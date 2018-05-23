@@ -19,37 +19,24 @@
  */
 package org.neo4j.storageengine.api;
 
-import java.util.function.LongPredicate;
+import java.util.function.IntPredicate;
 
-public interface StorageNodeCursor
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
+
+public interface StoragePropertyCursor
 {
-    void scan();
-
-    void single( long reference );
-
-    long nodeReference();
-
-    long[] labels();
-
-    boolean hasLabel( int label );
-
-    boolean hasProperties();
-
-    long relationshipGroupReference();
-
-    long allRelationshipsReference();
-
-    long propertiesReference();
-
-    boolean next( LongPredicate filter );
-
-    void setCurrent( long nodeReference );
+    void init( long reference );
 
     void close();
 
-    boolean isDense();
+    int propertyKey();
 
-    void reset();
+    ValueGroup propertyType();
+
+    Value propertyValue();
 
     void release();
+
+    boolean next( IntPredicate filter );
 }

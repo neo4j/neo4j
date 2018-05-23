@@ -53,13 +53,14 @@ public class StorePropertyCursor extends PropertyRecord implements StorageProper
     private static final int MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY = 32;
     private static final int INITIAL_POSITION = -1;
 
-    private PropertyStore read;
+    private final PropertyStore read;
     private long next;
     private int block;
     public ByteBuffer buffer;
     private PageCursor page;
     private PageCursor stringPage;
     private PageCursor arrayPage;
+    private boolean open;
 
     public StorePropertyCursor( PropertyStore read )
     {
@@ -87,9 +88,11 @@ public class StorePropertyCursor extends PropertyRecord implements StorageProper
 
         // Store state
         this.next = reference;
+        this.open = true;
     }
 
-    boolean next( IntPredicate filter )
+    @Override
+    public boolean next( IntPredicate filter )
     {
         while ( true )
         {
@@ -144,9 +147,9 @@ public class StorePropertyCursor extends PropertyRecord implements StorageProper
     @Override
     public void close()
     {
-        if ( !isClosed() )
+        if ( open )
         {
-            read = null;
+            open = false;
             clear();
         }
     }
@@ -334,15 +337,9 @@ public class StorePropertyCursor extends PropertyRecord implements StorageProper
         return Values.booleanValue( PropertyBlock.fetchByte( currentBlock() ) == 1 );
     }
 
-    @Override
-    public boolean isClosed()
-    {
-        return read == null;
-    }
-
     public String toString()
     {
-        if ( isClosed() )
+        if ( !open )
         {
             return "PropertyCursor[closed state]";
         }

@@ -43,7 +43,6 @@ import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -71,9 +70,6 @@ import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -94,8 +90,6 @@ import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
 public class AllStoreHolder extends Read
 {
-    private final StorageReader.Groups groups;
-    private final StorageReader.Relationships relationships;
     private final StorageReader storageReader;
     private final ExplicitIndexStore explicitIndexStore;
     private final Procedures procedures;
@@ -111,8 +105,6 @@ public class AllStoreHolder extends Read
     {
         super( cursors, ktx );
         this.storageReader = storageReader;
-        this.relationships = storageReader.relationships();
-        this.groups = storageReader.groups();
         this.explicitIndexStore = explicitIndexStore;
         this.procedures = procedures;
         this.schemaState = schemaState;
@@ -656,59 +648,6 @@ public class AllStoreHolder extends Read
             return ktx.txState().constraintsChangesForRelationshipType( typeId ).apply( constraints );
         }
         return constraints;
-    }
-
-    @Override
-    PageCursor relationshipPage( long reference )
-    {
-        return relationships.openPageCursorForReading( reference );
-    }
-
-    @Override
-    PageCursor groupPage( long reference )
-    {
-        return groups.openPageCursorForReading( reference );
-    }
-
-    @Override
-    void relationship( RelationshipRecord record, long reference, PageCursor pageCursor )
-    {
-        // When scanning, we inspect RelationshipRecord.inUse(), so using RecordLoad.CHECK is fine
-        relationships.getRecordByCursor( reference, record, RecordLoad.CHECK, pageCursor );
-    }
-
-    @Override
-    void relationshipAdvance( RelationshipRecord record, PageCursor pageCursor )
-    {
-        // When scanning, we inspect RelationshipRecord.inUse(), so using RecordLoad.CHECK is fine
-        relationships.nextRecordByCursor( record, RecordLoad.CHECK, pageCursor );
-    }
-
-    @Override
-    void relationshipFull( RelationshipRecord record, long reference, PageCursor pageCursor )
-    {
-        // We need to load forcefully for relationship chain traversal since otherwise we cannot
-        // traverse over relationship records which have been concurrently deleted
-        // (flagged as inUse = false).
-        // see
-        //      org.neo4j.kernel.impl.store.RelationshipChainPointerChasingTest
-        //      org.neo4j.kernel.impl.locking.RelationshipCreateDeleteIT
-        relationships.getRecordByCursor( reference, record, RecordLoad.FORCE, pageCursor );
-    }
-
-    @Override
-    void group( RelationshipGroupRecord record, long reference, PageCursor page )
-    {
-        // We need to load forcefully here since otherwise we cannot traverse over groups
-        // records which have been concurrently deleted (flagged as inUse = false).
-        // @see #org.neo4j.kernel.impl.store.RelationshipChainPointerChasingTest
-        groups.getRecordByCursor( reference, record, RecordLoad.FORCE, page );
-    }
-
-    @Override
-    long relationshipHighMark()
-    {
-        return relationships.getHighestPossibleIdInUse();
     }
 
     boolean nodeExistsInStore( long id )

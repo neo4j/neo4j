@@ -19,12 +19,12 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -175,7 +175,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             node.properties( props );
             assertFalse( "no properties by direct method", props.next() );
 
-            read.nodeProperties( node.nodeReference(), node.propertiesReference(), props );
+            node.properties( props );
             assertFalse( "no properties via property ref", props.next() );
 
             assertFalse( "only one node", node.next() );
@@ -268,7 +268,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             assertEquals( "correct value", expectedValue, props.propertyValue() );
             assertFalse( "single property", props.next() );
 
-            read.nodeProperties( node.nodeReference(), node.propertiesReference(), props );
+            node.properties( props );
             assertTrue( "has properties via property ref", props.next() );
             assertEquals( "correct value", expectedValue, props.propertyValue() );
             assertFalse( "single property", props.next() );

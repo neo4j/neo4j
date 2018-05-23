@@ -27,7 +27,6 @@ import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
-import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
@@ -176,24 +175,6 @@ public class StubRead implements Read
     }
 
     @Override
-    public void relationshipGroups( long nodeReference, long reference, RelationshipGroupCursor cursor )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void relationships( long nodeReference, long reference, RelationshipTraversalCursor cursor )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void nodeProperties( long nodeReference, long reference, PropertyCursor cursor )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public boolean nodeDeletedInTransaction( long node )
     {
         throw new UnsupportedOperationException();
@@ -201,12 +182,6 @@ public class StubRead implements Read
 
     @Override
     public boolean relationshipDeletedInTransaction( long relationship )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void relationshipProperties( long relationshipReference, long reference, PropertyCursor cursor )
     {
         throw new UnsupportedOperationException();
     }

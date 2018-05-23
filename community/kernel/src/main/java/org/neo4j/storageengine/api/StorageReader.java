@@ -37,7 +37,6 @@ import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelExcep
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -49,14 +48,6 @@ import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.locking.Lock;
-import org.neo4j.kernel.impl.newapi.StorePropertyCursor;
-import org.neo4j.kernel.impl.store.InvalidRecordException;
-import org.neo4j.kernel.impl.store.RecordCursors;
-import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -175,13 +166,6 @@ public interface StorageReader extends AutoCloseable
      * @throws IndexNotFoundKernelException if no such index exists.
      */
     IndexReader getFreshIndexReader( IndexDescriptor index ) throws IndexNotFoundKernelException;
-
-    /**
-     * Access to low level record cursors
-     *
-     * @return record cursors
-     */
-    RecordCursors recordCursors();
 
     /**
      * Reserves a node id for future use to store a node. The reason for it being exposed here is that
@@ -563,65 +547,13 @@ public interface StorageReader extends AutoCloseable
 
     <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StorageReader, T> factory );
 
-    Relationships relationships();
-
-    Groups groups();
-
     StorageNodeCursor allocateNodeCursor();
 
-    StorePropertyCursor allocatePropertyCursor();
+    StoragePropertyCursor allocatePropertyCursor();
 
-    interface RecordReads<RECORD>
-    {
-        /**
-         * Open a new PageCursor for reading nodes.
-         * <p>
-         * DANGER: make sure to always close this cursor.
-         *
-         * @param reference the initial node reference to access.
-         * @return the opened PageCursor
-         */
-        PageCursor openPageCursorForReading( long reference );
+    StorageRelationshipGroupCursor allocateRelationshipGroupCursor();
 
-        /**
-         * Load a node {@code record} with the node corresponding to the given node {@code reference}.
-         * <p>
-         * The provided page cursor will be used to get the record, and in doing this it will be redirected to the
-         * correct page if needed.
-         *
-         * @param reference the record reference, understood to be the absolute reference to the store.
-         * @param record the record to fill.
-         * @param mode loading behaviour, read more in {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad)}.
-         * @param cursor the PageCursor to use for record loading.
-         * @throws InvalidRecordException if record not in use and the {@code mode} allows for throwing.
-         */
-        void getRecordByCursor( long reference, RECORD record, RecordLoad mode, PageCursor cursor )
-                throws InvalidRecordException;
+    StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor();
 
-        /**
-         * Reads a record from the store into {@code target}, see
-         * {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad)}.
-         * <p>
-         * This method requires that the cursor page and offset point to the first byte of the record in target on calling.
-         * The provided page cursor will be used to get the record, and in doing this it will be redirected to the
-         * next page if the input record was the last on it's page.
-         *
-         * @param record the record to fill.
-         * @param mode loading behaviour, read more in {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad)}.
-         * @param cursor the PageCursor to use for record loading.
-         * @throws InvalidRecordException if record not in use and the {@code mode} allows for throwing.
-         */
-        void nextRecordByCursor( RECORD record, RecordLoad mode, PageCursor cursor )
-                throws InvalidRecordException;
-
-        long getHighestPossibleIdInUse();
-    }
-
-    interface Relationships extends RecordReads<RelationshipRecord>
-    {
-    }
-
-    interface Groups extends RecordReads<RelationshipGroupRecord>
-    {
-    }
+    StorageRelationshipScanCursor allocateRelationshipScanCursor();
 }

@@ -22,9 +22,14 @@ package org.neo4j.kernel.impl.newapi;
 import java.util.function.LongPredicate;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
-class StoreRelationshipTraversalCursor extends StoreRelationshipCursor
+import static org.neo4j.kernel.impl.newapi.References.clearEncoding;
+
+public class StoreRelationshipTraversalCursor extends StoreRelationshipCursor implements StorageRelationshipTraversalCursor
 {
     private enum GroupState
     {
@@ -40,82 +45,71 @@ class StoreRelationshipTraversalCursor extends StoreRelationshipCursor
     private PageCursor pageCursor;
     private final StoreRelationshipGroupCursor group;
     private GroupState groupState;
+    private boolean open;
 
-    StoreRelationshipTraversalCursor()
+    public StoreRelationshipTraversalCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore )
     {
-        this.group = new StoreRelationshipGroupCursor();
+        super( relationshipStore, groupStore );
+        this.group = new StoreRelationshipGroupCursor( relationshipStore, groupStore );
     }
 
-    /*
-     * Cursor being called as a group, use the buffered records in Record
-     * instead. These are guaranteed to all have the same type and direction.
-     */
-    void buffered( long nodeReference, Record record, Read read )
+    @Override
+    public void init( long nodeReference, long reference, RelationshipDirection filterDirection, int filterType )
     {
-        this.originNodeReference = nodeReference;
-        this.buffer = Record.initialize( record );
-        this.groupState = GroupState.NONE;
-        init( read );
+        /* There are basically two ways a relationship traversal cursor can be initialized:
+         *
+         * 1. From a dense node, where multiple relationship chains are discovered from relationship groups
+         *    as the internal group cursor sees them.
+         * 2. From a sparse node, where a single relationship chain is traversed.
+         */
+
+        RelationshipReferenceEncoding encoding = RelationshipReferenceEncoding.parseEncoding( reference );
+
+        switch ( encoding )
+        {
+        case NONE: // this is a normal relationship reference
+            chain( nodeReference, reference );
+            break;
+
+        case GROUP: // this reference is actually to a group record
+            groups( nodeReference, clearEncoding( reference ) );
+            break;
+
+        default:
+            throw new IllegalStateException( "Unknown encoding " + encoding );
+        }
+
+        open = true;
     }
 
     /*
      * Normal traversal. Traversal returns mixed types and directions.
      */
-    void chain( long nodeReference, long reference, Read read )
+    private void chain( long nodeReference, long reference )
     {
         if ( pageCursor == null )
         {
-            pageCursor = read.relationshipPage( reference );
+            pageCursor = relationshipPage( reference );
         }
         setId( NO_ID );
         this.groupState = GroupState.NONE;
         this.originNodeReference = nodeReference;
         this.next = reference;
-        init( read );
     }
 
     /*
      * Reference to a group record. Traversal returns mixed types and directions.
      */
-    void groups( long nodeReference, long groupReference, Read read )
+    private void groups( long nodeReference, long groupReference )
     {
         setId( NO_ID );
         this.next = NO_ID;
         this.groupState = GroupState.INCOMING;
         this.originNodeReference = nodeReference;
-        group.direct( nodeReference, groupReference, read );
-        init( read );
+        group.direct( nodeReference, groupReference );
     }
 
-    /*
-     * Grouped traversal of non-dense node. Same type and direction as first read relationship. Store relationships are
-     * all assumed to be of wanted relationship type and direction iff filterStore == false.
-     */
-    void filtered( long nodeReference, long reference, Read read )
-    {
-        if ( pageCursor == null )
-        {
-            pageCursor = read.relationshipPage( reference );
-        }
-        setId( NO_ID );
-        this.groupState = GroupState.NONE;
-        this.originNodeReference = nodeReference;
-        this.next = reference;
-        init( read );
-    }
-
-    /*
-     * Empty chain in store. Return from tx-state with provided relationship type and direction.
-     */
-    void filteredTxState( long nodeReference, Read read )
-    {
-        setId( NO_ID );
-        this.groupState = GroupState.NONE;
-        this.originNodeReference = nodeReference;
-        this.next = NO_ID;
-        init( read );
-    }
-
+    @Override
     public long neighbourNodeReference()
     {
         final long source = sourceNodeReference(), target = targetNodeReference();
@@ -133,11 +127,13 @@ class StoreRelationshipTraversalCursor extends StoreRelationshipCursor
         }
     }
 
+    @Override
     public long originNodeReference()
     {
         return originNodeReference;
     }
 
+    @Override
     public boolean next( LongPredicate filter )
     {
         if ( hasBufferedData() )
@@ -158,7 +154,7 @@ class StoreRelationshipTraversalCursor extends StoreRelationshipCursor
                 return false;
             }
 
-            read.relationshipFull( this, next, pageCursor );
+            relationshipFull( this, next, pageCursor );
             computeNext();
 
         } while ( filter.test( getId() ) );
@@ -234,7 +230,7 @@ class StoreRelationshipTraversalCursor extends StoreRelationshipCursor
                 next = group.incomingRawId();
                 if ( pageCursor == null )
                 {
-                    pageCursor = read.relationshipPage( Math.max( next, 0L ) );
+                    pageCursor = relationshipPage( Math.max( next, 0L ) );
                 }
                 groupState = GroupState.OUTGOING;
                 break;
@@ -286,28 +282,26 @@ class StoreRelationshipTraversalCursor extends StoreRelationshipCursor
         return groupState != GroupState.NONE;
     }
 
+    @Override
     public void close()
     {
-        if ( !isClosed() )
+        if ( open )
         {
-            read = null;
+            open = false;
             buffer = null;
             reset();
         }
     }
 
-    private void reset()
+    @Override
+    public void reset()
     {
         setId( next = NO_ID );
         groupState = GroupState.NONE;
         buffer = null;
     }
 
-    public boolean isClosed()
-    {
-        return read == null && !hasBufferedData();
-    }
-
+    @Override
     public void release()
     {
         if ( pageCursor != null )
@@ -322,7 +316,7 @@ class StoreRelationshipTraversalCursor extends StoreRelationshipCursor
     @Override
     public String toString()
     {
-        if ( isClosed() )
+        if ( !open )
         {
             return "RelationshipTraversalCursor[closed state]";
         }

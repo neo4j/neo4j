@@ -27,12 +27,14 @@ import java.util.function.LongPredicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.storageengine.api.txstate.NodeState;
 
 import static java.lang.String.format;
+import static org.neo4j.internal.kernel.api.Read.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
-class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<StoreRelationshipTraversalCursor>
+class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<StorageRelationshipTraversalCursor>
         implements RelationshipTraversalCursor
 {
     private enum FilterState
@@ -114,75 +116,21 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Store
     private FilterState filterState;
     private boolean filterStore;
     private int filterType = NO_ID;
-
     private LongIterator addedRelationships;
 
-    DefaultRelationshipTraversalCursor( DefaultCursors pool )
+    DefaultRelationshipTraversalCursor( DefaultCursors pool, StorageRelationshipTraversalCursor storeCursor )
     {
-        super( pool, new StoreRelationshipTraversalCursor() );
+        super( pool, storeCursor );
     }
 
-    /*
-     * Cursor being called as a group, use the buffered records in Record
-     * instead. These are guaranteed to all have the same type and direction.
-     */
-    void buffered( long nodeReference, StoreRelationshipTraversalCursor.Record record, RelationshipDirection direction, int type, Read read )
+    void init( long nodeReference, long reference, Read read, RelationshipDirection direction, int type )
     {
-        storeCursor.buffered( nodeReference, record, read );
-        this.filterState = FilterState.fromRelationshipDirection( direction );
+        storeCursor.init( nodeReference, reference, direction, type );
+        this.filterState = direction == null ? FilterState.NONE : FilterState.fromRelationshipDirection( direction );
         this.filterType = type;
         init( read );
         this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
-    }
-
-    /*
-     * Normal traversal. Traversal returns mixed types and directions.
-     */
-    void chain( long nodeReference, long reference, Read read )
-    {
-        storeCursor.chain( nodeReference, reference, read );
-        this.filterState = FilterState.NONE;
-        this.filterType = NO_ID;
-        init( read );
-        this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
-    }
-
-    /*
-     * Reference to a group record. Traversal returns mixed types and directions.
-     */
-    void groups( long nodeReference, long groupReference, Read read )
-    {
-        storeCursor.groups( nodeReference, groupReference, read );
-        this.filterState = FilterState.NONE;
-        this.filterType = NO_ID;
-        init( read );
-        this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
-    }
-
-    /*
-     * Grouped traversal of non-dense node. Same type and direction as first read relationship. Store relationships are
-     * all assumed to be of wanted relationship type and direction iff filterStore == false.
-     */
-    void filtered( long nodeReference, long reference, Read read, boolean filterStore )
-    {
-        storeCursor.filtered( nodeReference, reference, read );
-        this.filterState = FilterState.NOT_INITIALIZED;
-        this.filterStore = filterStore;
-        init( read );
-        this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
-    }
-
-    /*
-     * Empty chain in store. Return from tx-state with provided relationship type and direction.
-     */
-    void filteredTxState( long nodeReference, Read read, int filterType, RelationshipDirection direction )
-    {
-        storeCursor.filteredTxState( nodeReference, read );
-        this.filterType = filterType;
-        this.filterState = FilterState.fromRelationshipDirection( direction );
-        this.filterStore = false;
-        init( read );
-        this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
+        this.filterStore = true;
     }
 
     @Override
@@ -273,7 +221,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Store
 
     private boolean correctTypeAndDirection()
     {
-        return filterType == storeCursor.type() &&
+        return (filterType == ANY_RELATIONSHIP_TYPE || filterType == storeCursor.type()) &&
                 filterState.check( sourceNodeReference(), targetNodeReference(), storeCursor.originNodeReference() );
     }
 
@@ -315,7 +263,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Store
     @Override
     public boolean isClosed()
     {
-        return storeCursor.isClosed();
+        return read == null;
     }
 
     public void release()

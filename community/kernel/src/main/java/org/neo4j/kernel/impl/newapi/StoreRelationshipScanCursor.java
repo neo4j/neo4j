@@ -22,16 +22,28 @@ package org.neo4j.kernel.impl.newapi;
 import java.util.function.LongPredicate;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
-class StoreRelationshipScanCursor extends StoreRelationshipCursor
+public class StoreRelationshipScanCursor extends StoreRelationshipCursor implements StorageRelationshipScanCursor
 {
     private int type;
     private long next;
     private long highMark;
     private long nextStoreReference;
     private PageCursor pageCursor;
+    private boolean open;
 
-    void scan( int type, Read read )
+    public StoreRelationshipScanCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore )
+    {
+        super( relationshipStore, groupStore );
+    }
+
+    @Override
+    public void scan( int type )
     {
         if ( getId() != NO_ID )
         {
@@ -39,16 +51,17 @@ class StoreRelationshipScanCursor extends StoreRelationshipCursor
         }
         if ( pageCursor == null )
         {
-            pageCursor = read.relationshipPage( 0 );
+            pageCursor = relationshipPage( 0 );
         }
         this.next = 0;
         this.type = type;
-        this.highMark = read.relationshipHighMark();
+        this.highMark = relationshipHighMark();
         this.nextStoreReference = NO_ID;
-        init( read );
+        this.open = true;
     }
 
-    void single( long reference, Read read )
+    @Override
+    public void single( long reference )
     {
         if ( getId() != NO_ID )
         {
@@ -56,15 +69,16 @@ class StoreRelationshipScanCursor extends StoreRelationshipCursor
         }
         if ( pageCursor == null )
         {
-            pageCursor = read.relationshipPage( reference );
+            pageCursor = relationshipPage( reference );
         }
         this.next = reference;
         this.type = -1;
         this.highMark = NO_ID;
         this.nextStoreReference = NO_ID;
-        init( read );
+        this.open = true;
     }
 
+    @Override
     public boolean next( LongPredicate filter )
     {
         if ( next == NO_ID )
@@ -82,13 +96,13 @@ class StoreRelationshipScanCursor extends StoreRelationshipCursor
             }
             else if ( nextStoreReference == next )
             {
-                read.relationshipAdvance( this, pageCursor );
+                relationshipAdvance( this, pageCursor );
                 next++;
                 nextStoreReference++;
             }
             else
             {
-                read.relationship( this, next++, pageCursor );
+                relationship( this, next++, pageCursor );
                 nextStoreReference = next;
             }
 
@@ -104,7 +118,7 @@ class StoreRelationshipScanCursor extends StoreRelationshipCursor
                 {
                     //we are a "scan cursor"
                     //Check if there is a new high mark
-                    highMark = read.relationshipHighMark();
+                    highMark = relationshipHighMark();
                     if ( next > highMark )
                     {
                         next = NO_ID;
@@ -122,29 +136,26 @@ class StoreRelationshipScanCursor extends StoreRelationshipCursor
         return (type == -1 || type() == type) && inUse();
     }
 
+    @Override
     public void close()
     {
-        if ( !isClosed() )
+        if ( open )
         {
-            read = null;
+            open = false;
             reset();
         }
     }
 
-    void reset()
+    @Override
+    public void reset()
     {
         setId( next = NO_ID );
-    }
-
-    public boolean isClosed()
-    {
-        return read == null;
     }
 
     @Override
     public String toString()
     {
-        if ( isClosed() )
+        if ( !open )
         {
             return "RelationshipScanCursor[closed state]";
         }
@@ -160,6 +171,7 @@ class StoreRelationshipScanCursor extends StoreRelationshipCursor
         return highMark == NO_ID;
     }
 
+    @Override
     public void release()
     {
         if ( pageCursor != null )
@@ -167,5 +179,11 @@ class StoreRelationshipScanCursor extends StoreRelationshipCursor
             pageCursor.close();
             pageCursor = null;
         }
+    }
+
+    private void relationshipAdvance( RelationshipRecord record, PageCursor pageCursor )
+    {
+        // When scanning, we inspect RelationshipRecord.inUse(), so using RecordLoad.CHECK is fine
+        relationshipStore.nextRecordByCursor( record, RecordLoad.CHECK, pageCursor );
     }
 }

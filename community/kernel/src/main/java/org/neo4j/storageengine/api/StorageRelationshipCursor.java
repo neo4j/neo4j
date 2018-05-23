@@ -21,35 +21,30 @@ package org.neo4j.storageengine.api;
 
 import java.util.function.LongPredicate;
 
-public interface StorageNodeCursor
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
+
+public interface StorageRelationshipCursor extends RelationshipVisitor<RuntimeException>
 {
-    void scan();
+    long relationshipReference();
 
-    void single( long reference );
-
-    long nodeReference();
-
-    long[] labels();
-
-    boolean hasLabel( int label );
+    int type();
 
     boolean hasProperties();
 
-    long relationshipGroupReference();
+    long sourceNodeReference();
 
-    long allRelationshipsReference();
+    long targetNodeReference();
 
     long propertiesReference();
 
-    boolean next( LongPredicate filter );
-
-    void setCurrent( long nodeReference );
-
-    void close();
-
-    boolean isDense();
+    // used to visit transaction state
+    void visit( long relationshipId, int typeId, long startNodeId, long endNodeId );
 
     void reset();
+
+    boolean next( LongPredicate filter );
+
+    void close();
 
     void release();
 }

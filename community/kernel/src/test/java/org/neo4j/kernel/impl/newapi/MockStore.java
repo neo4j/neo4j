@@ -120,18 +120,6 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
-    PageCursor relationshipPage( long reference )
-    {
-        return null;
-    }
-
-    @Override
-    PageCursor groupPage( long reference )
-    {
-        return null;
-    }
-
-    @Override
     public boolean nodeExists( long id )
     {
         throw new UnsupportedOperationException( "not implemented" );
@@ -488,35 +476,6 @@ public class MockStore extends Read implements TestRule
         PropertyBlock block = new PropertyBlock();
         PropertyStore.encodeValue( block, key, value, NO_DYNAMIC_RECORDS, NO_DYNAMIC_RECORDS, true );
         return block;
-    }
-
-    void relationship( RelationshipRecord record, long reference, PageCursor pageCursor )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    void relationshipAdvance( RelationshipRecord record, PageCursor pageCursor )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    void relationshipFull( RelationshipRecord record, long reference, PageCursor pageCursor )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    void group( RelationshipGroupRecord record, long reference, PageCursor page )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    long relationshipHighMark()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override

@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -36,14 +37,14 @@ import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 public class DefaultPropertyCursor implements PropertyCursor
 {
     private Read read;
-    private StorePropertyCursor storeCursor;
+    private StoragePropertyCursor storeCursor;
     private PropertyContainerState propertiesState;
     private Iterator<StorageProperty> txStateChangedProperties;
     private StorageProperty txStateValue;
     private AssertOpen assertOpen;
     private final DefaultCursors pool;
 
-    DefaultPropertyCursor( DefaultCursors pool, StorePropertyCursor storeCursor )
+    DefaultPropertyCursor( DefaultCursors pool, StoragePropertyCursor storeCursor )
     {
         this.pool = pool;
         this.storeCursor = storeCursor;

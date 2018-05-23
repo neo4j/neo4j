@@ -22,8 +22,9 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
+import org.neo4j.storageengine.api.StorageRelationshipCursor;
 
-abstract class DefaultRelationshipCursor<STORECURSOR extends StoreRelationshipCursor> implements RelationshipDataAccessor
+abstract class DefaultRelationshipCursor<STORECURSOR extends StorageRelationshipCursor> implements RelationshipDataAccessor
 {
     private boolean hasChanges;
     private boolean checkHasChanges;
@@ -72,7 +73,7 @@ abstract class DefaultRelationshipCursor<STORECURSOR extends StoreRelationshipCu
     @Override
     public void properties( PropertyCursor cursor )
     {
-        read.relationshipProperties( relationshipReference(), propertiesReference(), cursor );
+        ((DefaultPropertyCursor) cursor).initRelationship( relationshipReference(), propertiesReference(), read, read );
     }
 
     @Override

@@ -266,38 +266,6 @@ public interface Read
     Scan<RelationshipScanCursor> relationshipTypeScan( int type );
 
     /**
-     * @param nodeReference
-     *         a reference from {@link NodeCursor#nodeReference()}.
-     * @param reference
-     *         a reference from {@link NodeCursor#relationshipGroupReference()}.
-     * @param cursor
-     *         the cursor to use for consuming the results.
-     */
-    void relationshipGroups( long nodeReference, long reference, RelationshipGroupCursor cursor );
-
-    /**
-     * @param nodeReference
-     *         a reference from {@link NodeCursor#nodeReference()}.
-     * @param reference
-     *         a reference from {@link RelationshipGroupCursor#outgoingReference()},
-     *         {@link RelationshipGroupCursor#incomingReference()},
-     *         or {@link RelationshipGroupCursor#loopsReference()}.
-     * @param cursor
-     *         the cursor to use for consuming the results.
-     */
-    void relationships( long nodeReference, long reference, RelationshipTraversalCursor cursor );
-
-    /**
-     * @param nodeReference
-     *         the owner of the properties.
-     * @param reference
-     *         a reference from {@link NodeCursor#propertiesReference()}.
-     * @param cursor
-     *         the cursor to use for consuming the results.
-     */
-    void nodeProperties( long nodeReference, long reference, PropertyCursor cursor );
-
-    /**
      * Checks if a node was deleted in the current transaction
      * @param node the node to check
      * @return <code>true</code> if the node was deleted otherwise <code>false</code>
@@ -310,16 +278,6 @@ public interface Read
      * @return <code>true</code> if the relationship was deleted otherwise <code>false</code>
      */
     boolean relationshipDeletedInTransaction( long relationship );
-
-    /**
-     * @param relationshipReference
-     *         the owner of the properties.
-     * @param reference
-     *         a reference from {@link RelationshipDataAccessor#propertiesReference()}.
-     * @param cursor
-     *         the cursor to use for consuming the results.
-     */
-    void relationshipProperties( long relationshipReference, long reference, PropertyCursor cursor );
 
     void graphProperties( PropertyCursor cursor );
 
