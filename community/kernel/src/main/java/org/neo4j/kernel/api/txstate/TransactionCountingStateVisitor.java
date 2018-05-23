@@ -23,16 +23,19 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 
 import java.util.function.LongConsumer;
 
-import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.api.CountsRecordState;
+import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor;
-import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
+import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
+import static org.eclipse.collections.impl.block.factory.primitive.LongPredicates.alwaysFalse;
 import static org.neo4j.kernel.api.StatementConstants.ANY_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.ANY_RELATIONSHIP_TYPE;
 
@@ -42,6 +45,8 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     private final StorageReader storageReader;
     private final CountsRecordState counts;
     private final ReadableTransactionState txState;
+    private final StorageNodeCursor nodeCursor;
+    private final StorageRelationshipGroupCursor groupCursor;
 
     public TransactionCountingStateVisitor( TxStateVisitor next, StorageReader storageReader,
             ReadableTransactionState txState, CountsRecordState counts )
@@ -50,6 +55,8 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
         this.storageReader = storageReader;
         this.txState = txState;
         this.counts = counts;
+        this.nodeCursor = storageReader.allocateNodeCursor();
+        this.groupCursor = storageReader.allocateRelationshipGroupCursor();
     }
 
     @Override
@@ -63,20 +70,35 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     public void visitDeletedNode( long id )
     {
         counts.incrementNodeCount( ANY_LABEL, -1 );
-        storageReader.acquireSingleNodeCursor( id ).forAll( this::decrementCountForLabelsAndRelationships );
+        nodeCursor.single( id );
+        if ( nodeCursor.next( alwaysFalse() ) )
+        {
+            decrementCountForLabelsAndRelationships( nodeCursor );
+        }
         super.visitDeletedNode( id );
     }
 
-    private void decrementCountForLabelsAndRelationships( NodeItem node )
+    private void decrementCountForLabelsAndRelationships( StorageNodeCursor node )
     {
-        final LongSet labelIds = node.labels();
-        labelIds.forEach( labelId ->
+        final long[] labelIds = node.labels();
+        for ( long labelId : labelIds )
         {
             counts.incrementNodeCount( labelId, -1 );
-        } );
+        };
 
-        storageReader.degrees( node,
-                ( type, out, in ) -> updateRelationshipsCountsFromDegrees( labelIds, type, -out, -in ) );
+        visitDegrees( node, ( type, out, in ) -> updateRelationshipsCountsFromDegrees( labelIds, type, -out, -in ) );
+    }
+
+    private void visitDegrees( StorageNodeCursor node, DegreeVisitor visitor )
+    {
+        groupCursor.init( node.nodeReference(), node.relationshipGroupReference() );
+        while ( groupCursor.next() )
+        {
+            int loopCount = groupCursor.loopCount();
+            visitor.visitDegree( groupCursor.type(),
+                    groupCursor.outgoingCount() + loopCount,
+                    groupCursor.incomingCount() + loopCount );
+        }
     }
 
     @Override
@@ -113,19 +135,26 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
             removed.each( label -> counts.incrementNodeCount( label, -1 ) );
             // get the relationship counts from *before* this transaction,
             // the relationship changes will compensate for what happens during the transaction
-            storageReader.acquireSingleNodeCursor( id )
-                    .forAll( node -> storageReader.degrees( node, ( type, out, in ) ->
-                    {
-                        added.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, out, in ) );
-                        removed.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, -out, -in ) );
-                    } ) );
+
+            nodeCursor.single( id );
+            if ( nodeCursor.next( alwaysFalse() ) )
+            {
+                visitDegrees( nodeCursor, ( type, out, in ) ->
+                {
+                    added.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, out, in ) );
+                    removed.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, -out, -in ) );
+                } );
+            }
         }
         super.visitNodeLabelChanges( id, added, removed );
     }
 
-    private void updateRelationshipsCountsFromDegrees( LongSet labels, int type, long outgoing, long incoming )
+    private void updateRelationshipsCountsFromDegrees( long[] labels, int type, long outgoing, long incoming )
     {
-        labels.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, outgoing, incoming ) );
+        for ( long label : labels )
+        {
+            updateRelationshipsCountsFromDegrees( type, label, outgoing, incoming );
+        }
     }
 
     private boolean updateRelationshipsCountsFromDegrees( int type, long label, long outgoing, long incoming )
@@ -148,11 +177,33 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
 
     private void visitLabels( long nodeId, LongConsumer visitor )
     {
-        nodeCursor( nodeId ).forAll( node -> node.labels().forEach( visitor::accept ) );
-    }
+        // This transaction state visitor doesn't have access to higher level cursors that combine store- and tx-state,
+        // but however has access to the two individually, and so does this combining here directly.
+        if ( txState.nodeIsDeletedInThisTx( nodeId ) )
+        {
+            return;
+        }
 
-    private Cursor<NodeItem> nodeCursor( long nodeId )
-    {
-        return txState.augmentSingleNodeCursor( storageReader.acquireSingleNodeCursor( nodeId ), nodeId );
+        if ( txState.nodeIsAddedInThisTx( nodeId ) )
+        {
+            txState.getNodeState( nodeId ).labelDiffSets().getAdded().forEach( visitor::accept );
+        }
+        else
+        {
+            nodeCursor.single( nodeId );
+            if ( nodeCursor.next( alwaysFalse() ) )
+            {
+                long[] labels = nodeCursor.labels();
+                LongDiffSets labelDiff = txState.getNodeState( nodeId ).labelDiffSets();
+                labelDiff.getAdded().forEach( visitor::accept );
+                for ( long label : labels )
+                {
+                    if ( !labelDiff.isRemoved( label ) )
+                    {
+                        visitor.accept( label );
+                    }
+                }
+            }
+        }
     }
 }

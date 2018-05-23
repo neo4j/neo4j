@@ -221,7 +221,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
         {
             edgePage = relationshipStore.openPageCursorForReading( reference );
         }
-        relationshipStore.getRecordByCursor( reference, edge, RecordLoad.CHECK, edgePage );
+        relationshipStore.getRecordByCursor( reference, edge, RecordLoad.FORCE, edgePage );
         if ( edge.getFirstNode() == getOwningNode() )
         {
             return (int) edge.getFirstPrevRel();

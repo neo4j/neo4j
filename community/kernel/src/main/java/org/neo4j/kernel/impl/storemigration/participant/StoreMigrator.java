@@ -40,11 +40,12 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordNodeCursor;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreFile;
 import org.neo4j.kernel.impl.store.StoreHeader;
@@ -70,6 +71,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.BatchImporterFactory;
@@ -86,6 +88,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionM
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
 import static java.util.Arrays.asList;
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader.newReader;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
@@ -518,7 +521,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             @Override
             public InputChunk newChunk()
             {
-                return new RelationshipRecordChunk( createCursor(), legacyStore, requiresPropertyMigration );
+                return new RelationshipRecordChunk( newReader( legacyStore ), requiresPropertyMigration );
             }
         };
     }
@@ -530,7 +533,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             @Override
             public InputChunk newChunk()
             {
-                return new NodeRecordChunk( createCursor(), legacyStore, requiresPropertyMigration );
+                return new NodeRecordChunk( newReader( legacyStore ), requiresPropertyMigration );
             }
         };
     }
@@ -605,35 +608,35 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         return "Kernel StoreMigrator";
     }
 
-    private static class NodeRecordChunk extends StoreScanChunk<NodeRecord>
+    private static class NodeRecordChunk extends StoreScanChunk<RecordNodeCursor>
     {
-        NodeRecordChunk( RecordCursor<NodeRecord> recordCursor, NeoStores neoStores, boolean requiresPropertyMigration )
+        NodeRecordChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration )
         {
-            super( recordCursor, neoStores, requiresPropertyMigration );
+            super( storageReader.allocateNodeCursor(), storageReader, requiresPropertyMigration );
         }
 
         @Override
-        protected void visitRecord( NodeRecord record, InputEntityVisitor visitor )
+        protected void visitRecord( RecordNodeCursor record, InputEntityVisitor visitor )
         {
-            visitor.id( record.getId() );
+            visitor.id( record.nodeReference() );
             visitor.labelField( record.getLabelField() );
             visitProperties( record, visitor );
         }
     }
 
-    private static class RelationshipRecordChunk extends StoreScanChunk<RelationshipRecord>
+    private static class RelationshipRecordChunk extends StoreScanChunk<StorageRelationshipScanCursor>
     {
-        RelationshipRecordChunk( RecordCursor<RelationshipRecord> recordCursor, NeoStores neoStore, boolean requiresPropertyMigration )
+        RelationshipRecordChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration )
         {
-            super( recordCursor, neoStore, requiresPropertyMigration );
+            super( storageReader.allocateRelationshipScanCursor(), storageReader, requiresPropertyMigration );
         }
 
         @Override
-        protected void visitRecord( RelationshipRecord record, InputEntityVisitor visitor )
+        protected void visitRecord( StorageRelationshipScanCursor record, InputEntityVisitor visitor )
         {
-            visitor.startId( record.getFirstNode() );
-            visitor.endId( record.getSecondNode() );
-            visitor.type( record.getType() );
+            visitor.startId( record.sourceNodeReference() );
+            visitor.endId( record.targetNodeReference() );
+            visitor.type( record.type() );
             visitProperties( record, visitor );
         }
     }

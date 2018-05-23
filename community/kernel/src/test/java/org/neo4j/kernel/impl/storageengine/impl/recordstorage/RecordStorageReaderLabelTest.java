@@ -25,10 +25,13 @@ import org.junit.Test;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.storageengine.api.StorageNodeCursor;
 
+import static org.eclipse.collections.impl.block.factory.primitive.LongPredicates.alwaysFalse;
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
@@ -57,8 +60,10 @@ public class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
         }
 
         // THEN
-        storageReader.acquireSingleNodeCursor( nodeId ).forAll(
-                node -> assertEquals( newSetWith( labelId1, labelId2 ), node.labels() ) );
+        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor();
+        nodeCursor.single( nodeId );
+        assertTrue( nodeCursor.next( alwaysFalse() ) );
+        assertEquals( newSetWith( labelId1, labelId2 ), newSetWith( nodeCursor.labels() ) );
     }
 
     @Test

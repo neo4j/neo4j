@@ -47,6 +47,8 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 
+import static java.util.function.Function.identity;
+
 abstract class ReplicatedTokenHolder<TOKEN extends Token> implements TokenHolder<TOKEN>
 {
     protected final Dependencies dependencies;
@@ -131,7 +133,7 @@ abstract class ReplicatedTokenHolder<TOKEN extends Token> implements TokenHolder
         createToken( txState, tokenName, tokenId );
         try ( StorageReader statement = storageEngine.newReader() )
         {
-            storageEngine.createCommands( commands, txState, statement, ResourceLocker.NONE, Long.MAX_VALUE );
+            storageEngine.createCommands( commands, txState, statement, ResourceLocker.NONE, Long.MAX_VALUE, identity() );
         }
         catch ( CreateConstraintFailureException | TransactionFailureException | ConstraintValidationException e )
         {

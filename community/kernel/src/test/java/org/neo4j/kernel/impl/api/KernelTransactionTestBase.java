@@ -28,6 +28,7 @@ import org.mockito.Mockito;
 
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
@@ -117,7 +118,8 @@ public class KernelTransactionTestBase
                     anyCollection(),
                     any( ReadableTransactionState.class ),
                     any( StorageReader.class ), any( ResourceLocker.class ),
-                    anyLong() );
+                    anyLong(),
+                    any( Function.class ) );
     }
 
     public KernelTransactionImplementation newTransaction( long transactionTimeoutMillis )

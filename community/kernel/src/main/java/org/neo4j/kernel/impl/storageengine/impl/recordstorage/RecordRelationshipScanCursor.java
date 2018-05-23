@@ -30,7 +30,7 @@ import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
 class RecordRelationshipScanCursor extends RecordRelationshipCursor implements StorageRelationshipScanCursor
 {
-    private int type;
+    private int filterType;
     private long next;
     private long highMark;
     private long nextStoreReference;
@@ -54,7 +54,7 @@ class RecordRelationshipScanCursor extends RecordRelationshipCursor implements S
             pageCursor = relationshipPage( 0 );
         }
         this.next = 0;
-        this.type = type;
+        this.filterType = type;
         this.highMark = relationshipHighMark();
         this.nextStoreReference = NO_ID;
         this.open = true;
@@ -72,7 +72,7 @@ class RecordRelationshipScanCursor extends RecordRelationshipCursor implements S
             pageCursor = relationshipPage( reference );
         }
         this.next = reference;
-        this.type = -1;
+        this.filterType = -1;
         this.highMark = NO_ID;
         this.nextStoreReference = NO_ID;
         this.open = true;
@@ -122,18 +122,18 @@ class RecordRelationshipScanCursor extends RecordRelationshipCursor implements S
                     if ( next > highMark )
                     {
                         next = NO_ID;
-                        return inUse();
+                        return isWantedTypeAndInUse();
                     }
                 }
             }
         }
-        while ( !inUse() );
+        while ( !isWantedTypeAndInUse() );
         return true;
     }
 
     private boolean isWantedTypeAndInUse()
     {
-        return (type == -1 || type() == type) && inUse();
+        return (filterType == -1 || type() == filterType) && inUse();
     }
 
     @Override
@@ -161,7 +161,7 @@ class RecordRelationshipScanCursor extends RecordRelationshipCursor implements S
         }
         else
         {
-            return "RelationshipScanCursor[id=" + getId() + ", open state with: highMark=" + highMark + ", next=" + next + ", type=" + type +
+            return "RelationshipScanCursor[id=" + getId() + ", open state with: highMark=" + highMark + ", next=" + next + ", filterType=" + filterType +
                     ", underlying record=" + super.toString() + " ]";
         }
     }

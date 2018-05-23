@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -381,7 +382,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
                 any( TransactionState.class ),
                 any( StorageReader.class ),
                 any( ResourceLocker.class ),
-                anyLong() );
+                anyLong(), any( Function.class ) );
 
         try ( KernelTransactionImplementation transaction = newTransaction( loginContext() ) )
         {

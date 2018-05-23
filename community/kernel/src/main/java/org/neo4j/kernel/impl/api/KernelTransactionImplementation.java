@@ -144,6 +144,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final StorageReader storageReader;
     private final ClockContext clocks;
     private final AccessCapability accessCapability;
+    private final ConstraintSemantics constraintSemantics;
 
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
@@ -216,6 +217,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClockRef, heapAllocationRef );
         this.userMetaData = new HashMap<>();
+        this.constraintSemantics = constraintSemantics;
         DefaultCursors cursors = new DefaultCursors( storageReader );
         AllStoreHolder allStoreHolder =
                 new AllStoreHolder( storageReader, this, cursors, explicitIndexStore,
@@ -649,7 +651,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         extractedCommands,
                         txState, storageReader,
                         commitLocks,
-                        lastTransactionIdWhenStarted );
+                        lastTransactionIdWhenStarted,
+                        this::enforceConstraints );
                 if ( hasExplicitIndexChanges() )
                 {
                     explicitIndexTransactionState.extractCommands( extractedCommands );
@@ -1054,6 +1057,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public Statistics getStatistics()
     {
         return statistics;
+    }
+
+    private TxStateVisitor enforceConstraints( TxStateVisitor txStateVisitor )
+    {
+        return constraintSemantics.decorateTxStateVisitor( storageReader, operations.dataRead(), operations.cursors(), txState, txStateVisitor );
     }
 
     public static class Statistics

@@ -19,12 +19,13 @@
  */
 package org.neo4j.storageengine.api;
 
-public interface StorageRelationshipGroupCursor
+public interface StorageRelationshipGroupCursor extends AutoCloseable
 {
     boolean next();
 
     void setCurrent( int groupReference, int firstOut, int firstIn, int firstLoop );
 
+    @Override
     void close();
 
     int type();

@@ -19,14 +19,12 @@
  */
 package org.neo4j.kernel.impl.storemigration.participant;
 
-import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 
 import static java.lang.Long.min;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
  * An {@link InputIterator} backed by a {@link RecordStore}, iterating over all used records.
@@ -35,21 +33,14 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
  */
 abstract class StoreScanAsInputIterator<RECORD extends AbstractBaseRecord> implements InputIterator
 {
-    private final RecordStore<RECORD> store;
     private final int batchSize;
     private final long highId;
     private long id;
 
     StoreScanAsInputIterator( RecordStore<RECORD> store )
     {
-        this.store = store;
         this.batchSize = store.getRecordsPerPage() * 10;
         this.highId = store.getHighId();
-    }
-
-    RecordCursor<RECORD> createCursor()
-    {
-        return store.newRecordCursor( store.newRecord() ).acquire( 0, CHECK );
     }
 
     @Override

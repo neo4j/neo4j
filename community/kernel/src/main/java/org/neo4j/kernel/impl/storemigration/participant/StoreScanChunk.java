@@ -19,48 +19,46 @@
  */
 package org.neo4j.kernel.impl.storemigration.participant;
 
+import org.eclipse.collections.impl.block.factory.primitive.LongPredicates;
+
 import java.io.IOException;
 
-import org.neo4j.kernel.api.AssertOpen;
-import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StorePropertyCursor;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.RecordCursor;
-import org.neo4j.kernel.impl.store.RecordCursors;
-import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
+import org.neo4j.storageengine.api.StorageEntityCursor;
+import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 
-abstract class StoreScanChunk<T extends PrimitiveRecord> implements InputChunk
+import static org.eclipse.collections.impl.block.factory.primitive.IntPredicates.alwaysFalse;
+
+abstract class StoreScanChunk<T extends StorageEntityCursor> implements InputChunk
 {
-    protected final StorePropertyCursor storePropertyCursor;
-    protected final RecordCursors recordCursors;
-    private final RecordCursor<T> cursor;
+    protected final StoragePropertyCursor storePropertyCursor;
+    protected final T cursor;
     private final boolean requiresPropertyMigration;
     private long id;
     private long endId;
 
-    StoreScanChunk( RecordCursor<T> cursor, NeoStores neoStores, boolean requiresPropertyMigration )
+    StoreScanChunk( T cursor, RecordStorageReader storageReader, boolean requiresPropertyMigration )
     {
         this.cursor = cursor;
-        this.recordCursors = new RecordCursors( neoStores );
         this.requiresPropertyMigration = requiresPropertyMigration;
-        this.storePropertyCursor = new StorePropertyCursor( recordCursors, ignored -> {} );
+        this.storePropertyCursor = storageReader.allocatePropertyCursor();
     }
 
     void visitProperties( T record, InputEntityVisitor visitor )
     {
         if ( !requiresPropertyMigration )
         {
-            visitor.propertyId( record.getNextProp() );
+            visitor.propertyId( record.propertiesReference() );
         }
         else
         {
-            storePropertyCursor.init( record.getNextProp(), LockService.NO_LOCK, AssertOpen.ALWAYS_OPEN );
-            while ( storePropertyCursor.next() )
+            storePropertyCursor.init( record.propertiesReference() );
+            while ( storePropertyCursor.next( alwaysFalse() ) )
             {
                 // add key as int here as to have the importer use the token id
-                visitor.property( storePropertyCursor.propertyKeyId(), storePropertyCursor.value().asObject() );
+                visitor.property( storePropertyCursor.propertyKey(), storePropertyCursor.propertyValue().asObject() );
             }
             storePropertyCursor.close();
         }
@@ -69,8 +67,7 @@ abstract class StoreScanChunk<T extends PrimitiveRecord> implements InputChunk
     @Override
     public void close()
     {
-        recordCursors.close();
-        cursor.close();
+        storePropertyCursor.close();
     }
 
     @Override
@@ -78,9 +75,10 @@ abstract class StoreScanChunk<T extends PrimitiveRecord> implements InputChunk
     {
         if ( id < endId )
         {
-            if ( cursor.next( id ) )
+            cursor.single( id );
+            if ( cursor.next( LongPredicates.alwaysFalse() ) )
             {
-                visitRecord( cursor.get(), visitor );
+                visitRecord( cursor, visitor );
                 visitor.endOfEntity();
             }
             id++;

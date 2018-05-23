@@ -106,6 +106,7 @@ import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -172,6 +173,7 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.helpers.Numbers.safeCastLongToInt;
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader.newReader;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 
@@ -193,6 +195,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private final BatchInserterImpl.BatchSchemaActions actions;
     private final StoreLocker storeLocker;
     private final PageCache pageCache;
+    private final RecordStorageReader storageReader;
     private boolean labelsTouched;
     private boolean isShutdown;
 
@@ -316,6 +319,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         flushStrategy = new BatchedFlushStrategy( recordAccess, config.get( GraphDatabaseSettings
                 .batch_inserter_batch_size ) );
         cursors = new RecordCursors( neoStores );
+        storageReader = newReader( neoStores );
     }
 
     private StoreLocker tryLockStore( FileSystemAbstraction fileSystem )
@@ -921,7 +925,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     public Iterable<Long> getRelationshipIds( long nodeId )
     {
         flushStrategy.forceFlush();
-        return new BatchRelationshipIterable<Long>( neoStores, nodeId, cursors )
+        return new BatchRelationshipIterable<Long>( storageReader, nodeId, cursors )
         {
             @Override
             protected Long nextFrom( long relId, int type, long startNode, long endNode )
@@ -935,7 +939,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     public Iterable<BatchRelationship> getRelationships( long nodeId )
     {
         flushStrategy.forceFlush();
-        return new BatchRelationshipIterable<BatchRelationship>( neoStores, nodeId, cursors )
+        return new BatchRelationshipIterable<BatchRelationship>( storageReader, nodeId, cursors )
         {
             @Override
             protected BatchRelationship nextFrom( long relId, int type, long startNode, long endNode )
