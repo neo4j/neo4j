@@ -165,7 +165,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan.toString should equal(
       """Apply() {
         |  LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
-        |    LHS -> VarExpand(a, OUTGOING, OUTGOING, List(), b, r, VarPatternLength(1,None), ExpandAll, r_NODES, r_RELS, True(), True(), Vector()) {
+        |    LHS -> VarExpand(a, OUTGOING, OUTGOING, List(), b, r, VarPatternLength(1,None), ExpandAll, r_NODES, r_RELS, True(), True(), List()) {
         |      LHS -> AllNodesScan(a, Set()) {}
         |    }
         |  }
