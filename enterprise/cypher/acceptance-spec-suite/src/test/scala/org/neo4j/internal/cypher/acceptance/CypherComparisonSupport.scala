@@ -597,6 +597,8 @@ object CypherComparisonSupport {
 
     def Cost3_1: TestConfiguration = TestScenario(Versions.V3_1, Planners.Cost, Runtimes.Default)
 
+    def Cost3_3: TestConfiguration = TestScenario(Versions.V3_3, Planners.Cost, Runtimes.Default)
+
     def Cost3_4: TestConfiguration = TestScenario(Versions.v3_5, Planners.Cost, Runtimes.Default)
 
     def Rule2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Rule, Runtimes.Default)
