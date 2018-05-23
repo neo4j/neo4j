@@ -93,6 +93,16 @@ abstract class ReplicatedTokenHolder<TOKEN extends Token> implements TokenHolder
         return requestToken( tokenName );
     }
 
+    @Override
+    public void getOrCreateIds( String[] names, int[] ids )
+    {
+        // todo This could be optimised, but doing so requires a protocol change.
+        for ( int i = 0; i < names.length; i++ )
+        {
+            ids[i] = getOrCreateId( names[i] );
+        }
+    }
+
     private int requestToken( String tokenName )
     {
         ReplicatedTokenRequest tokenRequest = new ReplicatedTokenRequest( type, tokenName, createCommands( tokenName ) );
@@ -158,6 +168,25 @@ abstract class ReplicatedTokenHolder<TOKEN extends Token> implements TokenHolder
             return NO_ID;
         }
         return id;
+    }
+
+    @Override
+    public boolean getIdsByNames( String[] names, int[] ids )
+    {
+        boolean hasUnresolvedTokens = false;
+        for ( int i = 0; i < names.length; i++ )
+        {
+            Integer id = tokenRegistry.getId( names[i] );
+            if ( id == null )
+            {
+                hasUnresolvedTokens = true;
+            }
+            else
+            {
+                ids[i] = id;
+            }
+        }
+        return hasUnresolvedTokens;
     }
 
     @Override

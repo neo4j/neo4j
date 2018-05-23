@@ -343,6 +343,17 @@ public interface StorageReader extends AutoCloseable
     String labelGetName( long labelId ) throws LabelNotFoundKernelException;
 
     /**
+     * Get or create the property token ids for each of the given {@code propertyKeys}, and store them at the
+     * corresponding index in the given {@code ids} array.
+     *
+     * This is effectively a batching version of {@link #propertyKeyGetOrCreateForName(String)}.
+     *
+     * @param propertyKeys The array of property names for which to resolve or create their id.
+     * @param ids The array into which the resulting token ids will be stored.
+     */
+    void propertyKeyGetOrCreateForNames( String[] propertyKeys, int[] ids );
+
+    /**
      * @param propertyKeyName name of property key.
      * @return token id of property key.
      */
@@ -404,6 +415,19 @@ public interface StorageReader extends AutoCloseable
     int labelGetOrCreateForName( String labelName ) throws TooManyLabelsException;
 
     /**
+     * Get or create the label token ids for each of the given {@code labelNames}, and store them at the corresponding
+     * index in the given {@code labelIds} array.
+     *
+     * This is effectively a batching version of {@link #labelGetOrCreateForName(String)}.
+     *
+     * @param labelNames The array of label names for which to resolve or create their id.
+     * @param labelIds The array into which the resulting token ids will be stored.
+     * @throws TooManyLabelsException if too many labels would bve created by this call, compared to the token id space
+     * available.
+     */
+    void labelGetOrCreateForNames( String[] labelNames, int[] labelIds ) throws TooManyLabelsException;
+
+    /**
      * Gets relationship type token id for the given {@code relationshipTypeName}, or creates one if there is no
      * existing relationship type with the given name.
      *
@@ -411,6 +435,17 @@ public interface StorageReader extends AutoCloseable
      * @return relationship type token id for the given name, created if need be.
      */
     int relationshipTypeGetOrCreateForName( String relationshipTypeName );
+
+    /**
+     * Get or create the relationship type token ids for each of the given {@code relationshipTypeNames}, and store
+     * them at the corresponding index in the given {@code ids} array.
+     *
+     * This is effectively a batching version of {@link #relationshipTypeGetOrCreateForName(String)}.
+     *
+     * @param relationshipTypeNames The array of label names for which to resolve or create their id.
+     * @param ids The array into which the resulting token ids will be stored.
+     */
+    void relationshipTypeGetOrCreateForNames( String[] relationshipTypeNames, int[] ids );
 
     /**
      * Visits data about a relationship. The given {@code relationshipVisitor} will be notified.
