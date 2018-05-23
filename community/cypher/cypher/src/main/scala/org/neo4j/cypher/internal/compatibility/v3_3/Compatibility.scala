@@ -87,7 +87,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
     case CypherPlannerOption.dp => Some(DPPlannerNameV3_3)
     case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${planner.name}")
   }
-  override val maybePlannerNamev3_5: Option[CostBasedPlannerName] = maybePlannerName.map(x => helpers.as3_4(x).asInstanceOf[CostBasedPlannerName])
+  override val maybePlannerNamev3_5: Option[CostBasedPlannerName] = maybePlannerName.map(x => helpers.as3_5(x).asInstanceOf[CostBasedPlannerName])
   val maybeUpdateStrategy: Option[v3_3.UpdateStrategy] = updateStrategy match {
     case CypherUpdateStrategy.eager => Some(v3_3.eagerUpdateStrategy)
     case _ => None
@@ -162,7 +162,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
           syntacticQuery.queryText, preParsedQuery.debugOptions,
           Some(inputPositionv3_5), monitorsv3_5,
           CachedMetricsFactory(SimpleMetricsFactory), queryGraphSolverv3_5,
-          configv3_5, maybeUpdateStrategy.map(helpers.as3_4).getOrElse(defaultUpdateStrategy),
+          configv3_5, maybeUpdateStrategy.map(helpers.as3_5).getOrElse(defaultUpdateStrategy),
           clock, logicalPlanIdGen, simpleExpressionEvaluator)
 
         //Prepare query for caching
@@ -174,7 +174,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
         //Just in the case the query is not in the cache do we want to do the full planning + creating executable plan
         def createPlan(): ExecutionPlan_v3_5 = {
           val logicalPlanStateV3_3 = compiler.planPreparedQuery(preparedQuery, contextV3_3)
-          val logicalPlanStatev3_5 = helpers.as3_4(logicalPlanStateV3_3)
+          val logicalPlanStatev3_5 = helpers.as3_5(logicalPlanStateV3_3)
           LogicalPlanNotifications
             .checkForNotifications(logicalPlanStatev3_5.maybeLogicalPlan.get, planContextv3_5, configv3_5)
             .foreach(notificationLoggerv3_5.log)
@@ -194,7 +194,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
             createPlan()
 
         // Log notifications/warnings from planning
-        notificationLoggerV3_3.notifications.map(helpers.as3_4).foreach(notificationLoggerv3_5.log)
+        notificationLoggerV3_3.notifications.map(helpers.as3_5).foreach(notificationLoggerv3_5.log)
 
         (new ExecutionPlanWrapper(executionPlan, preParsingNotifications), preparedQuery.extractedParams(), queryParamNames)
       }
@@ -209,7 +209,116 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
   override val runSafelyDuringPlanning : RunSafely = runSafely
   override val runSafelyDuringRuntime : RunSafely = runtimeRunSafely
 
-  override def compile(): ExecutionPlan = ???
+  override def compile(preParsedQuery: PreParsedQuery,
+                       tracer: CompilationPhaseTracer,
+                       preParsingNotifications: Set[org.neo4j.graphdb.Notification],
+                       transactionalContext: TransactionalContext
+                      ): CachedExecutableQuery = {
+    val inputPositionV3_3 = helpers.as3_3(preParsedQuery.offset)
+    val inputPositionv3_5 = preParsedQuery.offset
+    val notificationLoggerV3_3 = new RecordingNotificationLoggerV3_3(Some(inputPositionV3_3))
+    val notificationLoggerv3_5 = new RecordingNotificationLoggerv3_5(Some(inputPositionv3_5))
+
+    // The "tracer" can get closed, even if a ParsedQuery is cached and reused. It should not
+    // be used inside ParsedQuery.plan. There, use the "planningTracer" instead
+    val preparedSyntacticQueryForV_3_3 =
+      Try(compiler.parseQuery(preParsedQuery.statement,
+                              preParsedQuery.rawStatement,
+                              notificationLoggerV3_3,
+                              preParsedQuery.planner.name,
+                              preParsedQuery.debugOptions,
+                              Some(helpers.as3_3(preParsedQuery.offset)),
+                              as3_3(tracer)))
+
+    runSafely {
+      val syntacticQuery = preparedSyntacticQueryForV_3_3.get
+
+      // Context used for db communication during planning
+      val tcv3_5 = TransactionalContextWrapper(transactionalContext)
+
+      // Create graph-statistics to be shared between 3.3 logical planning and 3.4 physical planning
+      val graphStatisticsSnapshotv3_5 = new MutableGraphStatisticsSnapshotv3_5()
+      val graphStatisticsV3_3 = new WrappedInstrumentedGraphStatistics(
+        TransactionBoundGraphStatisticsV3_3(tcv3_5.dataRead, tcv3_5.schemaRead),
+        graphStatisticsSnapshotv3_5)
+      val planContextV3_3 = new ExceptionTranslatingPlanContextV3_3(
+        new TransactionBoundPlanContextV3_3(() => transactionalContext.kernelTransaction,
+                                            notificationLoggerV3_3, graphStatisticsV3_3))
+      val graphStatisticsv3_5 = InstrumentedGraphStatisticsv3_5(
+        TransactionBoundGraphStatistics(tcv3_5.dataRead, tcv3_5.schemaRead),
+        graphStatisticsSnapshotv3_5)
+      val planContextv3_5 = new ExceptionTranslatingPlanContextv3_5(
+        new TransactionBoundPlanContext(tcv3_5, notificationLoggerv3_5, graphStatisticsv3_5))
+
+      // Only used during planning
+      def simpleExpressionEvaluatorV3_3 = new logicalV3_3.ExpressionEvaluator {
+        override def evaluateExpression(expr: Expression): Option[Any] = None
+      }
+
+      // Context used to create logical plans
+      val contextV3_3: CONTEXT3_3 =
+        contextCreatorV3_3.create(as3_3(tracer),
+                                  notificationLoggerV3_3,
+                                  planContextV3_3,
+                                  syntacticQuery.queryText,
+                                  preParsedQuery.debugOptions,
+                                  Some(inputPositionV3_3),
+                                  monitorsV3_3,
+                                  logicalV3_3.CachedMetricsFactory(logicalV3_3.SimpleMetricsFactory),
+                                  queryGraphSolverV3_3,
+                                  configV3_3,
+                                  maybeUpdateStrategy.getOrElse(v3_3.defaultUpdateStrategy),
+                                  clock,
+                                  simpleExpressionEvaluatorV3_3)
+
+      val logicalPlanIdGen = new SequentialIdGen()
+      val contextv3_5: CONTEXT3_4 =
+        contextCreatorV3_5.create(tracer,
+                                  notificationLoggerv3_5,
+                                  planContextv3_5,
+                                  syntacticQuery.queryText,
+                                  preParsedQuery.debugOptions,
+                                  Some(inputPositionv3_5),
+                                  monitorsv3_5,
+                                  CachedMetricsFactory(SimpleMetricsFactory),
+                                  queryGraphSolverv3_5,
+                                  configv3_5,
+                                  maybeUpdateStrategy.map(helpers.as3_5).getOrElse(defaultUpdateStrategy),
+                                  clock,
+                                  logicalPlanIdGen,
+                                  simpleExpressionEvaluator)
+
+      // Prepare query for caching
+      val preparedQuery = compiler.normalizeQuery(syntacticQuery, contextV3_3)
+      val queryParamNames: Seq[String] = preparedQuery.statement().findByAllClass[Parameter].map(x => x.name)
+      checkForSchemaChanges(planContextv3_5)
+
+      // If the query is not cached we do full planning + creating of executable plan
+      def createPlan(): ExecutionPlan_v3_5 = {
+        val logicalPlanStateV3_3 = compiler.planPreparedQuery(preparedQuery, contextV3_3)
+        val logicalPlanStatev3_5 = helpers.as3_5(logicalPlanStateV3_3)
+        LogicalPlanNotifications
+          .checkForNotifications(logicalPlanStatev3_5.maybeLogicalPlan.get, planContextv3_5, configv3_5)
+          .foreach(notificationLoggerv3_5.log)
+        val result = createExecPlan.transform(logicalPlanStatev3_5, contextv3_5) // Here we switch from 3.3 to 3.5
+        result.maybeExecutionPlan.get
+      }
+
+      val executionPlan3_5 =
+        if (preParsedQuery.debugOptions.isEmpty)
+          planCache.computeIfAbsentOrStale(syntacticQuery.statement(),
+                                           transactionalContext,
+                                           createPlan,
+                                           syntacticQuery.queryText).executableQuery
+        else
+          createPlan()
+
+      // Log notifications/warnings from planning
+      notificationLoggerV3_3.notifications.map(helpers.as3_5).foreach(notificationLoggerv3_5.log)
+      val executionPlan = new ExecutionPlanWrapper(executionPlan3_5, preParsingNotifications)
+      CachedExecutableQuery(executionPlan, queryParamNames, ValueConversion.asValues(preparedQuery.extractedParams()))
+    }
+  }
 }
 
 object Compatibility {

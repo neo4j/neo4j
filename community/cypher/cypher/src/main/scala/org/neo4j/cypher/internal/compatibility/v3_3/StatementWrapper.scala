@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3
 
-import org.neo4j.cypher.internal.compatibility.v3_3.helpers.as3_4
+import org.neo4j.cypher.internal.compatibility.v3_3.helpers.as3_5
 import org.neo4j.cypher.internal.frontend.v3_3.{ast => astV3_3}
 import org.opencypher.v9_0.ast.semantics.SemanticCheck
 import org.opencypher.v9_0.{ast => astv3_5}
@@ -31,5 +31,5 @@ case class StatementWrapper(statement: astV3_3.Statement) extends astv3_5.Statem
 
   override lazy val returnColumns: List[String] = statement.returnColumns
 
-  override lazy val position: InputPosition = as3_4(statement.position)
+  override lazy val position: InputPosition = as3_5(statement.position)
 }

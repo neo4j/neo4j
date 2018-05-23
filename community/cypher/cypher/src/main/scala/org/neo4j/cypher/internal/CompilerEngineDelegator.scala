@@ -42,7 +42,7 @@ object CompilerEngineDelegator {
   val CLOCK: Clock = Clock.systemUTC()
   val DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD = 0.5
   val DEFAULT_STATISTICS_DIVERGENCE_TARGET = 0.1
-  val DEFAULT_DIVERGENCE_ALGORITHM = StatsDivergenceCalculator.inverse
+  val DEFAULT_DIVERGENCE_ALGORITHM: String = StatsDivergenceCalculator.inverse
   val DEFAULT_NON_INDEXED_LABEL_WARNING_THRESHOLD = 10000
 }
 
@@ -137,7 +137,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
       case Left(CypherVersion.v2_3) =>
         val parsedQuery = compatibilityFactory.
           create(PlannerSpec_v2_3(preParsedQuery.planner, preParsedQuery.runtime), compilerConfig).
-          produceParsedQuery(preParsedQuery, as2_3(tracer), preParsingNotifications)
+          produceParsedQuery(preParsedQuery, tracer, preParsingNotifications)
         Right(parsedQuery)
     }
 

@@ -19,7 +19,26 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.kernel.impl.query.TransactionalContext
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
+
+/**
+  * Cypher compiler, which compiles pre-parsed queries into executable queries.
+  */
 trait Compiler {
 
-  def compile(): ExecutionPlan
+  /**
+    * Compile pre-parsed query into executable query.
+    *
+    * @param preParsedQuery pre-parsed query to convert
+    * @param tracer compilation tracer to which events of the compilation process are reported
+    * @param preParsingNotifications notifications from pre-parsing
+    * @param transactionalContext transactional context to use during compilation (in logical and physical planning)
+    * @return a compiled and executable query
+    */
+  def compile(preParsedQuery: PreParsedQuery,
+              tracer: CompilationPhaseTracer,
+              preParsingNotifications: Set[org.neo4j.graphdb.Notification],
+              transactionalContext: TransactionalContext
+             ): CachedExecutableQuery
 }

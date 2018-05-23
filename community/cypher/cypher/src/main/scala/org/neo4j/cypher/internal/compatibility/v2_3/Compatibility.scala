@@ -30,8 +30,9 @@ import org.neo4j.cypher.internal.compiler.v2_3.spi.{PlanContext, QueryContext}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_3.{InfoLogger, ExplainMode => ExplainModev2_3, NormalMode => NormalModev2_3, ProfileMode => ProfileModev2_3, _}
 import org.opencypher.v9_0.frontend.phases
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
-import org.neo4j.cypher.internal.runtime.interpreted.{LastCommittedTxIdProvider, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.runtime.interpreted.{TransactionalContextWrapper, ValueConversion}
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.graphdb.{Node, Relationship, Result}
@@ -43,6 +44,7 @@ import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
+import org.neo4j.cypher.internal.compatibility.v2_3.helpers.as2_3
 
 import scala.collection.mutable
 import scala.util.Try
@@ -66,15 +68,14 @@ trait Compatibility extends Compiler {
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
-                         preParsingNotifications: Set[org.neo4j.graphdb.Notification]) = {
-    import org.neo4j.cypher.internal.compatibility.v2_3.helpers.as2_3
+                         preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
     val notificationLogger = new RecordingNotificationLogger
     val preparedQueryForV_2_3: Try[PreparedQuery] =
       Try(compiler.prepareQuery(preParsedQuery.statement,
                                 preParsedQuery.rawStatement,
                                 notificationLogger,
                                 preParsedQuery.planner.name,
-                                Some(as2_3(preParsedQuery.offset)), tracer))
+                                Some(as2_3(preParsedQuery.offset)), as2_3(tracer)))
     new ParsedQuery {
       def plan(transactionalContext: TransactionalContext,
                tracer: phases.CompilationPhaseTracer): (ExecutionPlan, Map[String, Any], Seq[String]) = exceptionHandler
@@ -143,7 +144,30 @@ trait Compatibility extends Compiler {
     }
   }
 
-  override def compile(): ExecutionPlan = ???
+  override def compile(preParsedQuery: PreParsedQuery,
+                       tracer: CompilationPhaseTracer,
+                       preParsingNotifications: Set[org.neo4j.graphdb.Notification],
+                       transactionalContext: TransactionalContext
+                      ): CachedExecutableQuery = {
+    val notificationLogger = new RecordingNotificationLogger
+    val preparedQueryForV_2_3: Try[PreparedQuery] =
+      Try(compiler.prepareQuery(preParsedQuery.statement,
+        preParsedQuery.rawStatement,
+        notificationLogger,
+        preParsedQuery.planner.name,
+        Some(as2_3(preParsedQuery.offset)), as2_3(tracer)))
+
+    exceptionHandler.runSafely {
+      val planContext: PlanContext = new TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext))
+      val (executionPlan2_3, extractedParameters) =
+        compiler.planPreparedQuery(preparedQueryForV_2_3.get, planContext, as2_3(tracer))
+
+      // Log notifications/warnings from planning
+      executionPlan2_3.notifications(planContext).foreach(notificationLogger += _)
+      val executionPlan = new ExecutionPlanWrapper(executionPlan2_3, preParsingNotifications, as2_3(preParsedQuery.offset))
+      CachedExecutableQuery(executionPlan, Seq.empty[String], ValueConversion.asValues(extractedParameters))
+    }
+  }
 }
 
 class StringInfoLogger(log: Log) extends InfoLogger {

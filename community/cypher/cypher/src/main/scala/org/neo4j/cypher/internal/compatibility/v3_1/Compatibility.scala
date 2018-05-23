@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
 import org.neo4j.cypher.internal.compiler.v3_1
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{InternalExecutionResult, ExecutionPlan => ExecutionPlan_v3_1}
 import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v3_1.{CompilationPhaseTracer, InfoLogger, ExplainMode => ExplainModev3_1, NormalMode => NormalModev3_1, ProfileMode => ProfileModev3_1, _}
+import org.neo4j.cypher.internal.compiler.v3_1.{InfoLogger, ExplainMode => ExplainModev3_1, NormalMode => NormalModev3_1, ProfileMode => ProfileModev3_1, _}
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
-import org.neo4j.cypher.internal.runtime.interpreted.{TransactionalContextWrapper => TransactionalContextWrapperV3_5}
+import org.neo4j.cypher.internal.runtime.interpreted.{ValueConversion, TransactionalContextWrapper => TransactionalContextWrapperV3_5}
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_1.{TransactionalContextWrapper => TransactionalContextWrapperV3_1, _}
 import org.neo4j.cypher.internal.{frontend, _}
@@ -148,7 +148,34 @@ trait Compatibility extends Compiler {
     }
   }
 
-  override def compile(): ExecutionPlan = ???
+  override def compile(preParsedQuery: PreParsedQuery,
+                       tracer: v3_5.phases.CompilationPhaseTracer,
+                       preParsingNotifications: Set[org.neo4j.graphdb.Notification],
+                       transactionalContext: TransactionalContext
+                      ): CachedExecutableQuery = {
+    val notificationLogger = new RecordingNotificationLogger
+    val preparedSyntacticQueryForV_3_1: Try[PreparedQuerySyntax] =
+      Try(compiler.prepareSyntacticQuery(preParsedQuery.statement,
+        preParsedQuery.rawStatement,
+        notificationLogger,
+        preParsedQuery.planner.name,
+        Some(helpers.as3_1(preParsedQuery.offset)), as3_1(tracer)))
+
+    exceptionHandler.runSafely {
+      val tc = TransactionalContextWrapperV3_1(transactionalContext)
+      val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(tc, notificationLogger))
+      val syntacticQuery = preparedSyntacticQueryForV_3_1.get
+      val (executionPlan3_1, extractedParameters) =
+        compiler.planPreparedQuery(syntacticQuery, notificationLogger, planContext, Some(as3_1(preParsedQuery.offset)),
+          as3_1(tracer))
+
+      // Log notifications/warnings from planning
+      executionPlan3_1.notifications(planContext).foreach(notificationLogger += _)
+
+      val executionPlan = new ExecutionPlanWrapper(executionPlan3_1, preParsingNotifications, as3_1(preParsedQuery.offset))
+      CachedExecutableQuery(executionPlan, Seq.empty[String], ValueConversion.asValues(extractedParameters))
+    }
+  }
 }
 
 class StringInfoLogger(log: Log) extends InfoLogger {
