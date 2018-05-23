@@ -50,9 +50,6 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.kernel.impl.store.RecordCursor;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -571,8 +568,6 @@ abstract class Read implements TxStateHolder,
     @Override
     public abstract IndexReference index( int label, int... properties );
 
-    abstract PageCursor nodePage( long reference );
-
     abstract PageCursor relationshipPage( long reference );
 
     abstract PageCursor groupPage( long reference );
@@ -583,12 +578,6 @@ abstract class Read implements TxStateHolder,
 
     abstract PageCursor arrayPage( long reference );
 
-    abstract RecordCursor<DynamicRecord> labelCursor();
-
-    abstract void node( NodeRecord record, long reference, PageCursor pageCursor );
-
-    abstract void nodeAdvance( NodeRecord record, PageCursor pageCursor );
-
     abstract void relationship( RelationshipRecord record, long reference, PageCursor pageCursor );
 
     abstract void relationshipAdvance( RelationshipRecord record, PageCursor pageCursor );
@@ -598,8 +587,6 @@ abstract class Read implements TxStateHolder,
     abstract void property( PropertyRecord record, long reference, PageCursor pageCursor );
 
     abstract void group( RelationshipGroupRecord record, long reference, PageCursor page );
-
-    abstract long nodeHighMark();
 
     abstract long relationshipHighMark();
 

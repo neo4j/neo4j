@@ -73,9 +73,6 @@ import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RecordCursor;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -104,7 +101,6 @@ import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
 public class AllStoreHolder extends Read
 {
-    private final StorageReader.Nodes nodes;
     private final StorageReader.Groups groups;
     private final StorageReader.Properties properties;
     private final StorageReader.Relationships relationships;
@@ -123,7 +119,6 @@ public class AllStoreHolder extends Read
     {
         super( cursors, ktx );
         this.storageReader = storageReader;
-        this.nodes = storageReader.nodes();
         this.relationships = storageReader.relationships();
         this.groups = storageReader.groups();
         this.properties = storageReader.properties();
@@ -673,12 +668,6 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    PageCursor nodePage( long reference )
-    {
-        return nodes.openPageCursorForReading( reference );
-    }
-
-    @Override
     PageCursor relationshipPage( long reference )
     {
         return relationships.openPageCursorForReading( reference );
@@ -706,24 +695,6 @@ public class AllStoreHolder extends Read
     PageCursor arrayPage( long reference )
     {
         return properties.openArrayPageCursor( reference );
-    }
-
-    @Override
-    RecordCursor<DynamicRecord> labelCursor()
-    {
-        return nodes.newLabelCursor();
-    }
-
-    @Override
-    void node( NodeRecord record, long reference, PageCursor pageCursor )
-    {
-        nodes.getRecordByCursor( reference, record, RecordLoad.CHECK, pageCursor );
-    }
-
-    @Override
-    void nodeAdvance( NodeRecord record, PageCursor pageCursor )
-    {
-        nodes.nextRecordByCursor( record, RecordLoad.CHECK, pageCursor );
     }
 
     @Override
@@ -767,12 +738,6 @@ public class AllStoreHolder extends Read
         // records which have been concurrently deleted (flagged as inUse = false).
         // @see #org.neo4j.kernel.impl.store.RelationshipChainPointerChasingTest
         groups.getRecordByCursor( reference, record, RecordLoad.FORCE, page );
-    }
-
-    @Override
-    long nodeHighMark()
-    {
-        return nodes.getHighestPossibleIdInUse();
     }
 
     @Override

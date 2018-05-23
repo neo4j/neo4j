@@ -609,7 +609,7 @@ public class KernelTransactionsTest
                 mock( TransactionMonitor.class ), availabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
                 new CanWrite(),
-                DefaultCursors::new, AutoIndexing.UNSUPPORTED,
+                DefaultCursors.supplier( storageEngine ), AutoIndexing.UNSUPPORTED,
                 mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
                 mock( IndexingProvidersService.class), mock( PropertyKeyTokenHolder.class ) );
@@ -624,7 +624,7 @@ public class KernelTransactionsTest
                 null, DEFAULT,
                 commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ),
                 availabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
-                new CanWrite(), DefaultCursors::new,
+                new CanWrite(), DefaultCursors.supplier( storageEngine ),
                         AutoIndexing.UNSUPPORTED, EmptyVersionContextSupplier.EMPTY, mock( PropertyKeyTokenHolder.class ) );
     }
 

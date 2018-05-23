@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
-
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
@@ -46,9 +45,9 @@ import static org.neo4j.values.storable.Values.stringValue;
 public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClient
 {
     @Rule
-    public final MockStore store = new MockStore( new DefaultCursors() );
+    public final MockStore store = new MockStore( new DefaultCursors( null ) );
+    private final DefaultCursors cursors = new DefaultCursors( null );
     private final List<Event> events = new ArrayList<>();
-    private final DefaultCursors cursors = new DefaultCursors();
 
     @Test
     public void shouldAcceptAllNodesOnNoFilters()

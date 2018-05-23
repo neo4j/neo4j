@@ -24,15 +24,19 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.neo4j.internal.kernel.api.AutoCloseablePlus;
 import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageReader;
 
 import static java.lang.String.format;
 import static org.neo4j.util.FeatureToggles.flag;
 
 public class DefaultCursors implements CursorFactory
 {
+    private final StorageReader storageReader;
     private DefaultNodeCursor nodeCursor;
     private DefaultRelationshipScanCursor relationshipScanCursor;
     private DefaultRelationshipTraversalCursor relationshipTraversalCursor;
@@ -46,12 +50,22 @@ public class DefaultCursors implements CursorFactory
     private static final boolean DEBUG_CLOSING = flag( DefaultCursors.class, "trackCursors", false );
     private List<CloseableStacktrace> closeables = new ArrayList<>();
 
+    public DefaultCursors( StorageReader storageReader )
+    {
+        this.storageReader = storageReader;
+    }
+
+    public static Supplier<DefaultCursors> supplier( StorageEngine storageEngine )
+    {
+        return () -> new DefaultCursors( storageEngine.newReader() );
+    }
+
     @Override
     public DefaultNodeCursor allocateNodeCursor()
     {
         if ( nodeCursor == null )
         {
-            return trace( new DefaultNodeCursor( this ) );
+            return trace( new DefaultNodeCursor( this, storageReader.allocateNodeCursor() ) );
         }
 
         try
