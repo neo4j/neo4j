@@ -280,12 +280,16 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         schemaStore = neoStores.getSchemaStore();
         labelTokenStore = neoStores.getLabelTokenStore();
 
+        indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
         Dependencies deps = new Dependencies();
+        Monitors monitors = new Monitors();
+        deps.satisfyDependencies( fileSystem, config, logService, indexStoreView, pageCache, monitors,
+                RecoveryCleanupWorkCollector.IMMEDIATE );
         KernelExtensions extensions = life.add( new KernelExtensions(
                 new SimpleKernelContext( storeDir, DatabaseInfo.UNKNOWN, deps ),
                 kernelExtensions, deps, UnsatisfiedDependencyStrategies.ignore() ) );
-        IndexProvider provider = extensions.resolveDependency( IndexProvider.class,
-                                                               HighestSelectionStrategy.INSTANCE );
+
+        IndexProvider provider = extensions.resolveDependency( IndexProvider.class, HighestSelectionStrategy.INSTANCE );
         indexProviderMap = new DefaultIndexProviderMap( provider );
 
         List<Token> indexes = propertyKeyTokenStore.getTokens( 10000 );
@@ -295,12 +299,6 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         relationshipTypeTokens = new BatchTokenHolder( types );
         indexStore = life.add( new IndexConfigStore( this.storeDir, fileSystem ) );
         schemaCache = new SchemaCache( new StandardConstraintSemantics(), schemaStore, indexProviderMap );
-
-        indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
-
-        Monitors monitors = new Monitors();
-        deps.satisfyDependencies( fileSystem, config, logService, indexStoreView, pageCache, monitors,
-                RecoveryCleanupWorkCollector.IMMEDIATE );
 
         labelScanStore = new NativeLabelScanStore( pageCache, storeDir, fileSystem, FullStoreChangeStream.EMPTY, false, new Monitors(),
                 RecoveryCleanupWorkCollector.IMMEDIATE );
