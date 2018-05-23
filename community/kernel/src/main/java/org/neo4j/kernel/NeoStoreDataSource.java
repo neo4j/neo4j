@@ -673,7 +673,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 constraintIndexCreator, statementOperationParts, schemaWriteGuard, transactionHeaderInformationFactory,
                 transactionCommitProcess, indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor,
                 availabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock,
-                cpuClockRef, heapAllocationRef, accessCapability, DefaultCursors::new, autoIndexing,
+                cpuClockRef, heapAllocationRef, accessCapability, DefaultCursors.supplier( storageEngine ), autoIndexing,
                 explicitIndexStore, versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
                 databaseSchemaState, indexingService, propertyKeyTokenHolder ) );
 

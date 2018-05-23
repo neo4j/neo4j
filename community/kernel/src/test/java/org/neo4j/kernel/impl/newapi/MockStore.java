@@ -36,7 +36,6 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
@@ -51,13 +50,11 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.register.Register;
@@ -125,12 +122,6 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
-    PageCursor nodePage( long reference )
-    {
-        return null;
-    }
-
-    @Override
     PageCursor relationshipPage( long reference )
     {
         return null;
@@ -158,55 +149,6 @@ public class MockStore extends Read implements TestRule
     PageCursor arrayPage( long reference )
     {
         return null;
-    }
-
-    @Override
-    RecordCursor<DynamicRecord> labelCursor()
-    {
-        return new RecordCursor<DynamicRecord>()
-        {
-            @Override
-            public RecordCursor<DynamicRecord> acquire( long id, RecordLoad mode )
-            {
-                placeAt( id, mode );
-                return this;
-            }
-
-            @Override
-            public void placeAt( long id, RecordLoad mode )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            public boolean next()
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            public boolean next( long id )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            public boolean next( long id, DynamicRecord record, RecordLoad mode )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            public void close()
-            {
-            }
-
-            @Override
-            public DynamicRecord get()
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-        };
     }
 
     @Override
@@ -568,19 +510,6 @@ public class MockStore extends Read implements TestRule
         return block;
     }
 
-    @Override
-    void node( NodeRecord record, long reference, PageCursor pageCursor )
-    {
-        initialize( record, reference, nodes );
-    }
-
-    @Override
-    void nodeAdvance( NodeRecord record, PageCursor pageCursor )
-    {
-        initialize( record, record.getId() + 1, nodes );
-    }
-
-    @Override
     void relationship( RelationshipRecord record, long reference, PageCursor pageCursor )
     {
         throw new UnsupportedOperationException( "not implemented" );
@@ -606,12 +535,6 @@ public class MockStore extends Read implements TestRule
 
     @Override
     void group( RelationshipGroupRecord record, long reference, PageCursor page )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    long nodeHighMark()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

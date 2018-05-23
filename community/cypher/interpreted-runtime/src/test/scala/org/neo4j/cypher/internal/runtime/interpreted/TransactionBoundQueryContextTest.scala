@@ -89,7 +89,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
     val bridge = mock[ThreadToStatementContextBridge]
     val transaction = mock[KernelTransaction]
-    when(transaction.cursors()).thenReturn(new DefaultCursors())
+    when(transaction.cursors()).thenReturn(new DefaultCursors(null))
     when(bridge.getKernelTransactionBoundToThisThread(true)).thenReturn(transaction)
     val tc = new Neo4jTransactionalContext(graph, bridge, locker, outerTx, statement,null, null)
     val transactionalContext = TransactionalContextWrapper(tc)
@@ -113,7 +113,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val bridge = mock[ThreadToStatementContextBridge]
     val transaction = mock[KernelTransaction]
     when(transaction.acquireStatement()).thenReturn(statement)
-    when(transaction.cursors()).thenReturn(new DefaultCursors())
+    when(transaction.cursors()).thenReturn(new DefaultCursors(null))
     when(bridge.getKernelTransactionBoundToThisThread(true)).thenReturn(transaction)
     val tc = new Neo4jTransactionalContext(graph, bridge, locker, outerTx, statement,null, null)
     val transactionalContext = TransactionalContextWrapper(tc)
@@ -216,7 +216,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val bridge = mock[ThreadToStatementContextBridge]
     val transaction = mock[KernelTransaction]
     when(transaction.acquireStatement()).thenReturn(statement)
-    when(transaction.cursors()).thenReturn(new DefaultCursors())
+    when(transaction.cursors()).thenReturn(new DefaultCursors(null))
     when(bridge.getKernelTransactionBoundToThisThread(true)).thenReturn(transaction)
     val tc = new Neo4jTransactionalContext(graph, bridge, locker, outerTx, statement, null, null)
     val transactionalContext = TransactionalContextWrapper(tc)

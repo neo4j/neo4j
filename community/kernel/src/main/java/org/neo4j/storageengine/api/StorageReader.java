@@ -51,12 +51,9 @@ import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
-import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -567,13 +564,13 @@ public interface StorageReader extends AutoCloseable
 
     <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StorageReader, T> factory );
 
-    Nodes nodes();
-
     Relationships relationships();
 
     Groups groups();
 
     Properties properties();
+
+    StorageNodeCursor allocateNodeCursor();
 
     interface RecordReads<RECORD>
     {
@@ -619,14 +616,6 @@ public interface StorageReader extends AutoCloseable
                 throws InvalidRecordException;
 
         long getHighestPossibleIdInUse();
-    }
-
-    interface Nodes extends RecordReads<NodeRecord>
-    {
-        /**
-         * @return a new Record cursor for accessing DynamicRecords containing labels. This comes acquired.
-         */
-        RecordCursor<DynamicRecord> newLabelCursor();
     }
 
     interface Relationships extends RecordReads<RelationshipRecord>

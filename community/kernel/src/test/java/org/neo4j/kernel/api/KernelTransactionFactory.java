@@ -100,7 +100,7 @@ public class KernelTransactionFactory
                 Clocks.systemClock(), new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), NULL,
                 LockTracer.NONE,
                 PageCursorTracerSupplier.NULL,
-                storageEngine, new CanWrite(), new DefaultCursors(), AutoIndexing.UNSUPPORTED,
+                storageEngine, new CanWrite(), new DefaultCursors( storageReader ), AutoIndexing.UNSUPPORTED,
                 mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(),
                 mock( SchemaState.class), mock( IndexingService.class ) );
 

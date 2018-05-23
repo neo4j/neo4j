@@ -64,6 +64,7 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.newapi.StoreNodeCursor;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -87,6 +88,7 @@ import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.Token;
@@ -107,7 +109,7 @@ import static org.neo4j.register.Registers.newDoubleLongRegister;
 /**
  * Default implementation of StorageReader. Delegates to NeoStores and indexes.
  */
-class RecordStorageReader implements StorageReader
+public class RecordStorageReader implements StorageReader
 {
     // These token holders should perhaps move to the cache layer.. not really any reason to have them here?
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
@@ -731,12 +733,6 @@ class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public Nodes nodes()
-    {
-        return nodeStore;
-    }
-
-    @Override
     public Relationships relationships()
     {
         return relationshipStore;
@@ -962,5 +958,11 @@ class RecordStorageReader implements StorageReader
     public long getGraphPropertyReference()
     {
         return neoStores.getMetaDataStore().getGraphNextProp();
+    }
+
+    @Override
+    public StorageNodeCursor allocateNodeCursor()
+    {
+        return new StoreNodeCursor( nodeStore );
     }
 }
