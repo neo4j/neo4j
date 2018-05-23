@@ -55,8 +55,8 @@ public class SwapperSetTest
     {
         DummyPageSwapper a = new DummyPageSwapper( "a", 42 );
         DummyPageSwapper b = new DummyPageSwapper( "b", 43 );
-        short idA = set.allocate( a );
-        short idB = set.allocate( b );
+        int idA = set.allocate( a );
+        int idB = set.allocate( b );
         SwapperSet.SwapperMapping allocA = set.getAllocation( idA );
         SwapperSet.SwapperMapping allocB = set.getAllocation( idB );
         assertThat( allocA.swapper, is( a ) );
@@ -66,7 +66,7 @@ public class SwapperSetTest
     @Test
     public void accessingFreedAllocationMustReturnNull()
     {
-        short id = set.allocate( new DummyPageSwapper( "a", 42 ) );
+        int id = set.allocate( new DummyPageSwapper( "a", 42 ) );
         set.free( id );
         assertNull( set.getAllocation( id ) );
     }
@@ -162,7 +162,7 @@ public class SwapperSetTest
     public void mustNotUseZeroAsSwapperId()
     {
         PageSwapper swapper = new DummyPageSwapper( "a", 42 );
-        Matcher<Short> isNotZero = is( not( (short) 0 ) );
+        Matcher<Integer> isNotZero = is( not( 0 ) );
         for ( int i = 0; i < 10_000; i++ )
         {
             assertThat( set.allocate( swapper ), isNotZero );
