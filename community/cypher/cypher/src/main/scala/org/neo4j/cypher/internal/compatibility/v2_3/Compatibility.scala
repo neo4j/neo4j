@@ -45,16 +45,19 @@ import org.neo4j.logging.Log
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.cypher.internal.compatibility.v2_3.helpers.as2_3
+import org.neo4j.cypher.internal.frontend.v2_3.InputPosition
 
 import scala.collection.mutable
 import scala.util.Try
 
-
-trait Compatibility extends Compiler {
+trait Compatibility extends CachingCompiler[PreparedQuery] {
 
   val graph: GraphDatabaseQueryService
   val queryCacheSize: Int
   val kernelMonitors: KernelMonitors
+
+  override def parserCacheSize: Int = queryCacheSize
+  override def plannerCacheSize: Int = 0
 
   protected val rewriterSequencer: (String) => RewriterStepSequencer = {
     import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer._
@@ -149,24 +152,40 @@ trait Compatibility extends Compiler {
                        preParsingNotifications: Set[org.neo4j.graphdb.Notification],
                        transactionalContext: TransactionalContext
                       ): CachedExecutableQuery = {
-    val notificationLogger = new RecordingNotificationLogger
-    val preparedQueryForV_2_3: Try[PreparedQuery] =
-      Try(compiler.prepareQuery(preParsedQuery.statement,
-        preParsedQuery.rawStatement,
-        notificationLogger,
-        preParsedQuery.planner.name,
-        Some(as2_3(preParsedQuery.offset)), as2_3(tracer)))
 
     exceptionHandler.runSafely {
+      val notificationLogger = new RecordingNotificationLogger
+      val position2_3 = as2_3(preParsedQuery.offset)
+      val tracer2_3 = as2_3(tracer)
+
+      val preparedQuery2_3: PreparedQuery =
+        getOrParse(preParsedQuery, new Parser2_3(compiler, notificationLogger, position2_3, tracer2_3))
+
       val planContext: PlanContext = new TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext))
       val (executionPlan2_3, extractedParameters) =
-        compiler.planPreparedQuery(preparedQueryForV_2_3.get, planContext, as2_3(tracer))
+        compiler.planPreparedQuery(preparedQuery2_3, planContext, tracer2_3)
 
       // Log notifications/warnings from planning
       executionPlan2_3.notifications(planContext).foreach(notificationLogger += _)
-      val executionPlan = new ExecutionPlanWrapper(executionPlan2_3, preParsingNotifications, as2_3(preParsedQuery.offset))
+      val executionPlan = new ExecutionPlanWrapper(executionPlan2_3, preParsingNotifications, position2_3)
       CachedExecutableQuery(executionPlan, Seq.empty[String], ValueConversion.asValues(extractedParameters))
     }
+  }
+}
+
+class Parser2_3(compiler: CypherCompiler,
+                notificationLogger: InternalNotificationLogger,
+                offset: InputPosition,
+                tracer: v2_3.CompilationPhaseTracer
+               ) extends Parser[PreparedQuery] {
+
+  override def parse(preParsedQuery: PreParsedQuery): PreparedQuery = {
+    compiler.prepareQuery(preParsedQuery.statement,
+                          preParsedQuery.rawStatement,
+                          notificationLogger,
+                          preParsedQuery.planner.name,
+                          Some(offset),
+                          tracer)
   }
 }
 

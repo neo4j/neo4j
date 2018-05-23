@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 import org.opencypher.v9_0.rewriting.RewriterStepSequencer
+import org.opencypher.v9_0.util.InputPosition
 
 import scala.util.Try
 
@@ -66,7 +67,7 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
                                                                            updateStrategy,
                                                                            runtimeBuilder,
                                                                            contextCreatorv3_5,
-                                                                           txIdProvider) with Compiler {
+                                                                           txIdProvider) with CachingCompiler[BaseState]  {
 
   val monitors: Monitors = WrappedMonitors(kernelMonitors)
   monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), "cypher3.4")
@@ -81,6 +82,9 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
     case CypherUpdateStrategy.eager => Some(eagerUpdateStrategy)
     case _ => None
   }
+
+  override def parserCacheSize: Int = config.queryCacheSize
+  override def plannerCacheSize: Int = config.queryCacheSize
 
   protected val rewriterSequencer: (String) => RewriterStepSequencer = {
     import RewriterStepSequencer._
@@ -171,17 +175,9 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
 
     val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
 
-    // The "preparationTracer" can get closed, even if a ParsedQuery is cached and reused. It should not
-    // be used inside ParsedQuery.plan. There, use the "planningTracer" instead
-    val preparedSyntacticQueryForV_3_5 =
-      Try(compiler.parseQuery(preParsedQuery.statement,
-        preParsedQuery.rawStatement,
-        notificationLogger, preParsedQuery.planner.name,
-        preParsedQuery.debugOptions,
-        Some(preParsedQuery.offset), tracer))
-
     runSafely {
-      val syntacticQuery = preparedSyntacticQueryForV_3_5.get
+      val syntacticQuery =
+        getOrParse(preParsedQuery, new Parser3_5(compiler, notificationLogger, preParsedQuery.offset, tracer))
 
       // Context used for db communication during planning
       val planContext = new ExceptionTranslatingPlanContext(TransactionBoundPlanContext(
@@ -233,5 +229,22 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
       val executionPlan = new ExecutionPlanWrapper(executionPlan3_5, preParsingNotifications)
       CachedExecutableQuery(executionPlan, queryParamNames, ValueConversion.asValues(preparedQuery.extractedParams()))
     }
+  }
+}
+
+class Parser3_5[CONTEXT3_5 <: v3_5.phases.CompilerContext](compiler: v3_5.CypherCompiler[CONTEXT3_5],
+                                                           notificationLogger: RecordingNotificationLogger,
+                                                           offset: InputPosition,
+                                                           tracer: CompilationPhaseTracer
+                                                          ) extends Parser[BaseState] {
+
+  override def parse(preParsedQuery: PreParsedQuery): BaseState = {
+    compiler.parseQuery(preParsedQuery.statement,
+                        preParsedQuery.rawStatement,
+                        notificationLogger,
+                        preParsedQuery.planner.name,
+                        preParsedQuery.debugOptions,
+                        Some(offset),
+                        tracer)
   }
 }
