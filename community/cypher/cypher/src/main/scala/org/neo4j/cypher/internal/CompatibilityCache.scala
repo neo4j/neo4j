@@ -106,7 +106,7 @@ class CommunityCompatibilityFactory(graph: GraphDatabaseQueryService, kernelMoni
     }
 }
 
-class CompatibilityCache(factory: CompatibilityFactory, config: CypherPlannerConfiguration) extends CompatibilityFactory {
+class CompatibilityCache(factory: CompatibilityFactory) extends CompatibilityFactory {
 
   import scala.collection.convert.decorateAsScala._
 

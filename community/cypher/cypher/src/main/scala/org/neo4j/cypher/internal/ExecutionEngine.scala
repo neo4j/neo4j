@@ -76,8 +76,9 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private val queryCache: QueryCache[String, CachedExecutableQuery] =
     new QueryCache(config.queryCacheSize, planStalenessCaller, cacheTracer)
 
+  private val compatibilityCache: CompatibilityCache = new CompatibilityCache(compatibilityFactory)
   private val compilerEngineDelegator: CompilerEngineDelegator =
-    new CompilerEngineDelegator(queryService, kernelMonitors, config, logProvider, compatibilityFactory)
+    new CompilerEngineDelegator(queryService, kernelMonitors, config, logProvider, compatibilityCache)
 
   private val parsedQueries = new LFUCache[String, ParsedQuery](config.queryCacheSize)
 
@@ -160,6 +161,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private def compileQuery(preParsedQuery: PreParsedQuery,
                            tracer: CompilationPhaseTracer,
                            tc: TransactionalContext): CachedExecutableQuery = {
+
+
 
     val parsedQuery = parsePreParsedQuery(preParsedQuery, tracer)
     val (executionPlan, extractedParams, paramNames) = parsedQuery.plan(tc, tracer)
