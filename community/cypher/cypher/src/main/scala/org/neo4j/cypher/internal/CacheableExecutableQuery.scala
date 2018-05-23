@@ -28,6 +28,6 @@ import org.neo4j.values.virtual.MapValue
   * @param paramNames Names of all parameters for this query, explicit and auto-parametrized.
   * @param extractedParams The names and values of the auto-parametrized parameters for this query.
   */
-case class CachedExecutableQuery(plan: ExecutionPlan,
-                                 paramNames: Seq[String],
-                                 extractedParams: MapValue)
+case class CacheableExecutableQuery(plan: ExecutionPlan,
+                                    paramNames: Seq[String],
+                                    extractedParams: MapValue)

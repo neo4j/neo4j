@@ -46,7 +46,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                       val tracer: CompilationTracer,
                       val cacheTracer: CacheTracer[String],
                       val config: CypherConfiguration,
-                      val compatibilityFactory: CompatibilityFactory,
+                      val compatibilityFactory: CompilerFactory,
                       val logProvider: LogProvider,
                       val clock: Clock = Clock.systemUTC() ) {
 
@@ -56,7 +56,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   private val preParser = new PreParser(config.version, config.planner, config.runtime, config.queryCacheSize)
   private val lastCommittedTxIdProvider = LastCommittedTxIdProvider(queryService)
-  private def planReusabilitiy(cachedExecutableQuery: CachedExecutableQuery,
+  private def planReusabilitiy(cachedExecutableQuery: CacheableExecutableQuery,
                                transactionalContext: TransactionalContext): ReusabilityState =
     cachedExecutableQuery.plan.reusabilityState(lastCommittedTxIdProvider, transactionalContext)
 
@@ -69,15 +69,15 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   })
 
   private val planStalenessCaller =
-    new PlanStalenessCaller[CachedExecutableQuery](clock,
+    new PlanStalenessCaller[CacheableExecutableQuery](clock,
                                                    config.statsDivergenceCalculator,
                                                    lastCommittedTxIdProvider,
                                                    planReusabilitiy)
-  private val queryCache: QueryCache[String, CachedExecutableQuery] =
+  private val queryCache: QueryCache[String, CacheableExecutableQuery] =
     new QueryCache(config.queryCacheSize, planStalenessCaller, cacheTracer)
 
   private val compilerEngineDelegator: CompilerEngineDelegator =
-    new CompilerEngineDelegator(queryService, kernelMonitors, config, logProvider, new CompatibilityCache(compatibilityFactory))
+    new CompilerEngineDelegator(queryService, kernelMonitors, config, logProvider, new CompilerLibrary(compatibilityFactory))
 
   private val parsedQueries = new LFUCache[String, ParsedQuery](config.queryCacheSize)
 
@@ -119,7 +119,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private def getOrCompile(context: TransactionalContext,
                            preParsedQuery: PreParsedQuery,
                            tracer: QueryCompilationEvent
-                          ): CachedExecutableQuery = {
+                          ): CacheableExecutableQuery = {
     val cacheKey = preParsedQuery.statementWithVersionAndPlanner
 
     // create transaction and query context

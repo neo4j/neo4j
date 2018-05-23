@@ -45,7 +45,7 @@ import org.opencypher.v9_0.rewriting.RewriterStepSequencer
 import org.opencypher.v9_0.util.InputPosition
 import org.opencypher.v9_0.util.attribution.SequentialIdGen
 
-case class Compatibility[CONTEXT <: CommunityRuntimeContext,
+case class Cypher35Compiler[CONTEXT <: CommunityRuntimeContext,
                     T <: Transformer[CONTEXT, LogicalPlanState, CompilationState]](config: CypherPlannerConfiguration,
                                                                                    clock: Clock,
                                                                                    kernelMonitors: KernelMonitors,
@@ -108,7 +108,7 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
                        tracer: CompilationPhaseTracer,
                        preParsingNotifications: Set[org.neo4j.graphdb.Notification],
                        transactionalContext: TransactionalContext
-                      ): CachedExecutableQuery = {
+                      ): CacheableExecutableQuery = {
 
     val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
 
@@ -164,12 +164,12 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
           createPlan()
 
       val executionPlan = new ExecutionPlanWrapper(executionPlan3_5, preParsingNotifications)
-      CachedExecutableQuery(executionPlan, queryParamNames, ValueConversion.asValues(preparedQuery.extractedParams()))
+      CacheableExecutableQuery(executionPlan, queryParamNames, ValueConversion.asValues(preparedQuery.extractedParams()))
     }
   }
 }
 
-class Parser3_5[CONTEXT3_5 <: v3_5.phases.CompilerContext](compiler: v3_5.CypherCompiler[CONTEXT3_5],
+class Parser3_5[CONTEXT3_5 <: v3_5.phases.PlannerContext](compiler: v3_5.CypherPlanner[CONTEXT3_5],
                                                            notificationLogger: RecordingNotificationLogger,
                                                            offset: InputPosition,
                                                            tracer: CompilationPhaseTracer

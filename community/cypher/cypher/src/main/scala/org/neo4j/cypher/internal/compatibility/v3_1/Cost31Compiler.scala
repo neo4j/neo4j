@@ -30,14 +30,14 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 
-case class CostCompatibility(graph: GraphDatabaseQueryService,
-                             config: CypherCompilerConfiguration,
-                             clock: Clock,
-                             kernelMonitors: KernelMonitors,
-                             log: Log,
-                             planner: CypherPlannerOption,
-                             runtime: CypherRuntimeOption,
-                             strategy: CypherUpdateStrategy) extends Compatibility {
+case class Cost31Compiler(graph: GraphDatabaseQueryService,
+                          config: CypherCompilerConfiguration,
+                          clock: Clock,
+                          kernelMonitors: KernelMonitors,
+                          log: Log,
+                          planner: CypherPlannerOption,
+                          runtime: CypherRuntimeOption,
+                          strategy: CypherUpdateStrategy) extends Cypher31Compiler {
 
   protected val compiler = {
     val plannerName = planner match {

@@ -92,7 +92,7 @@ object ExecutionEngineHelper {
     val resolver = graphDatabaseCypherService.getDependencyResolver
     val kernelMonitors: KernelMonitors = resolver.resolveDependency(classOf[KernelMonitors])
     val cacheTracer = new MonitoringCacheTracer( kernelMonitors.newMonitor( classOf[StringCacheMonitor] ) )
-    val compatibilityFactory = resolver.resolveDependency( classOf[CompatibilityFactory] )
+    val compilerFactory = resolver.resolveDependency( classOf[CompilerFactory] )
     val config = resolver.resolveDependency(classOf[Config])
 
     val tracer = new TimingCompilationTracer(kernelMonitors.newMonitor(classOf[TimingCompilationTracer.EventListener]))
@@ -102,7 +102,7 @@ object ExecutionEngineHelper {
                         tracer,
                         cacheTracer,
                         CypherConfiguration.fromConfig(config),
-                        compatibilityFactory,
+                        compilerFactory,
                         logProvider)
   }
 }

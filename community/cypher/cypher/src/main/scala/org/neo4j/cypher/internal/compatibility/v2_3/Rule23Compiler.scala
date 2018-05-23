@@ -26,10 +26,10 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
-case class RuleCompatibility(graph: GraphDatabaseQueryService,
-                             config: CypherCompilerConfiguration,
-                             clock: Clock,
-                             kernelMonitors: KernelMonitors) extends Compatibility {
+case class Rule23Compiler(graph: GraphDatabaseQueryService,
+                          config: CypherCompilerConfiguration,
+                          clock: Clock,
+                          kernelMonitors: KernelMonitors) extends Cypher23Compiler {
   protected val compiler = {
     val proxySpi = graph.getDependencyResolver.resolveDependency(classOf[EmbeddedProxySPI])
     val entityAccessor = new EntityAccessorWrapper(proxySpi)

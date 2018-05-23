@@ -53,7 +53,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
                               kernelMonitors: KernelMonitors,
                               config: CypherConfiguration,
                               logProvider: LogProvider,
-                              compatibilityCache: CompatibilityCache) {
+                              compilerLibrary: CompilerLibrary) {
 
   import org.neo4j.cypher.internal.CompilerEngineDelegator._
 
@@ -84,7 +84,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
   def compile(preParsedQuery: PreParsedQuery,
               tracer: CompilationPhaseTracer,
               transactionalContext: TransactionalContext
-             ): CachedExecutableQuery = {
+             ): CacheableExecutableQuery = {
 
     var notifications = Set.newBuilder[org.neo4j.graphdb.Notification]
     val supportedRuntimes3_1 = Seq(CypherRuntimeOption.interpreted, CypherRuntimeOption.default)
@@ -100,18 +100,18 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
       }
     }
 
-    def innerCompile(preParsedQuery: PreParsedQuery): CachedExecutableQuery = {
+    def innerCompile(preParsedQuery: PreParsedQuery): CacheableExecutableQuery = {
 
       if ((preParsedQuery.version == CypherVersion.v3_3 || preParsedQuery.version == CypherVersion.v3_5) && preParsedQuery.planner == CypherPlannerOption.rule) {
         notifications += rulePlannerUnavailableFallbackNotification(preParsedQuery.offset)
         innerCompile(preParsedQuery.copy(version = CypherVersion.v3_1))
 
       } else if (preParsedQuery.version == CypherVersion.v3_5) {
-        val compiler3_5 = compatibilityCache.selectCompiler(preParsedQuery.version,
-                                                            preParsedQuery.planner,
-                                                            preParsedQuery.runtime,
-                                                            preParsedQuery.updateStrategy,
-                                                            compilerConfig)
+        val compiler3_5 = compilerLibrary.selectCompiler(preParsedQuery.version,
+                                                         preParsedQuery.planner,
+                                                         preParsedQuery.runtime,
+                                                         preParsedQuery.updateStrategy,
+                                                         compilerConfig)
 
         try {
           compiler3_5.compile(preParsedQuery, tracer, notifications.result(), transactionalContext)
@@ -130,11 +130,11 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
 
       } else {
 
-        val compiler = compatibilityCache.selectCompiler(preParsedQuery.version,
-                                                         preParsedQuery.planner,
-                                                         preParsedQuery.runtime,
-                                                         preParsedQuery.updateStrategy,
-                                                         compilerConfig)
+        val compiler = compilerLibrary.selectCompiler(preParsedQuery.version,
+                                                      preParsedQuery.planner,
+                                                      preParsedQuery.runtime,
+                                                      preParsedQuery.updateStrategy,
+                                                      compilerConfig)
 
         compiler.compile(preParsedQuery, tracer, notifications.result(), transactionalContext)
       }

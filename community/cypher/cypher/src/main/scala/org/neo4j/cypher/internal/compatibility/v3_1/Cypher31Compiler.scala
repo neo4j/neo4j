@@ -47,7 +47,7 @@ import org.opencypher.v9_0.{frontend => v3_5}
 
 import scala.collection.mutable
 
-trait Compatibility extends CachingCompiler[PreparedQuerySyntax] {
+trait Cypher31Compiler extends CachingCompiler[PreparedQuerySyntax] {
 
   val graph: GraphDatabaseQueryService
   val queryCacheSize: Int
@@ -124,7 +124,7 @@ trait Compatibility extends CachingCompiler[PreparedQuerySyntax] {
                        tracer: v3_5.phases.CompilationPhaseTracer,
                        preParsingNotifications: Set[org.neo4j.graphdb.Notification],
                        transactionalContext: TransactionalContext
-                      ): CachedExecutableQuery = {
+                      ): CacheableExecutableQuery = {
 
     exceptionHandler.runSafely {
       val notificationLogger = new RecordingNotificationLogger
@@ -143,7 +143,7 @@ trait Compatibility extends CachingCompiler[PreparedQuerySyntax] {
       executionPlan3_1.notifications(planContext).foreach(notificationLogger += _)
 
       val executionPlan = new ExecutionPlanWrapper(executionPlan3_1, preParsingNotifications, position3_1)
-      CachedExecutableQuery(executionPlan, Seq.empty[String], ValueConversion.asValues(extractedParameters))
+      CacheableExecutableQuery(executionPlan, Seq.empty[String], ValueConversion.asValues(extractedParameters))
     }
   }
 }

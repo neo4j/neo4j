@@ -51,7 +51,7 @@ import org.neo4j.logging.Log
 import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, Transformer, RecordingNotificationLogger => RecordingNotificationLoggerv3_5}
 import org.opencypher.v9_0.util.attribution.SequentialIdGen
 
-case class Compatibility[CONTEXT3_3 <: v3_3.phases.CompilerContext,
+case class Cypher33Compiler[CONTEXT3_3 <: v3_3.phases.CompilerContext,
 CONTEXT3_5 <: CommunityRuntimeContextv3_5,
 T <: Transformer[CONTEXT3_5, LogicalPlanState, CompilationState]](configv3_5: CypherPlannerConfiguration,
                                                                   clock: Clock,
@@ -105,7 +105,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_5, T, StatementV3_3](
       maybePlannerName, maybeUpdateStrategy, contextCreatorV3_3)
 
 
-  private def queryGraphSolverV3_3 = Compatibility.
+  private def queryGraphSolverV3_3 = Cypher33Compiler.
     createQueryGraphSolver(maybePlannerName.getOrElse(v3_3.CostBasedPlannerName.default), monitorsV3_3, configV3_3)
 
   private def checkForSchemaChanges(planContext: PlanContext): Unit =
@@ -118,7 +118,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_5, T, StatementV3_3](
                        tracer: CompilationPhaseTracer,
                        preParsingNotifications: Set[org.neo4j.graphdb.Notification],
                        transactionalContext: TransactionalContext
-                      ): CachedExecutableQuery = {
+                      ): CacheableExecutableQuery = {
 
     val inputPositionV3_3 = as3_3(preParsedQuery.offset)
     val inputPositionv3_5 = preParsedQuery.offset
@@ -215,7 +215,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_5, T, StatementV3_3](
       // Log notifications/warnings from planning
       notificationLoggerV3_3.notifications.map(helpers.as3_5).foreach(notificationLoggerv3_5.log)
       val executionPlan = new ExecutionPlanWrapper(executionPlan3_5, preParsingNotifications)
-      CachedExecutableQuery(executionPlan, queryParamNames, ValueConversion.asValues(preparedQuery.extractedParams()))
+      CacheableExecutableQuery(executionPlan, queryParamNames, ValueConversion.asValues(preparedQuery.extractedParams()))
     }
   }
 }
@@ -237,7 +237,7 @@ class Parser3_3[CONTEXT3_3 <: v3_3.phases.CompilerContext](compiler: v3_3.Cypher
   }
 }
 
-object Compatibility {
+object Cypher33Compiler {
   def createQueryGraphSolver(n: v3_3.CostBasedPlannerName, monitors: MonitorsV3_3,
                              config: v3_3.CypherCompilerConfiguration): logicalV3_3.QueryGraphSolver = n match {
     case v3_3.IDPPlannerName =>
