@@ -28,6 +28,6 @@ public class ContentTypeProtocol extends Protocol<ContentType>
 {
     public ContentTypeProtocol()
     {
-        super( ContentType.MessageType );
+        super( ContentType.ContentType );
     }
 }

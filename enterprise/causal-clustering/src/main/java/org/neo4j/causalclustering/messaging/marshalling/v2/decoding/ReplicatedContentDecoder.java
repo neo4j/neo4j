@@ -50,7 +50,7 @@ public class ReplicatedContentDecoder extends MessageToMessageDecoder<ContentBui
         {
             out.add( contentBuilder.build() );
             contentBuilder = ContentBuilder.emptyUnfinished();
-            protocol.expect( ContentType.MessageType );
+            protocol.expect( ContentType.ContentType );
         }
     }
 }

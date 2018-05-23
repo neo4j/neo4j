@@ -31,11 +31,11 @@ import java.util.List;
 import org.neo4j.causalclustering.catchup.Protocol;
 import org.neo4j.causalclustering.messaging.marshalling.v2.ContentType;
 
-class RaftLogEntryTermDecoder extends ByteToMessageDecoder
+class RaftLogEntryTermsDecoder extends ByteToMessageDecoder
 {
     private final Protocol<ContentType> protocol;
 
-    RaftLogEntryTermDecoder( Protocol<ContentType> protocol )
+    RaftLogEntryTermsDecoder( Protocol<ContentType> protocol )
     {
         this.protocol = protocol;
     }
@@ -43,21 +43,26 @@ class RaftLogEntryTermDecoder extends ByteToMessageDecoder
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out )
     {
-        long l = in.readLong();
-        out.add( new RaftLogEntryTerm( l ) );
-        protocol.expect( ContentType.MessageType );
+        int size = in.readInt();
+        long[] terms = new long[size];
+        for ( int i = 0; i < size; i++ )
+        {
+           terms[i] = in.readLong();
+        }
+        out.add( new RaftLogEntryTerms( terms ) );
+        protocol.expect( ContentType.ContentType );
     }
 
-    class RaftLogEntryTerm
+    class RaftLogEntryTerms
     {
-        private final long term;
+        private final long[] term;
 
-        RaftLogEntryTerm( long term )
+        RaftLogEntryTerms( long[] term )
         {
             this.term = term;
         }
 
-        public long term()
+        public long[] terms()
         {
             return term;
         }

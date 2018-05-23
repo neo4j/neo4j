@@ -23,7 +23,6 @@
 package org.neo4j.causalclustering.messaging.marshalling.v2.encoding;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
@@ -107,6 +106,7 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
             channel.putLong( appendRequest.prevLogIndex() );
             channel.putLong( appendRequest.prevLogTerm() );
             channel.putLong( appendRequest.leaderCommit() );
+            channel.putInt( appendRequest.entries().length );
 
             return null;
         }

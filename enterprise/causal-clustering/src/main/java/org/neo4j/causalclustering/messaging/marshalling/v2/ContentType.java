@@ -24,7 +24,7 @@ package org.neo4j.causalclustering.messaging.marshalling.v2;
 
 public enum ContentType
 {
-    MessageType( (byte) 0 ),
+    ContentType( (byte) 0 ),
     ReplicatedContent( (byte) 1 ),
     RaftLogEntries( (byte) 2 ),
     Message( (byte) 3 );
