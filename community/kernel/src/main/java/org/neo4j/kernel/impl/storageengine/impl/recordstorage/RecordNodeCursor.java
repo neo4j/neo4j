@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 
-class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
+public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
 {
     private NodeStore read;
     private RecordCursor<DynamicRecord> labelCursor;
@@ -91,6 +91,11 @@ class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     public long[] labels()
     {
         return NodeLabelsField.get( this, labelCursor() );
+    }
+
+    public long labelField()
+    {
+        return getLabelField();
     }
 
     @Override

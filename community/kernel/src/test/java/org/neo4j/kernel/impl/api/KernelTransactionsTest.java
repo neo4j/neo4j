@@ -32,6 +32,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.function.Function;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
@@ -563,7 +564,7 @@ public class KernelTransactionsTest
                 any( ReadableTransactionState.class ),
                 any( StorageReader.class ),
                 any( ResourceLocker.class ),
-                anyLong() );
+                anyLong(), any( Function.class ) );
 
         return newKernelTransactions( locks, storageEngine, commitProcess, testKernelTransactions );
     }

@@ -24,10 +24,11 @@ import java.util.function.IntPredicate;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-public interface StoragePropertyCursor
+public interface StoragePropertyCursor extends AutoCloseable
 {
     void init( long reference );
 
+    @Override
     void close();
 
     int propertyKey();

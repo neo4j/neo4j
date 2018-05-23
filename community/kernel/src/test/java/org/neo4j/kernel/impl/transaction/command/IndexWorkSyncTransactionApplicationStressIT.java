@@ -61,6 +61,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singletonList;
+import static java.util.function.Function.identity;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.helpers.TimeUtil.parseTimeMillis;
@@ -204,7 +205,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
             Collection<StorageCommand> commands = new ArrayList<>();
             try ( StorageReader statement = storageEngine.newReader() )
             {
-                storageEngine.createCommands( commands, txState, statement, null, 0 );
+                storageEngine.createCommands( commands, txState, statement, null, 0, identity() );
             }
             return tx( commands );
         }

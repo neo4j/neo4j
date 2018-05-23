@@ -23,48 +23,28 @@ import java.util.Iterator;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreNodeRelationshipCursor;
-import org.neo4j.kernel.impl.store.InvalidRecordException;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordNodeCursor;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
 import org.neo4j.kernel.impl.store.RecordCursors;
-import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.storageengine.api.Direction;
+import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
-import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
-import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.function.Predicates.alwaysFalseLong;
+import static org.neo4j.internal.kernel.api.Read.ANY_RELATIONSHIP_TYPE;
 
 abstract class BatchRelationshipIterable<T> implements Iterable<T>
 {
-    private final StoreNodeRelationshipCursor relationshipCursor;
+    private final StorageRelationshipTraversalCursor relationshipCursor;
 
-    BatchRelationshipIterable( NeoStores neoStores, long nodeId, RecordCursors cursors )
+    BatchRelationshipIterable( RecordStorageReader storageReader, long nodeId, RecordCursors cursors )
     {
-        RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-        RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
-        RelationshipRecord relationshipRecord = relationshipStore.newRecord();
-        RelationshipGroupRecord relationshipGroupRecord = relationshipGroupStore.newRecord();
-        this.relationshipCursor = new StoreNodeRelationshipCursor( relationshipRecord, relationshipGroupRecord,
-                cursor -> {}, cursors, NO_LOCK_SERVICE );
-
-        // TODO There's an opportunity to reuse lots of instances created here, but this isn't a
-        // critical path instance so perhaps not necessary a.t.m.
-        try
-        {
-            NodeStore nodeStore = neoStores.getNodeStore();
-            NodeRecord nodeRecord = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL );
-            relationshipCursor
-                    .init( nodeRecord.isDense(), nodeRecord.getNextRel(), nodeId, Direction.BOTH, ALWAYS_TRUE_INT );
-        }
-        catch ( InvalidRecordException e )
+        relationshipCursor = storageReader.allocateRelationshipTraversalCursor();
+        RecordNodeCursor nodeCursor = storageReader.allocateNodeCursor();
+        nodeCursor.single( nodeId );
+        if ( !nodeCursor.next( alwaysFalseLong ) )
         {
             throw new NotFoundException( "Node " + nodeId + " not found" );
         }
+        relationshipCursor.init( nodeId, nodeCursor.allRelationshipsReference(), null, ANY_RELATIONSHIP_TYPE );
     }
 
     @Override
@@ -75,13 +55,13 @@ abstract class BatchRelationshipIterable<T> implements Iterable<T>
             @Override
             protected T fetchNextOrNull()
             {
-                if ( !relationshipCursor.next() )
+                if ( !relationshipCursor.next( alwaysFalseLong ) )
                 {
                     return null;
                 }
 
-                return nextFrom( relationshipCursor.id(), relationshipCursor.type(),
-                        relationshipCursor.startNode(), relationshipCursor.endNode() );
+                return nextFrom( relationshipCursor.relationshipReference(), relationshipCursor.type(),
+                        relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
             }
         };
     }

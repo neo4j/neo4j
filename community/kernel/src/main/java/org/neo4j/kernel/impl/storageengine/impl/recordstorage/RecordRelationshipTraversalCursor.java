@@ -55,6 +55,12 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     }
 
     @Override
+    public void single( long reference )
+    {
+        throw new UnsupportedOperationException( "Not implemented yet" );
+    }
+
+    @Override
     public void init( long nodeReference, long reference, RelationshipDirection filterDirection, int filterType )
     {
         /* There are basically two ways a relationship traversal cursor can be initialized:
@@ -157,8 +163,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
 
             relationshipFull( this, next, pageCursor );
             computeNext();
-
-        } while ( filter.test( getId() ) );
+        } while ( !inUse() || filter.test( getId() ) );
 
         return true;
     }

@@ -19,13 +19,9 @@
  */
 package org.neo4j.storageengine.api;
 
-import java.util.function.LongPredicate;
-
-public interface StorageNodeCursor
+public interface StorageNodeCursor extends StorageEntityCursor
 {
     void scan();
-
-    void single( long reference );
 
     long nodeReference();
 
@@ -33,19 +29,11 @@ public interface StorageNodeCursor
 
     boolean hasLabel( int label );
 
-    boolean hasProperties();
-
     long relationshipGroupReference();
 
     long allRelationshipsReference();
 
-    long propertiesReference();
-
-    boolean next( LongPredicate filter );
-
     void setCurrent( long nodeReference );
-
-    void close();
 
     boolean isDense();
 

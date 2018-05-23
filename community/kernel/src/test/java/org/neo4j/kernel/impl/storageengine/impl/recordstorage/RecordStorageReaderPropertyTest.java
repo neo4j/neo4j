@@ -19,28 +19,27 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
+import org.eclipse.collections.impl.block.factory.primitive.IntPredicates;
 import org.junit.Test;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
 
-import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.impl.core.TokenHolder;
-import org.neo4j.kernel.impl.locking.Lock;
-import org.neo4j.storageengine.api.NodeItem;
-import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.storageengine.api.StorageNodeCursor;
+import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singletonMap;
+import static org.eclipse.collections.impl.block.factory.primitive.LongPredicates.alwaysFalse;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
 
 /**
  * Test read access to committed properties.
@@ -101,17 +100,17 @@ public class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
             long nodeId = createLabeledNode( db, singletonMap( "prop", value ), label1 ).getId();
 
             // when
-            try ( Cursor<NodeItem> node = storageReader.acquireSingleNodeCursor( nodeId ) )
+            try ( StorageNodeCursor node = storageReader.allocateNodeCursor() )
             {
-                node.next();
+                node.single( nodeId );
+                assertTrue( node.next( alwaysFalse() ) );
 
-                Lock lock = node.get().lock();
-                try ( Cursor<PropertyItem> props = storageReader
-                        .acquireSinglePropertyCursor( node.get().nextPropertyId(), propKey, lock, ALWAYS_OPEN ) )
+                try ( StoragePropertyCursor props = storageReader.allocatePropertyCursor() )
                 {
-                    if ( props.next() )
+                    props.init( node.propertiesReference() );
+                    if ( props.next( IntPredicates.alwaysFalse()  ) )
                     {
-                        Value propVal = props.get().value();
+                        Value propVal = props.propertyValue();
 
                         //then
                         assertTrue( propVal + ".equals(" + value + ")",

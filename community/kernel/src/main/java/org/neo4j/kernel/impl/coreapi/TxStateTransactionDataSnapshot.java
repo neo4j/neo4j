@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.coreapi;
 import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.impl.block.factory.primitive.IntPredicates;
+import org.eclipse.collections.impl.block.factory.primitive.LongPredicates;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 import java.util.ArrayList;
@@ -30,7 +32,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -45,12 +46,11 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
-import org.neo4j.kernel.impl.locking.Lock;
-import org.neo4j.storageengine.api.NodeItem;
-import org.neo4j.storageengine.api.PropertyItem;
-import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -59,7 +59,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.toIntExact;
-import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
+import static org.eclipse.collections.impl.block.factory.primitive.LongPredicates.alwaysFalse;
 
 /**
  * Transform for {@link org.neo4j.storageengine.api.txstate.ReadableTransactionState} to make it accessible as {@link TransactionData}.
@@ -199,65 +199,60 @@ public class TxStateTransactionDataSnapshot implements TransactionData
 
     private void takeSnapshot()
     {
-        try
+        try ( StorageNodeCursor node = store.allocateNodeCursor();
+              StoragePropertyCursor properties = store.allocatePropertyCursor();
+              StorageRelationshipScanCursor relationship = store.allocateRelationshipScanCursor() )
         {
             state.addedAndRemovedNodes().getRemoved().each( nodeId ->
             {
-                try ( Cursor<NodeItem> node = store.acquireSingleNodeCursor( nodeId ) )
+                node.single( nodeId );
+                if ( node.next( alwaysFalse() ) )
                 {
-                    if ( node.next() )
+                    properties.init( node.propertiesReference() );
+                    while ( properties.next( IntPredicates.alwaysFalse() ) )
                     {
-                        Lock lock = node.get().lock();
-                        try ( Cursor<PropertyItem> properties = store
-                                .acquirePropertyCursor( node.get().nextPropertyId(), lock, ALWAYS_OPEN ) )
+                        try
                         {
-                            while ( properties.next() )
-                            {
-                                removedNodeProperties.add( new NodePropertyEntryView( nodeId,
-                                        store.propertyKeyGetName( properties.get().propertyKeyId() ), null,
-                                        properties.get().value() ) );
-                            }
+                            removedNodeProperties.add( new NodePropertyEntryView( nodeId, store.propertyKeyGetName( properties.propertyKey() ), null,
+                                    properties.propertyValue() ) );
                         }
                         catch ( PropertyKeyIdNotFoundKernelException e )
                         {
-                            throw new IllegalStateException( "Nonexisting property was modified for node " + nodeId, e );
+                            throw new IllegalStateException( "Nonexisting properties was modified for node " + nodeId, e );
                         }
-
-                        node.get().labels().forEach( labelId ->
-                        {
-                            try
-                            {
-                                removedLabels.add( new LabelEntryView( nodeId, store.labelGetName( labelId ) ) );
-                            }
-                            catch ( LabelNotFoundKernelException e )
-                            {
-                                throw new IllegalStateException( "Nonexisting label was modified for node " + nodeId, e );
-                            }
-                        } );
                     }
+
+                    for ( long labelId : node.labels() )
+                    {
+                        try
+                        {
+                            removedLabels.add( new LabelEntryView( nodeId, store.labelGetName( labelId ) ) );
+                        }
+                        catch ( LabelNotFoundKernelException e )
+                        {
+                            throw new IllegalStateException( "Nonexisting label was modified for node " + nodeId, e );
+                        }
+                    };
                 }
             } );
             state.addedAndRemovedRelationships().getRemoved().each( relId ->
             {
                 Relationship relationshipProxy = relationship( relId );
-                try ( Cursor<RelationshipItem> relationship = store.acquireSingleRelationshipCursor( relId ) )
+                relationship.single( relId );
+                if ( relationship.next( alwaysFalse() ) )
                 {
-                    if ( relationship.next() )
+                    properties.init( relationship.propertiesReference() );
+                    while ( properties.next( IntPredicates.alwaysFalse() ) )
                     {
-                        Lock lock = relationship.get().lock();
-                        try ( Cursor<PropertyItem> properties = store
-                                .acquirePropertyCursor( relationship.get().nextPropertyId(), lock, ALWAYS_OPEN ) )
+                        try
                         {
-                            while ( properties.next() )
-                            {
-                                removedRelationshipProperties.add( new RelationshipPropertyEntryView( relationshipProxy,
-                                        store.propertyKeyGetName( properties.get().propertyKeyId() ), null,
-                                        properties.get().value() ) );
-                            }
+                            removedRelationshipProperties.add(
+                                    new RelationshipPropertyEntryView( relationshipProxy, store.propertyKeyGetName( properties.propertyKey() ), null,
+                                            properties.propertyValue() ) );
                         }
                         catch ( PropertyKeyIdNotFoundKernelException e )
                         {
-                            throw new IllegalStateException( "Nonexisting node property was modified for relationship " + relId, e );
+                            throw new IllegalStateException( "Nonexisting node properties was modified for relationship " + relId, e );
                         }
                     }
                 }
@@ -271,19 +266,19 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                     StorageProperty property = added.next();
                     assignedNodeProperties.add( new NodePropertyEntryView( nodeId,
                             store.propertyKeyGetName( property.propertyKeyId() ), property.value(),
-                            committedValue( nodeState, property.propertyKeyId() ) ) );
+                            committedValue( nodeState, property.propertyKeyId(), node, properties ) ) );
                 }
                 nodeState.removedProperties().each( id ->
                 {
                     try
                     {
                         final NodePropertyEntryView entryView = new NodePropertyEntryView( nodeId, store.propertyKeyGetName( id ), null,
-                                committedValue( nodeState, id ) );
+                                committedValue( nodeState, id, node, properties ) );
                         removedNodeProperties.add( entryView );
                     }
                     catch ( PropertyKeyIdNotFoundKernelException e )
                     {
-                        throw new IllegalStateException( "Nonexisting node property was modified for node " + nodeId, e );
+                        throw new IllegalStateException( "Nonexisting node properties was modified for node " + nodeId, e );
                     }
                 } );
 
@@ -293,26 +288,26 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             }
             for ( RelationshipState relState : state.modifiedRelationships() )
             {
-                Relationship relationship = relationship( relState.getId() );
+                Relationship relationshipProxy = relationship( relState.getId() );
                 Iterator<StorageProperty> added = relState.addedAndChangedProperties();
                 while ( added.hasNext() )
                 {
                     StorageProperty property = added.next();
-                    assignedRelationshipProperties.add( new RelationshipPropertyEntryView( relationship,
+                    assignedRelationshipProperties.add( new RelationshipPropertyEntryView( relationshipProxy,
                             store.propertyKeyGetName( property.propertyKeyId() ), property.value(),
-                            committedValue( relState, property.propertyKeyId() ) ) );
+                            committedValue( relState, property.propertyKeyId(), relationship, properties ) ) );
                 }
                 relState.removedProperties().each( id ->
                 {
                     try
                     {
-                        final RelationshipPropertyEntryView entryView = new RelationshipPropertyEntryView( relationship, store.propertyKeyGetName( id ),
-                                null, committedValue( relState, id ) );
+                        final RelationshipPropertyEntryView entryView = new RelationshipPropertyEntryView( relationshipProxy, store.propertyKeyGetName( id ),
+                                null, committedValue( relState, id, relationship, properties ) );
                         removedRelationshipProperties.add( entryView );
                     }
                     catch ( PropertyKeyIdNotFoundKernelException e )
                     {
-                        throw new IllegalStateException( "Nonexisting property was modified for relationship " + relState.getId(), e );
+                        throw new IllegalStateException( "Nonexisting properties was modified for relationship " + relState.getId(), e );
                     }
                 } );
             }
@@ -374,61 +369,50 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         return ids.asLazy().collect( this::relationship );
     }
 
-    private Value committedValue( NodeState nodeState, int property )
+    private Value committedValue( NodeState nodeState, int property, StorageNodeCursor node, StoragePropertyCursor properties )
     {
         if ( state.nodeIsAddedInThisTx( nodeState.getId() ) )
         {
             return Values.NO_VALUE;
         }
 
-        try ( Cursor<NodeItem> node = store.acquireSingleNodeCursor( nodeState.getId() ) )
+        node.single( nodeState.getId() );
+        if ( !node.next( alwaysFalse() ) )
         {
-            if ( !node.next() )
-            {
-                return Values.NO_VALUE;
-            }
+            return Values.NO_VALUE;
+        }
 
-            Lock lock = node.get().lock();
-            try ( Cursor<PropertyItem> properties = store
-                    .acquireSinglePropertyCursor( node.get().nextPropertyId(), property, lock, ALWAYS_OPEN ) )
+        return committedValue( properties, node.propertiesReference(), property );
+    }
+
+    private Value committedValue( StoragePropertyCursor properties, long propertiesReference, int propertyKey )
+    {
+        properties.init( propertiesReference );
+        while ( properties.next( IntPredicates.alwaysFalse() ) )
+        {
+            if ( properties.propertyKey() == propertyKey )
             {
-                if ( properties.next() )
-                {
-                    return properties.get().value();
-                }
+                return properties.propertyValue();
             }
         }
 
         return Values.NO_VALUE;
     }
 
-    private Value committedValue( RelationshipState relState, int property )
+    private Value committedValue( RelationshipState relState, int property, StorageRelationshipScanCursor relationship, StoragePropertyCursor properties )
     {
         if ( state.relationshipIsAddedInThisTx( relState.getId() ) )
         {
             return Values.NO_VALUE;
         }
 
-        try ( Cursor<RelationshipItem> relationship = store.acquireSingleRelationshipCursor(
-                relState.getId() ) )
+        relationship.single( relState.getId() );
+        if ( !relationship.next( LongPredicates.alwaysFalse() ) )
         {
-            if ( !relationship.next() )
-            {
-                return Values.NO_VALUE;
-            }
-
-            Lock lock = relationship.get().lock();
-            try ( Cursor<PropertyItem> properties = store
-                    .acquireSinglePropertyCursor( relationship.get().nextPropertyId(), property, lock, ALWAYS_OPEN ) )
-            {
-                if ( properties.next() )
-                {
-                    return properties.get().value();
-                }
-            }
+            return Values.NO_VALUE;
         }
 
-        return Values.NO_VALUE;
+        return committedValue( properties, relationship.propertiesReference(), property );
     }
 
     private class NodePropertyEntryView implements PropertyEntry<Node>

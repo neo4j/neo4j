@@ -23,7 +23,6 @@
 package org.neo4j.kernel.impl.enterprise;
 
 import org.eclipse.collections.api.IntIterable;
-import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.iterator.MutableLongIterator;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
@@ -38,24 +37,24 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 
-import org.neo4j.cursor.Cursor;
+import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.schema.NodePropertyExistenceException;
 import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceException;
-import org.neo4j.kernel.impl.locking.Lock;
-import org.neo4j.storageengine.api.NodeItem;
-import org.neo4j.storageengine.api.PropertyItem;
-import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageReader;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
+import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static org.neo4j.collection.PrimitiveArrays.union;
@@ -107,16 +106,16 @@ class PropertyExistenceEnforcer
         return values;
     }
 
-    TxStateVisitor decorate( TxStateVisitor visitor, ReadableTransactionState txState, StorageReader storageReader )
+    TxStateVisitor decorate( TxStateVisitor visitor, Read read, CursorFactory cursorFactory )
     {
-        return new Decorator( visitor, txState, storageReader );
+        return new Decorator( visitor, read, cursorFactory );
     }
 
     private static final PropertyExistenceEnforcer NO_CONSTRAINTS = new PropertyExistenceEnforcer(
             emptyList(), emptyList() )
     {
         @Override
-        TxStateVisitor decorate( TxStateVisitor visitor, ReadableTransactionState txState, StorageReader storageReader )
+        TxStateVisitor decorate( TxStateVisitor visitor, Read read, CursorFactory cursorFactory )
         {
             return visitor;
         }
@@ -155,15 +154,21 @@ class PropertyExistenceEnforcer
 
     private class Decorator extends TxStateVisitor.Delegator
     {
-        private final ReadableTransactionState txState;
         private final MutableIntSet propertyKeyIds = new IntHashSet();
-        private final StorageReader storageReader;
+        private final Read read;
+        private final CursorFactory cursorFactory;
+        private final NodeCursor nodeCursor;
+        private final PropertyCursor propertyCursor;
+        private final RelationshipScanCursor relationshipCursor;
 
-        Decorator( TxStateVisitor next, ReadableTransactionState txState, StorageReader storageReader )
+        Decorator( TxStateVisitor next, Read read, CursorFactory cursorFactory )
         {
             super( next );
-            this.txState = txState;
-            this.storageReader = storageReader;
+            this.read = read;
+            this.cursorFactory = cursorFactory;
+            this.nodeCursor = cursorFactory.allocateNodeCursor();
+            this.propertyCursor = cursorFactory.allocatePropertyCursor();
+            this.relationshipCursor = cursorFactory.allocateRelationshipScanCursor();
         }
 
         @Override
@@ -207,29 +212,25 @@ class PropertyExistenceEnforcer
                 return;
             }
 
-            final LongSet labelIds;
-            try ( Cursor<NodeItem> node = node( nodeId ) )
+            final LabelSet labelIds;
+            read.singleNode( nodeId, nodeCursor );
+            if ( nodeCursor.next() )
             {
-                if ( node.next() )
+                labelIds = nodeCursor.labels();
+                if ( labelIds.numberOfLabels() == 0 )
                 {
-                    labelIds = node.get().labels();
-                    if ( labelIds.isEmpty() )
-                    {
-                        return;
-                    }
-                    propertyKeyIds.clear();
-                    try ( Cursor<PropertyItem> properties = properties( node.get() ) )
-                    {
-                        while ( properties.next() )
-                        {
-                            propertyKeyIds.add( properties.get().propertyKeyId() );
-                        }
-                    }
+                    return;
                 }
-                else
+                propertyKeyIds.clear();
+                nodeCursor.properties( propertyCursor );
+                while ( propertyCursor.next() )
                 {
-                    throw new IllegalStateException( format( "Node %d with changes should exist.", nodeId ) );
+                    propertyKeyIds.add( propertyCursor.propertyKey() );
                 }
+            }
+            else
+            {
+                throw new IllegalStateException( format( "Node %d with changes should exist.", nodeId ) );
             }
 
             validateNodeProperties( nodeId, labelIds, propertyKeyIds );
@@ -244,29 +245,25 @@ class PropertyExistenceEnforcer
 
             int relationshipType;
             int[] required;
-            try ( Cursor<RelationshipItem> relationship = relationship( id ) )
+            read.singleRelationship( id, relationshipCursor );
+            if ( relationshipCursor.next() )
             {
-                if ( relationship.next() )
+                relationshipType = relationshipCursor.type();
+                required = mandatoryRelationshipPropertiesByType.get( relationshipType );
+                if ( required == null )
                 {
-                    relationshipType = relationship.get().type();
-                    required = mandatoryRelationshipPropertiesByType.get( relationshipType );
-                    if ( required == null )
-                    {
-                        return;
-                    }
-                    propertyKeyIds.clear();
-                    try ( Cursor<PropertyItem> properties = properties( relationship.get() ) )
-                    {
-                        while ( properties.next() )
-                        {
-                            propertyKeyIds.add( properties.get().propertyKeyId() );
-                        }
-                    }
+                    return;
                 }
-                else
+                propertyKeyIds.clear();
+                relationshipCursor.properties( propertyCursor );
+                while ( propertyCursor.next() )
                 {
-                    throw new IllegalStateException( format( "Relationship %d with changes should exist.", id ) );
+                    propertyKeyIds.add( propertyCursor.propertyKey() );
                 }
+            }
+            else
+            {
+                throw new IllegalStateException( format( "Relationship %d with changes should exist.", id ) );
             }
 
             for ( int mandatory : required )
@@ -277,45 +274,18 @@ class PropertyExistenceEnforcer
                 }
             }
         }
-
-        private Cursor<NodeItem> node( long id )
-        {
-            Cursor<NodeItem> cursor = storageReader.acquireSingleNodeCursor( id );
-            return txState.augmentSingleNodeCursor( cursor, id );
-        }
-
-        private Cursor<RelationshipItem> relationship( long id )
-        {
-            Cursor<RelationshipItem> cursor = storageReader.acquireSingleRelationshipCursor( id );
-            return txState.augmentSingleRelationshipCursor( cursor, id );
-        }
-
-        private Cursor<PropertyItem> properties( NodeItem node )
-        {
-            Lock lock = node.lock();
-            Cursor<PropertyItem> cursor = storageReader.acquirePropertyCursor( node.nextPropertyId(), lock,
-                    AssertOpen.ALWAYS_OPEN );
-            return txState.augmentPropertyCursor( cursor, txState.getNodeState( node.id() ) );
-        }
-
-        private Cursor<PropertyItem> properties( RelationshipItem relationship )
-        {
-            Lock lock = relationship.lock();
-            Cursor<PropertyItem> cursor = storageReader.acquirePropertyCursor( relationship.nextPropertyId(), lock,
-                    AssertOpen.ALWAYS_OPEN );
-            return txState.augmentPropertyCursor( cursor, txState.getRelationshipState( relationship.id() ) );
-        }
     }
 
-    private void validateNodeProperties( long id, LongSet labelIds, IntSet propertyKeyIds )
+    private void validateNodeProperties( long id, LabelSet labelIds, IntSet propertyKeyIds )
             throws NodePropertyExistenceException
     {
-        if ( labelIds.size() > mandatoryNodePropertiesByLabel.size() )
+        int numberOfLabels = labelIds.numberOfLabels();
+        if ( numberOfLabels > mandatoryNodePropertiesByLabel.size() )
         {
             for ( MutableLongIterator labels = mandatoryNodePropertiesByLabel.keySet().longIterator(); labels.hasNext(); )
             {
                 final long label = labels.next();
-                if ( labelIds.contains( label ) )
+                if ( labelIds.contains( toIntExact( label ) ) )
                 {
                     validateNodeProperties( id, label, mandatoryNodePropertiesByLabel.get( label ), propertyKeyIds );
                 }
@@ -323,9 +293,9 @@ class PropertyExistenceEnforcer
         }
         else
         {
-            for ( LongIterator labels = labelIds.longIterator(); labels.hasNext(); )
+            for ( int i = 0; i < numberOfLabels; i++ )
             {
-                final long label = labels.next();
+                final long label = labelIds.label( i );
                 int[] keys = mandatoryNodePropertiesByLabel.get( label );
                 if ( keys != null )
                 {
