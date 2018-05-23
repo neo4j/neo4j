@@ -796,6 +796,7 @@ public class BoltCausalClusteringIT
             catch ( IOException | TimeoutException e )
             {
                 // keep trying
+                e.printStackTrace();
             }
             finally
             {
@@ -812,8 +813,8 @@ public class BoltCausalClusteringIT
             if ( !coreClusterMember.equals( initialLeader ) )
             {
                 coreClusterMember.raft().triggerElection( Clock.systemUTC() );
-                cluster.awaitLeader();
             }
         }
+        cluster.awaitLeader();
     }
 }
