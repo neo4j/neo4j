@@ -375,7 +375,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     @Override
     public void start() throws IOException
     {
-        dependencies = new Dependencies();
+        dependencies = new Dependencies( dependencyResolver );
         life = new LifeSupport();
 
         life.add( recoveryCleanupWorkCollector );
