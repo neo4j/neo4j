@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.newapi.StoreRelationshipTraversalCursor.Record;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordRelationshipTraversalCursor.Record;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -31,10 +31,10 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
 
-import static org.neo4j.kernel.impl.newapi.GroupReferenceEncoding.isRelationship;
-import static org.neo4j.kernel.impl.newapi.References.clearEncoding;
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.GroupReferenceEncoding.isRelationship;
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.References.clearEncoding;
 
-public class StoreRelationshipGroupCursor extends RelationshipGroupRecord implements StorageRelationshipGroupCursor
+class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements StorageRelationshipGroupCursor
 {
     private final RelationshipStore relationshipStore;
     private final RelationshipGroupStore groupStore;
@@ -45,7 +45,7 @@ public class StoreRelationshipGroupCursor extends RelationshipGroupRecord implem
     private PageCursor edgePage;
     private boolean open;
 
-    public StoreRelationshipGroupCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore )
+    RecordRelationshipGroupCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore )
     {
         super( NO_ID );
         this.relationshipStore = relationshipStore;

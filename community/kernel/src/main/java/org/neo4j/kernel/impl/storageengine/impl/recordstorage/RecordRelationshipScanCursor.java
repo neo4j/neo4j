@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import java.util.function.LongPredicate;
 
@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
-public class StoreRelationshipScanCursor extends StoreRelationshipCursor implements StorageRelationshipScanCursor
+class RecordRelationshipScanCursor extends RecordRelationshipCursor implements StorageRelationshipScanCursor
 {
     private int type;
     private long next;
@@ -37,7 +37,7 @@ public class StoreRelationshipScanCursor extends StoreRelationshipCursor impleme
     private PageCursor pageCursor;
     private boolean open;
 
-    public StoreRelationshipScanCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore )
+    RecordRelationshipScanCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore )
     {
         super( relationshipStore, groupStore );
     }

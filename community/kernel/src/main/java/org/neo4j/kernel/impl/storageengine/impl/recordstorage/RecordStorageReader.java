@@ -64,10 +64,6 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.newapi.StoreNodeCursor;
-import org.neo4j.kernel.impl.newapi.StoreRelationshipGroupCursor;
-import org.neo4j.kernel.impl.newapi.StoreRelationshipScanCursor;
-import org.neo4j.kernel.impl.newapi.StoreRelationshipTraversalCursor;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -946,30 +942,30 @@ public class RecordStorageReader implements StorageReader
     @Override
     public StorageNodeCursor allocateNodeCursor()
     {
-        return new StoreNodeCursor( nodeStore );
+        return new RecordNodeCursor( nodeStore );
     }
 
     @Override
     public StorageRelationshipGroupCursor allocateRelationshipGroupCursor()
     {
-        return new StoreRelationshipGroupCursor( relationshipStore, relationshipGroupStore );
+        return new RecordRelationshipGroupCursor( relationshipStore, relationshipGroupStore );
     }
 
     @Override
     public StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor()
     {
-        return new StoreRelationshipTraversalCursor( relationshipStore, relationshipGroupStore );
+        return new RecordRelationshipTraversalCursor( relationshipStore, relationshipGroupStore );
     }
 
     @Override
     public StorageRelationshipScanCursor allocateRelationshipScanCursor()
     {
-        return new StoreRelationshipScanCursor( relationshipStore, relationshipGroupStore );
+        return new RecordRelationshipScanCursor( relationshipStore, relationshipGroupStore );
     }
 
     @Override
     public StoragePropertyCursor allocatePropertyCursor()
     {
-        return new org.neo4j.kernel.impl.newapi.StorePropertyCursor( propertyStore );
+        return new RecordPropertyCursor( propertyStore );
     }
 }

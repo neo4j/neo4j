@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
@@ -32,10 +32,6 @@ import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
  * that it actually points to a group. When the kernel then serves a relationship cursor using the reference, we need
  * to silently detect that we have a group reference, parse the groups, and setup the cursor to serve relationship
  * via this mode instead.
- *
- * The opposite problem also appears when the user acquires a relationship group reference from a non-dense node. See
- * {@link org.neo4j.kernel.impl.newapi.Read#relationships(long, long,
- * org.neo4j.internal.kernel.api.RelationshipTraversalCursor)} for more details.
  *
  * Node that {@code -1} is used to encode {@link AbstractBaseRecord#NO_ID that a reference is invalid}. In terms of
  * encoding {@code -1} is considered to have all flags, to setting one will not change {@code -1}. This however also

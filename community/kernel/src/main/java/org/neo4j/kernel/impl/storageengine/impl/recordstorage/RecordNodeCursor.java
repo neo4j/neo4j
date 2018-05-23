@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import java.util.function.LongPredicate;
 
@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 
-public class StoreNodeCursor extends NodeRecord implements StorageNodeCursor
+class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
 {
     private NodeStore read;
     private RecordCursor<DynamicRecord> labelCursor;
@@ -40,7 +40,7 @@ public class StoreNodeCursor extends NodeRecord implements StorageNodeCursor
     private long nextStoreReference;
     private boolean open;
 
-    public StoreNodeCursor( NodeStore read )
+    RecordNodeCursor( NodeStore read )
     {
         super( NO_ID );
         this.read = read;
@@ -230,11 +230,11 @@ public class StoreNodeCursor extends NodeRecord implements StorageNodeCursor
     {
         if ( !open )
         {
-            return "StoreNodeCursor[closed state]";
+            return "RecordNodeCursor[closed state]";
         }
         else
         {
-            return "StoreNodeCursor[id=" + getId() +
+            return "RecordNodeCursor[id=" + getId() +
                     ", open state with: highMark=" + highMark +
                     ", next=" + next +
                     ", underlying record=" + super.toString() + " ]";

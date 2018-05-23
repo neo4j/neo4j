@@ -83,7 +83,7 @@ import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 @RunWith( Enclosed.class )
-public class StorePropertyCursorTest
+public class RecordPropertyCursorTest
 {
     private static final List<Object[]> PARAMETERS = asList(
             new Object[]{false, PropertyType.BOOL},
@@ -206,7 +206,7 @@ public class StorePropertyCursorTest
                     PropertyType.STRING}
     );
 
-    private StorePropertyCursorTest()
+    private RecordPropertyCursorTest()
     {
     }
 
