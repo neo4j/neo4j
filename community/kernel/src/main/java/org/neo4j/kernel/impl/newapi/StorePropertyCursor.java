@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,12 +25,16 @@ import java.util.function.IntPredicate;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.GeometryType;
 import org.neo4j.kernel.impl.store.LongerShortString;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.ShortArray;
 import org.neo4j.kernel.impl.store.TemporalType;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.util.Bits;
+import org.neo4j.storageengine.api.StoragePropertyCursor;
+import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.ByteValue;
@@ -44,24 +48,27 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-public class StorePropertyCursor extends PropertyRecord
+public class StorePropertyCursor extends PropertyRecord implements StoragePropertyCursor
 {
     private static final int MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY = 32;
     private static final int INITIAL_POSITION = -1;
-    private Read read;
+
+    private PropertyStore read;
     private long next;
     private int block;
-    ByteBuffer buffer;
+    public ByteBuffer buffer;
     private PageCursor page;
     private PageCursor stringPage;
     private PageCursor arrayPage;
 
-    public StorePropertyCursor()
+    public StorePropertyCursor( PropertyStore read )
     {
         super( NO_ID );
+        this.read = read;
     }
 
-    void init( long reference, Read read )
+    @Override
+    public void init( long reference )
     {
         if ( getId() != NO_ID )
         {
@@ -70,12 +77,11 @@ public class StorePropertyCursor extends PropertyRecord
 
         //Set to high value to force a read
         this.block = Integer.MAX_VALUE;
-        this.read = read;
         if ( reference != NO_ID )
         {
             if ( page == null )
             {
-                page = read.propertyPage( reference );
+                page = propertyPage( reference );
             }
         }
 
@@ -124,7 +130,7 @@ public class StorePropertyCursor extends PropertyRecord
                 return false;
             }
 
-            read.property( this, next, page );
+            property( this, next, page );
             next = getNextProp();
             block = INITIAL_POSITION;
         }
@@ -135,6 +141,7 @@ public class StorePropertyCursor extends PropertyRecord
         return getBlocks()[block];
     }
 
+    @Override
     public void close()
     {
         if ( !isClosed() )
@@ -144,11 +151,13 @@ public class StorePropertyCursor extends PropertyRecord
         }
     }
 
+    @Override
     public int propertyKey()
     {
         return PropertyBlock.keyIndexId( currentBlock() );
     }
 
+    @Override
     public ValueGroup propertyType()
     {
         PropertyType type = type();
@@ -183,6 +192,7 @@ public class StorePropertyCursor extends PropertyRecord
         return PropertyType.getPropertyTypeOrNull( currentBlock() );
     }
 
+    @Override
     public Value propertyValue()
     {
         return readValue();
@@ -245,9 +255,9 @@ public class StorePropertyCursor extends PropertyRecord
         long reference = PropertyBlock.fetchLong( currentBlock() );
         if ( arrayPage == null )
         {
-            arrayPage = read.arrayPage( reference );
+            arrayPage = arrayPage( reference );
         }
-        return read.array( this, reference, arrayPage );
+        return array( this, reference, arrayPage );
     }
 
     private TextValue readLongString()
@@ -255,9 +265,9 @@ public class StorePropertyCursor extends PropertyRecord
         long reference = PropertyBlock.fetchLong( currentBlock() );
         if ( stringPage == null )
         {
-            stringPage = read.stringPage( reference );
+            stringPage = stringPage( reference );
         }
-        return read.string( this, reference, stringPage );
+        return string( this, reference, stringPage );
     }
 
     private Value readShortArray()
@@ -324,6 +334,7 @@ public class StorePropertyCursor extends PropertyRecord
         return Values.booleanValue( PropertyBlock.fetchByte( currentBlock() ) == 1 );
     }
 
+    @Override
     public boolean isClosed()
     {
         return read == null;
@@ -342,6 +353,7 @@ public class StorePropertyCursor extends PropertyRecord
         }
     }
 
+    @Override
     public void release()
     {
         if ( stringPage != null )
@@ -359,5 +371,41 @@ public class StorePropertyCursor extends PropertyRecord
             page.close();
             page = null;
         }
+    }
+
+    private PageCursor propertyPage( long reference )
+    {
+        return read.openPageCursorForReading( reference );
+    }
+
+    private PageCursor stringPage( long reference )
+    {
+        return read.openStringPageCursor( reference );
+    }
+
+    private PageCursor arrayPage( long reference )
+    {
+        return read.openArrayPageCursor( reference );
+    }
+
+    private void property( PropertyRecord record, long reference, PageCursor pageCursor )
+    {
+        // We need to load forcefully here since otherwise we can have inconsistent reads
+        // for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
+        read.getRecordByCursor( reference, record, RecordLoad.FORCE, pageCursor );
+    }
+
+    private TextValue string( org.neo4j.kernel.impl.newapi.StorePropertyCursor cursor, long reference, PageCursor page )
+    {
+        ByteBuffer buffer = cursor.buffer = read.loadString( reference, cursor.buffer, page );
+        buffer.flip();
+        return Values.stringValue( UTF8.decode( buffer.array(), 0, buffer.limit() ) );
+    }
+
+    private ArrayValue array( org.neo4j.kernel.impl.newapi.StorePropertyCursor cursor, long reference, PageCursor page )
+    {
+        ByteBuffer buffer = cursor.buffer = read.loadArray( reference, cursor.buffer, page );
+        buffer.flip();
+        return PropertyStore.readArrayFromBuffer( buffer );
     }
 }

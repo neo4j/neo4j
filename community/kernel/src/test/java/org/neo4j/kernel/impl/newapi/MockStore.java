@@ -63,8 +63,6 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
-import org.neo4j.values.storable.ArrayValue;
-import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 
 import static org.mockito.Mockito.mock;
@@ -129,24 +127,6 @@ public class MockStore extends Read implements TestRule
 
     @Override
     PageCursor groupPage( long reference )
-    {
-        return null;
-    }
-
-    @Override
-    PageCursor propertyPage( long reference )
-    {
-        return null;
-    }
-
-    @Override
-    PageCursor stringPage( long reference )
-    {
-        return null;
-    }
-
-    @Override
-    PageCursor arrayPage( long reference )
     {
         return null;
     }
@@ -528,12 +508,6 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
-    void property( PropertyRecord record, long reference, PageCursor pageCursor )
-    {
-        initialize( record, reference, properties );
-    }
-
-    @Override
     void group( RelationshipGroupRecord record, long reference, PageCursor page )
     {
         throw new UnsupportedOperationException( "not implemented" );
@@ -541,18 +515,6 @@ public class MockStore extends Read implements TestRule
 
     @Override
     long relationshipHighMark()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    TextValue string( StorePropertyCursor cursor, long reference, PageCursor page )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    ArrayValue array( StorePropertyCursor cursor, long reference, PageCursor page )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
