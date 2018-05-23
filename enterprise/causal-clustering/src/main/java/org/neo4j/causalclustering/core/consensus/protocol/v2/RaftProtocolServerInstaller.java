@@ -30,8 +30,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.neo4j.causalclustering.messaging.marshalling.v2.decoding.ContentTypeDispatcher;
 import org.neo4j.causalclustering.messaging.marshalling.v2.ContentTypeProtocol;
+import org.neo4j.causalclustering.messaging.marshalling.v2.decoding.ContentTypeDispatcher;
 import org.neo4j.causalclustering.messaging.marshalling.v2.decoding.DecodingDispatcher;
 import org.neo4j.causalclustering.messaging.marshalling.v2.decoding.RaftMessageComposer;
 import org.neo4j.causalclustering.messaging.marshalling.v2.decoding.ReplicatedContentDecoder;
@@ -76,12 +76,14 @@ public class RaftProtocolServerInstaller implements ProtocolInstaller<Orientatio
     {
 
         ContentTypeProtocol contentTypeProtocol = new ContentTypeProtocol();
+        DecodingDispatcher decodingDispatcher = new DecodingDispatcher( contentTypeProtocol, logProvider );
         pipelineBuilderFactory
                 .server( channel, log )
                 .modify( modifiers )
                 .addFraming()
+                .onClose( decodingDispatcher::close )
                 .add( "raft_content_type_dispatcher", new ContentTypeDispatcher( contentTypeProtocol ) )
-                .add( "raft_component_decoder", new DecodingDispatcher( contentTypeProtocol, logProvider ) )
+                .add( "raft_component_decoder", decodingDispatcher )
                 .add( "raft_content_decoder", new ReplicatedContentDecoder( contentTypeProtocol ) )
                 .add( "raft_message_composer", new RaftMessageComposer( Clock.systemUTC() ) )
                 .add( "raft_handler", raftMessageHandler )

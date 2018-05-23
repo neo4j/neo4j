@@ -26,20 +26,19 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
 import java.time.Clock;
-import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
-import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 
 public class RaftMessageComposer extends MessageToMessageDecoder<Object>
 {
     private final Queue<ReplicatedContent> replicatedContents = new LinkedBlockingQueue<>();
-    private final RaftLogEntries raftLogEntries = new RaftLogEntries();
+    private final Queue<Long> raftLogEntries = new LinkedBlockingQueue<>();
+    private RaftMessageDecoder.RaftMessageCreator messageCreator;
     private final Clock clock;
 
     public RaftMessageComposer( Clock clock )
@@ -54,38 +53,60 @@ public class RaftMessageComposer extends MessageToMessageDecoder<Object>
         {
             replicatedContents.add( (ReplicatedContent) msg );
         }
-        else if ( msg instanceof RaftLogEntryTermDecoder.RaftLogEntryTerm )
+        else if ( msg instanceof RaftLogEntryTermsDecoder.RaftLogEntryTerms )
         {
-            long term = ((RaftLogEntryTermDecoder.RaftLogEntryTerm) msg).term();
-            raftLogEntries.add( new RaftLogEntry( term, replicatedContents.poll() ) );
+            for ( long term : ((RaftLogEntryTermsDecoder.RaftLogEntryTerms) msg).terms() )
+            {
+                raftLogEntries.add( term );
+            }
         }
         else if ( msg instanceof RaftMessageDecoder.RaftMessageCreator )
         {
-            RaftMessageDecoder.RaftMessageCreator messageCreator = (RaftMessageDecoder.RaftMessageCreator) msg;
-            out.add( RaftMessages.ReceivedInstantClusterIdAwareMessage.of( clock.instant(), messageCreator.clusterId(),
-                    messageCreator.result().apply( raftLogEntries, replicatedContents::poll ) ) );
+            if ( messageCreator != null )
+            {
+                throw new IllegalStateException( "Received raft message header. Pipeline already contains message header waiting to build." );
+            }
+            messageCreator = (RaftMessageDecoder.RaftMessageCreator) msg;
         }
         else
         {
             throw new IllegalStateException( "Unexpected object in the pipeline: " + msg );
         }
+        if ( messageCreator != null )
+        {
+            RaftMessages.ClusterIdAwareMessage clusterIdAwareMessage = messageCreator.maybeCompose( clock, raftLogEntries, replicatedContents );
+            if ( clusterIdAwareMessage != null )
+            {
+                clear( clusterIdAwareMessage.toString() );
+                out.add( clusterIdAwareMessage );
+            }
+        }
     }
 
-    private class RaftLogEntries implements Supplier<RaftLogEntry[]>
+    private void clear( String messageDescription )
     {
-        private final ArrayList<RaftLogEntry> raftLogEntries = new ArrayList<>();
-
-        void add( RaftLogEntry raftLogEntry )
+        messageCreator = null;
+        if ( !replicatedContents.isEmpty() || !raftLogEntries.isEmpty() )
         {
-            raftLogEntries.add( raftLogEntry );
+            throw new IllegalStateException( String.format(
+                    "Message [%s] was composed without using all resources in the pipeline. " +
+                            "Pipeline still contains Replicated contents[%s] and RaftLogEntries [%s]",
+                    messageDescription, stringify( replicatedContents ), stringify( raftLogEntries ) ) );
         }
+    }
 
-        @Override
-        public RaftLogEntry[] get()
+    private String stringify( Iterable<?> objects )
+    {
+        StringBuilder stringBuilder = new StringBuilder();
+        Iterator<?> iterator = objects.iterator();
+        while ( iterator.hasNext() )
         {
-            RaftLogEntry[] array = this.raftLogEntries.toArray( RaftLogEntry.empty );
-            raftLogEntries.clear();
-            return array;
+            stringBuilder.append( iterator.next() );
+            if ( iterator.hasNext() )
+            {
+                stringBuilder.append( ", " );
+            }
         }
+        return stringBuilder.toString();
     }
 }

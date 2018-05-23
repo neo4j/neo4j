@@ -32,14 +32,19 @@ import java.util.List;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentSerializer;
 
-public class ReplicatedContentChunkDecoder extends ByteToMessageDecoder
+public class ReplicatedContentChunkDecoder extends ByteToMessageDecoder implements AutoCloseable
 {
     private UnfinishedChunk unfinishedChunk;
     private final CoreReplicatedContentSerializer coreReplicatedContentSerializer = new CoreReplicatedContentSerializer();
+    private boolean closed;
 
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out ) throws Exception
     {
+        if ( closed )
+        {
+            return;
+        }
         try
         {
 
@@ -83,12 +88,23 @@ public class ReplicatedContentChunkDecoder extends ByteToMessageDecoder
         }
         catch ( Exception e )
         {
-            if ( unfinishedChunk != null )
-            {
-                unfinishedChunk.release();
-            }
+            release();
             throw e;
         }
+    }
+
+    private void release()
+    {
+        if ( unfinishedChunk != null )
+        {
+            unfinishedChunk.release();
+        }
+    }
+
+    public void close()
+    {
+        closed = true;
+        release();
     }
 
     private static class UnfinishedChunk extends DefaultByteBufHolder

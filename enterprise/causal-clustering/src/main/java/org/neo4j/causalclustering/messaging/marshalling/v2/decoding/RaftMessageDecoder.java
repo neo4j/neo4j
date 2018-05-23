@@ -27,9 +27,10 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.util.List;
+import java.util.Queue;
 import java.util.function.BiFunction;
-import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.Protocol;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
@@ -73,7 +74,7 @@ public class RaftMessageDecoder extends ByteToMessageDecoder
         RaftMessages.Type messageType = values[messageTypeWire];
 
         MemberId from = retrieveMember( channel );
-        BiFunction<Supplier<RaftLogEntry[]>,Supplier<ReplicatedContent>,RaftMessages.BaseRaftMessage> result;
+        BiFunction<Queue<Long>,Queue<ReplicatedContent>,RaftMessages.BaseRaftMessage> result;
 
         if ( messageType.equals( VOTE_REQUEST ) )
         {
@@ -116,8 +117,29 @@ public class RaftMessageDecoder extends ByteToMessageDecoder
             long prevLogIndex = channel.getLong();
             long prevLogTerm = channel.getLong();
             long leaderCommit = channel.getLong();
+            int raftLogEntries = channel.getInt();
 
-            result = ( rle, rc ) -> new RaftMessages.AppendEntries.Request( from, term, prevLogIndex, prevLogTerm, rle.get(), leaderCommit );
+            result = ( rle, rc ) ->
+            {
+                if ( rle.size() < raftLogEntries || rc.size() < raftLogEntries )
+                {
+                    return null;
+                }
+                else
+                {
+                    RaftLogEntry[] entries = new RaftLogEntry[raftLogEntries];
+                    for ( int i = 0; i < raftLogEntries; i++ )
+                    {
+                        Long poll = rle.poll();
+                        if ( poll == null )
+                        {
+                            throw new IllegalArgumentException( "Term cannot be null" );
+                        }
+                        entries[i] = new RaftLogEntry( poll, rc.poll() );
+                    }
+                    return new RaftMessages.AppendEntries.Request( from, term, prevLogIndex, prevLogTerm, entries, leaderCommit );
+                }
+            };
         }
         else if ( messageType.equals( APPEND_ENTRIES_RESPONSE ) )
         {
@@ -130,7 +152,17 @@ public class RaftMessageDecoder extends ByteToMessageDecoder
         }
         else if ( messageType.equals( NEW_ENTRY_REQUEST ) )
         {
-            result = ( rle, rc ) -> new RaftMessages.NewEntry.Request( from, rc.get() );
+            result = ( rle, rc ) ->
+            {
+                if ( rc.isEmpty() )
+                {
+                    return null;
+                }
+                else
+                {
+                    return new RaftMessages.NewEntry.Request( from, rc.poll() );
+                }
+            };
         }
         else if ( messageType.equals( HEARTBEAT ) )
         {
@@ -157,33 +189,36 @@ public class RaftMessageDecoder extends ByteToMessageDecoder
         }
 
         list.add( new RaftMessageCreator( result, clusterId ) );
-        protocol.expect( ContentType.MessageType );
+        protocol.expect( ContentType.ContentType );
     }
 
-    private BiFunction<Supplier<RaftLogEntry[]>,Supplier<ReplicatedContent>,RaftMessages.BaseRaftMessage> noContent( RaftMessages.BaseRaftMessage message )
+    private BiFunction<Queue<Long>,Queue<ReplicatedContent>,RaftMessages.BaseRaftMessage> noContent( RaftMessages.BaseRaftMessage message )
     {
         return ( rle, rc ) -> message;
     }
 
-    class RaftMessageCreator
+    static class RaftMessageCreator
     {
-        private final BiFunction<Supplier<RaftLogEntry[]>,Supplier<ReplicatedContent>,RaftMessages.BaseRaftMessage> result;
+        private final BiFunction<Queue<Long>,Queue<ReplicatedContent>,RaftMessages.BaseRaftMessage> result;
         private final ClusterId clusterId;
 
-        RaftMessageCreator( BiFunction<Supplier<RaftLogEntry[]>,Supplier<ReplicatedContent>,RaftMessages.BaseRaftMessage> result, ClusterId clusterId )
+        RaftMessageCreator( BiFunction<Queue<Long>,Queue<ReplicatedContent>,RaftMessages.BaseRaftMessage> result, ClusterId clusterId )
         {
             this.result = result;
             this.clusterId = clusterId;
         }
 
-        public ClusterId clusterId()
+        RaftMessages.ClusterIdAwareMessage maybeCompose( Clock clock, Queue<Long> logEntryTerms, Queue<ReplicatedContent> replicatedContents )
         {
-            return clusterId;
-        }
-
-        public BiFunction<Supplier<RaftLogEntry[]>,Supplier<ReplicatedContent>,RaftMessages.BaseRaftMessage> result()
-        {
-            return result;
+            RaftMessages.BaseRaftMessage apply = result.apply( logEntryTerms, replicatedContents );
+            if ( apply != null )
+            {
+                return RaftMessages.ReceivedInstantClusterIdAwareMessage.of( clock.instant(), clusterId, apply );
+            }
+            else
+            {
+                return null;
+            }
         }
     }
 

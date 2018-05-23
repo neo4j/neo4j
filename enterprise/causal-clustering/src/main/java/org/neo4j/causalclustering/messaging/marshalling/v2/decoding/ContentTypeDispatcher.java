@@ -43,7 +43,7 @@ public class ContentTypeDispatcher extends ByteToMessageDecoder
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out )
     {
-        if ( contentTypeProtocol.isExpecting( ContentType.MessageType ) )
+        if ( contentTypeProtocol.isExpecting( ContentType.ContentType ) )
         {
             byte b = in.readByte();
             ContentType contentType = getContentType( b );

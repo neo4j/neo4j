@@ -31,21 +31,25 @@ public class RaftLogEntryTermEncoder extends MessageToByteEncoder<RaftLogEntryTe
     @Override
     protected void encode( ChannelHandlerContext ctx, RaftLogEntryTermSerializer msg, ByteBuf out )
     {
-        out.writeLong( msg.term );
+        out.writeInt( msg.terms.length );
+        for ( long term : msg.terms )
+        {
+            out.writeLong( term );
+        }
     }
 
-    static RaftLogEntryTermSerializer serializable( long term )
+    static RaftLogEntryTermSerializer serializable( long[] terms )
     {
-        return new RaftLogEntryTermSerializer( term );
+        return new RaftLogEntryTermSerializer( terms );
     }
 
     static class RaftLogEntryTermSerializer
     {
-        private final long term;
+        private final long[] terms;
 
-        private RaftLogEntryTermSerializer( long term )
+        private RaftLogEntryTermSerializer( long[] terms )
         {
-            this.term = term;
+            this.terms = terms;
         }
     }
 }
