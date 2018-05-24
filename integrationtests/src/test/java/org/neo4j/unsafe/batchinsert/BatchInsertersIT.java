@@ -30,7 +30,6 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.neo4j.unsafe.batchinsert.BatchInserters.inserter;
 
@@ -39,8 +38,6 @@ public class BatchInsertersIT
 
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
 
     @Test
     public void shouldStartBatchInserterWithRealIndexProvider() throws Exception
