@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
-import org.opencypher.v9_0.util.attribution.Id
 import org.neo4j.cypher.internal.runtime.{LongArrayHashMultiMap, PrefetchingIterator}
+import org.opencypher.v9_0.util.attribution.Id
 
 case class NodeHashJoinSlottedPipe(lhsOffsets: Array[Int],
                                    rhsOffsets: Array[Int],
@@ -95,8 +95,10 @@ case class NodeHashJoinSlottedPipe(lhsOffsets: Array[Int],
           fillKeyArray(currentRhsRow, key, rhsOffsets)
           if (key(0) != -1 /*If we have nulls in the key, no match will be found*/ ) {
             matches = probeTable.get(key)
-            // If we did not recurse back in like this, we would have to double up on the logic for creating output rows from matches
-            return produceNext()
+            if (matches.hasNext) {
+              // If we did not recurse back in like this, we would have to double up on the logic for creating output rows from matches
+              return produceNext()
+            }
           }
         }
 
