@@ -91,7 +91,12 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-slotted-runtime</artifactId>
+      <artifactId>neo4j-codegen</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-logical-plans-3.5</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
