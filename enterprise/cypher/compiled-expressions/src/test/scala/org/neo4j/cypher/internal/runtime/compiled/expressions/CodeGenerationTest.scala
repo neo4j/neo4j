@@ -73,7 +73,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     value should (be > 0.0 and be <= 1.0)
   }
 
-  test("add function") {
+  test("add numbers") {
     // Given
     val expression = add(literalInt(42), literalInt(10))
 
@@ -82,6 +82,18 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
     // Then
     compiled.compute(ctx, tx, EMPTY_MAP) should equal(longValue(52))
+  }
+
+  test("add with NO_VALUE") {
+    // Given
+    val expression = add(parameter("a"), parameter("b"))
+
+    // When
+    val compiled = compile(expression)
+
+    // Then
+    compiled.compute(ctx, tx, map(Array("a", "b"), Array(longValue(42), NO_VALUE))) should equal(NO_VALUE)
+    compiled.compute(ctx, tx, map(Array("a", "b"), Array(NO_VALUE, longValue(42)))) should equal(NO_VALUE)
   }
 
   test("subtract function") {
