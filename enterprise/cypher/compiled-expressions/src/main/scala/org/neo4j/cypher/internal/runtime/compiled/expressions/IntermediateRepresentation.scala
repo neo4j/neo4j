@@ -35,6 +35,9 @@ case class Integer(value: IntegralValue) extends IntermediateRepresentation
 case class Float(value: FloatingPointValue) extends IntermediateRepresentation
 case class StringLiteral(value: TextValue) extends IntermediateRepresentation
 case class Constant(value: Any) extends IntermediateRepresentation
+case object NULL extends IntermediateRepresentation
+case object TRUE extends IntermediateRepresentation
+case object FALSE extends IntermediateRepresentation
 
 case class Method(owner: Class[_], output: Class[_], name: String, params: Class[_]* ) {
   def asReference: MethodReference = MethodReference.methodReference(owner, output, name, params:_*)
@@ -53,18 +56,15 @@ object IntermediateRepresentation {
                                    in2: ClassTag[IN2]) =
     Method(owner.runtimeClass, out.runtimeClass, name, in1.runtimeClass, in2.runtimeClass)
 
-  def invokeStatic(method: Method, params: IntermediateRepresentation*) = InvokeStatic(method, params)
-
-  def invoke(owner: IntermediateRepresentation, method: Method, params: IntermediateRepresentation*) =
+  def invokeStatic(method: Method, params: IntermediateRepresentation*): IntermediateRepresentation = InvokeStatic(method, params)
+  def invoke(owner: IntermediateRepresentation, method: Method, params: IntermediateRepresentation*): IntermediateRepresentation =
     Invoke(owner, method, params)
-
-  def load(variable: String) = Load(variable)
-
-  def integer(value: IntegralValue) = Integer(value)
-
-  def float(value: FloatingPointValue) = Float(value)
-
-  def string(value: TextValue) = StringLiteral(value)
-
-  def constant(value: Any) = Constant(value)
+  def load(variable: String): IntermediateRepresentation = Load(variable)
+  def integer(value: IntegralValue): IntermediateRepresentation = Integer(value)
+  def float(value: FloatingPointValue): IntermediateRepresentation = Float(value)
+  def string(value: TextValue): IntermediateRepresentation = StringLiteral(value)
+  def noValue: IntermediateRepresentation = NULL
+  def truthy: IntermediateRepresentation = TRUE
+  def falsy: IntermediateRepresentation = FALSE
+  def constantJavaValue(value: Any): IntermediateRepresentation = Constant(value)
 }

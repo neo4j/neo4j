@@ -26,6 +26,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.{doubleValue, longValue}
 import org.neo4j.values.storable.{DoubleValue, Values}
 import org.neo4j.values.virtual.MapValue
+import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions._
 
 
@@ -75,11 +76,15 @@ object IntermediateCodeGeneration {
       }
 
     case Parameter(name, _) =>
-      Some(invoke(load("params"), method[MapValue, AnyValue, String]("get"), constant(name)))
+      Some(invoke(load("params"), method[MapValue, AnyValue, String]("get"), constantJavaValue(name)))
 
     case d: DoubleLiteral => Some(float(doubleValue(d.value)))
-
     case i: IntegerLiteral => Some(integer(longValue(i.value)))
+    case s: expressions.StringLiteral => Some(string(Values.stringValue(s.value)))
+    case _: Null => Some(noValue)
+    case _: True => Some(truthy)
+    case _: False => Some(falsy)
+
 
     case _ => None
   }
