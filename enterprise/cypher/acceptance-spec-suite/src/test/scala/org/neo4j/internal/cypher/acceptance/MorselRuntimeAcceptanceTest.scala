@@ -331,11 +331,27 @@ class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
     // When
     val result = graph.execute("CYPHER runtime=morsel MATCH (n: Person) WHERE n.name = 'Satia42' AND n.age = 42 RETURN n.name, n.age ")
 
-    println(result.getExecutionPlanDescription)
-
     // Then
     val resultSet = asScalaResult(result).toSet
     resultSet should equal(Set(Map("n.name" -> "Satia42", "n.age" -> 42)))
+    result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
+  }
+
+  test("should support range queries") {
+    // Given
+    graph.createIndex("Person", "age")
+    graph.inTx(graph.schema().awaitIndexesOnline(5, TimeUnit.SECONDS))
+    val names = (1 to 91).map(i => (i, s"Satia$i"))
+    names.foreach {
+      case (i,name) => createLabeledNode(Map("name" -> name, "age" -> i), "Person")
+    }
+
+    // When
+    val result = graph.execute("CYPHER runtime=morsel MATCH (n: Person) WHERE n.age < 42 RETURN n.name, n.age ")
+
+    // Then
+    val resultSet = asScalaResult(result).toSet
+    resultSet.map(map => map("n.name")) should equal((1 to 41).map(i => s"Satia$i").toSet)
     result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
   }
 
