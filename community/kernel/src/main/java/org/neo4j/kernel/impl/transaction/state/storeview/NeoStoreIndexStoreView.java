@@ -112,6 +112,13 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     }
 
     @Override
+    public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( final int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
+            final Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor )
+    {
+        return new RelationshipStoreScan<>( relationshipStore, locks, propertyStore, propertyUpdatesVisitor, relationshipTypeIds, propertyKeyIdFilter );
+    }
+
+    @Override
     public EntityUpdates nodeAsUpdates( long nodeId )
     {
         NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );
@@ -142,7 +149,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public Value getPropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException
+    public Value getNodePropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException
     {
         NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );
         if ( !node.inUse() )

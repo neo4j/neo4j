@@ -73,7 +73,7 @@ public class DuplicateCheckingCollector extends SimpleCollector
     {
         Document document = reader.document( doc );
         long nodeId = LuceneDocumentStructure.getNodeId( document );
-        Value value = accessor.getPropertyValue( nodeId, propertyKeyId );
+        Value value = accessor.getNodePropertyValue( nodeId, propertyKeyId );
         duplicateCheckStrategy.checkForDuplicate( value, nodeId );
     }
 

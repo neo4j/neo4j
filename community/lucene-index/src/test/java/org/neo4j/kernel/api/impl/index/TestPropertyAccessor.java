@@ -34,7 +34,7 @@ public class TestPropertyAccessor implements PropertyAccessor
     }
 
     @Override
-    public Value getPropertyValue( long nodeId, int propertyKeyId )
+    public Value getNodePropertyValue( long nodeId, int propertyKeyId )
     {
         return propertyValues.get( (int)nodeId );
     }

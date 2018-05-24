@@ -233,8 +233,8 @@ public class UniqueDatabaseIndexPopulatorTest
         addUpdate( populator, 2, "value2" );
         addUpdate( populator, 3, value );
 
-        when( propertyAccessor.getPropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( Values.of( value ) );
-        when( propertyAccessor.getPropertyValue( 3, PROPERTY_KEY_ID ) ).thenReturn( Values.of( value ) );
+        when( propertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( Values.of( value ) );
+        when( propertyAccessor.getNodePropertyValue( 3, PROPERTY_KEY_ID ) ).thenReturn( Values.of( value ) );
 
         // when
         try
@@ -262,8 +262,8 @@ public class UniqueDatabaseIndexPopulatorTest
         addUpdate( populator, 2, 2 );
         addUpdate( populator, 3, 1 );
 
-        when( propertyAccessor.getPropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( Values.of( 1 ) );
-        when( propertyAccessor.getPropertyValue( 3, PROPERTY_KEY_ID ) ).thenReturn( Values.of( 1 ) );
+        when( propertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( Values.of( 1 ) );
+        when( propertyAccessor.getNodePropertyValue( 3, PROPERTY_KEY_ID ) ).thenReturn( Values.of( 1 ) );
 
         // when
         try
@@ -291,8 +291,8 @@ public class UniqueDatabaseIndexPopulatorTest
         addUpdate( populator, 2, "value2" );
 
         Value value = Values.of( "value1" );
-        when( propertyAccessor.getPropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( value );
-        when( propertyAccessor.getPropertyValue( 3, PROPERTY_KEY_ID ) ).thenReturn( value );
+        when( propertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( value );
+        when( propertyAccessor.getNodePropertyValue( 3, PROPERTY_KEY_ID ) ).thenReturn( value );
 
         // when
         try
@@ -324,8 +324,8 @@ public class UniqueDatabaseIndexPopulatorTest
         addUpdate( populator, 2, valueString );
 
         Value value = Values.of( valueString );
-        when( propertyAccessor.getPropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( value );
-        when( propertyAccessor.getPropertyValue( 2, PROPERTY_KEY_ID ) ).thenReturn( value );
+        when( propertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( value );
+        when( propertyAccessor.getNodePropertyValue( 2, PROPERTY_KEY_ID ) ).thenReturn( value );
 
         // when
         try
@@ -349,7 +349,7 @@ public class UniqueDatabaseIndexPopulatorTest
         // given
         populator = newPopulator();
 
-        when( propertyAccessor.getPropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn(
+        when( propertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn(
                 Values.of( "value1" ) );
 
         IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
@@ -381,8 +381,8 @@ public class UniqueDatabaseIndexPopulatorTest
         addUpdate( populator, 3, 1000000000000000001L );
 
         // ... but the actual data in the store does not collide
-        when( propertyAccessor.getPropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( Values.of( 1000000000000000001L ) );
-        when( propertyAccessor.getPropertyValue( 3, PROPERTY_KEY_ID ) ).thenReturn( Values.of( 1000000000000000002L ) );
+        when( propertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( Values.of( 1000000000000000001L ) );
+        when( propertyAccessor.getNodePropertyValue( 3, PROPERTY_KEY_ID ) ).thenReturn( Values.of( 1000000000000000002L ) );
 
         // Then our verification should NOT fail:
         populator.verifyDeferredConstraints( propertyAccessor );
@@ -400,13 +400,13 @@ public class UniqueDatabaseIndexPopulatorTest
         for ( int nodeId = 0; nodeId < iterations; nodeId++ )
         {
             updater.process( add( nodeId, schemaDescriptor, 1 ) );
-            when( propertyAccessor.getPropertyValue( nodeId, PROPERTY_KEY_ID ) ).thenReturn(
+            when( propertyAccessor.getNodePropertyValue( nodeId, PROPERTY_KEY_ID ) ).thenReturn(
                     Values.of( nodeId ) );
         }
 
         // ... and the actual conflicting property:
         updater.process( add( iterations, schemaDescriptor, 1 ) );
-        when( propertyAccessor.getPropertyValue( iterations, PROPERTY_KEY_ID ) ).thenReturn(
+        when( propertyAccessor.getNodePropertyValue( iterations, PROPERTY_KEY_ID ) ).thenReturn(
                 Values.of( 1 ) ); // This collision is real!!!
 
         // when
@@ -435,13 +435,13 @@ public class UniqueDatabaseIndexPopulatorTest
         for ( int nodeId = 0; nodeId < iterations; nodeId++ )
         {
             addUpdate( populator, nodeId, 1 );
-            when( propertyAccessor.getPropertyValue( nodeId, PROPERTY_KEY_ID ) ).thenReturn(
+            when( propertyAccessor.getNodePropertyValue( nodeId, PROPERTY_KEY_ID ) ).thenReturn(
                     Values.of( nodeId ) );
         }
 
         // ... and the actual conflicting property:
         addUpdate( populator, iterations, 1 );
-        when( propertyAccessor.getPropertyValue( iterations, PROPERTY_KEY_ID ) ).thenReturn(
+        when( propertyAccessor.getNodePropertyValue( iterations, PROPERTY_KEY_ID ) ).thenReturn(
                 Values.of( 1 ) ); // This collision is real!!!
 
         // when

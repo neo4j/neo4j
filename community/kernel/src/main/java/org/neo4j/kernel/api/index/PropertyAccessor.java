@@ -27,5 +27,5 @@ import org.neo4j.values.storable.Value;
  */
 public interface PropertyAccessor
 {
-    Value getPropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
+    Value getNodePropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 }

@@ -100,7 +100,7 @@ public class IndexPopulationJob implements Runnable
                 multiPopulator.resetIndexCounts();
 
                 monitor.indexPopulationScanStarting();
-                indexAllNodes();
+                indexAllEntities();
                 monitor.indexPopulationScanComplete();
                 if ( cancelled )
                 {
@@ -124,9 +124,9 @@ public class IndexPopulationJob implements Runnable
         }
     }
 
-    private void indexAllNodes() throws IndexPopulationFailedKernelException
+    private void indexAllEntities() throws IndexPopulationFailedKernelException
     {
-        storeScan = multiPopulator.indexAllNodes();
+        storeScan = multiPopulator.indexAllEntities();
         storeScan.run();
     }
 

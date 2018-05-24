@@ -65,7 +65,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
-import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 @RunWith( MockitoJUnitRunner.class )
 public class MultipleIndexPopulatorTest
@@ -178,7 +177,7 @@ public class MultipleIndexPopulatorTest
 
         multipleIndexPopulator.cancelIndexPopulation( populationToCancel );
 
-        multipleIndexPopulator.indexAllNodes();
+        multipleIndexPopulator.indexAllEntities();
 
         assertTrue( multipleIndexPopulator.hasPopulators() );
 
@@ -200,7 +199,7 @@ public class MultipleIndexPopulatorTest
 
         multipleIndexPopulator.cancelIndexPopulation( populationToCancel );
 
-        multipleIndexPopulator.indexAllNodes();
+        multipleIndexPopulator.indexAllEntities();
 
         assertTrue( multipleIndexPopulator.hasPopulators() );
 
@@ -219,7 +218,7 @@ public class MultipleIndexPopulatorTest
         addPopulator( indexPopulator2, 2 );
 
         multipleIndexPopulator.create();
-        multipleIndexPopulator.indexAllNodes();
+        multipleIndexPopulator.indexAllEntities();
 
         verify( indexStoreView )
                 .visitNodes( any( int[].class ), any( IntPredicate.class ), any( Visitor.class ), isNull(),
@@ -365,7 +364,7 @@ public class MultipleIndexPopulatorTest
 
         when( indexPopulator1.sampleResult() ).thenThrow( getSampleError() );
 
-        multipleIndexPopulator.indexAllNodes();
+        multipleIndexPopulator.indexAllEntities();
         multipleIndexPopulator.flipAfterPopulation();
 
         verify( indexPopulator1 ).close( false );

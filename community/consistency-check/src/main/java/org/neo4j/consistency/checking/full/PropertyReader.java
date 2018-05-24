@@ -99,7 +99,7 @@ public class PropertyReader implements PropertyAccessor
     }
 
     @Override
-    public Value getPropertyValue( long nodeId, int propertyKeyId )
+    public Value getNodePropertyValue( long nodeId, int propertyKeyId )
     {
         NodeRecord nodeRecord = nodeStore.newRecord();
         if ( nodeStore.getRecord( nodeId, nodeRecord, FORCE ).inUse() )

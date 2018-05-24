@@ -88,6 +88,13 @@ public class DynamicIndexStoreView implements IndexStoreView
     }
 
     @Override
+    public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
+            Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor )
+    {
+        return new RelationshipStoreScan<>( relationshipStore, locks, propertyStore, propertyUpdateVisitor, relationshipTypeIds, propertyKeyIdFilter );
+    }
+
+    @Override
     public EntityUpdates nodeAsUpdates( long nodeId )
     {
         return neoStoreIndexStoreView.nodeAsUpdates( nodeId );
@@ -136,9 +143,9 @@ public class DynamicIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public Value getPropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException
+    public Value getNodePropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException
     {
-        return neoStoreIndexStoreView.getPropertyValue( nodeId, propertyKeyId );
+        return neoStoreIndexStoreView.getNodePropertyValue( nodeId, propertyKeyId );
     }
 
     @Override

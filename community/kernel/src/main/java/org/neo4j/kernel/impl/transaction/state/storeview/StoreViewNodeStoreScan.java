@@ -19,39 +19,26 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.apache.commons.lang3.ArrayUtils;
-
-import java.util.Iterator;
 import java.util.function.IntPredicate;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
-import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PropertyBlock;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.values.storable.Value;
 
-import static java.util.Collections.emptyIterator;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
-public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStoreScan<FAILURE>
+public class StoreViewNodeStoreScan<FAILURE extends Exception> extends PropertyAwareEntityStoreScan<NodeRecord,FAILURE>
 {
-    private final PropertyStore propertyStore;
+    private final NodeStore nodeStore;
 
     private final Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor;
     private final Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor;
-    private final IntPredicate propertyKeyIdFilter;
     protected final int[] labelIds;
 
     public StoreViewNodeStoreScan( NodeStore nodeStore, LockService locks, PropertyStore propertyStore,
@@ -59,26 +46,18 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
             Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
             int[] labelIds, IntPredicate propertyKeyIdFilter )
     {
-        super( nodeStore, locks, nodeStore.getHighId() );
-        this.propertyStore = propertyStore;
+        super( nodeStore, propertyStore, propertyKeyIdFilter, id -> locks.acquireNodeLock( id, LockService.LockType.READ_LOCK ) );
+        this.nodeStore = nodeStore;
         this.labelUpdateVisitor = labelUpdateVisitor;
         this.propertyUpdatesVisitor = propertyUpdatesVisitor;
         this.labelIds = labelIds;
-
-        this.propertyKeyIdFilter = propertyKeyIdFilter;
-    }
-
-    @Override
-    protected PrimitiveLongResourceIterator getNodeIdIterator()
-    {
-        return super.getNodeIdIterator();
     }
 
     @Override
     public void process( NodeRecord node ) throws FAILURE
     {
         long[] labels = parseLabelsField( node ).get( this.nodeStore );
-        if ( labels.length == 0 )
+        if ( labels.length == 0 && labelIds.length != 0 )
         {
             // This node has no labels at all
             return;
@@ -90,101 +69,15 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
             labelUpdateVisitor.visit( labelChanges( node.getId(), EMPTY_LONG_ARRAY, labels ) );
         }
 
-        if ( propertyUpdatesVisitor != null && containsAnyLabel( labelIds, labels ) )
+        if ( propertyUpdatesVisitor != null && containsAnyEntityToken( labelIds, labels ) )
         {
             // Notify the property update visitor
             // TODO: reuse object instead? Better in terms of speed and GC?
             EntityUpdates.Builder updates = EntityUpdates.forEntity( node.getId(), labels );
-            boolean hasRelevantProperty = false;
 
-            for ( PropertyBlock property : properties( node ) )
-            {
-                int propertyKeyId = property.getKeyIndexId();
-                if ( propertyKeyIdFilter.test( propertyKeyId ) )
-                {
-                    // This node has a property of interest to us
-                    Value value = valueOf( property );
-                    // No need to validate values before passing them to the updater since the index implementation
-                    // is allowed to fail in which ever way it wants to. The result of failure will be the same as
-                    // a failed validation, i.e. population FAILED.
-                    updates.added( propertyKeyId, value );
-                    hasRelevantProperty = true;
-                }
-            }
-
-            if ( hasRelevantProperty )
+            if ( hasRelevantProperty(node, updates) )
             {
                 propertyUpdatesVisitor.visit( updates.build() );
-            }
-        }
-    }
-
-    private Iterable<PropertyBlock> properties( final NodeRecord node )
-    {
-        return () -> new PropertyBlockIterator( node );
-    }
-
-    private Value valueOf( PropertyBlock property )
-    {
-        // Make sure the value is loaded, even if it's of a "heavy" kind.
-        propertyStore.ensureHeavy( property );
-        return property.getType().value( property, propertyStore );
-    }
-
-    private static boolean containsAnyLabel( int[] labelIdFilter, long[] labels )
-    {
-        for ( long candidate : labels )
-        {
-            if ( ArrayUtils.contains( labelIdFilter, Math.toIntExact( candidate ) ) )
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Override
-    public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update,
-            long currentlyIndexedNodeId )
-    {
-        if ( update.getEntityId() <= currentlyIndexedNodeId )
-        {
-            updater.process( update );
-        }
-    }
-
-    private class PropertyBlockIterator extends PrefetchingIterator<PropertyBlock>
-    {
-        private final Iterator<PropertyRecord> records;
-        private Iterator<PropertyBlock> blocks = emptyIterator();
-
-        PropertyBlockIterator( NodeRecord node )
-        {
-            long firstPropertyId = node.getNextProp();
-            if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
-            {
-                records = emptyIterator();
-            }
-            else
-            {
-                records = propertyStore.getPropertyRecordChain( firstPropertyId ).iterator();
-            }
-        }
-
-        @Override
-        protected PropertyBlock fetchNextOrNull()
-        {
-            for ( ; ; )
-            {
-                if ( blocks.hasNext() )
-                {
-                    return blocks.next();
-                }
-                if ( !records.hasNext() )
-                {
-                    return null;
-                }
-                blocks = records.next().iterator();
             }
         }
     }

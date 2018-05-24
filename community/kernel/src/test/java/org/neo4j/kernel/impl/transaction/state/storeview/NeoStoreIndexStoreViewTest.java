@@ -33,6 +33,8 @@ import java.util.Set;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Visitor;
@@ -42,6 +44,7 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -52,6 +55,7 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngin
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.values.storable.Value;
@@ -78,17 +82,22 @@ public class NeoStoreIndexStoreViewTest
 
     private final Map<Long, Lock> lockMocks = new HashMap<>();
     private final Label label = Label.label( "Person" );
+    private final RelationshipType relationshipType = RelationshipType.withName( "Knows" );
 
     private GraphDatabaseAPI graphDb;
     private NeoStoreIndexStoreView storeView;
 
     private int labelId;
+    private int relTypeId;
     private int propertyKeyId;
+    private int relPropertyKeyId;
 
     private Node alistair;
     private Node stefan;
     private LockService locks;
     private NeoStores neoStores;
+    private Relationship aKnowsS;
+    private Relationship sKnowsA;
 
     @Before
     public void before() throws KernelException
@@ -107,6 +116,11 @@ public class NeoStoreIndexStoreViewTest
                     Long nodeId = invocation.getArgument( 0 );
                     return lockMocks.computeIfAbsent( nodeId, k -> mock( Lock.class ) );
                 } );
+        when( locks.acquireRelationshipLock( anyLong(), any() ) ).thenAnswer( invocation ->
+        {
+            Long nodeId = invocation.getArgument( 0 );
+            return lockMocks.computeIfAbsent( nodeId, k -> mock( Lock.class ) );
+        } );
         storeView = new NeoStoreIndexStoreView( locks, neoStores );
     }
 
@@ -114,7 +128,7 @@ public class NeoStoreIndexStoreViewTest
     public void shouldScanExistingNodesForALabel() throws Exception
     {
         // given
-        NodeUpdateCollectingVisitor visitor = new NodeUpdateCollectingVisitor();
+        EntityUpdateCollectingVisitor visitor = new EntityUpdateCollectingVisitor();
         @SuppressWarnings( "unchecked" )
         Visitor<NodeLabelUpdate,Exception> labelVisitor = mock( Visitor.class );
         StoreScan<Exception> storeScan =
@@ -132,16 +146,50 @@ public class NeoStoreIndexStoreViewTest
     }
 
     @Test
+    public void shouldScanExistingRelationshipsForARelationshiptype() throws Exception
+    {
+        // given
+        EntityUpdateCollectingVisitor visitor = new EntityUpdateCollectingVisitor();
+        @SuppressWarnings( "unchecked" )
+        StoreScan<Exception> storeScan =
+                storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor );
+
+        // when
+        storeScan.run();
+
+        // then
+        assertEquals( asSet( add( aKnowsS.getId(), relPropertyKeyId, "long", new long[]{relTypeId} ),
+                add( sKnowsA.getId(), relPropertyKeyId, "lengthy", new long[]{relTypeId} ) ), visitor.getUpdates() );
+    }
+
+    @Test
     public void shouldIgnoreDeletedNodesDuringScan() throws Exception
     {
         // given
         deleteAlistairAndStefanNodes();
 
-        NodeUpdateCollectingVisitor visitor = new NodeUpdateCollectingVisitor();
+        EntityUpdateCollectingVisitor visitor = new EntityUpdateCollectingVisitor();
         @SuppressWarnings( "unchecked" )
         Visitor<NodeLabelUpdate,Exception> labelVisitor = mock( Visitor.class );
+        StoreScan<Exception> storeScan = storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, visitor, labelVisitor, false );
+
+        // when
+        storeScan.run();
+
+        // then
+        assertEquals( emptySet(), visitor.getUpdates() );
+    }
+
+    @Test
+    public void shouldIgnoreDeletedRelationshipsDuringScan() throws Exception
+    {
+        // given
+        deleteAlistairAndStefanNodes();
+
+        EntityUpdateCollectingVisitor visitor = new EntityUpdateCollectingVisitor();
+        @SuppressWarnings( "unchecked" )
         StoreScan<Exception> storeScan =
-                storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, visitor, labelVisitor, false );
+                storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor );
 
         // when
         storeScan.run();
@@ -176,9 +224,33 @@ public class NeoStoreIndexStoreViewTest
     }
 
     @Test
+    public void shouldLockRelationshipsWhileReadingThem() throws Exception
+    {
+        // given
+        @SuppressWarnings( "unchecked" )
+        Visitor<EntityUpdates,Exception> visitor = mock( Visitor.class );
+        StoreScan<Exception> storeScan = storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, visitor );
+
+        // when
+        storeScan.run();
+
+        // then
+        assertThat( "allocated locks: " + lockMocks.keySet(), lockMocks.size(), greaterThanOrEqualTo( 2 ) );
+        Lock lock0 = lockMocks.get( 0L );
+        Lock lock1 = lockMocks.get( 1L );
+        assertNotNull( "Lock[relationship=0] never acquired", lock0 );
+        assertNotNull( "Lock[relationship=1] never acquired", lock1 );
+        InOrder order = inOrder( locks, lock0, lock1 );
+        order.verify( locks ).acquireRelationshipLock( 0, LockService.LockType.READ_LOCK );
+        order.verify( lock0 ).release();
+        order.verify( locks ).acquireRelationshipLock( 1, LockService.LockType.READ_LOCK );
+        order.verify( lock1 ).release();
+    }
+
+    @Test
     public void shouldReadProperties() throws EntityNotFoundException
     {
-        Value value = storeView.getPropertyValue( alistair.getId(), propertyKeyId );
+        Value value = storeView.getNodePropertyValue( alistair.getId(), propertyKeyId );
         assertTrue( value.equals( Values.of( "Alistair" ) ) );
     }
 
@@ -212,6 +284,32 @@ public class NeoStoreIndexStoreViewTest
                 containsInAnyOrder( index1, index2, index3 ) );
     }
 
+    @Test
+    public void processAllRelationshipProperties() throws Exception
+    {
+        createAlistairAndStefanNodes();
+        CopyUpdateVisitor propertyUpdateVisitor = new CopyUpdateVisitor();
+        RelationshipStoreScan relationshipStoreScan =
+                new RelationshipStoreScan( neoStores.getRelationshipStore(), locks, neoStores.getPropertyStore(), propertyUpdateVisitor, new int[]{relTypeId},
+                        id -> true );
+
+        RelationshipRecord relationshipRecord = new RelationshipRecord( -1 );
+        neoStores.getRelationshipStore().getRecord( 1L, relationshipRecord, RecordLoad.FORCE );
+
+        relationshipStoreScan.process( relationshipRecord );
+
+        EntityUpdates propertyUpdates = propertyUpdateVisitor.getPropertyUpdates();
+        assertNotNull( "Visitor should contain container with updates.", propertyUpdates );
+
+        RelationTypeSchemaDescriptor index1 = SchemaDescriptorFactory.forRelType( 0, 2 );
+        RelationTypeSchemaDescriptor index2 = SchemaDescriptorFactory.forRelType( 0, 3 );
+        RelationTypeSchemaDescriptor index3 = SchemaDescriptorFactory.forRelType( 0, 2, 3 );
+        RelationTypeSchemaDescriptor index4 = SchemaDescriptorFactory.forRelType( 1, 3 );
+        List<RelationTypeSchemaDescriptor> indexes = Arrays.asList( index1, index2, index3, index4 );
+
+        assertThat( Iterables.map( IndexEntryUpdate::indexKey, propertyUpdates.forIndexKeys( indexes ) ), containsInAnyOrder( index1, index2, index3 ) );
+    }
+
     EntityUpdates add( long nodeId, int propertyKeyId, Object value, long[] labels )
     {
         return EntityUpdates.forEntity( nodeId, labels ).added( propertyKeyId, Values.of( value ) ).build();
@@ -227,6 +325,12 @@ public class NeoStoreIndexStoreViewTest
             stefan = graphDb.createNode( label );
             stefan.setProperty( "name", "Stefan" );
             stefan.setProperty( "country", "Deutschland" );
+            aKnowsS = alistair.createRelationshipTo( stefan, relationshipType );
+            aKnowsS.setProperty( "duration", "long" );
+            aKnowsS.setProperty( "irrelevant", "prop" );
+            sKnowsA = stefan.createRelationshipTo( alistair, relationshipType );
+            sKnowsA.setProperty( "duration", "lengthy" );
+            sKnowsA.setProperty( "irrelevant", "prop" );
             tx.success();
         }
     }
@@ -235,6 +339,8 @@ public class NeoStoreIndexStoreViewTest
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
+            aKnowsS.delete();
+            sKnowsA.delete();
             alistair.delete();
             stefan.delete();
             tx.success();
@@ -250,7 +356,9 @@ public class NeoStoreIndexStoreViewTest
 
             TokenWrite tokenWrite = bridge.getKernelTransactionBoundToThisThread( true ).tokenWrite();
             labelId = tokenWrite.labelGetOrCreateForName( "Person" );
+            relTypeId = tokenWrite.relationshipTypeGetOrCreateForName( "Knows" );
             propertyKeyId = tokenWrite.propertyKeyGetOrCreateForName( "name" );
+            relPropertyKeyId = tokenWrite.propertyKeyGetOrCreateForName( "duration" );
             tx.success();
         }
     }
@@ -273,7 +381,7 @@ public class NeoStoreIndexStoreViewTest
         }
     }
 
-    class NodeUpdateCollectingVisitor implements Visitor<EntityUpdates, Exception>
+    class EntityUpdateCollectingVisitor implements Visitor<EntityUpdates,Exception>
     {
         private final Set<EntityUpdates> updates = new HashSet<>();
 

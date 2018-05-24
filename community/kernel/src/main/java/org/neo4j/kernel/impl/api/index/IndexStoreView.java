@@ -57,6 +57,18 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
             boolean forceStoreScan );
 
     /**
+     * Retrieve all relationships in the database which has any of the the given relationship types AND
+     * one or more of the given property key ids.
+     *
+     * @param relationshipTypeIds array of relationsip type ids to generate updates for. Empty array means all.
+     * @param propertyKeyIdFilter property key ids to generate updates for.
+     * @param propertyUpdateVisitor visitor which will see all generated {@link EntityUpdates}
+     * @return a {@link StoreScan} to start and to stop the scan.
+     */
+    <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
+            Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor );
+
+    /**
      * Produces {@link EntityUpdates} objects from reading node {@code entityId}, its labels and properties
      * and puts those updates into node updates container.
      *
@@ -110,7 +122,7 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
         }
 
         @Override
-        public Value getPropertyValue( long nodeId, int propertyKeyId )
+        public Value getNodePropertyValue( long nodeId, int propertyKeyId )
         {
             return Values.NO_VALUE;
         }
@@ -120,6 +132,14 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
         public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
                 IntPredicate propertyKeyIdFilter, Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor,
                 Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor, boolean forceStoreScan )
+        {
+            return EMPTY_SCAN;
+        }
+
+        @SuppressWarnings( "unchecked" )
+        @Override
+        public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
+                Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor )
         {
             return EMPTY_SCAN;
         }

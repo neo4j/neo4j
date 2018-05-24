@@ -87,6 +87,7 @@ import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreS
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.values.storable.Values;
@@ -538,9 +539,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         }
 
         @Override
-        public PrimitiveLongResourceIterator getNodeIdIterator()
+        public PrimitiveLongResourceIterator getEntityIdIterator()
         {
-            PrimitiveLongResourceIterator originalIterator = delegate.getNodeIdIterator();
+            PrimitiveLongResourceIterator originalIterator = delegate.getEntityIdIterator();
             return new DelegatingPrimitiveLongResourceIterator( originalIterator, customAction );
         }
     }
@@ -632,7 +633,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                     for ( EntityUpdates update : updates )
                     {
                         Iterable<IndexEntryUpdate<SchemaDescriptor>> entryUpdates =
-                                indexService.convertToIndexUpdates( update );
+                                indexService.convertToIndexUpdates( update, EntityType.NODE );
                         DirectIndexUpdates directIndexUpdates = new DirectIndexUpdates( entryUpdates );
                         indexService.apply( directIndexUpdates );
                     }
