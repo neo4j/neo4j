@@ -107,6 +107,18 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.compute(ctx, tx, EMPTY_MAP) should equal(longValue(32))
   }
 
+  test("subtract with NO_VALUE") {
+    // Given
+    val expression = subtract(parameter("a"), parameter("b"))
+
+    // When
+    val compiled = compile(expression)
+
+    // Then
+    compiled.compute(ctx, tx, map(Array("a", "b"), Array(longValue(42), NO_VALUE))) should equal(NO_VALUE)
+    compiled.compute(ctx, tx, map(Array("a", "b"), Array(NO_VALUE, longValue(42)))) should equal(NO_VALUE)
+  }
+
   test("multiply function") {
     // Given
     val expression = multiply(literalInt(42), literalInt(10))
@@ -116,6 +128,18 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
     // Then
     compiled.compute(ctx, tx, EMPTY_MAP) should equal(longValue(420))
+  }
+
+  test("multiply with NO_VALUE") {
+    // Given
+    val expression = multiply(parameter("a"), parameter("b"))
+
+    // When
+    val compiled = compile(expression)
+
+    // Then
+    compiled.compute(ctx, tx, map(Array("a", "b"), Array(longValue(42), NO_VALUE))) should equal(NO_VALUE)
+    compiled.compute(ctx, tx, map(Array("a", "b"), Array(NO_VALUE, longValue(42)))) should equal(NO_VALUE)
   }
 
   test("extract parameter") {
