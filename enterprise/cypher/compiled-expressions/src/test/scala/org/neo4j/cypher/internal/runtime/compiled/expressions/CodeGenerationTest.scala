@@ -187,7 +187,6 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
   }
 
-
   private def compile(e: Expression) =
     CodeGeneration.compile(IntermediateCodeGeneration.compile(e).getOrElse(fail()))
 

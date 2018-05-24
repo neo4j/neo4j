@@ -23,15 +23,14 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.{ExecutionEngineFunSuite, ExecutionEngineTestSupport}
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.NodeProperty
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.{NodeProperty, RelationshipProperty}
 import org.neo4j.cypher.internal.runtime.compiled.expressions.{CodeGeneration, IntermediateCodeGeneration}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.opencypher.v9_0.ast.AstConstructionTestSupport
 import org.opencypher.v9_0.expressions.Expression
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class CompiledExpressionTest extends ExecutionEngineFunSuite with AstConstructionTestSupport {
 
@@ -41,7 +40,24 @@ class CompiledExpressionTest extends ExecutionEngineFunSuite with AstConstructio
     val offset = 42
     val ctx = mock[ExecutionContext]
     when(ctx.getLongAt(offset)).thenReturn(node)
-    val expression = NodeProperty(offset, graph.inTx(propertyToken("prop")), "prop")(null)
+    val expression = NodeProperty(offset, propertyToken("prop"), "prop")(null)
+
+    // When
+    val compiled = compile(expression)
+
+    // Then
+    graph.inTx(
+      compiled.compute(ctx, transaction, EMPTY_MAP) should equal(stringValue("hello"))
+    )
+  }
+
+  test("relationship property access") {
+    // Given
+    val relationship = relate(createNode(), createNode(), "prop" -> "hello").getId
+    val offset = 42
+    val ctx = mock[ExecutionContext]
+    when(ctx.getLongAt(offset)).thenReturn(relationship)
+    val expression = RelationshipProperty(offset, graph.inTx(propertyToken("prop")), "prop")(null)
 
     // When
     val compiled = compile(expression)

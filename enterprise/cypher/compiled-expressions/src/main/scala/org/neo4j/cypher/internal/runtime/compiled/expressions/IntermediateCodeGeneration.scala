@@ -22,7 +22,7 @@
  */
 package org.neo4j.cypher.internal.runtime.compiled.expressions
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.NodeProperty
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.{NodeProperty, RelationshipProperty}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.values.AnyValue
@@ -96,8 +96,11 @@ object IntermediateCodeGeneration {
                         invoke(load("context"), method[ExecutionContext, Long, Int]("getLongAt"),
                                constantJavaValue(offset)), constantJavaValue(token)))
 
-
-
+    case RelationshipProperty(offset, token, _) =>
+      Some(invokeStatic(method[ExpressionMethods, Value, Transaction, Long, Int]("relationshipProperty"),
+                        load("tx"),
+                        invoke(load("context"), method[ExecutionContext, Long, Int]("getLongAt"),
+                               constantJavaValue(offset)), constantJavaValue(token)))
 
     case _ => None
   }
