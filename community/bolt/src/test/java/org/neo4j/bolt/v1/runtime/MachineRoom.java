@@ -65,14 +65,6 @@ public class MachineRoom
         return machine;
     }
 
-    public static BoltStateMachine newMachineWithOwner( BoltStateMachine.State state, String owner ) throws AuthenticationException, BoltConnectionFatality
-    {
-        BoltStateMachine machine = newMachine();
-        init( machine, owner );
-        machine.state = state;
-        return machine;
-    }
-
     public static BoltStateMachine newMachineWithTransaction( BoltStateMachine.State state )
             throws AuthenticationException, BoltConnectionFatality
     {

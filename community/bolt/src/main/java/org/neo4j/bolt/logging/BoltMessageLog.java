@@ -41,10 +41,11 @@ public class BoltMessageLog extends LifecycleAdapter
     private static final int MAX_ARCHIVES = 10;
 
     private final Log inner;
+    private final RotatingFileOutputStreamSupplier outputStreamSupplier;
 
-    public BoltMessageLog( FileSystemAbstraction fileSystem, ZoneId logTimeZone, File logFile, Executor executor ) throws IOException
+    BoltMessageLog( FileSystemAbstraction fileSystem, ZoneId logTimeZone, File logFile, Executor executor ) throws IOException
     {
-        RotatingFileOutputStreamSupplier outputStreamSupplier = new RotatingFileOutputStreamSupplier( fileSystem,
+        outputStreamSupplier = new RotatingFileOutputStreamSupplier( fileSystem,
                 logFile, ROTATION_THRESHOLD_BYTES, ROTATION_DELAY_MS, MAX_ARCHIVES, executor );
         DateTimeFormatter isoDateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
         FormattedLog formattedLog = FormattedLog.withZoneId( logTimeZone )
@@ -118,5 +119,14 @@ public class BoltMessageLog extends LifecycleAdapter
     public void debug( String remoteAddress, String message, String arg1, String arg2 )
     {
         inner.debug( "%s %s %s %s", remoteAddress, message, arg1, arg2 );
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        if ( outputStreamSupplier != null )
+        {
+            outputStreamSupplier.close();
+        }
     }
 }

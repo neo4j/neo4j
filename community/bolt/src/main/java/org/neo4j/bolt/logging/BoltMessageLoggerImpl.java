@@ -21,9 +21,7 @@ package org.neo4j.bolt.logging;
 
 import io.netty.channel.Channel;
 import io.netty.util.AttributeKey;
-import org.codehaus.jackson.map.ObjectMapper;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -44,7 +42,6 @@ import static java.lang.String.format;
  */
 class BoltMessageLoggerImpl implements BoltMessageLogger
 {
-    private static final ObjectMapper jsonObjectMapper = new ObjectMapper();
     private static final Supplier<String> PLACEHOLDER_DETAIL_SUPPLIER = () -> "-";
     private final BoltMessageLog messageLog;
 
@@ -207,18 +204,6 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
         {
             SocketAddress remoteAddress = channel.remoteAddress();
             return remoteAddress.toString();
-        }
-    }
-
-    private static String json( Object arg )
-    {
-        try
-        {
-            return jsonObjectMapper.writeValueAsString( arg );
-        }
-        catch ( IOException e )
-        {
-            return "?";
         }
     }
 
