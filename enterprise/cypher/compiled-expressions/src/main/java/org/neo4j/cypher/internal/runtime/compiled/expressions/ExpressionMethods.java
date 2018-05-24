@@ -178,28 +178,62 @@ public final class ExpressionMethods
 
     public static AnyValue subtract( AnyValue lhs, AnyValue rhs )
     {
+        if ( lhs == NO_VALUE || rhs == NO_VALUE )
+        {
+            return NO_VALUE;
+        }
+        //numbers
         if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
         {
             return ((NumberValue) lhs).minus( (NumberValue) rhs );
         }
-        else
+        // Temporal values
+        if ( lhs instanceof TemporalValue )
         {
-            //todo
-            throw new CypherTypeException( "can only subtract numbers", null );
+            if ( rhs instanceof DurationValue )
+            {
+                return ((TemporalValue) lhs).minus( (DurationValue) rhs );
+            }
         }
+        if ( lhs instanceof DurationValue )
+        {
+            if ( rhs instanceof DurationValue )
+            {
+                return ((DurationValue) lhs).sub( (DurationValue) rhs );
+            }
+        }
+
+        throw new CypherTypeException(
+                String.format( "Don't know how to subtract `%s` and `%s`", lhs, rhs), null );
     }
 
     public static AnyValue multiply( AnyValue lhs, AnyValue rhs )
     {
+        if ( lhs == NO_VALUE || rhs == NO_VALUE )
+        {
+            return NO_VALUE;
+        }
         if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
         {
             return ((NumberValue) lhs).times( (NumberValue) rhs );
         }
-        else
+        // Temporal values
+        if ( lhs instanceof DurationValue )
         {
-            //todo
-            throw new CypherTypeException( "can only multiply numbers", null );
+            if ( rhs instanceof NumberValue )
+            {
+                return ((DurationValue) lhs).mul( (NumberValue) rhs );
+            }
         }
+        if ( rhs instanceof DurationValue )
+        {
+            if ( lhs instanceof NumberValue )
+            {
+                return ((DurationValue) rhs).mul( (NumberValue) lhs );
+            }
+        }
+        throw new CypherTypeException(
+                String.format( "Don't know how to subtract `%s` and `%s`", lhs, rhs), null );
     }
 
     public static Value nodeProperty( Transaction tx, long node, int property )
