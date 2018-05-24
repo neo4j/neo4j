@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
+import org.neo4j.causalclustering.core.replication.ReplicationFailureException;
 import org.neo4j.causalclustering.core.replication.Replicator;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionStateMachine;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -39,6 +40,7 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 
 import static org.neo4j.kernel.api.exceptions.Status.Cluster.NoLeaderAvailable;
 import static org.neo4j.kernel.api.exceptions.Status.Cluster.NotALeader;
+import static org.neo4j.kernel.api.exceptions.Status.Cluster.ReplicationFailure;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Interrupted;
 
 /**
@@ -114,9 +116,9 @@ public class LeaderOnlyLockManager implements Locks
         {
             future = replicator.replicate( lockTokenRequest, true );
         }
-        catch ( InterruptedException e )
+        catch ( ReplicationFailureException e )
         {
-            throw new AcquireLockTimeoutException( e, "Interrupted acquiring token.", Interrupted );
+            throw new AcquireLockTimeoutException( e, "Replication failure acquiring lock token.", ReplicationFailure );
         }
 
         try

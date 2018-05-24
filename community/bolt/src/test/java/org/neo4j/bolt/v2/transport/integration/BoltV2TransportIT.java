@@ -43,7 +43,6 @@ import org.neo4j.values.AnyValue;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.runners.Parameterized.Parameters;
@@ -276,7 +275,7 @@ public class BoltV2TransportIT
         negotiateBoltV2();
 
         connection.send( util.chunk(
-                run( "CREATE (n:Node {value: $value}) RETURN 42", map( singletonMap( "value", value ) ) ),
+                run( "CREATE (n:Node {value: $value}) RETURN 42", map( new String[]{"value"}, new AnyValue[]{value}  ) ),
                 pullAll() ) );
 
         assertThat( connection, util.eventuallyReceives(
@@ -306,7 +305,7 @@ public class BoltV2TransportIT
         negotiateBoltV2();
 
         connection.send( util.chunk(
-                run( "RETURN $value", map( singletonMap( "value", value ) ) ),
+                run( "RETURN $value", map(  new String[]{"value"} , new AnyValue[]{value} ) ),
                 pullAll() ) );
 
         assertThat( connection, util.eventuallyReceives(

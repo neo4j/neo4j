@@ -39,7 +39,6 @@ import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -64,7 +63,6 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 public class Neo4jTransactionalContextTest
 {
     private GraphDatabaseQueryService queryService;
-    private Guard guard;
     private KernelStatement initialStatement;
     private ThreadToStatementContextBridge txBridge;
     private ConfiguredExecutionStatistics statistics;
@@ -85,21 +83,11 @@ public class Neo4jTransactionalContextTest
         when( txBridge.getKernelTransactionBoundToThisThread( true ) ).thenReturn( kernelTransaction );
 
         Neo4jTransactionalContext transactionalContext =
-                new Neo4jTransactionalContext(
-                        null,
-                        guard,
-                        txBridge
-                        ,
-                        null,
-                        initialTransaction,
-                        initialStatement,
-                        null,
-                        kernel
-                );
+                new Neo4jTransactionalContext( null, txBridge, null, initialTransaction, initialStatement, null, kernel );
 
         transactionalContext.check();
 
-        verify( guard ).check( kernelTransaction );
+        verify( kernelTransaction ).assertOpen();
     }
 
     @SuppressWarnings( "ConstantConditions" )
@@ -136,15 +124,8 @@ public class Neo4jTransactionalContextTest
         when( secondStatement.queryRegistration() ).thenReturn( secondQueryRegistry );
 
         Kernel kernel = mock( Kernel.class );
-        Neo4jTransactionalContext context = new Neo4jTransactionalContext( queryService,
-                guard,
-                txBridge,
-                locker,
-                initialTransaction,
-                initialStatement,
-                executingQuery,
-                kernel
-        );
+        Neo4jTransactionalContext context =
+                new Neo4jTransactionalContext( queryService, txBridge, locker, initialTransaction, initialStatement, executingQuery, kernel );
 
         // When
         context.commitAndRestartTx();
@@ -221,16 +202,8 @@ public class Neo4jTransactionalContextTest
         when( secondStatement.queryRegistration() ).thenReturn( secondQueryRegistry );
 
         Kernel kernel = mock( Kernel.class );
-        Neo4jTransactionalContext context = new Neo4jTransactionalContext(
-                queryService,
-                guard,
-                txBridge,
-                locker,
-                initialTransaction,
-                initialStatement,
-                executingQuery,
-                kernel
-        );
+        Neo4jTransactionalContext context =
+                new Neo4jTransactionalContext( queryService, txBridge, locker, initialTransaction, initialStatement, executingQuery, kernel );
 
         // When
         try
@@ -286,7 +259,7 @@ public class Neo4jTransactionalContextTest
         when( initialTransaction.terminationReason() ).thenReturn( Optional.empty() );
         Kernel kernel = mock( Kernel.class );
         Neo4jTransactionalContext transactionalContext = new Neo4jTransactionalContext( queryService,
-                guard, txBridge, null, initialTransaction, initialStatement, null, kernel );
+                txBridge, null, initialTransaction, initialStatement, null, kernel );
 
         statistics.setFaults( 2 );
         statistics.setHits( 5 );
@@ -461,7 +434,6 @@ public class Neo4jTransactionalContextTest
         queryService = mock( GraphDatabaseQueryService.class );
         DependencyResolver resolver = mock( DependencyResolver.class );
         txBridge = mock( ThreadToStatementContextBridge.class );
-        guard = mock( Guard.class );
         initialStatement = mock( KernelStatement.class );
 
         statistics = new ConfiguredExecutionStatistics();
@@ -472,7 +444,6 @@ public class Neo4jTransactionalContextTest
         when( initialStatement.queryRegistration() ).thenReturn( queryRegistryOperations );
         when( queryService.getDependencyResolver() ).thenReturn( resolver );
         when( resolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( txBridge );
-        when( resolver.resolveDependency( Guard.class ) ).thenReturn( guard );
         when( queryService.beginTransaction( any(), any() ) ).thenReturn( internalTransaction );
 
         KernelTransaction mockTransaction = mockTransaction( initialStatement );
@@ -482,8 +453,7 @@ public class Neo4jTransactionalContextTest
 
     private Neo4jTransactionalContext newContext( InternalTransaction initialTx )
     {
-        return new Neo4jTransactionalContext( queryService, guard,
-                txBridge, new PropertyContainerLocker(), initialTx, initialStatement, null, null );
+        return new Neo4jTransactionalContext( queryService, txBridge, new PropertyContainerLocker(), initialTx, initialStatement, null, null );
     }
 
     private KernelTransaction mockTransaction( Statement statement )

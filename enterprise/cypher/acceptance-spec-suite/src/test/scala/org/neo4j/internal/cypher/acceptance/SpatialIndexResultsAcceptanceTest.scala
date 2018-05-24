@@ -65,7 +65,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
       planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "point")
         plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3))
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_3))
 
     // Then
     val point = result.columnAs("point").toList.head.asInstanceOf[Point]
@@ -83,12 +83,12 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     // When
     val localConfig = Configs.All - Configs.OldAndRule
     val result = executeWith(localConfig,
-      "MATCH (p:Place) WHERE p.location = $param RETURN p.location as point",
-      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
+                             "MATCH (p:Place) WHERE p.location = $param RETURN p.location as point",
+                             planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "point")
         plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3),
-      params = ImmutableMap("param" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7)))
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_3),
+                             params = ImmutableMap("param" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7)))
 
     // Then
     val point = result.columnAs("point").toList.head.asInstanceOf[Point]
@@ -106,12 +106,12 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     // When
     val localConfig = Configs.All - Configs.OldAndRule
     val result = executeWith(localConfig,
-      "MATCH (p:Place) WHERE p.location = $param RETURN p.location as point",
-      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
+                             "MATCH (p:Place) WHERE p.location = $param RETURN p.location as point",
+                             planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "point")
         plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3),
-      params = ImmutableMap("param" -> Array(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_3),
+                             params = ImmutableMap("param" -> Array(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
 
     // Then
     val pointList = result.columnAs("point").toList.head.asInstanceOf[Iterable[PointValue]].toList
@@ -133,12 +133,12 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     // When
     val localConfig = Configs.All - Configs.OldAndRule
     val result = executeWith(localConfig,
-      "MATCH (p:Place) WHERE p.location = $param RETURN p.location as point",
-      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
+                             "MATCH (p:Place) WHERE p.location = $param RETURN p.location as point",
+                             planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "point")
         plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3),
-      params = ImmutableMap("param" ->
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_3),
+                             params = ImmutableMap("param" ->
         Array(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7),
           Values.pointValue(CoordinateReferenceSystem.WGS84, 13.78, 56.7))))
 
@@ -166,12 +166,12 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     // When
     val localConfig = Configs.All - Configs.OldAndRule
     val result = executeWith(localConfig,
-      "MATCH (p:Place) WHERE p.location = $param RETURN p.location as point",
-      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
+                             "MATCH (p:Place) WHERE p.location = $param RETURN p.location as point",
+                             planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "point")
         plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3),
-      params = ImmutableMap("param" ->
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_3),
+                             params = ImmutableMap("param" ->
         List(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7),
           Values.pointValue(CoordinateReferenceSystem.WGS84, 13.78, 56.7))))
 
@@ -235,7 +235,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
       planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "point")
         plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3))
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_3))
 
     // Then
     val point = result.columnAs("point").toList.head.asInstanceOf[Point]

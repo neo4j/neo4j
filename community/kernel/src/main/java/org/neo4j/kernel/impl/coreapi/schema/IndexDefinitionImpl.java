@@ -37,7 +37,7 @@ public class IndexDefinitionImpl implements IndexDefinition
     private final boolean constraintIndex;
 
     public IndexDefinitionImpl( InternalSchemaActions actions, Label label, String[] propertyKeys,
-            boolean constraintIndex )
+                                boolean constraintIndex )
     {
         this.actions = actions;
         this.label = label;
@@ -59,6 +59,20 @@ public class IndexDefinitionImpl implements IndexDefinition
     {
         assertInUnterminatedTransaction();
         return asList( propertyKeys );
+    }
+
+    /**
+     * Returns the inner array of property keys in this index definition.
+     * <p>
+     * This array <em><strong>must not</strong></em> be modified, since the index definition is supposed to be
+     * immutable.
+     *
+     * @return The array of property keys.
+     */
+    public String[] getPropertyKeysArrayShared()
+    {
+        assertInUnterminatedTransaction();
+        return propertyKeys;
     }
 
     @Override

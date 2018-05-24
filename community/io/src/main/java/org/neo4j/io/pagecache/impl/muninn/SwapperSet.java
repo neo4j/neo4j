@@ -92,7 +92,7 @@ final class SwapperSet
     /**
      * Allocate a new swapper id for the given {@link PageSwapper}.
      */
-    synchronized short allocate( PageSwapper swapper )
+    synchronized int allocate( PageSwapper swapper )
     {
         SwapperMapping[] swapperMappings = this.swapperMappings;
 
@@ -101,7 +101,7 @@ final class SwapperSet
         {
             if ( !free.isEmpty() )
             {
-                short id = safeCastIntToShort( free.intIterator().next() );
+                int id = free.intIterator().next();
                 free.remove( id );
                 swapperMappings[id] = new SwapperMapping( id, swapper );
                 this.swapperMappings = swapperMappings; // Volatile store synchronizes-with loads in getters.
@@ -110,7 +110,7 @@ final class SwapperSet
         }
 
         // No free slot was found above, so we extend the array to make room for a new slot.
-        short id = safeCastIntToShort( swapperMappings.length );
+        int id = swapperMappings.length;
         if ( id + 1 > MAX_SWAPPER_ID )
         {
             throw new IllegalStateException( "All swapper ids are allocated: " + MAX_SWAPPER_ID );

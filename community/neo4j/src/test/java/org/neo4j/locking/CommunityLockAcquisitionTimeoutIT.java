@@ -117,7 +117,7 @@ public class CommunityLockAcquisitionTimeoutIT
         expectedException.expect( new RootCauseMatcher<>( LockAcquisitionTimeoutException.class,
                 "The transaction has been terminated. " +
                         "Retry your operation in a new transaction, and you should see a successful result. " +
-                        "Unable to acquire lock within configured timeout. " +
+                        "Unable to acquire lock within configured timeout (dbms.lock.acquisition.timeout). " +
                         "Unable to acquire lock for resource: NODE with id: 0 within 2000 millis." ) );
 
         try ( Transaction ignored = database.beginTx() )
@@ -154,7 +154,7 @@ public class CommunityLockAcquisitionTimeoutIT
         expectedException.expect( new RootCauseMatcher<>( LockAcquisitionTimeoutException.class,
                 "The transaction has been terminated. " +
                         "Retry your operation in a new transaction, and you should see a successful result. " +
-                        "Unable to acquire lock within configured timeout. " +
+                        "Unable to acquire lock within configured timeout (dbms.lock.acquisition.timeout). " +
                         "Unable to acquire lock for resource: LABEL with id: 1 within 2000 millis." ) );
 
         try ( Transaction ignored = database.beginTx() )

@@ -17,20 +17,40 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.guard;
+package org.neo4j.values.virtual;
 
-import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.kernel.api.KernelTransaction;
+import java.util.HashMap;
+import java.util.Map;
 
-/**
- * Guard that checks kernel transaction for termination.
- * As soon as transaction timeout time reached {@link TransactionTerminatedException } will be thrown.
- */
-public class TerminationGuard implements Guard
+import org.neo4j.values.AnyValue;
+
+public class MapValueBuilder
 {
-    @Override
-    public void check( KernelTransaction transaction )
+    private final Map<String, AnyValue> map;
+
+    public MapValueBuilder()
     {
-        transaction.assertOpen();
+        this.map = new HashMap<>(  );
     }
+
+    public MapValueBuilder( int size )
+    {
+        this.map = new HashMap<>( size );
+    }
+
+    public AnyValue add( String key, AnyValue value )
+    {
+        return map.put( key, value );
+    }
+
+    public void clear()
+    {
+        map.clear();
+    }
+
+    public MapValue build()
+    {
+        return new MapValue.MapWrappingMapValue( map );
+    }
+
 }

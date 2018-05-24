@@ -124,13 +124,13 @@ public class SlaveTokenCreatorTest
     public void mustTranslateComExceptionsToTransientTransactionFailures()
     {
         when( fixture.callMasterMethod( master, requestContext, name ) ).thenThrow( new ComException() );
-        tokenCreator.getOrCreate( name );
+        tokenCreator.createToken( name );
     }
 
     @Test
     public void mustReturnIdentifierFromMaster()
     {
         when( fixture.callMasterMethod( master, requestContext, name ) ).thenReturn( new IntegerResponse( 13 ) );
-        assertThat( tokenCreator.getOrCreate( name ), is( 13 ) );
+        assertThat( tokenCreator.createToken( name ), is( 13 ) );
     }
 }

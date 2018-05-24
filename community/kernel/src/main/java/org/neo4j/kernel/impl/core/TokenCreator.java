@@ -19,9 +19,31 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.function.IntPredicate;
+
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
 public interface TokenCreator
 {
-    int getOrCreate( String name ) throws KernelException;
+    /**
+     * Create a token by the given name and return the newly allocated id for this token.
+     * <p>
+     * It is assumed that the token name is not already being used.
+     *
+     * @param name The token name to allocate.
+     * @return The id of the allocated token name.
+     * @throws KernelException If the inner transaction used to allocate the token encountered a problem.
+     */
+    int createToken( String name ) throws KernelException;
+
+    /**
+     * Create the tokens by the given names, and store their ids in the corresponding entry in the {@code ids} array,
+     * but only if the {@code indexFilter} returns {@code true} for the given index.
+     *
+     * @param names The array of token names we potentially want to create new ids for.
+     * @param ids The array into which we still store the id we create for the various token names.
+     * @param indexFilter A filter for the array indexes for which a token needs an id.
+     * @throws KernelException If the inner transaction used to allocate the tokens encountered a problem.
+     */
+    void createTokens( String[] names, int[] ids, IntPredicate indexFilter ) throws KernelException;
 }

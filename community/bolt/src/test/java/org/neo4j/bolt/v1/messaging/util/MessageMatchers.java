@@ -57,7 +57,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.kernel.impl.util.HexPrinter;
-import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.MapValue;
 
@@ -78,11 +77,11 @@ public class MessageMatchers
     {
         Deserializer deserializer = new Deserializer();
         HashMap<String,Object> map = new HashMap<>( mapValue.size() );
-        for ( Map.Entry<String,AnyValue> entry : mapValue.entrySet() )
-        {
-            entry.getValue().writeTo( deserializer );
-            map.put( entry.getKey(), deserializer.value() );
-        }
+        mapValue.foreach( ( key, value ) -> {
+            value.writeTo( deserializer );
+            map.put( key, deserializer.value() );
+        } );
+
         return map;
     }
 

@@ -40,7 +40,7 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getPropertyKeys;
 public class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
 {
     @Test
-    public void should_be_able_to_list_labels_for_node() throws Exception
+    public void shouldBeAbleToListLabelsForNode() throws Exception
     {
         // GIVEN
         long nodeId;
@@ -62,7 +62,7 @@ public class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
     }
 
     @Test
-    public void should_be_able_to_get_label_name_for_label() throws Exception
+    public void shouldBeAbleToGetLabelNameForLabel() throws Exception
     {
         // GIVEN
         String labelName = label1.name();
@@ -76,7 +76,24 @@ public class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
     }
 
     @Test
-    public void labels_should_not_leak_out_as_properties()
+    public void shouldBeAbleToCreateMultipleLabels() throws Exception
+    {
+        // GIVEN
+        String[] labelNames = {label1.name(), label2.name()};
+        int[] labelIds = new int[labelNames.length];
+        storageReader.labelGetOrCreateForNames( labelNames, labelIds );
+
+        // WHEN
+        String firstLabelName = storageReader.labelGetName( labelIds[0] );
+        String secondLabelName = storageReader.labelGetName( labelIds[1] );
+
+        // THEN
+        assertEquals( labelNames[0], firstLabelName );
+        assertEquals( labelNames[1], secondLabelName );
+    }
+
+    @Test
+    public void labelsShouldNotLeakOutAsProperties()
     {
         // GIVEN
         Node node = createLabeledNode( db, map( "name", "Node" ), label1 );
@@ -86,7 +103,7 @@ public class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
     }
 
     @Test
-    public void should_return_all_nodes_with_label()
+    public void shouldReturnAllNodesWithLabel()
     {
         // GIVEN
         Node node1 = createLabeledNode( db, map( "name", "First", "age", 1L ), label1 );

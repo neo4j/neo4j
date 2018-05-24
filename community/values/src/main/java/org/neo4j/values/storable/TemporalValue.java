@@ -56,6 +56,7 @@ import org.neo4j.values.utils.InvalidValuesArgumentException;
 import org.neo4j.values.utils.TemporalArithmeticException;
 import org.neo4j.values.utils.TemporalParseException;
 import org.neo4j.values.utils.UnsupportedTemporalUnitException;
+import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
@@ -1386,39 +1387,42 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         return (int) (ms * 1000_000 + us * 1000 + ns);
     }
 
-    static <TEMP extends Temporal> TEMP updateFieldMapWithConflictingSubseconds( Map<String,AnyValue> fields, TemporalUnit unit, TEMP truncated )
+    static <TEMP extends Temporal, VALUE> VALUE updateFieldMapWithConflictingSubseconds( MapValue fields,
+            TemporalUnit unit,
+            TEMP temporal, BiFunction<MapValue,TEMP,VALUE> mapFunction )
     {
-        boolean conflictingMilliSeconds = false;
-        boolean conflictingMicroSeconds = false;
-
-        for ( Map.Entry<String,AnyValue> entry : fields.entrySet() )
-        {
-            if ( unit == ChronoUnit.MILLIS && ( "microsecond".equals( entry.getKey() ) || "nanosecond".equals( entry.getKey() ) ) )
-            {
-                conflictingMilliSeconds = true;
-            }
-            else if ( unit == ChronoUnit.MICROS && "nanosecond".equals( entry.getKey() ) )
-            {
-                conflictingMicroSeconds = true;
-            }
-        }
+        boolean conflictingMilliSeconds =
+                unit == ChronoUnit.MILLIS &&
+                (fields.containsKey( "microsecond" ) || fields.containsKey( "nanosecond" ));
+        boolean conflictingMicroSeconds = unit == ChronoUnit.MICROS && fields.containsKey( "nanosecond" );
 
         if ( conflictingMilliSeconds )
         {
-            AnyValue millis = Values.intValue( truncated.get( ChronoField.MILLI_OF_SECOND ) );
-            AnyValue micros = fields.remove( "microsecond" );
-            AnyValue nanos = fields.remove( "nanosecond" );
+            AnyValue millis = Values.intValue( temporal.get( ChronoField.MILLI_OF_SECOND ) );
+            AnyValue micros = fields.get( "microsecond" );
+            AnyValue nanos = fields.get( "nanosecond" );
+
             int newNanos = validNano( millis, micros, nanos );
-            truncated = (TEMP) truncated.with( ChronoField.NANO_OF_SECOND, newNanos );
+            TEMP newTemporal = (TEMP) temporal.with( ChronoField.NANO_OF_SECOND, newNanos );
+            MapValue filtered = fields.filter(
+                    ( k, ignore ) -> !k.equals( "microsecond" ) && !k.equals( "nanosecond" ) );
+            return mapFunction.apply( filtered, newTemporal );
         }
         else if ( conflictingMicroSeconds )
         {
-            AnyValue micros = Values.intValue( truncated.get( ChronoField.MICRO_OF_SECOND ) );
-            AnyValue nanos = fields.remove( "nanosecond" );
-            int newNanos = validNano( null,  micros, nanos );
-            truncated = (TEMP) truncated.with( ChronoField.NANO_OF_SECOND, newNanos );
+            AnyValue micros = Values.intValue( temporal.get( ChronoField.MICRO_OF_SECOND ) );
+            AnyValue nanos = fields.get( "nanosecond" );
+            int newNanos = validNano( null, micros, nanos );
+            TEMP newTemporal = (TEMP) temporal.with( ChronoField.NANO_OF_SECOND, newNanos );
+            MapValue filtered = fields.filter(
+                    ( k, ignore ) -> !k.equals( "nanosecond" ) );
+
+            return mapFunction.apply( filtered, newTemporal );
         }
-        return truncated;
+        else
+        {
+            return mapFunction.apply( fields, temporal );
+        }
     }
 
     static <TEMP extends Temporal> TEMP assertValidArgument( Supplier<TEMP> func )

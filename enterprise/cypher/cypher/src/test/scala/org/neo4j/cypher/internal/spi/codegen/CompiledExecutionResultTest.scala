@@ -23,7 +23,6 @@
 package org.neo4j.cypher.internal.spi.codegen
 
 import java.util
-import java.util.function.BiConsumer
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
@@ -38,6 +37,7 @@ import org.neo4j.cypher.internal.runtime.{ExecutionMode, NormalMode, QueryContex
 import org.opencypher.v9_0.util.TaskCloser
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
+import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.helpers.collection.Iterators
@@ -218,7 +218,7 @@ class CompiledExecutionResultTest extends CypherFunSuite {
       list
     case m: MapValue =>
       val map = new util.HashMap[String, AnyRef]()
-      m.foreach(new BiConsumer[String, AnyValue] {
+      m.foreach(new ThrowingBiConsumer[String, AnyValue, RuntimeException] {
         override def accept(t: String, u: AnyValue): Unit = map.put(t, toObjectConverter(u))
       })
       map

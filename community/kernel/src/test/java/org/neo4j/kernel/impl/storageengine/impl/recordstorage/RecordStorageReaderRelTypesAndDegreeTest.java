@@ -357,6 +357,23 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
                 asSet( TestRelType.IN, TestRelType.OUT, TestRelType.LOOP ) );
     }
 
+    @Test
+    public void shouldBeAbleToCreateMultipleRelationshipTypes() throws Exception
+    {
+        // GIVEN
+        String[] typeNames = {relType1.name(), relType2.name()};
+        int[] typeIds = new int[typeNames.length];
+        storageReader.relationshipTypeGetOrCreateForNames( typeNames, typeIds );
+
+        // WHEN
+        String firstLabelName = storageReader.relationshipTypeGetName( typeIds[0] );
+        String secondLabelName = storageReader.relationshipTypeGetName( typeIds[1] );
+
+        // THEN
+        assertEquals( typeNames[0], firstLabelName );
+        assertEquals( typeNames[1], secondLabelName );
+    }
+
     private void testRelationshipTypesForDenseNode( LongConsumer nodeChanger, Set<TestRelType> expectedTypes )
     {
         int inRelCount = randomRelCount();

@@ -29,7 +29,6 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalUnit;
-import java.util.Map;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -40,7 +39,6 @@ import org.neo4j.values.ValueMapper;
 import org.neo4j.values.utils.InvalidValuesArgumentException;
 import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Objects.requireNonNull;
@@ -115,14 +113,17 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
         }
         else
         {
-            Map<String,AnyValue> updatedFields = fields.getMapCopy();
-            truncatedLT = updateFieldMapWithConflictingSubseconds( updatedFields, unit, truncatedLT );
-            if ( updatedFields.size() == 0 )
-            {
-                return localTime( truncatedLT );
-            }
-            updatedFields.put( "time", localTime( truncatedLT ) );
-            return build( VirtualValues.map( updatedFields ), defaultZone );
+            return updateFieldMapWithConflictingSubseconds( fields, unit, truncatedLT,
+                    ( mapValue, localTime1 ) -> {
+                        if ( mapValue.size() == 0 )
+                        {
+                            return localTime( localTime1 );
+                        }
+                        else
+                        {
+                            return build( mapValue.updatedWith( "time", localTime( localTime1 ) ), defaultZone );
+                        }
+                    } );
         }
     }
 

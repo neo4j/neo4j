@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningCo
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v3_5.logical.plans.{ExpandAll, ExpandInto, LogicalPlan}
-import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.expressions.{Ands, Expression, LogicalVariable}
 
 case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
 
@@ -91,7 +91,7 @@ object expandSolverStep {
           qg.selections.predicatesGiven(availableSymbols + patternRel.name)
         val tempNode = patternRel.name + "_NODES"
         val tempEdge = patternRel.name + "_RELS"
-        val (nodePredicates: Seq[Expression], edgePredicates: Seq[Expression], solvedPredicates: Seq[Expression]) =
+        val (nodePredicates: Seq[Expression], edgePredicates: Seq[Expression], legacyPredicates: Seq[(LogicalVariable,Expression)], solvedPredicates: Seq[Expression]) =
           extractPredicates(
             availablePredicates,
             originalEdgeName = patternRel.name,
@@ -100,7 +100,6 @@ object expandSolverStep {
             originalNodeName = nodeId)
         val nodePredicate = Ands.create(nodePredicates.toSet)
         val relationshipPredicate = Ands.create(edgePredicates.toSet)
-        val legacyPredicates = extractLegacyPredicates(availablePredicates, patternRel, nodeId)
 
         context.logicalPlanProducer.planVarExpand(
           source = sourcePlan,
@@ -118,34 +117,4 @@ object expandSolverStep {
           context = context)
     }
   }
-
-  def extractLegacyPredicates(availablePredicates: Seq[Expression], patternRel: PatternRelationship,
-                              nodeId: String): Seq[(LogicalVariable, Expression)] = {
-    availablePredicates.collect {
-      //MATCH ()-[r* {prop:1337}]->()
-      case all@AllIterablePredicate(FilterScope(variable, Some(innerPredicate)), relId@Variable(patternRel.name))
-        if variable == relId || !innerPredicate.dependencies(relId) =>
-        (variable, innerPredicate) -> all
-      //MATCH p = ... WHERE all(n in nodes(p)... or all(r in relationships(p)
-      case all@AllIterablePredicate(FilterScope(variable, Some(innerPredicate)),
-      FunctionInvocation(_, FunctionName(fname), false,
-      Seq(PathExpression(
-      NodePathStep(startNode: Variable, MultiRelationshipPathStep(rel: Variable, _, NilPathStep) ))) ))
-        if (fname  == "nodes" || fname == "relationships")
-          && startNode.name == nodeId
-          && rel.name == patternRel.name =>
-        (variable, innerPredicate) -> all
-
-      //MATCH p = ... WHERE all(n in nodes(p)... or all(r in relationships(p)
-      case none@NoneIterablePredicate(FilterScope(variable, Some(innerPredicate)),
-      FunctionInvocation(_, FunctionName(fname), false,
-      Seq(PathExpression(
-      NodePathStep(startNode: Variable, MultiRelationshipPathStep(rel: Variable, _, NilPathStep) ))) ))
-        if (fname  == "nodes" || fname == "relationships")
-          && startNode.name == nodeId
-          && rel.name == patternRel.name =>
-        (variable, Not(innerPredicate)(innerPredicate.position)) -> none
-    }.unzip._1
-  }
-
 }

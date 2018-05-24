@@ -159,12 +159,12 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     // When
     val localConfig = Configs.All - Configs.OldAndRule
     val result = executeWith(localConfig,
-      "MATCH (o:Occasion) WHERE o.timeSpan = $param RETURN o.timeSpan as timeSpan",
-      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
+                             "MATCH (o:Occasion) WHERE o.timeSpan = $param RETURN o.timeSpan as timeSpan",
+                             planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "timeSpan")
         plan should useOperatorWithText("NodeIndexSeek", ":Occasion(timeSpan)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3),
-      params = Map("param" ->
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_3),
+                             params = Map("param" ->
         Array(LocalDate.of(2018, 4, 1))))
 
     // Then
@@ -185,12 +185,12 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     // When
     val localConfig = Configs.All - Configs.OldAndRule
     val result = executeWith(localConfig,
-      "MATCH (o:Occasion) WHERE o.timeSpan = $param RETURN o.timeSpan as timeSpan",
-      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
+                             "MATCH (o:Occasion) WHERE o.timeSpan = $param RETURN o.timeSpan as timeSpan",
+                             planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "timeSpan")
         plan should useOperatorWithText("NodeIndexSeek", ":Occasion(timeSpan)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3),
-      params = Map("param" ->
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_3),
+                             params = Map("param" ->
         List(LocalDate.of(2018, 4, 1))))
 
     // Then
@@ -211,12 +211,12 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     // When
     val localConfig = Configs.All - Configs.OldAndRule
     val result = executeWith(localConfig,
-      "MATCH (o:Occasion) WHERE o.timeSpan = $param RETURN o.timeSpan as timeSpan",
-      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
+                             "MATCH (o:Occasion) WHERE o.timeSpan = $param RETURN o.timeSpan as timeSpan",
+                             planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "timeSpan")
         plan should useOperatorWithText("NodeIndexSeek", ":Occasion(timeSpan)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3),
-      params = Map("param" ->
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_3),
+                             params = Map("param" ->
         Array(LocalDate.of(2018, 4, 1), LocalDate.of(2018, 4, 2))))
 
     // Then
@@ -238,12 +238,12 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     // When
     val localConfig = Configs.All - Configs.OldAndRule
     val result = executeWith(localConfig,
-      "MATCH (o:Occasion) WHERE o.timeSpan = $param RETURN o.timeSpan as timeSpan",
-      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
+                             "MATCH (o:Occasion) WHERE o.timeSpan = $param RETURN o.timeSpan as timeSpan",
+                             planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "timeSpan")
         plan should useOperatorWithText("NodeIndexSeek", ":Occasion(timeSpan)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3),
-      params = Map("param" ->
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_3),
+                             params = Map("param" ->
         List(LocalDate.of(2018, 4, 1), LocalDate.of(2018, 4, 2))))
 
     // Then
@@ -770,7 +770,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
           *  Version 3.3 returns null instead due to running with 3.4 runtime
           *  SyntaxException come from the 3.4 planner and IncomparableValuesException from earlier runtimes
           */
-        failWithError(Configs.Version3_4 + Configs.Procs - Configs.AllRulePlanners, query, Seq("Type mismatch"))
+        failWithError(Configs.Version3_5 + Configs.Procs - Configs.AllRulePlanners, query, Seq("Type mismatch"))
       }
     }
   }

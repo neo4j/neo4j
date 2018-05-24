@@ -67,6 +67,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -82,7 +83,6 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.GraphPropertiesProxy;
@@ -200,7 +200,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     /**
      * Create a new Core API facade, backed by the given SPI and using pre-resolved dependencies
      */
-    public void init( EditionModule editionModule, SPI spi, Guard guard, ThreadToStatementContextBridge txBridge, Config config,
+    public void init( EditionModule editionModule, SPI spi, ThreadToStatementContextBridge txBridge, Config config,
             RelationshipTypeTokenHolder relationshipTypeTokenHolder )
     {
         this.editionModule = editionModule;
@@ -224,7 +224,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                     nodeAutoIndexer, relAutoIndexer );
         } );
 
-        this.contextFactory = Neo4jTransactionalContextFactory.create( spi, guard, txBridge, locker );
+        this.contextFactory = Neo4jTransactionalContextFactory.create( spi, txBridge, locker );
     }
 
     @Override
@@ -263,9 +263,16 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         {
             Write write = transaction.dataWrite();
             long nodeId = write.nodeCreate();
-            for ( Label label : labels )
+            TokenWrite tokenWrite = transaction.tokenWrite();
+            int[] labelIds = new int[labels.length];
+            String[] labelNames = new String[labels.length];
+            for ( int i = 0; i < labelNames.length; i++ )
             {
-                int labelId = transaction.tokenWrite().labelGetOrCreateForName( label.name() );
+                labelNames[i] = labels[i].name();
+            }
+            tokenWrite.labelGetOrCreateForNames( labelNames, labelIds );
+            for ( int labelId : labelIds )
+            {
                 try
                 {
                     write.nodeAddLabel( nodeId, labelId );

@@ -142,7 +142,7 @@ public interface Status
                 "Transaction was marked as both successful and failed. Failure takes precedence and so this " +
                 "transaction was rolled back although it may have looked like it was going to be committed" ),
         TransactionTimedOut( ClientError,
-                "The transaction has not completed within the specified timeout. You may want to retry with a longer " +
+                "The transaction has not completed within the specified timeout (dbms.transaction.timeout). You may want to retry with a longer " +
                 "timeout." ),
         InvalidBookmark( ClientError,
                 "Supplied bookmark cannot be interpreted. You should only supply a bookmark previously that was " +
@@ -184,7 +184,7 @@ public interface Status
                 "transaction ran longer than the configured transaction timeout, or because a human operator manually " +
                 "terminated the transaction, or because the database is shutting down." ),
         LockAcquisitionTimeout( TransientError,
-                "Unable to acquire lock within configured timeout." ),
+                "Unable to acquire lock within configured timeout (dbms.lock.acquisition.timeout)." ),
         Terminated( TransientError,
                 "Explicitly terminated by the user." ),
         Interrupted( TransientError,
@@ -500,6 +500,9 @@ public interface Status
         // transient errors
         NoLeaderAvailable( TransientError,
                 "No leader available at the moment. Retrying your request at a later time may succeed." ),
+
+        ReplicationFailure( TransientError,
+                "Replication failure." ),
 
         NotALeader( ClientError,
                 "The request cannot be processed by this server. Write requests can only be processed by the leader." ),

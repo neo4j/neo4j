@@ -19,13 +19,20 @@
  */
 package org.neo4j.values.virtual;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.BiConsumer;
+import java.util.NoSuchElementException;
+import java.util.function.BiFunction;
+import java.util.stream.StreamSupport;
 
+import org.neo4j.function.ThrowingBiConsumer;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.ValueMapper;
@@ -34,53 +41,476 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
-public final class MapValue extends VirtualValue
+public abstract class MapValue extends VirtualValue
 {
-    private final Map<String,AnyValue> map;
-
-    MapValue( Map<String,AnyValue> map )
+    public static MapValue EMPTY = new MapValue()
     {
-        this.map = map;
-    }
+        @Override
+        public Iterable<String> keySet()
+        {
+            return Collections.emptyList();
+        }
 
-    @Override
-    public boolean equals( VirtualValue other )
-    {
-        if ( other == null || other.getClass() != MapValue.class )
+        @Override
+        public <E extends Exception> void foreach( ThrowingBiConsumer<String,AnyValue,E> f )
+        {
+            //do nothing
+        }
+
+        @Override
+        public boolean containsKey( String key )
         {
             return false;
         }
-        MapValue that = (MapValue) other;
-        return map.equals( that.map );
+
+        @Override
+        public AnyValue get( String key )
+        {
+            return NO_VALUE;
+        }
+
+        @Override
+        public int size()
+        {
+            return 0;
+        }
+    };
+
+    static final class MapWrappingMapValue extends MapValue
+    {
+        private final Map<String,AnyValue> map;
+
+        MapWrappingMapValue( Map<String,AnyValue> map )
+        {
+            this.map = map;
+        }
+
+        public Iterable<String> keySet()
+        {
+            return map.keySet();
+        }
+
+        @Override
+        public <E extends Exception> void foreach( ThrowingBiConsumer<String,AnyValue,E> f ) throws E
+        {
+            for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
+            {
+                f.accept( entry.getKey(), entry.getValue() );
+            }
+        }
+
+        public boolean containsKey( String key )
+        {
+            return map.containsKey( key );
+        }
+
+        public AnyValue get( String key )
+        {
+            return map.getOrDefault( key, NO_VALUE );
+        }
+
+        public int size()
+        {
+            return map.size();
+        }
+    }
+
+    private static final class FilteringMapValue extends MapValue
+    {
+        private final MapValue map;
+        private final BiFunction<String,AnyValue,Boolean> filter;
+        private int size = -1;
+
+        FilteringMapValue( MapValue map,
+                BiFunction<String,AnyValue,Boolean> filter )
+        {
+            this.map = map;
+            this.filter = filter;
+        }
+
+        @Override
+        public Iterable<String> keySet()
+        {
+            List<String> keys = size >= 0 ? new ArrayList<>( size ) : new ArrayList<>();
+            foreach( ( key, value ) -> {
+                if ( filter.apply( key, value ) )
+                {
+                    keys.add( key );
+                }
+            } );
+
+            return keys;
+        }
+
+        @Override
+        public <E extends Exception> void foreach( ThrowingBiConsumer<String,AnyValue,E> f ) throws E
+        {
+            map.foreach( ( s, anyValue ) -> {
+                if ( filter.apply( s, anyValue ) )
+                {
+                    f.accept( s, anyValue );
+                }
+            } );
+        }
+
+        public boolean containsKey( String key )
+        {
+            AnyValue value = map.get( key );
+            if ( value == NO_VALUE )
+            {
+                return false;
+            }
+            else
+            {
+                return filter.apply( key, value );
+            }
+        }
+
+        public AnyValue get( String key )
+        {
+            AnyValue value = map.get( key );
+            if ( value == NO_VALUE )
+            {
+                return NO_VALUE;
+            }
+            else if ( filter.apply( key, value ) )
+            {
+                return value;
+            }
+            else
+            {
+                return NO_VALUE;
+            }
+        }
+
+        public int size()
+        {
+            if ( size < 0 )
+            {
+                size = 0;
+                foreach( ( k, v ) -> {
+                    if ( filter.apply( k, v ) )
+                    {
+                        size++;
+                    }
+                } );
+            }
+            return size;
+        }
+    }
+
+    private static final class MappedMapValue extends MapValue
+    {
+        private final MapValue map;
+        private final BiFunction<String,AnyValue,AnyValue> mapFunction;
+
+        MappedMapValue( MapValue map,
+                BiFunction<String,AnyValue,AnyValue> mapFunction )
+        {
+            this.map = map;
+            this.mapFunction = mapFunction;
+        }
+
+        public ListValue keys()
+        {
+            return map.keys();
+        }
+
+        public Iterable<String> keySet()
+        {
+            return map.keySet();
+        }
+
+        @Override
+        public <E extends Exception> void foreach( ThrowingBiConsumer<String,AnyValue,E> f ) throws E
+        {
+            map.foreach( ( s, anyValue ) -> f.accept( s, mapFunction.apply( s, anyValue ) ) );
+        }
+
+        public boolean containsKey( String key )
+        {
+            return map.containsKey( key );
+        }
+
+        public AnyValue get( String key )
+        {
+            return mapFunction.apply( key, map.get( key ) );
+        }
+
+        public int size()
+        {
+            return map.size();
+        }
+    }
+
+    private static final class UpdatedMapValue extends MapValue
+    {
+        private final MapValue map;
+        private final String[] updatedKeys;
+        private final AnyValue[] updatedValues;
+
+        UpdatedMapValue( MapValue map, String[] updatedKeys, AnyValue[] updatedValues )
+        {
+            assert updatedKeys.length == updatedValues.length;
+            assert !overlaps( map, updatedKeys );
+            this.map = map;
+            this.updatedKeys = updatedKeys;
+            this.updatedValues = updatedValues;
+        }
+
+        private static boolean overlaps( MapValue map, String[] updatedKeys )
+        {
+            for ( String key : updatedKeys )
+            {
+                if ( map.containsKey( key ) )
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        @Override
+        public ListValue keys()
+        {
+            return VirtualValues.concat( map.keys(), VirtualValues.fromArray( Values.stringArray( updatedKeys ) ) );
+        }
+
+        public Iterable<String> keySet()
+        {
+            return () -> new Iterator<String>()
+            {
+                private Iterator<String> internal = map.keySet().iterator();
+                private int index;
+
+                @Override
+                public boolean hasNext()
+                {
+                    if ( internal.hasNext() )
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return index < updatedKeys.length;
+                    }
+                }
+
+                @Override
+                public String next()
+                {
+                    if ( internal.hasNext() )
+                    {
+                        return internal.next();
+                    }
+                    else if ( index < updatedKeys.length )
+                    {
+                        return updatedKeys[index++];
+                    }
+                    else
+                    {
+                        throw new NoSuchElementException();
+                    }
+                }
+            };
+        }
+
+        @Override
+        public <E extends Exception> void foreach( ThrowingBiConsumer<String,AnyValue,E> f ) throws E
+        {
+            map.foreach( f );
+            for ( int i = 0; i < updatedKeys.length; i++ )
+            {
+                f.accept( updatedKeys[i], updatedValues[i] );
+            }
+        }
+
+        public boolean containsKey( String key )
+        {
+            for ( String updatedKey : updatedKeys )
+            {
+                if ( updatedKey.equals( key ) )
+                {
+                    return true;
+                }
+            }
+
+            return map.containsKey( key );
+        }
+
+        public AnyValue get( String key )
+        {
+            for ( int i = 0; i < updatedKeys.length; i++ )
+            {
+                if ( updatedKeys[i].equals( key ) )
+                {
+                    return updatedValues[i];
+                }
+            }
+            return map.get( key );
+        }
+
+        public int size()
+        {
+            return map.size() + updatedKeys.length;
+        }
+    }
+
+    private static final class CombinedMapValue extends MapValue
+    {
+        private final MapValue[] maps;
+
+        CombinedMapValue( MapValue... mapValues )
+        {
+            this.maps = mapValues;
+        }
+
+        @Override
+        public Iterable<String> keySet()
+        {
+           return () -> new PrefetchingIterator<String>()
+           {
+               private int mapIndex;
+               private Iterator<String> internal;
+
+               @Override
+               protected String fetchNextOrNull()
+               {
+                   while ( mapIndex < maps.length )
+                   {
+                       if ( internal == null || !internal.hasNext() )
+                       {
+                           internal = maps[mapIndex++].keySet().iterator();
+                       }
+
+                       if ( internal.hasNext() )
+                       {
+                           return internal.next();
+                       }
+                   }
+                   return null;
+               }
+           };
+        }
+
+        @Override
+        public <E extends Exception> void foreach( ThrowingBiConsumer<String,AnyValue,E> f ) throws E
+        {
+            HashSet<String> seen = new HashSet<>();
+            ThrowingBiConsumer<String,AnyValue,E> consume = ( key, value ) ->
+            {
+                if ( seen.add( key ) )
+                {
+                    f.accept( key, value );
+                }
+            };
+            for ( int i = maps.length - 1; i >= 0; i-- )
+            {
+                maps[i].foreach( consume );
+            }
+        }
+
+        public boolean containsKey( String key )
+        {
+            for ( MapValue map : maps )
+            {
+                if ( map.containsKey( key ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public AnyValue get( String key )
+        {
+            for ( int i = maps.length - 1; i >= 0; i-- )
+            {
+                AnyValue value = maps[i].get( key );
+                if ( value != NO_VALUE )
+                {
+                    return value;
+                }
+            }
+            return NO_VALUE;
+        }
+
+        public int size()
+        {
+            int[] size = {0};
+            HashSet<String> seen = new HashSet<>();
+            ThrowingBiConsumer<String,AnyValue,RuntimeException> consume = ( key, value ) ->
+            {
+                if ( seen.add( key ) )
+                {
+                    size[0]++;
+                }
+            };
+            for ( int i = maps.length - 1; i >= 0; i-- )
+            {
+                maps[i].foreach( consume );
+            }
+            return size[0];
+        }
     }
 
     @Override
     public int computeHash()
     {
-        return map.hashCode();
+        int[] h = new int[1];
+        foreach( ( key, value ) -> h[0] += key.hashCode() ^ value.hashCode() );
+        return h[0];
     }
 
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
-        writer.beginMap( map.size() );
-        for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
-        {
-            writer.writeString( entry.getKey() );
-            entry.getValue().writeTo( writer );
-        }
+        writer.beginMap( size() );
+        foreach( ( s, anyValue ) -> {
+            writer.writeString( s );
+            anyValue.writeTo( writer );
+        } );
         writer.endMap();
     }
 
-    public ListValue keys()
+    @Override
+    public boolean equals( VirtualValue other )
     {
-        String[] strings = keySet().toArray( new String[map.size()] );
-        return VirtualValues.fromArray( Values.stringArray( strings ) );
+        if ( !(other instanceof MapValue) )
+        {
+            return false;
+        }
+        MapValue that = (MapValue) other;
+        int size = size();
+        if ( size != that.size() )
+        {
+            return false;
+        }
+
+        Iterable<String> keys = keySet();
+        for ( String key : keys )
+        {
+            if ( !get( key ).equals( that.get( key ) ) )
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
-    public Set<String> keySet()
+    public abstract Iterable<String> keySet();
+
+    public ListValue keys()
     {
-        return map.keySet();
+        String[] keys = new String[size()];
+        int i = 0;
+        for ( String key : keySet() )
+        {
+            keys[i++] = key;
+        }
+        return VirtualValues.fromArray( Values.stringArray( keys ) );
     }
 
     @Override
@@ -92,18 +522,18 @@ public final class MapValue extends VirtualValue
     @Override
     public int compareTo( VirtualValue other, Comparator<AnyValue> comparator )
     {
-        if ( other == null || other.getClass() != MapValue.class )
+        if ( !(other instanceof MapValue) )
         {
             throw new IllegalArgumentException( "Cannot compare different virtual values" );
         }
-        Map<String,AnyValue> otherMap = ((MapValue) other).map;
-        int size = map.size();
-        int compare = Integer.compare( size(), otherMap.size() );
+        MapValue otherMap = (MapValue) other;
+        int size = size();
+        int compare = Integer.compare( size, otherMap.size() );
         if ( compare == 0 )
         {
-            String[] thisKeys = keySet().toArray( new String[size] );
+            String[] thisKeys = StreamSupport.stream( keySet().spliterator(), false).toArray( String[]::new  );
             Arrays.sort( thisKeys, String::compareTo );
-            String[] thatKeys = otherMap.keySet().toArray( new String[size] );
+            String[] thatKeys = StreamSupport.stream( otherMap.keySet().spliterator(), false).toArray( String[]::new  );
             Arrays.sort( thatKeys, String::compareTo );
             for ( int i = 0; i < size; i++ )
             {
@@ -117,7 +547,7 @@ public final class MapValue extends VirtualValue
             for ( int i = 0; i < size; i++ )
             {
                 String key = thisKeys[i];
-                compare = comparator.compare( map.get( key ), otherMap.get( key ) );
+                compare = comparator.compare( get( key ), otherMap.get( key ) );
                 if ( compare != 0 )
                 {
                     return compare;
@@ -138,15 +568,15 @@ public final class MapValue extends VirtualValue
         {
             return Boolean.FALSE;
         }
-        Map<String,AnyValue> otherMap = ((MapValue) other).map;
-        int size = map.size();
+        MapValue otherMap = (MapValue) other;
+        int size = size();
         if ( size != otherMap.size() )
         {
             return Boolean.FALSE;
         }
-        String[] thisKeys = keySet().toArray( new String[size] );
+        String[] thisKeys = StreamSupport.stream( keySet().spliterator(), false ).toArray( String[]::new );
         Arrays.sort( thisKeys, String::compareTo );
-        String[] thatKeys = otherMap.keySet().toArray( new String[size] );
+        String[] thatKeys = StreamSupport.stream( otherMap.keySet().spliterator(), false ).toArray( String[]::new );
         Arrays.sort( thatKeys, String::compareTo );
         for ( int i = 0; i < size; i++ )
         {
@@ -160,7 +590,7 @@ public final class MapValue extends VirtualValue
         for ( int i = 0; i < size; i++ )
         {
             String key = thisKeys[i];
-            Boolean s = map.get( key ).ternaryEquals( otherMap.get( key ) );
+            Boolean s = get( key ).ternaryEquals( otherMap.get( key ) );
             if ( s == null )
             {
                 equalityResult = null;
@@ -179,51 +609,64 @@ public final class MapValue extends VirtualValue
         return mapper.mapMap( this );
     }
 
-    public void foreach( BiConsumer<String,AnyValue> f )
+    public abstract <E extends Exception> void foreach( ThrowingBiConsumer<String,AnyValue,E> f ) throws E;
+
+    public abstract boolean containsKey( String key );
+
+    public abstract AnyValue get( String key );
+
+    public MapValue filter( BiFunction<String,AnyValue,Boolean> filterFunction )
     {
-        map.forEach( f );
+        return new FilteringMapValue( this, filterFunction );
     }
 
-    public Set<Map.Entry<String,AnyValue>> entrySet()
+    public MapValue updatedWith( String key, AnyValue value )
     {
-        return map.entrySet();
+        AnyValue current = get( key );
+        if ( current.equals( value ) )
+        {
+            return this;
+        }
+        else if ( current == NO_VALUE )
+        {
+            return new UpdatedMapValue( this, new String[]{key}, new AnyValue[]{value} );
+        }
+        else
+        {
+            return new MappedMapValue( this, ( k, v ) -> {
+                if ( k.equals( key ) )
+                {
+                    return value;
+                }
+                else
+                {
+                    return v;
+                }
+            } );
+        }
     }
 
-    public boolean containsKey( String key )
+    public MapValue updatedWith(  MapValue other )
     {
-        return map.containsKey( key );
-    }
-
-    public AnyValue get( String key )
-    {
-      return map.getOrDefault( key, NO_VALUE );
-    }
-
-    public Map<String,AnyValue> getMapCopy()
-    {
-        return new HashMap<>( map );
+        return new CombinedMapValue( this, other );
     }
 
     @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder( "Map{" );
-        String sep = "";
-        for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
+        final String[] sep = new String[]{""};
+        foreach( ( key, value ) ->
         {
-            sb.append( sep );
-            sb.append( entry.getKey() );
+            sb.append( sep[0] );
+            sb.append( key );
             sb.append( " -> " );
-            sb.append( entry.getValue() );
-            sep = ", ";
-        }
-
+            sb.append( value );
+            sep[0] = ", ";
+        } );
         sb.append( '}' );
         return sb.toString();
     }
 
-    public int size()
-    {
-        return map.size();
-    }
+    public abstract int size();
 }
