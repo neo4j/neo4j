@@ -51,9 +51,12 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public final class AnyValueMath
+/**
+ * This class contains static helper methods used by the compiled expressions
+ */
+public final class ExpressionMethods
 {
-    private AnyValueMath()
+    private ExpressionMethods()
     {
         throw new UnsupportedOperationException( "Do not instantiate" );
     }

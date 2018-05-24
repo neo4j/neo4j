@@ -44,24 +44,24 @@ object IntermediateCodeGeneration {
     case c: FunctionInvocation if c.function == functions.Round =>
       compile(c.args.head) match {
         case Some(arg) =>
-          Some(invokeStatic(method[AnyValueMath, DoubleValue, AnyValue]("round"), arg))
+          Some(invokeStatic(method[ExpressionMethods, DoubleValue, AnyValue]("round"), arg))
         case _ => None
       }
 
     case c: FunctionInvocation if c.function == functions.Sin =>
       compile(c.args.head) match {
         case Some(arg) =>
-          Some(invokeStatic(method[AnyValueMath, DoubleValue, AnyValue]("sin"), arg))
+          Some(invokeStatic(method[ExpressionMethods, DoubleValue, AnyValue]("sin"), arg))
         case _ => None
       }
 
     case c: FunctionInvocation if c.function == functions.Rand =>
-      Some(invokeStatic(method[AnyValueMath, DoubleValue]("rand")))
+      Some(invokeStatic(method[ExpressionMethods, DoubleValue]("rand")))
 
     case Multiply(lhs, rhs) =>
       (compile(lhs), compile(rhs)) match {
         case (Some(l), Some(r)) =>
-          Some(invokeStatic(method[AnyValueMath, AnyValue, AnyValue, AnyValue]("multiply"), l, r))
+          Some(invokeStatic(method[ExpressionMethods, AnyValue, AnyValue, AnyValue]("multiply"), l, r))
 
         case _ => None
       }
@@ -69,14 +69,14 @@ object IntermediateCodeGeneration {
     case Add(lhs, rhs) =>
       (compile(lhs), compile(rhs)) match {
         case (Some(l), Some(r)) =>
-          Some(invokeStatic(method[AnyValueMath, AnyValue, AnyValue, AnyValue]("add"), l, r))
+          Some(invokeStatic(method[ExpressionMethods, AnyValue, AnyValue, AnyValue]("add"), l, r))
         case _ => None
       }
 
     case Subtract(lhs, rhs) =>
       (compile(lhs), compile(rhs)) match {
         case (Some(l), Some(r)) =>
-          Some(invokeStatic(method[AnyValueMath, AnyValue, AnyValue, AnyValue]("subtract"), l, r))
+          Some(invokeStatic(method[ExpressionMethods, AnyValue, AnyValue, AnyValue]("subtract"), l, r))
         case _ => None
       }
 
@@ -91,7 +91,7 @@ object IntermediateCodeGeneration {
     case _: False => Some(falsy)
 
     case NodeProperty(offset, token, _) =>
-      Some(invokeStatic(method[AnyValueMath, Value, Transaction, Long, Int]("nodeProperty"),
+      Some(invokeStatic(method[ExpressionMethods, Value, Transaction, Long, Int]("nodeProperty"),
                         load("tx"),
                         invoke(load("context"), method[ExecutionContext, Long, Int]("getLongAt"),
                                constantJavaValue(offset)), constantJavaValue(token)))
