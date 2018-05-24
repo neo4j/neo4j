@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.PhysicalPlanningAttr
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RefSlot
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{LazyLabel, LazyTypes}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{IndexSeekModeFactory, LazyLabel, LazyTypes}
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeBuilder.translateColumnOrder
 import org.neo4j.cypher.internal.runtime.vectorized.expressions.AggregationExpressionOperator
 import org.neo4j.cypher.internal.runtime.vectorized.operators._
@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.util.InternalException
 
-class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: ExpressionConverters)
+class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: ExpressionConverters, readOnly: Boolean)
   extends TreeBuilder[Pipeline] {
 
   override def create(plan: LogicalPlan): Pipeline = {
@@ -67,19 +67,23 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
           slots.getLongOffsetFor(column),
           labelToken.nameId.id, propertyKey.nameId.id)
 
-      case plans.NodeIndexSeek(column, label, propertyKeys, SingleQueryExpression(valueExpr),  _) if propertyKeys.size == 1 =>
+      case plans.NodeIndexSeek(column, label, propertyKeys, valueExpr,  _) =>
+        val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         new NodeIndexSeekOperator(
           slots.numberOfLongs,
           slots.numberOfReferences,
           slots.getLongOffsetFor(column),
-          label, propertyKeys.head, converters.toCommandExpression(valueExpr))
+          label, propertyKeys, valueExpr.map(converters.toCommandExpression),
+          indexSeekMode)
 
-      case plans.NodeUniqueIndexSeek(column, label, propertyKeys, SingleQueryExpression(valueExpr),  _) if propertyKeys.size == 1 =>
+      case plans.NodeUniqueIndexSeek(column, label, propertyKeys, valueExpr,  _) =>
+        val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
         new NodeIndexSeekOperator(
           slots.numberOfLongs,
           slots.numberOfReferences,
           slots.getLongOffsetFor(column),
-          label, propertyKeys.head, converters.toCommandExpression(valueExpr))
+          label, propertyKeys, valueExpr.map(converters.toCommandExpression),
+          indexSeekMode)
 
       case plans.Argument(_) =>
         new ArgumentOperator
