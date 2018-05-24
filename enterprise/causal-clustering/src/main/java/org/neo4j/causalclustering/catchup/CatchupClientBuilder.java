@@ -60,7 +60,7 @@ public class CatchupClientBuilder
     private NettyPipelineBuilderFactory pipelineBuilder = new NettyPipelineBuilderFactory( VOID_WRAPPER );
     private ApplicationSupportedProtocols catchupProtocols = new ApplicationSupportedProtocols( CATCHUP, emptyList() );
     private Collection<ModifierSupportedProtocols> modifierProtocols = emptyList();
-    private long inactivityTimeoutMillis = SECONDS.toMillis( 20 );
+    private long inactivityTimeoutMillis = SECONDS.toMillis( 3600 );
     private Clock clock = systemClock();
 
     public CatchupClientBuilder()
