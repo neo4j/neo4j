@@ -24,12 +24,14 @@ import java.util.function.Supplier
 import org.scalatest.{FunSuite, Matchers}
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.util.Random
 
-class LongArrayHashMapTest extends FunSuite with Matchers {
+class LongArrayHashMapTest extends FunSuite with Matchers with RandomTester {
   test("basic") {
     val map = new LongArrayHashMap[String](32, 3)
-    map.getOrCreateAndAdd(Array(1L, 2L, 3L), () => "hello") should equal("hello")
-    map.getOrCreateAndAdd(Array(1L, 2L, 3L), () => "world") should equal("hello")
+    map.computeIfAbsent(Array(1L, 2L, 3L), () => "hello") should equal("hello")
+    map.computeIfAbsent(Array(1L, 2L, 3L), () => "world") should equal("hello")
 
     map.get(Array(1L, 2L, 3L)) should equal("hello")
     resultAsSet(map) should equal(Set(List(1L, 2L, 3L) -> "hello"))
@@ -44,14 +46,14 @@ class LongArrayHashMapTest extends FunSuite with Matchers {
 
   test("fill and doubleCapacity") {
     val map = new LongArrayHashMap[String](8, 3)
-    map.getOrCreateAndAdd(Array(0L, 8L, 1L), () => "hello")
-    map.getOrCreateAndAdd(Array(0L, 7L, 2L), () => "is")
-    map.getOrCreateAndAdd(Array(0L, 6L, 3L), () => "it")
-    map.getOrCreateAndAdd(Array(0L, 5L, 4L), () => "me")
-    map.getOrCreateAndAdd(Array(0L, 4L, 5L), () => "you")
-    map.getOrCreateAndAdd(Array(0L, 3L, 6L), () => "are")
-    map.getOrCreateAndAdd(Array(0L, 2L, 7L), () => "looking")
-    map.getOrCreateAndAdd(Array(0L, 1L, 8L), () => "for")
+    map.computeIfAbsent(Array(0L, 8L, 1L), () => "hello")
+    map.computeIfAbsent(Array(0L, 7L, 2L), () => "is")
+    map.computeIfAbsent(Array(0L, 6L, 3L), () => "it")
+    map.computeIfAbsent(Array(0L, 5L, 4L), () => "me")
+    map.computeIfAbsent(Array(0L, 4L, 5L), () => "you")
+    map.computeIfAbsent(Array(0L, 3L, 6L), () => "are")
+    map.computeIfAbsent(Array(0L, 2L, 7L), () => "looking")
+    map.computeIfAbsent(Array(0L, 1L, 8L), () => "for")
 
     map.get(Array(0L, 8L, 1L)) should equal("hello")
     map.get(Array(0L, 7L, 2L)) should equal("is")
@@ -83,6 +85,63 @@ class LongArrayHashMapTest extends FunSuite with Matchers {
 
   implicit def lambda2JavaFunction[T](f: () => T): Supplier[T] = new Supplier[T] {
     override def get(): T = f()
+  }
+
+  randomTest { randomer =>
+    val r = randomer.r
+    val width = r.nextInt(10) + 2
+    val size = r.nextInt(10000)
+    val tested = new LongArrayHashMap[String](16, width)
+    val validator = new mutable.HashMap[Array[Long], String]()
+    (0 to size) foreach { _ =>
+      val key = new Array[Long](width)
+      (0 until width) foreach { i => key(i) = randomer.randomLong() }
+      tested.computeIfAbsent(key, () => key.toString)
+      validator.getOrElseUpdate(key, key.toString)
+    }
+
+    validator foreach { case (key: Array[Long], expectedValue: String) =>
+      val v = tested.get(key)
+      v should equal(expectedValue)
+    }
+
+    (0 to size) foreach { _ =>
+      val tuple = new Array[Long](width)
+      (0 until width) foreach { i => tuple(i) = randomer.randomLong() }
+      val a = tested.get(tuple)
+      val b = validator.getOrElse(tuple, null)
+      a should equal(b)
+    }
+
+  }
+}
+
+trait RandomTester {
+  self: FunSuite =>
+  def randomTest(f: Randomer => Unit): Unit = {
+    val seed = System.nanoTime()
+    val rand = new Random(seed)
+    val input = new Randomer {
+      override val r: Random = rand
+    }
+
+    (0 to 100) foreach { i =>
+      test(s"random test with seed $seed uniquefier $i") {
+        f(input)
+      }
+    }
+  }
+
+  trait Randomer {
+    val r: Random
+
+    def randomLong(): Long = {
+      val x = r.nextLong()
+      if (x == -1 || x == -2)
+        randomLong()
+      else
+        x
+    }
   }
 
 }

@@ -19,14 +19,17 @@
  */
 package org.neo4j.cypher.internal.runtime;
 
-import org.neo4j.helpers.collection.Pair;
-
 public class LongArrayHash
 {
     static final long NOT_IN_USE = -2;
     static final int SLOT_EMPTY = 0;
     static final int VALUE_FOUND = 1;
     static final int CONTINUE_PROBING = -1;
+
+    // Static class only
+    private LongArrayHash()
+    {
+    }
 
     public static int hashCode( long[] arr, int from, int numberOfElements )
     {
@@ -58,5 +61,4 @@ public class LongArrayHash
         }
         return true;
     }
-
 }

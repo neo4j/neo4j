@@ -35,23 +35,23 @@ import static org.neo4j.cypher.internal.runtime.LongArrayHash.VALUE_FOUND;
  */
 public class LongArrayHashMultiMap<VALUE>
 {
-    private final int width;
+    private final int keySize;
     private LongArrayHashTable table;
     private Object[] values;
 
-    public LongArrayHashMultiMap( int initialCapacity, int width )
+    public LongArrayHashMultiMap( int initialCapacity, int keySize )
     {
-        assert (initialCapacity & (initialCapacity - 1)) == 0 : "Size must be a power of 2";
-        assert width > 0 : "Number of elements must be larger than 0";
+        assert (initialCapacity & (initialCapacity - 1)) == 0 : "Capacity must be a power of 2";
+        assert keySize > 0 : "Number of elements must be larger than 0";
 
-        this.width = width;
-        table = new LongArrayHashTable( initialCapacity, width );
+        this.keySize = keySize;
+        table = new LongArrayHashTable( initialCapacity, keySize );
         values = new Object[initialCapacity];
     }
 
     public void add( long[] key, VALUE value )
     {
-        assert LongArrayHash.validValue( key, width );
+        assert LongArrayHash.validValue( key, keySize );
         int slotNr = slotFor( key );
 
         while ( true )
@@ -62,7 +62,7 @@ public class LongArrayHashMultiMap<VALUE>
             case SLOT_EMPTY:
                 if ( table.timeToResize() )
                 {
-                    // We know we need to add the value to the set, but there is no space left
+                    // We know we need to add the value to the map, but there is no space left
                     resize();
                     // Need to restart linear probe after resizing
                     slotNr = slotFor( key );
@@ -95,7 +95,7 @@ public class LongArrayHashMultiMap<VALUE>
 
     public Iterator<VALUE> get( long[] key )
     {
-        assert LongArrayHash.validValue( key, width );
+        assert LongArrayHash.validValue( key, keySize );
         int slot = slotFor( key );
 
         // Here we'll spin while the slot is taken by a different value.
@@ -124,7 +124,7 @@ public class LongArrayHashMultiMap<VALUE>
 
     private int slotFor( long[] value )
     {
-        return LongArrayHash.hashCode( value, 0, width ) & table.tableMask;
+        return LongArrayHash.hashCode( value, 0, keySize ) & table.tableMask;
     }
 
     class Node

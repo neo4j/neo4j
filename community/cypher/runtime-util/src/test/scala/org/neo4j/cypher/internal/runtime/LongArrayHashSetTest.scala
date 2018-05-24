@@ -24,48 +24,36 @@ import java.util
 import org.scalatest.{FunSuite, Matchers}
 
 import scala.collection.mutable
-import scala.util.Random
 
-class LongArrayHashSetTest extends FunSuite with Matchers {
+class LongArrayHashSetTest extends FunSuite with Matchers with RandomTester {
 
-  val r = new Random()
-
-  (0 to 100) foreach { i =>
-    test(s"test #$i") {
-      val width = r.nextInt(10) + 2
-      val size = r.nextInt(10000)
-      val tested = new LongArrayHashSet(16, width)
-      val validator = new mutable.HashSet[Array[Long]]()
-      (0 to size) foreach { _ =>
-        val tuple = new Array[Long](width)
-        (0 until width) foreach { i => tuple(i) = randomLong() }
-        tested.add(tuple)
-        validator.add(tuple)
-      }
-
-      validator foreach { x =>
-        if (!tested.contains(x))
-          fail(s"Value was missing: ${util.Arrays.toString(x)}")
-      }
-
-      (0 to size) foreach { _ =>
-        val tuple = new Array[Long](width)
-        (0 until width) foreach { i => tuple(i) = randomLong() }
-        val a = tested.contains(tuple)
-        val b = validator.contains(tuple)
-
-        if(a != b)
-          fail(s"Value: ${util.Arrays.toString(tuple)} LongArrayHashSet $a mutable.HashSet")
-      }
+  randomTest { randomer =>
+    val r = randomer.r
+    val width = r.nextInt(10) + 2
+    val size = r.nextInt(10000)
+    val tested = new LongArrayHashSet(16, width)
+    val validator = new mutable.HashSet[Array[Long]]()
+    (0 to size) foreach { _ =>
+      val tuple = new Array[Long](width)
+      (0 until width) foreach { i => tuple(i) = randomer.randomLong() }
+      tested.add(tuple)
+      validator.add(tuple)
     }
-  }
 
-  private def randomLong(): Long = {
-    val x = r.nextLong()
-    if (x == -1 || x == -2)
-      randomLong()
-    else
-      x
+    validator foreach { x =>
+      if (!tested.contains(x))
+        fail(s"Value was missing: ${util.Arrays.toString(x)}")
+    }
+
+    (0 to size) foreach { _ =>
+      val tuple = new Array[Long](width)
+      (0 until width) foreach { i => tuple(i) = randomer.randomLong() }
+      val a = tested.contains(tuple)
+      val b = validator.contains(tuple)
+
+      if (a != b)
+        fail(s"Value: ${util.Arrays.toString(tuple)} LongArrayHashSet $a mutable.HashSet")
+    }
   }
 
   test("manual test to help with debugging") {

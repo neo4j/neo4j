@@ -22,8 +22,9 @@ package org.neo4j.cypher.internal.runtime
 import org.scalatest.{FunSuite, Matchers}
 
 import scala.collection.JavaConverters._
+import scala.collection.{immutable, mutable}
 
-class LongArrayHashMultiMapTest extends FunSuite with Matchers {
+class LongArrayHashMultiMapTest extends FunSuite with Matchers with RandomTester {
   test("basic") {
     val map = new LongArrayHashMultiMap[String](32, 3)
     map.add(Array(1L, 2L, 3L), "hello")
@@ -85,4 +86,32 @@ class LongArrayHashMultiMapTest extends FunSuite with Matchers {
     map.get(Array(0L, 0L)).asScala.toList should equal(List.empty)
   }
 
+  randomTest { randomer =>
+    val r = randomer.r
+    val width = r.nextInt(10) + 2
+    val size = r.nextInt(10000)
+    val tested = new LongArrayHashMultiMap[String](16, width)
+    val validator = new mutable.HashMap[Array[Long], mutable.ListBuffer[String]]()
+    (0 to size) foreach { _ =>
+      val key = new Array[Long](width)
+      (0 until width) foreach { i => key(i) = randomer.randomLong() }
+      val value = System.nanoTime().toString
+      tested.add(key, value)
+      val values: mutable.ListBuffer[String] = validator.getOrElseUpdate(key, new mutable.ListBuffer[String])
+      values.append(value)
+    }
+
+    validator.foreach { case (key, expectedValues) =>
+      val v = tested.get(key).asScala.toList
+      v should equal(expectedValues.toList)
+    }
+
+    (0 to size) foreach { _ =>
+      val tuple = new Array[Long](width)
+      (0 until width) foreach { i => tuple(i) = randomer.randomLong() }
+      val a = tested.get(tuple).asScala.toList
+      val b = validator.getOrElse(tuple, List.empty)
+      a should equal(b.toList)
+    }
+  }
 }

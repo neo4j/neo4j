@@ -38,23 +38,23 @@ import static org.neo4j.cypher.internal.runtime.LongArrayHash.VALUE_FOUND;
  */
 public class LongArrayHashMap<VALUE>
 {
-    private final int width;
+    private final int keySize;
     private LongArrayHashTable table;
     private Object[] values;
 
-    public LongArrayHashMap( int initialCapacity, int width )
+    public LongArrayHashMap( int initialCapacity, int keySize )
     {
-        assert (initialCapacity & (initialCapacity - 1)) == 0 : "Size must be a power of 2";
-        assert width > 0 : "Number of elements must be larger than 0";
+        assert (initialCapacity & (initialCapacity - 1)) == 0 : "Capacity must be a power of 2";
+        assert keySize > 0 : "Number of elements must be larger than 0";
 
-        this.width = width;
-        table = new LongArrayHashTable( initialCapacity, width );
+        this.keySize = keySize;
+        table = new LongArrayHashTable( initialCapacity, keySize );
         values = new Object[initialCapacity];
     }
 
-    public VALUE getOrCreateAndAdd( long[] key, Supplier<VALUE> creator )
+    public VALUE computeIfAbsent( long[] key, Supplier<VALUE> creator )
     {
-        assert LongArrayHash.validValue( key, width );
+        assert LongArrayHash.validValue( key, keySize );
         int slotNr = slotFor( key );
         while ( true )
         {
@@ -96,7 +96,7 @@ public class LongArrayHashMap<VALUE>
 
     public VALUE get( long[] key )
     {
-        assert LongArrayHash.validValue( key, width );
+        assert LongArrayHash.validValue( key, keySize );
         int slotNr = slotFor( key );
         while ( true )
         {
@@ -135,7 +135,7 @@ public class LongArrayHashMap<VALUE>
 
     private int slotFor( long[] value )
     {
-        return LongArrayHash.hashCode( value, 0, width ) & table.tableMask;
+        return LongArrayHash.hashCode( value, 0, keySize ) & table.tableMask;
     }
 
     public Iterator<Map.Entry<long[],VALUE>> iterator()
@@ -148,7 +148,7 @@ public class LongArrayHashMap<VALUE>
             protected Map.Entry<long[],VALUE> fetchNextOrNull()
             {
                 // First, find a good spot
-                while ( current < table.capacity && table.keys[current * width] == NOT_IN_USE )
+                while ( current < table.capacity && table.keys[current * keySize] == NOT_IN_USE )
                 {
                     current = current + 1;
                 }
@@ -160,8 +160,8 @@ public class LongArrayHashMap<VALUE>
                 }
 
                 // Otherwise, let's create the return object.
-                long[] key = new long[width];
-                System.arraycopy( table.keys, current * width, key, 0, width );
+                long[] key = new long[keySize];
+                System.arraycopy( table.keys, current * keySize, key, 0, keySize );
 
                 @SuppressWarnings( "unchecked" )
                 VALUE value = (VALUE) values[current];
@@ -201,7 +201,7 @@ public class LongArrayHashMap<VALUE>
         @Override
         public VALUE setValue( VALUE value )
         {
-            return null;
+            throw new UnsupportedOperationException();
         }
     }
 }

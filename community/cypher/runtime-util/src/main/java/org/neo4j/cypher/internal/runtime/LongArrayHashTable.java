@@ -59,7 +59,7 @@ class LongArrayHashTable
      */
     boolean timeToResize()
     {
-        return numberOfEntries == resizeLimit;
+        return numberOfEntries >= resizeLimit;
     }
 
     /***
@@ -101,20 +101,14 @@ class LongArrayHashTable
     void claimSlot( int slot, long[] key )
     {
         int offset = slot * width;
+        assert keys[offset] == NOT_IN_USE : "Tried overwriting an already used slot";
         System.arraycopy( key, 0, keys, offset, width );
         numberOfEntries++;
     }
 
     public boolean isEmpty()
     {
-        for ( int i = 0; i < keys.length; i = i + width )
-        {
-            if ( keys[i] != NOT_IN_USE )
-            {
-                return false;
-            }
-        }
-        return true;
+        return numberOfEntries == 0;
     }
 
     /**
@@ -136,39 +130,39 @@ class LongArrayHashTable
 
     LongArrayHashTable doubleCapacity()
     {
-        LongArrayHashTable newTable = new LongArrayHashTable( capacity * 2, width );
-        newTable.numberOfEntries = numberOfEntries;
+        LongArrayHashTable toTable = new LongArrayHashTable( capacity * 2, width );
+        toTable.numberOfEntries = numberOfEntries;
 
         for ( int fromOffset = 0; fromOffset < capacity * width; fromOffset = fromOffset + width )
         {
             if ( keys[fromOffset] != NOT_IN_USE )
             {
-                int toSlot = LongArrayHash.hashCode( keys, fromOffset, width ) & newTable.tableMask;
-                toSlot = newTable.findUnusedSlot( toSlot );
-                System.arraycopy( keys, fromOffset, newTable.keys, toSlot * width, width );
+                int toSlot = LongArrayHash.hashCode( keys, fromOffset, width ) & toTable.tableMask;
+                toSlot = toTable.findUnusedSlot( toSlot );
+                System.arraycopy( keys, fromOffset, toTable.keys, toSlot * width, width );
             }
         }
 
-        return newTable;
+        return toTable;
     }
 
-    Pair<LongArrayHashTable,Object[]> doubleCapacity( Object[] srcValues )
+    Pair<LongArrayHashTable,Object[]> doubleCapacity( Object[] fromValues )
     {
-        LongArrayHashTable dstTable = new LongArrayHashTable( capacity * 2, width );
-        Object[] dstValues = new Object[capacity * 2];
-        long[] srcKeys = keys;
-        dstTable.numberOfEntries = numberOfEntries;
+        LongArrayHashTable toTable = new LongArrayHashTable( capacity * 2, width );
+        Object[] toValues = new Object[capacity * 2];
+        long[] fromKeys = keys;
+        toTable.numberOfEntries = numberOfEntries;
         for ( int fromSlot = 0; fromSlot < capacity; fromSlot = fromSlot + 1 )
         {
             int fromOffset = fromSlot * width;
-            if ( srcKeys[fromOffset] != NOT_IN_USE )
+            if ( fromKeys[fromOffset] != NOT_IN_USE )
             {
-                int toSlot = LongArrayHash.hashCode( srcKeys, fromOffset, width ) & dstTable.tableMask;
-                toSlot = dstTable.findUnusedSlot( toSlot );
-                System.arraycopy( srcKeys, fromOffset, dstTable.keys, toSlot * width, width );
-                dstValues[toSlot] = srcValues[fromSlot];
+                int toSlot = LongArrayHash.hashCode( fromKeys, fromOffset, width ) & toTable.tableMask;
+                toSlot = toTable.findUnusedSlot( toSlot );
+                System.arraycopy( fromKeys, fromOffset, toTable.keys, toSlot * width, width );
+                toValues[toSlot] = fromValues[fromSlot];
             }
         }
-        return Pair.of( dstTable, dstValues );
+        return Pair.of( toTable, toValues );
     }
 }

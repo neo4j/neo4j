@@ -86,7 +86,7 @@ case class EagerAggregationSlottedPrimitivePipe(source: Pipe,
     // Consume all input and aggregate
     input.foreach(ctx => {
       setKeyFromCtx(ctx)
-      val aggregationFunctions = result.getOrCreateAndAdd(keys, supplier)
+      val aggregationFunctions = result.computeIfAbsent(keys, supplier)
       aggregationFunctions.foreach(func => func(ctx, state))
     })
 
