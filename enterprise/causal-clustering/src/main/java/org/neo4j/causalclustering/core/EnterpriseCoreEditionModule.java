@@ -138,7 +138,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 
-import static java.util.Collections.singletonList;
+import static java.util.Arrays.asList;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_messages_log_path;
 
 /**
@@ -270,9 +270,10 @@ public class EnterpriseCoreEditionModule extends EditionModule
         ModifierProtocolRepository modifierProtocolRepository =
                 new ModifierProtocolRepository( Protocol.ModifierProtocols.values(), supportedModifierProtocols );
 
-        ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstallerRepository =
-                new ProtocolInstallerRepository<>(
-                        singletonList( new RaftProtocolClientInstaller.Factory( clientPipelineBuilderFactory, logProvider ) ),
+        ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstallerRepository = new ProtocolInstallerRepository<>(
+                asList( new RaftProtocolClientInstaller.Factory( clientPipelineBuilderFactory, logProvider ),
+                        new org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolClientInstaller.Factory( clientPipelineBuilderFactory,
+                                logProvider ) ),
                         ModifierProtocolInstaller.allClientInstallers );
 
         Duration handshakeTimeout = config.get( CausalClusteringSettings.handshake_timeout );
