@@ -141,7 +141,7 @@ public class MetricsSettings implements LoadableConfig
     @Description( "The file size in bytes at which the csv files will auto-rotate. If set to zero then no " +
             "rotation will occur. Accepts a binary suffix `k`, `m` or `g`." )
     public static final Setting<Long> csvRotationThreshold = buildSetting( "metrics.csv.rotation.size",
-            BYTES, "100m" ).constraint( range( 0L, Long.MAX_VALUE ) ).build();
+            BYTES, "10m" ).constraint( range( 0L, Long.MAX_VALUE ) ).build();
 
     @Description( "Maximum number of history files for the csv files." )
     public static final Setting<Integer> csvMaxArchives = buildSetting( "metrics.csv.rotation.keep_number",
