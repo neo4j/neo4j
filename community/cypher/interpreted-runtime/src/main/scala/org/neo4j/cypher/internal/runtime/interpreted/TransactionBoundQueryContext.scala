@@ -308,9 +308,13 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def lockingUniqueIndexSeek(indexReference: IndexReference, queries: Seq[IndexQuery.ExactPredicate]): Option[NodeValue] = {
     indexSearchMonitor.lockingUniqueIndexSeek(indexReference, queries)
-    val index = DefaultIndexReference.general(indexReference.label(), indexReference.properties():_*)
-    val nodeId = reads().lockingNodeUniqueIndexSeek(index, queries:_*)
-    if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
+    if (queries.exists(q => q.value() == Values.NO_VALUE))
+      None
+    else {
+      val index = DefaultIndexReference.general(indexReference.label(), indexReference.properties(): _*)
+      val nodeId = reads().lockingNodeUniqueIndexSeek(index, queries: _*)
+      if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
+    }
   }
 
   override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
