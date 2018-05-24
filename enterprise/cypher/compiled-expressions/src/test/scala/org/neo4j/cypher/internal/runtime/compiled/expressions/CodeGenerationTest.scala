@@ -24,17 +24,21 @@ package org.neo4j.cypher.internal.runtime.compiled.expressions
 
 import java.lang.Math.PI
 
-import org.neo4j.values.storable.{DoubleValue, Values}
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.values.storable.Values._
-import org.neo4j.values.virtual.VirtualValues
+import org.neo4j.values.storable.{DoubleValue, Values}
 import org.neo4j.values.virtual.VirtualValues.{EMPTY_MAP, map}
 import org.opencypher.v9_0.ast.AstConstructionTestSupport
 import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.util.symbols
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.util.{InputPosition, NonEmptyList, symbols}
 
+class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport {
 
-class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport{
+  private val tx = mock[Transaction]
+  private val ctx = mock[ExecutionContext]
+
   test("round function") {
     // Given
     val expression = function("round", literalFloat(PI))
@@ -43,7 +47,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport{
     val compiled = compile(expression)
 
     // Then
-    compiled.compute(EMPTY_MAP) should equal(doubleValue(3.0))
+    compiled.compute(ctx, tx, EMPTY_MAP) should equal(doubleValue(3.0))
   }
 
   test("sin function") {
@@ -54,7 +58,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport{
     val compiled = compile(expression)
 
     // Then
-    compiled.compute(EMPTY_MAP) should equal(doubleValue(Math.sin(PI)))
+    compiled.compute(ctx, tx, EMPTY_MAP) should equal(doubleValue(Math.sin(PI)))
   }
 
   test("rand function") {
@@ -65,7 +69,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport{
     val compiled = compile(expression)
 
     // Then
-    val value = compiled.compute(EMPTY_MAP).asInstanceOf[DoubleValue].doubleValue()
+    val value = compiled.compute(ctx, tx, EMPTY_MAP).asInstanceOf[DoubleValue].doubleValue()
     value should (be > 0.0 and be <= 1.0)
   }
 
@@ -77,7 +81,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport{
     val compiled = compile(expression)
 
     // Then
-    compiled.compute(EMPTY_MAP) should equal(longValue(52))
+    compiled.compute(ctx, tx, EMPTY_MAP) should equal(longValue(52))
   }
 
   test("subtract function") {
@@ -88,7 +92,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport{
     val compiled = compile(expression)
 
     // Then
-    compiled.compute(EMPTY_MAP) should equal(longValue(32))
+    compiled.compute(ctx, tx, EMPTY_MAP) should equal(longValue(32))
   }
 
   test("multiply function") {
@@ -99,7 +103,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport{
     val compiled = compile(expression)
 
     // Then
-    compiled.compute(EMPTY_MAP) should equal(longValue(420))
+    compiled.compute(ctx, tx, EMPTY_MAP) should equal(longValue(420))
   }
 
   test("extract parameter") {
@@ -110,8 +114,8 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport{
     val compiled = compile(expression)
 
     // Then
-    compiled.compute(EMPTY_MAP) should equal(NO_VALUE)
-    compiled.compute(map(Array("prop"), Array(stringValue("foo")))) should equal(stringValue("foo"))
+    compiled.compute(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
+    compiled.compute(ctx, tx, map(Array("prop"), Array(stringValue("foo")))) should equal(stringValue("foo"))
   }
 
   test("Null") {
@@ -122,7 +126,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport{
     val compiled = compile(expression)
 
     // Then
-    compiled.compute(EMPTY_MAP) should equal(NO_VALUE)
+    compiled.compute(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
   }
 
   test("True") {
@@ -133,7 +137,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport{
     val compiled = compile(expression)
 
     // Then
-    compiled.compute(EMPTY_MAP) should equal(Values.TRUE)
+    compiled.compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
   }
 
   test("False") {
@@ -144,8 +148,9 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport{
     val compiled = compile(expression)
 
     // Then
-    compiled.compute(EMPTY_MAP) should equal(Values.FALSE)
+    compiled.compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
   }
+
 
   private def compile(e: Expression) =
     CodeGeneration.compile(IntermediateCodeGeneration.compile(e).getOrElse(fail()))

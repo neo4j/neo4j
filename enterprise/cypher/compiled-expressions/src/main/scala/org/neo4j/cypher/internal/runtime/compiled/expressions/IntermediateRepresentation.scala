@@ -55,6 +55,10 @@ object IntermediateRepresentation {
                                   (implicit owner: ClassTag[OWNER], out: ClassTag[OUT], in1: ClassTag[IN1],
                                    in2: ClassTag[IN2]) =
     Method(owner.runtimeClass, out.runtimeClass, name, in1.runtimeClass, in2.runtimeClass)
+  def method[OWNER, OUT, IN1, IN2, IN3](name: String)
+                                  (implicit owner: ClassTag[OWNER], out: ClassTag[OUT], in1: ClassTag[IN1],
+                                   in2: ClassTag[IN2], in3: ClassTag[IN3]) =
+    Method(owner.runtimeClass, out.runtimeClass, name, in1.runtimeClass, in2.runtimeClass, in3.runtimeClass)
 
   def invokeStatic(method: Method, params: IntermediateRepresentation*): IntermediateRepresentation = InvokeStatic(method, params)
   def invoke(owner: IntermediateRepresentation, method: Method, params: IntermediateRepresentation*): IntermediateRepresentation =

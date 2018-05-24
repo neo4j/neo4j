@@ -26,9 +26,15 @@ import org.opencypher.v9_0.util.CypherTypeException;
 
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.storable.NumberValue;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.neo4j.values.storable.Values.doubleValue;
 
@@ -70,7 +76,7 @@ public final class AnyValueMath
 
     public static AnyValue add( AnyValue lhs, AnyValue rhs )
     {
-        if ( lhs instanceof NumberValue  && rhs instanceof  NumberValue )
+        if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
         {
             return ((NumberValue) lhs).plus( (NumberValue) rhs );
         }
@@ -83,7 +89,7 @@ public final class AnyValueMath
 
     public static AnyValue subtract( AnyValue lhs, AnyValue rhs )
     {
-        if ( lhs instanceof NumberValue  && rhs instanceof  NumberValue )
+        if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
         {
             return ((NumberValue) lhs).minus( (NumberValue) rhs );
         }
@@ -96,7 +102,7 @@ public final class AnyValueMath
 
     public static AnyValue multiply( AnyValue lhs, AnyValue rhs )
     {
-        if ( lhs instanceof NumberValue  && rhs instanceof  NumberValue )
+        if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
         {
             return ((NumberValue) lhs).times( (NumberValue) rhs );
         }
@@ -104,6 +110,28 @@ public final class AnyValueMath
         {
             //todo
             throw new CypherTypeException( "can only multiply numbers", null );
+        }
+    }
+
+    public static Value nodeProperty( Transaction tx, long node, int property )
+    {
+        CursorFactory cursors = tx.cursors();
+        try ( NodeCursor nodes = cursors.allocateNodeCursor();
+              PropertyCursor properties = cursors.allocatePropertyCursor() )
+        {
+            tx.dataRead().singleNode( node, nodes );
+            if ( nodes.next() )
+            {
+                nodes.properties( properties );
+                while ( properties.next() )
+                {
+                    if ( properties.propertyKey() == property )
+                    {
+                        return properties.propertyValue();
+                    }
+                }
+            }
+            return Values.NO_VALUE;
         }
     }
 }
