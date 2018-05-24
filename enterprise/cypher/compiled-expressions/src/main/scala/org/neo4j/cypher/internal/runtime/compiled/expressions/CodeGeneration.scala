@@ -33,6 +33,9 @@ import org.neo4j.codegen.MethodReference.methodReference
 import org.neo4j.codegen.Parameter.param
 import org.neo4j.codegen.bytecode.ByteCode.BYTECODE
 import org.neo4j.codegen.source.SourceCode
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.NodeProperty
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.MapValue
@@ -42,7 +45,10 @@ object CodeGeneration {
 
   private val PACKAGE_NAME = "org.neo4j.cypher.internal.compiler.v3_5.generated"
   private val INTERFACE = classOf[CompiledExpression]
-  private val COMPUTE_METHOD = method(classOf[AnyValue], "compute", param(classOf[MapValue], "params"))
+  private val COMPUTE_METHOD = method(classOf[AnyValue], "compute",
+                                      param(classOf[ExecutionContext], "context"),
+                                      param(classOf[Transaction], "tx"),
+                                      param(classOf[MapValue], "params"))
 
   private def className(): String = "Expression" + System.nanoTime()
 
@@ -82,7 +88,6 @@ object CodeGeneration {
     case NULL => getStatic(staticField(classOf[Values], classOf[Value], "NO_VALUE"))
     case TRUE => getStatic(staticField(classOf[Values], classOf[BooleanValue], "TRUE"))
     case FALSE => getStatic(staticField(classOf[Values], classOf[BooleanValue], "FALSE"))
-
   }
 
 

@@ -22,9 +22,12 @@
  */
 package org.neo4j.cypher.internal.runtime.compiled.expressions
 
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.NodeProperty
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.{doubleValue, longValue}
-import org.neo4j.values.storable.{DoubleValue, Values}
+import org.neo4j.values.storable.{DoubleValue, Value, Values}
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions._
@@ -84,6 +87,14 @@ object IntermediateCodeGeneration {
     case _: Null => Some(noValue)
     case _: True => Some(truthy)
     case _: False => Some(falsy)
+
+    case NodeProperty(offset, token, _) =>
+      Some(invokeStatic(method[AnyValueMath, Value, Transaction, Long, Int]("nodeProperty"),
+                        load("tx"),
+                        invoke(load("context"), method[ExecutionContext, Long, Int]("getLongAt"),
+                               constantJavaValue(offset)), constantJavaValue(token)))
+
+
 
 
     case _ => None

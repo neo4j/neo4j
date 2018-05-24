@@ -53,6 +53,7 @@ case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTr
   // needed only for compatibility with 2.3
   def acquireWriteLock(p: PropertyContainer): Lock = tc.acquireWriteLock(p)
 
+  override def transaction: Transaction = tc.kernelTransaction
 
   override def cursors: CursorFactory = tc.kernelTransaction.cursors()
 

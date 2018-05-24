@@ -22,10 +22,12 @@
  */
 package org.neo4j.cypher.internal.runtime.compiled.expressions;
 
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 
 public interface CompiledExpression
 {
-    AnyValue compute( MapValue params );
+    AnyValue compute( ExecutionContext context, Transaction tx, MapValue params );
 }

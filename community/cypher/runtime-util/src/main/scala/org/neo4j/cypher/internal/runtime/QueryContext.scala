@@ -239,6 +239,8 @@ trait Operations[T] {
 
 trait QueryTransactionalContext extends CloseableResource {
 
+  def transaction : Transaction
+
   def cursors : CursorFactory
 
   def dataRead: Read
