@@ -185,9 +185,13 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         dependencies.satisfyDependency( idController );
         dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
-        propertyKeyTokenHolder = life.add( dependencies.satisfyDependency( new DelegatingPropertyKeyTokenHolder( new ReadOnlyTokenCreator() ) ) );
-        labelTokenHolder = life.add( dependencies.satisfyDependency( new DelegatingLabelTokenHolder( new ReadOnlyTokenCreator() ) ) );
-        relationshipTypeTokenHolder = life.add( dependencies.satisfyDependency( new DelegatingRelationshipTypeTokenHolder( new ReadOnlyTokenCreator() ) ) );
+        propertyKeyTokenHolder = new DelegatingPropertyKeyTokenHolder( new ReadOnlyTokenCreator() );
+        labelTokenHolder = new DelegatingLabelTokenHolder( new ReadOnlyTokenCreator() );
+        relationshipTypeTokenHolder = new DelegatingRelationshipTypeTokenHolder( new ReadOnlyTokenCreator() );
+
+        dependencies.satisfyDependency( propertyKeyTokenHolder );
+        dependencies.satisfyDependency( labelTokenHolder );
+        dependencies.satisfyDependency( relationshipTypeTokenHolder );
 
         life.add( dependencies.satisfyDependency( new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade ) ) );
 

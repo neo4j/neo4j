@@ -27,18 +27,15 @@ import java.io.IOException;
 
 import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class BranchedDataMigrator extends LifecycleAdapter
 {
     private final File storeDir;
-    private final PageCache pageCache;
 
-    public BranchedDataMigrator( File storeDir, PageCache pageCache )
+    public BranchedDataMigrator( File storeDir )
     {
         this.storeDir = storeDir;
-        this.pageCache = pageCache;
     }
 
     @Override

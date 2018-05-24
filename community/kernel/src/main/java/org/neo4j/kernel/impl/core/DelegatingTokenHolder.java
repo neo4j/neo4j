@@ -31,7 +31,6 @@ import java.util.function.IntPredicate;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.TokenFactory;
 
@@ -43,7 +42,7 @@ import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
  * When asked for a token that isn't in the cache, delegates to a TokenCreator to create the token,
  * then stores it in the cache.
  */
-public abstract class DelegatingTokenHolder<TOKEN extends Token> extends LifecycleAdapter implements TokenHolder<TOKEN>
+public abstract class DelegatingTokenHolder<TOKEN extends Token> implements TokenHolder<TOKEN>
 {
     protected InMemoryTokenCache<TOKEN> tokenCache = new InMemoryTokenCache<>( tokenType() );
 
@@ -52,7 +51,7 @@ public abstract class DelegatingTokenHolder<TOKEN extends Token> extends Lifecyc
     private final TokenCreator tokenCreator;
     private final TokenFactory<TOKEN> tokenFactory;
 
-    public DelegatingTokenHolder( TokenCreator tokenCreator, TokenFactory<TOKEN> tokenFactory )
+    DelegatingTokenHolder( TokenCreator tokenCreator, TokenFactory<TOKEN> tokenFactory )
     {
         this.tokenCreator = tokenCreator;
         this.tokenFactory = tokenFactory;
