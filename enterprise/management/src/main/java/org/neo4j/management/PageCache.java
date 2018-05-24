@@ -72,4 +72,16 @@ public interface PageCache
     {
        return Double.NaN;
     }
+
+    @Description( "Number of page unpins. How many pages have been accessed and are not accessed anymore (monitoring must be enabled separately)." )
+    default long getUnpins()
+    {
+        return 0;
+    }
+
+    @Description( "Number of page hits. How often requested data was found in memory." )
+    default long getHits()
+    {
+        return 0;
+    }
 }
