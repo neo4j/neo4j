@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_5
 import java.time.Clock
 
 import org.opencypher.v9_0.util.InputPosition
-import org.neo4j.cypher.internal.compiler.v3_5.phases.{CompilerContext, _}
+import org.neo4j.cypher.internal.compiler.v3_5.phases.{PlannerContext, _}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.debug.DebugPrinter
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans.rewriter.PlanRewriter
@@ -34,14 +34,14 @@ import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
 import org.opencypher.v9_0.rewriting.RewriterStepSequencer
 
-case class CypherCompiler[Context <: CompilerContext](astRewriter: ASTRewriter,
-                                                      monitors: Monitors,
-                                                      sequencer: String => RewriterStepSequencer,
-                                                      metricsFactory: MetricsFactory,
-                                                      config: CypherCompilerConfiguration,
-                                                      updateStrategy: UpdateStrategy,
-                                                      clock: Clock,
-                                                      contextCreation: ContextCreator[Context]) {
+case class CypherPlanner[Context <: PlannerContext](astRewriter: ASTRewriter,
+                                                    monitors: Monitors,
+                                                    sequencer: String => RewriterStepSequencer,
+                                                    metricsFactory: MetricsFactory,
+                                                    config: CypherPlannerConfiguration,
+                                                    updateStrategy: UpdateStrategy,
+                                                    clock: Clock,
+                                                    contextCreation: ContextCreator[Context]) {
   def normalizeQuery(state: BaseState, context: Context): BaseState = prepareForCaching.transform(state, context)
 
   def planPreparedQuery(state: BaseState, context: Context): LogicalPlanState = {
@@ -68,17 +68,17 @@ case class CypherCompiler[Context <: CompilerContext](astRewriter: ASTRewriter,
     CompilationPhases.parsing(sequencer).transform(startState, context)
   }
 
-  val prepareForCaching: Transformer[CompilerContext, BaseState, BaseState] =
+  val prepareForCaching: Transformer[PlannerContext, BaseState, BaseState] =
     RewriteProcedureCalls andThen
     ProcedureDeprecationWarnings andThen
     ProcedureWarnings
 
-  val irConstruction: Transformer[CompilerContext, BaseState, LogicalPlanState] =
+  val irConstruction: Transformer[PlannerContext, BaseState, LogicalPlanState] =
     ResolveTokens andThen
       CreatePlannerQuery.adds(CompilationContains[UnionQuery]) andThen
       OptionalMatchRemover
 
-  val costBasedPlanning: Transformer[CompilerContext, LogicalPlanState, LogicalPlanState] =
+  val costBasedPlanning: Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] =
     QueryPlanner().adds(CompilationContains[LogicalPlan]) andThen
     PlanRewriter(sequencer) andThen
     If((s: LogicalPlanState) => s.unionQuery.readOnly) (
@@ -97,13 +97,13 @@ case class CypherCompiler[Context <: CompilerContext](astRewriter: ASTRewriter,
     )
 }
 
-case class CypherCompilerConfiguration(queryCacheSize: Int,
-                                       statsDivergenceCalculator: StatsDivergenceCalculator,
-                                       useErrorsOverWarnings: Boolean,
-                                       idpMaxTableSize: Int,
-                                       idpIterationDuration: Long,
-                                       errorIfShortestPathFallbackUsedAtRuntime: Boolean,
-                                       errorIfShortestPathHasCommonNodesAtRuntime: Boolean,
-                                       legacyCsvQuoteEscaping: Boolean,
-                                       nonIndexedLabelWarningThreshold: Long,
-                                       planWithMinimumCardinalityEstimates: Boolean)
+case class CypherPlannerConfiguration(queryCacheSize: Int,
+                                      statsDivergenceCalculator: StatsDivergenceCalculator,
+                                      useErrorsOverWarnings: Boolean,
+                                      idpMaxTableSize: Int,
+                                      idpIterationDuration: Long,
+                                      errorIfShortestPathFallbackUsedAtRuntime: Boolean,
+                                      errorIfShortestPathHasCommonNodesAtRuntime: Boolean,
+                                      legacyCsvQuoteEscaping: Boolean,
+                                      nonIndexedLabelWarningThreshold: Long,
+                                      planWithMinimumCardinalityEstimates: Boolean)

@@ -44,7 +44,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
                      clock: Clock = Clock.systemUTC(), log: Log = NullLog.getInstance):
   Compatibility[CommunityRuntimeContext, Transformer[CommunityRuntimeContext, LogicalPlanState, CompilationState]] = {
 
-    val config = CypherCompilerConfiguration(
+    val config = CypherPlannerConfiguration(
       queryCacheSize,
       StatsDivergenceCalculator.divergenceNoDecayCalculator(statsDivergenceThreshold, queryPlanTTL),
       useErrorsOverWarnings = false,
@@ -60,8 +60,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
                   clock,
                   kernelMonitors,
                   log,
-                  CypherPlanner.default,
-                  CypherRuntime.default,
+                  CypherPlannerOption.default,
+                  CypherRuntimeOption.default,
                   CypherUpdateStrategy.default,
                   CommunityRuntimeBuilder,
                   CommunityRuntimeContextCreator,
@@ -109,8 +109,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
                                                                    isPeriodicCommit = false,
                                                                    CypherVersion.default,
                                                                    CypherExecutionMode.default,
-                                                                   CypherPlanner.default,
-                                                                   CypherRuntime.default,
+                                                                   CypherPlannerOption.default,
+                                                                   CypherRuntimeOption.default,
                                                                    CypherUpdateStrategy.default,
                                                                    debugOptions),
                                                     noTracing, Set.empty)

@@ -38,7 +38,7 @@ trait ContextCreator[Context <: BaseContext] {
              monitors: Monitors,
              metricsFactory: MetricsFactory,
              queryGraphSolver: QueryGraphSolver,
-             config: CypherCompilerConfiguration,
+             config: CypherPlannerConfiguration,
              updateStrategy: UpdateStrategy,
              clock: Clock,
              logicalPlanIdGen: IdGen,

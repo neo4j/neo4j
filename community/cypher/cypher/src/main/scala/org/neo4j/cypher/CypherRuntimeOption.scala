@@ -19,16 +19,15 @@
  */
 package org.neo4j.cypher
 
-sealed abstract class CypherPlanner(plannerName: String) extends CypherOption(plannerName)
+sealed abstract class CypherRuntimeOption(runtimeName: String) extends CypherOption(runtimeName)
 
-case object CypherPlanner extends CypherOptionCompanion[CypherPlanner] {
+case object CypherRuntimeOption extends CypherOptionCompanion[CypherRuntimeOption] {
 
-  case object default extends CypherPlanner("default")
-  case object cost extends CypherPlanner("cost")
-  case object greedy extends CypherPlanner("greedy")
-  case object idp extends CypherPlanner("idp")
-  case object dp extends CypherPlanner("dp")
-  case object rule extends CypherPlanner("rule")
+  case object default extends CypherRuntimeOption("default")
+  case object interpreted extends CypherRuntimeOption("interpreted")
+  case object slotted extends CypherRuntimeOption("slotted")
+  case object morsel extends CypherRuntimeOption("morsel")
+  case object compiled extends CypherRuntimeOption("compiled")
 
-  val all: Set[CypherPlanner] = Set(cost, greedy, idp, dp, rule)
+  val all: Set[CypherRuntimeOption] = Set(interpreted, compiled, slotted, morsel)
 }

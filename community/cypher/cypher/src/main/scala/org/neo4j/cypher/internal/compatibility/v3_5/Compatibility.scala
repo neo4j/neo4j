@@ -47,12 +47,12 @@ import org.opencypher.v9_0.rewriting.RewriterStepSequencer
 import scala.util.Try
 
 case class Compatibility[CONTEXT <: CommunityRuntimeContext,
-                    T <: Transformer[CONTEXT, LogicalPlanState, CompilationState]](config: CypherCompilerConfiguration,
+                    T <: Transformer[CONTEXT, LogicalPlanState, CompilationState]](config: CypherPlannerConfiguration,
                                                                                    clock: Clock,
                                                                                    kernelMonitors: KernelMonitors,
                                                                                    log: Log,
-                                                                                   planner: CypherPlanner,
-                                                                                   runtime: CypherRuntime,
+                                                                                   planner: CypherPlannerOption,
+                                                                                   runtime: CypherRuntimeOption,
                                                                                    updateStrategy: CypherUpdateStrategy,
                                                                                    runtimeBuilder: RuntimeBuilder[T],
                                                                                    contextCreatorv3_5: ContextCreator[CONTEXT],
@@ -72,9 +72,9 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
   monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), "cypher3.4")
 
   val maybePlannerNamev3_5: Option[CostBasedPlannerName] = planner match {
-    case CypherPlanner.default => None
-    case CypherPlanner.cost | CypherPlanner.idp => Some(IDPPlannerName)
-    case CypherPlanner.dp => Some(DPPlannerName)
+    case CypherPlannerOption.default => None
+    case CypherPlannerOption.cost | CypherPlannerOption.idp => Some(IDPPlannerName)
+    case CypherPlannerOption.dp => Some(DPPlannerName)
     case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${planner.name}")
   }
   val maybeUpdateStrategy: Option[UpdateStrategy] = updateStrategy match {
@@ -89,8 +89,8 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
     if (assertionsEnabled()) newValidating else newPlain
   }
 
-  protected val compiler: v3_5.CypherCompiler[CONTEXT] =
-    new CypherCompilerFactory().costBasedCompiler(config, clock, monitors, rewriterSequencer,
+  protected val compiler: v3_5.CypherPlanner[CONTEXT] =
+    new CypherPlannerFactory().costBasedCompiler(config, clock, monitors, rewriterSequencer,
       maybePlannerNamev3_5, maybeUpdateStrategy, contextCreatorv3_5)
 
   private def queryGraphSolver = LatestRuntimeVariablePlannerCompatibility.

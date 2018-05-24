@@ -46,7 +46,7 @@ import org.neo4j.cypher.internal.planner.v3_5.spi.{CostBasedPlannerName, PlanCon
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.spi.v3_3.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_3, TransactionBoundGraphStatistics => TransactionBoundGraphStatisticsV3_3, TransactionBoundPlanContext => TransactionBoundPlanContextV3_3}
 import org.opencypher.v9_0.util.attribution.SequentialIdGen
-import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
+import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy}
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
@@ -55,12 +55,12 @@ import scala.util.Try
 
 case class Compatibility[CONTEXT3_3 <: v3_3.phases.CompilerContext,
 CONTEXT3_4 <: CommunityRuntimeContextv3_5,
-T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]](configv3_5: CypherCompilerConfiguration,
+T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]](configv3_5: CypherPlannerConfiguration,
                                                                   clock: Clock,
                                                                   kernelMonitors: KernelMonitors,
                                                                   log: Log,
-                                                                  planner: CypherPlanner,
-                                                                  runtime: CypherRuntime,
+                                                                  planner: CypherPlannerOption,
+                                                                  runtime: CypherRuntimeOption,
                                                                   updateStrategy: CypherUpdateStrategy,
                                                                   runtimeBuilder: RuntimeBuilder[T],
                                                                   contextCreatorV3_3: v3_3.ContextCreator[CONTEXT3_3],
@@ -82,9 +82,9 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
 
   val configV3_3: v3_3.CypherCompilerConfiguration = helpers.as3_3(configv3_5)
   val maybePlannerName: Option[v3_3.CostBasedPlannerName] = planner match {
-    case CypherPlanner.default => None
-    case CypherPlanner.cost | CypherPlanner.idp => Some(IDPPlannerNameV3_3)
-    case CypherPlanner.dp => Some(DPPlannerNameV3_3)
+    case CypherPlannerOption.default => None
+    case CypherPlannerOption.cost | CypherPlannerOption.idp => Some(IDPPlannerNameV3_3)
+    case CypherPlannerOption.dp => Some(DPPlannerNameV3_3)
     case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${planner.name}")
   }
   override val maybePlannerNamev3_5: Option[CostBasedPlannerName] = maybePlannerName.map(x => helpers.as3_4(x).asInstanceOf[CostBasedPlannerName])

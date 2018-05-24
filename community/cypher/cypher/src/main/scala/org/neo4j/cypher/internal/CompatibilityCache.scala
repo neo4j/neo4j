@@ -27,29 +27,29 @@ import org.neo4j.cypher.internal.compatibility.v3_3.{CommunityRuntimeContextCrea
 import org.neo4j.cypher.internal.compatibility.v3_5.Compatibility
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{CommunityRuntimeBuilder, CommunityRuntimeContextCreator => CommunityRuntimeContextCreatorv3_5}
 import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_3 => v3_3compat}
-import org.neo4j.cypher.internal.compiler.v3_5.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.LastCommittedTxIdProvider
 import org.opencypher.v9_0.util.InvalidArgumentException
-import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
+import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.{Log, LogProvider}
 
 sealed trait PlannerSpec
-final case class PlannerSpec_v2_3(planner: CypherPlanner, runtime: CypherRuntime) extends PlannerSpec
-final case class PlannerSpec_v3_1(planner: CypherPlanner, runtime: CypherRuntime, updateStrategy: CypherUpdateStrategy) extends PlannerSpec
-final case class PlannerSpec_v3_3(planner: CypherPlanner, runtime: CypherRuntime, updateStrategy: CypherUpdateStrategy) extends PlannerSpec
-final case class PlannerSpec_v3_5(planner: CypherPlanner, runtime: CypherRuntime, updateStrategy: CypherUpdateStrategy) extends PlannerSpec
+final case class PlannerSpec_v2_3(planner: CypherPlannerOption, runtime: CypherRuntimeOption) extends PlannerSpec
+final case class PlannerSpec_v3_1(planner: CypherPlannerOption, runtime: CypherRuntimeOption, updateStrategy: CypherUpdateStrategy) extends PlannerSpec
+final case class PlannerSpec_v3_3(planner: CypherPlannerOption, runtime: CypherRuntimeOption, updateStrategy: CypherUpdateStrategy) extends PlannerSpec
+final case class PlannerSpec_v3_5(planner: CypherPlannerOption, runtime: CypherRuntimeOption, updateStrategy: CypherUpdateStrategy) extends PlannerSpec
 
 trait CompatibilityFactory {
-  def create(spec: PlannerSpec_v2_3, config: CypherCompilerConfiguration): v2_3.Compatibility
+  def create(spec: PlannerSpec_v2_3, config: CypherPlannerConfiguration): v2_3.Compatibility
 
-  def create(spec: PlannerSpec_v3_1, config: CypherCompilerConfiguration): v3_1.Compatibility
+  def create(spec: PlannerSpec_v3_1, config: CypherPlannerConfiguration): v3_1.Compatibility
 
-  def create(spec: PlannerSpec_v3_3, config: CypherCompilerConfiguration): v3_3compat.Compatibility[_,_,_]
+  def create(spec: PlannerSpec_v3_3, config: CypherPlannerConfiguration): v3_3compat.Compatibility[_,_,_]
 
-  def create(spec: PlannerSpec_v3_5, config: CypherCompilerConfiguration): Compatibility[_,_]
+  def create(spec: PlannerSpec_v3_5, config: CypherPlannerConfiguration): Compatibility[_,_]
 }
 
 class CommunityCompatibilityFactory(graph: GraphDatabaseQueryService, kernelMonitors: KernelMonitors,
@@ -57,23 +57,23 @@ class CommunityCompatibilityFactory(graph: GraphDatabaseQueryService, kernelMoni
 
   private val log: Log = logProvider.getLog(getClass)
 
-  override def create(spec: PlannerSpec_v2_3, config: CypherCompilerConfiguration): v2_3.Compatibility = spec.planner match {
-    case CypherPlanner.rule =>
+  override def create(spec: PlannerSpec_v2_3, config: CypherPlannerConfiguration): v2_3.Compatibility = spec.planner match {
+    case CypherPlannerOption.rule =>
       v2_3.RuleCompatibility(graph, as2_3(config), Clock.SYSTEM_CLOCK, kernelMonitors)
     case _ =>
       v2_3.CostCompatibility(graph, as2_3(config), Clock.SYSTEM_CLOCK, kernelMonitors, log, spec.planner, spec.runtime)
   }
 
-  override def create(spec: PlannerSpec_v3_1, config: CypherCompilerConfiguration): v3_1.Compatibility = spec.planner match {
-    case CypherPlanner.rule =>
+  override def create(spec: PlannerSpec_v3_1, config: CypherPlannerConfiguration): v3_1.Compatibility = spec.planner match {
+    case CypherPlannerOption.rule =>
       v3_1.RuleCompatibility(graph, as3_1(config), CompilerEngineDelegator.CLOCK, kernelMonitors)
     case _ =>
       v3_1.CostCompatibility(graph, as3_1(config), CompilerEngineDelegator.CLOCK, kernelMonitors, log, spec.planner, spec.runtime, spec.updateStrategy)
   }
 
-  override def create(spec: PlannerSpec_v3_3, config: CypherCompilerConfiguration): v3_3compat.Compatibility[_,_,_] =
+  override def create(spec: PlannerSpec_v3_3, config: CypherPlannerConfiguration): v3_3compat.Compatibility[_,_,_] =
     (spec.planner, spec.runtime) match {
-      case (CypherPlanner.rule, _) =>
+      case (CypherPlannerOption.rule, _) =>
         throw new InvalidArgumentException("The rule planner is no longer a valid planner option in Neo4j 3.3. If you need to use it, please select compatibility mode Cypher 3.1")
       case _ =>
         v3_3compat.Compatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, log,
@@ -81,9 +81,9 @@ class CommunityCompatibilityFactory(graph: GraphDatabaseQueryService, kernelMoni
           CommunityRuntimeContextCreatorV3_3, CommunityRuntimeContextCreatorv3_5, LastCommittedTxIdProvider(graph))
     }
 
-  override def create(spec: PlannerSpec_v3_5, config: CypherCompilerConfiguration): Compatibility[_,_] =
+  override def create(spec: PlannerSpec_v3_5, config: CypherPlannerConfiguration): Compatibility[_,_] =
     (spec.planner, spec.runtime) match {
-      case (CypherPlanner.rule, _) =>
+      case (CypherPlannerOption.rule, _) =>
         throw new InvalidArgumentException("The rule planner is no longer a valid planner option in Neo4j 3.4. If you need to use it, please select compatibility mode Cypher 3.1")
       case _ =>
         Compatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, log,
@@ -101,15 +101,15 @@ class CompatibilityCache(factory: CompatibilityFactory) extends CompatibilityFac
   private val cache_v3_3 = new ConcurrentHashMap[PlannerSpec_v3_3, v3_3compat.Compatibility[_,_,_]].asScala
   private val cache_v3_5 = new ConcurrentHashMap[PlannerSpec_v3_5, Compatibility[_,_]].asScala
 
-  override def create(spec: PlannerSpec_v2_3, config: CypherCompilerConfiguration): v2_3.Compatibility =
+  override def create(spec: PlannerSpec_v2_3, config: CypherPlannerConfiguration): v2_3.Compatibility =
     cache_v2_3.getOrElseUpdate(spec, factory.create(spec, config))
 
-  override def create(spec: PlannerSpec_v3_1, config: CypherCompilerConfiguration): v3_1.Compatibility =
+  override def create(spec: PlannerSpec_v3_1, config: CypherPlannerConfiguration): v3_1.Compatibility =
     cache_v3_1.getOrElseUpdate(spec, factory.create(spec, config))
 
-  override def create(spec: PlannerSpec_v3_3, config: CypherCompilerConfiguration): v3_3compat.Compatibility[_,_,_] =
+  override def create(spec: PlannerSpec_v3_3, config: CypherPlannerConfiguration): v3_3compat.Compatibility[_,_,_] =
     cache_v3_3.getOrElseUpdate(spec, factory.create(spec, config))
 
-  override def create(spec: PlannerSpec_v3_5, config: CypherCompilerConfiguration): Compatibility[_,_] =
+  override def create(spec: PlannerSpec_v3_5, config: CypherPlannerConfiguration): Compatibility[_,_] =
     cache_v3_5.getOrElseUpdate(spec, factory.create(spec, config))
 }

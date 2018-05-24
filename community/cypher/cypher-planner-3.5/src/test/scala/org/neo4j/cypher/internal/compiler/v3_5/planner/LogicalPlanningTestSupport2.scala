@@ -60,7 +60,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true)
   final var planner = new QueryPlanner()
   var queryGraphSolver: QueryGraphSolver = new IDPQueryGraphSolver(SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]), cartesianProductsOrValueJoins, mock[IDPQueryGraphSolverMonitor])
-  val cypherCompilerConfig = CypherCompilerConfiguration(
+  val cypherCompilerConfig = CypherPlannerConfiguration(
     queryCacheSize = 100,
     statsDivergenceCalculator = StatsDivergenceCalculator.divergenceNoDecayCalculator(0.5, 1000),
     useErrorsOverWarnings = false,
@@ -78,7 +78,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     lazy val semanticTable = config.updateSemanticTableWithTokens(SemanticTable())
 
     def metricsFactory = new MetricsFactory {
-      def newCostModel(ignore: CypherCompilerConfiguration) =
+      def newCostModel(ignore: CypherPlannerConfiguration) =
         (plan: LogicalPlan, input: QueryGraphSolverInput, cardinalities: Cardinalities) => config.costModel()((plan, input, cardinalities))
 
       def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator) =
@@ -139,7 +139,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         semanticTable.resolvedRelTypeNames.get(relType).map(_.id)
     }
 
-    def pipeLine(): Transformer[CompilerContext, BaseState, LogicalPlanState] =
+    def pipeLine(): Transformer[PlannerContext, BaseState, LogicalPlanState] =
       Parsing andThen
       PreparatoryRewriting andThen
       SemanticAnalysis(warn = true) andThen
@@ -154,19 +154,19 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       CreatePlannerQuery andThen
       OptionalMatchRemover andThen
       QueryPlanner().adds(CompilationContains[LogicalPlan]) andThen
-      Do[CompilerContext, LogicalPlanState, LogicalPlanState]((state, context) => removeApply(state, context, state.solveds, new Attributes(idGen, state.cardinalities)))
+      Do[PlannerContext, LogicalPlanState, LogicalPlanState]((state, context) => removeApply(state, context, state.solveds, new Attributes(idGen, state.cardinalities)))
 
     // This fakes pattern expression naming for testing purposes
     // In the actual code path, this renaming happens as part of planning
     //
     // cf. QueryPlanningStrategy
     //
-    private def namePatternPredicates(input: LogicalPlanState, context: CompilerContext): LogicalPlanState = {
+    private def namePatternPredicates(input: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
       val newStatement = input.statement.endoRewrite(namePatternPredicatePatternElements)
       input.copy(maybeStatement = Some(newStatement))
     }
 
-    private def removeApply(input: LogicalPlanState, context: CompilerContext, solveds: Solveds, attributes: Attributes): LogicalPlanState = {
+    private def removeApply(input: LogicalPlanState, context: PlannerContext, solveds: Solveds, attributes: Attributes): LogicalPlanState = {
       val newPlan = input.logicalPlan.endoRewrite(fixedPoint(unnestApply(solveds, attributes)))
       input.copy(maybeLogicalPlan = Some(newPlan))
     }

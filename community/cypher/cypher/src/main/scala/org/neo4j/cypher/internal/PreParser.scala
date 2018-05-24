@@ -39,12 +39,12 @@ import org.neo4j.cypher.internal.compatibility.LFUCache
   * )
   */
 class PreParser(configuredVersion: CypherVersion,
-                configuredPlanner: CypherPlanner,
-                configuredRuntime: CypherRuntime,
+                configuredPlanner: CypherPlannerOption,
+                configuredRuntime: CypherRuntimeOption,
                 planCacheSize: Int) {
 
-  private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(CypherPlanner, CypherRuntime)] = Set((CypherPlanner.rule, CypherRuntime.compiled), (CypherPlanner.rule, CypherRuntime.slotted))
-  private final val ILLEGAL_PLANNER_VERSION_COMBINATIONS: Set[(CypherPlanner, CypherVersion)] = Set((CypherPlanner.rule, CypherVersion.v3_3), (CypherPlanner.rule, CypherVersion.v3_5))
+  private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(CypherPlannerOption, CypherRuntimeOption)] = Set((CypherPlannerOption.rule, CypherRuntimeOption.compiled), (CypherPlannerOption.rule, CypherRuntimeOption.slotted))
+  private final val ILLEGAL_PLANNER_VERSION_COMBINATIONS: Set[(CypherPlannerOption, CypherVersion)] = Set((CypherPlannerOption.rule, CypherVersion.v3_3), (CypherPlannerOption.rule, CypherVersion.v3_5))
 
   private val preParsedQueries = new LFUCache[String, PreParsedQuery](planCacheSize)
 
@@ -60,8 +60,8 @@ class PreParser(configuredVersion: CypherVersion,
 
     val executionMode: PPOption[CypherExecutionMode] = new PPOption(CypherExecutionMode.default)
     val version: PPOption[CypherVersion] = new PPOption(configuredVersion)
-    val planner: PPOption[CypherPlanner] = new PPOption(configuredPlanner)
-    val runtime: PPOption[CypherRuntime] = new PPOption(configuredRuntime)
+    val planner: PPOption[CypherPlannerOption] = new PPOption(configuredPlanner)
+    val runtime: PPOption[CypherRuntimeOption] = new PPOption(configuredRuntime)
     val updateStrategy: PPOption[CypherUpdateStrategy] = new PPOption(CypherUpdateStrategy.default)
     var debugOptions: Set[String] = Set()
 
@@ -75,9 +75,9 @@ class PreParser(configuredVersion: CypherVersion,
           case p: PlannerPreParserOption if p.name == GreedyPlannerOption.name =>
             throw new InvalidArgumentException("The greedy planner has been removed in Neo4j 3.1. Please use the cost planner instead.")
           case p: PlannerPreParserOption =>
-            planner.selectOrThrow(CypherPlanner(p.name), "Can't specify multiple conflicting Cypher planners")
+            planner.selectOrThrow(CypherPlannerOption(p.name), "Can't specify multiple conflicting Cypher planners")
           case r: RuntimePreParserOption =>
-            runtime.selectOrThrow(CypherRuntime(r.name), "Can't specify multiple conflicting Cypher runtimes")
+            runtime.selectOrThrow(CypherRuntimeOption(r.name), "Can't specify multiple conflicting Cypher runtimes")
           case u: UpdateStrategyOption =>
             updateStrategy.selectOrThrow( CypherUpdateStrategy(u.name), "Can't specify multiple conflicting update strategies")
           case DebugOption(debug) =>

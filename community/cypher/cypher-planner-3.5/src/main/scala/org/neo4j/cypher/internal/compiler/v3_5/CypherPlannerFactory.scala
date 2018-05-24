@@ -21,27 +21,27 @@ package org.neo4j.cypher.internal.compiler.v3_5
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compiler.v3_5.phases.{CompilerContext, LogicalPlanState}
+import org.neo4j.cypher.internal.compiler.v3_5.phases.{PlannerContext, LogicalPlanState}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical._
 import org.neo4j.cypher.internal.planner.v3_5.spi.CostBasedPlannerName
 import org.opencypher.v9_0.frontend.phases.{ASTRewriter, Monitors, Transformer}
 import org.opencypher.v9_0.rewriting.RewriterStepSequencer
 import org.opencypher.v9_0.rewriting.rewriters.IfNoParameter
 
-class CypherCompilerFactory[C <: CompilerContext, T <: Transformer[C, LogicalPlanState, LogicalPlanState]] {
-  val monitorTag = "cypher3.3"
+class CypherPlannerFactory[C <: PlannerContext, T <: Transformer[C, LogicalPlanState, LogicalPlanState]] {
+  val monitorTag = "cypher3.5"
 
-  def costBasedCompiler(config: CypherCompilerConfiguration,
+  def costBasedCompiler(config: CypherPlannerConfiguration,
                         clock: Clock,
                         monitors: Monitors,
                         rewriterSequencer: (String) => RewriterStepSequencer,
                         plannerName: Option[CostBasedPlannerName],
                         updateStrategy: Option[UpdateStrategy],
-                        contextCreator: ContextCreator[C]): CypherCompiler[C] = {
+                        contextCreator: ContextCreator[C]): CypherPlanner[C] = {
     val rewriter = new ASTRewriter(rewriterSequencer, IfNoParameter, getDegreeRewriting = true)
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
     val actualUpdateStrategy: UpdateStrategy = updateStrategy.getOrElse(defaultUpdateStrategy)
-    CypherCompiler( rewriter, monitors, rewriterSequencer,
+    CypherPlanner( rewriter, monitors, rewriterSequencer,
       metricsFactory, config, actualUpdateStrategy, clock, contextCreator)
   }
 }

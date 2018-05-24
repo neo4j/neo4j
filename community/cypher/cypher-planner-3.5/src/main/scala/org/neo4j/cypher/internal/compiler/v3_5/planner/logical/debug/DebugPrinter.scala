@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.debug
 
-import org.neo4j.cypher.internal.compiler.v3_5.phases.{CompilerContext, LogicalPlanState}
+import org.neo4j.cypher.internal.compiler.v3_5.phases.{PlannerContext, LogicalPlanState}
 import org.opencypher.v9_0.ast._
 import org.opencypher.v9_0.frontend.phases.{Condition, Phase}
 import org.opencypher.v9_0.util.InputPosition
@@ -29,12 +29,12 @@ import org.neo4j.cypher.internal.v3_5.logical.plans.{Argument, LogicalPlan, Prod
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 
-object DebugPrinter extends Phase[CompilerContext, LogicalPlanState, LogicalPlanState] {
+object DebugPrinter extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {
   override def phase: CompilationPhaseTracer.CompilationPhase = LOGICAL_PLANNING
 
   override def description: String = "Print IR or AST as query result"
 
-  override def process(from: LogicalPlanState, context: CompilerContext): LogicalPlanState = {
+  override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
     val string = if (context.debugOptions.contains("querygraph"))
       from.unionQuery.toString
     else if (context.debugOptions.contains("ast"))
