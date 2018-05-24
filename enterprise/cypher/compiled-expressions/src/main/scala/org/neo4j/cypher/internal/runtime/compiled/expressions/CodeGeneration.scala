@@ -26,14 +26,15 @@ import org.neo4j.codegen
 import org.neo4j.codegen.CodeGenerator.generateCode
 import org.neo4j.codegen._
 import org.neo4j.codegen.bytecode.ByteCode
-import org.neo4j.codegen.Expression.invoke
+import org.neo4j.codegen.Expression.{getStatic, invoke}
+import org.neo4j.codegen.FieldReference.staticField
 import org.neo4j.codegen.MethodDeclaration.method
 import org.neo4j.codegen.MethodReference.methodReference
 import org.neo4j.codegen.Parameter.param
 import org.neo4j.codegen.bytecode.ByteCode.BYTECODE
 import org.neo4j.codegen.source.SourceCode
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{DoubleValue, LongValue, TextValue, Values}
+import org.neo4j.values.storable._
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.frontend.helpers.using
 
@@ -77,6 +78,11 @@ object CodeGeneration {
                              "stringValue", classOf[String]), Expression.constant(value.stringValue()))
 
     case Constant(value) => Expression.constant(value)
+
+    case NULL => getStatic(staticField(classOf[Values], classOf[Value], "NO_VALUE"))
+    case TRUE => getStatic(staticField(classOf[Values], classOf[BooleanValue], "TRUE"))
+    case FALSE => getStatic(staticField(classOf[Values], classOf[BooleanValue], "FALSE"))
+
   }
 
 

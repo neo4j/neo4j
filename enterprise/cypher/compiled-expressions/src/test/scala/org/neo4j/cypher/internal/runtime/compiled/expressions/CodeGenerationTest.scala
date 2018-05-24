@@ -25,7 +25,7 @@ package org.neo4j.cypher.internal.runtime.compiled.expressions
 import java.lang.Math.PI
 
 import org.neo4j.values.storable.{DoubleValue, Values}
-import org.neo4j.values.storable.Values.{NO_VALUE, doubleValue, longValue, stringValue}
+import org.neo4j.values.storable.Values._
 import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.virtual.VirtualValues.{EMPTY_MAP, map}
 import org.opencypher.v9_0.ast.AstConstructionTestSupport
@@ -114,6 +114,39 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport{
     compiled.compute(map(Array("prop"), Array(stringValue("foo")))) should equal(stringValue("foo"))
   }
 
+  test("Null") {
+    // Given
+    val expression = noValue
+
+    // When
+    val compiled = compile(expression)
+
+    // Then
+    compiled.compute(EMPTY_MAP) should equal(NO_VALUE)
+  }
+
+  test("True") {
+    // Given
+    val expression = True()(pos)
+
+    // When
+    val compiled = compile(expression)
+
+    // Then
+    compiled.compute(EMPTY_MAP) should equal(Values.TRUE)
+  }
+
+  test("False") {
+    // Given
+    val expression = False()(pos)
+
+    // When
+    val compiled = compile(expression)
+
+    // Then
+    compiled.compute(EMPTY_MAP) should equal(Values.FALSE)
+  }
+
   private def compile(e: Expression) =
     CodeGeneration.compile(IntermediateCodeGeneration.compile(e).getOrElse(fail()))
 
@@ -130,4 +163,6 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport{
   private def multiply(l: Expression, r: Expression) = Multiply(l, r)(pos)
 
   private def parameter(key: String) = Parameter(key, symbols.CTAny)(pos)
+
+  private def noValue = Null()(pos)
 }
