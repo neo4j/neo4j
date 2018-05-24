@@ -69,7 +69,7 @@ public class LabelScanViewNodeStoreScanTest
         int[] labelIds = new int[]{1, 2};
 
         LabelScanViewNodeStoreScan<Exception> storeScan = getLabelScanViewStoreScan( labelIds );
-        PrimitiveLongResourceIterator idIterator = storeScan.getNodeIdIterator();
+        PrimitiveLongResourceIterator idIterator = storeScan.getEntityIdIterator();
         List<Long> visitedNodeIds = PrimitiveLongCollections.asList( idIterator );
 
         assertThat(visitedNodeIds, Matchers.hasSize( 4 ));

@@ -48,7 +48,7 @@ public class NodePropertyAccessor implements PropertyAccessor
     }
 
     @Override
-    public Value getPropertyValue( long nodeId, int propertyKeyId )
+    public Value getNodePropertyValue( long nodeId, int propertyKeyId )
     {
         if ( nodePropertyMap.containsKey( nodeId ) )
         {

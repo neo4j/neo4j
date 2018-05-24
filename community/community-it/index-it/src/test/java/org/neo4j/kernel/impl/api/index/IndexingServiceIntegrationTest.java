@@ -36,6 +36,8 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -63,6 +65,7 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forRelType;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
 
 @RunWith( Parameterized.class )
@@ -129,6 +132,25 @@ public class IndexingServiceIntegrationTest
         int propertyId = getPropertyKeyId( PROPERTY_NAME );
 
         StoreIndexDescriptor rule = forSchema( forLabel( foodId, propertyId ), indexDescriptor ).withId( schemaStore.nextId() );
+        indexingService.createIndexes( rule );
+        IndexProxy indexProxy = indexingService.getIndexProxy( rule.getId() );
+
+        waitIndexOnline( indexProxy );
+        assertEquals( InternalIndexState.ONLINE, indexProxy.getState() );
+        PopulationProgress progress = indexProxy.getIndexPopulationProgress();
+        assertEquals( progress.getCompleted(), progress.getTotal() );
+    }
+
+    @Test
+    public void testManualRelationshipIndexPopulation() throws IOException, IndexNotFoundKernelException, InterruptedException
+    {
+        IndexingService indexingService = getIndexingService( database );
+        SchemaStore schemaStore = getSchemaStore( database );
+
+        int foodId = getRelationshipTypeId( FOOD_LABEL );
+        int propertyId = getPropertyKeyId( PROPERTY_NAME );
+
+        StoreIndexDescriptor rule = forSchema( forRelType( foodId, propertyId ), indexDescriptor ).withId( schemaStore.nextId() );
         indexingService.createIndexes( rule );
         IndexProxy indexProxy = indexingService.getIndexProxy( rule.getId() );
 
@@ -236,7 +258,10 @@ public class IndexingServiceIntegrationTest
             {
                 Node node = database.createNode( Label.label( FOOD_LABEL ), Label.label( CLOTHES_LABEL ),
                         Label.label( WEATHER_LABEL ) );
-                node.setProperty( PROPERTY_NAME, "Node" + index++ );
+                node.setProperty( PROPERTY_NAME, "Node" + index );
+                Relationship relationship = node.createRelationshipTo( node, RelationshipType.withName( FOOD_LABEL ) );
+                relationship.setProperty( PROPERTY_NAME, "Relationship" + index );
+                index++;
                 transaction.success();
             }
         }
@@ -259,6 +284,16 @@ public class IndexingServiceIntegrationTest
             KernelTransaction transaction = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency(
                     ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
             return transaction.tokenRead().nodeLabel( name );
+        }
+    }
+
+    private int getRelationshipTypeId( String name )
+    {
+        try ( Transaction tx = database.beginTx() )
+        {
+            KernelTransaction transaction = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency(
+                    ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
+            return transaction.tokenRead().relationshipType( name );
         }
     }
 }

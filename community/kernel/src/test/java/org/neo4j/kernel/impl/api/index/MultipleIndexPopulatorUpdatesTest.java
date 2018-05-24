@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.StoreViewNodeStoreScan;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.values.storable.Values;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -84,7 +85,7 @@ public class MultipleIndexPopulatorUpdatesTest
 
         ProcessListenableNeoStoreIndexView
                 storeView = new ProcessListenableNeoStoreIndexView( LockService.NO_LOCK_SERVICE, neoStores );
-        MultipleIndexPopulator indexPopulator = new MultipleIndexPopulator( storeView, logProvider );
+        MultipleIndexPopulator indexPopulator = new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE );
 
         storeView.setProcessListener( new NodeUpdateProcessListener( indexPopulator ) );
 
@@ -94,7 +95,7 @@ public class MultipleIndexPopulatorUpdatesTest
         addPopulator( indexPopulator, populator, 1, TestIndexDescriptorFactory.forLabel( 1, 1 ) );
 
         indexPopulator.create();
-        StoreScan<IndexPopulationFailedKernelException> storeScan = indexPopulator.indexAllNodes();
+        StoreScan<IndexPopulationFailedKernelException> storeScan = indexPopulator.indexAllEntities();
         storeScan.run();
 
         Mockito.verify( indexUpdater, never() ).process( any(IndexEntryUpdate.class) );

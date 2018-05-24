@@ -51,7 +51,7 @@ public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends Store
     }
 
     @Override
-    public PrimitiveLongResourceIterator getNodeIdIterator()
+    public PrimitiveLongResourceIterator getEntityIdIterator()
     {
         return new LabelScanViewIdIterator( labelScanStore.newReader(), labelIds );
     }

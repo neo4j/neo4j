@@ -25,6 +25,7 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
+import org.neo4j.storageengine.api.EntityType;
 
 public interface IndexingUpdateService
 {
@@ -38,5 +39,5 @@ public interface IndexingUpdateService
      * application of the updates to the indexes, so that the properties reflect the exact state of the
      * transaction.
      */
-    Iterable<IndexEntryUpdate<SchemaDescriptor>> convertToIndexUpdates( EntityUpdates entityUpdates );
+    Iterable<IndexEntryUpdate<SchemaDescriptor>> convertToIndexUpdates( EntityUpdates entityUpdates, EntityType type );
 }

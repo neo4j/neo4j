@@ -71,7 +71,7 @@ public class LookupFilter
                     for ( IndexQuery predicate : filteredPredicates )
                     {
                         int propertyKeyId = predicate.propertyKeyId();
-                        Value value = accessor.getPropertyValue( nodeId, propertyKeyId );
+                        Value value = accessor.getNodePropertyValue( nodeId, propertyKeyId );
                         if ( !predicate.acceptsValue( value ) )
                         {
                             return false;

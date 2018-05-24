@@ -125,7 +125,7 @@ class UniqueInMemoryIndex extends InMemoryIndex
             Map<Object,Long> entries = new HashMap<>();
             for ( long nodeId : nodeIds )
             {
-                final Value value = accessor.getPropertyValue( nodeId, schema.getPropertyId() );
+                final Value value = accessor.getNodePropertyValue( nodeId, schema.getPropertyId() );
                 if ( entries.containsKey( value ) )
                 {
                     long existingNodeId = entries.get( value );
@@ -167,7 +167,7 @@ class UniqueInMemoryIndex extends InMemoryIndex
             Value[] values = new Value[propertyIds.length];
             for ( int i = 0; i < values.length; i++ )
             {
-                values[i] = accessor.getPropertyValue( nodeId, propertyIds[i] );
+                values[i] = accessor.getNodePropertyValue( nodeId, propertyIds[i] );
             }
             return ValueTuple.of( values );
         }
