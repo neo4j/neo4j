@@ -65,7 +65,17 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
           slots.numberOfLongs,
           slots.numberOfReferences,
           slots.getLongOffsetFor(column),
-          labelToken.nameId.id, propertyKey.nameId.id)
+          labelToken.nameId.id,
+          propertyKey.nameId.id)
+
+      case NodeIndexContainsScan(column, labelToken, propertyKey, valueExpr, _) =>
+        new NodeIndexContainsScanOperator(
+          slots.numberOfLongs,
+          slots.numberOfReferences,
+          slots.getLongOffsetFor(column),
+          labelToken.nameId.id,
+          propertyKey.nameId.id,
+          converters.toCommandExpression(valueExpr))
 
       case plans.NodeIndexSeek(column, label, propertyKeys, valueExpr,  _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
@@ -73,7 +83,9 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
           slots.numberOfLongs,
           slots.numberOfReferences,
           slots.getLongOffsetFor(column),
-          label, propertyKeys, valueExpr.map(converters.toCommandExpression),
+          label,
+          propertyKeys,
+          valueExpr.map(converters.toCommandExpression),
           indexSeekMode)
 
       case plans.NodeUniqueIndexSeek(column, label, propertyKeys, valueExpr,  _) =>
@@ -82,7 +94,9 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
           slots.numberOfLongs,
           slots.numberOfReferences,
           slots.getLongOffsetFor(column),
-          label, propertyKeys, valueExpr.map(converters.toCommandExpression),
+          label,
+          propertyKeys,
+          valueExpr.map(converters.toCommandExpression),
           indexSeekMode)
 
       case plans.Argument(_) =>

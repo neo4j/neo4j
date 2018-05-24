@@ -55,12 +55,11 @@ class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
                        state: QueryState): Continuation = {
     var nodeIterator: Iterator[NodeValue] = null
     var iterationState: Iteration = null
-    val read = context.transactionalContext.dataRead
-    val currentRow = new MorselExecutionContext(data, longsPerRow, refsPerRow, currentRow = 0)
-    val queryState = new OldQueryState(context, resources = null, params = state.params)
 
     message match {
       case StartLeafLoop(is) =>
+        val currentRow = new MorselExecutionContext(data, longsPerRow, refsPerRow, currentRow = 0)
+        val queryState = new OldQueryState(context, resources = null, params = state.params)
         val indexReference = reference(context)
         nodeIterator = indexSeek(queryState, indexReference, currentRow)
         iterationState = is
