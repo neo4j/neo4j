@@ -41,6 +41,9 @@ import org.neo4j.values.storable._
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.frontend.helpers.using
 
+/**
+  * Produces runnable code from an IntermediateRepresentation
+  */
 object CodeGeneration {
 
   private val PACKAGE_NAME = "org.neo4j.cypher.internal.compiler.v3_5.generated"
@@ -57,36 +60,43 @@ object CodeGeneration {
       using(clazz.generate(COMPUTE_METHOD)) { block =>
         block.returns(compileExpression(ir, block))
       }
-     clazz.handle()
+      clazz.handle()
     }
 
-   handle.loadClass().newInstance().asInstanceOf[CompiledExpression]
+    handle.loadClass().newInstance().asInstanceOf[CompiledExpression]
   }
 
   private def compileExpression(ir: IntermediateRepresentation, block: CodeBlock): codegen.Expression = ir match {
+    //Foo.method(p1, p2,...)
     case InvokeStatic(method, params) =>
       invoke(method.asReference, params.map(p => compileExpression(p, block)): _*)
+    //target.method(p1,p2,...)
     case Invoke(target, method, params) =>
       invoke(compileExpression(target, block), method.asReference, params.map(p => compileExpression(p, block)): _*)
+    //loads local variable by name
     case Load(variable) => block.load(variable)
+    //Values.longValue(value)
     case Integer(value) =>
       invoke(methodReference(classOf[Values],
                              classOf[LongValue],
                              "longValue", classOf[Long]), Expression.constant(value.longValue()))
+    //Values.doubleValue(value)
     case Float(value) =>
       invoke(methodReference(classOf[Values],
                              classOf[DoubleValue],
                              "doubleValue", classOf[Double]), Expression.constant(value.doubleValue()))
-
+    //Values.stringValue(value)
     case StringLiteral(value) =>
       invoke(methodReference(classOf[Values],
                              classOf[TextValue],
                              "stringValue", classOf[String]), Expression.constant(value.stringValue()))
-
+    //loads a given constant
     case Constant(value) => Expression.constant(value)
-
+    //Values.NO_VALUE
     case NULL => getStatic(staticField(classOf[Values], classOf[Value], "NO_VALUE"))
+    //Values.TRUE
     case TRUE => getStatic(staticField(classOf[Values], classOf[BooleanValue], "TRUE"))
+    //Values.FALSE
     case FALSE => getStatic(staticField(classOf[Values], classOf[BooleanValue], "FALSE"))
   }
 

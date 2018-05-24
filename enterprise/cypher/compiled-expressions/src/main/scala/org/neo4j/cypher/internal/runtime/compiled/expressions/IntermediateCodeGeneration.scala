@@ -32,7 +32,9 @@ import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions._
 
-
+/**
+  * Produces IntermediateRepresentation from a Cypher Expression
+  */
 object IntermediateCodeGeneration {
 
   import IntermediateRepresentation._

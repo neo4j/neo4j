@@ -27,22 +27,98 @@ import org.neo4j.values.storable.{FloatingPointValue, IntegralValue, TextValue}
 
 import scala.reflect.ClassTag
 
+/**
+  * IntermediateRepresentation is an intermediate step between pure byte code and the operator/expression
+  *
+  * The representation is intended to be quite low level and fairly close to the actual bytecode representation.
+  */
 sealed trait IntermediateRepresentation
-case class InvokeStatic(method: Method, params: Seq[IntermediateRepresentation] ) extends IntermediateRepresentation
-case class Invoke(target: IntermediateRepresentation, method: Method, params: Seq[IntermediateRepresentation] ) extends IntermediateRepresentation
+
+/**
+  * Invoke a static method
+  *
+  * @param method the method to invoke
+  * @param params the parameter to the static method
+  */
+case class InvokeStatic(method: Method, params: Seq[IntermediateRepresentation]) extends IntermediateRepresentation
+
+/**
+  * Invoke a method
+  *
+  * @param target the target to call the method on
+  * @param method the method to invoke
+  * @param params the parameter to the method
+  */
+case class Invoke(target: IntermediateRepresentation, method: Method, params: Seq[IntermediateRepresentation])
+  extends IntermediateRepresentation
+
+/**
+  * Load a local variable by name
+  *
+  * @param variable the name of the variable
+  */
 case class Load(variable: String) extends IntermediateRepresentation
+
+/**
+  * Loads constant IntegralValue
+  *
+  * @param value the constant value
+  */
 case class Integer(value: IntegralValue) extends IntermediateRepresentation
+
+/**
+  * Constant FloatingPointValue
+  *
+  * @param value the constant value
+  */
 case class Float(value: FloatingPointValue) extends IntermediateRepresentation
+
+/**
+  * Constant TextValue
+  *
+  * @param value the constant value
+  */
 case class StringLiteral(value: TextValue) extends IntermediateRepresentation
+
+/**
+  * Constant java value
+  *
+  * @param value the constant value
+  */
 case class Constant(value: Any) extends IntermediateRepresentation
+
+/**
+  * Load NO_VALUE
+  */
 case object NULL extends IntermediateRepresentation
+
+/**
+  * Load TRUE
+  */
 case object TRUE extends IntermediateRepresentation
+
+
+/**
+  * Load FALSE
+  */
 case object FALSE extends IntermediateRepresentation
 
-case class Method(owner: Class[_], output: Class[_], name: String, params: Class[_]* ) {
-  def asReference: MethodReference = MethodReference.methodReference(owner, output, name, params:_*)
+/**
+  * Defines a method
+  *
+  * @param owner  the owner of the method
+  * @param output output type to the method
+  * @param name   the name of the method
+  * @param params the parameter types of the method
+  */
+case class Method(owner: Class[_], output: Class[_], name: String, params: Class[_]*) {
+
+  def asReference: MethodReference = MethodReference.methodReference(owner, output, name, params: _*)
 }
 
+/**
+  * Defines a simple dsl to facilitate constructing intermediate representation
+  */
 object IntermediateRepresentation {
 
   def method[OWNER, OUT](name: String)(implicit owner: ClassTag[OWNER], out: ClassTag[OUT]) =
@@ -55,20 +131,32 @@ object IntermediateRepresentation {
                                   (implicit owner: ClassTag[OWNER], out: ClassTag[OUT], in1: ClassTag[IN1],
                                    in2: ClassTag[IN2]) =
     Method(owner.runtimeClass, out.runtimeClass, name, in1.runtimeClass, in2.runtimeClass)
+
   def method[OWNER, OUT, IN1, IN2, IN3](name: String)
-                                  (implicit owner: ClassTag[OWNER], out: ClassTag[OUT], in1: ClassTag[IN1],
-                                   in2: ClassTag[IN2], in3: ClassTag[IN3]) =
+                                       (implicit owner: ClassTag[OWNER], out: ClassTag[OUT], in1: ClassTag[IN1],
+                                        in2: ClassTag[IN2], in3: ClassTag[IN3]) =
     Method(owner.runtimeClass, out.runtimeClass, name, in1.runtimeClass, in2.runtimeClass, in3.runtimeClass)
 
-  def invokeStatic(method: Method, params: IntermediateRepresentation*): IntermediateRepresentation = InvokeStatic(method, params)
-  def invoke(owner: IntermediateRepresentation, method: Method, params: IntermediateRepresentation*): IntermediateRepresentation =
+  def invokeStatic(method: Method, params: IntermediateRepresentation*): IntermediateRepresentation = InvokeStatic(
+    method, params)
+
+  def invoke(owner: IntermediateRepresentation, method: Method,
+             params: IntermediateRepresentation*): IntermediateRepresentation =
     Invoke(owner, method, params)
+
   def load(variable: String): IntermediateRepresentation = Load(variable)
+
   def integer(value: IntegralValue): IntermediateRepresentation = Integer(value)
+
   def float(value: FloatingPointValue): IntermediateRepresentation = Float(value)
+
   def string(value: TextValue): IntermediateRepresentation = StringLiteral(value)
+
   def noValue: IntermediateRepresentation = NULL
+
   def truthy: IntermediateRepresentation = TRUE
+
   def falsy: IntermediateRepresentation = FALSE
+
   def constantJavaValue(value: Any): IntermediateRepresentation = Constant(value)
 }
