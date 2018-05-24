@@ -38,11 +38,10 @@ import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContext
-import org.neo4j.cypher.internal.runtime.compiled.expressions.CompiledExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, LogicalPlan2PlanDescription}
-import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedExpressionConverters
+import org.neo4j.cypher.internal.runtime.slotted.expressions.{CompiledExpressionConverters, SlottedExpressionConverters}
 import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.{Dispatcher, SingleThreadedExecutor}
 import org.neo4j.cypher.internal.runtime.vectorized.expressions.MorselExpressionConverters
 import org.neo4j.cypher.internal.runtime.vectorized.{Pipeline, PipelineBuilder}
