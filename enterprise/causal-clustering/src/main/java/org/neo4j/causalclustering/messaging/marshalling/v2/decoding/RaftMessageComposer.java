@@ -77,13 +77,13 @@ public class RaftMessageComposer extends MessageToMessageDecoder<Object>
             RaftMessages.ClusterIdAwareMessage clusterIdAwareMessage = messageCreator.maybeCompose( clock, raftLogEntries, replicatedContents );
             if ( clusterIdAwareMessage != null )
             {
-                clear( clusterIdAwareMessage.toString() );
+                clear( clusterIdAwareMessage );
                 out.add( clusterIdAwareMessage );
             }
         }
     }
 
-    private void clear( String messageDescription )
+    private void clear( RaftMessages.ClusterIdAwareMessage message )
     {
         messageCreator = null;
         if ( !replicatedContents.isEmpty() || !raftLogEntries.isEmpty() )
@@ -91,7 +91,7 @@ public class RaftMessageComposer extends MessageToMessageDecoder<Object>
             throw new IllegalStateException( String.format(
                     "Message [%s] was composed without using all resources in the pipeline. " +
                             "Pipeline still contains Replicated contents[%s] and RaftLogEntries [%s]",
-                    messageDescription, stringify( replicatedContents ), stringify( raftLogEntries ) ) );
+                    message, stringify( replicatedContents ), stringify( raftLogEntries ) ) );
         }
     }
 
