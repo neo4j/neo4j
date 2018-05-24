@@ -38,6 +38,7 @@ import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContext
+import org.neo4j.cypher.internal.runtime.compiled.expressions.CompiledExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, LogicalPlan2PlanDescription}
@@ -62,11 +63,14 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
   override def process(from: LogicalPlanState, context: EnterpriseRuntimeContext): CompilationState = {
     try {
       val (physicalPlan, pipelines) = rewritePlan(context, from.logicalPlan, from.semanticTable())
-      val converters: ExpressionConverters = new ExpressionConverters(MorselExpressionConverters,
-                                                                      SlottedExpressionConverters,
-                                                                      CommunityExpressionConverter)
+      val converters: ExpressionConverters = new ExpressionConverters(
+        new CompiledExpressionConverters(new ExpressionConverters(CommunityExpressionConverter)),
+        MorselExpressionConverters,
+        SlottedExpressionConverters,
+        CommunityExpressionConverter)
       val readOnly = from.solveds(from.logicalPlan.id).readOnly
       val operatorBuilder = new PipelineBuilder(pipelines, converters, readOnly)
+
       val operators = operatorBuilder.create(physicalPlan)
       val dispatcher =
         if (context.debugOptions.contains("singlethreaded")) new SingleThreadedExecutor()
