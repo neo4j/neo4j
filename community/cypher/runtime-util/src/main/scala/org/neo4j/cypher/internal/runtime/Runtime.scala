@@ -36,13 +36,11 @@ import org.opencypher.v9_0.util.symbols.CypherType
   * A runtime knows how to compile logical plans into executable queries. Executable queries are intended to be reused
   * for executing the same multiple times, also concurrently. To facilitate this, all execution state is held in a
   * QueryExecutionState object. The runtime has the power to allocate and release these execution states,
-  *
-  * @tparam State the execution state type for this runtime.
   */
-trait Runtime[State <: QueryExecutionState] {
+trait Runtime {
 
   def allocateExecutionState: QueryExecutionState
-  def compileToExecutable(query: String, logicalPlan: LogicalPlan, context: PhysicalCompilationContext): ExecutableQuery[State]
+  def compileToExecutable(query: String, logicalPlan: LogicalPlan, context: PhysicalCompilationContext): ExecutableQuery
   def releaseExecutionState(executionState: QueryExecutionState): Unit
 }
 
@@ -50,23 +48,19 @@ trait Runtime[State <: QueryExecutionState] {
   * An executable representation of a query.
   *
   * The ExecutableQuery holds no mutable state, and is safe to cache, reuse and use concurrently.
-  *
-  * @tparam State The type of execution state needed to execute this query.
   */
-trait ExecutableQuery[State <: QueryExecutionState] {
+trait ExecutableQuery {
 
   /**
     * Execute this query.
     *
     * @param params Parameters of the execution.
-    * @param state The execution state to use.
     * @param resultBuffer The result buffer to write results to.
     * @param transaction The transaction to execute the query in. If None, a new transaction will be begun
     *                    for the duration of this execution.
-    * @return A QueryExecution representing the started exeucution.
+    * @return A QueryExecution representing the started execution.
     */
   def execute( params: MapValue,
-               state: State,
                resultBuffer: ResultBuffer,
                transaction: Option[Transaction]
              ): QueryExecution

@@ -57,7 +57,7 @@ class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
       val dispatcher =
         if (workers == 1) new SingleThreadedExecutor(morselSize)
         else {
-          val numberOfThreads = if (workers == 0) Runtime.getRuntime.availableProcessors() else workers
+          val numberOfThreads = if (workers == 0) java.lang.Runtime.getRuntime.availableProcessors() else workers
           val jobScheduler = graph.getDependencyResolver.resolveDependency(classOf[JobScheduler])
           val executorService = jobScheduler.workStealingExecutor(JobScheduler.Groups.cypherWorker, numberOfThreads)
 
@@ -66,9 +66,9 @@ class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
 
       val log = logProvider.getLog(getClass)
       Cypher35Compiler(config, MasterCompiler.CLOCK, kernelMonitors, log,
-                       cypherPlanner, cypherRuntime, cypherUpdateStrategy, EnterpriseRuntimeBuilder,
-                       EnterpriseRuntimeContextCreator(GeneratedQueryStructure, dispatcher, log),
-                       LastCommittedTxIdProvider(graph))
+        cypherPlanner, cypherUpdateStrategy, EnterpriseRuntimeFactory.getRuntime(cypherRuntime, config.useErrorsOverWarnings),
+        EnterpriseRuntimeContextCreator(GeneratedQueryStructure, dispatcher, log),
+        LastCommittedTxIdProvider(graph))
 
     } else
       community.createCompiler(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy, config)

@@ -51,9 +51,8 @@ case class Cypher35Compiler[CONTEXT <: CommunityRuntimeContext,
                                                                                    kernelMonitors: KernelMonitors,
                                                                                    log: Log,
                                                                                    planner: CypherPlannerOption,
-                                                                                   runtime: CypherRuntimeOption,
                                                                                    updateStrategy: CypherUpdateStrategy,
-                                                                                   runtimeBuilder: RuntimeBuilder[T],
+                                                                                   runtime: TemporaryRuntime[CONTEXT],
                                                                                    contextCreatorv3_5: ContextCreator[CONTEXT],
                                                                                    txIdProvider: () => Long)
   extends LatestRuntimeVariablePlannerCompatibility[CONTEXT, T, Statement](config,
@@ -61,9 +60,8 @@ case class Cypher35Compiler[CONTEXT <: CommunityRuntimeContext,
                                                                            kernelMonitors,
                                                                            log,
                                                                            planner,
-                                                                           runtime,
                                                                            updateStrategy,
-                                                                           runtimeBuilder,
+                                                                           runtime,
                                                                            contextCreatorv3_5,
                                                                            txIdProvider) with CachingCompiler[BaseState]  {
 
@@ -147,15 +145,13 @@ case class Cypher35Compiler[CONTEXT <: CommunityRuntimeContext,
 
       checkForSchemaChanges(planContext)
 
-        //If the query is not cached we want to do the full planning + creating executable plan
-        def createPlan(): ExecutionPlan_v3_5 = {
-          val logicalPlanState = compiler.planPreparedQuery(preparedQuery, context)
+      // If the query is not cached we want to do the full planning + creating executable plan
+      def createPlan(): ExecutionPlan_v3_5 = {
+        val logicalPlanState = compiler.planPreparedQuery(preparedQuery, context)
           notification.LogicalPlanNotifications
-            .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
-            .foreach(notificationLogger.log)
-
-        val result = createExecPlan.transform(logicalPlanState, context)
-        result.maybeExecutionPlan.get
+          .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
+          .foreach(notificationLogger.log)
+       runtime.googldiblopp(logicalPlanState, context)
       }
 
       val executionPlan3_5 =
