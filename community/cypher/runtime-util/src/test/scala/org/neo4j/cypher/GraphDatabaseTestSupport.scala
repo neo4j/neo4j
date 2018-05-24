@@ -283,7 +283,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   def transaction: org.neo4j.internal.kernel.api.Transaction =
     graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).getKernelTransactionBoundToThisThread(true)
 
-  def propertyToken(name: String): Int = transaction.tokenRead().propertyKey(name)
+  def propertyToken(name: String): Int = graph.inTx(transaction.tokenRead().propertyKey(name))
 
   private def kernelAPI: InwardKernel = graph.getDependencyResolver.resolveDependency(classOf[InwardKernel])
 

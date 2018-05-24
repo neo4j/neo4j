@@ -31,6 +31,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
@@ -246,15 +247,37 @@ public final class ExpressionMethods
             if ( nodes.next() )
             {
                 nodes.properties( properties );
-                while ( properties.next() )
-                {
-                    if ( properties.propertyKey() == property )
-                    {
-                        return properties.propertyValue();
-                    }
-                }
+                return property( properties, property );
             }
             return Values.NO_VALUE;
         }
+    }
+
+    public static Value relationshipProperty( Transaction tx, long relationship, int property )
+    {
+        CursorFactory cursors = tx.cursors();
+        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor();
+              PropertyCursor properties = cursors.allocatePropertyCursor() )
+        {
+            tx.dataRead().singleRelationship( relationship, relationships );
+            if ( relationships.next() )
+            {
+                relationships.properties( properties );
+                return property( properties, property );
+            }
+            return Values.NO_VALUE;
+        }
+    }
+
+    private static Value property(PropertyCursor properties, int property)
+    {
+        while ( properties.next() )
+        {
+            if ( properties.propertyKey() == property )
+            {
+                return properties.propertyValue();
+            }
+        }
+        return Values.NO_VALUE;
     }
 }
