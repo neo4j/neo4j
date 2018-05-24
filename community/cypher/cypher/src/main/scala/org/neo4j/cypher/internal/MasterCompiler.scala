@@ -131,15 +131,17 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
         try {
           compiler3_5.compile(preParsedQuery, tracer, notifications.result(), transactionalContext)
         } catch {
-          case ex: util.SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
-            notifications += createUniqueNotification(ex, inputPosition)
-            assertSupportedRuntime(ex, preParsedQuery.runtime)
+          case ex: SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
+            val ex3_5 = ex.getCause.asInstanceOf[util.SyntaxException]
+            notifications += createUniqueNotification(ex3_5, inputPosition)
+            assertSupportedRuntime(ex3_5, preParsedQuery.runtime)
             innerCompile(preParsedQuery.copy(version = CypherVersion.v3_1, runtime = CypherRuntimeOption.interpreted))
 
-          case ex: util.SyntaxException if ex.getMessage.startsWith("START is deprecated") =>
-            notifications += createStartUnavailableNotification(ex, inputPosition)
-            notifications += createStartDeprecatedNotification(ex, inputPosition)
-            assertSupportedRuntime(ex, preParsedQuery.runtime)
+          case ex: SyntaxException if ex.getMessage.startsWith("START is deprecated") =>
+            val ex3_5 = ex.getCause.asInstanceOf[util.SyntaxException]
+            notifications += createStartUnavailableNotification(ex3_5, inputPosition)
+            notifications += createStartDeprecatedNotification(ex3_5, inputPosition)
+            assertSupportedRuntime(ex3_5, preParsedQuery.runtime)
             innerCompile(preParsedQuery.copy(version = CypherVersion.v3_1, runtime = CypherRuntimeOption.interpreted))
         }
 
