@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.{doubleValue, longValue}
-import org.neo4j.values.storable.{BooleanValue, DoubleValue, Value, Values}
+import org.neo4j.values.storable.{DoubleValue, Value, Values}
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions._
@@ -45,14 +45,14 @@ object IntermediateCodeGeneration {
     case c: FunctionInvocation if c.function == functions.Round =>
       compile(c.args.head) match {
         case Some(arg) =>
-          Some(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("round"), arg))
+          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("round"), arg))
         case _ => None
       }
 
     case c: FunctionInvocation if c.function == functions.Sin =>
       compile(c.args.head) match {
         case Some(arg) =>
-          Some(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("sin"), arg))
+          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("sin"), arg))
         case _ => None
       }
 

@@ -24,16 +24,13 @@ package org.neo4j.cypher.internal.runtime.compiled.expressions
 
 import org.neo4j.codegen
 import org.neo4j.codegen.CodeGenerator.generateCode
-import org.neo4j.codegen._
-import org.neo4j.codegen.bytecode.ByteCode
 import org.neo4j.codegen.Expression.{getStatic, invoke}
 import org.neo4j.codegen.FieldReference.staticField
 import org.neo4j.codegen.MethodDeclaration.method
 import org.neo4j.codegen.MethodReference.methodReference
 import org.neo4j.codegen.Parameter.param
+import org.neo4j.codegen._
 import org.neo4j.codegen.bytecode.ByteCode.BYTECODE
-import org.neo4j.codegen.source.SourceCode
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.NodeProperty
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.values.AnyValue
@@ -45,7 +42,6 @@ import org.opencypher.v9_0.frontend.helpers.using
   * Produces runnable code from an IntermediateRepresentation
   */
 object CodeGeneration {
-
   private val VALUES = classOf[Values]
   private val VALUE = classOf[Value]
   private val LONG = classOf[LongValue]
