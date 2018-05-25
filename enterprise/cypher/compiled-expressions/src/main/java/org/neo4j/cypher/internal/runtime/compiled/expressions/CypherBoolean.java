@@ -85,6 +85,23 @@ public final class CypherBoolean
         return Values.FALSE;
     }
 
+    public static Value and( AnyValue... args )
+    {
+        for ( AnyValue arg : args )
+        {
+            if ( arg == NO_VALUE )
+            {
+                return NO_VALUE;
+            }
+
+            if ( !arg.map( BOOLEAN_MAPPER ) )
+            {
+                return Values.FALSE;
+            }
+        }
+        return Values.TRUE;
+    }
+
     private static final class BooleanMapper implements ValueMapper<Boolean>
     {
         @Override
