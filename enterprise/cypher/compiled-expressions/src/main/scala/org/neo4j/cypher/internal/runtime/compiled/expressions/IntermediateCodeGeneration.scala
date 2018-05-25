@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.{doubleValue, longValue}
-import org.neo4j.values.storable.{DoubleValue, Value, Values}
+import org.neo4j.values.storable.{BooleanValue, DoubleValue, Value, Values}
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions._
@@ -95,7 +95,7 @@ object IntermediateCodeGeneration {
     case Or(lhs, rhs) =>
       (compile(lhs), compile(rhs)) match {
         case (Some(l), Some(r)) =>
-          Some(invokeStatic(method[ExpressionMethods, AnyValue, AnyValue, AnyValue]("or"), l, r))
+          Some(invokeStatic(method[ExpressionMethods, Value, Array[AnyValue]]("or"), arrayOf(l, r)))
         case _ => None
       }
 

@@ -103,6 +103,8 @@ case object TRUE extends IntermediateRepresentation
   */
 case object FALSE extends IntermediateRepresentation
 
+case class ArrayLiteral(values: Array[IntermediateRepresentation]) extends IntermediateRepresentation
+
 /**
   * Defines a method
   *
@@ -159,4 +161,6 @@ object IntermediateRepresentation {
   def falsy: IntermediateRepresentation = FALSE
 
   def constantJavaValue(value: Any): IntermediateRepresentation = Constant(value)
+
+  def arrayOf(values: IntermediateRepresentation*): IntermediateRepresentation = ArrayLiteral(values.toArray)
 }
