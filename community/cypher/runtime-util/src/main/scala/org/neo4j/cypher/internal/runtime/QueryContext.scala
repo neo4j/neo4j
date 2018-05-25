@@ -23,9 +23,8 @@ import java.net.URL
 
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IdempotentResult, IndexDescriptor, KernelStatisticProvider, TokenContext}
-import org.opencypher.v9_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
-import org.neo4j.graphdb.{Node, Path, PropertyContainer}
+import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write, _}
 import org.neo4j.kernel.api.dbms.DbmsOperations
@@ -35,6 +34,7 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue}
+import org.opencypher.v9_0.expressions.SemanticDirection
 
 import scala.collection.Iterator
 
@@ -66,7 +66,7 @@ trait QueryContext extends TokenContext {
 
   def relationshipOps: Operations[RelationshipValue]
 
-  def createNode(): Node
+  def createNode(): NodeValue
 
   def createNodeId(): Long
 
