@@ -67,7 +67,7 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
     private AssertOpen assertOpen;
     private final DefaultCursors pool;
 
-    public DefaultPropertyCursor( DefaultCursors pool )
+    DefaultPropertyCursor( DefaultCursors pool )
     {
         super( NO_ID );
         this.pool = pool;
@@ -254,6 +254,11 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
     @Override
     public ValueGroup propertyType()
     {
+        if ( txStateValue != null )
+        {
+            return txStateValue.value().valueGroup();
+        }
+
         PropertyType type = type();
         if ( type == null )
         {

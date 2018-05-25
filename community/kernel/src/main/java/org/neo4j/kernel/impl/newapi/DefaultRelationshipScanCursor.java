@@ -35,11 +35,9 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
     private PageCursor pageCursor;
     private Set<Long> addedRelationships;
 
-    private final DefaultCursors pool;
-
     DefaultRelationshipScanCursor( DefaultCursors pool )
     {
-        this.pool = pool;
+        super( pool );
     }
 
     void scan( int type, Read read )
@@ -142,6 +140,7 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
     @Override
     public void close()
     {
+        super.close();
         if ( !isClosed() )
         {
             read = null;
