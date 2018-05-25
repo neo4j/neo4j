@@ -45,25 +45,25 @@ object IntermediateCodeGeneration {
     case c: FunctionInvocation if c.function == functions.Round =>
       compile(c.args.head) match {
         case Some(arg) =>
-          Some(invokeStatic(method[ExpressionMethods, DoubleValue, AnyValue]("round"), arg))
+          Some(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("round"), arg))
         case _ => None
       }
 
     case c: FunctionInvocation if c.function == functions.Sin =>
       compile(c.args.head) match {
         case Some(arg) =>
-          Some(invokeStatic(method[ExpressionMethods, DoubleValue, AnyValue]("sin"), arg))
+          Some(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("sin"), arg))
         case _ => None
       }
 
     case c: FunctionInvocation if c.function == functions.Rand =>
-      Some(invokeStatic(method[ExpressionMethods, DoubleValue]("rand")))
+      Some(invokeStatic(method[CypherFunctions, DoubleValue]("rand")))
 
     //math
     case Multiply(lhs, rhs) =>
       (compile(lhs), compile(rhs)) match {
         case (Some(l), Some(r)) =>
-          Some(invokeStatic(method[ExpressionMethods, AnyValue, AnyValue, AnyValue]("multiply"), l, r))
+          Some(invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("multiply"), l, r))
 
         case _ => None
       }
@@ -71,14 +71,14 @@ object IntermediateCodeGeneration {
     case Add(lhs, rhs) =>
       (compile(lhs), compile(rhs)) match {
         case (Some(l), Some(r)) =>
-          Some(invokeStatic(method[ExpressionMethods, AnyValue, AnyValue, AnyValue]("add"), l, r))
+          Some(invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("add"), l, r))
         case _ => None
       }
 
     case Subtract(lhs, rhs) =>
       (compile(lhs), compile(rhs)) match {
         case (Some(l), Some(r)) =>
-          Some(invokeStatic(method[ExpressionMethods, AnyValue, AnyValue, AnyValue]("subtract"), l, r))
+          Some(invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("subtract"), l, r))
         case _ => None
       }
 
@@ -95,7 +95,7 @@ object IntermediateCodeGeneration {
     case Or(lhs, rhs) =>
       (compile(lhs), compile(rhs)) match {
         case (Some(l), Some(r)) =>
-          Some(invokeStatic(method[ExpressionMethods, Value, Array[AnyValue]]("or"), arrayOf(l, r)))
+          Some(invokeStatic(method[CypherBoolean, Value, Array[AnyValue]]("or"), arrayOf(l, r)))
         case _ => None
       }
 
@@ -104,13 +104,13 @@ object IntermediateCodeGeneration {
       Some(invoke(load("params"), method[MapValue, AnyValue, String]("get"), constantJavaValue(name)))
 
     case NodeProperty(offset, token, _) =>
-      Some(invokeStatic(method[ExpressionMethods, Value, Transaction, Long, Int]("nodeProperty"),
+      Some(invokeStatic(method[CypherDbAccess, Value, Transaction, Long, Int]("nodeProperty"),
                         load("tx"),
                         invoke(load("context"), method[ExecutionContext, Long, Int]("getLongAt"),
                                constantJavaValue(offset)), constantJavaValue(token)))
 
     case RelationshipProperty(offset, token, _) =>
-      Some(invokeStatic(method[ExpressionMethods, Value, Transaction, Long, Int]("relationshipProperty"),
+      Some(invokeStatic(method[CypherDbAccess, Value, Transaction, Long, Int]("relationshipProperty"),
                         load("tx"),
                         invoke(load("context"), method[ExecutionContext, Long, Int]("getLongAt"),
                                constantJavaValue(offset)), constantJavaValue(token)))
