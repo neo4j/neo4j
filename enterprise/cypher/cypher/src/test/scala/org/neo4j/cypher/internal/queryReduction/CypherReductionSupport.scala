@@ -190,7 +190,7 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
 
     baseState = rewriting.transform(baseState, planningContext)
 
-    val logicalPlanState = CypherReductionSupport.planner.planPreparedQuery(baseState, planningContext)
+    val logicalPlanState = CypherReductionSupport.compiler.planPreparedQuery(baseState, planningContext)
 
 
     val compilationState = createExecPlan.transform(logicalPlanState, planningContext)
