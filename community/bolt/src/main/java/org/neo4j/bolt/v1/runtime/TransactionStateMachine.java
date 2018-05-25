@@ -271,9 +271,7 @@ public class TransactionStateMachine implements StatementProcessor
                             }
                             else
                             {
-                                // Periodic commit will change the current transaction, so
-                                // we can't trust this to point to the actual current transaction;
-                                ctx.currentTransaction = null;
+                                ctx.currentTransaction = spi.beginTransaction( ctx.loginContext );
                             }
                         }
                     }
