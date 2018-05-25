@@ -36,7 +36,7 @@ import scala.util.{Failure, Success, Try}
 /**
   * This runtime takes on queries that require no planning, such as procedures and schema commands
   */
-class ProcedureCallOrSchemaCommandRuntime extends TemporaryRuntime[CommunityRuntimeContext] {
+object ProcedureCallOrSchemaCommandRuntime extends TemporaryRuntime[CommunityRuntimeContext] {
   override def googldiblopp(state: LogicalPlanState, context: CommunityRuntimeContext): ExecutionPlan = {
     val maybeExecutionPlan: Try[ExecutionPlan] = state.maybeLogicalPlan match {
       case None => throw new IllegalStateException("A proper logical plan must have been built by now")

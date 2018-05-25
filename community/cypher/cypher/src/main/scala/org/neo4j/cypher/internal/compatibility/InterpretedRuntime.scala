@@ -36,41 +36,8 @@ import org.opencypher.v9_0.frontend.PlannerName
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 import org.opencypher.v9_0.util.PeriodicCommitInOpenTransactionException
 
-object InterpretedRuntime {
-  def getExecutionPlanFunction(periodicCommit: Option[PeriodicCommitInfo],
-                               resultBuilderFactory: ExecutionResultBuilderFactory,
-                               notificationLogger: InternalNotificationLogger,
-                               plannerName: PlannerName,
-                               runtimeName: RuntimeName,
-                               readOnly: Boolean,
-                               cardinalities: Cardinalities):
-  (QueryContext, ExecutionMode, MapValue) => InternalExecutionResult =
-    (queryContext: QueryContext, planType: ExecutionMode, params: MapValue) => {
-      val builder = resultBuilderFactory.create()
-
-      val profiling = planType == ProfileMode
-      val builderContext = if (!readOnly || profiling) new UpdateCountingQueryContext(queryContext) else queryContext
-
-      builder.setQueryContext(builderContext)
-
-      if (periodicCommit.isDefined) {
-        if (!builderContext.transactionalContext.isTopLevelTx)
-          throw new PeriodicCommitInOpenTransactionException()
-        builder.setLoadCsvPeriodicCommitObserver(periodicCommit.get.batchRowCount)
-      }
-
-      if (profiling)
-        builder.setPipeDecorator(new Profiler(queryContext.transactionalContext.databaseInfo))
-
-      builder.build(planType, params, notificationLogger, plannerName, runtimeName, readOnly, cardinalities)
-    }
-}
-
-class InterpretedRuntime(logError: Boolean) extends TemporaryRuntime[CommunityRuntimeContext] {
+object InterpretedRuntime extends TemporaryRuntime[CommunityRuntimeContext] {
   override def googldiblopp(state: LogicalPlanState, context: CommunityRuntimeContext): ExecutionPlan = {
-    if (logError) {
-      context.notificationLogger.log(RuntimeUnsupportedNotification)
-    }
     val readOnly = state.solveds(state.logicalPlan.id).readOnly
     val cardinalities = state.cardinalities
     val logicalPlan = state.logicalPlan
@@ -119,4 +86,31 @@ class InterpretedRuntime(logError: Boolean) extends TemporaryRuntime[CommunityRu
     override def plannedIndexUsage: Seq[IndexUsage] = logicalPlan.indexUsage
   }
 
+  def getExecutionPlanFunction(periodicCommit: Option[PeriodicCommitInfo],
+                               resultBuilderFactory: ExecutionResultBuilderFactory,
+                               notificationLogger: InternalNotificationLogger,
+                               plannerName: PlannerName,
+                               runtimeName: RuntimeName,
+                               readOnly: Boolean,
+                               cardinalities: Cardinalities):
+  (QueryContext, ExecutionMode, MapValue) => InternalExecutionResult =
+    (queryContext: QueryContext, planType: ExecutionMode, params: MapValue) => {
+      val builder = resultBuilderFactory.create()
+
+      val profiling = planType == ProfileMode
+      val builderContext = if (!readOnly || profiling) new UpdateCountingQueryContext(queryContext) else queryContext
+
+      builder.setQueryContext(builderContext)
+
+      if (periodicCommit.isDefined) {
+        if (!builderContext.transactionalContext.isTopLevelTx)
+          throw new PeriodicCommitInOpenTransactionException()
+        builder.setLoadCsvPeriodicCommitObserver(periodicCommit.get.batchRowCount)
+      }
+
+      if (profiling)
+        builder.setPipeDecorator(new Profiler(queryContext.transactionalContext.databaseInfo))
+
+      builder.build(planType, params, notificationLogger, plannerName, runtimeName, readOnly, cardinalities)
+    }
 }

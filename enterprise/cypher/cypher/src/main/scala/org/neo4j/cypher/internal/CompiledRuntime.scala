@@ -41,7 +41,7 @@ import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.frontend.PlannerName
 import org.opencypher.v9_0.util.TaskCloser
 
-class CompiledRuntime extends TemporaryRuntime[EnterpriseRuntimeContext] {
+object CompiledRuntime extends TemporaryRuntime[EnterpriseRuntimeContext] {
 
   @throws[CantCompileQueryException]
   override def googldiblopp(state: LogicalPlanState, context: EnterpriseRuntimeContext): ExecutionPlan_V35 = {

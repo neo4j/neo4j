@@ -51,7 +51,7 @@ import org.opencypher.v9_0.frontend.PlannerName
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 import org.opencypher.v9_0.util.TaskCloser
 
-class MorselRuntime extends TemporaryRuntime[EnterpriseRuntimeContext] {
+object MorselRuntime extends TemporaryRuntime[EnterpriseRuntimeContext] {
   override def googldiblopp(state: LogicalPlanState, context: EnterpriseRuntimeContext): ExecutionPlan_V35 = {
     val (physicalPlan, pipelines) = rewritePlan(context, state.logicalPlan, state.semanticTable())
     val converters: ExpressionConverters = new ExpressionConverters(

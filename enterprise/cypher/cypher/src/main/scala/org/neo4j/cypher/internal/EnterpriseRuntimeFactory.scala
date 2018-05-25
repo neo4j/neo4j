@@ -23,39 +23,33 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.CypherRuntimeOption
-import org.neo4j.cypher.internal.compatibility.{FallbackRuntime, InterpretedRuntime, ProcedureCallOrSchemaCommandRuntime, TemporaryRuntime}
+import org.neo4j.cypher.internal.compatibility.{FallbackRuntime, InterpretedRuntime, TemporaryRuntime}
 import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContext
-import org.opencypher.v9_0.util.InvalidArgumentException
 
 object EnterpriseRuntimeFactory {
 
-  def getRuntime(cypherRuntime: CypherRuntimeOption, useErrorsOverWarnings: Boolean): TemporaryRuntime[EnterpriseRuntimeContext] = cypherRuntime match {
-    case CypherRuntimeOption.interpreted =>
-      new FallbackRuntime(
-        List(new ProcedureCallOrSchemaCommandRuntime(), new InterpretedRuntime(true)),
-        CypherRuntimeOption.interpreted)
+  val interpreted = new FallbackRuntime(List(InterpretedRuntime), CypherRuntimeOption.interpreted)
+  val slotted = new FallbackRuntime(List(SlottedRuntime), CypherRuntimeOption.slotted)
+  val compiledWithoutFallback = new FallbackRuntime(List(CompiledRuntime), CypherRuntimeOption.compiled)
+  val compiled = new FallbackRuntime(List(CompiledRuntime, SlottedRuntime), CypherRuntimeOption.compiled)
+  val morselWithoutFallback = new FallbackRuntime(List(MorselRuntime), CypherRuntimeOption.morsel)
+  val morsel = new FallbackRuntime(List(MorselRuntime, CompiledRuntime, SlottedRuntime), CypherRuntimeOption.morsel)
+  val default = new FallbackRuntime(List(CompiledRuntime, SlottedRuntime), CypherRuntimeOption.default)
 
-    case CypherRuntimeOption.slotted =>
-      new FallbackRuntime(
-        List(new ProcedureCallOrSchemaCommandRuntime(), new SlottedRuntime()),
-        CypherRuntimeOption.slotted)
+  def getRuntime(cypherRuntime: CypherRuntimeOption, disallowFallback: Boolean): TemporaryRuntime[EnterpriseRuntimeContext] =
+    cypherRuntime match {
+      case CypherRuntimeOption.interpreted => interpreted
 
-    case CypherRuntimeOption.compiled =>
-      new FallbackRuntime(
-        List(new ProcedureCallOrSchemaCommandRuntime(), new CompiledRuntime(), new SlottedRuntime()),
-        CypherRuntimeOption.compiled)
+      case CypherRuntimeOption.slotted => slotted
 
-    case CypherRuntimeOption.morsel =>
-      new FallbackRuntime(
-        List(new ProcedureCallOrSchemaCommandRuntime(), new MorselRuntime(), new CompiledRuntime(), new SlottedRuntime()),
-        CypherRuntimeOption.morsel)
+      case CypherRuntimeOption.compiled if disallowFallback => compiledWithoutFallback
 
-    case CypherRuntimeOption.default =>
-      new FallbackRuntime(
-        List(new ProcedureCallOrSchemaCommandRuntime(), new CompiledRuntime(), new SlottedRuntime()),
-        CypherRuntimeOption.default)
+      case CypherRuntimeOption.compiled => compiled
 
-    case runtime if useErrorsOverWarnings =>
-      throw new InvalidArgumentException(s"This version of Neo4j does not support requested runtime: $runtime")
-  }
+      case CypherRuntimeOption.morsel if disallowFallback => morselWithoutFallback
+
+      case CypherRuntimeOption.morsel => morsel
+
+      case CypherRuntimeOption.default => default
+    }
 }

@@ -40,7 +40,7 @@ import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.frontend.PlannerName
 import org.opencypher.v9_0.util.CypherException
 
-class SlottedRuntime extends TemporaryRuntime[EnterpriseRuntimeContext] with DebugPrettyPrinter {
+object SlottedRuntime extends TemporaryRuntime[EnterpriseRuntimeContext] with DebugPrettyPrinter {
 
   val ENABLE_DEBUG_PRINTS = false // NOTE: false toggles all debug prints off, overriding the individual settings below
 

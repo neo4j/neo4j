@@ -20,23 +20,25 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.CypherRuntimeOption
-import org.neo4j.cypher.internal.compatibility.{FallbackRuntime, InterpretedRuntime, ProcedureCallOrSchemaCommandRuntime, TemporaryRuntime}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.CommunityRuntimeContext
+import org.neo4j.cypher.internal.compatibility.{FallbackRuntime, InterpretedRuntime, TemporaryRuntime, UnknownRuntime}
 import org.opencypher.v9_0.util.InvalidArgumentException
 
 object CommunityRuntimeFactory {
 
-  def getRuntime(cypherRuntime: CypherRuntimeOption, useErrorsOverWarnings: Boolean): TemporaryRuntime[CommunityRuntimeContext] = cypherRuntime match {
-    case CypherRuntimeOption.interpreted =>
-      new FallbackRuntime(List(new ProcedureCallOrSchemaCommandRuntime(), new InterpretedRuntime(false)), CypherRuntimeOption.interpreted)
+  val interpreted = new FallbackRuntime(List(InterpretedRuntime), CypherRuntimeOption.interpreted)
+  val default = new FallbackRuntime(List(InterpretedRuntime), CypherRuntimeOption.default)
+  val unsupportedWithFallback = new FallbackRuntime(List(UnknownRuntime, InterpretedRuntime), CypherRuntimeOption.default)
 
-    case CypherRuntimeOption.default =>
-      new FallbackRuntime(List(new ProcedureCallOrSchemaCommandRuntime(), new InterpretedRuntime(false)), CypherRuntimeOption.default)
+  def getRuntime(cypherRuntime: CypherRuntimeOption, disallowFallback: Boolean): TemporaryRuntime[CommunityRuntimeContext] =
+    cypherRuntime match {
+      case CypherRuntimeOption.interpreted => interpreted
 
-    case x if useErrorsOverWarnings =>
-      throw new InvalidArgumentException(s"This version of Neo4j does not support requested runtime: $x")
+      case CypherRuntimeOption.default => default
 
-    case _  =>
-      new FallbackRuntime(List(new ProcedureCallOrSchemaCommandRuntime(), new InterpretedRuntime(true)), CypherRuntime.default)
-  }
+      case unsupported if disallowFallback =>
+        throw new InvalidArgumentException(s"This version of Neo4j does not support requested runtime: $unsupported")
+
+      case unsupported => unsupportedWithFallback
+    }
 }

@@ -19,31 +19,38 @@
  */
 package org.neo4j.cypher.internal.compatibility
 
-import org.neo4j.cypher.CypherRuntime
+import org.neo4j.cypher.CypherRuntimeOption
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
+import org.opencypher.v9_0.util.RuntimeUnsupportedNotification
+
+import scala.util.{Failure, Try}
 
 trait TemporaryRuntime[-CONTEXT <: CommunityRuntimeContext] {
   def googldiblopp(logicalPlan: LogicalPlanState, context: CONTEXT): ExecutionPlan
 }
 
+object UnknownRuntime extends TemporaryRuntime[CommunityRuntimeContext] {
+  def googldiblopp(logicalPlan: LogicalPlanState, context: CommunityRuntimeContext): ExecutionPlan =
+    throw new CantCompileQueryException()
+}
+
 class FallbackRuntime[CONTEXT <: CommunityRuntimeContext](runtimes: Seq[TemporaryRuntime[CONTEXT]],
-                                                          requestedRuntime: CypherRuntime) extends TemporaryRuntime[CONTEXT] {
+                                                          requestedRuntime: CypherRuntimeOption) extends TemporaryRuntime[CONTEXT] {
 
   val cantCompile = new CantCompileQueryException(s"This version of Neo4j does not support requested runtime: ${requestedRuntime.name}")
 
   override def googldiblopp(logicalPlan: LogicalPlanState, context: CONTEXT): ExecutionPlan = {
-    var executionPlan: Option[ExecutionPlan] = None
-    for (runtime <- runtimes if executionPlan.isEmpty) {
-      try {
-        executionPlan = Some(runtime.googldiblopp(logicalPlan, context))
-      } catch {
-        case _: Throwable => // ignore and try next runtime
-      }
+    var executionPlan: Try[ExecutionPlan] = Try(ProcedureCallOrSchemaCommandRuntime.googldiblopp(logicalPlan, context))
+
+    for (runtime <- runtimes if executionPlan.isFailure) {
+      executionPlan = Try(runtime.googldiblopp(logicalPlan, context))
+      if (executionPlan.isFailure)
+        context.notificationLogger.log(RuntimeUnsupportedNotification)
     }
 
-    executionPlan.orElse(throw cantCompile).get
+    executionPlan.orElse(Failure(cantCompile)).get
   }
 }
