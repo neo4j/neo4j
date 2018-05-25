@@ -53,6 +53,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.internal.kernel.api.Read.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.core.TokenHolder.NO_ID;
 import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.TestRelType.IN;
 import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.TestRelType.LOOP;
@@ -93,7 +94,6 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
         testDegreesForDenseNodeWithPartiallyDeletedRelGroupChain( IN, OUT, LOOP );
     }
 
-    @RandomRule.Seed( 1 )
     @Test
     public void degreesForDenseNodeWithPartiallyDeletedRelChains()
     {
@@ -239,11 +239,37 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
 
     private int degreeForDirection( StorageNodeCursor cursor, Direction direction )
     {
-        return storageReader.degreeRelationshipsInGroup( cursor.nodeReference(), cursor.relationshipGroupReference(), direction, null );
+        return degreeForDirectionAndType( cursor, direction, ANY_RELATIONSHIP_TYPE );
     }
+
     private int degreeForDirectionAndType( StorageNodeCursor cursor, Direction direction, int relType )
     {
-        return storageReader.degreeRelationshipsInGroup( cursor.nodeReference(), cursor.relationshipGroupReference(), direction, relType );
+        int degree = 0;
+        try ( StorageRelationshipGroupCursor groups = storageReader.allocateRelationshipGroupCursor() )
+        {
+            groups.init( cursor.nodeReference(), cursor.relationshipGroupReference() );
+            while ( groups.next() )
+            {
+                if ( relType == ANY_RELATIONSHIP_TYPE || relType == groups.type() )
+                {
+                    switch ( direction )
+                    {
+                    case OUTGOING:
+                        degree += groups.outgoingCount() + groups.loopCount();
+                        break;
+                    case INCOMING:
+                        degree += groups.incomingCount() + groups.loopCount();
+                        break;
+                    case BOTH:
+                        degree += groups.outgoingCount() + groups.incomingCount() + groups.loopCount();
+                        break;
+                    default:
+                        throw new IllegalArgumentException( direction.name() );
+                    }
+                }
+            }
+        }
+        return degree;
     }
 
     private void testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain(

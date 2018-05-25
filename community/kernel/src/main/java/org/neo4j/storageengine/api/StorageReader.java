@@ -19,9 +19,6 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.eclipse.collections.api.iterator.IntIterator;
-import org.eclipse.collections.api.iterator.LongIterator;
-
 import java.util.Iterator;
 import java.util.function.Function;
 
@@ -36,12 +33,10 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -151,30 +146,6 @@ public interface StorageReader extends AutoCloseable
      * if the given index isn't related to a uniqueness constraint.
      */
     Long indexGetOwningUniquenessConstraintId( IndexDescriptor index );
-
-    /**
-     * @param index {@link IndexDescriptor} to get schema rule id for.
-     * @return schema rule id for matching index.
-     * @throws SchemaRuleNotFoundException if no such index exists in storage.
-     */
-    long indexGetCommittedId( IndexDescriptor index )
-            throws SchemaRuleNotFoundException;
-
-    /**
-     * @return iterator with property keys of all stored graph properties.
-     */
-    IntIterator graphGetPropertyKeys();
-
-    /**
-     * @param propertyKeyId property key id to get graph property for.
-     * @return property value of graph property with key {@code propertyKeyId}, or {@code null} if not found.
-     */
-    Object graphGetProperty( int propertyKeyId );
-
-    /**
-     * @return all stored graph properties.
-     */
-    Iterator<StorageProperty> graphGetAllProperties();
 
     /**
      * @param descriptor describing the label and property key (or keys) defining the requested constraint.
@@ -380,17 +351,6 @@ public interface StorageReader extends AutoCloseable
             RelationshipVisitor<EXCEPTION> relationshipVisitor ) throws EntityNotFoundException, EXCEPTION;
 
     /**
-     * @return ids of all stored nodes.
-     */
-    LongIterator nodesGetAll();
-
-    /**
-     * @return ids of all stored relationships. The returned iterator can optionally visit data about
-     * each relationship returned.
-     */
-    RelationshipIterator relationshipsGetAll();
-
-    /**
      * Releases a previously {@link #reserveNode() reserved} node id if it turns out to not actually being used,
      * for example in the event of a transaction rolling back.
      *
@@ -464,8 +424,6 @@ public interface StorageReader extends AutoCloseable
     boolean nodeExists( long id );
 
     boolean relationshipExists( long id );
-
-    int degreeRelationshipsInGroup( long id, long groupId, Direction direction, Integer relType );
 
     <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StorageReader, T> factory );
 
