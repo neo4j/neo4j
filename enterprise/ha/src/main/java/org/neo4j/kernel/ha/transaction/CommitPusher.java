@@ -33,12 +33,11 @@ import java.util.concurrent.FutureTask;
 
 import org.neo4j.com.Response;
 import org.neo4j.kernel.ha.com.master.Slave;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.scheduler.JobScheduler.Groups.masterTransactionPushing;
 
-public class CommitPusher extends LifecycleAdapter
+public class CommitPusher
 {
     private static class PullUpdateFuture
             extends FutureTask<Object>

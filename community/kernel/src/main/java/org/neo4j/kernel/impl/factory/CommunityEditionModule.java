@@ -112,12 +112,14 @@ public class CommunityEditionModule extends EditionModule
         dependencies.satisfyDependency( idGeneratorFactory );
         dependencies.satisfyDependency( idController );
 
-        propertyKeyTokenHolder = life.add( dependencies.satisfyDependency( new DelegatingPropertyKeyTokenHolder(
-                createPropertyKeyCreator( config, dataSourceManager, idGeneratorFactory ) ) ) );
-        labelTokenHolder = life.add( dependencies.satisfyDependency(new DelegatingLabelTokenHolder( createLabelIdCreator( config,
-                dataSourceManager, idGeneratorFactory ) ) ));
-        relationshipTypeTokenHolder = life.add( dependencies.satisfyDependency(new DelegatingRelationshipTypeTokenHolder(
-                createRelationshipTypeCreator( config, dataSourceManager, idGeneratorFactory ) ) ));
+        propertyKeyTokenHolder = new DelegatingPropertyKeyTokenHolder( createPropertyKeyCreator( config, dataSourceManager, idGeneratorFactory ) );
+        labelTokenHolder = new DelegatingLabelTokenHolder( createLabelIdCreator( config, dataSourceManager, idGeneratorFactory ) );
+        relationshipTypeTokenHolder =
+                new DelegatingRelationshipTypeTokenHolder( createRelationshipTypeCreator( config, dataSourceManager, idGeneratorFactory ) );
+
+        dependencies.satisfyDependency( propertyKeyTokenHolder );
+        dependencies.satisfyDependency( labelTokenHolder );
+        dependencies.satisfyDependency( relationshipTypeTokenHolder );
 
         dependencies.satisfyDependency(
                 createKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade, life ) );
