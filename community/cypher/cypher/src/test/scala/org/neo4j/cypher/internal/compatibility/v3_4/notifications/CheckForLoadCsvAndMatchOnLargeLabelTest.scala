@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.frontend.v3_4.notification.LargeLabelWithLoadCsvNotification
 import org.neo4j.cypher.internal.ir.v3_4.HasHeaders
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId}
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelName, StringLiteral}
@@ -63,7 +64,8 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest
         "foo",
         HasHeaders,
         None,
-        legacyCsvQuoteEscaping = false
+        legacyCsvQuoteEscaping = false,
+        CSVResources.DEFAULT_BUFFER_SIZE
       )
 
     val plan = CartesianProduct(
@@ -82,7 +84,8 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest
         "foo",
         HasHeaders,
         None,
-        legacyCsvQuoteEscaping = false
+        legacyCsvQuoteEscaping = false,
+        CSVResources.DEFAULT_BUFFER_SIZE
       )
 
     val plan =
@@ -97,7 +100,8 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest
   test("should not notify when doing large label scan on top of LoadCSV") {
     val start = NodeByLabelScan("bar", LabelName(labelOverThreshold)(pos), Set.empty)
     val plan =
-      LoadCSV(start, url, "foo", HasHeaders, None, legacyCsvQuoteEscaping = false)
+      LoadCSV(start, url, "foo", HasHeaders, None, legacyCsvQuoteEscaping = false,
+              CSVResources.DEFAULT_BUFFER_SIZE)
 
     checker(plan) should equal(Seq.empty)
   }

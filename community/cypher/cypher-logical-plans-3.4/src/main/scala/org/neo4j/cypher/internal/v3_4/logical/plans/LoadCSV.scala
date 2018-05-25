@@ -35,7 +35,8 @@ case class LoadCSV(source: LogicalPlan,
                    variableName: String,
                    format: CSVFormat,
                    fieldTerminator: Option[String],
-                   legacyCsvQuoteEscaping: Boolean)
+                   legacyCsvQuoteEscaping: Boolean,
+                   csvBufferSize: Int)
                   (implicit idGen: IdGen) extends LogicalPlan(idGen) {
 
   override val availableSymbols: Set[String] = source.availableSymbols + variableName

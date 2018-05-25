@@ -43,7 +43,7 @@ import scala.collection.JavaConverters._
 
 class LoadCsvAcceptanceTest
   extends ExecutionEngineFunSuite with BeforeAndAfterAll
-  with QueryStatisticsTestSupport with CreateTempFileTestSupport with CypherComparisonSupport{
+  with QueryStatisticsTestSupport with CreateTempFileTestSupport with CypherComparisonSupport with RunWithConfigTestSupport {
 
   val expectedToFail = Configs.AbsolutelyAll - Configs.Compiled - Configs.Cost2_3
 
@@ -595,6 +595,42 @@ class LoadCsvAcceptanceTest
       )
 
       result.toList should equal(List(Map("count(*)" -> 0)))
+    }
+  }
+
+  test("should give nice error message when overflowing the buffer") {
+    runWithConfig(GraphDatabaseSettings.csv_buffer_size -> (1 * 1024 * 1024).toString) { db =>
+      val longName  = "f"* 6000000
+      val urls = csvUrls({
+        writer =>
+          writer.println("\"prop\"")
+          writer.println(longName)
+      })
+      for (url <- urls) {
+        //TODO this message should mention `dbms.import.csv.buffer_size` in 3.5
+        val error = intercept[QueryExecutionException](db.execute(
+          s"""LOAD CSV WITH HEADERS FROM '$url' AS row
+             |RETURN row.prop""".stripMargin).next().get("row.prop"))
+        error.getMessage should startWith(
+          """Tried to read a field larger than buffer size 1048576.""".stripMargin)
+      }
+    }
+  }
+
+  test("should be able to configure db to handle huge fields") {
+    runWithConfig(GraphDatabaseSettings.csv_buffer_size -> (4 * 1024 * 1024).toString) { db =>
+      val longName  = "f"* 6000000
+      val urls = csvUrls({
+        writer =>
+          writer.println("\"prop\"")
+          writer.println(longName)
+      })
+      for (url <- urls) {
+        val result = db.execute(
+          s"""LOAD CSV WITH HEADERS FROM '$url' AS row
+             |RETURN row.prop""".stripMargin)
+        result.next().get("row.prop") should equal(longName)
+      }
     }
   }
 

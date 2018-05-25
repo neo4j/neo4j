@@ -17,19 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.interpreted.pipes
+package org.neo4j.csv.reader;
 
-import java.net.URL
-
-trait ExternalCSVResource {
-  def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean, bufferSize: Int,
-                     headers: Boolean = false): Iterator[Array[String]]
-}
-
-object ExternalCSVResource {
-  def empty: ExternalCSVResource = new ExternalCSVResource {
-    override def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean, bufferSize: Int,
-                                headers: Boolean = false): Iterator[Array[String]] =
-      Iterator.empty
-  }
+public class BufferOverflowException extends IllegalStateException
+{
+    public BufferOverflowException( String msg )
+    {
+        super( msg );
+    }
 }

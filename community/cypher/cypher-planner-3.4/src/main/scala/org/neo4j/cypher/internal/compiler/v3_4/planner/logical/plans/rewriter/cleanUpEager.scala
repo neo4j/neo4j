@@ -39,7 +39,7 @@ case class cleanUpEager(solveds: Solveds, attributes: Attributes) extends Rewrit
       res
 
     // E LCSV => LCSV E
-    case eager@Eager(loadCSV@LoadCSV(source, _, _, _, _, _)) =>
+    case eager@Eager(loadCSV@LoadCSV(source, _, _, _, _, _,_)) =>
       val res = loadCSV.copy(source = eager.copy(source = source)(SameId(eager.id)))(attributes.copy(loadCSV.id))
       solveds.copy(eager.id, res.id)
       res

@@ -317,6 +317,12 @@ public class GraphDatabaseSettings implements LoadableConfig
             setting( "dbms.import.csv.legacy_quote_escaping", BOOLEAN,
                     Boolean.toString( Configuration.DEFAULT_LEGACY_STYLE_QUOTING ) );
 
+    @Description( "The size of the internal buffer in bytes used by `LOAD CSV`. If the csv file contains huge fields " +
+                  "this value may have to be increased." )
+    public static Setting<Integer> csv_buffer_size =
+            buildSetting( "dbms.import.csv.buffer_size", INTEGER, Integer.toString( 2 * Configuration.MB ) )
+                    .constraint( min( 1 ) ).build();
+
     @Description( "Enables or disables tracking of how much time a query spends actively executing on the CPU." )
     @Dynamic
     public static final Setting<Boolean> track_query_cpu_time = setting( "dbms.track_query_cpu_time", BOOLEAN, FALSE );

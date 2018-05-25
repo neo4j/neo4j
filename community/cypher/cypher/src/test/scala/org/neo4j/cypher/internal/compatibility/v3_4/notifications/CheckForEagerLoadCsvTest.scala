@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.notifications
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.notification.EagerLoadCsvNotification
 import org.neo4j.cypher.internal.ir.v3_4.NoHeaders
+import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.StringLiteral
 import org.neo4j.cypher.internal.v3_4.logical.plans.{AllNodesScan, Eager, LoadCSV}
@@ -39,7 +40,8 @@ class CheckForEagerLoadCsvTest extends CypherFunSuite with LogicalPlanningTestSu
           "foo",
           NoHeaders,
           None,
-          legacyCsvQuoteEscaping = false
+          legacyCsvQuoteEscaping = false,
+          CSVResources.DEFAULT_BUFFER_SIZE
         )
       )
 
@@ -56,7 +58,8 @@ class CheckForEagerLoadCsvTest extends CypherFunSuite with LogicalPlanningTestSu
         "foo",
         NoHeaders,
         None,
-        legacyCsvQuoteEscaping = false
+        legacyCsvQuoteEscaping = false,
+        CSVResources.DEFAULT_BUFFER_SIZE
       )
 
     checkForEagerLoadCsv(plan) should equal(Seq.empty)

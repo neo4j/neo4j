@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.ir.v3_4.{CSVFormat, HasHeaders, NoHeaders}
 import org.neo4j.cypher.internal.runtime.{ArrayBackedMap, QueryContext}
 import org.neo4j.cypher.internal.util.v3_4.attribution.Id
+
 import org.neo4j.values._
 import org.neo4j.values.storable.{TextValue, Value, Values}
 import org.neo4j.values.virtual.VirtualValues
@@ -39,7 +40,8 @@ case class LoadCSVPipe(source: Pipe,
                        urlExpression: Expression,
                        variable: String,
                        fieldTerminator: Option[String],
-                       legacyCsvQuoteEscaping: Boolean)
+                       legacyCsvQuoteEscaping: Boolean,
+                        bufferSize: Int)
                       (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
 
@@ -112,12 +114,12 @@ case class LoadCSVPipe(source: Pipe,
 
       format match {
         case HasHeaders =>
-          val iterator: Iterator[Array[Value]] = state.resources.getCsvIterator(url, fieldTerminator, legacyCsvQuoteEscaping, headers = true)
+          val iterator: Iterator[Array[Value]] = state.resources.getCsvIterator(url, fieldTerminator, legacyCsvQuoteEscaping, bufferSize, headers = true)
             .map(_.map(s => Values.stringOrNoValue(s)))
           val headers = if (iterator.nonEmpty) iterator.next().toIndexedSeq else IndexedSeq.empty // First row is headers
           new IteratorWithHeaders(headers, context, iterator)
         case NoHeaders =>
-          val iterator: Iterator[Array[Value]] = state.resources.getCsvIterator(url, fieldTerminator, legacyCsvQuoteEscaping, headers = false)
+          val iterator: Iterator[Array[Value]] = state.resources.getCsvIterator(url, fieldTerminator, legacyCsvQuoteEscaping, bufferSize, headers = false)
             .map(_.map(s => Values.stringOrNoValue(s)))
           new IteratorWithoutHeaders(context, iterator)
       }
