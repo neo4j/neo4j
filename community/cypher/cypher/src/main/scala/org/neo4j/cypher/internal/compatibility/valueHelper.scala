@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility
 
-import java.util.function.BiConsumer
-
+import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.kernel.impl.util.{NodeProxyWrappingNodeValue, PathWrappingPathValue, RelationshipProxyWrappingValue}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
@@ -37,7 +36,7 @@ object valueHelper {
 
     case m: MapValue => {
       val map: mutable.Map[String, Any] = mutable.Map[String, Any]()
-      m.foreach(new BiConsumer[String, AnyValue] {
+      m.foreach(new ThrowingBiConsumer[String, AnyValue, RuntimeException] {
         override def accept(t: String, u: AnyValue): Unit = map.put(t, fromValue(u))
       })
       map.toMap

@@ -67,7 +67,7 @@ object CypherReductionSupport {
   private val astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true)
   private val stepSequencer = RewriterStepSequencer.newPlain _
   private val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
-  private val config = CypherCompilerConfiguration(
+  private val config = CypherPlannerConfiguration(
     queryCacheSize = 0,
     statsDivergenceCalculator = StatsDivergenceCalculator.divergenceNoDecayCalculator(0, 0),
     useErrorsOverWarnings = false,
@@ -79,7 +79,7 @@ object CypherReductionSupport {
     nonIndexedLabelWarningThreshold = 0,
     planWithMinimumCardinalityEstimates = true)
   private val kernelMonitors = new Monitors
-  private val compiler = CypherCompiler(astRewriter, WrappedMonitors(kernelMonitors), stepSequencer, metricsFactory, config, defaultUpdateStrategy,
+  private val planner = CypherPlanner(astRewriter, WrappedMonitors(kernelMonitors), stepSequencer, metricsFactory, config, defaultUpdateStrategy,
     CompilerEngineDelegator.CLOCK, CommunityRuntimeContextCreator)
 
   private val monitor = kernelMonitors.newMonitor(classOf[IDPQueryGraphSolverMonitor])
@@ -189,7 +189,7 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
 
     baseState = rewriting.transform(baseState, planningContext)
 
-    val logicalPlanState = CypherReductionSupport.compiler.planPreparedQuery(baseState, planningContext)
+    val logicalPlanState = CypherReductionSupport.planner.planPreparedQuery(baseState, planningContext)
 
 
     val compilationState = createExecPlan.transform(logicalPlanState, planningContext)
@@ -200,7 +200,7 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
   }
 
   private def createContext(query: String, metricsFactory: CachedMetricsFactory,
-                            config: CypherCompilerConfiguration,
+                            config: CypherPlannerConfiguration,
                             planContext: PlanContext,
                             queryGraphSolver: IDPQueryGraphSolver, enterprise: Boolean) = {
     val logicalPlanIdGen = new SequentialIdGen()

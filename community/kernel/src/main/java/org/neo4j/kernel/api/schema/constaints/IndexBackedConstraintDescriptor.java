@@ -23,8 +23,8 @@ import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
 public abstract class IndexBackedConstraintDescriptor extends ConstraintDescriptor implements LabelSchemaSupplier
 {
@@ -42,9 +42,9 @@ public abstract class IndexBackedConstraintDescriptor extends ConstraintDescript
         return schema;
     }
 
-    public SchemaIndexDescriptor ownedIndexDescriptor()
+    public IndexDescriptor ownedIndexDescriptor()
     {
-        return SchemaIndexDescriptorFactory.uniqueForSchema( schema );
+        return IndexDescriptorFactory.uniqueForSchema( schema );
     }
 
     @Override

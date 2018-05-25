@@ -24,8 +24,6 @@ package org.neo4j.causalclustering.core.replication;
 
 import java.util.concurrent.Future;
 
-import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
-
 /**
  * Replicate content across a cluster of servers.
   */
@@ -41,5 +39,5 @@ public interface Replicator
      *
      * @return A future that will receive the result when available. Only valid if trackResult is set.
      */
-    Future<Object> replicate( ReplicatedContent content, boolean trackResult ) throws InterruptedException;
+    Future<Object> replicate( ReplicatedContent content, boolean trackResult ) throws ReplicationFailureException;
 }

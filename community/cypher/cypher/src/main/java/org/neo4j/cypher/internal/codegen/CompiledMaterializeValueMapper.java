@@ -20,9 +20,7 @@
 package org.neo4j.cypher.internal.codegen;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -41,6 +39,7 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.NodeReference;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
@@ -106,9 +105,9 @@ public final class CompiledMaterializeValueMapper
         @Override
         public AnyValue mapMap( MapValue value )
         {
-            Map<String,AnyValue> map = new HashMap<>();
-            value.foreach( ( k, v ) -> map.put( k, v.map( this ) ) );
-            return VirtualValues.map( map );
+            MapValueBuilder builder = new MapValueBuilder();
+            value.foreach( ( k, v ) -> builder.add( k, v.map( this ) ) );
+            return builder.build();
         }
 
         @Override

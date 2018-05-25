@@ -79,7 +79,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.LifecycleManagingDatabase;
 import org.neo4j.server.enterprise.OpenEnterpriseNeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
@@ -278,8 +277,7 @@ public class TransactionGuardIT
         }
         catch ( ShellException e )
         {
-            assertThat( e.getMessage(), containsString( "The transaction has not completed within " +
-                    "the specified timeout." ) );
+            assertThat( e.getMessage(), containsString( "The transaction has not completed within the specified timeout (dbms.transaction.timeout)" ) );
         }
 
         assertDatabaseDoesNotHaveNodes( database );

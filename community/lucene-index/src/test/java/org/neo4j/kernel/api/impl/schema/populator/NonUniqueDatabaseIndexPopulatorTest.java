@@ -40,8 +40,8 @@ import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -72,7 +72,7 @@ public class NonUniqueDatabaseIndexPopulatorTest
         File folder = testDir.directory( "folder" );
         PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fileSystemRule.get(), folder );
 
-        SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forSchema( labelSchemaDescriptor );
+        IndexDescriptor descriptor = IndexDescriptorFactory.forSchema( labelSchemaDescriptor );
         index = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )
                                         .withIndexStorage( indexStorage )
                                         .build();

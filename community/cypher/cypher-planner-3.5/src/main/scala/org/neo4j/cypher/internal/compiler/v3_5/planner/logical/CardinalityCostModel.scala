@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_5.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics._
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
@@ -27,7 +27,7 @@ import org.opencypher.v9_0.util.{Cardinality, Cost, CostPerRow, Multiplier}
 import org.opencypher.v9_0.expressions.{HasLabels, Property}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 
-case class CardinalityCostModel(config: CypherCompilerConfiguration) extends CostModel {
+case class CardinalityCostModel(config: CypherPlannerConfiguration) extends CostModel {
   def VERBOSE = java.lang.Boolean.getBoolean("CardinalityCostModel.VERBOSE")
 
   private val DEFAULT_COST_PER_ROW: CostPerRow = 0.1

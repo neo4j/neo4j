@@ -1167,11 +1167,10 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   // This version is for when maps contains AnyValues
   override def asMap(map: Map[String, Expression]) = {
-    invoke(method[VirtualValues, MapValue]("map", typeRef[java.util.Map[String,AnyValue]]),
-      invoke(Methods.createAnyValueMap,
-             newArray(typeRef[Object], map.flatMap {
-               case (key, value) => Seq(constant(key), value)
-             }.toSeq: _*)))
+    val (keys: Seq[String], values: Seq[Expression]) = map.toSeq.unzip
+    invoke(method[VirtualValues, MapValue]("map", typeRef[Array[String]], typeRef[Array[AnyValue]]),
+           newArray(typeRef[String], keys.map(constant): _*),
+           newArray(typeRef[AnyValue], values: _*))
   }
 
   override def invokeMethod(resultType: JoinTableType, resultVar: String, methodName: String)
@@ -1558,9 +1557,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def newIndexReference(referenceVar: String, labelVar: String, propKeyVar: String) = {
     val propertyIdsExpr = Expression.newArray(typeRef[Int], generator.load(propKeyVar))
 
-    generator.assign(typeRef[CapableIndexReference], referenceVar,
+    generator.assign(typeRef[IndexReference], referenceVar,
                      invoke(schemaRead,
-                           method[SchemaRead, CapableIndexReference]("index", typeRef[Int], typeRef[Array[Int]]),
+                           method[SchemaRead, IndexReference]("index", typeRef[Int], typeRef[Array[Int]]),
                             generator.load(labelVar), propertyIdsExpr)
     )
   }
@@ -1580,7 +1579,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       body.assign(local,
                   invoke(
                     methodReference(typeRef[CompiledIndexUtils], typeRef[NodeValueIndexCursor], "indexSeek",
-                                    typeRef[Read], typeRef[CursorFactory], typeRef[CapableIndexReference], typeRef[AnyRef]),
+                                    typeRef[Read], typeRef[CursorFactory], typeRef[IndexReference], typeRef[AnyRef]),
                     dataRead, cursors, index, boxedValue)
       )
     }

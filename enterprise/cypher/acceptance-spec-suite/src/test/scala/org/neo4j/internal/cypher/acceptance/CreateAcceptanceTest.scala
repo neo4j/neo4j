@@ -24,7 +24,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.runtime.CreateTempFileTestSupport
 import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{Configs, TestConfiguration}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport
   with CreateTempFileTestSupport {
@@ -108,13 +108,6 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     // Should not get StackOverflowException
     result.executionPlanDescription()
-  }
-
-  test("should allow create, delete and return in one go (relationship)") {
-    val typ = "ThisIsTheRelationshipType"
-    val query = s"CREATE ()-[r:$typ]->() DELETE r RETURN type(r)"
-    val result = executeWith(Configs.UpdateConf, query)
-    result.toList should equal(List(Map("type(r)" -> typ)))
   }
 
   test("should create nodes with label and property with slotted runtime") {

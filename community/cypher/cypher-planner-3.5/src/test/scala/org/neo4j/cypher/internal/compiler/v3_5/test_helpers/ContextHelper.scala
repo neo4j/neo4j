@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.test_helpers
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_5._
-import org.neo4j.cypher.internal.compiler.v3_5.phases.CompilerContext
+import org.neo4j.cypher.internal.compiler.v3_5.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
@@ -39,13 +39,13 @@ object ContextHelper extends MockitoSugar {
              planContext: PlanContext = new NotImplementedPlanContext,
              monitors: Monitors = mock[Monitors],
              metrics: Metrics = mock[Metrics],
-             config: CypherCompilerConfiguration = mock[CypherCompilerConfiguration],
+             config: CypherPlannerConfiguration = mock[CypherPlannerConfiguration],
              queryGraphSolver: QueryGraphSolver = mock[QueryGraphSolver],
              updateStrategy: UpdateStrategy = mock[UpdateStrategy],
              debugOptions: Set[String] = Set.empty,
              clock: Clock = Clock.systemUTC(),
-             logicalPlanIdGen: IdGen = new SequentialIdGen()): CompilerContext = {
-    new CompilerContext(exceptionCreator, tracer, notificationLogger, planContext,
+             logicalPlanIdGen: IdGen = new SequentialIdGen()): PlannerContext = {
+    new PlannerContext(exceptionCreator, tracer, notificationLogger, planContext,
       monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen)
   }
 }

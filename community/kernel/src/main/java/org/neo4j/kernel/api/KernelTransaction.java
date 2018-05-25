@@ -19,13 +19,17 @@
  */
 package org.neo4j.kernel.api;
 
+import java.util.Optional;
+
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.ClockContext;
 
 /**
@@ -52,6 +56,15 @@ public interface KernelTransaction extends Transaction, AssertOpen
      * @return a {@link Statement} with access to underlying database.
      */
     Statement acquireStatement();
+
+    /**
+     * Create unique index which will be used to support uniqueness constraint.
+     *
+     * @param schema schema to create unique index for.
+     * @param provider
+     * @return IndexDescriptor for the index to be created.
+     */
+    IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, Optional<String> provider );
 
     /**
      * @return the security context this transaction is currently executing in.

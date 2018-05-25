@@ -29,7 +29,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.IndexTextValueLengthValidator;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.util.Validator;
@@ -43,18 +43,11 @@ public class StringSchemaIndexAccessor extends NativeSchemaIndexAccessor<StringS
 {
     private static final Validator<Value> VALIDATOR = new IndexTextValueLengthValidator( TreeNodeDynamicSize.MAX_KEY_SIZE );
 
-    StringSchemaIndexAccessor(
-            PageCache pageCache,
-            FileSystemAbstraction fs,
-            File storeFile,
-            Layout<StringSchemaKey,NativeSchemaValue> layout,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            IndexProvider.Monitor monitor,
-            SchemaIndexDescriptor descriptor,
-            long indexId,
+    StringSchemaIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<StringSchemaKey,NativeSchemaValue> layout,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
-        super( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig );
+        super( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );
     }
 
     @Override

@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compiler.v3_1.spi.{GraphStatistics, StatisticsC
 import org.neo4j.cypher.internal.frontend.v3_1.{LabelId, NameId, PropertyKeyId, RelTypeId}
 import org.neo4j.internal.kernel.api.{Read, SchemaRead}
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
-import org.neo4j.kernel.impl.api.store.DefaultIndexReference
 import org.neo4j.kernel.impl.query.TransactionalContext
 
 object TransactionBoundGraphStatistics {
@@ -44,7 +43,7 @@ object TransactionBoundGraphStatistics {
 
         // Probability of any node with the given label, to have a property with a given value
         val indexEntrySelectivity = schemaRead.indexUniqueValuesSelectivity(
-          DefaultIndexReference.general(label.id, property.id)
+          schemaRead.indexReferenceUnchecked(label.id, property.id)
         )
         val frequencyOfNodesWithSameValue = 1.0 / indexEntrySelectivity
         val indexSelectivity = frequencyOfNodesWithSameValue / labeledNodes
@@ -60,7 +59,7 @@ object TransactionBoundGraphStatistics {
         val labeledNodes = read.countsForNodeWithoutTxState( label ).toDouble
 
         // Probability of any node with the given label, to have a given property
-        val indexSize = schemaRead.indexSize(DefaultIndexReference.general(label.id, property.id))
+        val indexSize = schemaRead.indexSize(schemaRead.indexReferenceUnchecked(label.id, property.id))
         val indexSelectivity = indexSize / labeledNodes
 
         Selectivity.of(indexSelectivity)

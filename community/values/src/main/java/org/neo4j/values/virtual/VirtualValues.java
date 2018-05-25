@@ -19,12 +19,9 @@
  */
 package org.neo4j.values.virtual;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextArray;
@@ -37,7 +34,7 @@ import org.neo4j.values.virtual.PathValue.DirectPathValue;
 @SuppressWarnings( "WeakerAccess" )
 public final class VirtualValues
 {
-    public static final MapValue EMPTY_MAP = new MapValue( Collections.emptyMap() );
+    public static final MapValue EMPTY_MAP = MapValue.EMPTY;
     public static final ListValue EMPTY_LIST = new ListValue.ArrayListValue( new AnyValue[0] );
 
     private VirtualValues()
@@ -148,35 +145,7 @@ public final class VirtualValues
         {
             map.put( keys[i], values[i] );
         }
-        return new MapValue( map );
-    }
-
-    public static MapValue combine( MapValue a, MapValue b )
-    {
-        HashMap<String,AnyValue> map = new HashMap<>( a.size() + b.size() );
-        a.foreach( map::put );
-        b.foreach( map::put );
-        return VirtualValues.map( map );
-    }
-
-    public static MapValue map( Map<String,AnyValue> map )
-    {
-        return new MapValue( map );
-    }
-
-    @SafeVarargs
-    public static MapValue copy( MapValue map, Pair<String,AnyValue>... moreEntries )
-    {
-        HashMap<String,AnyValue> hashMap = new HashMap<>( map.size() );
-        for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
-        {
-            hashMap.put( entry.getKey(), entry.getValue() );
-        }
-        for ( Pair<String,AnyValue> entry : moreEntries )
-        {
-            hashMap.put( entry.first(), entry.other() );
-        }
-        return new MapValue( hashMap );
+        return new MapValue.MapWrappingMapValue( map );
     }
 
     public static NodeReference node( long id )

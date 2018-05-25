@@ -252,8 +252,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                     clientPipelineBuilderFactory, handshakeTimeout, logProvider );
         };
 
-        long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
-        CatchUpClient catchUpClient = life.add( new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, channelInitializer ) );
+        CatchUpClient catchUpClient = life.add( new CatchUpClient( logProvider, Clocks.systemClock(), channelInitializer ) );
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 

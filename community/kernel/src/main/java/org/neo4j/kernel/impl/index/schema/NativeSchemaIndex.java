@@ -31,7 +31,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 
 import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -43,21 +44,19 @@ abstract class NativeSchemaIndex<KEY extends NativeSchemaKey<KEY>, VALUE extends
     final File storeFile;
     final Layout<KEY,VALUE> layout;
     final FileSystemAbstraction fileSystem;
-    final SchemaIndexDescriptor descriptor;
-    private final long indexId;
+    final IndexDescriptor descriptor;
     private final IndexProvider.Monitor monitor;
 
     protected GBPTree<KEY,VALUE> tree;
 
-    NativeSchemaIndex( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
-                       IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId )
+    NativeSchemaIndex( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
+            StoreIndexDescriptor descriptor )
     {
         this.pageCache = pageCache;
         this.storeFile = storeFile;
         this.layout = layout;
         this.fileSystem = fs;
         this.descriptor = descriptor;
-        this.indexId = indexId;
         this.monitor = monitor;
     }
 

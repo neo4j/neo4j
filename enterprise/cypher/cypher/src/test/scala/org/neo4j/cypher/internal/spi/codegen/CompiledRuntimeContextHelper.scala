@@ -26,7 +26,7 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.{PlanFingerprint, PlanFingerprintReference}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{Metrics, QueryGraphSolver}
-import org.neo4j.cypher.internal.compiler.v3_5.{CypherCompilerConfiguration, NotImplementedPlanContext, UpdateStrategy}
+import org.neo4j.cypher.internal.compiler.v3_5.{CypherPlannerConfiguration, NotImplementedPlanContext, UpdateStrategy}
 import org.neo4j.cypher.internal.executionplan.GeneratedQuery
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.NO_TRACING
 import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors, devNullLogger}
@@ -47,7 +47,7 @@ object CompiledRuntimeContextHelper extends MockitoSugar {
                monitors: Monitors = mock[Monitors],
                metrics: Metrics = mock[Metrics],
                queryGraphSolver: QueryGraphSolver = mock[QueryGraphSolver],
-               config: CypherCompilerConfiguration = mock[CypherCompilerConfiguration],
+               config: CypherPlannerConfiguration = mock[CypherPlannerConfiguration],
                updateStrategy: UpdateStrategy = mock[UpdateStrategy],
                debugOptions: Set[String] = Set.empty,
                clock: Clock = Clock.systemUTC(),

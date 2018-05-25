@@ -63,13 +63,6 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
     String userDescription( TokenNameLookup tokenNameLookup );
 
     /**
-     * Translate the schema key to a key name using the given {@link TokenNameLookup}.
-     * @param tokenNameLookup used for looking up names for token ids.
-     * @return The string name of the key token.
-     */
-    String keyName( TokenNameLookup tokenNameLookup );
-
-    /**
      * This method return the property ids that are relevant to this Schema Descriptor.
      *
      * Putting this method here is a convenience that will break if/when we introduce more complicated schema

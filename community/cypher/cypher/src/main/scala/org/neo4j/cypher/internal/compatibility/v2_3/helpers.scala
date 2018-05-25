@@ -24,7 +24,7 @@ import org.opencypher.v9_0.util.InputPosition
 import org.neo4j.cypher.internal.compiler.v2_3
 import org.neo4j.cypher.internal.compiler.v2_3.CompilationPhaseTracer.CompilationPhaseEvent
 import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerConfiguration => CypherCompilerConfiguration2_3}
-import org.neo4j.cypher.internal.compiler.v3_5.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition => InputPosition2_3}
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
 import org.opencypher.v9_0.frontend.phases
@@ -35,7 +35,7 @@ object helpers {
     monitor.endFailure(tc.executingQuery(), t)
   }
 
-  def as2_3(config: CypherCompilerConfiguration) = CypherCompilerConfiguration2_3(config.queryCacheSize,
+  def as2_3(config: CypherPlannerConfiguration) = CypherCompilerConfiguration2_3(config.queryCacheSize,
     config.statsDivergenceCalculator.initialThreshold, config.statsDivergenceCalculator.initialMillis,
     config.useErrorsOverWarnings, config.idpMaxTableSize, config.idpIterationDuration,
     config.nonIndexedLabelWarningThreshold)

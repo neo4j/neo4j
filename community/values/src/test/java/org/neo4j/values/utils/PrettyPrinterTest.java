@@ -22,7 +22,6 @@ package org.neo4j.values.utils;
 import org.junit.Test;
 
 import java.time.ZoneOffset;
-import java.util.HashMap;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -171,7 +170,8 @@ public class PrettyPrinterTest
     {
         NodeValue startNode = VirtualValues.nodeValue( 1L, Values.stringArray( "L" ), EMPTY_MAP );
         NodeValue endNode = VirtualValues.nodeValue( 2L, Values.stringArray( "L" ), EMPTY_MAP );
-        RelationshipValue rel = VirtualValues.relationshipValue( 42L, startNode, endNode, stringValue( "R" ), EMPTY_MAP );
+        RelationshipValue rel =
+                VirtualValues.relationshipValue( 42L, startNode, endNode, stringValue( "R" ), EMPTY_MAP );
         PrettyPrinter printer = new PrettyPrinter();
 
         // When
@@ -201,7 +201,8 @@ public class PrettyPrinterTest
         // Given
         NodeValue startNode = VirtualValues.nodeValue( 1L, Values.stringArray( "L" ), EMPTY_MAP );
         NodeValue endNode = VirtualValues.nodeValue( 2L, Values.stringArray( "L" ), EMPTY_MAP );
-        RelationshipValue rel = VirtualValues.relationshipValue( 42L, startNode, endNode, stringValue( "R" ), EMPTY_MAP );
+        RelationshipValue rel =
+                VirtualValues.relationshipValue( 42L, startNode, endNode, stringValue( "R" ), EMPTY_MAP );
         PathValue path = VirtualValues.path( new NodeValue[]{startNode, endNode}, new RelationshipValue[]{rel} );
         PrettyPrinter printer = new PrettyPrinter();
 
@@ -405,19 +406,19 @@ public class PrettyPrinterTest
 
     private MapValue props( Object... keyValue )
     {
-        HashMap<String,AnyValue> map = new HashMap<>( keyValue.length );
-        String key = null;
+        String[] keys = new String[keyValue.length / 2];
+        AnyValue[] values = new AnyValue[keyValue.length / 2];
         for ( int i = 0; i < keyValue.length; i++ )
         {
             if ( i % 2 == 0 )
             {
-                key = (String) keyValue[i];
+                keys[i / 2] = (String) keyValue[i];
             }
             else
             {
-                map.put( key, (AnyValue) keyValue[i] );
+                values[i / 2] = (AnyValue) keyValue[i];
             }
         }
-        return VirtualValues.map( map );
+        return VirtualValues.map( keys, values );
     }
 }

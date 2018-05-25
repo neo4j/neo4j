@@ -22,14 +22,20 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import org.opencypher.v9_0.util.CypherTypeException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.IsMap
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, IsMap}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, IsMap, LazyMap}
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.VirtualValues
 
 case class PropertiesFunction(a: Expression) extends NullInNullOutExpression(a) {
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState) =
     value match {
-      case IsMap(mapValue) => VirtualValues.copy(mapValue(state.query))
+      case IsMap(mapValue) => mapValue(state.query) match {
+        //in case we have a lazy map we need to make sure to load it before proceeding
+        case lm: LazyMap[_] => lm.load()
+        case m => m
+      }
       case v =>
         throw new CypherTypeException(s"Expected a Node, Relationship, or Map, got: $v")
     }

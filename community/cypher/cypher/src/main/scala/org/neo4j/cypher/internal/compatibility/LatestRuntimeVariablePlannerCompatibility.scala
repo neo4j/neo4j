@@ -51,12 +51,12 @@ import scala.collection.JavaConverters._
 
 abstract class LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4 <: CommunityRuntimeContextv3_5,
 T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState],
-STATEMENT <: AnyRef](configv3_5: CypherCompilerConfiguration,
+STATEMENT <: AnyRef](configv3_5: CypherPlannerConfiguration,
                      clock: Clock,
                      kernelMonitors: KernelMonitors,
                      log: Log,
-                     planner: CypherPlanner,
-                     runtime: CypherRuntime,
+                     planner: CypherPlannerOption,
+                     runtime: CypherRuntimeOption,
                      updateStrategy: CypherUpdateStrategy,
                      runtimeBuilder: RuntimeBuilder[T],
                      contextCreatorV3_5: ContextCreator[CONTEXT3_4],
@@ -92,11 +92,11 @@ STATEMENT <: AnyRef](configv3_5: CypherCompilerConfiguration,
     ProcedureCallOrSchemaCommandExecutionPlanBuilder andThen
       If((s: CompilationState) => s.maybeExecutionPlan.isFailure) {
         val maybeRuntimeName: Option[RuntimeName] = runtime match {
-          case CypherRuntime.default => None
-          case CypherRuntime.interpreted => Some(InterpretedRuntimeName)
-          case CypherRuntime.slotted => Some(SlottedRuntimeName)
-          case CypherRuntime.morsel => Some(MorselRuntimeName)
-          case CypherRuntime.compiled => Some(CompiledRuntimeName)
+          case CypherRuntimeOption.default => None
+          case CypherRuntimeOption.interpreted => Some(InterpretedRuntimeName)
+          case CypherRuntimeOption.slotted => Some(SlottedRuntimeName)
+          case CypherRuntimeOption.morsel => Some(MorselRuntimeName)
+          case CypherRuntimeOption.compiled => Some(CompiledRuntimeName)
         }
         runtimeBuilder.create(maybeRuntimeName, configv3_5.useErrorsOverWarnings).adds(CompilationContains[ExecutionPlan_v3_5])
       }
@@ -160,7 +160,7 @@ STATEMENT <: AnyRef](configv3_5: CypherCompilerConfiguration,
 
 object LatestRuntimeVariablePlannerCompatibility {
   def createQueryGraphSolver(n: CostBasedPlannerName, monitors: Monitors,
-                             config: CypherCompilerConfiguration): QueryGraphSolver = n match {
+                             config: CypherPlannerConfiguration): QueryGraphSolver = n match {
     case IDPPlannerName =>
       val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
       val solverConfig = new ConfigurableIDPSolverConfig(

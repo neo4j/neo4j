@@ -37,7 +37,6 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NamedToken;
@@ -56,9 +55,8 @@ import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
-import org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference;
-import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -82,6 +80,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
 import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 
 public class BuiltInProceduresTest
 {
@@ -415,7 +414,7 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        IndexReference index = DefaultIndexReference.general( labelId, propId );
+        IndexReference index = IndexDescriptorFactory.forSchema( forLabel( labelId, propId ), InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
         indexes.add( index );
     }
 
@@ -424,7 +423,7 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        IndexReference index = DefaultIndexReference.unique( labelId, propId );
+        IndexReference index = IndexDescriptorFactory.uniqueForSchema( forLabel( labelId, propId ), InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
         uniqueIndexes.add( index );
         constraints.add( ConstraintDescriptorFactory.uniqueForLabel( labelId, propId ) );
     }
@@ -503,23 +502,21 @@ public class BuiltInProceduresTest
         when( schemaRead.indexesGetAll() ).thenAnswer(
                 i -> Iterators.concat( indexes.iterator(), uniqueIndexes.iterator() ) );
         when( schemaRead.index( anyInt(), anyInt() )).thenAnswer(
-                (Answer<CapableIndexReference>) invocationOnMock -> {
+                (Answer<IndexReference>) invocationOnMock -> {
                     int label = invocationOnMock.getArgument( 0 );
                     int prop = invocationOnMock.getArgument( 1 );
                     for ( IndexReference index : indexes )
                     {
                         if ( index.label() == label && prop == index.properties()[0] )
                         {
-                            return new DefaultCapableIndexReference( index.isUnique(), null,
-                                    InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, label, prop );
+                            return index;
                         }
                     }
                     for ( IndexReference index : uniqueIndexes )
                     {
                         if ( index.label() == label && prop == index.properties()[0] )
                         {
-                            return new DefaultCapableIndexReference( index.isUnique(), null,
-                                    InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, label, prop );
+                            return index;
                         }
                     }
                     throw new AssertionError(  );

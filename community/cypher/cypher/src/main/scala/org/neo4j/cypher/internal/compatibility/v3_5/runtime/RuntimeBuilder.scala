@@ -38,7 +38,7 @@ object CommunityRuntimeBuilder extends RuntimeBuilder[Transformer[CommunityRunti
       throw new InvalidArgumentException(s"This version of Neo4j does not support requested runtime: $x")
 
     case _ =>
-      Do((_: CompilerContext).notificationLogger.log(RuntimeUnsupportedNotification)) andThen
+      Do((_: PlannerContext).notificationLogger.log(RuntimeUnsupportedNotification)) andThen
         BuildInterpretedExecutionPlan
   }
 }

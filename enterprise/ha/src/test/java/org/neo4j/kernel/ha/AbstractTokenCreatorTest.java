@@ -76,7 +76,7 @@ public class AbstractTokenCreatorTest
         int responseValue = response.response();
 
         // WHEN
-        int result = creator.getOrCreate( label );
+        int result = creator.createToken( label );
 
         // THEN
         assertEquals( responseValue, result );
@@ -93,7 +93,7 @@ public class AbstractTokenCreatorTest
         try
         {
             // WHEN
-            throwingCreator.getOrCreate( "A" );
+            throwingCreator.createToken( "A" );
             fail( "Should have thrown" );
         }
         catch ( Exception e )

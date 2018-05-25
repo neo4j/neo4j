@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner
 
 import java.util
 
-import org.neo4j.cypher.internal.compiler.v3_5.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
 import org.opencypher.v9_0.util.{LabelId, PropertyKeyId, RelTypeId}
@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.util.dbstructure.{DbStructureCollector, DbStructure
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
-case class DbStructureLogicalPlanningConfiguration(cypherCompilerConfig: CypherCompilerConfiguration) {
+case class DbStructureLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerConfiguration) {
 
   def apply(visitable: Visitable[DbStructureVisitor]): LogicalPlanningConfiguration = {
     val collector = new DbStructureCollector

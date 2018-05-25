@@ -286,8 +286,8 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
   }
 
   test("yield from void procedure should return correct error msg") {
-    failWithError(Configs.Procs + Configs.Version3_4 + Configs.Version3_3 - Configs.AllRulePlanners,
-      "CALL db.createLabel('Label') yield node",
-      List("Cannot yield value from void procedure."))
+    failWithError(Configs.Procs + Configs.Version3_5 + Configs.Version3_3 - Configs.AllRulePlanners,
+                  "CALL db.createLabel('Label') yield node",
+                  List("Cannot yield value from void procedure."))
   }
 }

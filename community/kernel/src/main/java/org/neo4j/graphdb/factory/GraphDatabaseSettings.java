@@ -47,7 +47,6 @@ import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.configuration.ssl.SslPolicyConfigValidator;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogTimeZone;
-import org.neo4j.values.storable.DateTimeValue;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
@@ -320,11 +319,11 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Description( "Enables or disables tracking of how much time a query spends actively executing on the CPU." )
     @Dynamic
-    public static final Setting<Boolean> track_query_cpu_time = setting( "dbms.track_query_cpu_time", BOOLEAN, TRUE );
+    public static final Setting<Boolean> track_query_cpu_time = setting( "dbms.track_query_cpu_time", BOOLEAN, FALSE );
 
     @Description( "Enables or disables tracking of how many bytes are allocated by the execution of a query." )
     @Dynamic
-    public static final Setting<Boolean> track_query_allocation = setting( "dbms.track_query_allocation", BOOLEAN, TRUE );
+    public static final Setting<Boolean> track_query_allocation = setting( "dbms.track_query_allocation", BOOLEAN, FALSE );
 
     @Description( "The size of the morsels" )
     @Internal
@@ -350,11 +349,13 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> execution_guard_enabled =
             setting( "unsupported.dbms.executiontime_limit.enabled", BOOLEAN, FALSE );
 
+     // @see Status.Transaction#TransactionTimedOut
     @Description( "The maximum time interval of a transaction within which it should be completed." )
     @Dynamic
     public static final Setting<Duration> transaction_timeout = setting( "dbms.transaction.timeout", DURATION, String
             .valueOf( UNSPECIFIED_TIMEOUT ) );
 
+     // @see Status.Transaction#LockAcquisitionTimeout
     @Description( "The maximum time interval within which lock should be acquired." )
     public static final Setting<Duration> lock_acquisition_timeout = setting( "dbms.lock.acquisition.timeout", DURATION,
             String.valueOf( UNSPECIFIED_TIMEOUT ) );

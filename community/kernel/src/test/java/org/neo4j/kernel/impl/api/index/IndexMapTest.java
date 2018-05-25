@@ -30,6 +30,8 @@ import org.junit.Test;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -49,9 +51,9 @@ public class IndexMapTest
     public void setup()
     {
         MutableLongObjectMap<IndexProxy> map = new LongObjectHashMap<>();
-        map.put( 1L, new TestIndexProxy( schema3_4 ) );
-        map.put( 2L, new TestIndexProxy( schema5_6_7 ) );
-        map.put( 3L, new TestIndexProxy( schema5_8 ) );
+        map.put( 1L, new TestIndexProxy( IndexDescriptorFactory.forSchema( schema3_4 ).withId( 1 ).withoutCapabilities() ) );
+        map.put( 2L, new TestIndexProxy( IndexDescriptorFactory.forSchema( schema5_6_7 ).withId( 2 ).withoutCapabilities() ) );
+        map.put( 3L, new TestIndexProxy( IndexDescriptorFactory.forSchema( schema5_8 ).withId( 3 ).withoutCapabilities() ) );
         indexMap = new IndexMap( map );
     }
 
@@ -133,15 +135,15 @@ public class IndexMapTest
 
     private class TestIndexProxy extends IndexProxyAdapter
     {
-        private final LabelSchemaDescriptor schema;
+        private final CapableIndexDescriptor schema;
 
-        private TestIndexProxy( LabelSchemaDescriptor schema )
+        private TestIndexProxy( CapableIndexDescriptor schema )
         {
             this.schema = schema;
         }
 
         @Override
-        public LabelSchemaDescriptor schema()
+        public CapableIndexDescriptor getDescriptor()
         {
             return schema;
         }

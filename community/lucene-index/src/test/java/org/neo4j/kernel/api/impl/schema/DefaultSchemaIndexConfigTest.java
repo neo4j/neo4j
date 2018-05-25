@@ -27,7 +27,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -111,7 +111,7 @@ public class DefaultSchemaIndexConfigTest
             TokenRead tokenRead = ktx.tokenRead();
             int labelId = tokenRead.nodeLabel( LABEL.name() );
             int propertyId = tokenRead.propertyKey( KEY );
-            CapableIndexReference index = ktx.schemaRead().index( labelId, propertyId );
+            IndexReference index = ktx.schemaRead().index( labelId, propertyId );
 
             assertEquals( "expected IndexProvider.Descriptor", expected,
                     new IndexProvider.Descriptor( index.providerKey(), index.providerVersion() ) );

@@ -39,8 +39,7 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.LoggingMonitor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.logging.AssertableLogProvider;
@@ -55,6 +54,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.defaultDirectoryStructure;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class LuceneSchemaIndexCorruptionTest
@@ -76,8 +77,8 @@ public class LuceneSchemaIndexCorruptionTest
         LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
-        SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
-        InternalIndexState initialState = provider.getInitialState( faultyIndexId, descriptor );
+        StoreIndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() ).withId( faultyIndexId );
+        InternalIndexState initialState = provider.getInitialState( descriptor );
 
         // Then
         assertThat( initialState, equalTo(InternalIndexState.POPULATING) );
@@ -94,8 +95,8 @@ public class LuceneSchemaIndexCorruptionTest
         LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
-        SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
-        InternalIndexState initialState = provider.getInitialState( faultyIndexId, descriptor );
+        StoreIndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() ).withId( faultyIndexId );
+        InternalIndexState initialState = provider.getInitialState( descriptor );
 
         // Then
         assertThat( initialState, equalTo(InternalIndexState.POPULATING) );
@@ -112,8 +113,8 @@ public class LuceneSchemaIndexCorruptionTest
         LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
-        SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
-        InternalIndexState initialState = provider.getInitialState( faultyIndexId, descriptor );
+        StoreIndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() ).withId( faultyIndexId );
+        InternalIndexState initialState = provider.getInitialState( descriptor );
 
         // Then
         assertThat( initialState, equalTo(InternalIndexState.POPULATING) );

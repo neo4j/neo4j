@@ -22,15 +22,13 @@ package org.neo4j.kernel.impl.api.index;
 import java.io.File;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.values.storable.Value;
@@ -39,13 +37,13 @@ import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 
 public class PopulatingIndexProxy implements IndexProxy
 {
-    private final IndexMeta indexMeta;
+    private final CapableIndexDescriptor capableIndexDescriptor;
     private final IndexPopulationJob job;
     private final MultipleIndexPopulator.IndexPopulation indexPopulation;
 
-    PopulatingIndexProxy( IndexMeta indexMeta, IndexPopulationJob job, MultipleIndexPopulator.IndexPopulation indexPopulation )
+    PopulatingIndexProxy( CapableIndexDescriptor capableIndexDescriptor, IndexPopulationJob job, MultipleIndexPopulator.IndexPopulation indexPopulation )
     {
-        this.indexMeta = indexMeta;
+        this.capableIndexDescriptor = capableIndexDescriptor;
         this.job = job;
         this.indexPopulation = indexPopulation;
     }
@@ -89,33 +87,15 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public SchemaIndexDescriptor getDescriptor()
+    public CapableIndexDescriptor getDescriptor()
     {
-        return indexMeta.indexDescriptor();
-    }
-
-    @Override
-    public SchemaDescriptor schema()
-    {
-        return indexMeta.indexDescriptor().schema();
-    }
-
-    @Override
-    public IndexProvider.Descriptor getProviderDescriptor()
-    {
-        return indexMeta.providerDescriptor();
+        return capableIndexDescriptor;
     }
 
     @Override
     public InternalIndexState getState()
     {
         return InternalIndexState.POPULATING;
-    }
-
-    @Override
-    public IndexCapability getIndexCapability()
-    {
-        return indexMeta.indexCapability();
     }
 
     @Override
@@ -165,12 +145,6 @@ public class PopulatingIndexProxy implements IndexProxy
     public void validateBeforeCommit( Value[] tuple )
     {
         // It's OK to put whatever values in while populating because it will take the natural path of failing the population.
-    }
-
-    @Override
-    public long getIndexId()
-    {
-        return indexMeta.getIndexId();
     }
 
     @Override

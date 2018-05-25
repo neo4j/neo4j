@@ -27,13 +27,16 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 abstract class RelationshipCursor extends RelationshipRecord implements RelationshipDataAccessor, RelationshipVisitor<RuntimeException>
 {
-    Read read;
     private boolean hasChanges;
     private boolean checkHasChanges;
+    private PropertyCursor propertyCursor;
+    final DefaultCursors pool;
+    Read read;
 
-    RelationshipCursor()
+    RelationshipCursor( DefaultCursors pool )
     {
         super( NO_ID );
+        this.pool = pool;
     }
 
     protected void init( Read read )
@@ -57,7 +60,16 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
     @Override
     public boolean hasProperties()
     {
-        return nextProp != DefaultPropertyCursor.NO_ID;
+        if ( read.hasTxStateWithChanges() )
+        {
+            PropertyCursor cursor = propertyCursor();
+            properties( cursor );
+            return cursor.next();
+        }
+        else
+        {
+            return nextProp != DefaultPropertyCursor.NO_ID;
+        }
     }
 
     @Override
@@ -118,7 +130,7 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
     }
 
     // Load transaction state using RelationshipVisitor
-    protected void loadFromTxState( long reference )
+    void loadFromTxState( long reference )
     {
         read.txState().relationshipVisit( reference, this );
     }
@@ -129,5 +141,23 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
     {
         setId( relationshipId );
         initialize( true, NO_ID, startNodeId, endNodeId, typeId, NO_ID, NO_ID, NO_ID, NO_ID, false, false );
+    }
+
+    private PropertyCursor propertyCursor()
+    {
+        if ( propertyCursor == null )
+        {
+            propertyCursor = pool.allocatePropertyCursor();
+        }
+        return propertyCursor;
+    }
+
+    void close()
+    {
+        if ( propertyCursor != null )
+        {
+            propertyCursor.close();
+            propertyCursor = null;
+        }
     }
 }

@@ -30,7 +30,7 @@ import org.opencypher.v9_0.frontend.phases.Phase
 import org.opencypher.v9_0.util.Cost
 import org.opencypher.v9_0.util.attribution.IdGen
 
-case class QueryPlanner(planSingleQuery: ((PlannerQuery, LogicalPlanningContext, Solveds, Cardinalities, IdGen) => LogicalPlan) = PlanSingleQuery()) extends Phase[CompilerContext, LogicalPlanState, LogicalPlanState] {
+case class QueryPlanner(planSingleQuery: ((PlannerQuery, LogicalPlanningContext, Solveds, Cardinalities, IdGen) => LogicalPlan) = PlanSingleQuery()) extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {
 
 
   override def phase = LOGICAL_PLANNING
@@ -39,7 +39,7 @@ case class QueryPlanner(planSingleQuery: ((PlannerQuery, LogicalPlanningContext,
 
   override def postConditions = Set(CompilationContains[LogicalPlan])
 
-  override def process(from: LogicalPlanState, context: CompilerContext): LogicalPlanState = {
+  override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
     val debugCosts = context.debugOptions.contains("dumpcosts")
 
     val costComparisonListener = if (debugCosts)
@@ -73,7 +73,7 @@ case class QueryPlanner(planSingleQuery: ((PlannerQuery, LogicalPlanningContext,
     }
   }
 
-  private def getMetricsFrom(context: CompilerContext) = if (context.debugOptions.contains("inverse_cost")) {
+  private def getMetricsFrom(context: PlannerContext) = if (context.debugOptions.contains("inverse_cost")) {
     context.metrics.copy(cost = new CostModel {
       override def apply(v1: LogicalPlan, v2: QueryGraphSolverInput, v3: Cardinalities): Cost = -context.metrics.cost(v1, v2, v3)
     })

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.notification
 
-import org.neo4j.cypher.internal.compiler.v3_5.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.opencypher.v9_0.util.InternalNotification
@@ -31,7 +31,7 @@ trait NotificationChecker {
 object LogicalPlanNotifications {
   def checkForNotifications(logicalPlan: LogicalPlan,
                             planContext: PlanContext,
-                            config: CypherCompilerConfiguration): Seq[InternalNotification] = {
+                            config: CypherPlannerConfiguration): Seq[InternalNotification] = {
     val notificationCheckers = Seq(
       checkForEagerLoadCsv,
       checkForLoadCsvAndMatchOnLargeLabel(planContext, config.nonIndexedLabelWarningThreshold),

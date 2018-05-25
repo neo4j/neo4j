@@ -27,7 +27,7 @@ import java.time.Clock
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.CommunityRuntimeContext
 import org.neo4j.cypher.internal.runtime.compiled.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{ExpressionEvaluator, Metrics, MetricsFactory, QueryGraphSolver}
-import org.neo4j.cypher.internal.compiler.v3_5.{ContextCreator, CypherCompilerConfiguration, SyntaxExceptionCreator, UpdateStrategy}
+import org.neo4j.cypher.internal.compiler.v3_5.{ContextCreator, CypherPlannerConfiguration, SyntaxExceptionCreator, UpdateStrategy}
 import org.neo4j.cypher.internal.executionplan.GeneratedQuery
 import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
@@ -41,7 +41,7 @@ class EnterpriseRuntimeContext(override val exceptionCreator: (String, InputPosi
                                override val planContext: PlanContext,
                                override val monitors: Monitors,
                                override val metrics: Metrics,
-                               override val config: CypherCompilerConfiguration,
+                               override val config: CypherPlannerConfiguration,
                                override val queryGraphSolver: QueryGraphSolver,
                                override val updateStrategy: UpdateStrategy,
                                override val debugOptions: Set[String],
@@ -64,7 +64,7 @@ case class EnterpriseRuntimeContextCreator(codeStructure: CodeStructure[Generate
                       monitors: Monitors,
                       metricsFactory: MetricsFactory,
                       queryGraphSolver: QueryGraphSolver,
-                      config: CypherCompilerConfiguration,
+                      config: CypherPlannerConfiguration,
                       updateStrategy: UpdateStrategy,
                       clock: Clock,
                       logicalPlanIdGen: IdGen,

@@ -69,7 +69,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     volatile int[][] translationTable;
 
     final PageSwapper swapper;
-    final short swapperId;
+    final int swapperId;
     private final CursorPool cursorPool;
 
     // Guarded by the monitor lock on MuninnPageCache (map and unmap)

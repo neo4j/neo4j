@@ -31,9 +31,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -45,7 +45,6 @@ import org.neo4j.kernel.impl.store.kvstore.HeaderField;
 import org.neo4j.kernel.impl.store.kvstore.Headers;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.WritableBuffer;
-import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.test.rule.SuppressOutput;
 
@@ -73,8 +72,7 @@ public class DumpCountsStoreTest
     private static final String INDEX_PROPERTY = "indexProperty";
 
     private static final long indexId = 0;
-    private static final SchemaIndexDescriptor descriptor =
-            SchemaIndexDescriptorFactory.forLabel( INDEX_LABEL_ID, INDEX_PROPERTY_KEY_ID );
+    private static final IndexDescriptor descriptor = TestIndexDescriptorFactory.forLabel( INDEX_LABEL_ID, INDEX_PROPERTY_KEY_ID );
 
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
@@ -156,9 +154,8 @@ public class DumpCountsStoreTest
     private SchemaStorage createSchemaStorage()
     {
         SchemaStorage schemaStorage = mock(SchemaStorage.class);
-        IndexProvider.Descriptor providerDescriptor = new IndexProvider.Descriptor( "in-memory", "1.0" );
-        IndexRule rule = IndexRule.indexRule( indexId, descriptor, providerDescriptor );
-        ArrayList<IndexRule> rules = new ArrayList<>();
+        StoreIndexDescriptor rule = descriptor.withId( indexId );
+        ArrayList<StoreIndexDescriptor> rules = new ArrayList<>();
         rules.add( rule );
 
         when( schemaStorage.indexesGetAll() ).thenReturn( rules.iterator() );

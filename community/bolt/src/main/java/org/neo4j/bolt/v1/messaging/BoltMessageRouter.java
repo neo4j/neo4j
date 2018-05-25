@@ -157,7 +157,7 @@ public class BoltMessageRouter implements BoltRequestMessageHandler
                 @Override
                 public void addMetadata( String key, AnyValue value )
                 {
-                    metadata.put( key, value );
+                    metadata.add( key, value );
                 }
 
             } );

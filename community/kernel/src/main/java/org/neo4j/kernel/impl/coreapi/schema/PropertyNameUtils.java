@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.coreapi.schema;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
@@ -87,21 +88,27 @@ public class PropertyNameUtils
             throws IllegalTokenNameException
     {
         int[] propertyKeyIds = new int[propertyKeys.length];
-        for ( int i = 0; i < propertyKeys.length; i++ )
-        {
-            propertyKeyIds[i] = tokenWrite.propertyKeyGetOrCreateForName( propertyKeys[i] );
-        }
+        tokenWrite.propertyKeyGetOrCreateForNames( propertyKeys, propertyKeyIds );
         return propertyKeyIds;
     }
 
     public static int[] getOrCreatePropertyKeyIds( TokenWrite tokenWrite, IndexDefinition indexDefinition )
             throws IllegalTokenNameException
     {
-        ArrayList<Integer> propertyKeyIds = new ArrayList<>();
-        for ( String s : indexDefinition.getPropertyKeys() )
+        return getOrCreatePropertyKeyIds( tokenWrite, getPropertyKeysArrayOf( indexDefinition ) );
+    }
+
+    private static String[] getPropertyKeysArrayOf( IndexDefinition indexDefinition )
+    {
+        if ( indexDefinition instanceof IndexDefinitionImpl )
         {
-            propertyKeyIds.add( tokenWrite.propertyKeyGetOrCreateForName( s ) );
+            return ((IndexDefinitionImpl) indexDefinition).getPropertyKeysArrayShared();
         }
-        return propertyKeyIds.stream().mapToInt( i -> i ).toArray();
+        List<String> keys = new ArrayList<>();
+        for ( String key : indexDefinition.getPropertyKeys() )
+        {
+            keys.add( key );
+        }
+        return keys.toArray( new String[0] );
     }
 }

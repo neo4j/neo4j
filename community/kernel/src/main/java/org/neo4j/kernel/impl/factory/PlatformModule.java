@@ -43,16 +43,18 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.security.URLAccessRules;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
+import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
+import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.internal.locker.GlobalStoreLocker;
 import org.neo4j.kernel.internal.locker.StoreLocker;
@@ -95,6 +97,8 @@ public class PlatformModule
 
     public final DiagnosticsManager diagnosticsManager;
 
+    public final KernelEventHandlers eventHandlers;
+
     public final Tracers tracers;
 
     public final Config config;
@@ -119,6 +123,8 @@ public class PlatformModule
     public final VersionContextSupplier versionContextSupplier;
 
     public final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
+
+    public final CollectionsFactorySupplier collectionsFactorySupplier;
 
     public PlatformModule( File providedStoreDir, Config config, DatabaseInfo databaseInfo,
             GraphDatabaseFacadeFactory.Dependencies externalDependencies, GraphDatabaseFacade graphDatabaseFacade )
@@ -178,6 +184,7 @@ public class PlatformModule
                 CheckPointerMonitor.class, tracers.checkPointTracer, CheckPointerMonitor.NULL ) );
 
         versionContextSupplier = createCursorContextSupplier( config );
+        collectionsFactorySupplier = createCollectionsFactorySupplier( config );
         dependencies.satisfyDependency( versionContextSupplier );
         pageCache = dependencies.satisfyDependency( createPageCache( fileSystem, config, logging, tracers,
                 versionContextSupplier ) );
@@ -203,6 +210,8 @@ public class PlatformModule
         dependencies.satisfyDependency( storeCopyCheckPointMutex );
 
         dependencies.satisfyDependency( new ConnectorPortRegister() );
+
+        eventHandlers = new KernelEventHandlers( logging.getInternalLog( KernelEventHandlers.class ) );
 
         publishPlatformInfo( dependencies.resolveDependency( UsageData.class ) );
     }
@@ -318,6 +327,20 @@ public class PlatformModule
             pageCacheFactory.dumpConfiguration();
         }
         return pageCache;
+    }
+
+    private CollectionsFactorySupplier createCollectionsFactorySupplier( Config config )
+    {
+        final GraphDatabaseSettings.TransactionStateMemoryAllocation allocation = config.get( GraphDatabaseSettings.tx_state_memory_allocation );
+        switch ( allocation )
+        {
+        case ON_HEAP:
+            return CollectionsFactorySupplier.ON_HEAP;
+        case OFF_HEAP:
+            return CollectionsFactorySupplier.OFF_HEAP;
+        default:
+            throw new IllegalArgumentException( "Unknown transaction state memory allocation value: " + allocation );
+        }
     }
 
     protected TransactionStats createTransactionStats()

@@ -503,9 +503,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             throw new RuntimeException( e );
         }
 
-        // NOTE: please make sure this is performed after having added everything to the life, in fact we would like
-        // to perform the checkpointing as first step when the life is shutdown.
-        life.add( lifecycleToTriggerCheckPointOnShutdown() );
+        life.addLast( lifecycleToTriggerCheckPointOnShutdown() );
 
         try
         {

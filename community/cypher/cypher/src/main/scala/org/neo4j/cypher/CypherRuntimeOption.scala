@@ -17,20 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.guard;
+package org.neo4j.cypher
 
-import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.kernel.api.KernelTransaction;
+sealed abstract class CypherRuntimeOption(runtimeName: String) extends CypherOption(runtimeName)
 
-/**
- * Guard that checks kernel transaction for termination.
- * As soon as transaction timeout time reached {@link TransactionTerminatedException } will be thrown.
- */
-public class TerminationGuard implements Guard
-{
-    @Override
-    public void check( KernelTransaction transaction )
-    {
-        transaction.assertOpen();
-    }
+case object CypherRuntimeOption extends CypherOptionCompanion[CypherRuntimeOption] {
+
+  case object default extends CypherRuntimeOption("default")
+  case object interpreted extends CypherRuntimeOption("interpreted")
+  case object slotted extends CypherRuntimeOption("slotted")
+  case object morsel extends CypherRuntimeOption("morsel")
+  case object compiled extends CypherRuntimeOption("compiled")
+
+  val all: Set[CypherRuntimeOption] = Set(interpreted, compiled, slotted, morsel)
 }

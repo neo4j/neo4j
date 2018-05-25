@@ -28,13 +28,18 @@ import java.util.function.Supplier;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.StartupWaiter;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.cache.VmPauseMonitorComponent;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
+import org.neo4j.kernel.impl.pagecache.PublishPageCacheTracerMetricsAfterStart;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -160,6 +165,14 @@ public class GraphDatabaseFacadeFactory
         AtomicReference<QueryExecutionEngine> queryEngine = new AtomicReference<>( noEngine() );
 
         final DataSourceModule dataSource = createDataSource( platform, edition, queryEngine::get );
+
+        platform.life.add( new VmPauseMonitorComponent( config, platform.logging.getInternalLog( VmPauseMonitorComponent.class ), platform.jobScheduler ) );
+        platform.life.add( new PublishPageCacheTracerMetricsAfterStart( platform.tracers.pageCursorTracerSupplier ) );
+        platform.life.add( new DatabaseAvailability( platform.availabilityGuard, platform.transactionMonitor,
+                config.get( GraphDatabaseSettings.shutdown_transaction_end_timeout ).toMillis() ) );
+        platform.life.add( new StartupWaiter( platform.availabilityGuard, edition.transactionStartTimeout ) );
+        platform.life.addLast( platform.eventHandlers );
+
         Logger msgLog = platform.logging.getInternalLog( getClass() ).infoLogger();
         CoreAPIAvailabilityGuard coreAPIAvailabilityGuard = edition.coreAPIAvailabilityGuard;
 
@@ -167,7 +180,6 @@ public class GraphDatabaseFacadeFactory
         graphDatabaseFacade.init(
                 edition,
                 spi,
-                dataSource.guard,
                 dataSource.threadToTransactionBridge,
                 platform.config,
                 edition.relationshipTypeTokenHolder

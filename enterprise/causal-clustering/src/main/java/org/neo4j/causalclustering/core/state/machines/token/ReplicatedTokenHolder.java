@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.neo4j.causalclustering.core.replication.ReplicationFailureException;
 import org.neo4j.causalclustering.core.replication.Replicator;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -93,6 +94,16 @@ abstract class ReplicatedTokenHolder<TOKEN extends Token> implements TokenHolder
         return requestToken( tokenName );
     }
 
+    @Override
+    public void getOrCreateIds( String[] names, int[] ids )
+    {
+        // todo This could be optimised, but doing so requires a protocol change.
+        for ( int i = 0; i < names.length; i++ )
+        {
+            ids[i] = getOrCreateId( names[i] );
+        }
+    }
+
     private int requestToken( String tokenName )
     {
         ReplicatedTokenRequest tokenRequest = new ReplicatedTokenRequest( type, tokenName, createCommands( tokenName ) );
@@ -101,7 +112,7 @@ abstract class ReplicatedTokenHolder<TOKEN extends Token> implements TokenHolder
             Future<Object> future = replicator.replicate( tokenRequest, true );
             return (int) future.get();
         }
-        catch ( InterruptedException e )
+        catch ( ReplicationFailureException | InterruptedException e )
         {
             throw new org.neo4j.graphdb.TransactionFailureException( "Could not create token", e );
         }
@@ -158,6 +169,25 @@ abstract class ReplicatedTokenHolder<TOKEN extends Token> implements TokenHolder
             return NO_ID;
         }
         return id;
+    }
+
+    @Override
+    public boolean getIdsByNames( String[] names, int[] ids )
+    {
+        boolean hasUnresolvedTokens = false;
+        for ( int i = 0; i < names.length; i++ )
+        {
+            Integer id = tokenRegistry.getId( names[i] );
+            if ( id == null )
+            {
+                hasUnresolvedTokens = true;
+            }
+            else
+            {
+                ids[i] = id;
+            }
+        }
+        return hasUnresolvedTokens;
     }
 
     @Override

@@ -47,14 +47,14 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaState;
+import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.LockTracer;
@@ -134,9 +134,9 @@ public class OperationsLockTest
         allStoreHolder = new AllStoreHolder( storageReader,  transaction, cursors, mock(
                 ExplicitIndexStore.class ), mock( Procedures.class ), mock( SchemaState.class ) );
         constraintIndexCreator = mock( ConstraintIndexCreator.class );
-        operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ), storageReader,
-                transaction, new KernelToken( storageReader, transaction ), cursors, autoindexing,
-                constraintIndexCreator, mock( ConstraintSemantics.class ) );
+        operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),storageReader,
+                 transaction, new KernelToken( storageReader, transaction ), cursors, autoindexing,
+                constraintIndexCreator, mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ) );
         operations.initialize();
 
         this.order = inOrder( locks, txState, storageReader );
@@ -447,11 +447,11 @@ public class OperationsLockTest
     public void shouldAcquireSchemaWriteLockBeforeRemovingIndexRule() throws Exception
     {
         // given
-        SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( 0, 0 );
+        CapableIndexDescriptor index =  TestIndexDescriptorFactory.forLabel( 0, 0 ).withId( 0 ).withoutCapabilities();
         when( storageReader.indexGetForSchema( any() )).thenReturn( index );
 
         // when
-        operations.indexDrop( DefaultIndexReference.fromDescriptor( index ) );
+        operations.indexDrop( index );
 
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, 0 );
@@ -462,7 +462,7 @@ public class OperationsLockTest
     public void shouldAcquireSchemaWriteLockBeforeCreatingUniquenessConstraint() throws Exception
     {
         // given
-        when( constraintIndexCreator.createUniquenessConstraintIndex( transaction, descriptor ) ).thenReturn( 42L );
+        when( constraintIndexCreator.createUniquenessConstraintIndex( transaction, descriptor, Optional.empty() ) ).thenReturn( 42L );
         when( storageReader.constraintsGetForSchema(  descriptor.schema() ) ).thenReturn( Collections.emptyIterator() );
 
         // when

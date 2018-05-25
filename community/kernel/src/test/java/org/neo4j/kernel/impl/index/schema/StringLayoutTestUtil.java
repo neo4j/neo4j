@@ -26,7 +26,7 @@ import java.util.Set;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -38,7 +38,7 @@ import static org.neo4j.values.storable.UTF8StringValue.byteArrayCompare;
 
 abstract class StringLayoutTestUtil extends LayoutTestUtil<StringSchemaKey,NativeSchemaValue>
 {
-    StringLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )
+    StringLayoutTestUtil( IndexDescriptor schemaIndexDescriptor )
     {
         super( schemaIndexDescriptor );
     }
@@ -58,19 +58,19 @@ abstract class StringLayoutTestUtil extends LayoutTestUtil<StringSchemaKey,Nativ
     }
 
     @Override
-    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdates()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
     {
         return generateAddUpdatesFor( STRINGS );
     }
 
     @Override
-    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesNoDuplicateValues()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdatesNoDuplicateValues()
     {
         return generateAddUpdatesFor( STRINGS );
     }
 
     @Override
-    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesWithDuplicateValues()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues()
     {
         Collection<String> duplicates = new ArrayList<>( asList( STRINGS ) );
         duplicates.addAll( asList( STRINGS ) );

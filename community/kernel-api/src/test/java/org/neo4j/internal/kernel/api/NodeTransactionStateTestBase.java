@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.util.Arrays;
 
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.values.storable.ValueGroup;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -34,6 +35,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 @SuppressWarnings( "Duplicates" )
@@ -853,6 +855,117 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             // then
             assertEquals( 1, countTxState );
             assertEquals( 2, countNoTxState );
+        }
+    }
+
+    @Test
+    public void hasPropertiesShouldSeeNewlyCreatedProperties() throws Exception
+    {
+        // Given
+        long node;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            node = tx.dataWrite().nodeCreate();
+            tx.success();
+        }
+
+        // Then
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            try ( NodeCursor cursor = tx.cursors().allocateNodeCursor() )
+            {
+                tx.dataRead().singleNode( node, cursor );
+                assertTrue( cursor.next() );
+                assertFalse( cursor.hasProperties() );
+                tx.dataWrite().nodeSetProperty( node, tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" ),
+                        stringValue( "foo" ) );
+                assertTrue( cursor.hasProperties() );
+            }
+        }
+    }
+
+    @Test
+    public void hasPropertiesShouldSeeNewlyCreatedPropertiesOnNewlyCreatedNode() throws Exception
+    {
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            long node = tx.dataWrite().nodeCreate();
+            try ( NodeCursor cursor = tx.cursors().allocateNodeCursor() )
+            {
+                tx.dataRead().singleNode( node, cursor );
+                assertTrue( cursor.next() );
+                assertFalse( cursor.hasProperties() );
+                tx.dataWrite().nodeSetProperty( node, tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" ),
+                        stringValue( "foo" ) );
+                assertTrue( cursor.hasProperties() );
+            }
+        }
+    }
+
+    @Test
+    public void hasPropertiesShouldSeeNewlyRemovedProperties() throws Exception
+    {
+        // Given
+        long node;
+        int prop1, prop2, prop3;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            node = tx.dataWrite().nodeCreate();
+            prop1 = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
+            prop2 = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop2" );
+            prop3 = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop3" );
+            tx.dataWrite().nodeSetProperty( node, prop1, longValue( 1 ) );
+            tx.dataWrite().nodeSetProperty( node, prop2, longValue( 2 ) );
+            tx.dataWrite().nodeSetProperty( node, prop3, longValue( 3 ) );
+            tx.success();
+        }
+
+        // Then
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            try ( NodeCursor cursor = tx.cursors().allocateNodeCursor() )
+            {
+                tx.dataRead().singleNode( node, cursor );
+                assertTrue( cursor.next() );
+
+                assertTrue( cursor.hasProperties() );
+                tx.dataWrite().nodeRemoveProperty( node, prop1 );
+                assertTrue( cursor.hasProperties() );
+                tx.dataWrite().nodeRemoveProperty( node, prop2 );
+                assertTrue( cursor.hasProperties() );
+                tx.dataWrite().nodeRemoveProperty( node, prop3 );
+                assertFalse( cursor.hasProperties() );
+            }
+        }
+    }
+
+    @Test
+    public void propertyTypeShouldBeTxStateAware() throws Exception
+    {
+        // Given
+        long node;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            node = tx.dataWrite().nodeCreate();
+            tx.success();
+        }
+
+        // Then
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            try ( NodeCursor nodes = tx.cursors().allocateNodeCursor();
+                  PropertyCursor properties = tx.cursors().allocatePropertyCursor() )
+            {
+                tx.dataRead().singleNode( node, nodes );
+                assertTrue( nodes.next() );
+                assertFalse( nodes.hasProperties() );
+                int prop = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
+                tx.dataWrite().nodeSetProperty( node, prop, stringValue( "foo" ) );
+                nodes.properties( properties );
+
+                assertTrue( properties.next() );
+                assertThat( properties.propertyType(), equalTo( ValueGroup.TEXT ) );
+            }
         }
     }
 

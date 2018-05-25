@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -28,15 +28,13 @@ public class TimeUniqueSchemaIndexPopulatorTest extends NativeUniqueSchemaIndexP
     @Override
     NativeSchemaIndexPopulator<ZonedTimeSchemaKey,NativeSchemaValue> createPopulator( IndexSamplingConfig samplingConfig )
     {
-        TemporalIndexFiles.FileLayout<ZonedTimeSchemaKey> fileLayout =
-                new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.ZONED_TIME );
-        return new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, schemaIndexDescriptor, indexId, samplingConfig );
+        TemporalIndexFiles.FileLayout<ZonedTimeSchemaKey> fileLayout = new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.ZONED_TIME );
+        return new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, indexDescriptor, samplingConfig );
     }
 
     @Override
     protected LayoutTestUtil<ZonedTimeSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
-        return new UniqueLayoutTestUtil<>(
-                new TimeLayoutTestUtil( SchemaIndexDescriptorFactory.uniqueForLabel( 42, 666 ) ) );
+        return new UniqueLayoutTestUtil<>( new TimeLayoutTestUtil( TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ) ) );
     }
 }

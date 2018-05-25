@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -38,7 +37,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -54,7 +52,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
-import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory.forSchema;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class AwaitIndexProcedureTest
@@ -67,7 +65,7 @@ public class AwaitIndexProcedureTest
     private IndexProcedures procedure;
     private LabelSchemaDescriptor descriptor;
     private LabelSchemaDescriptor anyDescriptor;
-    private CapableIndexReference anyIndex ;
+    private IndexReference anyIndex ;
 
     @Before
     public void setup()
@@ -78,7 +76,7 @@ public class AwaitIndexProcedureTest
         procedure = new IndexProcedures( transaction, null );
         descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
         anyDescriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
-        anyIndex = DefaultCapableIndexReference.fromDescriptor( forSchema( anyDescriptor ) );
+        anyIndex = forSchema( anyDescriptor );
         when( transaction.tokenRead() ).thenReturn( tokenRead );
         when( transaction.schemaRead() ).thenReturn( schemaRead );
     }
@@ -157,7 +155,7 @@ public class AwaitIndexProcedureTest
     {
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
-        when( schemaRead.index( anyInt(), any() ) ).thenReturn( CapableIndexReference.NO_INDEX );
+        when( schemaRead.index( anyInt(), any() ) ).thenReturn( IndexReference.NO_INDEX );
 
         try
         {

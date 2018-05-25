@@ -43,8 +43,8 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -56,8 +56,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.UNIQUE;
-import static org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference.fromDescriptor;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 @RunWith( Parameterized.class )
 public class CompositeIndexingIT
@@ -73,7 +72,7 @@ public class CompositeIndexingIT
     @Rule
     public Timeout globalTimeout = Timeout.seconds( 200 );
 
-    private final SchemaIndexDescriptor index;
+    private final IndexDescriptor index;
     private GraphDatabaseAPI graphDatabaseAPI;
 
     @Before
@@ -97,7 +96,7 @@ public class CompositeIndexingIT
         try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ktx();
-            while ( ktx.schemaRead().indexGetState( fromDescriptor( index ) ) !=
+            while ( ktx.schemaRead().indexGetState( index ) !=
                     InternalIndexState.ONLINE )
             {
                 Thread.sleep( 10 );
@@ -118,7 +117,7 @@ public class CompositeIndexingIT
             }
             else
             {
-                ktx.schemaWrite().indexDrop( fromDescriptor( index ) );
+                ktx.schemaWrite().indexDrop( index );
             }
             tx.success();
         }
@@ -136,17 +135,17 @@ public class CompositeIndexingIT
     @Parameterized.Parameters( name = "Index: {0}" )
     public static Iterable<Object[]> parameterValues()
     {
-        return Arrays.asList( Iterators.array( SchemaIndexDescriptorFactory.forLabel( LABEL_ID, 1 ) ),
-                Iterators.array( SchemaIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2 ) ),
-                Iterators.array( SchemaIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4 ) ),
-                Iterators.array( SchemaIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) ),
-                Iterators.array( SchemaIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 ) ),
-                Iterators.array( SchemaIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2 ) ),
-                Iterators.array( SchemaIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) )
+        return Arrays.asList( Iterators.array( TestIndexDescriptorFactory.forLabel( LABEL_ID, 1 ) ),
+                Iterators.array( TestIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2 ) ),
+                Iterators.array( TestIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4 ) ),
+                Iterators.array( TestIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) ),
+                Iterators.array( TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 ) ),
+                Iterators.array( TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2 ) ),
+                Iterators.array( TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) )
         );
     }
 
-    public CompositeIndexingIT( SchemaIndexDescriptor nodeDescriptor )
+    public CompositeIndexingIT( IndexDescriptor nodeDescriptor )
     {
         this.index = nodeDescriptor;
     }
@@ -338,7 +337,7 @@ public class CompositeIndexingIT
     private NodeValueIndexCursor seek( KernelTransaction transaction ) throws KernelException
     {
         NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
-        transaction.dataRead().nodeIndexSeek( fromDescriptor( index ), cursor, IndexOrder.NONE, exactQuery() );
+        transaction.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, exactQuery() );
         return cursor;
     }
 

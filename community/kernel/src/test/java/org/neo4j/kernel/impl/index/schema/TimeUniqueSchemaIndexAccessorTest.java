@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -33,14 +33,13 @@ public class TimeUniqueSchemaIndexAccessorTest extends NativeSchemaIndexAccessor
     NativeSchemaIndexAccessor<ZonedTimeSchemaKey,NativeSchemaValue> makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
     {
         TemporalIndexFiles.FileLayout<ZonedTimeSchemaKey> fileLayout = new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.ZONED_TIME );
-        return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, IMMEDIATE, monitor, schemaIndexDescriptor, indexId, samplingConfig );
+        return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, IMMEDIATE, monitor, indexDescriptor, samplingConfig );
     }
 
     @Override
     protected LayoutTestUtil<ZonedTimeSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
-        return new UniqueLayoutTestUtil<>(
-                new TimeLayoutTestUtil( SchemaIndexDescriptorFactory.uniqueForLabel( 42, 666 ) ) );
+        return new UniqueLayoutTestUtil<>( new TimeLayoutTestUtil( TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ) ) );
     }
 
 }

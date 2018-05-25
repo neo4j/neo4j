@@ -22,7 +22,7 @@ package org.neo4j.kernel;
 import java.time.Clock;
 
 import org.neo4j.kernel.impl.transaction.TransactionStats;
-import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.time.Clocks;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -35,7 +35,7 @@ import static org.neo4j.kernel.AvailabilityGuard.availabilityRequirement;
  * As it runs as the last service in the lifecycle list, the stop() is called first
  * on stop, shutdown or restart, and thus blocks access to everything else for outsiders.
  */
-public class DatabaseAvailability implements Lifecycle
+public class DatabaseAvailability extends LifecycleAdapter
 {
     private static final AvailabilityRequirement AVAILABILITY_REQUIREMENT = availabilityRequirement( "Database available" );
     private final AvailabilityGuard availabilityGuard;
@@ -51,11 +51,6 @@ public class DatabaseAvailability implements Lifecycle
 
         // On initial setup, deny availability
         availabilityGuard.require( AVAILABILITY_REQUIREMENT );
-    }
-
-    @Override
-    public void init()
-    {
     }
 
     @Override
@@ -83,11 +78,5 @@ public class DatabaseAvailability implements Lifecycle
         {
             parkNanos( MILLISECONDS.toNanos( 10 ) );
         }
-    }
-
-    @Override
-    public void shutdown()
-    {
-        // TODO: Starting database. Make sure none can access it through lock or CAS
     }
 }

@@ -17,16 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.guard;
+package org.neo4j.kernel.api.schema.index;
 
-import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 
-/**
- * Guard that check entities for compatibility with some kind of guard criteria.
- * As soon as entity do not satisfy that criteria {@link TransactionTerminatedException } will be thrown.
- */
-public interface Guard
+public class TestIndexDescriptorFactory
 {
-    void check( KernelTransaction transaction );
+    private TestIndexDescriptorFactory()
+    {
+    }
+
+    public static IndexDescriptor forLabel( int labelId, int... propertyIds )
+    {
+        return IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
+    }
+
+    public static IndexDescriptor uniqueForLabel( int labelId, int... propertyIds )
+    {
+        return IndexDescriptorFactory.uniqueForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
+    }
 }

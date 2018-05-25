@@ -17,18 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.kernel;
 
-sealed abstract class CypherPlanner(plannerName: String) extends CypherOption(plannerName)
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-case object CypherPlanner extends CypherOptionCompanion[CypherPlanner] {
+/**
+ * At end of startup, wait for instance to become available for transactions.
+ * <p>
+ * This helps users who expect to be able to access the instance after
+ * the constructor is run.
+ */
+public class StartupWaiter extends LifecycleAdapter
+{
+    private final AvailabilityGuard availabilityGuard;
+    private final long timeout;
 
-  case object default extends CypherPlanner("default")
-  case object cost extends CypherPlanner("cost")
-  case object greedy extends CypherPlanner("greedy")
-  case object idp extends CypherPlanner("idp")
-  case object dp extends CypherPlanner("dp")
-  case object rule extends CypherPlanner("rule")
+    public StartupWaiter( AvailabilityGuard availabilityGuard, long timeout )
+    {
+        this.availabilityGuard = availabilityGuard;
+        this.timeout = timeout;
+    }
 
-  val all: Set[CypherPlanner] = Set(cost, greedy, idp, dp, rule)
+    @Override
+    public void start()
+    {
+        availabilityGuard.isAvailable( timeout );
+    }
 }

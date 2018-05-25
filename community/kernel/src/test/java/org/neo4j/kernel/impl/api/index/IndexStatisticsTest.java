@@ -53,8 +53,8 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -204,7 +204,7 @@ public class IndexStatisticsTest
         awaitIndexesOnline();
 
         SchemaStorage storage = new SchemaStorage( neoStores().getSchemaStore() );
-        long indexId = storage.indexGetForSchema( DefaultIndexReference.toDescriptor( index ) ).getId();
+        long indexId = storage.indexGetForSchema( (IndexDescriptor) index ).getId();
 
         // when
         dropIndex( index );
@@ -719,9 +719,9 @@ public class IndexStatisticsTest
         private final Set<IndexReference> onlineIndexes = Collections.newSetFromMap( new ConcurrentHashMap<>() );
 
         @Override
-        public void populationCompleteOn( SchemaIndexDescriptor descriptor )
+        public void populationCompleteOn( StoreIndexDescriptor descriptor )
         {
-            onlineIndexes.add( DefaultIndexReference.fromDescriptor( descriptor ) );
+            onlineIndexes.add( descriptor );
         }
 
         public boolean isIndexOnline( IndexReference descriptor )

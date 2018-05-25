@@ -30,8 +30,8 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
@@ -145,8 +145,8 @@ public class IndexPopulationFlipRaceIT
             int keyAId = tx.tokenRead().propertyKey( keyA( i ) );
             int labelBId = tx.tokenRead().nodeLabel( labelB( i ).name() );
             int keyBId = tx.tokenRead().propertyKey( keyB( i ) );
-            IndexReference indexA = DefaultIndexReference.general( labelAId, keyAId );
-            IndexReference indexB = DefaultIndexReference.general( labelBId, keyBId );
+            IndexReference indexA = TestIndexDescriptorFactory.forLabel( labelAId, keyAId );
+            IndexReference indexB = TestIndexDescriptorFactory.forLabel( labelBId, keyBId );
 
             for ( int j = 0; j < NODES_PER_INDEX; j++ )
             {

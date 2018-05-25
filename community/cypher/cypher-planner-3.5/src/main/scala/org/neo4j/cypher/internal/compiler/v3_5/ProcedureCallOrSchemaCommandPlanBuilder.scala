@@ -32,7 +32,7 @@ import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPha
 /**
   * This planner takes on queries that requires no planning such as procedures and schema commands
   */
-case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase[CompilerContext, BaseState, LogicalPlanState] {
+case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, LogicalPlanState] {
 
   override def phase: CompilationPhase = PIPE_BUILDING
 
@@ -40,7 +40,7 @@ case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase[CompilerContex
 
   override def postConditions: Set[Condition] = Set.empty
 
-  override def process(from: BaseState, context: CompilerContext): LogicalPlanState = {
+  override def process(from: BaseState, context: PlannerContext): LogicalPlanState = {
     implicit val idGen = new SequentialIdGen()
     val maybeLogicalPlan: Option[LogicalPlan] = from.statement() match {
       // Global call: CALL foo.bar.baz("arg1", 2)
