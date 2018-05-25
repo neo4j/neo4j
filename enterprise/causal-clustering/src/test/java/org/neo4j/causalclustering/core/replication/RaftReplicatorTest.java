@@ -43,7 +43,6 @@ import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Message;
 import org.neo4j.causalclustering.messaging.Outbound;
-import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
@@ -87,7 +86,7 @@ public class RaftReplicatorTest
 
         RaftReplicator replicator =
                 new RaftReplicator( leaderLocator, myself, outbound, sessionPool,
-                        capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy,
+                        capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy, DEFAULT_TIMEOUT_MS,
                         availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
@@ -115,7 +114,7 @@ public class RaftReplicatorTest
         CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
 
         RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound,
-                sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy,
+                sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy, DEFAULT_TIMEOUT_MS,
                 availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
@@ -140,7 +139,7 @@ public class RaftReplicatorTest
         CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
 
         RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound,
-                sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy,
+                sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy, DEFAULT_TIMEOUT_MS,
                 availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
@@ -172,7 +171,7 @@ public class RaftReplicatorTest
 
         RaftReplicator replicator =
                 new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy,
-                        availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
+                        DEFAULT_TIMEOUT_MS, availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         ReplicatingThread replicatingThread = replicatingThread( replicator, content, true );
@@ -182,7 +181,29 @@ public class RaftReplicatorTest
 
         availabilityGuard.shutdown();
         replicatingThread.join();
-        assertThat( replicatingThread.getReplicationException(), Matchers.instanceOf( DatabaseShutdownException.class ) );
+        assertThat( replicatingThread.getReplicationException().getCause(), Matchers.instanceOf( AvailabilityGuard.UnavailableException.class ) );
+    }
+
+    @Test
+    public void stopReplicationWhenUnavailable() throws NoLeaderFoundException, InterruptedException
+    {
+        when( leaderLocator.getLeader() ).thenReturn( leader );
+        CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
+        CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
+
+        RaftReplicator replicator =
+                new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy,
+                        DEFAULT_TIMEOUT_MS, availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
+
+        ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
+        ReplicatingThread replicatingThread = replicatingThread( replicator, content, true );
+
+        // when
+        replicatingThread.start();
+
+        availabilityGuard.require( () -> "Database not unavailable" );
+        replicatingThread.join();
+        assertThat( replicatingThread.getReplicationException().getCause(), Matchers.instanceOf( AvailabilityGuard.UnavailableException.class ) );
     }
 
     @Test
@@ -195,7 +216,7 @@ public class RaftReplicatorTest
         CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
 
         RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress,
-                noWaitTimeoutStrategy, noWaitTimeoutStrategy, availabilityGuard, NullLogProvider.getInstance(),
+                noWaitTimeoutStrategy, noWaitTimeoutStrategy, DEFAULT_TIMEOUT_MS, availabilityGuard, NullLogProvider.getInstance(),
                 replicationLimit );
 
         // when
@@ -221,7 +242,7 @@ public class RaftReplicatorTest
         CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
 
         RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress,
-                noWaitTimeoutStrategy, noWaitTimeoutStrategy, availabilityGuard, NullLogProvider.getInstance(),
+                noWaitTimeoutStrategy, noWaitTimeoutStrategy, DEFAULT_TIMEOUT_MS, availabilityGuard, NullLogProvider.getInstance(),
                 replicationLimit );
 
         // when
