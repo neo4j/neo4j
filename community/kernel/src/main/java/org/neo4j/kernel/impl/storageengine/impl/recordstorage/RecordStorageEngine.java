@@ -196,11 +196,15 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             labelScanStore = new NativeLabelScanStore( pageCache, storeDir, fs, new FullLabelStream( neoStoreIndexStoreView ),
                     readOnly, monitors, recoveryCleanupWorkCollector );
 
+            // We need to load the property tokens here, since we need them before we load the indexes.
+            propertyKeyTokenHolder.setInitialTokens(
+                    neoStores.getPropertyKeyTokenStore().getTokens( Integer.MAX_VALUE ) );
+
             indexStoreView = new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, lockService, neoStores, logProvider );
             this.indexProviderMap = indexProviderMap;
-            indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, this.indexProviderMap,
+            indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, indexProviderMap,
                     indexStoreView, tokenNameLookup,
-                    Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).indexesGetAll() ), logProvider,
+                    Iterators.asList( schemaStorage.indexesGetAll() ), logProvider,
                     indexingServiceMonitor, schemaState );
 
             integrityValidator = new IntegrityValidator( neoStores, indexingService );
@@ -332,7 +336,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             // Schema index application
             appliers.add( new IndexBatchTransactionApplier( indexingService, labelScanStoreSync, indexUpdatesSync,
-                    neoStores.getNodeStore(),
+                    neoStores.getNodeStore(), neoStores.getRelationshipStore(),
                     indexUpdatesConverter ) );
 
             // Explicit index application

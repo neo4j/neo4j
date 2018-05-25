@@ -30,15 +30,16 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
-import org.neo4j.kernel.impl.api.index.NodePropertyCommandsExtractor;
+import org.neo4j.kernel.impl.api.index.PropertyCommandsExtractor;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
@@ -64,17 +65,15 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     private List<NodeLabelUpdate> labelUpdates;
     private IndexUpdates indexUpdates;
 
-    public IndexBatchTransactionApplier( IndexingService indexingService,
-            WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync,
-            WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync,
-            NodeStore nodeStore,
+    public IndexBatchTransactionApplier( IndexingService indexingService, WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync,
+            WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync, NodeStore nodeStore, RelationshipStore relationshipStore,
             PropertyPhysicalToLogicalConverter indexUpdateConverter )
     {
         this.indexingService = indexingService;
         this.labelScanStoreSync = labelScanStoreSync;
         this.indexUpdatesSync = indexUpdatesSync;
         this.indexUpdateConverter = indexUpdateConverter;
-        this.transactionApplier = new SingleTransactionApplier( nodeStore );
+        this.transactionApplier = new SingleTransactionApplier( nodeStore, relationshipStore );
     }
 
     @Override
@@ -133,23 +132,25 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     private class SingleTransactionApplier extends TransactionApplier.Adapter
     {
         private final NodeStore nodeStore;
-        private final NodePropertyCommandsExtractor indexUpdatesExtractor = new NodePropertyCommandsExtractor();
+        private RelationshipStore relationshipStore;
+        private final PropertyCommandsExtractor indexUpdatesExtractor = new PropertyCommandsExtractor();
         private List<StoreIndexDescriptor> createdIndexes;
 
-        SingleTransactionApplier( NodeStore nodeStore )
+        SingleTransactionApplier( NodeStore nodeStore, RelationshipStore relationshipStore )
         {
             this.nodeStore = nodeStore;
+            this.relationshipStore = relationshipStore;
         }
 
         @Override
         public void close() throws Exception
         {
-            if ( indexUpdatesExtractor.containsAnyNodeOrPropertyUpdate() )
+            if ( indexUpdatesExtractor.containsAnyEntityOrPropertyUpdate() )
             {
                 // Queue the index updates. When index updates from all transactions in this batch have been accumulated
                 // we'll feed them to the index updates work sync at the end of the batch
-                indexUpdates().feed( indexUpdatesExtractor.propertyCommandsByNodeIds(),
-                        indexUpdatesExtractor.nodeCommandsById() );
+                indexUpdates().feed( indexUpdatesExtractor.propertyCommandsByNodeIds(), indexUpdatesExtractor.propertyCommandsByRelationshipIds(),
+                        indexUpdatesExtractor.nodeCommandsById(), indexUpdatesExtractor.relationshipCommandsById() );
                 indexUpdatesExtractor.close();
             }
 
@@ -165,7 +166,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         {
             if ( indexUpdates == null )
             {
-                indexUpdates = new OnlineIndexUpdates( nodeStore, indexingService, indexUpdateConverter );
+                indexUpdates = new OnlineIndexUpdates( nodeStore, relationshipStore, indexingService, indexUpdateConverter );
             }
             return indexUpdates;
         }
@@ -196,6 +197,12 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
 
             // for indexes
             return indexUpdatesExtractor.visitNodeCommand( command );
+        }
+
+        @Override
+        public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException
+        {
+            return indexUpdatesExtractor.visitRelationshipCommand( command );
         }
 
         @Override
