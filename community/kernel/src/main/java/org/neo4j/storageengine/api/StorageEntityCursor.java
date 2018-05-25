@@ -1,17 +1,17 @@
 package org.neo4j.storageengine.api;
 
-import java.util.function.LongPredicate;
-
-public interface StorageEntityCursor extends AutoCloseable
+/**
+ * A {@link StorageCursor} for entities, i.e. which has properties.
+ */
+public interface StorageEntityCursor extends StorageCursor
 {
-    boolean next( LongPredicate filter );
-
+    /**
+     * @return {@code true} if the entity the cursor is at has any properties, otherwise {@code false}.
+     */
     boolean hasProperties();
 
+    /**
+     * @return a {@code long} reference to start reading properties for the entity this cursor is at.
+     */
     long propertiesReference();
-
-    void single( long reference );
-
-    @Override
-    void close();
 }

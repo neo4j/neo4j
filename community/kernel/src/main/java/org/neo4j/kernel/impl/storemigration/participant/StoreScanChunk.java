@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration.participant;
 
-import org.eclipse.collections.impl.block.factory.primitive.LongPredicates;
-
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
@@ -28,8 +26,6 @@ import org.neo4j.storageengine.api.StorageEntityCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
-
-import static org.eclipse.collections.impl.block.factory.primitive.IntPredicates.alwaysFalse;
 
 abstract class StoreScanChunk<T extends StorageEntityCursor> implements InputChunk
 {
@@ -55,7 +51,7 @@ abstract class StoreScanChunk<T extends StorageEntityCursor> implements InputChu
         else
         {
             storePropertyCursor.init( record.propertiesReference() );
-            while ( storePropertyCursor.next( alwaysFalse() ) )
+            while ( storePropertyCursor.next() )
             {
                 // add key as int here as to have the importer use the token id
                 visitor.property( storePropertyCursor.propertyKey(), storePropertyCursor.propertyValue().asObject() );
@@ -75,8 +71,8 @@ abstract class StoreScanChunk<T extends StorageEntityCursor> implements InputChu
     {
         if ( id < endId )
         {
-            cursor.single( id );
-            if ( cursor.next( LongPredicates.alwaysFalse() ) )
+            read( cursor, id );
+            if ( cursor.next() )
             {
                 visitRecord( cursor, visitor );
                 visitor.endOfEntity();
@@ -86,6 +82,8 @@ abstract class StoreScanChunk<T extends StorageEntityCursor> implements InputChu
         }
         return false;
     }
+
+    protected abstract void read( T cursor, long id );
 
     public void initialize( long startId, long endId )
     {

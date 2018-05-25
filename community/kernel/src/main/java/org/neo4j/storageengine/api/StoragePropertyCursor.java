@@ -19,25 +19,33 @@
  */
 package org.neo4j.storageengine.api;
 
-import java.util.function.IntPredicate;
-
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-public interface StoragePropertyCursor extends AutoCloseable
+/**
+ * Cursor that can read property data.
+ */
+public interface StoragePropertyCursor extends StorageCursor
 {
+    /**
+     * Initializes this cursor to that reading property data at the given {@code reference}.
+     *
+     * @param reference reference to start reading properties at.
+     */
     void init( long reference );
 
-    @Override
-    void close();
-
+    /**
+     * @return property key of the property this cursor currently is placed at.
+     */
     int propertyKey();
 
+    /**
+     * @return value group of the property this cursor currently is placed at.
+     */
     ValueGroup propertyType();
 
+    /**
+     * @return value of the property this cursor currently is placed at.
+     */
     Value propertyValue();
-
-    void release();
-
-    boolean next( IntPredicate filter );
 }

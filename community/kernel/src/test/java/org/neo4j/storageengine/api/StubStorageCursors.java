@@ -6,13 +6,12 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
-import java.util.function.IntPredicate;
-import java.util.function.LongPredicate;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
@@ -601,7 +600,7 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
-        public boolean next( LongPredicate filter )
+        public boolean next()
         {
             if ( iterator != null )
             {
@@ -720,7 +719,7 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
-        public boolean next( LongPredicate filter )
+        public boolean next()
         {
             if ( iterator != null )
             {
@@ -794,7 +793,12 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
-        public boolean next( IntPredicate filter )
+        public void reset()
+        {
+        }
+
+        @Override
+        public boolean next()
         {
             if ( iterator.hasNext() )
             {

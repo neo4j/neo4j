@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import java.nio.ByteBuffer;
-import java.util.function.IntPredicate;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.GeometryType;
@@ -92,7 +91,7 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
     }
 
     @Override
-    public boolean next( IntPredicate filter )
+    public boolean next()
     {
         while ( true )
         {
@@ -122,10 +121,7 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
                     break;
                 }
 
-                if ( !filter.test( propertyKey() ) )
-                {
-                    return true;
-                }
+                return true;
             }
 
             if ( next == NO_ID )
@@ -368,6 +364,12 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
             page.close();
             page = null;
         }
+    }
+
+    @Override
+    public void reset()
+    {
+        clear();
     }
 
     private PageCursor propertyPage( long reference )

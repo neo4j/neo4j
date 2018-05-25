@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
-import org.eclipse.collections.impl.block.factory.primitive.IntPredicates;
 import org.junit.Test;
 
 import java.lang.reflect.Array;
@@ -33,7 +32,6 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singletonMap;
-import static org.eclipse.collections.impl.block.factory.primitive.LongPredicates.alwaysFalse;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -103,12 +101,12 @@ public class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
             try ( StorageNodeCursor node = storageReader.allocateNodeCursor() )
             {
                 node.single( nodeId );
-                assertTrue( node.next( alwaysFalse() ) );
+                assertTrue( node.next() );
 
                 try ( StoragePropertyCursor props = storageReader.allocatePropertyCursor() )
                 {
                     props.init( node.propertiesReference() );
-                    if ( props.next( IntPredicates.alwaysFalse()  ) )
+                    if ( props.next() )
                     {
                         Value propVal = props.propertyValue();
 

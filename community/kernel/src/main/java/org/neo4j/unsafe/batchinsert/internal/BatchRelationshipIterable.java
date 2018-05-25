@@ -28,7 +28,6 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReade
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
-import static org.neo4j.function.Predicates.alwaysFalseLong;
 import static org.neo4j.internal.kernel.api.Read.ANY_RELATIONSHIP_TYPE;
 
 abstract class BatchRelationshipIterable<T> implements Iterable<T>
@@ -40,7 +39,7 @@ abstract class BatchRelationshipIterable<T> implements Iterable<T>
         relationshipCursor = storageReader.allocateRelationshipTraversalCursor();
         RecordNodeCursor nodeCursor = storageReader.allocateNodeCursor();
         nodeCursor.single( nodeId );
-        if ( !nodeCursor.next( alwaysFalseLong ) )
+        if ( !nodeCursor.next() )
         {
             throw new NotFoundException( "Node " + nodeId + " not found" );
         }
@@ -55,7 +54,7 @@ abstract class BatchRelationshipIterable<T> implements Iterable<T>
             @Override
             protected T fetchNextOrNull()
             {
-                if ( !relationshipCursor.next( alwaysFalseLong ) )
+                if ( !relationshipCursor.next() )
                 {
                     return null;
                 }

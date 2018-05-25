@@ -133,7 +133,15 @@ public class DefaultPropertyCursor implements PropertyCursor
         }
 
         IntPredicate predicate = propertyKey -> propertiesState != null && propertiesState.isPropertyChangedOrRemoved( propertyKey );
-        return storeCursor.next( predicate );
+        while ( storeCursor.next() )
+        {
+            boolean skip = propertiesState != null && propertiesState.isPropertyChangedOrRemoved( storeCursor.propertyKey() );
+            if ( !skip )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

@@ -42,7 +42,6 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.function.Predicates.alwaysFalseLong;
 import static org.neo4j.internal.kernel.api.Read.ANY_RELATIONSHIP_TYPE;
 
 public class RecordRelationshipScanCursorTest
@@ -81,7 +80,7 @@ public class RecordRelationshipScanCursorTest
         try ( RecordRelationshipScanCursor cursor = createRelationshipCursor() )
         {
             cursor.single( RELATIONSHIP_ID );
-            assertTrue( cursor.next( alwaysFalseLong ) );
+            assertTrue( cursor.next() );
             assertEquals( RELATIONSHIP_ID, cursor.relationshipReference() );
         }
     }
@@ -96,7 +95,7 @@ public class RecordRelationshipScanCursorTest
         try ( RecordRelationshipScanCursor cursor = createRelationshipCursor() )
         {
             cursor.single( RELATIONSHIP_ID );
-            assertFalse( cursor.next( alwaysFalseLong ) );
+            assertFalse( cursor.next() );
         }
     }
 
@@ -151,7 +150,7 @@ public class RecordRelationshipScanCursorTest
         try ( RecordRelationshipScanCursor cursor = createRelationshipCursor() )
         {
             cursor.scan( type );
-            while ( cursor.next( alwaysFalseLong ) )
+            while ( cursor.next() )
             {
                 // then
                 assertTrue( cursor.toString(), expected.remove( cursor.relationshipReference() ) );

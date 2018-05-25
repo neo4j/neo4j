@@ -48,7 +48,6 @@ import org.neo4j.test.rule.RandomRule;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
-import static org.eclipse.collections.impl.block.factory.primitive.LongPredicates.alwaysFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -526,7 +525,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
     {
         StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor();
         nodeCursor.single( nodeId );
-        assertTrue( nodeCursor.next( alwaysFalse() ) );
+        assertTrue( nodeCursor.next() );
         return nodeCursor;
     }
 

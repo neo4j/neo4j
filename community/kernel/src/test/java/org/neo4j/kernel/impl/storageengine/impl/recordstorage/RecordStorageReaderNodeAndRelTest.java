@@ -25,7 +25,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
-import static org.eclipse.collections.impl.block.factory.primitive.LongPredicates.alwaysFalse;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.RelationshipType.withName;
@@ -91,7 +90,7 @@ public class RecordStorageReaderNodeAndRelTest extends RecordStorageReaderTestBa
         try ( StorageNodeCursor node = storageReader.allocateNodeCursor() )
         {
             node.single( id );
-            return node.next( alwaysFalse() );
+            return node.next();
         }
     }
 
@@ -100,7 +99,7 @@ public class RecordStorageReaderNodeAndRelTest extends RecordStorageReaderTestBa
         try ( StorageRelationshipScanCursor relationship = storageReader.allocateRelationshipScanCursor() )
         {
             relationship.single( id );
-            return relationship.next( alwaysFalse() );
+            return relationship.next();
         }
     }
 }

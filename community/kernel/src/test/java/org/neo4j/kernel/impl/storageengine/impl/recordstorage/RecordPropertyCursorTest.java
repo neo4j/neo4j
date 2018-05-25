@@ -26,7 +26,6 @@ import org.neo4j.unsafe.batchinsert.internal.DirectRecordAccessSet;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 
-import static org.eclipse.collections.impl.block.factory.primitive.IntPredicates.alwaysFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.iterator;
@@ -111,7 +110,7 @@ public class RecordPropertyCursorTest
     {
         Map<Integer,Value> expectedValues = asMap( values );
         cursor.init( firstPropertyId );
-        while ( cursor.next( alwaysFalse() ) )
+        while ( cursor.next() )
         {
             // then
             assertEquals( expectedValues.remove( cursor.propertyKey() ), cursor.propertyValue() );
