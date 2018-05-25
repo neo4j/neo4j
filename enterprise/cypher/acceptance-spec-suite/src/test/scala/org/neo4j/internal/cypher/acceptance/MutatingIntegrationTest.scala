@@ -309,7 +309,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
     failWithError(Configs.AbsolutelyAll, "RETURN 1 / 0", List("/ by zero", "divide by zero"))
 
     val contextBridge : ThreadToStatementContextBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
-    contextBridge.getTopLevelTransactionBoundToThisThread( false ) should be(null)
+    contextBridge.getKernelTransactionBoundToThisThread( false ) should be(null)
   }
 
   test("full path in one create") {

@@ -40,7 +40,7 @@ public class TransactionStateChecker implements AutoCloseable
     public static TransactionStateChecker create( TransitionalPeriodTransactionMessContainer container )
     {
         KernelTransaction topLevelTransactionBoundToThisThread =
-                container.getBridge().getTopLevelTransactionBoundToThisThread( true );
+                container.getBridge().getKernelTransactionBoundToThisThread( true );
         KernelStatement kernelStatement = (KernelStatement) topLevelTransactionBoundToThisThread.acquireStatement();
 
         return new TransactionStateChecker(

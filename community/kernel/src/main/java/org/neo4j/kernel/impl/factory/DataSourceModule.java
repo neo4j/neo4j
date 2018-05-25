@@ -116,7 +116,7 @@ public class DataSourceModule
         DiagnosticsManager diagnosticsManager = platformModule.diagnosticsManager;
         this.queryExecutor = queryExecutionEngineSupplier;
 
-        threadToTransactionBridge = deps.satisfyDependency( life.add( new ThreadToStatementContextBridge() ) );
+        threadToTransactionBridge = deps.satisfyDependency( new ThreadToStatementContextBridge( platformModule.availabilityGuard ) );
 
         deps.satisfyDependency( graphDatabaseFacade );
         transactionEventHandlers = new TransactionEventHandlers( graphDatabaseFacade );
