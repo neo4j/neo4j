@@ -187,7 +187,6 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
   }
 
-
   test("or") {
     compile(or(t, t)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
     compile(or(f, t)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
