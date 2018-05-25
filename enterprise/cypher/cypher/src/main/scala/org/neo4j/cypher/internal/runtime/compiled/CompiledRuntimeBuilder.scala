@@ -24,9 +24,10 @@ package org.neo4j.cypher.internal.runtime.compiled
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{CompiledRuntimeName, _}
+import org.neo4j.cypher.internal.compiler.v3_5.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.opencypher.v9_0.frontend.phases.{Do, If, Transformer}
-import org.opencypher.v9_0.util.{InvalidArgumentException, RuntimeUnsupportedNotification}
+import org.opencypher.v9_0.util.InvalidArgumentException
 
 class CompiledRuntimeBuilder extends RuntimeBuilder[Transformer[EnterpriseRuntimeContext, LogicalPlanState, CompilationState]] {
 

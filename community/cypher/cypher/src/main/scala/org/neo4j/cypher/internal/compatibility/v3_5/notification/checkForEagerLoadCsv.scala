@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.notification
 
+import org.neo4j.cypher.internal.compiler.v3_5.EagerLoadCsvNotification
 import org.neo4j.cypher.internal.v3_5.logical.plans.{Eager, LoadCSV, LogicalPlan}
-import org.opencypher.v9_0.util.{EagerLoadCsvNotification, InternalNotification}
+import org.opencypher.v9_0.util.InternalNotification
 
 object checkForEagerLoadCsv extends NotificationChecker {
 

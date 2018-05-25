@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.compatibility.v3_5.notifications
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compatibility.v3_5.notification.{SuboptimalIndexForWildcardQueryNotification, checkForIndexLimitation}
+import org.neo4j.cypher.internal.compatibility.v3_5.notification.checkForIndexLimitation
+import org.neo4j.cypher.internal.compiler.v3_5.SuboptimalIndexForWildcardQueryNotification
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.planner.v3_5.spi
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IndexDescriptor, IndexLimitation, PlanContext, SlowContains}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{NodeIndexContainsScan, NodeIndexEndsWithScan}
-import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken, StringLiteral, True}
+import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 

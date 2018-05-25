@@ -180,7 +180,7 @@
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>ast-9.0</artifactId>
-      <version>${openCypher.version}</version>
+      <version>${openCypher.frontend.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
@@ -188,7 +188,7 @@
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>util-9.0</artifactId>
-      <version>${openCypher.version}</version>
+      <version>${openCypher.frontend.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>

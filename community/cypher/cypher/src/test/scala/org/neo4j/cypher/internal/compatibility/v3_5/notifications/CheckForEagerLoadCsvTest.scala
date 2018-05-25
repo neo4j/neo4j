@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compatibility.v3_5.notifications
 
 import org.neo4j.cypher.internal.compatibility.v3_5.notification.checkForEagerLoadCsv
+import org.neo4j.cypher.internal.compiler.v3_5.EagerLoadCsvNotification
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.v3_5.NoHeaders
 import org.neo4j.cypher.internal.v3_5.logical.plans.{AllNodesScan, Eager, LoadCSV}
 import org.opencypher.v9_0.expressions.StringLiteral
-import org.opencypher.v9_0.util.EagerLoadCsvNotification
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class CheckForEagerLoadCsvTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -44,7 +44,7 @@ class CheckForEagerLoadCsvTest extends CypherFunSuite with LogicalPlanningTestSu
         )
       )
 
-    checkForEagerLoadCsv(plan) should equal(Some(EagerLoadCsvNotification))
+    checkForEagerLoadCsv(plan) should equal(Seq(EagerLoadCsvNotification))
   }
 
   test("should not notify for LoadCsv on top of eager pipe") {
@@ -60,6 +60,6 @@ class CheckForEagerLoadCsvTest extends CypherFunSuite with LogicalPlanningTestSu
         legacyCsvQuoteEscaping = false
       )
 
-    checkForEagerLoadCsv(plan) should equal(None)
+    checkForEagerLoadCsv(plan) should equal(List.empty)
   }
 }

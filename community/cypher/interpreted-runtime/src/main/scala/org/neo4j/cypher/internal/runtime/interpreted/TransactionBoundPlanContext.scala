@@ -30,8 +30,9 @@ import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.internal.kernel.api.exceptions.KernelException
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.internal.kernel.api.procs.{DefaultParameterValue, Neo4jTypes}
-import org.neo4j.internal.kernel.api.{CapableIndexReference, IndexReference, InternalIndexState, procs}
+import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor
 import org.neo4j.procedure.Mode
 
 import scala.collection.JavaConverters._
@@ -84,7 +85,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     tc.schemaRead.indexGetState(reference) match {
       case InternalIndexState.ONLINE =>
         reference match {
-          case cir: CapableIndexReference => Some(IndexDescriptor(cir.label(), cir.properties(), cir.limitations().map(kernelToCypher).toSet))
+          case cir: CapableIndexDescriptor => Some(IndexDescriptor(cir.label(), cir.properties(), cir.limitations().map(kernelToCypher).toSet))
           case _ => Some(IndexDescriptor(reference.label(), reference.properties()))
         }
       case _ => None
