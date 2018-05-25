@@ -229,7 +229,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                         {
                             throw new IllegalStateException( "Nonexisting label was modified for node " + nodeId, e );
                         }
-                    };
+                    }
                 }
             } );
             state.addedAndRemovedRelationships().getRemoved().each( relId ->
