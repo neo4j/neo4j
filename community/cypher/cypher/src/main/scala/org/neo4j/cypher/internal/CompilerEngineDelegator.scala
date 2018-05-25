@@ -68,6 +68,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     errorIfShortestPathFallbackUsedAtRuntime = config.errorIfShortestPathFallbackUsedAtRuntime,
     errorIfShortestPathHasCommonNodesAtRuntime = config.errorIfShortestPathHasCommonNodesAtRuntime,
     legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping,
+    csvBufferSize = config.csvBufferSize,
     nonIndexedLabelWarningThreshold = getNonIndexedLabelWarningThreshold,
     planWithMinimumCardinalityEstimates = config.planWithMinimumCardinalityEstimates
   )

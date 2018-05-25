@@ -22,6 +22,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import java.util.concurrent.TimeUnit
+
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -240,6 +242,55 @@ class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
     second("collect(n.prop)").asInstanceOf[Seq[_]] should contain theSameElementsAs List(10, 20, 30, 40, 50)
 
     result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
+  }
+
+  test("should support index scans") {
+    // Given
+    graph.createIndex("Person", "name")
+    graph.inTx(graph.schema().awaitIndexesOnline(5, TimeUnit.SECONDS))
+    val names = (1 to 91).map(i => s"Satia$i")
+    names.foreach(name => createLabeledNode(Map("name" -> name), "Person"))
+
+    // When
+    val result = graph.execute("CYPHER runtime=morsel MATCH (n: Person) WHERE EXISTS(n.name) RETURN n.name ")
+
+    // Then
+    val resultSet = asScalaResult(result).toSet
+    resultSet.map(map => map("n.name")) should equal(names.toSet)
+    result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
+
+  }
+
+  test("should support index seek") {
+    // Given
+    graph.createIndex("Person", "name")
+    graph.inTx(graph.schema().awaitIndexesOnline(5, TimeUnit.SECONDS))
+    val names = (1 to 91).map(i => s"Satia$i")
+    names.foreach(name => createLabeledNode(Map("name" -> name), "Person"))
+
+    // When
+    val result = graph.execute("CYPHER runtime=morsel MATCH (n: Person) WHERE n.name='Satia42' RETURN n.name ")
+
+    // Then
+    val resultSet = asScalaResult(result).toSet
+    resultSet.map(map => map("n.name")) should equal(Set("Satia42"))
+    result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
+
+  }
+
+  test("should support label scans") {
+    // Given
+    val names = (1 to 91).map(i => s"Satia$i")
+    names.foreach(name => createLabeledNode(Map("name" -> name), "Person"))
+
+    // When
+    val result = graph.execute("CYPHER runtime=morsel MATCH (n: Person) RETURN n.name ")
+
+    // Then
+    val resultSet = asScalaResult(result).toSet
+    resultSet.map(map => map("n.name")) should equal(names.toSet)
+    result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
+
   }
 
   //we use a ridiculously small morsel size in order to trigger as many morsel overflows as possible

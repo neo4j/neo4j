@@ -467,11 +467,11 @@ object SlotAllocation {
           source.newLong(end, nullable, CTNode)
         source
 
-      case LoadCSV(_, _, variableName, NoHeaders, _, _) =>
+      case LoadCSV(_, _, variableName, NoHeaders, _, _, _) =>
         source.newReference(variableName, nullable, CTList(CTAny))
         source
 
-      case LoadCSV(_, _, variableName, HasHeaders, _, _) =>
+      case LoadCSV(_, _, variableName, HasHeaders, _, _, _) =>
         source.newReference(variableName, nullable, CTMap)
         source
 

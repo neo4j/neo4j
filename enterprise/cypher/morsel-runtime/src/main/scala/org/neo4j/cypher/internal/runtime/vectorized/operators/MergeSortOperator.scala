@@ -54,7 +54,7 @@ class MergeSortOperator(orderBy: Seq[ColumnOrder], slots: SlotConfiguration) ext
         inputs.foreach { morsel =>
           if (morsel.validRows > 0) sortedInputs.add(new MorselWithReadPos(morsel, 0))
         }
-      case ContinueLoopWith(ContinueWithSource(inputs: PriorityQueue[_], is, _)) =>
+      case ContinueLoopWith(ContinueWithSource(inputs: PriorityQueue[_], is)) =>
         sortedInputs = inputs.asInstanceOf[PriorityQueue[MorselWithReadPos]]
         iterationState = is
       case _ => throw new IllegalStateException()
@@ -81,7 +81,7 @@ class MergeSortOperator(orderBy: Seq[ColumnOrder], slots: SlotConfiguration) ext
     }
 
     val next = if (!sortedInputs.isEmpty) {
-      ContinueWithSource(sortedInputs, iterationState, needsSameThread = false)
+      ContinueWithSource(sortedInputs, iterationState)
     } else
       EndOfLoop(iterationState)
 

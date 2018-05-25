@@ -62,6 +62,7 @@ case class QueryPlanner(planSingleQuery: ((PlannerQuery, LogicalPlanningContext,
       errorIfShortestPathHasCommonNodesAtRuntime = context.config.errorIfShortestPathHasCommonNodesAtRuntime,
       config = QueryPlannerConfiguration.default.withUpdateStrategy(context.updateStrategy),
       legacyCsvQuoteEscaping = context.config.legacyCsvQuoteEscaping,
+      csvBufferSize = context.config.csvBufferSize,
       costComparisonListener = costComparisonListener
     )
 

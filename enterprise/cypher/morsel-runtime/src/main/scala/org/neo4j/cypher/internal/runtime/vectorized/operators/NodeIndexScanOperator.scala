@@ -23,51 +23,37 @@
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.neo4j.internal.kernel.api._
-import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
+import org.neo4j.internal.kernel.api.{IndexOrder, NodeValueIndexCursor}
 
-class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
-                            label: LabelToken,
-                            propertyKey: PropertyKeyToken,
-                            valueExpr: Expression)
-  extends NodeIndexOperator[NodeValueIndexCursor](longsPerRow, refsPerRow, offset){
 
-  private var reference: IndexReference = IndexReference.NO_INDEX
-
-  private def reference(context: QueryContext): IndexReference = {
-    if (reference == IndexReference.NO_INDEX) {
-      reference = context.indexReference(label.nameId.id, propertyKey.nameId.id)
-    }
-    reference
-  }
+class NodeIndexScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, label: Int, propertyKey: Int)
+  extends NodeIndexOperator[NodeValueIndexCursor](longsPerRow, refsPerRow, offset) {
 
   override def operate(message: Message,
                        data: Morsel,
                        context: QueryContext,
                        state: QueryState): Continuation = {
-    var nodeCursor: NodeValueIndexCursor  = null
+    var valueIndexCursor: NodeValueIndexCursor  = null
     var iterationState: Iteration = null
     val read = context.transactionalContext.dataRead
-    val currentRow = new MorselExecutionContext(data, longsPerRow, refsPerRow, currentRow = 0)
-    val queryState = new OldQueryState(context, resources = null, params = state.params)
+    val index = context.transactionalContext.schemaRead.index(label, propertyKey)
 
     message match {
       case StartLeafLoop(is) =>
-        nodeCursor = context.transactionalContext.cursors.allocateNodeValueIndexCursor()
-        read.nodeIndexSeek(reference(context), nodeCursor, IndexOrder.NONE,
-                           IndexQuery.exact(propertyKey.nameId.id, valueExpr(currentRow, queryState) ))
+        valueIndexCursor = context.transactionalContext.cursors.allocateNodeValueIndexCursor()
+        read.nodeIndexScan(index, valueIndexCursor, IndexOrder.NONE)
         iterationState = is
       case ContinueLoopWith(ContinueWithSource(cursor, is)) =>
-        nodeCursor = cursor.asInstanceOf[NodeValueIndexCursor]
+        valueIndexCursor = cursor.asInstanceOf[NodeValueIndexCursor]
         iterationState = is
       case _ => throw new IllegalStateException()
-
     }
-   iterate(data, nodeCursor, iterationState)
+
+    iterate(data, valueIndexCursor, iterationState)
   }
+
+
 
   override def addDependency(pipeline: Pipeline): Dependency = NoDependencies
 }

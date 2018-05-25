@@ -51,20 +51,13 @@ sealed trait Continuation {
   val iteration: Iteration
 }
 
-trait Continue extends Continuation {
-  val needsSameThread: Boolean
-}
+trait Continue extends Continuation
 
-case class ContinueWithData(data: Morsel, index: Int, iteration: Iteration) extends Continue {
-  override val needsSameThread = false
-}
+case class ContinueWithData(data: Morsel, index: Int, iteration: Iteration) extends Continue
 
-case class ContinueWithSource[T](source: T, iteration: Iteration, needsSameThread: Boolean) extends Continue
+case class ContinueWithSource[T](source: T, iteration: Iteration) extends Continue
 
-case class ContinueWithDataAndSource[T](data: Morsel, index: Int, source: T, iteration: Iteration)
-  extends Continue {
-  override val needsSameThread = true
-}
+case class ContinueWithDataAndSource[T](data: Morsel, index: Int, source: T, iteration: Iteration) extends Continue
 
 case class NoOp(iteration: Iteration) extends Continuation
 

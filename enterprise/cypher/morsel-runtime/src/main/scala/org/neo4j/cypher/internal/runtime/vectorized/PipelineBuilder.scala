@@ -25,15 +25,15 @@ package org.neo4j.cypher.internal.runtime.vectorized
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RefSlot
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
-import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{LazyLabel, LazyTypes}
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeBuilder.translateColumnOrder
 import org.neo4j.cypher.internal.runtime.vectorized.expressions.AggregationExpressionOperator
 import org.neo4j.cypher.internal.runtime.vectorized.operators._
-import org.opencypher.v9_0.util.InternalException
 import org.neo4j.cypher.internal.v3_5.logical.plans
 import org.neo4j.cypher.internal.v3_5.logical.plans._
+import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.opencypher.v9_0.util.InternalException
 
 class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: ExpressionConverters)
   extends TreeBuilder[Pipeline] {
@@ -59,6 +59,13 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
           slots.numberOfReferences,
           slots.getLongOffsetFor(column),
           LazyLabel(label)(SemanticTable()))
+
+      case plans.NodeIndexScan(column, labelToken, propertyKey, _) =>
+        new NodeIndexScanOperator(
+          slots.numberOfLongs,
+          slots.numberOfReferences,
+          slots.getLongOffsetFor(column),
+          labelToken.nameId.id, propertyKey.nameId.id)
 
       case plans.NodeIndexSeek(column, label, propertyKeys, SingleQueryExpression(valueExpr),  _) if propertyKeys.size == 1 =>
         new NodeIndexSeekOperator(
