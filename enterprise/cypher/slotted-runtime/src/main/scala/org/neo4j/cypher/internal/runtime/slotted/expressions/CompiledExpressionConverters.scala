@@ -30,8 +30,9 @@ import org.opencypher.v9_0.expressions.functions.AggregatingFunction
 import org.opencypher.v9_0.{expressions => ast}
 
 object CompiledExpressionConverters extends ExpressionConverter {
+
   //uses an inner converter to simplify compliance with Expression trait
-  private val inner = new ExpressionConverters(SlottedExpressionConverters,CommunityExpressionConverter)
+  private val inner = new ExpressionConverters(SlottedExpressionConverters, CommunityExpressionConverter)
 
   override def toCommandExpression(expression: ast.Expression,
                                    self: ExpressionConverters): Option[Expression] = expression match {
@@ -39,27 +40,36 @@ object CompiledExpressionConverters extends ExpressionConverter {
     //we don't deal with aggregations
     case f: FunctionInvocation if f.function.isInstanceOf[AggregatingFunction] => None
 
-    case e => IntermediateCodeGeneration.compile(e) match {
-      case Some(ir) =>
-        Some(CompileWrappingExpression(CodeGeneration.compile(ir),
-                                           inner.toCommandExpression(expression)))
-      case _ => None
+    case e => try {
+      IntermediateCodeGeneration.compile(e) match {
+        case Some(ir) =>
+          Some(CompileWrappingExpression(CodeGeneration.compile(ir),
+                                         inner.toCommandExpression(expression)))
+        case _ => None
+      }
+    } catch {
+      case _: Throwable =>
+        //Something horrible happened, maybe we exceeded the bytecode size or introduced a bug so that we tried
+        //to load invalid bytecode, whatever is the case we should silently fallback to the next expression
+        //converter
+        None
     }
   }
+}
 
-  case class CompileWrappingExpression(ce: CompiledExpression, legacy: Expression) extends Expression {
+case class CompileWrappingExpression(ce: CompiledExpression, legacy: Expression) extends Expression {
 
-    override def rewrite(f: Expression => Expression): Expression = f(this)
+  override def rewrite(f: Expression => Expression): Expression = f(this)
 
-    override def arguments: Seq[Expression] = legacy.arguments
+  override def arguments: Seq[Expression] = legacy.arguments
 
-    override def apply(ctx: ExecutionContext, state: QueryState): AnyValue =
-      ce.compute(ctx, state.query.transactionalContext.transaction,  state.params)
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue =
+    ce.compute(ctx, state.query.transactionalContext.transaction, state.params)
 
-    override def symbolTableDependencies: Set[String] = legacy.symbolTableDependencies
+  override def symbolTableDependencies: Set[String] = legacy.symbolTableDependencies
 
-    override def toString: String = legacy.toString
-  }
+  override def toString: String = legacy.toString
+}
 
 
 }
