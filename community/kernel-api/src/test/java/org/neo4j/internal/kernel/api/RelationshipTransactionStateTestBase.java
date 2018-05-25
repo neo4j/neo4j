@@ -1307,7 +1307,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         try ( Transaction tx = beginTransaction() )
         {
             try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor();
-                  PropertyCursor props = tx.cursors().allocatePropertyCursor())
+                  PropertyCursor props = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleRelationship( relationship, cursor );
                 assertTrue( cursor.next() );

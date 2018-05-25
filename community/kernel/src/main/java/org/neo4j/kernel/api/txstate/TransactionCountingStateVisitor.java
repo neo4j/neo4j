@@ -83,7 +83,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
         for ( long labelId : labelIds )
         {
             counts.incrementNodeCount( labelId, -1 );
-        };
+        }
 
         visitDegrees( node, ( type, out, in ) -> updateRelationshipsCountsFromDegrees( labelIds, type, -out, -in ) );
     }
