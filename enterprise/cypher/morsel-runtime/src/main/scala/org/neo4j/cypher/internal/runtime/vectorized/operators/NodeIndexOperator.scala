@@ -22,39 +22,19 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.internal.kernel.api.NodeIndexCursor
 
-class AllNodeScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int) extends Operator {
+abstract class NodeIndexOperator[CURSOR <: NodeIndexCursor](longsPerRow: Int, refsPerRow: Int, offset: Int) extends Operator {
 
-  override def operate(message: Message,
-                       data: Morsel,
-                       context: QueryContext,
-                       state: QueryState): Continuation = {
-    var nodeCursor: NodeCursor = null
-    var iterationState: Iteration = null
-    val read = context.transactionalContext.dataRead
-
-    message match {
-      case StartLeafLoop(is) =>
-        nodeCursor = context.transactionalContext.cursors.allocateNodeCursor()
-        read.allNodesScan(nodeCursor)
-        iterationState = is
-      case ContinueLoopWith(ContinueWithSource(cursor, is)) =>
-        nodeCursor = cursor.asInstanceOf[NodeCursor]
-        iterationState = is
-      case _ => throw new IllegalStateException()
-    }
-
+  protected def iterate(data: Morsel, cursor: CURSOR, iterationState: Iteration): Continuation = {
     val longs: Array[Long] = data.longs
-
     var processedRows = 0
     var hasMore = true
     while (processedRows < data.validRows && hasMore) {
-      hasMore = nodeCursor.next()
+      hasMore = cursor.next()
       if (hasMore) {
-        longs(processedRows * longsPerRow + offset) = nodeCursor.nodeReference()
+        longs(processedRows * longsPerRow + offset) = cursor.nodeReference()
         processedRows += 1
       }
     }
@@ -62,15 +42,12 @@ class AllNodeScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int) extend
     data.validRows = processedRows
 
     if (hasMore)
-      ContinueWithSource(nodeCursor, iterationState)
+      ContinueWithSource(cursor, iterationState)
     else {
-      if (nodeCursor != null) {
-        nodeCursor.close()
-        nodeCursor = null
+      if (cursor != null) {
+        cursor.close()
       }
       EndOfLoop(iterationState)
     }
   }
-
-  override def addDependency(pipeline: Pipeline): Dependency = NoDependencies
 }
