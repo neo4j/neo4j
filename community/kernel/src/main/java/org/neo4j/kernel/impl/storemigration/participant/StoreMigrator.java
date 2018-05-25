@@ -616,6 +616,12 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         }
 
         @Override
+        protected void read( RecordNodeCursor cursor, long id )
+        {
+            cursor.single( id );
+        }
+
+        @Override
         protected void visitRecord( RecordNodeCursor record, InputEntityVisitor visitor )
         {
             visitor.id( record.nodeReference() );
@@ -629,6 +635,12 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         RelationshipRecordChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration )
         {
             super( storageReader.allocateRelationshipScanCursor(), storageReader, requiresPropertyMigration );
+        }
+
+        @Override
+        protected void read( StorageRelationshipScanCursor cursor, long id )
+        {
+            cursor.single( id );
         }
 
         @Override

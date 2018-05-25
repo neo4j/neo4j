@@ -19,8 +19,6 @@
  */
 package org.neo4j.storageengine.api;
 
-import java.util.function.LongPredicate;
-
 import org.neo4j.kernel.impl.newapi.RelationshipDirection;
 
 public interface StorageRelationshipTraversalCursor extends StorageRelationshipCursor
@@ -28,8 +26,6 @@ public interface StorageRelationshipTraversalCursor extends StorageRelationshipC
     long neighbourNodeReference();
 
     long originNodeReference();
-
-    boolean next( LongPredicate filter );
 
     void init( long nodeReference, long reference, RelationshipDirection filterDirection, int filterType );
 }

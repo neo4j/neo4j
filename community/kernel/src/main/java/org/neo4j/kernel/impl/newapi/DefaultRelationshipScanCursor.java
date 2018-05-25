@@ -73,7 +73,14 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
             return true;
         }
 
-        return storeCursor.next( isDeleted );
+        while ( storeCursor.next() )
+        {
+            if ( !isDeleted.test( storeCursor.relationshipReference() ) )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

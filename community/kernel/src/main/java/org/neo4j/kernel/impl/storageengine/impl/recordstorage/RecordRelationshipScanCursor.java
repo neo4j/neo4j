@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
-import java.util.function.LongPredicate;
-
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -39,7 +37,7 @@ class RecordRelationshipScanCursor extends RecordRelationshipCursor implements S
 
     RecordRelationshipScanCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore )
     {
-        super( relationshipStore, groupStore );
+        super( relationshipStore );
     }
 
     @Override
@@ -79,7 +77,7 @@ class RecordRelationshipScanCursor extends RecordRelationshipCursor implements S
     }
 
     @Override
-    public boolean next( LongPredicate filter )
+    public boolean next()
     {
         if ( next == NO_ID )
         {
@@ -89,12 +87,7 @@ class RecordRelationshipScanCursor extends RecordRelationshipCursor implements S
 
         do
         {
-            if ( filter.test( next ) )
-            {
-                next++;
-                setInUse( false );
-            }
-            else if ( nextStoreReference == next )
+            if ( nextStoreReference == next )
             {
                 relationshipAdvance( this, pageCursor );
                 next++;

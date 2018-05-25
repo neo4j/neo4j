@@ -176,7 +176,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
 
             if ( filterState == FilterState.NOT_INITIALIZED && filterStore )
             {
-                storeCursor.next( Predicates.alwaysFalseLong );
+                storeCursor.next();
                 setupFilterState();
             }
 
@@ -198,7 +198,15 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
             return true;
         }
 
-        return storeCursor.next( ref -> ( filterStore && !correctTypeAndDirection() ) || isDeleted.test( ref ) );
+        while ( storeCursor.next() )
+        {
+            boolean skip = (filterStore && !correctTypeAndDirection()) || isDeleted.test( storeCursor.relationshipReference() );
+            if ( !skip )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void setupFilterState()
@@ -245,7 +253,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     {
         if ( filterState == FilterState.NOT_INITIALIZED )
         {
-            storeCursor.next( Predicates.alwaysFalseLong );
+            storeCursor.next();
             setupFilterState();
         }
 

@@ -67,6 +67,12 @@ public class StoreScanChunkIT
         }
 
         @Override
+        protected void read( StorageNodeCursor cursor, long id )
+        {
+            cursor.single( id );
+        }
+
+        @Override
         void visitRecord( StorageNodeCursor record, InputEntityVisitor visitor )
         {
             // empty

@@ -21,20 +21,33 @@ package org.neo4j.storageengine.api;
 
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 
+/**
+ * Shared interface between the two {@link StorageRelationshipScanCursor} and {@link StorageRelationshipTraversalCursor}.
+ */
 public interface StorageRelationshipCursor extends RelationshipVisitor<RuntimeException>, StorageEntityCursor
 {
+    /**
+     * @return reference to the relationship this cursor is placed at.
+     */
     long relationshipReference();
 
+    /**
+     * @return relationship type of the relationship this cursor is placed at.
+     */
     int type();
 
+    /**
+     * @return source node of the relationship this cursor is placed at.
+     */
     long sourceNodeReference();
 
+    /**
+     * @return target node of the relationship this cursor is placed at.
+     */
     long targetNodeReference();
 
-    // used to visit transaction state
+    /**
+     * Used to visit transaction state, for simplifying implementation of higher-level cursor that consider transaction-state.
+     */
     void visit( long relationshipId, int typeId, long startNodeId, long endNodeId );
-
-    void reset();
-
-    void release();
 }

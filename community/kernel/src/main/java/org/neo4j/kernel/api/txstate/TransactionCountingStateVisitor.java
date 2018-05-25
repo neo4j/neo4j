@@ -35,7 +35,6 @@ import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
-import static org.eclipse.collections.impl.block.factory.primitive.LongPredicates.alwaysFalse;
 import static org.neo4j.kernel.api.StatementConstants.ANY_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.ANY_RELATIONSHIP_TYPE;
 
@@ -71,7 +70,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     {
         counts.incrementNodeCount( ANY_LABEL, -1 );
         nodeCursor.single( id );
-        if ( nodeCursor.next( alwaysFalse() ) )
+        if ( nodeCursor.next() )
         {
             decrementCountForLabelsAndRelationships( nodeCursor );
         }
@@ -137,7 +136,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
             // the relationship changes will compensate for what happens during the transaction
 
             nodeCursor.single( id );
-            if ( nodeCursor.next( alwaysFalse() ) )
+            if ( nodeCursor.next() )
             {
                 visitDegrees( nodeCursor, ( type, out, in ) ->
                 {
@@ -191,7 +190,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
         else
         {
             nodeCursor.single( nodeId );
-            if ( nodeCursor.next( alwaysFalse() ) )
+            if ( nodeCursor.next() )
             {
                 long[] labels = nodeCursor.labels();
                 LongDiffSets labelDiff = txState.getNodeState( nodeId ).labelDiffSets();

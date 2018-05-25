@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.coreapi;
 import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.impl.block.factory.primitive.IntPredicates;
-import org.eclipse.collections.impl.block.factory.primitive.LongPredicates;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 import java.util.ArrayList;
@@ -59,7 +57,6 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.toIntExact;
-import static org.eclipse.collections.impl.block.factory.primitive.LongPredicates.alwaysFalse;
 
 /**
  * Transform for {@link org.neo4j.storageengine.api.txstate.ReadableTransactionState} to make it accessible as {@link TransactionData}.
@@ -206,10 +203,10 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             state.addedAndRemovedNodes().getRemoved().each( nodeId ->
             {
                 node.single( nodeId );
-                if ( node.next( alwaysFalse() ) )
+                if ( node.next() )
                 {
                     properties.init( node.propertiesReference() );
-                    while ( properties.next( IntPredicates.alwaysFalse() ) )
+                    while ( properties.next() )
                     {
                         try
                         {
@@ -239,10 +236,10 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             {
                 Relationship relationshipProxy = relationship( relId );
                 relationship.single( relId );
-                if ( relationship.next( alwaysFalse() ) )
+                if ( relationship.next() )
                 {
                     properties.init( relationship.propertiesReference() );
-                    while ( properties.next( IntPredicates.alwaysFalse() ) )
+                    while ( properties.next() )
                     {
                         try
                         {
@@ -377,7 +374,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         }
 
         node.single( nodeState.getId() );
-        if ( !node.next( alwaysFalse() ) )
+        if ( !node.next() )
         {
             return Values.NO_VALUE;
         }
@@ -388,7 +385,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     private Value committedValue( StoragePropertyCursor properties, long propertiesReference, int propertyKey )
     {
         properties.init( propertiesReference );
-        while ( properties.next( IntPredicates.alwaysFalse() ) )
+        while ( properties.next() )
         {
             if ( properties.propertyKey() == propertyKey )
             {
@@ -407,7 +404,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         }
 
         relationship.single( relState.getId() );
-        if ( !relationship.next( LongPredicates.alwaysFalse() ) )
+        if ( !relationship.next() )
         {
             return Values.NO_VALUE;
         }

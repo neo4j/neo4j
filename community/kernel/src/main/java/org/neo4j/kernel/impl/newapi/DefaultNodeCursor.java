@@ -188,7 +188,14 @@ class DefaultNodeCursor implements NodeCursor
             return true;
         }
 
-        return storeCursor.next( isDeleted );
+        while ( storeCursor.next() )
+        {
+            if ( !hasChanges || !read.txState().nodeIsDeletedInThisTx( storeCursor.nodeReference() ) )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
-import java.util.function.LongPredicate;
-
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.newapi.RelationshipDirection;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
@@ -52,12 +50,6 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     {
         super( relationshipStore );
         this.group = new RecordRelationshipGroupCursor( relationshipStore, groupStore );
-    }
-
-    @Override
-    public void single( long reference )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
     }
 
     @Override
@@ -141,11 +133,11 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     }
 
     @Override
-    public boolean next( LongPredicate filter )
+    public boolean next()
     {
         if ( hasBufferedData() )
         {   // We have buffered data, iterate the chain of buffered records
-            return nextBuffered( filter );
+            return nextBuffered();
         }
 
         do
@@ -163,27 +155,24 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
 
             relationshipFull( this, next, pageCursor );
             computeNext();
-        } while ( !inUse() || filter.test( getId() ) );
+        } while ( !inUse() );
 
         return true;
     }
 
-    private boolean nextBuffered( LongPredicate isDeleted )
+    private boolean nextBuffered()
     {
-        do
+        buffer = buffer.next;
+        if ( !hasBufferedData() )
         {
-            buffer = buffer.next;
-            if ( !hasBufferedData() )
-            {
-                reset();
-                return false;
-            }
-            else
-            {
-                // Copy buffer data to self
-                copyFromBuffer();
-            }
-        } while ( isDeleted.test( getId() ) );
+            reset();
+            return false;
+        }
+        else
+        {
+            // Copy buffer data to self
+            copyFromBuffer();
+        }
 
         return true;
     }

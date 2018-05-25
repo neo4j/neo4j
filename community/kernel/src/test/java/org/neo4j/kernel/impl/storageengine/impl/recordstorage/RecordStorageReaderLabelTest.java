@@ -27,7 +27,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 
-import static org.eclipse.collections.impl.block.factory.primitive.LongPredicates.alwaysFalse;
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -62,7 +61,7 @@ public class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
         // THEN
         StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor();
         nodeCursor.single( nodeId );
-        assertTrue( nodeCursor.next( alwaysFalse() ) );
+        assertTrue( nodeCursor.next() );
         assertEquals( newSetWith( labelId1, labelId2 ), newSetWith( nodeCursor.labels() ) );
     }
 

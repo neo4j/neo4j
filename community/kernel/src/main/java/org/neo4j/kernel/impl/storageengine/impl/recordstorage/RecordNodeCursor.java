@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
-import java.util.function.LongPredicate;
-
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -134,7 +132,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     }
 
     @Override
-    public boolean next( LongPredicate filter )
+    public boolean next()
     {
         if ( next == NO_ID )
         {
@@ -144,12 +142,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
 
         do
         {
-            if ( filter.test( next ) )
-            {
-                next++;
-                setInUse( false );
-            }
-            else if ( nextStoreReference == next )
+            if ( nextStoreReference == next )
             {
                 nodeAdvance( this, pageCursor );
                 next++;
