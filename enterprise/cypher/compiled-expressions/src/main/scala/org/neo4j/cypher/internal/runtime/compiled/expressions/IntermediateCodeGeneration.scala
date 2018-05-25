@@ -111,6 +111,12 @@ object IntermediateCodeGeneration {
         case _ => None
       }
 
+    case Ands(exprs) =>
+      val compiled = exprs.flatMap(compile).toIndexedSeq
+      //we bail if some of the expressions weren't compiled
+      if (compiled.size < exprs.size) None
+      else  Some(invokeStatic(method[CypherBoolean, Value, Array[AnyValue]]("and"), arrayOf(compiled:_*)))
+
     //data access
     case Parameter(name, _) =>
       Some(invoke(load("params"), method[MapValue, AnyValue, String]("get"), constantJavaValue(name)))
