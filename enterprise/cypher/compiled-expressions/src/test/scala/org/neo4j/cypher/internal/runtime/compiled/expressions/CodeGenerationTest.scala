@@ -28,7 +28,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.values.storable.Values._
 import org.neo4j.values.storable.{DoubleValue, Values}
-import org.neo4j.values.virtual.VirtualValues.{EMPTY_MAP, map}
+import org.neo4j.values.virtual.VirtualValues
+import org.neo4j.values.virtual.VirtualValues.{EMPTY_MAP, list, map}
 import org.opencypher.v9_0.ast.AstConstructionTestSupport
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.symbols
@@ -94,6 +95,20 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     // Then
     compiled.compute(ctx, tx, map(Array("a", "b"), Array(longValue(42), NO_VALUE))) should equal(NO_VALUE)
     compiled.compute(ctx, tx, map(Array("a", "b"), Array(NO_VALUE, longValue(42)))) should equal(NO_VALUE)
+  }
+
+  test("add arrays") {
+    // Given
+    val expression = add(parameter("a"), parameter("b"))
+
+    // When
+    val compiled = compile(expression)
+
+    // Then
+    compiled.compute(ctx, tx, map(Array("a", "b"),
+                                  Array(longArray(Array(42, 43)),
+                                        longArray(Array(44, 45))))) should
+      equal(list(longValue(42), longValue(43), longValue(44), longValue(45)))
   }
 
   test("subtract function") {

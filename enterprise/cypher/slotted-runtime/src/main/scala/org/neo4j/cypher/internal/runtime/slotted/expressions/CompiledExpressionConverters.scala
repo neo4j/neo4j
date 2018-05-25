@@ -72,9 +72,6 @@ case class CompileWrappingExpression(ce: CompiledExpression, legacy: Expression)
 }
 
 
-}
-
-
 
 
 
