@@ -103,7 +103,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     @Override
     public BoundedIterable<Long> newAllEntriesReader()
     {
-        BoundedIterable<Long>[] entries = instanceSelector.instancesAs( new BoundedIterable[INSTANCE_COUNT], IndexAccessor::newAllEntriesReader );
+        BoundedIterable[] entries = instanceSelector.instancesAs( new BoundedIterable[INSTANCE_COUNT], IndexAccessor::newAllEntriesReader );
         return new BoundedIterable<Long>()
         {
             @Override
@@ -149,8 +149,9 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     @Override
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
-        return concatResourceIterators(
-                iterator( instanceSelector.instancesAs( new ResourceIterator[INSTANCE_COUNT], accessor -> accessor.snapshotFiles() ) ) );
+        ResourceIterator[] items = instanceSelector.instancesAs( new ResourceIterator[INSTANCE_COUNT], IndexAccessor::snapshotFiles );
+        Iterator iterator = iterator( items );
+        return concatResourceIterators( iterator );
     }
 
     @Override
