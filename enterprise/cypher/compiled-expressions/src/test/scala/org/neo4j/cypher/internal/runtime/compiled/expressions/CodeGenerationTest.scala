@@ -167,7 +167,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("True") {
     // Given
-    val expression = True()(pos)
+    val expression = t()
 
     // When
     val compiled = compile(expression)
@@ -178,13 +178,25 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("False") {
     // Given
-    val expression = False()(pos)
+    val expression = f()
 
     // When
     val compiled = compile(expression)
 
     // Then
     compiled.compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
+  }
+
+
+  test("or") {
+    // Given
+    val expression = or(t(), t())
+
+    // When
+    val compiled = compile(expression)
+
+    // Then
+    compiled.compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
   }
 
   private def compile(e: Expression) =
@@ -205,4 +217,10 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   private def parameter(key: String) = Parameter(key, symbols.CTAny)(pos)
 
   private def noValue = Null()(pos)
+
+  private def t() = True()(pos)
+
+  private def f() = False()(pos)
+
+  private def or(l: Expression, r: Expression) = Or(l, r)(pos)
 }

@@ -41,6 +41,7 @@ object IntermediateCodeGeneration {
 
   def compile(expression: Expression): Option[IntermediateRepresentation] = expression match {
 
+    //functions
     case c: FunctionInvocation if c.function == functions.Round =>
       compile(c.args.head) match {
         case Some(arg) =>
@@ -58,6 +59,7 @@ object IntermediateCodeGeneration {
     case c: FunctionInvocation if c.function == functions.Rand =>
       Some(invokeStatic(method[ExpressionMethods, DoubleValue]("rand")))
 
+    //math
     case Multiply(lhs, rhs) =>
       (compile(lhs), compile(rhs)) match {
         case (Some(l), Some(r)) =>
@@ -80,15 +82,26 @@ object IntermediateCodeGeneration {
         case _ => None
       }
 
-    case Parameter(name, _) =>
-      Some(invoke(load("params"), method[MapValue, AnyValue, String]("get"), constantJavaValue(name)))
 
+    //literals
     case d: DoubleLiteral => Some(float(doubleValue(d.value)))
     case i: IntegerLiteral => Some(integer(longValue(i.value)))
     case s: expressions.StringLiteral => Some(string(Values.stringValue(s.value)))
     case _: Null => Some(noValue)
     case _: True => Some(truthy)
     case _: False => Some(falsy)
+
+    //boolean operators
+    case Or(lhs, rhs) =>
+      (compile(lhs), compile(rhs)) match {
+        case (Some(l), Some(r)) =>
+          Some(invokeStatic(method[ExpressionMethods, AnyValue, AnyValue, AnyValue]("or"), l, r))
+        case _ => None
+      }
+
+    //data access
+    case Parameter(name, _) =>
+      Some(invoke(load("params"), method[MapValue, AnyValue, String]("get"), constantJavaValue(name)))
 
     case NodeProperty(offset, token, _) =>
       Some(invokeStatic(method[ExpressionMethods, Value, Transaction, Long, Int]("nodeProperty"),
