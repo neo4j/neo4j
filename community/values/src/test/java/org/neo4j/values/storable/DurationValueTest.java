@@ -40,6 +40,7 @@ import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.helpers.collection.Pair.pair;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateValue.date;
@@ -378,6 +379,39 @@ public class DurationValueTest
         assertNotEquals(
                 duration( 1, 0, 0, 0 ).computeHash(),
                 duration( 0, 1, 0, 0 ).computeHash() );
+    }
+
+    @Test
+    public void shouldThrowExceptionOnAddOverflow()
+    {
+        DurationValue duration1 = duration( 0, 0, Long.MAX_VALUE, 500_000_000 );
+        DurationValue duration2 = duration( 0, 0, 1, 0 );
+        DurationValue duration3 = duration( 0, 0, 0, 500_000_000 );
+        assertThrows( ArithmeticException.class, () -> duration1.add( duration2 ) );
+        assertThrows( ArithmeticException.class, () -> duration1.add( duration3 ) );
+    }
+
+    @Test
+    public void shouldThrowExceptionOnSubtractOverflow()
+    {
+        DurationValue duration1 = duration( 0, 0, Long.MIN_VALUE, 0 );
+        DurationValue duration2 = duration( 0, 0, 1, 0 );
+        assertThrows( ArithmeticException.class, () -> duration1.sub( duration2 ) );
+    }
+
+    @Test
+    public void shouldThrowExceptionOnMultiplyOverflow()
+    {
+        DurationValue duration = duration( 0, 0, Long.MAX_VALUE, 0 );
+        assertThrows( ArithmeticException.class, () -> duration.mul( Values.intValue( 2 ) ) );
+        assertThrows( ArithmeticException.class, () -> duration.mul( Values.floatValue( 2 ) ) );
+    }
+
+    @Test
+    public void shouldThrowExceptionOnDivideOverflow()
+    {
+        DurationValue duration = duration( 0, 0, Long.MAX_VALUE, 0 );
+        assertThrows( ArithmeticException.class, () -> duration.div( Values.floatValue( 0.5f ) ) );
     }
 
     @Test

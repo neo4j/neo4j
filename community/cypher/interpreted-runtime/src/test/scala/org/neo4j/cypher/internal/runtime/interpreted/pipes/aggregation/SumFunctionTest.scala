@@ -58,6 +58,13 @@ class SumFunctionTest extends CypherFunSuite with AggregateTest {
     }
   }
 
+  test("catches duration overflows") {
+    val durationValue = DurationValue.duration(0, 0, Long.MaxValue, 0)
+    an[ArithmeticException] shouldBe thrownBy{
+      aggregateOn(durationValue, durationValue)
+    }
+  }
+
   test("singleValueOfDecimalReturnsDecimal") {
     val result = aggregateOn(doubleValue(1.0d))
 
