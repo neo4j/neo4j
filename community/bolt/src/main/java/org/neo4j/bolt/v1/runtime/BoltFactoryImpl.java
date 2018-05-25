@@ -24,61 +24,34 @@ import java.time.Duration;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.security.auth.Authentication;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.udc.UsageData;
 
-public class BoltFactoryImpl extends LifecycleAdapter implements BoltFactory
+public class BoltFactoryImpl implements BoltFactory
 {
-    private final GraphDatabaseAPI gds;
+    private final GraphDatabaseAPI db;
     private final UsageData usageData;
+    private final AvailabilityGuard availabilityGuard;
     private final LogService logging;
     private final Authentication authentication;
     private final BoltConnectionTracker connectionTracker;
-    private final ThreadToStatementContextBridge txBridge;
     private final Config config;
 
-    private QueryExecutionEngine queryExecutionEngine;
-    private GraphDatabaseQueryService queryService;
-    private AvailabilityGuard availabilityGuard;
-
-    public BoltFactoryImpl( GraphDatabaseAPI gds, UsageData usageData, LogService logging,
-            ThreadToStatementContextBridge txBridge, Authentication authentication,
-            BoltConnectionTracker connectionTracker, Config config )
+    public BoltFactoryImpl( GraphDatabaseAPI db, UsageData usageData, AvailabilityGuard availabilityGuard,
+            Authentication authentication, BoltConnectionTracker connectionTracker, Config config, LogService logging )
     {
-        this.gds = gds;
+        this.db = db;
         this.usageData = usageData;
+        this.availabilityGuard = availabilityGuard;
         this.logging = logging;
-        this.txBridge = txBridge;
         this.authentication = authentication;
         this.connectionTracker = connectionTracker;
         this.config = config;
-    }
-
-    @Override
-    public void start()
-    {
-        DependencyResolver dependencyResolver = gds.getDependencyResolver();
-        queryExecutionEngine = dependencyResolver.resolveDependency( QueryExecutionEngine.class );
-        queryService = dependencyResolver.resolveDependency( GraphDatabaseQueryService.class );
-        availabilityGuard = dependencyResolver.resolveDependency( AvailabilityGuard.class );
-    }
-
-    @Override
-    public void stop()
-    {
-        queryExecutionEngine = null;
-        queryService = null;
-        availabilityGuard = null;
     }
 
     @Override
@@ -95,7 +68,6 @@ public class BoltFactoryImpl extends LifecycleAdapter implements BoltFactory
         long bookmarkReadyTimeout = config.get( GraphDatabaseSettings.bookmark_ready_timeout ).toMillis();
         Duration txAwaitDuration = Duration.ofMillis( bookmarkReadyTimeout );
 
-        return new TransactionStateMachineSPI( gds, txBridge, queryExecutionEngine,
-                availabilityGuard, queryService, txAwaitDuration, clock );
+        return new TransactionStateMachineSPI( db, availabilityGuard, txAwaitDuration, clock );
     }
 }

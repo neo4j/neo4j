@@ -124,17 +124,21 @@ public class TransactionStateMachineSPITest
     private static TransactionStateMachineSPI createTxSpi( Supplier<TransactionIdStore> txIdStore, Duration txAwaitDuration,
             AvailabilityGuard availabilityGuard, Clock clock )
     {
-        GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
-        DependencyResolver dependencyResolver = mock( DependencyResolver.class );
-        GraphDatabaseAPI db = mock( GraphDatabaseAPI.class );
+        QueryExecutionEngine queryExecutionEngine = mock( QueryExecutionEngine.class );
 
-        when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
+        DependencyResolver dependencyResolver = mock( DependencyResolver.class );
+        ThreadToStatementContextBridge bridge = new ThreadToStatementContextBridge( availabilityGuard );
+        when( dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( bridge );
+        when( dependencyResolver.resolveDependency( QueryExecutionEngine.class ) ).thenReturn( queryExecutionEngine );
+        when( dependencyResolver.provideDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
+
+        GraphDatabaseAPI db = mock( GraphDatabaseAPI.class );
         when( db.getDependencyResolver() ).thenReturn( dependencyResolver );
 
-        when(dependencyResolver.provideDependency( TransactionIdStore.class )).thenReturn( txIdStore );
+        GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
+        when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
+        when( dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
 
-        return new TransactionStateMachineSPI( db, new ThreadToStatementContextBridge( mock( AvailabilityGuard.class ) ),
-                mock( QueryExecutionEngine.class ), availabilityGuard, queryService, txAwaitDuration,
-                clock );
+        return new TransactionStateMachineSPI( db, availabilityGuard, txAwaitDuration, clock );
     }
 }
