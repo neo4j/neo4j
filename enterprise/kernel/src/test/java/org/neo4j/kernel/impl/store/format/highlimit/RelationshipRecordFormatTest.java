@@ -65,6 +65,12 @@ public class RelationshipRecordFormatTest
             assertEquals( 0, pageId );
             return true;
         }
+
+        @Override
+        public boolean next()
+        {
+            return true;
+        }
     };
 
     @Test

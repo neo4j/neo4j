@@ -1081,7 +1081,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             long pageId = cursor.getCurrentPageId();
             if ( offset >= storeFile.pageSize() || pageId < 0 )
             {
-                if ( !cursor.next( pageId + 1 ) )
+                if ( !cursor.next() )
                 {
                     verifyAfterNotRead( record, mode );
                     return;
