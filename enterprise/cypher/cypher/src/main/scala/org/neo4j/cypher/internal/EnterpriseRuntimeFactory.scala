@@ -31,19 +31,29 @@ object EnterpriseRuntimeFactory {
 
   def getRuntime(cypherRuntime: CypherRuntimeOption, useErrorsOverWarnings: Boolean): TemporaryRuntime[EnterpriseRuntimeContext] = cypherRuntime match {
     case CypherRuntimeOption.interpreted =>
-      new FallbackRuntime(List(new ProcedureCallOrSchemaCommandRuntime(), new InterpretedRuntime(true)))
+      new FallbackRuntime(
+        List(new ProcedureCallOrSchemaCommandRuntime(), new InterpretedRuntime(true)),
+        CypherRuntimeOption.interpreted)
 
     case CypherRuntimeOption.slotted =>
-      new FallbackRuntime(List(new ProcedureCallOrSchemaCommandRuntime(), new SlottedRuntime()))
+      new FallbackRuntime(
+        List(new ProcedureCallOrSchemaCommandRuntime(), new SlottedRuntime()),
+        CypherRuntimeOption.slotted)
 
     case CypherRuntimeOption.compiled =>
-      new FallbackRuntime(List(new ProcedureCallOrSchemaCommandRuntime(), new CompiledRuntime(), new SlottedRuntime()))
+      new FallbackRuntime(
+        List(new ProcedureCallOrSchemaCommandRuntime(), new CompiledRuntime(), new SlottedRuntime()),
+        CypherRuntimeOption.compiled)
 
     case CypherRuntimeOption.morsel =>
-      new FallbackRuntime(List(new ProcedureCallOrSchemaCommandRuntime(), new MorselRuntime(), new CompiledRuntime(), new SlottedRuntime()))
+      new FallbackRuntime(
+        List(new ProcedureCallOrSchemaCommandRuntime(), new MorselRuntime(), new CompiledRuntime(), new SlottedRuntime()),
+        CypherRuntimeOption.morsel)
 
     case CypherRuntimeOption.default =>
-      new FallbackRuntime(List(new ProcedureCallOrSchemaCommandRuntime(), new CompiledRuntime(), new SlottedRuntime()))
+      new FallbackRuntime(
+        List(new ProcedureCallOrSchemaCommandRuntime(), new CompiledRuntime(), new SlottedRuntime()),
+        CypherRuntimeOption.default)
 
     case runtime if useErrorsOverWarnings =>
       throw new InvalidArgumentException(s"This version of Neo4j does not support requested runtime: $runtime")

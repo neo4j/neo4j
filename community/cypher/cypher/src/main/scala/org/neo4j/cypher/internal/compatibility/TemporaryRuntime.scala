@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility
 
+import org.neo4j.cypher.CypherRuntime
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
@@ -28,14 +29,21 @@ trait TemporaryRuntime[-CONTEXT <: CommunityRuntimeContext] {
   def googldiblopp(logicalPlan: LogicalPlanState, context: CONTEXT): ExecutionPlan
 }
 
-class FallbackRuntime[CONTEXT <: CommunityRuntimeContext](runtimes: Seq[TemporaryRuntime[CONTEXT]]) extends TemporaryRuntime[CONTEXT] {
+class FallbackRuntime[CONTEXT <: CommunityRuntimeContext](runtimes: Seq[TemporaryRuntime[CONTEXT]],
+                                                          requestedRuntime: CypherRuntime) extends TemporaryRuntime[CONTEXT] {
+
+  val cantCompile = new CantCompileQueryException(s"This version of Neo4j does not support requested runtime: ${requestedRuntime.name}")
+
   override def googldiblopp(logicalPlan: LogicalPlanState, context: CONTEXT): ExecutionPlan = {
-    for (runtime <- runtimes)
+    var executionPlan: Option[ExecutionPlan] = None
+    for (runtime <- runtimes if executionPlan.isEmpty) {
       try {
-        runtime.googldiblopp(logicalPlan, context)
+        executionPlan = Some(runtime.googldiblopp(logicalPlan, context))
       } catch {
-        case _: Throwable => // ignore
+        case _: Throwable => // ignore and try next runtime
       }
-    throw new CantCompileQueryException("It just doesn't work no matter how we try!")
+    }
+
+    executionPlan.orElse(throw cantCompile).get
   }
 }

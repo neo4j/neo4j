@@ -25,17 +25,18 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.CommunityRuntimeCont
 import org.opencypher.v9_0.util.InvalidArgumentException
 
 object CommunityRuntimeFactory {
+
   def getRuntime(cypherRuntime: CypherRuntimeOption, useErrorsOverWarnings: Boolean): TemporaryRuntime[CommunityRuntimeContext] = cypherRuntime match {
     case CypherRuntimeOption.interpreted =>
-      new FallbackRuntime(List(new ProcedureCallOrSchemaCommandRuntime(), new InterpretedRuntime(false)))
+      new FallbackRuntime(List(new ProcedureCallOrSchemaCommandRuntime(), new InterpretedRuntime(false)), CypherRuntimeOption.interpreted)
 
     case CypherRuntimeOption.default =>
-      new FallbackRuntime(List(new ProcedureCallOrSchemaCommandRuntime(), new InterpretedRuntime(false)))
+      new FallbackRuntime(List(new ProcedureCallOrSchemaCommandRuntime(), new InterpretedRuntime(false)), CypherRuntimeOption.default)
 
     case x if useErrorsOverWarnings =>
       throw new InvalidArgumentException(s"This version of Neo4j does not support requested runtime: $x")
 
     case _  =>
-      new FallbackRuntime(List(new ProcedureCallOrSchemaCommandRuntime(), new InterpretedRuntime(true)))
+      new FallbackRuntime(List(new ProcedureCallOrSchemaCommandRuntime(), new InterpretedRuntime(true)), CypherRuntime.default)
   }
 }
