@@ -197,6 +197,13 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(or(t, noValue)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
   }
 
+  test("ors") {
+    compile(ors(f, f, f, f, f, f, t, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
+    compile(ors(f, f, f, f, f, f, f, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
+    compile(ors(f, f, f, f, noValue, t, f, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(ors(f, f, f, t, noValue, t, f, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
+  }
+
   test("and") {
     compile(and(t, t)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
     compile(and(f, t)).compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
@@ -231,6 +238,8 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   private def f = False()(pos)
 
   private def or(l: Expression, r: Expression) = Or(l, r)(pos)
+
+  private def ors(es: Expression*) = Ors(es.toSet)(pos)
 
   private def and(l: Expression, r: Expression) = And(l, r)(pos)
 }
