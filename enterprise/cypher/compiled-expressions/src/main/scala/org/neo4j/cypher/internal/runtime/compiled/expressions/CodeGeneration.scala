@@ -46,6 +46,11 @@ import org.opencypher.v9_0.frontend.helpers.using
   */
 object CodeGeneration {
 
+  private val VALUES = classOf[Values]
+  private val VALUE = classOf[Value]
+  private val LONG = classOf[LongValue]
+  private val DOUBLE = classOf[DoubleValue]
+  private val TEXT = classOf[TextValue]
   private val PACKAGE_NAME = "org.neo4j.cypher.internal.compiler.v3_5.generated"
   private val INTERFACE = classOf[CompiledExpression]
   private val COMPUTE_METHOD = method(classOf[AnyValue], "compute",
@@ -77,27 +82,24 @@ object CodeGeneration {
     case Load(variable) => block.load(variable)
     //Values.longValue(value)
     case Integer(value) =>
-      invoke(methodReference(classOf[Values],
-                             classOf[LongValue],
+      invoke(methodReference(VALUES, LONG,
                              "longValue", classOf[Long]), Expression.constant(value.longValue()))
     //Values.doubleValue(value)
     case Float(value) =>
-      invoke(methodReference(classOf[Values],
-                             classOf[DoubleValue],
+      invoke(methodReference(VALUES, DOUBLE,
                              "doubleValue", classOf[Double]), Expression.constant(value.doubleValue()))
     //Values.stringValue(value)
     case StringLiteral(value) =>
-      invoke(methodReference(classOf[Values],
-                             classOf[TextValue],
+      invoke(methodReference(VALUES, TEXT,
                              "stringValue", classOf[String]), Expression.constant(value.stringValue()))
     //loads a given constant
     case Constant(value) => Expression.constant(value)
     //Values.NO_VALUE
-    case NULL => getStatic(staticField(classOf[Values], classOf[Value], "NO_VALUE"))
+    case NULL => getStatic(staticField(VALUES, VALUE, "NO_VALUE"))
     //Values.TRUE
-    case TRUE => getStatic(staticField(classOf[Values], classOf[BooleanValue], "TRUE"))
+    case TRUE => getStatic(staticField(VALUES, classOf[BooleanValue], "TRUE"))
     //Values.FALSE
-    case FALSE => getStatic(staticField(classOf[Values], classOf[BooleanValue], "FALSE"))
+    case FALSE => getStatic(staticField(VALUES, classOf[BooleanValue], "FALSE"))
   }
 
 
