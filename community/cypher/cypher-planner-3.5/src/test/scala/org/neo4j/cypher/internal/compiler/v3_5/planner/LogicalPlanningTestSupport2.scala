@@ -42,6 +42,8 @@ import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.opencypher.v9_0.util.{Cardinality, PropertyKeyId}
 import org.opencypher.v9_0.expressions.PatternExpression
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, ProduceResult}
+
+import org.neo4j.csv.reader.Configuration
 import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 import org.opencypher.v9_0.parser.CypherParser
@@ -69,6 +71,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     errorIfShortestPathFallbackUsedAtRuntime = false,
     errorIfShortestPathHasCommonNodesAtRuntime = true,
     legacyCsvQuoteEscaping = false,
+    csvBufferSize = Configuration.DEFAULT_BUFFER_SIZE_4MB,
     nonIndexedLabelWarningThreshold = 10000,
     planWithMinimumCardinalityEstimates = true
   )

@@ -24,11 +24,13 @@ import java.net.URL
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
+import org.neo4j.csv.reader.Configuration
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
+  private val DEFAULT_BUFFER_SIZE = Configuration.DEFAULT_BUFFER_SIZE_4MB
 
   var resourceUnderTest: LoadCsvPeriodicCommitObserver = _
   var transactionalContext: QueryTransactionalContext = _
@@ -37,12 +39,12 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   test("should not trigger tx restart until after first batch has been processed") {
     // Given
-    when(resource.getCsvIterator(ArgumentMatchers.eq(url), any(), anyBoolean(), anyBoolean())).thenReturn(Iterator(
+    when(resource.getCsvIterator(ArgumentMatchers.eq(url), any(), anyBoolean(), anyInt(), anyBoolean())).thenReturn(Iterator(
       Array("Row1"),
       Array("Row2")))
 
     // When
-    val iterator = resourceUnderTest.getCsvIterator(url, None, legacyCsvQuoteEscaping = false)
+    val iterator = resourceUnderTest.getCsvIterator(url, None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE)
 
     // Then
     iterator.next() should equal(Array("Row1"))
@@ -53,14 +55,15 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   test("headers should not count") {
     // given
-    when(resource.getCsvIterator(ArgumentMatchers.eq(url), any(), anyBoolean(), ArgumentMatchers.eq(true))).thenReturn(Iterator(
+    when(resource.getCsvIterator(ArgumentMatchers.eq(url), any(), anyBoolean(), anyInt(), ArgumentMatchers.eq(true))).thenReturn(Iterator(
       Array("header"),
       Array("Row1"),
       Array("Row2"),
       Array("Row3")))
 
     // when
-    val iterator = resourceUnderTest.getCsvIterator(url, fieldTerminator = None, legacyCsvQuoteEscaping = false, headers = true)
+    val iterator = resourceUnderTest.getCsvIterator(url, fieldTerminator = None, legacyCsvQuoteEscaping = false,
+                                                    DEFAULT_BUFFER_SIZE, headers = true)
     verify(transactionalContext, never()).commitAndRestartTx()
 
     iterator.next() should equal(Array("header"))
@@ -78,11 +81,13 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   test("multiple iterators are still handled correctly only commit when the first iterator advances") {
     // Given
-    when(resource.getCsvIterator(ArgumentMatchers.eq(url), any(), anyBoolean(), anyBoolean())).
+    when(resource.getCsvIterator(ArgumentMatchers.eq(url), any(), anyBoolean(), anyInt(), anyBoolean())).
       thenReturn(Iterator(Array("outer1"),Array("outer2"))).
       thenReturn(Iterator(Array("inner1"),Array("inner2"),Array("inner3"),Array("inner4")))
-    val iterator1 = resourceUnderTest.getCsvIterator(url, fieldTerminator = None, legacyCsvQuoteEscaping = false, headers = false)
-    val iterator2 = resourceUnderTest.getCsvIterator(url, fieldTerminator = None, legacyCsvQuoteEscaping = false, headers = false)
+    val iterator1 = resourceUnderTest.getCsvIterator(url, fieldTerminator = None, legacyCsvQuoteEscaping = false,
+                                                     DEFAULT_BUFFER_SIZE)
+    val iterator2 = resourceUnderTest.getCsvIterator(url, fieldTerminator = None, legacyCsvQuoteEscaping = false,
+                                                     DEFAULT_BUFFER_SIZE)
 
     // When
     iterator1.next()
@@ -98,10 +103,11 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   test("if a custom separator is specified it should be passed to the wrapped resource") {
     // Given
-    resourceUnderTest.getCsvIterator(url, Some(";"), legacyCsvQuoteEscaping = false, headers = false)
+    resourceUnderTest.getCsvIterator(url, Some(";"), legacyCsvQuoteEscaping = false,  DEFAULT_BUFFER_SIZE)
 
     // When
-    verify(resource, times(1)).getCsvIterator(url, Some(";"), false, false)
+    verify(resource, times(1)).getCsvIterator(url, Some(";"), legacyCsvQuoteEscaping = false,
+                                              DEFAULT_BUFFER_SIZE, false)
   }
 
   override protected def beforeEach() {

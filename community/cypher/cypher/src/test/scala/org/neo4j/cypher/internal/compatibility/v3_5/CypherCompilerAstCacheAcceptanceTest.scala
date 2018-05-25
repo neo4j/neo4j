@@ -27,6 +27,9 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{CommunityRuntimeBui
 import org.neo4j.cypher.internal.compiler.v3_5._
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.{CacheTracer, PreParsedQuery}
+
+import org.neo4j.cypher.internal.PreParsedQuery
+import org.neo4j.cypher.internal.runtime.interpreted.{CSVResources, TransactionalContextWrapper}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.logging.AssertableLogProvider.inLog
@@ -53,6 +56,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       errorIfShortestPathFallbackUsedAtRuntime = false,
       errorIfShortestPathHasCommonNodesAtRuntime = true,
       legacyCsvQuoteEscaping = false,
+      csvBufferSize = CSVResources.DEFAULT_BUFFER_SIZE,
       nonIndexedLabelWarningThreshold = 10000L,
       planWithMinimumCardinalityEstimates = true
     )

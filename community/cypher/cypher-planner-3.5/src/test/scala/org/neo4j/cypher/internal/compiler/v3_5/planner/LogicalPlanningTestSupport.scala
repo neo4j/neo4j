@@ -48,6 +48,8 @@ import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.opencypher.v9_0.util.{Cardinality, LabelId, PropertyKeyId, RelTypeId}
 import org.opencypher.v9_0.rewriting.RewriterStepSequencer.newPlain
 
+import org.neo4j.csv.reader.Configuration
+
 import scala.collection.mutable
 
 trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
@@ -162,7 +164,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, new StubSolveds, new StubCardinalities, idGen), metrics, semanticTable,
       strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness),
       notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
-      legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, config = QueryPlannerConfiguration.default, costComparisonListener = devNullListener)
+      legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, csvBufferSize = config.csvBufferSize,
+                           config = QueryPlannerConfiguration.default, costComparisonListener = devNullListener)
   }
 
   def newMockedStatistics = mock[GraphStatistics]
@@ -228,6 +231,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     errorIfShortestPathFallbackUsedAtRuntime = false,
     errorIfShortestPathHasCommonNodesAtRuntime = true,
     legacyCsvQuoteEscaping = false,
+    csvBufferSize = Configuration.DEFAULT_BUFFER_SIZE_4MB,
     nonIndexedLabelWarningThreshold = 10000,
     planWithMinimumCardinalityEstimates = true
   )

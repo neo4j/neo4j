@@ -26,8 +26,10 @@ import org.neo4j.cypher.internal.compiler.{v3_3 => compilerV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression => ExpressionV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3, SemanticDirection => SemanticDirectionV3_3, ast => astV3_3, symbols => symbolsV3_3}
 import org.neo4j.cypher.internal.frontend.{v3_3 => frontendV3_3}
+import org.neo4j.cypher.internal.ir.v3_5.CSVFormat
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_5 => irv3_5}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.opencypher.v9_0.util.Rewritable.RewritableAny
 import org.opencypher.v9_0.util.attribution.{IdGen, SequentialIdGen}
 import org.opencypher.v9_0.util.symbols.CypherType
@@ -64,6 +66,14 @@ object LogicalPlanConverter {
 
     private val rewriter: RewriterWithArgs = bottomUpWithArgs { before =>
       val rewritten = RewriterWithArgs.lift {
+        case ( plan:plansV3_3.LoadCSV, children: Seq[AnyRef]) =>
+          plansv3_5.LoadCSV(children(0).asInstanceOf[LogicalPlanv3_5],
+                            children(1).asInstanceOf[Expressionv3_5],
+                            children(2).asInstanceOf[String],
+                            children(3).asInstanceOf[CSVFormat],
+                            children(4).asInstanceOf[Option[String]],
+                            children(5).asInstanceOf[Boolean],
+                            CSVResources.DEFAULT_BUFFER_SIZE)(ids.convertId(plan))
         case (plan: plansV3_3.Argument, children: Seq[AnyRef]) =>
           plansv3_5.Argument(children.head.asInstanceOf[Set[String]])(ids.convertId(plan))
         case (plan: plansV3_3.SingleRow, _) =>
