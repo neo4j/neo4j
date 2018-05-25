@@ -958,7 +958,11 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         return approximate( months / divisor, days / divisor, seconds / divisor, nanos / divisor );
     }
 
-    private static DurationValue approximate( double months, double days, double seconds, double nanos )
+    /**
+     * Returns an approximation of the provided values by rounding to whole units and recalculating
+     * the remainder into the smaller units.
+     */
+    public static DurationValue approximate( double months, double days, double seconds, double nanos )
     {
         long m = safeDoubleToLong( months );
         days += AVG_DAYS_PER_MONTH * (months - m);

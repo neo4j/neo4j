@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
+import java.time.temporal.ChronoUnit
+
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -37,27 +39,35 @@ class AvgFunction(val value: Expression)
 
   private var count: Long = 0L
 
+  private var monthsRunningAvg = 0d
+  private var daysRunningAvg = 0d
+  private var secondsRunningAvg = 0d
+  private var nanosRunningAvg = 0d
+
   override def result(state: QueryState): Value = aggregatingType match {
     case None =>
       Values.NO_VALUE
     case Some(AggregatingNumbers) =>
       sumNumber
     case Some(AggregatingDurations) =>
-      sumDuration.div(Values.longValue(count))
+      DurationValue.approximate(monthsRunningAvg, daysRunningAvg, secondsRunningAvg, nanosRunningAvg)
   }
 
   override def apply(data: ExecutionContext, state: QueryState) {
     val vl = value(data, state)
     actOnNumberOrDuration(vl,
       number => {
-      count += 1
+        count += 1
         val diff = number.minus(sumNumber)
         val next = diff.dividedBy(count.toDouble)
         sumNumber = overflowSafeAdd(sumNumber, next)
       },
       duration => {
         count += 1
-        sumDuration = sumDuration.add(duration)
+        monthsRunningAvg += (duration.get(ChronoUnit.MONTHS).asInstanceOf[Double] - monthsRunningAvg) / count
+        daysRunningAvg += (duration.get(ChronoUnit.DAYS).asInstanceOf[Double] - daysRunningAvg) / count
+        secondsRunningAvg += (duration.get(ChronoUnit.SECONDS).asInstanceOf[Double] - secondsRunningAvg) / count
+        nanosRunningAvg += (duration.get(ChronoUnit.NANOS).asInstanceOf[Double] - nanosRunningAvg) / count
       }
     )
   }
