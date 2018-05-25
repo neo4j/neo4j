@@ -28,10 +28,11 @@ import java.util.concurrent.Executor;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 
-public class BoltMessageLogging
+public class BoltMessageLogging extends LifecycleAdapter
 {
     private final BoltMessageLog boltMessageLog;
 
@@ -43,11 +44,6 @@ public class BoltMessageLogging
     public static BoltMessageLogging create( FileSystemAbstraction fs, JobScheduler scheduler, Config config, Log log )
     {
         return new BoltMessageLogging( createBoltMessageLog( fs, scheduler, config, log ) );
-    }
-
-    public static BoltMessageLogging none()
-    {
-        return new BoltMessageLogging( null );
     }
 
     public BoltMessageLogger newLogger( Channel channel )
@@ -74,5 +70,14 @@ public class BoltMessageLogging
             }
         }
         return null;
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        if ( boltMessageLog != null )
+        {
+            boltMessageLog.shutdown();
+        }
     }
 }

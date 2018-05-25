@@ -144,6 +144,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         InternalLoggerFactory.setDefaultFactory( new Netty4LoggerFactory( logService.getInternalLogProvider() ) );
         BoltMessageLogging boltLogging = BoltMessageLogging.create( dependencies.fileSystem(), scheduler, config, log );
+        life.add( boltLogging );
 
         Authentication authentication = authentication( dependencies.authManager(), dependencies.userManagerSupplier() );
 

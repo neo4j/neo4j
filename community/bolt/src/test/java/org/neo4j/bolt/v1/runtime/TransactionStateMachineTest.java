@@ -46,7 +46,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -567,19 +566,6 @@ public class TransactionStateMachineTest
     private MapValue map( Object... keyValues )
     {
         return ValueUtils.asMapValue( MapUtil.map( keyValues ) );
-    }
-
-    private static TransactionStateMachineSPI newFailingTransactionStateMachineSPI( Status failureStatus ) throws KernelException
-    {
-        TransactionStateMachine.BoltResultHandle resultHandle = newResultHandle();
-        TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
-
-        KernelTransaction kernelTransaction = mock( KernelTransaction.class );
-        when( stateMachineSPI.beginTransaction( any() ) ).thenReturn( kernelTransaction );
-        when( stateMachineSPI.executeQuery( any(), any(), anyString(), any() ) ).thenReturn( resultHandle );
-        when( stateMachineSPI.executeQuery( any(), any(), eq( "FAIL" ), any() ) ).thenThrow( new TransactionTerminatedException( failureStatus ) );
-
-        return stateMachineSPI;
     }
 
     private static TransactionStateMachineSPI newTransactionStateMachineSPI( KernelTransaction transaction ) throws KernelException
