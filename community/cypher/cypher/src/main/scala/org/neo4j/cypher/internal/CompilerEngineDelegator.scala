@@ -87,6 +87,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
                               errorIfShortestPathFallbackUsedAtRuntime: Boolean,
                               errorIfShortestPathHasCommonNodesAtRuntime: Boolean,
                               legacyCsvQuoteEscaping: Boolean,
+                              csvBufferSize: Int,
                               planWithMinimumCardinalityEstimates: Boolean,
                               logProvider: LogProvider,
                               compatibilityFactory: CompatibilityFactory) {
@@ -104,6 +105,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     errorIfShortestPathFallbackUsedAtRuntime = errorIfShortestPathFallbackUsedAtRuntime,
     errorIfShortestPathHasCommonNodesAtRuntime = errorIfShortestPathHasCommonNodesAtRuntime,
     legacyCsvQuoteEscaping = legacyCsvQuoteEscaping,
+    csvBufferSize = csvBufferSize,
     nonIndexedLabelWarningThreshold = getNonIndexedLabelWarningThreshold,
     planWithMinimumCardinalityEstimates = planWithMinimumCardinalityEstimates
   )

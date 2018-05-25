@@ -17,25 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.v3_3.logical.plans
+package org.neo4j.csv.reader;
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
-import org.neo4j.cypher.internal.ir.v3_3._
-
-case class LoadCSV(source: LogicalPlan,
-                   url: Expression,
-                   variableName: String,
-                   format: CSVFormat,
-                   fieldTerminator: Option[String],
-                   legacyCsvQuoteEscaping: Boolean,
-                   csvBufferSize: Int
-                  )(val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
-
-  override val availableSymbols = source.availableSymbols + variableName
-
-  override def lhs = Some(source)
-
-  override def rhs = None
-
-  override def strictness: StrictnessMode = source.strictness
+public class BufferOverflowException extends IllegalStateException
+{
+    public BufferOverflowException( String msg )
+    {
+        super( msg );
+    }
 }
