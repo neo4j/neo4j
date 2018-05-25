@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
-import org.eclipse.collections.api.iterator.IntIterator;
-import org.eclipse.collections.api.iterator.LongIterator;
-
 import java.util.Iterator;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -39,8 +36,6 @@ import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
@@ -48,15 +43,11 @@ import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
-import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
-import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -67,14 +58,10 @@ import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.EntityType;
-import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
@@ -83,10 +70,8 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
-import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.lang.Math.toIntExact;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.DegreeCounter.countRelationshipsInGroup;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
@@ -107,7 +92,6 @@ public class RecordStorageReader implements StorageReader
     private final PropertyStore propertyStore;
     private final SchemaStorage schemaStorage;
     private final CountsTracker counts;
-    private final PropertyLoader propertyLoader;
     private final SchemaCache schemaCache;
 
     private final Supplier<IndexReaderFactory> indexReaderFactorySupplier;
@@ -125,7 +109,7 @@ public class RecordStorageReader implements StorageReader
             RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage, NeoStores neoStores,
             IndexingService indexService, SchemaCache schemaCache,
             Supplier<IndexReaderFactory> indexReaderFactory,
-            Supplier<LabelScanReader> labelScanReaderSupplier, LockService lockService,
+            Supplier<LabelScanReader> labelScanReaderSupplier,
             RecordStorageCommandCreationContext commandCreationContext )
     {
         this.neoStores = neoStores;
@@ -139,7 +123,6 @@ public class RecordStorageReader implements StorageReader
         this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
         this.propertyStore = neoStores.getPropertyStore();
         this.counts = neoStores.getCounts();
-        this.propertyLoader = new PropertyLoader( neoStores );
         this.schemaCache = schemaCache;
         this.indexReaderFactorySupplier = indexReaderFactory;
         this.labelScanReaderSupplier = labelScanReaderSupplier;
@@ -153,7 +136,7 @@ public class RecordStorageReader implements StorageReader
      */
     public static RecordStorageReader newReader( NeoStores stores )
     {
-        return new RecordStorageReader( null, null, null, null, stores, null, null, null, null, null, null );
+        return new RecordStorageReader( null, null, null, null, stores, null, null, null, null, null );
     }
 
     @Override
@@ -261,17 +244,6 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public long indexGetCommittedId( IndexDescriptor index ) throws SchemaRuleNotFoundException
-    {
-        StoreIndexDescriptor storeIndexDescriptor = getStoreIndexDescriptor( index );
-        if ( storeIndexDescriptor == null )
-        {
-            throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, index.schema() );
-        }
-        return storeIndexDescriptor.getId();
-    }
-
-    @Override
     public InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getIndexProxy( descriptor.schema() ).getState();
@@ -371,24 +343,6 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public IntIterator graphGetPropertyKeys()
-    {
-        return new PropertyKeyIdIterator( propertyLoader.graphLoadProperties( new IteratingPropertyReceiver<>() ) );
-    }
-
-    @Override
-    public Object graphGetProperty( int propertyKeyId )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Iterator<StorageProperty> graphGetAllProperties()
-    {
-        return propertyLoader.graphLoadProperties( new IteratingPropertyReceiver<>() );
-    }
-
-    @Override
     public Iterator<Token> propertyKeyGetAllTokens()
     {
         return propertyKeyTokenHolder.getAllTokens().iterator();
@@ -449,18 +403,6 @@ public class RecordStorageReader implements StorageReader
             throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
         }
         relationshipVisitor.visit( relationshipId, record.getType(), record.getFirstNode(), record.getSecondNode() );
-    }
-
-    @Override
-    public LongIterator nodesGetAll()
-    {
-        return new AllNodeIterator( nodeStore );
-    }
-
-    @Override
-    public RelationshipIterator relationshipsGetAll()
-    {
-        return new AllRelationshipIterator( relationshipStore );
     }
 
     @Override
@@ -566,34 +508,9 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public int degreeRelationshipsInGroup( long nodeId, long groupId,
-            Direction direction, Integer relType )
-    {
-        RelationshipRecord relationshipRecord = relationshipStore.newRecord();
-        RelationshipGroupRecord relationshipGroupRecord = relationshipGroupStore.newRecord();
-        return countRelationshipsInGroup( groupId, direction, relType, nodeId, relationshipRecord,
-                relationshipGroupRecord, recordCursors );
-    }
-
-    @Override
     public <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StorageReader,T> factory )
     {
         return schemaCache.getOrCreateDependantState( type, factory, this );
-    }
-
-    private Direction directionOf( long nodeId, long relationshipId, long startNode, long endNode )
-    {
-        if ( startNode == nodeId )
-        {
-            return endNode == nodeId ? Direction.BOTH : Direction.OUTGOING;
-        }
-        if ( endNode == nodeId )
-        {
-            return Direction.INCOMING;
-        }
-        throw new InvalidRecordException(
-                "Node " + nodeId + " neither start nor end node of relationship " + relationshipId +
-                        " with startNode:" + startNode + " and endNode:" + endNode );
     }
 
     @Override
@@ -662,7 +579,7 @@ public class RecordStorageReader implements StorageReader
         return indexReaderFactory().newUnCachedReader( descriptor );
     }
 
-    public RecordStorageCommandCreationContext getCommandCreationContext()
+    RecordStorageCommandCreationContext getCommandCreationContext()
     {
         return commandCreationContext;
     }

@@ -125,6 +125,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 {
     private static final boolean takePropertyReadLocks = FeatureToggles.flag(
             RecordStorageEngine.class, "propertyReadLocks", false );
+    static
+    {
+        if ( takePropertyReadLocks )
+        {
+            throw new UnsupportedOperationException( "Acquiring property read locks are no longer supported" );
+        }
+    }
 
     private final IndexingService indexingService;
     private final NeoStores neoStores;
@@ -241,10 +248,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public StorageReader newReader()
     {
         Supplier<IndexReaderFactory> indexReaderFactory = () -> new IndexReaderFactory.Caching( indexingService );
-        LockService lockService = takePropertyReadLocks ? this.lockService : NO_LOCK_SERVICE;
-
         return new RecordStorageReader( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder, schemaStorage, neoStores, indexingService,
-                schemaCache, indexReaderFactory, labelScanStore::newReader, lockService, allocateCommandCreationContext() );
+                schemaCache, indexReaderFactory, labelScanStore::newReader, allocateCommandCreationContext() );
     }
 
     @Override
