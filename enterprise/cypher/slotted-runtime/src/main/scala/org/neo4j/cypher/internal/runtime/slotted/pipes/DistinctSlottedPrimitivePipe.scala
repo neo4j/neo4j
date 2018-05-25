@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.runtime.slotted.helpers.SlottedPipeBuilderUtils
+import org.neo4j.cypher.internal.runtime.{LongArraySet, PrefetchingIterator}
 import org.opencypher.v9_0.util.attribution.Id
-import org.neo4j.cypher.internal.runtime.{LongArrayHashSet, PrefetchingIterator}
 
 import scala.collection.immutable
 
@@ -55,7 +55,7 @@ case class DistinctSlottedPrimitivePipe(source: Pipe,
   protected def internalCreateResults(input: Iterator[ExecutionContext],
                                       state: QueryState): Iterator[ExecutionContext] = {
     new PrefetchingIterator[ExecutionContext] {
-      private val seen = new LongArrayHashSet(32, projections.size)
+      private val seen = new LongArraySet(32, projections.size)
 
       override def produceNext(): Option[ExecutionContext] = {
         while (input.nonEmpty) {
