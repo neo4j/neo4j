@@ -57,6 +57,8 @@ object CompiledExpressionConverters extends ExpressionConverter {
       ce.compute(ctx, state.query.transactionalContext.transaction,  state.params)
 
     override def symbolTableDependencies: Set[String] = legacy.symbolTableDependencies
+
+    override def toString: String = legacy.toString
   }
 
 

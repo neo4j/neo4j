@@ -70,9 +70,13 @@ public final class CypherFunctions
         throw new UnsupportedOperationException( "Do not instantiate" );
     }
 
-    public static DoubleValue sin( AnyValue in )
+    public static Value sin( AnyValue in )
     {
-        if ( in instanceof NumberValue )
+        if ( in == NO_VALUE )
+        {
+            return NO_VALUE;
+        }
+        else if ( in instanceof NumberValue )
         {
             return doubleValue( Math.sin( ((NumberValue) in).doubleValue() ) );
         }
@@ -82,9 +86,13 @@ public final class CypherFunctions
         }
     }
 
-    public static DoubleValue round( AnyValue in )
+    public static Value round( AnyValue in )
     {
-        if ( in instanceof NumberValue )
+        if ( in == NO_VALUE )
+        {
+            return NO_VALUE;
+        }
+        else if ( in instanceof NumberValue )
         {
             return doubleValue( Math.round( ((NumberValue) in).doubleValue() ) );
         }
