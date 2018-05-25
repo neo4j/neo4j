@@ -35,17 +35,29 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.SequenceValue;
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.ArrayValue;
+import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.PathValue;
+import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -57,6 +69,8 @@ import static org.neo4j.values.storable.Values.stringValue;
  */
 public final class ExpressionMethods
 {
+    private static final BooleanMapper BOOLEAN_MAPPER = new BooleanMapper();
+
     private ExpressionMethods()
     {
         throw new UnsupportedOperationException( "Do not instantiate" );
@@ -126,12 +140,12 @@ public final class ExpressionMethods
                 // exclude them
                 if ( !(rhs instanceof TemporalValue || rhs instanceof DurationValue || rhs instanceof PointValue) )
                 {
-                    return stringValue( ((TextValue) lhs).stringValue() + ((Value) rhs).prettyPrint());
+                    return stringValue( ((TextValue) lhs).stringValue() + ((Value) rhs).prettyPrint() );
                 }
                 else
                 {
                     //TODO this seems wrong but it is what we currently do in compiled runtime
-                    return stringValue(((TextValue) lhs).stringValue() + String.valueOf( rhs ));
+                    return stringValue( ((TextValue) lhs).stringValue() + String.valueOf( rhs ) );
                 }
             }
         }
@@ -143,12 +157,12 @@ public final class ExpressionMethods
                 // exclude them
                 if ( !(lhs instanceof TemporalValue || lhs instanceof DurationValue || lhs instanceof PointValue) )
                 {
-                    return stringValue( ((Value) lhs).prettyPrint() + ((TextValue) rhs).stringValue());
+                    return stringValue( ((Value) lhs).prettyPrint() + ((TextValue) rhs).stringValue() );
                 }
                 else
                 {
                     //TODO this seems wrong but it is what we currently do in compiled runtime
-                    return stringValue(String.valueOf( lhs ) + ((TextValue) rhs).stringValue() );
+                    return stringValue( String.valueOf( lhs ) + ((TextValue) rhs).stringValue() );
                 }
             }
         }
@@ -174,7 +188,7 @@ public final class ExpressionMethods
         }
 
         throw new CypherTypeException(
-                String.format( "Don't know how to add `%s` and `%s`", lhs, rhs), null );
+                String.format( "Don't know how to add `%s` and `%s`", lhs, rhs ), null );
     }
 
     public static AnyValue subtract( AnyValue lhs, AnyValue rhs )
@@ -205,7 +219,7 @@ public final class ExpressionMethods
         }
 
         throw new CypherTypeException(
-                String.format( "Don't know how to subtract `%s` and `%s`", lhs, rhs), null );
+                String.format( "Don't know how to subtract `%s` and `%s`", lhs, rhs ), null );
     }
 
     public static AnyValue multiply( AnyValue lhs, AnyValue rhs )
@@ -234,9 +248,10 @@ public final class ExpressionMethods
             }
         }
         throw new CypherTypeException(
-                String.format( "Don't know how to subtract `%s` and `%s`", lhs, rhs), null );
+                String.format( "Don't know how to subtract `%s` and `%s`", lhs, rhs ), null );
     }
 
+    //data access
     public static Value nodeProperty( Transaction tx, long node, int property )
     {
         CursorFactory cursors = tx.cursors();
@@ -269,7 +284,132 @@ public final class ExpressionMethods
         }
     }
 
-    private static Value property(PropertyCursor properties, int property)
+    //boolean operations
+
+    public static Value or( AnyValue... args )
+    {
+        for ( AnyValue arg : args )
+        {
+            if ( arg == NO_VALUE )
+            {
+                return NO_VALUE;
+            }
+
+            if ( arg.map( BOOLEAN_MAPPER ) )
+            {
+                return Values.TRUE;
+            }
+        }
+        return Values.FALSE;
+    }
+
+    private static final class BooleanMapper implements ValueMapper<Boolean>
+    {
+
+        @Override
+        public Boolean mapPath( PathValue value )
+        {
+            return value.size() > 0;
+        }
+
+        @Override
+        public Boolean mapNode( VirtualNodeValue value )
+        {
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null);
+        }
+
+        @Override
+        public Boolean mapRelationship( VirtualRelationshipValue value )
+        {
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null);
+        }
+
+        @Override
+        public Boolean mapMap( MapValue value )
+        {
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null);
+        }
+
+        @Override
+        public Boolean mapNoValue()
+        {
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + NO_VALUE, null);
+        }
+
+        @Override
+        public Boolean mapSequence( SequenceValue value )
+        {
+            return value.length() > 0;
+        }
+
+        @Override
+        public Boolean mapText( TextValue value )
+        {
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null);
+        }
+
+        @Override
+        public Boolean mapBoolean( BooleanValue value )
+        {
+            return value.booleanValue();
+        }
+
+        @Override
+        public Boolean mapNumber( NumberValue value )
+        {
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null);
+
+        }
+
+        @Override
+        public Boolean mapDateTime( DateTimeValue value )
+        {
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null);
+
+        }
+
+        @Override
+        public Boolean mapLocalDateTime( LocalDateTimeValue value )
+        {
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null);
+
+        }
+
+        @Override
+        public Boolean mapDate( DateValue value )
+        {
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null);
+        }
+
+        @Override
+        public Boolean mapTime( TimeValue value )
+        {
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null);
+
+        }
+
+        @Override
+        public Boolean mapLocalTime( LocalTimeValue value )
+        {
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null);
+
+        }
+
+        @Override
+        public Boolean mapDuration( DurationValue value )
+        {
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null);
+
+        }
+
+        @Override
+        public Boolean mapPoint( PointValue value )
+        {
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null);
+        }
+    }
+
+    private static Value property( PropertyCursor properties, int property )
     {
         while ( properties.next() )
         {
