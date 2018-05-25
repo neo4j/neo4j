@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QuerySta
 import org.opencypher.v9_0.util.symbols._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
+import scala.collection.immutable
+
 class NodeHashJoinSlottedPipeTest extends CypherFunSuite {
 
   test("should support simple hash join over nodes") {
@@ -134,6 +136,48 @@ class NodeHashJoinSlottedPipeTest extends CypherFunSuite {
     result should be(empty)
     verify(right, times(1)).createResults(any())
     verifyNoMoreInteractions(right)
+  }
+
+  test("worst case scenario should not lead to stackoverflow errors") {
+    // This test case lead to stack overflow errors.
+    // It's the worst case - large inputs on both sides that have no overlap on the join column
+    val size = 10000
+    val a_b: immutable.Seq[RowL] = (0 to size) map { i =>
+      RowL(i.toLong, i.toLong)
+    }
+    val b_c: immutable.Seq[RowL] = (size+1 to size*2) map { i =>
+      RowL(i.toLong, i.toLong)
+    }
+
+    val lhs = SlotConfiguration.empty
+    lhs.newLong("a", nullable = false, CTNode)
+    lhs.newLong("b", nullable = false, CTNode)
+
+    val rhs = SlotConfiguration.empty
+    rhs.newLong("b", nullable = false, CTNode)
+    rhs.newLong("c", nullable = false, CTNode)
+
+    val output = SlotConfiguration.empty
+    output.newLong("a", nullable = false, CTNode)
+    output.newLong("b", nullable = false, CTNode)
+    output.newLong("c", nullable = false, CTNode)
+
+    val lhsPipe = mockPipeFor(lhs, a_b:_*)
+    val rhsPipe = mockPipeFor(lhs, b_c:_*)
+
+    // when
+    val result = NodeHashJoinSlottedPipe(
+      lhsOffsets = Array(0, 1),
+      rhsOffsets = Array(0, 1),
+      left = lhsPipe,
+      right = rhsPipe,
+      slots = output,
+      longsToCopy = Array((1, 2)),
+      refsToCopy = Array())().
+      createResults(QueryStateHelper.empty)
+
+    // If we got here it means we did not throw a stack overflow exception. ooo-eeh!
+    result should be(empty)
   }
 
   private val node0 = 0
