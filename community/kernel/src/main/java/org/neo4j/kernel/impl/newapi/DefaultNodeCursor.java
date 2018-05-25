@@ -46,6 +46,7 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
     private long highMark;
     private HasChanges hasChanges = HasChanges.MAYBE;
     private LongSet addedNodes;
+    private PropertyCursor propertyCursor;
 
     private final DefaultCursors pool;
 
@@ -161,7 +162,16 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
     @Override
     public boolean hasProperties()
     {
-        return nextProp != NO_ID;
+        if ( read.hasTxStateWithChanges() )
+        {
+            PropertyCursor cursor = propertyCursor();
+            properties( cursor );
+            return cursor.next();
+        }
+        else
+        {
+            return nextProp != NO_ID;
+        }
     }
 
     @Override
@@ -275,6 +285,11 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
             hasChanges = HasChanges.MAYBE;
             addedNodes = LongSets.immutable.empty();
             reset();
+            if ( propertyCursor != null )
+            {
+                propertyCursor.close();
+                propertyCursor = null;
+            }
 
             pool.accept( this );
         }
@@ -332,6 +347,15 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
             labelCursor = read.labelCursor();
         }
         return labelCursor;
+    }
+
+    private PropertyCursor propertyCursor()
+    {
+        if ( propertyCursor == null )
+        {
+            propertyCursor = pool.allocatePropertyCursor();
+        }
+        return propertyCursor;
     }
 
     private boolean isSingle()
