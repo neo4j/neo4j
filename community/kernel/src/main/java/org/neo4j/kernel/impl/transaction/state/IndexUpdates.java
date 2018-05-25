@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 
@@ -35,11 +36,13 @@ public interface IndexUpdates extends Iterable<IndexEntryUpdate<SchemaDescriptor
 {
     /**
      * Feeds updates raw material in the form of node/property commands, to create updates from.
-     *
-     * @param propCommands {@link PropertyCommand} grouped by node id.
+     * @param propCommandsByNodeId {@link PropertyCommand} grouped by node id.
+     * @param propCommandsByRelationshipId
      * @param nodeCommands {@link NodeCommand} by node id.
+     * @param relationshipCommandPrimitiveLongObjectMap
      */
-    void feed( LongObjectMap<List<PropertyCommand>> propCommands, LongObjectMap<NodeCommand> nodeCommands );
+    void feed( LongObjectMap<List<PropertyCommand>> propCommandsByNodeId, LongObjectMap<List<PropertyCommand>> propCommandsByRelationshipId,
+            LongObjectMap<NodeCommand> nodeCommands, LongObjectMap<Command.RelationshipCommand> relationshipCommandPrimitiveLongObjectMap );
 
     boolean hasUpdates();
 }

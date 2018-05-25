@@ -42,14 +42,14 @@ public class PropertyPhysicalToLogicalConverter
     }
 
     /**
-     * Converts physical changes to PropertyRecords for a node into logical updates
+     * Converts physical changes to PropertyRecords for a entity into logical updates
      */
-    public void convertPropertyRecord( long nodeId, Iterable<PropertyRecordChange> changes,
+    public void convertPropertyRecord( long entityId, Iterable<PropertyRecordChange> changes,
             EntityUpdates.Builder properties )
     {
         MutableIntObjectMap<PropertyBlock> beforeMap = new IntObjectHashMap<>();
         MutableIntObjectMap<PropertyBlock> afterMap = new IntObjectHashMap<>();
-        mapBlocks( nodeId, changes, beforeMap, afterMap );
+        mapBlocks( entityId, changes, beforeMap, afterMap );
 
         final IntIterator uniqueIntIterator = uniqueIntIterator( beforeMap, afterMap );
         while ( uniqueIntIterator.hasNext() )
@@ -95,21 +95,21 @@ public class PropertyPhysicalToLogicalConverter
         return keys.intIterator();
     }
 
-    private void mapBlocks( long nodeId, Iterable<PropertyRecordChange> changes,
+    private void mapBlocks( long entityId, Iterable<PropertyRecordChange> changes,
             MutableIntObjectMap<PropertyBlock> beforeMap, MutableIntObjectMap<PropertyBlock> afterMap )
     {
         for ( PropertyRecordChange change : changes )
         {
-            equalCheck( change.getBefore().getNodeId(), nodeId );
-            equalCheck( change.getAfter().getNodeId(), nodeId );
+            equalCheck( change.getBefore().getEntityId(), entityId );
+            equalCheck( change.getAfter().getEntityId(), entityId );
             mapBlocks( change.getBefore(), beforeMap );
             mapBlocks( change.getAfter(), afterMap );
         }
     }
 
-    private void equalCheck( long nodeId, long expectedNodeId )
+    private void equalCheck( long entityId, long expectedEntityId )
     {
-        assert nodeId == expectedNodeId : "Node id differs expected " + expectedNodeId + ", but was " + nodeId;
+        assert entityId == expectedEntityId : "Entity id differs expected " + expectedEntityId + ", but was " + entityId;
     }
 
     private void mapBlocks( PropertyRecord record, MutableIntObjectMap<PropertyBlock> blocks )

@@ -908,8 +908,7 @@ public class NeoStoreTransactionApplierTest
     private BatchTransactionApplier newIndexApplier()
     {
         return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer,
-                indexUpdatesSync, nodeStore,
-                new PropertyPhysicalToLogicalConverter( propertyStore ) );
+                indexUpdatesSync, nodeStore, neoStores.getRelationshipStore(), new PropertyPhysicalToLogicalConverter( propertyStore ) );
     }
 
     // SCHEMA RULE COMMAND
