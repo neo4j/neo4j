@@ -87,6 +87,16 @@ public final class CypherMath
             return ((NumberValue) lhs).plus( (NumberValue) rhs );
         }
         //List addition
+        //arrays are same as lists when it comes to addition
+        if ( lhs instanceof ArrayValue )
+        {
+            lhs = VirtualValues.fromArray( (ArrayValue) lhs );
+        }
+        if ( rhs instanceof ArrayValue )
+        {
+            rhs = VirtualValues.fromArray( (ArrayValue) rhs );
+        }
+
         boolean lhsIsListValue = lhs instanceof ListValue;
         if ( lhsIsListValue && rhs instanceof ListValue )
         {
