@@ -73,7 +73,7 @@ class MergeSortOperatorTest extends CypherFunSuite {
     val columnOrdering = Seq(Ascending(slot))
     val info = new SlotConfiguration(mutable.Map("apa" -> slot), 1, 0)
 
-    val long1 = Array[Long](1, 2, 3, 4, 5, 6, 7, 8, 9)
+    val long1 = Array[Long](1, 2, 3, 4, 6, 7, 8, 9)
     val long2 = Array[Long](5, 7, 9, 14, 86, 92)
     val in1 = new Morsel(long1, Array[AnyValue](), long1.length)
     val in2 = new Morsel(long2, Array[AnyValue](), long2.length)
@@ -84,14 +84,109 @@ class MergeSortOperatorTest extends CypherFunSuite {
     val continuation1 = operator.operate(StartLoopWithEagerData(Array(in1, in2), new Iteration(None)), out, null, null )
     continuation1 shouldBe a[ContinueWithSource[_]]
     out.longs should equal(Array(1, 2, 3, 4, 5))
+    out.validRows shouldBe 5
 
     val continuation2 = operator.operate(ContinueLoopWith(continuation1), out, null, null )
     continuation2 shouldBe a[ContinueWithSource[_]]
-    out.longs should equal(Array(5, 6, 7, 7, 8))
+    out.longs should equal(Array(6, 7, 7, 8, 9))
+    out.validRows shouldBe 5
 
     val continuation3 = operator.operate(ContinueLoopWith(continuation2), out, null, null )
     continuation3 shouldBe an[EndOfLoop]
-    out.longs should equal(Array(9, 9, 14,86,92))
+    out.longs.take(4) should equal(Array(9, 14, 86,92))
+    out.validRows shouldBe 4
+  }
+
+  test("sort two morsels with additional column") {
+    val numberOfLongs = 2
+
+    val slot1 = LongSlot(0, nullable = false, CTNode)
+    val slot2 = LongSlot(1, nullable = false, CTNode)
+    val columnOrdering = Seq(Ascending(slot1))
+    val info = new SlotConfiguration(mutable.Map("apa1" -> slot1, "apa2" -> slot2), numberOfLongs, 0)
+
+    val long1 = Array[Long](
+      1, 101,
+      3, 103,
+      5, 105,
+      7, 107,
+      9, 109
+    )
+    val long2 = Array[Long](
+      2, 102,
+      4, 104,
+      6, 106,
+      8, 108,
+      10, 110
+    )
+    val in1 = new Morsel(long1, Array[AnyValue](), long1.length / numberOfLongs)
+    val in2 = new Morsel(long2, Array[AnyValue](), long2.length / numberOfLongs)
+
+    val outputRowsPerMorsel = 4
+    val out = new Morsel(new Array[Long](numberOfLongs * outputRowsPerMorsel), Array[AnyValue](), outputRowsPerMorsel)
+
+    val operator = new MergeSortOperator(columnOrdering, info)
+
+    val continuation1 = operator.operate(StartLoopWithEagerData(Array(in1, in2), new Iteration(None)), out, null, null )
+    continuation1 shouldBe a[ContinueWithSource[_]]
+    out.longs should equal(Array(1, 101, 2, 102, 3, 103, 4, 104))
+    out.validRows shouldBe outputRowsPerMorsel
+
+    val continuation2 = operator.operate(ContinueLoopWith(continuation1), out, null, null )
+    continuation1 shouldBe a[ContinueWithSource[_]]
+    out.longs should equal(Array(5, 105, 6, 106, 7, 107, 8, 108))
+    out.validRows shouldBe outputRowsPerMorsel
+
+    val continuation3 = operator.operate(ContinueLoopWith(continuation2), out, null, null )
+    continuation3 shouldBe an[EndOfLoop]
+    out.longs.take(4) should equal(Array(9, 109, 10, 110))
+    out.validRows shouldBe 2
+  }
+
+  test("sort two morsels by two columns") {
+    val numberOfLongs = 2
+
+    val slot1 = LongSlot(0, nullable = false, CTNode)
+    val slot2 = LongSlot(1, nullable = false, CTNode)
+    val columnOrdering = Seq(Ascending(slot1), Ascending(slot2))
+    val info = new SlotConfiguration(mutable.Map("apa1" -> slot1, "apa2" -> slot2), numberOfLongs, 0)
+
+    val long1 = Array[Long](
+      1, 101,
+      1, 102,
+      2, 202,
+      5, 501,
+      7, 701
+    )
+    val long2 = Array[Long](
+      1, 103,
+      2, 201,
+      3, 301,
+      5, 502,
+      5, 503
+    )
+    val in1 = new Morsel(long1, Array[AnyValue](), long1.length / numberOfLongs)
+    val in2 = new Morsel(long2, Array[AnyValue](), long2.length / numberOfLongs)
+
+    val outputRowsPerMorsel = 4
+    val out = new Morsel(new Array[Long](numberOfLongs * outputRowsPerMorsel), Array[AnyValue](), outputRowsPerMorsel)
+
+    val operator = new MergeSortOperator(columnOrdering, info)
+
+    val continuation1 = operator.operate(StartLoopWithEagerData(Array(in1, in2), new Iteration(None)), out, null, null )
+    continuation1 shouldBe a[ContinueWithSource[_]]
+    out.longs should equal(Array(1, 101, 1, 102, 1, 103, 2, 201))
+    out.validRows shouldBe outputRowsPerMorsel
+
+    val continuation2 = operator.operate(ContinueLoopWith(continuation1), out, null, null )
+    continuation1 shouldBe a[ContinueWithSource[_]]
+    out.longs should equal(Array(2, 202, 3, 301, 5, 501, 5, 502))
+    out.validRows shouldBe outputRowsPerMorsel
+
+    val continuation3 = operator.operate(ContinueLoopWith(continuation2), out, null, null )
+    continuation3 shouldBe an[EndOfLoop]
+    out.longs.take(4) should equal(Array(5, 503, 7, 701))
+    out.validRows shouldBe 2
   }
 
   test("top on two morsels") {
@@ -99,7 +194,7 @@ class MergeSortOperatorTest extends CypherFunSuite {
     val columnOrdering = Seq(Ascending(slot))
     val info = new SlotConfiguration(mutable.Map("apa" -> slot), 1, 0)
 
-    val long1 = Array[Long](1, 2, 3, 4, 5, 6, 7, 8, 9)
+    val long1 = Array[Long](1, 2, 3, 4, 6, 7, 8, 9)
     val long2 = Array[Long](5, 7, 9, 14, 86, 92)
     val in1 = new Morsel(long1, Array[AnyValue](), long1.length)
     val in2 = new Morsel(long2, Array[AnyValue](), long2.length)
@@ -114,7 +209,7 @@ class MergeSortOperatorTest extends CypherFunSuite {
 
     val continuation2 = operator.operate(ContinueLoopWith(continuation1), out, null, QueryState(VirtualValues.EMPTY_MAP, null) )
     continuation2 shouldBe a[EndOfLoop]
-    out.longs.take(4) should equal(Array(5, 6, 7, 7))
+    out.longs.take(4) should equal(Array(6, 7, 7, 8))
     out.validRows shouldBe 4
   }
 

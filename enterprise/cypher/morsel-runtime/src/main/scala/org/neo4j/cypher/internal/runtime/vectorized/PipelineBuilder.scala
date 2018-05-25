@@ -125,7 +125,7 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
         case Top(_, sortItems, limit) =>
           val ordering = sortItems.map(translateColumnOrder(slots, _))
           val countExpression = converters.toCommandExpression(limit)
-          val preTop = new PreTopNOperator(ordering, slots, countExpression)
+          val preTop = new PreSortOperator(ordering, slots, Some(countExpression))
           source = source.addOperator(preTop)
           new MergeSortOperator(ordering, slots, Some(countExpression))
 

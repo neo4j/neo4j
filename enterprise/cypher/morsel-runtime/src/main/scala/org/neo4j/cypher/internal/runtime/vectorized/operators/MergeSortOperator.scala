@@ -74,8 +74,7 @@ class MergeSortOperator(orderBy: Seq[ColumnOrder], slots: SlotConfiguration, cou
 
     // potentially calculate the limit
     val limit = countExpression.map { count =>
-      var readingPos = 0
-      val firstRow = new MorselExecutionContext(sortedInputs.peek().m, longCount, refCount, currentRow = readingPos)
+      val firstRow = new MorselExecutionContext(sortedInputs.peek().m, longCount, refCount, currentRow = 0)
       val queryState = new OldQueryState(context, resources = null, params = state.params)
       count(firstRow, queryState).asInstanceOf[NumberValue].longValue()
     }

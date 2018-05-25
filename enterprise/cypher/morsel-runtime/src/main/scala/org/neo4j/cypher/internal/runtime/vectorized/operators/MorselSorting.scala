@@ -30,13 +30,14 @@ import org.neo4j.cypher.internal.runtime.vectorized.Morsel
 import org.neo4j.values.AnyValue
 
 object MorselSorting {
-  def createComparator(data: Morsel, slots: SlotConfiguration)(order: ColumnOrder): Comparator[Object] = order.slot match {
+
+  def compareMorselIndexesByColumnOrder(data: Morsel, slots: SlotConfiguration)(order: ColumnOrder): Comparator[Integer] = order.slot match {
     case LongSlot(offset, _, _) =>
-      new Comparator[Object] {
-        override def compare(idx1: Object, idx2: Object): Int = {
+      new Comparator[Integer] {
+        override def compare(idx1: Integer, idx2: Integer): Int = {
           val longs = slots.numberOfLongs
-          val aIdx = longs * idx1.asInstanceOf[Int] + offset
-          val bIdx = longs * idx2.asInstanceOf[Int] + offset
+          val aIdx = longs * idx1 + offset
+          val bIdx = longs * idx2 + offset
           val aVal = data.longs(aIdx)
           val bVal = data.longs(bIdx)
           order.compareLongs(aVal, bVal)
@@ -44,11 +45,11 @@ object MorselSorting {
       }
 
     case RefSlot(offset, _, _) =>
-      new Comparator[Object] {
-        override def compare(idx1: Object, idx2: Object): Int = {
+      new Comparator[Integer] {
+        override def compare(idx1: Integer, idx2: Integer): Int = {
           val refs = slots.numberOfReferences
-          val aIdx = refs * idx1.asInstanceOf[Int] + offset
-          val bIdx = refs * idx2.asInstanceOf[Int] + offset
+          val aIdx = refs * idx1 + offset
+          val bIdx = refs * idx2 + offset
           val aVal = data.refs(aIdx)
           val bVal = data.refs(bIdx)
           order.compareValues(aVal, bVal)
@@ -56,36 +57,36 @@ object MorselSorting {
       }
   }
 
-  def createArray(data: Morsel): Array[Object] = {
+  def createMorselIndexesArray(data: Morsel): Array[Integer] = {
     val rows = data.validRows
-    val list = new Array[Object](rows)
+    val list = new Array[Integer](rows)
     var idx = 0
     while (idx < rows) {
-      list(idx) = idx.asInstanceOf[Object]
+      list(idx) = idx
       idx += 1
     }
     list
   }
 
-  def createSortedMorselData(data: Morsel, arrayToSort: Array[Object], slots: SlotConfiguration): (Array[Long], Array[AnyValue]) = {
+  def createSortedMorselData(data: Morsel, arrayToSort: Array[Integer], slots: SlotConfiguration): (Array[Long], Array[AnyValue]) = {
     val longCount = slots.numberOfLongs
     val refCount = slots.numberOfReferences
     val newLongs = new Array[Long](data.validRows * longCount)
     val newRefs = new Array[AnyValue](data.validRows * refCount)
 
-    var idx = 0
-    while (idx < data.validRows) {
-      val to = arrayToSort(idx).asInstanceOf[Int]
+    var toIndex = 0
+    while (toIndex < data.validRows) {
+      val fromIndex = arrayToSort(toIndex)
 
-      val fromLong = to * longCount
-      val fromRef = to * refCount
-      val toLong = idx * longCount
-      val toRef = idx * refCount
+      val fromLong = fromIndex * longCount
+      val fromRef = fromIndex * refCount
+      val toLong = toIndex * longCount
+      val toRef = toIndex * refCount
 
       System.arraycopy(data.longs, fromLong, newLongs, toLong, longCount)
       System.arraycopy(data.refs, fromRef, newRefs, toRef, refCount)
 
-      idx += 1
+      toIndex += 1
     }
 
     (newLongs, newRefs)
