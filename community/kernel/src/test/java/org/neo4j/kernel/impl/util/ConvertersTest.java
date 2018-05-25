@@ -134,18 +134,12 @@ public class ConvertersTest
         // with
         String full = "1234:5678:9abc:def0:1234:5678:9abc:def0";
         List<Pair<String,OptionalHostnamePort>> cases = Arrays.asList(
-                Pair.of( "::/0", new OptionalHostnamePort( "::/0", null, null ) ),
-                Pair.of( "[::1/128]:1234", new OptionalHostnamePort( "::1/128", 1234, null ) ),
-                Pair.of( "2002::/16", new OptionalHostnamePort( "2002::/16", null, null ) ),
-                Pair.of( "[2001::/32]:1234", new OptionalHostnamePort( "2001::/32", 1234, null ) ),
-                Pair.of( "::/96", new OptionalHostnamePort( "::/96", null, null ) ),
-                Pair.of( "[::/96]", new OptionalHostnamePort( "::/96", null, null ) ),
-                Pair.of( "fec0::/10", new OptionalHostnamePort( "fec0::/10", null, null ) ),
-                Pair.of( "[3FFE::/16]", new OptionalHostnamePort( "3FFE::/16", null, null ) ),
-                Pair.of( full, new OptionalHostnamePort( full, null, null ) ),
+                Pair.of( "[::1]", new OptionalHostnamePort( "::1", null, null ) ),
+                Pair.of( "[3FFe::1]", new OptionalHostnamePort( "3FFe::1", null, null ) ),
+                Pair.of( "[::1]:2", new OptionalHostnamePort( "::1", 2, 2 ) ),
                 Pair.of( "[" + full + "]", new OptionalHostnamePort( full, null, null ) ),
-                Pair.of( "[" + full + "]:5432", new OptionalHostnamePort( full, 5432, null ) ),
-                Pair.of( "[1::2]:3:4", new OptionalHostnamePort( "1::2", 3, 4 ) ) );
+                Pair.of( "[" + full + "]" + ":5432", new OptionalHostnamePort( full, 5432, 5432 ) ),
+                Pair.of( "[1::2]:3-4", new OptionalHostnamePort( "1::2", 3, 4 ) ) );
         for ( Pair<String,OptionalHostnamePort> useCase : cases )
         {
             // given
@@ -156,7 +150,7 @@ public class ConvertersTest
             OptionalHostnamePort optionalHostnamePort = toOptionalHostnamePortFromRawAddress( caseInput );
 
             // then
-            String msg = caseInput + "->" + caseOutput;
+            String msg = String.format( "\"%s\" -> %s", caseInput, caseOutput );
             assertEquals( msg, caseOutput.getHostname(), optionalHostnamePort.getHostname() );
             assertEquals( msg, caseOutput.getPort(), optionalHostnamePort.getPort() );
             assertEquals( msg, caseOutput.getUpperRangePort(), optionalHostnamePort.getUpperRangePort() );

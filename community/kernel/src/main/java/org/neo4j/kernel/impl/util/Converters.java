@@ -33,6 +33,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.Pair;
 
 import static org.neo4j.function.Predicates.not;
@@ -127,70 +128,16 @@ public class Converters
      */
     public static OptionalHostnamePort toOptionalHostnamePortFromRawAddress( String rawAddress )
     {
-        Pair<Optional<Integer>,String> firstPair = popPort( rawAddress );
-        Pair<Optional<Integer>,String> secondPair = popPort( firstPair.other() );
-
-        boolean twoPorts = secondPair.first().isPresent();
-        Integer lowerBound = null;
-        Integer upperBound = null;
-        if ( twoPorts )
-        {
-            lowerBound = secondPair.first().get();
-            upperBound = firstPair.first().get();
-        }
-        else if ( firstPair.first().isPresent() )
-        {
-            lowerBound = firstPair.first().get();
-        }
-        String address = Stream.of( secondPair.other() )
-                .map( Converters::removeIpv6Brackets )
-                .filter( not( String::isEmpty ) )
-                .findFirst()
-                .orElse( null );
-        return new OptionalHostnamePort( address, lowerBound, upperBound );
+        HostnamePort hostnamePort = new HostnamePort( rawAddress );
+        Optional<String> processedHost = Optional.ofNullable( hostnamePort.getHost() )
+                .map( str -> str.replaceAll( "\\[", "" ) )
+                .map( str -> str.replaceAll( "]", "" ) );
+        return new OptionalHostnamePort( processedHost, optionalFromZeroable( hostnamePort.getPorts()[0] ),
+                optionalFromZeroable( hostnamePort.getPorts()[1] ) );
     }
 
-    /**
-     * IPv6 addresses with ports can be wrapped in brackets. This method assumes the ports have been removed from the raw
-     * address and what remains is a IPv6 address that is wrapped in brackets. It will return the address without the brackets.
-     *
-     * @param rawAddress a potential ipv6 address within brackets. Non-ipv6 addresses will work as well, but will be ignored since they cannot be in brackets
-     * @return the address without brackets
-     */
-    private static String removeIpv6Brackets( String rawAddress )
+    private static Optional<Integer> optionalFromZeroable( int port )
     {
-        Pattern pattern = Pattern.compile( "^\\[(?<address>.+)\\]$" );
-        Matcher matcher = pattern.matcher( rawAddress );
-        if ( matcher.find() )
-        {
-            return matcher.group( "address" );
-        }
-        return rawAddress;
-    }
-
-    /**
-     * Given an address it will 'pop' the port that is attached to the end of the address
-     * and clean at most 1 colon that is used as a delimiter between host (or port) and port.
-     *
-     * @param rawAddress the raw address such as "neo4j.com:123:456"
-     * @return a pair representing a possible port that was found and whatever remains from removing that port from the address
-     */
-    private static Pair<Optional<Integer>,String> popPort( String rawAddress )
-    {
-        Pattern suffixPortPattern = Pattern.compile( ":(?<port>\\d+)$" );
-        Matcher matcher = suffixPortPattern.matcher( rawAddress );
-        if ( matcher.find() )
-        {
-            Integer port = Integer.parseInt( matcher.group( "port" ) );
-            int length = rawAddress.length() - (port.toString().length() + 1); // colon
-            String remainingAddress = rawAddress.substring( 0, length );
-            return Pair.of( Optional.of( port ), remainingAddress );
-        }
-        String address = rawAddress;
-        if ( rawAddress.endsWith( ":" ) )
-        {
-            address = rawAddress.substring( 0, rawAddress.length() - 1 );
-        }
-        return Pair.of( Optional.empty(), address );
+        return port == 0 ? Optional.empty() : Optional.of( port );
     }
 }
