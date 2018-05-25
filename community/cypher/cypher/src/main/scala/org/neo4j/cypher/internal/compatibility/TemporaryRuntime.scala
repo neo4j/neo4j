@@ -28,10 +28,6 @@ trait TemporaryRuntime[-CONTEXT <: CommunityRuntimeContext] {
   def googldiblopp(logicalPlan: LogicalPlanState, context: CONTEXT): ExecutionPlan
 }
 
-class ProcedureCallOrSchemaCommandRuntime extends TemporaryRuntime[CommunityRuntimeContext] {
-  override def googldiblopp(logicalPlan: LogicalPlanState, context: CommunityRuntimeContext): ExecutionPlan = ???
-}
-
 class FallbackRuntime[CONTEXT <: CommunityRuntimeContext](runtimes: Seq[TemporaryRuntime[CONTEXT]]) extends TemporaryRuntime[CONTEXT] {
   override def googldiblopp(logicalPlan: LogicalPlanState, context: CONTEXT): ExecutionPlan = {
     for (runtime <- runtimes)
