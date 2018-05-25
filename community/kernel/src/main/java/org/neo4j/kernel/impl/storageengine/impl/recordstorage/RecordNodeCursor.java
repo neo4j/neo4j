@@ -93,11 +93,6 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
         return NodeLabelsField.get( this, labelCursor() );
     }
 
-    public long labelField()
-    {
-        return getLabelField();
-    }
-
     @Override
     public boolean hasLabel( int label )
     {

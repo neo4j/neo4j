@@ -157,45 +157,15 @@ class PropertyContainerStateImpl implements PropertyContainerState
     }
 
     @Override
-    public boolean hasPropertyChanges()
-    {
-        return addedProperties != null || removedProperties != null || changedProperties != null;
-    }
-
-    @Override
-    public StorageProperty getChangedProperty( int propertyKeyId )
-    {
-        return changedProperties == null ? null : getPropertyOrNull( changedProperties, propertyKeyId );
-    }
-
-    @Override
-    public StorageProperty getAddedProperty( int propertyKeyId )
-    {
-        return addedProperties == null ? null : getPropertyOrNull( addedProperties, propertyKeyId );
-    }
-
-    @Override
     public boolean isPropertyChangedOrRemoved( int propertyKey )
     {
         return (removedProperties != null && removedProperties.contains( propertyKey ))
                || (changedProperties != null && changedProperties.containsKey( propertyKey ));
     }
 
-    @Override
-    public boolean isPropertyRemoved( int propertyKeyId )
-    {
-        return removedProperties != null && removedProperties.contains( propertyKeyId );
-    }
-
     private Iterator<StorageProperty> toPropertyIterator( IntObjectMap<Value> propertyMap )
     {
         return propertyMap == null ? emptyIterator()
                                    : propertyMap.keyValuesView().collect( e -> (StorageProperty) new PropertyKeyValue( e.getOne(), e.getTwo() ) ).iterator();
-    }
-
-    private PropertyKeyValue getPropertyOrNull( IntObjectMap<Value> propertyMap, int propertyKeyId )
-    {
-        Value value = propertyMap.get( propertyKeyId );
-        return value == null ? null : new PropertyKeyValue( propertyKeyId, value );
     }
 }

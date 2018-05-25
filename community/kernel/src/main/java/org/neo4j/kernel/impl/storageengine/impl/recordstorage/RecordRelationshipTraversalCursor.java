@@ -50,7 +50,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
 
     RecordRelationshipTraversalCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore )
     {
-        super( relationshipStore, groupStore );
+        super( relationshipStore );
         this.group = new RecordRelationshipGroupCursor( relationshipStore, groupStore );
     }
 
@@ -357,21 +357,12 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
      */
     static class Record
     {
-        private static final RelationshipRecord DUMMY = null;
         final long id;
         final int type;
         final long nextProp;
         final long firstNode;
         final long secondNode;
         final Record next;
-
-        /*
-         * Initialize the chain of records
-         */
-        static Record initialize( Record first )
-        {
-            return new Record( DUMMY, first );
-        }
 
         /*
          * Initialize the record chain or push a new record as the new head of the record chain

@@ -71,31 +71,7 @@ class RelationshipStateImpl extends PropertyContainerStateImpl implements Relati
         }
 
         @Override
-        public boolean hasPropertyChanges()
-        {
-            return false;
-        }
-
-        @Override
-        public StorageProperty getChangedProperty( int propertyKeyId )
-        {
-            return null;
-        }
-
-        @Override
-        public StorageProperty getAddedProperty( int propertyKeyId )
-        {
-            return null;
-        }
-
-        @Override
         public boolean isPropertyChangedOrRemoved( int propertyKey )
-        {
-            return false;
-        }
-
-        @Override
-        public boolean isPropertyRemoved( int propertyKeyId )
         {
             return false;
         }
