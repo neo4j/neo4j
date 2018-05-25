@@ -62,15 +62,10 @@ public class KernelTransactionFactory
     public static class Instances
     {
         public KernelTransactionImplementation transaction;
-        public StorageEngine storageEngine;
-        public StorageReader storageReader;
 
-        public Instances( KernelTransactionImplementation transaction, StorageEngine storageEngine,
-                StorageReader storageReader )
+        public Instances( KernelTransactionImplementation transaction )
         {
             this.transaction = transaction;
-            this.storageEngine = storageEngine;
-            this.storageReader = storageReader;
         }
     }
 
@@ -108,7 +103,7 @@ public class KernelTransactionFactory
         transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.implicit,
                 loginContext.authorize( s -> -1 ), 0L, 1L );
 
-        return new Instances( transaction, storageEngine, storageReader );
+        return new Instances( transaction );
     }
 
     static KernelTransaction kernelTransaction( LoginContext loginContext )

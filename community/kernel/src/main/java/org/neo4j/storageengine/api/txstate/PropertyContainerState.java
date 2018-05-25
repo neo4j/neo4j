@@ -46,15 +46,7 @@ public interface PropertyContainerState
 
     Iterator<StorageProperty> addedAndChangedProperties();
 
-    boolean hasPropertyChanges();
-
-    StorageProperty getChangedProperty( int propertyKeyId );
-
-    StorageProperty getAddedProperty( int propertyKeyId );
-
     boolean isPropertyChangedOrRemoved( int propertyKey );
-
-    boolean isPropertyRemoved( int propertyKeyId );
 
     PropertyContainerState EMPTY = new EmptyPropertyContainerState();
 
@@ -85,31 +77,7 @@ public interface PropertyContainerState
         }
 
         @Override
-        public boolean hasPropertyChanges()
-        {
-            return false;
-        }
-
-        @Override
-        public StorageProperty getChangedProperty( int propertyKeyId )
-        {
-            return null;
-        }
-
-        @Override
-        public StorageProperty getAddedProperty( int propertyKeyId )
-        {
-            return null;
-        }
-
-        @Override
         public boolean isPropertyChangedOrRemoved( int propertyKey )
-        {
-            return false;
-        }
-
-        @Override
-        public boolean isPropertyRemoved( int propertyKeyId )
         {
             return false;
         }

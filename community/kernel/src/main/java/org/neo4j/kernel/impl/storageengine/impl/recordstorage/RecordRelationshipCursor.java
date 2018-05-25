@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -30,13 +29,11 @@ import org.neo4j.storageengine.api.StorageRelationshipCursor;
 abstract class RecordRelationshipCursor extends RelationshipRecord implements RelationshipVisitor<RuntimeException>, StorageRelationshipCursor
 {
     final RelationshipStore relationshipStore;
-    final RelationshipGroupStore groupStore;
 
-    RecordRelationshipCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore )
+    RecordRelationshipCursor( RelationshipStore relationshipStore )
     {
         super( NO_ID );
         this.relationshipStore = relationshipStore;
-        this.groupStore = groupStore;
     }
 
     @Override
