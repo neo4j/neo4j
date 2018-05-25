@@ -63,7 +63,7 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
     try {
       val (physicalPlan, pipelines) = rewritePlan(context, from.logicalPlan, from.semanticTable())
       val converters: ExpressionConverters = new ExpressionConverters(
-        new CompiledExpressionConverters(new ExpressionConverters(CommunityExpressionConverter)),
+        CompiledExpressionConverters,
         MorselExpressionConverters,
         SlottedExpressionConverters,
         CommunityExpressionConverter)

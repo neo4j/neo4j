@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.slotted.expressions
 
 import org.neo4j.cypher.internal.runtime.compiled.expressions.{CodeGeneration, CompiledExpression, IntermediateCodeGeneration}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{ExpressionConverter, ExpressionConverters}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
@@ -29,7 +29,9 @@ import org.opencypher.v9_0.expressions.FunctionInvocation
 import org.opencypher.v9_0.expressions.functions.AggregatingFunction
 import org.opencypher.v9_0.{expressions => ast}
 
-class CompiledExpressionConverters(inner: ExpressionConverters) extends ExpressionConverter {
+object CompiledExpressionConverters extends ExpressionConverter {
+  //uses an inner converter to simplify compliance with Expression trait
+  private val inner = new ExpressionConverters(SlottedExpressionConverters,CommunityExpressionConverter)
 
   override def toCommandExpression(expression: ast.Expression,
                                    self: ExpressionConverters): Option[Expression] = expression match {
@@ -39,15 +41,15 @@ class CompiledExpressionConverters(inner: ExpressionConverters) extends Expressi
 
     case e => IntermediateCodeGeneration.compile(e) match {
       case Some(ir) =>
-        Some(new CompileWrappingExpression(CodeGeneration.compile(ir),
+        Some(CompileWrappingExpression(CodeGeneration.compile(ir),
                                            inner.toCommandExpression(expression)))
       case _ => None
     }
   }
 
-  class CompileWrappingExpression(ce: CompiledExpression, legacy: Expression) extends Expression {
+  case class CompileWrappingExpression(ce: CompiledExpression, legacy: Expression) extends Expression {
 
-    override def rewrite(f: Expression => Expression): Expression = f(new CompileWrappingExpression(ce, legacy))
+    override def rewrite(f: Expression => Expression): Expression = f(this)
 
     override def arguments: Seq[Expression] = legacy.arguments
 
