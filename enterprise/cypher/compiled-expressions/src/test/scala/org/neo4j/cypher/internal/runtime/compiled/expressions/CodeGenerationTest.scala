@@ -97,6 +97,19 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.compute(ctx, tx, map(Array("a", "b"), Array(NO_VALUE, longValue(42)))) should equal(NO_VALUE)
   }
 
+  test("add strings") {
+    // Given
+    val expression = add(parameter("a"), parameter("b"))
+
+    // When
+    val compiled = compile(expression)
+
+    // Then
+    compiled.compute(ctx, tx,
+                     map(Array("a", "b"), Array(stringValue("hello "), stringValue("world")))) should
+      equal(stringValue("hello world"))
+  }
+
   test("add arrays") {
     // Given
     val expression = add(parameter("a"), parameter("b"))

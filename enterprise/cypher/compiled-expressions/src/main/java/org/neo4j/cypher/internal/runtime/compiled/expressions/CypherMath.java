@@ -112,7 +112,12 @@ public final class CypherMath
         }
 
         // String addition
-        if ( lhs instanceof TextValue )
+        if ( lhs instanceof TextValue && rhs instanceof TextValue )
+        {
+            return stringValue( ((TextValue) lhs).stringValue() + ((TextValue) rhs).stringValue() );
+
+        }
+        else if ( lhs instanceof TextValue )
         {
             if ( rhs instanceof Value )
             {
@@ -129,7 +134,7 @@ public final class CypherMath
                 }
             }
         }
-        if ( rhs instanceof TextValue )
+        else if ( rhs instanceof TextValue )
         {
             if ( lhs instanceof Value )
             {
