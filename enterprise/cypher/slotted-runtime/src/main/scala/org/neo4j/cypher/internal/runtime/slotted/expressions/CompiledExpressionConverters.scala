@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.slotted.expressions
 import org.neo4j.cypher.internal.runtime.compiled.expressions.{CodeGeneration, CompiledExpression, IntermediateCodeGeneration}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, RandFunction}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 import org.opencypher.v9_0.expressions.FunctionInvocation
@@ -69,6 +69,11 @@ case class CompileWrappingExpression(ce: CompiledExpression, legacy: Expression)
   override def symbolTableDependencies: Set[String] = legacy.symbolTableDependencies
 
   override def toString: String = legacy.toString
+
+  override val isDeterministic: Boolean = !legacy.exists {
+    case RandFunction() => true
+    case _              => false
+  }
 }
 
 
