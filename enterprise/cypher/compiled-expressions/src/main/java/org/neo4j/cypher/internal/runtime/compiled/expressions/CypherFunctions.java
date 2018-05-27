@@ -89,6 +89,118 @@ public final class CypherFunctions
         }
     }
 
+    public static Value asin( AnyValue in )
+    {
+        if ( in == NO_VALUE )
+        {
+            return NO_VALUE;
+        }
+        else if ( in instanceof NumberValue )
+        {
+            return doubleValue( Math.asin( ((NumberValue) in).doubleValue() ) );
+        }
+        else
+        {
+            throw new CypherTypeException( "asin requires numbers", null );
+        }
+    }
+
+    public static Value haversin( AnyValue in )
+    {
+        if ( in == NO_VALUE )
+        {
+            return NO_VALUE;
+        }
+        else if ( in instanceof NumberValue )
+        {
+            return doubleValue( (1.0 - Math.cos( ((NumberValue) in).doubleValue() ) )/ 2 );
+        }
+        else
+        {
+            throw new CypherTypeException( "asin requires numbers", null );
+        }
+    }
+
+    public static Value cos( AnyValue in )
+    {
+        if ( in == NO_VALUE )
+        {
+            return NO_VALUE;
+        }
+        else if ( in instanceof NumberValue )
+        {
+            return doubleValue( Math.cos( ((NumberValue) in).doubleValue() ) );
+        }
+        else
+        {
+            throw new CypherTypeException( "cos requires numbers", null );
+        }
+    }
+
+    public static Value cot( AnyValue in )
+    {
+        if ( in == NO_VALUE )
+        {
+            return NO_VALUE;
+        }
+        else if ( in instanceof NumberValue )
+        {
+            return doubleValue( 1.0 / Math.tan( ((NumberValue) in).doubleValue() ) );
+        }
+        else
+        {
+            throw new CypherTypeException( "cot requires numbers", null );
+        }
+    }
+
+    public static Value acos( AnyValue in )
+    {
+        if ( in == NO_VALUE )
+        {
+            return NO_VALUE;
+        }
+        else if ( in instanceof NumberValue )
+        {
+            return doubleValue( Math.acos( ((NumberValue) in).doubleValue() ) );
+        }
+        else
+        {
+            throw new CypherTypeException( "acos requires numbers", null );
+        }
+    }
+
+    public static Value tan( AnyValue in )
+    {
+        if ( in == NO_VALUE )
+        {
+            return NO_VALUE;
+        }
+        else if ( in instanceof NumberValue )
+        {
+            return doubleValue( Math.tan( ((NumberValue) in).doubleValue() ) );
+        }
+        else
+        {
+            throw new CypherTypeException( "tan requires numbers", null );
+        }
+    }
+
+    public static Value atan( AnyValue in )
+    {
+        if ( in == NO_VALUE )
+        {
+            return NO_VALUE;
+        }
+        else if ( in instanceof NumberValue )
+        {
+            return doubleValue( Math.atan( ((NumberValue) in).doubleValue() ) );
+        }
+        else
+        {
+            throw new CypherTypeException( "atan requires numbers", null );
+        }
+    }
+
     public static Value round( AnyValue in )
     {
         if ( in == NO_VALUE )

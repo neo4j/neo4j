@@ -23,6 +23,7 @@
 package org.neo4j.cypher.internal.runtime.compiled.expressions
 
 import java.lang.Math.PI
+import java.util.concurrent.ThreadLocalRandom
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.internal.kernel.api.Transaction
@@ -39,29 +40,12 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   private val tx = mock[Transaction]
   private val ctx = mock[ExecutionContext]
+  private val random = ThreadLocalRandom.current()
 
   test("round function") {
-    // Given
-    val expression = function("round", literalFloat(PI))
-
-    // When
-    val compiled = compile(expression)
-
-    // Then
-    compiled.compute(ctx, tx, EMPTY_MAP) should equal(doubleValue(3.0))
+    compile(function("round", literalFloat(PI))).compute(ctx, tx, EMPTY_MAP) should equal(doubleValue(3.0))
+    compile(function("round", noValue)).compute(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
   }
-
-  test("sin function") {
-    // Given
-    val expression = function("sin", literalFloat(PI))
-
-    // When
-    val compiled = compile(expression)
-
-    // Then
-    compiled.compute(ctx, tx, EMPTY_MAP) should equal(doubleValue(Math.sin(PI)))
-  }
-
   test("rand function") {
     // Given
     val expression = function("rand")
@@ -72,6 +56,54 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     // Then
     val value = compiled.compute(ctx, tx, EMPTY_MAP).asInstanceOf[DoubleValue].doubleValue()
     value should (be > 0.0 and be <= 1.0)
+  }
+
+  test("sin function") {
+    val arg = random.nextDouble()
+    compile(function("sin", literalFloat(arg))).compute(ctx, tx, EMPTY_MAP) should equal(doubleValue(Math.sin(arg)))
+    compile(function("sin", noValue)).compute(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
+  test("asin function") {
+    val arg = random.nextDouble()
+    compile(function("asin", literalFloat(arg))).compute(ctx, tx, EMPTY_MAP) should equal(doubleValue(Math.asin(arg)))
+    compile(function("asin", noValue)).compute(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
+  test("haversin function") {
+    val arg = random.nextDouble()
+    compile(function("haversin", literalFloat(arg))).compute(ctx, tx, EMPTY_MAP) should equal((doubleValue((1.0 - Math.cos(arg))/2)))
+    compile(function("haversin", noValue)).compute(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
+  test("acos function") {
+    val arg = random.nextDouble()
+    compile(function("acos", literalFloat(arg))).compute(ctx, tx, EMPTY_MAP) should equal(doubleValue(Math.acos(arg)))
+    compile(function("acos", noValue)).compute(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
+  test("cos function") {
+    val arg = random.nextDouble()
+    compile(function("cos", literalFloat(arg))).compute(ctx, tx, EMPTY_MAP) should equal(doubleValue(Math.cos(arg)))
+    compile(function("cos", noValue)).compute(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
+  test("cot function") {
+    val arg = random.nextDouble()
+    compile(function("cot", literalFloat(arg))).compute(ctx, tx, EMPTY_MAP) should equal(doubleValue(1 / Math.tan(arg)))
+    compile(function("cot", noValue)).compute(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
+  test("atan function") {
+    val arg = random.nextDouble()
+    compile(function("atan", literalFloat(arg))).compute(ctx, tx, EMPTY_MAP) should equal(doubleValue(Math.atan(arg)))
+    compile(function("atan", noValue)).compute(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
+  test("tan function") {
+    val arg = random.nextDouble()
+    compile(function("tan", literalFloat(arg))).compute(ctx, tx, EMPTY_MAP) should equal(doubleValue(Math.tan(arg)))
+    compile(function("tan", noValue)).compute(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
   }
 
   test("abs function") {

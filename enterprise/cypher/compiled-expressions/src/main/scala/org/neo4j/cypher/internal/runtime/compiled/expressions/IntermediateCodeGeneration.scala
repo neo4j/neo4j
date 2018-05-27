@@ -42,10 +42,38 @@ object IntermediateCodeGeneration {
   def compile(expression: Expression): Option[IntermediateRepresentation] = expression match {
 
     //functions
-    case c: FunctionInvocation if c.function == functions.Round =>
+    case c: FunctionInvocation if c.function == functions.Acos =>
       compile(c.args.head) match {
         case Some(arg) =>
-          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("round"), arg))
+          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("acos"), arg))
+        case _ => None
+      }
+
+    case c: FunctionInvocation if c.function == functions.Cos =>
+      compile(c.args.head) match {
+        case Some(arg) =>
+          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("cos"), arg))
+        case _ => None
+      }
+
+    case c: FunctionInvocation if c.function == functions.Cot =>
+      compile(c.args.head) match {
+        case Some(arg) =>
+          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("cot"), arg))
+        case _ => None
+      }
+
+    case c: FunctionInvocation if c.function == functions.Asin =>
+      compile(c.args.head) match {
+        case Some(arg) =>
+          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("asin"), arg))
+        case _ => None
+      }
+
+    case c: FunctionInvocation if c.function == functions.Haversin =>
+      compile(c.args.head) match {
+        case Some(arg) =>
+          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("haversin"), arg))
         case _ => None
       }
 
@@ -53,6 +81,34 @@ object IntermediateCodeGeneration {
       compile(c.args.head) match {
         case Some(arg) =>
           Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("sin"), arg))
+        case _ => None
+      }
+
+    case c: FunctionInvocation if c.function == functions.Atan =>
+      compile(c.args.head) match {
+        case Some(arg) =>
+          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("atan"), arg))
+        case _ => None
+      }
+
+    case c: FunctionInvocation if c.function == functions.Atan2 =>
+      compile(c.args.head) match {
+        case Some(arg) =>
+          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("atan2"), arg))
+        case _ => None
+      }
+
+    case c: FunctionInvocation if c.function == functions.Tan =>
+      compile(c.args.head) match {
+        case Some(arg) =>
+          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("tan"), arg))
+        case _ => None
+      }
+
+    case c: FunctionInvocation if c.function == functions.Round =>
+      compile(c.args.head) match {
+        case Some(arg) =>
+          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("round"), arg))
         case _ => None
       }
 
