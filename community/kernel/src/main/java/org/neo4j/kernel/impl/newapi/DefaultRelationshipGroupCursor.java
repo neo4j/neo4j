@@ -31,6 +31,9 @@ import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoIncomingRels;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoLoopRels;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoOutgoingRels;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
@@ -188,37 +191,40 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
     @Override
     public void outgoing( RelationshipTraversalCursor cursor )
     {
-        ((DefaultRelationshipTraversalCursor) cursor).init( storeCursor.getOwningNode(), outgoingReference(), read, RelationshipDirection.OUTGOING, type() );
+        ((DefaultRelationshipTraversalCursor) cursor).init( storeCursor.getOwningNode(), outgoingReference(), read );
     }
 
     @Override
     public void incoming( RelationshipTraversalCursor cursor )
     {
-        ((DefaultRelationshipTraversalCursor) cursor).init( storeCursor.getOwningNode(), incomingReference(), read, RelationshipDirection.INCOMING, type() );
+        ((DefaultRelationshipTraversalCursor) cursor).init( storeCursor.getOwningNode(), incomingReference(), read );
     }
 
     @Override
     public void loops( RelationshipTraversalCursor cursor )
     {
-        ((DefaultRelationshipTraversalCursor) cursor).init( storeCursor.getOwningNode(), loopsReference(), read, RelationshipDirection.LOOP, type() );
+        ((DefaultRelationshipTraversalCursor) cursor).init( storeCursor.getOwningNode(), loopsReference(), read );
     }
 
     @Override
     public long outgoingReference()
     {
-        return storeCursor.outgoingReference();
+        long reference = storeCursor.outgoingReference();
+        return reference == NO_ID ? encodeNoOutgoingRels( storeCursor.type() ) : reference;
     }
 
     @Override
     public long incomingReference()
     {
-        return storeCursor.incomingReference();
+        long reference = storeCursor.incomingReference();
+        return reference == NO_ID ? encodeNoIncomingRels( storeCursor.type() ) : reference;
     }
 
     @Override
     public long loopsReference()
     {
-        return storeCursor.loopsReference();
+        long reference = storeCursor.loopsReference();
+        return reference == NO_ID ? encodeNoLoopRels( storeCursor.type() ) : reference;
     }
 
     @Override

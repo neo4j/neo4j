@@ -50,7 +50,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.internal.kernel.api.Read.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.newapi.RelationshipDirection.INCOMING;
 import static org.neo4j.kernel.impl.newapi.RelationshipDirection.LOOP;
@@ -113,13 +112,13 @@ public class RecordRelationshipTraversalCursorTest
 
         try ( RecordRelationshipTraversalCursor cursor = getNodeRelationshipCursor() )
         {
-            cursor.init( FIRST_OWNING_NODE, 1L, direction, ANY_RELATIONSHIP_TYPE );
+            cursor.init( FIRST_OWNING_NODE, 1L );
             assertTrue( cursor.next() );
 
-            cursor.init( FIRST_OWNING_NODE, 2, direction, ANY_RELATIONSHIP_TYPE );
+            cursor.init( FIRST_OWNING_NODE, 2 );
             assertTrue( cursor.next() );
 
-            cursor.init( FIRST_OWNING_NODE, 3, direction, ANY_RELATIONSHIP_TYPE );
+            cursor.init( FIRST_OWNING_NODE, 3 );
             assertTrue( cursor.next() );
         }
     }
@@ -131,7 +130,7 @@ public class RecordRelationshipTraversalCursorTest
         long expectedNodeId = 1;
         try ( RecordRelationshipTraversalCursor cursor = getNodeRelationshipCursor() )
         {
-            cursor.init( FIRST_OWNING_NODE, 1, direction, ANY_RELATIONSHIP_TYPE );
+            cursor.init( FIRST_OWNING_NODE, 1 );
             while ( cursor.next() )
             {
                 assertEquals( "Should load next relationship in a sequence", expectedNodeId++, cursor.relationshipReference() );
@@ -149,7 +148,7 @@ public class RecordRelationshipTraversalCursorTest
         int relationshipIndex = 0;
         try ( RecordRelationshipTraversalCursor cursor = getNodeRelationshipCursor() )
         {
-            cursor.init( FIRST_OWNING_NODE, 1, direction, ANY_RELATIONSHIP_TYPE );
+            cursor.init( FIRST_OWNING_NODE, 1 );
             while ( cursor.next() )
             {
                 assertEquals( "Should load next relationship in a sequence",
@@ -168,7 +167,7 @@ public class RecordRelationshipTraversalCursorTest
         try ( RecordRelationshipTraversalCursor cursor = getNodeRelationshipCursor() )
         {
             // WHEN
-            cursor.init( FIRST_OWNING_NODE, NO_NEXT_RELATIONSHIP.intValue(), direction, ANY_RELATIONSHIP_TYPE );
+            cursor.init( FIRST_OWNING_NODE, NO_NEXT_RELATIONSHIP.intValue() );
 
             // THEN
             assertFalse( cursor.next() );

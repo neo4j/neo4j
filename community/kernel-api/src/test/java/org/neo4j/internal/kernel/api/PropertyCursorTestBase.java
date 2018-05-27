@@ -175,7 +175,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             node.properties( props );
             assertFalse( "no properties by direct method", props.next() );
 
-            node.properties( props );
+            read.nodeProperties( node.nodeReference(), node.propertiesReference(), props );
             assertFalse( "no properties via property ref", props.next() );
 
             assertFalse( "only one node", node.next() );
@@ -268,7 +268,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             assertEquals( "correct value", expectedValue, props.propertyValue() );
             assertFalse( "single property", props.next() );
 
-            node.properties( props );
+            read.nodeProperties( node.nodeReference(), node.propertiesReference(), props );
             assertTrue( "has properties via property ref", props.next() );
             assertEquals( "correct value", expectedValue, props.propertyValue() );
             assertFalse( "single property", props.next() );

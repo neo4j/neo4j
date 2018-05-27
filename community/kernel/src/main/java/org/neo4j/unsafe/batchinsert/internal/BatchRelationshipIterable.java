@@ -28,8 +28,6 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReade
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
-import static org.neo4j.internal.kernel.api.Read.ANY_RELATIONSHIP_TYPE;
-
 abstract class BatchRelationshipIterable<T> implements Iterable<T>
 {
     private final StorageRelationshipTraversalCursor relationshipCursor;
@@ -43,7 +41,7 @@ abstract class BatchRelationshipIterable<T> implements Iterable<T>
         {
             throw new NotFoundException( "Node " + nodeId + " not found" );
         }
-        relationshipCursor.init( nodeId, nodeCursor.allRelationshipsReference(), null, ANY_RELATIONSHIP_TYPE );
+        relationshipCursor.init( nodeId, nodeCursor.allRelationshipsReference() );
     }
 
     @Override

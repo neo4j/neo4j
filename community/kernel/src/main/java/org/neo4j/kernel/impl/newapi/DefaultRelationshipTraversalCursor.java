@@ -32,6 +32,10 @@ import org.neo4j.storageengine.api.txstate.NodeState;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.Read.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.kernel.impl.newapi.References.clearEncoding;
+import static org.neo4j.kernel.impl.newapi.RelationshipDirection.INCOMING;
+import static org.neo4j.kernel.impl.newapi.RelationshipDirection.LOOP;
+import static org.neo4j.kernel.impl.newapi.RelationshipDirection.OUTGOING;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<StorageRelationshipTraversalCursor>
@@ -123,14 +127,89 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         super( pool, storeCursor );
     }
 
-    void init( long nodeReference, long reference, Read read, RelationshipDirection direction, int type )
+    void init( long nodeReference, long reference, Read read )
     {
-        storeCursor.init( nodeReference, reference, direction, type );
-        this.filterState = direction == null ? FilterState.NONE : FilterState.fromRelationshipDirection( direction );
-        this.filterType = type;
+        /* There are 5 different ways a relationship traversal cursor can be initialized:
+         *
+         * 1. From a batched group in a detached way. This happens when the user manually retrieves the relationships
+         *    references from the group cursor and passes it to this method and if the group cursor was based on having
+         *    batched all the different types in the single (mixed) chain of relationships.
+         *    In this case we should pass a reference marked with some flag to the first relationship in the chain that
+         *    has the type of the current group in the group cursor. The traversal cursor then needs to read the type
+         *    from that first record and use that type as a filter for when reading the rest of the chain.
+         *    - NOTE: we probably have to do the same sort of filtering for direction - so we need a flag for that too.
+         *
+         * 2. From a batched group in a DIRECT way. This happens when the traversal cursor is initialized directly from
+         *    the group cursor, in this case we can simply initialize the traversal cursor with the buffered state from
+         *    the group cursor, so this method here does not have to be involved, and things become pretty simple.
+         *
+         * 3. Traversing all relationships - regardless of type - of a node that has grouped relationships. In this case
+         *    the traversal cursor needs to traverse through the group records in order to get to the actual
+         *    relationships. The initialization of the cursor (through this here method) should be with a FLAGGED
+         *    reference to the (first) group record.
+         *
+         * 4. Traversing a single chain - this is what happens in the cases when
+         *    a) Traversing all relationships of a node without grouped relationships.
+         *    b) Traversing the relationships of a particular group of a node with grouped relationships.
+         *
+         * 5. There are no relationships - i.e. passing in NO_ID to this method.
+         *
+         * This means that we need reference encodings (flags) for cases: 1, 3, 4, 5
+         */
+
+        RelationshipReferenceEncoding encoding = RelationshipReferenceEncoding.parseEncoding( reference );
+
+        switch ( encoding )
+        {
+        case NONE:
+        case GROUP:
+            storeCursor.init( nodeReference, reference );
+            initFiltering( FilterState.NONE, false );
+            break;
+
+        case FILTER_TX_STATE:
+            // The relationships in tx-state needs to be filtered according to the first relationship we discover,
+            // but let's have the store cursor bother with this detail.
+            storeCursor.init( nodeReference, clearEncoding( reference ) );
+            initFiltering( FilterState.NOT_INITIALIZED, false );
+            break;
+
+        case FILTER:
+            // The relationships needs to be filtered according to the first relationship we discover
+            storeCursor.init( nodeReference, clearEncoding( reference ) );
+            initFiltering( FilterState.NOT_INITIALIZED, true );
+            break;
+
+        case NO_OUTGOING_OF_TYPE: // nothing in store, but proceed to check tx-state changes
+            storeCursor.init( nodeReference, NO_ID );
+            initFiltering( FilterState.fromRelationshipDirection( OUTGOING ), false );
+            this.filterType = (int) clearEncoding( reference );
+            break;
+
+        case NO_INCOMING_OF_TYPE: // nothing in store, but proceed to check tx-state changes
+            storeCursor.init( nodeReference, NO_ID );
+            initFiltering( FilterState.fromRelationshipDirection( INCOMING ), false );
+            this.filterType = (int) clearEncoding( reference );
+            break;
+
+        case NO_LOOP_OF_TYPE: // nothing in store, but proceed to check tx-state changes
+            storeCursor.init( nodeReference, NO_ID );
+            initFiltering( FilterState.fromRelationshipDirection( LOOP ), false );
+            this.filterType = (int) clearEncoding( reference );
+            break;
+
+        default:
+            throw new IllegalStateException( "Unknown encoding " + encoding );
+        }
+
         init( read );
         this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
-        this.filterStore = true;
+    }
+
+    private void initFiltering( FilterState filterState, boolean filterStore )
+    {
+        this.filterState = filterState;
+        this.filterStore = filterStore;
     }
 
     @Override

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordCursor;

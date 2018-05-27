@@ -307,13 +307,25 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     @Test
     public void shouldTraverseSparseNodeViaGroups() throws Exception
     {
-        traverseViaGroups( sparse( graphDb ) );
+        traverseViaGroups( sparse( graphDb ), false );
     }
 
     @Test
     public void shouldTraverseDenseNodeViaGroups() throws Exception
     {
-        traverseViaGroups( RelationshipTestSupport.dense( graphDb ) );
+        traverseViaGroups( RelationshipTestSupport.dense( graphDb ), false );
+    }
+
+    @Test
+    public void shouldTraverseSparseNodeViaGroupsWithDetachedReferences() throws Exception
+    {
+        traverseViaGroups( sparse( graphDb ), true );
+    }
+
+    @Test
+    public void shouldTraverseDenseNodeViaGroupsWithDetachedReferences() throws Exception
+    {
+        traverseViaGroups( RelationshipTestSupport.dense( graphDb ), true );
     }
 
     @Test
@@ -1130,7 +1142,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 assertTrue( "access node", node.next() );
                 if ( detached )
                 {
-                    node.allRelationships( relationship );
+                    tx.dataRead().relationships( start.id, node.allRelationshipsReference(), relationship );
                 }
                 else
                 {
@@ -1147,7 +1159,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         }
     }
 
-    private void traverseViaGroups( RelationshipTestSupport.StartNode start ) throws Exception
+    private void traverseViaGroups( RelationshipTestSupport.StartNode start, boolean detached ) throws Exception
     {
         try ( Transaction tx = beginTransaction() )
         {
@@ -1162,25 +1174,55 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 // when
                 read.singleNode( start.id, node );
                 assertTrue( "access node", node.next() );
-                node.relationships( group );
+                if ( detached )
+                {
+                    read.relationshipGroups( start.id, node.relationshipGroupReference(), group );
+                }
+                else
+                {
+                    node.relationships( group );
+                }
 
                 while ( group.next() )
                 {
-                    int type = group.type();
                     // outgoing
-                    group.outgoing( relationship );
+                    if ( detached )
+                    {
+                        read.relationships( start.id, group.outgoingReference(), relationship );
+                    }
+                    else
+                    {
+                        group.outgoing( relationship );
+                    }
                     // then
-                    RelationshipTestSupport.assertCount( tx, relationship, expectedCounts, type, OUTGOING );
+                    RelationshipTestSupport
+                            .assertCount( tx, relationship, expectedCounts, group.type(), OUTGOING );
 
                     // incoming
-                    group.incoming( relationship );
+                    if ( detached )
+                    {
+                        read.relationships( start.id, group.incomingReference(), relationship );
+                    }
+                    else
+                    {
+                        group.incoming( relationship );
+                    }
                     // then
-                    RelationshipTestSupport.assertCount( tx, relationship, expectedCounts, type, INCOMING );
+                    RelationshipTestSupport
+                            .assertCount( tx, relationship, expectedCounts, group.type(), INCOMING );
 
                     // loops
-                    group.loops( relationship );
+                    if ( detached )
+                    {
+                        read.relationships( start.id, group.loopsReference(), relationship );
+                    }
+                    else
+                    {
+                        group.loops( relationship );
+                    }
                     // then
-                    RelationshipTestSupport.assertCount( tx, relationship, expectedCounts, type, BOTH );
+                    RelationshipTestSupport
+                            .assertCount( tx, relationship, expectedCounts, group.type(), BOTH );
                 }
             }
         }
@@ -1247,16 +1289,15 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         // Then
         try ( Transaction tx = beginTransaction() )
         {
-            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor();
-                  PropertyCursor props = tx.cursors().allocatePropertyCursor() )
+            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor() )
             {
                 tx.dataRead().singleRelationship( relationship, cursor );
                 assertTrue( cursor.next() );
-                assertFalse( hasProperties( cursor, props ) );
+                assertFalse( hasProperties( cursor, tx ) );
                 tx.dataWrite().relationshipSetProperty( relationship,
                         tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" ),
                         stringValue( "foo" ) );
-                assertTrue( hasProperties( cursor, props ) );
+                assertTrue( hasProperties( cursor, tx ) );
             }
         }
     }
@@ -1269,16 +1310,15 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             Write write = tx.dataWrite();
             int token = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
             long relationship = write.relationshipCreate( write.nodeCreate(), token, write.nodeCreate() );
-            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor();
-                  PropertyCursor props = tx.cursors().allocatePropertyCursor() )
+            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor() )
             {
                 tx.dataRead().singleRelationship( relationship, cursor );
                 assertTrue( cursor.next() );
-                assertFalse( hasProperties( cursor, props ) );
+                assertFalse( hasProperties( cursor, tx ) );
                 tx.dataWrite().relationshipSetProperty( relationship,
                         tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" ),
                         stringValue( "foo" ) );
-                assertTrue( hasProperties( cursor, props ) );
+                assertTrue( hasProperties( cursor, tx ) );
             }
         }
     }
@@ -1306,19 +1346,18 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         // Then
         try ( Transaction tx = beginTransaction() )
         {
-            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor();
-                  PropertyCursor props = tx.cursors().allocatePropertyCursor() )
+            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor() )
             {
                 tx.dataRead().singleRelationship( relationship, cursor );
                 assertTrue( cursor.next() );
 
-                assertTrue( hasProperties( cursor, props ) );
+                assertTrue( hasProperties( cursor, tx ) );
                 tx.dataWrite().relationshipRemoveProperty( relationship, prop1 );
-                assertTrue( hasProperties( cursor, props ) );
+                assertTrue( hasProperties( cursor, tx ) );
                 tx.dataWrite().relationshipRemoveProperty( relationship, prop2 );
-                assertTrue( hasProperties( cursor, props ) );
+                assertTrue( hasProperties( cursor, tx ) );
                 tx.dataWrite().relationshipRemoveProperty( relationship, prop3 );
-                assertFalse( hasProperties( cursor, props ) );
+                assertFalse( hasProperties( cursor, tx ) );
             }
         }
     }
@@ -1344,7 +1383,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             {
                 tx.dataRead().singleRelationship( relationship, relationships );
                 assertTrue( relationships.next() );
-                assertFalse( hasProperties( relationships, properties ) );
+                assertFalse( hasProperties( relationships, tx ) );
                 int prop = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
                 tx.dataWrite().relationshipSetProperty( relationship, prop, stringValue( "foo" ) );
                 relationships.properties( properties );
@@ -1355,6 +1394,15 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         }
     }
 
+    private boolean hasProperties( RelationshipScanCursor cursor, Transaction tx )
+    {
+        try ( PropertyCursor propertyCursor = tx.cursors().allocatePropertyCursor() )
+        {
+            cursor.properties( propertyCursor );
+            return propertyCursor.next();
+        }
+    }
+
     private void relateNTimes( int nRelationshipsInStore, int type, long n1, long n2, Transaction tx )
             throws KernelException
     {
@@ -1362,12 +1410,6 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         {
             tx.dataWrite().relationshipCreate( n1, type, n2 );
         }
-    }
-
-    private boolean hasProperties( RelationshipScanCursor cursor, PropertyCursor props )
-    {
-        cursor.properties( props );
-        return props.next();
     }
 
     private void assertCountRelationships(

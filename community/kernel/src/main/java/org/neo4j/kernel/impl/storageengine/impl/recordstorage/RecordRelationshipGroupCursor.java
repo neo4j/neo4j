@@ -31,8 +31,10 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
 
+import static org.neo4j.kernel.impl.newapi.References.clearEncoding;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeForFiltering;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeForTxStateFiltering;
 import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.GroupReferenceEncoding.isRelationship;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.References.clearEncoding;
 
 class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements StorageRelationshipGroupCursor
 {
@@ -235,19 +237,22 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
     @Override
     public long outgoingReference()
     {
-        return getFirstOut();
+        long outgoing = getFirstOut();
+        return outgoing == NO_ID ? NO_ID : encodeRelationshipReference( outgoing );
     }
 
     @Override
     public long incomingReference()
     {
-        return getFirstIn();
+        long incoming = getFirstIn();
+        return incoming == NO_ID ? NO_ID : encodeRelationshipReference( incoming );
     }
 
     @Override
     public long loopsReference()
     {
-        return getFirstLoop();
+        long loops = getFirstLoop();
+        return loops == NO_ID ? NO_ID : encodeRelationshipReference( loops );
     }
 
     @Override
@@ -294,6 +299,12 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
     long loopsRawId()
     {
         return getFirstLoop();
+    }
+
+    private long encodeRelationshipReference( long relationshipId )
+    {
+        assert relationshipId != NO_ID;
+        return isBuffered() ? encodeForFiltering( relationshipId ) : encodeForTxStateFiltering( relationshipId );
     }
 
     private boolean isBuffered()

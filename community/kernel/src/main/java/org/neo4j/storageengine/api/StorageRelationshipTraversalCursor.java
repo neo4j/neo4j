@@ -19,13 +19,11 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.neo4j.kernel.impl.newapi.RelationshipDirection;
-
 public interface StorageRelationshipTraversalCursor extends StorageRelationshipCursor
 {
     long neighbourNodeReference();
 
     long originNodeReference();
 
-    void init( long nodeReference, long reference, RelationshipDirection filterDirection, int filterType );
+    void init( long nodeReference, long reference );
 }

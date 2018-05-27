@@ -30,7 +30,7 @@ import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.Assert.assertEquals;
 
-public class ReferenceTest
+public class RelationshipReferenceEncodingTest
 {
     /**
      * The current scheme only allows us to use 58 bits for a reference. Adhere to that limit here.
