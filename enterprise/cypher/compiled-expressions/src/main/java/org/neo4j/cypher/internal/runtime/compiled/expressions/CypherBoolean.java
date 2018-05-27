@@ -96,7 +96,7 @@ public final class CypherBoolean
             return NO_VALUE;
         }
 
-        return booleanValue( lhs.map( BOOLEAN_MAPPER ) ^ rhs.map( BOOLEAN_MAPPER ) );
+        return lhs.map( BOOLEAN_MAPPER ) ^ rhs.map( BOOLEAN_MAPPER ) ? Values.TRUE : Values.FALSE;
     }
 
     public static Value and( AnyValue... args )
@@ -116,6 +116,16 @@ public final class CypherBoolean
             }
         }
         return seenNull ? NO_VALUE : Values.TRUE;
+    }
+
+    public static Value not( AnyValue in )
+    {
+        if ( in == NO_VALUE )
+        {
+            return NO_VALUE;
+        }
+
+        return !in.map( BOOLEAN_MAPPER ) ? Values.TRUE : Values.FALSE;
     }
 
     private static final class BooleanMapper implements ValueMapper<Boolean>
