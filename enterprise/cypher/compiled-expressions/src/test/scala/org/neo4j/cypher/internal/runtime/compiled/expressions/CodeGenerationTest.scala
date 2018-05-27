@@ -220,15 +220,18 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(or(f, t)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
     compile(or(t, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
     compile(or(f, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
-    compile(or(noValue, t)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
-    compile(or(f, noValue)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
+
+    compile(or(noValue, noValue)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(or(noValue, t)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
     compile(or(t, noValue)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
+    compile(or(noValue, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(or(f, noValue)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
   }
 
   test("ors") {
     compile(ors(f, f, f, f, f, f, t, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
     compile(ors(f, f, f, f, f, f, f, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
-    compile(ors(f, f, f, f, noValue, t, f, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(ors(f, f, f, f, noValue, f, f, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
     compile(ors(f, f, f, t, noValue, t, f, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
   }
 
@@ -237,15 +240,18 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(and(f, t)).compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
     compile(and(t, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
     compile(and(f, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
+
+    compile(and(noValue, noValue)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
     compile(and(noValue, t)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
-    compile(and(f, noValue)).compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
     compile(and(t, noValue)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(and(noValue, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
+    compile(and(f, noValue)).compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
   }
 
   test("ands") {
     compile(ands(t, t, t, t, t)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
     compile(ands(t, t, t, t, t, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
-    compile(ands(t, t, t, t, noValue, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(ands(t, t, t, t, noValue, t)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
     compile(ands(t, t, t, f, noValue, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
   }
 

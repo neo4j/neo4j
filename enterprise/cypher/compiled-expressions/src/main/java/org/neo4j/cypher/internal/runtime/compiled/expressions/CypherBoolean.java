@@ -70,11 +70,13 @@ public final class CypherBoolean
 
     public static Value or( AnyValue... args )
     {
+        boolean seenNull = false;
         for ( AnyValue arg : args )
         {
             if ( arg == NO_VALUE )
             {
-                return NO_VALUE;
+                seenNull = true;
+                continue;
             }
 
             if ( arg.map( BOOLEAN_MAPPER ) )
@@ -82,16 +84,18 @@ public final class CypherBoolean
                 return Values.TRUE;
             }
         }
-        return Values.FALSE;
+        return seenNull ? NO_VALUE : Values.FALSE;
     }
 
     public static Value and( AnyValue... args )
     {
+        boolean seenNull = false;
         for ( AnyValue arg : args )
         {
             if ( arg == NO_VALUE )
             {
-                return NO_VALUE;
+               seenNull = true;
+               continue;
             }
 
             if ( !arg.map( BOOLEAN_MAPPER ) )
@@ -99,7 +103,7 @@ public final class CypherBoolean
                 return Values.FALSE;
             }
         }
-        return Values.TRUE;
+        return seenNull ? NO_VALUE : Values.TRUE;
     }
 
     private static final class BooleanMapper implements ValueMapper<Boolean>
