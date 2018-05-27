@@ -268,6 +268,12 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(ands(t, t, t, f, noValue, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
   }
 
+  test("NOT") {
+    compile(not(f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
+    compile(not(t)).compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
+    compile(not(noValue)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
+  }
+
   private def compile(e: Expression) =
     CodeGeneration.compile(IntermediateCodeGeneration.compile(e).getOrElse(fail()))
 
@@ -300,4 +306,6 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   private def and(l: Expression, r: Expression) = And(l, r)(pos)
 
   private def ands(es: Expression*) = Ands(es.toSet)(pos)
+
+  private def not(e: Expression) = Not(e)(pos)
 }

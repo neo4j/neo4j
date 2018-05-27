@@ -125,6 +125,13 @@ object IntermediateCodeGeneration {
       if (compiled.size < exprs.size) None
       else  Some(invokeStatic(method[CypherBoolean, Value, Array[AnyValue]]("and"), arrayOf(compiled:_*)))
 
+    case Not(arg) =>
+      compile(arg) match {
+        case Some(a) =>
+          Some(invokeStatic(method[CypherBoolean, Value, AnyValue]("not"), a))
+        case _ => None
+      }
+
     //data access
     case Parameter(name, _) =>
       Some(invoke(load("params"), method[MapValue, AnyValue, String]("get"), constantJavaValue(name)))
