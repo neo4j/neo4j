@@ -53,6 +53,7 @@ import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 /**
@@ -87,6 +88,17 @@ public final class CypherBoolean
         return seenNull ? NO_VALUE : Values.FALSE;
     }
 
+    public static Value xor( AnyValue lhs, AnyValue rhs )
+    {
+        boolean seenNull = false;
+        if ( lhs == NO_VALUE || rhs == NO_VALUE )
+        {
+            return NO_VALUE;
+        }
+
+        return booleanValue( lhs.map( BOOLEAN_MAPPER ) ^ rhs.map( BOOLEAN_MAPPER ) );
+    }
+
     public static Value and( AnyValue... args )
     {
         boolean seenNull = false;
@@ -94,8 +106,8 @@ public final class CypherBoolean
         {
             if ( arg == NO_VALUE )
             {
-               seenNull = true;
-               continue;
+                seenNull = true;
+                continue;
             }
 
             if ( !arg.map( BOOLEAN_MAPPER ) )
