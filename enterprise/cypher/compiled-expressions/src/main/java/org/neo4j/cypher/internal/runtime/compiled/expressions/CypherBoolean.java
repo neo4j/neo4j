@@ -141,6 +141,19 @@ public final class CypherBoolean
         }
     }
 
+    public static Value notEquals( AnyValue lhs, AnyValue rhs )
+    {
+        Boolean equals = lhs.ternaryEquals( rhs );
+        if ( equals == null )
+        {
+            return NO_VALUE;
+        }
+        else
+        {
+            return equals ? Values.FALSE : Values.TRUE;
+        }
+    }
+
     private static final class BooleanMapper implements ValueMapper<Boolean>
     {
         @Override

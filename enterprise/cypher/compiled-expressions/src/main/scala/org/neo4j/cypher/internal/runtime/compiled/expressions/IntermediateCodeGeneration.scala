@@ -59,6 +59,13 @@ object IntermediateCodeGeneration {
     case c: FunctionInvocation if c.function == functions.Rand =>
       Some(invokeStatic(method[CypherFunctions, DoubleValue]("rand")))
 
+    case c: FunctionInvocation if c.function == functions.Abs =>
+      compile(c.args.head) match {
+        case Some(arg) =>
+          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("abs"), arg))
+        case _ => None
+      }
+
     //math
     case Multiply(lhs, rhs) =>
       (compile(lhs), compile(rhs)) match {
@@ -136,6 +143,13 @@ object IntermediateCodeGeneration {
       (compile(lhs), compile(rhs)) match {
         case (Some(l), Some(r)) =>
           Some(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("equals"), l, r))
+        case _ => None
+      }
+
+    case NotEquals(lhs, rhs) =>
+      (compile(lhs), compile(rhs)) match {
+        case (Some(l), Some(r)) =>
+          Some(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("notEquals"), l, r))
         case _ => None
       }
 
