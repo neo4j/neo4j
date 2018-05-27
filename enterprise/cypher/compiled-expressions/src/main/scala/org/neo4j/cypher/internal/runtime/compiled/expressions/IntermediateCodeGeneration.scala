@@ -98,11 +98,19 @@ object IntermediateCodeGeneration {
           Some(invokeStatic(method[CypherBoolean, Value, Array[AnyValue]]("or"), arrayOf(l, r)))
         case _ => None
       }
+
     case Ors(exprs) =>
       val compiled = exprs.flatMap(compile).toIndexedSeq
       //we bail if some of the expressions weren't compiled
       if (compiled.size < exprs.size) None
       else  Some(invokeStatic(method[CypherBoolean, Value, Array[AnyValue]]("or"), arrayOf(compiled:_*)))
+
+    case Xor(lhs, rhs) =>
+      (compile(lhs), compile(rhs)) match {
+        case (Some(l), Some(r)) =>
+          Some(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("xor"), l, r))
+        case _ => None
+      }
 
     case And(lhs, rhs) =>
       (compile(lhs), compile(rhs)) match {
