@@ -23,6 +23,7 @@
 package org.neo4j.cypher.internal.runtime.compiled.expressions;
 
 import org.opencypher.v9_0.util.CypherTypeException;
+import org.opencypher.v9_0.util.EntityNotFoundException;
 
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -67,6 +68,11 @@ public final class CypherDbAccess
                 nodes.properties( properties );
                 return property( properties, property );
             }
+            if ( tx.dataRead().nodeDeletedInTransaction( node ) )
+            {
+                throw new EntityNotFoundException(
+                        String.format( "Node with id %d has been deleted in this transaction", node ), null );
+            }
             return Values.NO_VALUE;
         }
     }
@@ -82,6 +88,11 @@ public final class CypherDbAccess
             {
                 relationships.properties( properties );
                 return property( properties, property );
+            }
+            if ( tx.dataRead().relationshipDeletedInTransaction( relationship ) )
+            {
+                throw new EntityNotFoundException(
+                        String.format( "Relationship with id %d has been deleted in this transaction", relationship ), null );
             }
             return Values.NO_VALUE;
         }

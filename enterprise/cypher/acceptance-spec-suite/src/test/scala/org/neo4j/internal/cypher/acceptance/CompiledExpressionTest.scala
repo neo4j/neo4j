@@ -31,6 +31,7 @@ import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.opencypher.v9_0.ast.AstConstructionTestSupport
 import org.opencypher.v9_0.expressions.Expression
+import org.opencypher.v9_0.util.EntityNotFoundException
 
 class CompiledExpressionTest extends ExecutionEngineFunSuite with AstConstructionTestSupport {
 
@@ -51,6 +52,24 @@ class CompiledExpressionTest extends ExecutionEngineFunSuite with AstConstructio
     )
   }
 
+  test("should fail if node has been deleted in transaction") {
+    // Given
+    val node = createNode("prop" -> "hello")
+    val offset = 42
+    val ctx = mock[ExecutionContext]
+    when(ctx.getLongAt(offset)).thenReturn(node.getId)
+    val expression = NodeProperty(offset, propertyToken("prop"), "prop")(null)
+
+    // When
+    val compiled = compile(expression)
+
+    // Then
+    graph.inTx {
+      node.delete()
+      an[EntityNotFoundException] should be thrownBy compiled.compute(ctx, transaction, EMPTY_MAP)
+    }
+  }
+
   test("relationship property access") {
     // Given
     val relationship = relate(createNode(), createNode(), "prop" -> "hello").getId
@@ -66,6 +85,24 @@ class CompiledExpressionTest extends ExecutionEngineFunSuite with AstConstructio
     graph.inTx(
       compiled.compute(ctx, transaction, EMPTY_MAP) should equal(stringValue("hello"))
     )
+  }
+
+  test("should fail if relationship has been deleted in transaction") {
+    // Given
+    val relationship = relate(createNode(), createNode(), "prop" -> "hello")
+    val offset = 42
+    val ctx = mock[ExecutionContext]
+    when(ctx.getLongAt(offset)).thenReturn(relationship.getId)
+    val expression = RelationshipProperty(offset, graph.inTx(propertyToken("prop")), "prop")(null)
+
+    // When
+    val compiled = compile(expression)
+
+    // Then
+    graph.inTx {
+      relationship.delete()
+      an[EntityNotFoundException] should be thrownBy compiled.compute(ctx, transaction, EMPTY_MAP)
+    }
   }
 
   private def compile(e: Expression) =
