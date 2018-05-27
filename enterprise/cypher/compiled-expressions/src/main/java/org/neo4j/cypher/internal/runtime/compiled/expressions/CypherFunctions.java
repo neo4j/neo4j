@@ -39,8 +39,10 @@ import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TemporalValue;
@@ -57,6 +59,7 @@ import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.doubleValue;
+import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 /**
@@ -99,6 +102,29 @@ public final class CypherFunctions
         else
         {
             throw new CypherTypeException( "round requires numbers", null );
+        }
+    }
+
+    public static Value abs( AnyValue in )
+    {
+        if ( in == NO_VALUE )
+        {
+            return NO_VALUE;
+        }
+        else if ( in instanceof NumberValue )
+        {
+            if ( in instanceof IntegralValue )
+            {
+                return longValue( Math.abs( ((NumberValue) in).longValue() ) );
+            }
+            else
+            {
+                return doubleValue( Math.abs( ((NumberValue) in).doubleValue() ) );
+            }
+        }
+        else
+        {
+            throw new CypherTypeException( "abs requires numbers", null );
         }
     }
 

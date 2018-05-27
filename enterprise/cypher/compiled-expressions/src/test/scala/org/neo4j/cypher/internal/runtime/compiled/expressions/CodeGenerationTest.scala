@@ -74,6 +74,14 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     value should (be > 0.0 and be <= 1.0)
   }
 
+  test("abs function") {
+    compile(function("abs", literalFloat(3.2))).compute(ctx, tx, EMPTY_MAP) should equal(doubleValue(3.2))
+    compile(function("abs", literalFloat(-3.2))).compute(ctx, tx, EMPTY_MAP) should equal(doubleValue(3.2))
+    compile(function("abs", literalInt(3))).compute(ctx, tx, EMPTY_MAP) should equal(longValue(3))
+    compile(function("abs", literalInt(-3))).compute(ctx, tx, EMPTY_MAP) should equal(longValue(3))
+    compile(function("abs", noValue)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
+  }
+
   test("add numbers") {
     // Given
     val expression = add(literalInt(42), literalInt(10))
@@ -282,6 +290,14 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(equals(noValue, noValue)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
   }
 
+  test("NOT EQUALS") {
+    compile(notEquals(literalInt(42), literalInt(42))).compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
+    compile(notEquals(literalInt(42), literalInt(43))).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
+    compile(notEquals(noValue, literalInt(43))).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(notEquals(literalInt(42), noValue)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(notEquals(noValue, noValue)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
+  }
+
   private def compile(e: Expression) =
     CodeGeneration.compile(IntermediateCodeGeneration.compile(e).getOrElse(fail()))
 
@@ -318,4 +334,6 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   private def not(e: Expression) = Not(e)(pos)
 
   private def equals(lhs: Expression, rhs: Expression) = Equals(lhs, rhs)(pos)
+
+  private def notEquals(lhs: Expression, rhs: Expression) = NotEquals(lhs, rhs)(pos)
 }
