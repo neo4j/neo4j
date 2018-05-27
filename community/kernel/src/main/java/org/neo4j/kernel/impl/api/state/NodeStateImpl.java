@@ -69,6 +69,12 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         }
 
         @Override
+        public boolean hasPropertyChanges()
+        {
+            return false;
+        }
+
+        @Override
         public LongDiffSets labelDiffSets()
         {
             return LongDiffSets.EMPTY;

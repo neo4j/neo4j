@@ -30,7 +30,9 @@ import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
@@ -316,6 +318,30 @@ abstract class Read implements TxStateHolder,
     {
         ktx.assertOpen();
         throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void relationshipGroups( long nodeReference, long reference, RelationshipGroupCursor cursor )
+    {
+        ((DefaultRelationshipGroupCursor) cursor).init( nodeReference, reference, this );
+    }
+
+    @Override
+    public void relationships( long nodeReference, long reference, RelationshipTraversalCursor cursor )
+    {
+        ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, reference, this );
+    }
+
+    @Override
+    public void nodeProperties( long nodeReference, long reference, PropertyCursor cursor )
+    {
+        ((DefaultPropertyCursor) cursor).initNode( nodeReference, reference, this, ktx );
+    }
+
+    @Override
+    public void relationshipProperties( long relationshipReference, long reference, PropertyCursor cursor )
+    {
+        ((DefaultPropertyCursor) cursor).initRelationship( relationshipReference, reference, this, ktx );
     }
 
     @Override

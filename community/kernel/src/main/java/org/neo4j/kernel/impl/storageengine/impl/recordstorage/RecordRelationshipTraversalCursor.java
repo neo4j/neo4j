@@ -20,13 +20,13 @@
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.newapi.RelationshipDirection;
+import org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.References.clearEncoding;
+import static org.neo4j.kernel.impl.newapi.References.clearEncoding;
 
 class RecordRelationshipTraversalCursor extends RecordRelationshipCursor implements StorageRelationshipTraversalCursor
 {
@@ -53,7 +53,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     }
 
     @Override
-    public void init( long nodeReference, long reference, RelationshipDirection filterDirection, int filterType )
+    public void init( long nodeReference, long reference )
     {
         /* There are basically two ways a relationship traversal cursor can be initialized:
          *

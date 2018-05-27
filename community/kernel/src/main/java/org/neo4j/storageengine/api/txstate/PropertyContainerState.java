@@ -46,6 +46,8 @@ public interface PropertyContainerState
 
     Iterator<StorageProperty> addedAndChangedProperties();
 
+    boolean hasPropertyChanges();
+
     boolean isPropertyChangedOrRemoved( int propertyKey );
 
     PropertyContainerState EMPTY = new EmptyPropertyContainerState();
@@ -74,6 +76,12 @@ public interface PropertyContainerState
         public Iterator<StorageProperty> addedAndChangedProperties()
         {
             return emptyIterator();
+        }
+
+        @Override
+        public boolean hasPropertyChanges()
+        {
+            return false;
         }
 
         @Override

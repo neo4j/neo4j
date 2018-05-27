@@ -250,30 +250,56 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     @Test
     public void shouldTraverseSparseNodeViaGroups() throws Exception
     {
-        traverseViaGroups( sparse );
+        traverseViaGroups( sparse, false );
     }
 
     @Test
     public void shouldTraverseDenseNodeViaGroups() throws Exception
     {
-        traverseViaGroups( dense );
+        traverseViaGroups( dense, false );
+    }
+
+    @Test
+    public void shouldTraverseSparseNodeViaGroupsWithDetachedReferences() throws Exception
+    {
+        traverseViaGroups( sparse, true );
+    }
+
+    @Test
+    public void shouldTraverseDenseNodeViaGroupsWithDetachedReferences() throws Exception
+    {
+        traverseViaGroups( dense, true );
     }
 
     @Test
     public void shouldTraverseSparseNodeWithoutGroups() throws Exception
     {
         Assume.assumeTrue( supportsSparseNodes() && supportsDirectTraversal() );
-        traverseWithoutGroups( sparse );
+        traverseWithoutGroups( sparse, false );
     }
 
     @Test
     public void shouldTraverseDenseNodeWithoutGroups() throws Exception
     {
         Assume.assumeTrue( supportsDirectTraversal() );
-        traverseWithoutGroups( dense );
+        traverseWithoutGroups( dense, false );
     }
 
-    private void traverseViaGroups( RelationshipTestSupport.StartNode start ) throws KernelException
+    @Test
+    public void shouldTraverseSparseNodeWithoutGroupsWithDetachedReferences() throws Exception
+    {
+        Assume.assumeTrue( supportsSparseNodes() );
+        traverseWithoutGroups( sparse, true );
+    }
+
+    @Test
+    public void shouldTraverseDenseNodeWithoutGroupsWithDetachedReferences() throws Exception
+    {
+        Assume.assumeTrue( supportsDirectTraversal() );
+        traverseWithoutGroups( dense, true );
+    }
+
+    private void traverseViaGroups( RelationshipTestSupport.StartNode start, boolean detached ) throws KernelException
     {
         // given
         Map<String,Integer> expectedCounts = start.expectedCounts();
@@ -285,30 +311,57 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             // when
             read.singleNode( start.id, node );
             assertTrue( "access node", node.next() );
-            node.relationships( group );
+            if ( detached )
+            {
+                read.relationshipGroups( start.id, node.relationshipGroupReference(), group );
+            }
+            else
+            {
+                node.relationships( group );
+            }
 
             while ( group.next() )
             {
-                int type = group.type();
                 // outgoing
-                group.outgoing( relationship );
+                if ( detached )
+                {
+                    read.relationships( start.id, group.outgoingReference(), relationship );
+                }
+                else
+                {
+                    group.outgoing( relationship );
+                }
                 // then
                 assertCount( tx, relationship, expectedCounts, group.type(), OUTGOING );
 
                 // incoming
-                group.incoming( relationship );
+                if ( detached )
+                {
+                    read.relationships( start.id, group.incomingReference(), relationship );
+                }
+                else
+                {
+                    group.incoming( relationship );
+                }
                 // then
                 assertCount( tx, relationship, expectedCounts, group.type(), INCOMING );
 
                 // loops
-                group.loops( relationship );
+                if ( detached )
+                {
+                    read.relationships( start.id, group.loopsReference(), relationship );
+                }
+                else
+                {
+                    group.loops( relationship );
+                }
                 // then
                 assertCount( tx, relationship, expectedCounts, group.type(), BOTH );
             }
         }
     }
 
-    private void traverseWithoutGroups( RelationshipTestSupport.StartNode start )
+    private void traverseWithoutGroups( RelationshipTestSupport.StartNode start, boolean detached )
             throws KernelException
     {
         // given
@@ -318,7 +371,15 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             // when
             read.singleNode( start.id, node );
             assertTrue( "access node", node.next() );
-            node.allRelationships( relationship );
+
+            if ( detached )
+            {
+                read.relationships( start.id, node.allRelationshipsReference(), relationship );
+            }
+            else
+            {
+                node.allRelationships( relationship );
+            }
 
             Map<String,Integer> counts = count( tx, relationship );
 

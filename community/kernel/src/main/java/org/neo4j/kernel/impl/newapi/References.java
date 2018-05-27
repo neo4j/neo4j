@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
+package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
@@ -41,11 +41,11 @@ import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
  * the reference, the encoding must be cleared with {@link References#clearEncoding(long)}. To guard against using an
  * encoded reference, all encoded references are marked so they appear negative.
  */
-class References
+public class References
 {
-    static final long FLAG_MARKER = 0x8000_0000_0000_0000L;
-    static final long FLAG_MASK = 0x7000_0000_0000_0000L;
-    static final long FLAGS = 0xF000_0000_0000_0000L;
+    public static final long FLAG_MARKER = 0x8000_0000_0000_0000L;
+    public static final long FLAG_MASK = 0x7000_0000_0000_0000L;
+    public static final long FLAGS = 0xF000_0000_0000_0000L;
 
     /**
      * Clear all encoding from a reference.
@@ -53,7 +53,7 @@ class References
      * @param reference The reference to clear.
      * @return The cleared reference.
      */
-    static long clearEncoding( long reference )
+    public static long clearEncoding( long reference )
     {
         assert reference != NO_ID;
         return reference & ~FLAGS;

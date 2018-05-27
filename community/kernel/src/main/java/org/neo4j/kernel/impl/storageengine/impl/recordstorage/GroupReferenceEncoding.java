@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
+import org.neo4j.kernel.impl.newapi.References;
+
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 class GroupReferenceEncoding

@@ -157,6 +157,12 @@ class PropertyContainerStateImpl implements PropertyContainerState
     }
 
     @Override
+    public boolean hasPropertyChanges()
+    {
+        return addedProperties != null || removedProperties != null || changedProperties != null;
+    }
+
+    @Override
     public boolean isPropertyChangedOrRemoved( int propertyKey )
     {
         return (removedProperties != null && removedProperties.contains( propertyKey ))
