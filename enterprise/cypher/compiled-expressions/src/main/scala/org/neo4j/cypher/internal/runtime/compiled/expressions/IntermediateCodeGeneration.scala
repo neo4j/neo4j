@@ -132,6 +132,13 @@ object IntermediateCodeGeneration {
         case _ => None
       }
 
+    case Equals(lhs, rhs) =>
+      (compile(lhs), compile(rhs)) match {
+        case (Some(l), Some(r)) =>
+          Some(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("equals"), l, r))
+        case _ => None
+      }
+
     //data access
     case Parameter(name, _) =>
       Some(invoke(load("params"), method[MapValue, AnyValue, String]("get"), constantJavaValue(name)))

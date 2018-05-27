@@ -128,6 +128,19 @@ public final class CypherBoolean
         return !in.map( BOOLEAN_MAPPER ) ? Values.TRUE : Values.FALSE;
     }
 
+    public static Value equals( AnyValue lhs, AnyValue rhs )
+    {
+        Boolean equals = lhs.ternaryEquals( rhs );
+        if ( equals == null )
+        {
+            return NO_VALUE;
+        }
+        else
+        {
+            return equals ? Values.TRUE : Values.FALSE;
+        }
+    }
+
     private static final class BooleanMapper implements ValueMapper<Boolean>
     {
         @Override
