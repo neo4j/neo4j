@@ -106,6 +106,18 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(function("tan", noValue)).compute(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
   }
 
+  test("ceil function") {
+    val arg = random.nextDouble()
+    compile(function("ceil", literalFloat(arg))).compute(ctx, tx, EMPTY_MAP) should equal(doubleValue(Math.ceil(arg)))
+    compile(function("ceil", noValue)).compute(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
+  test("floor function") {
+    val arg = random.nextDouble()
+    compile(function("floor", literalFloat(arg))).compute(ctx, tx, EMPTY_MAP) should equal(doubleValue(Math.floor(arg)))
+    compile(function("floor", noValue)).compute(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
   test("abs function") {
     compile(function("abs", literalFloat(3.2))).compute(ctx, tx, EMPTY_MAP) should equal(doubleValue(3.2))
     compile(function("abs", literalFloat(-3.2))).compute(ctx, tx, EMPTY_MAP) should equal(doubleValue(3.2))

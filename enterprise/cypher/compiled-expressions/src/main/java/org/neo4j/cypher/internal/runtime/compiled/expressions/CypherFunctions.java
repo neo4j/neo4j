@@ -201,6 +201,38 @@ public final class CypherFunctions
         }
     }
 
+    public static Value ceil( AnyValue in )
+    {
+        if ( in == NO_VALUE )
+        {
+            return NO_VALUE;
+        }
+        else if ( in instanceof NumberValue )
+        {
+            return doubleValue( Math.ceil( ((NumberValue) in).doubleValue() ) );
+        }
+        else
+        {
+            throw new CypherTypeException( "ceil requires numbers", null );
+        }
+    }
+
+    public static Value floor( AnyValue in )
+    {
+        if ( in == NO_VALUE )
+        {
+            return NO_VALUE;
+        }
+        else if ( in instanceof NumberValue )
+        {
+            return doubleValue( Math.floor( ((NumberValue) in).doubleValue() ) );
+        }
+        else
+        {
+            throw new CypherTypeException( "ceil requires numbers", null );
+        }
+    }
+
     public static Value round( AnyValue in )
     {
         if ( in == NO_VALUE )

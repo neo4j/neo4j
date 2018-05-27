@@ -42,85 +42,90 @@ object IntermediateCodeGeneration {
   def compile(expression: Expression): Option[IntermediateRepresentation] = expression match {
 
     //functions
-    case c: FunctionInvocation if c.function == functions.Acos =>
-      compile(c.args.head) match {
-        case Some(arg) =>
-          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("acos"), arg))
-        case _ => None
-      }
+    case c: FunctionInvocation => c.function match {
+      case functions.Acos =>
+        compile(c.args.head) match {
+          case Some(arg) =>
+            Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("acos"), arg))
+          case _ => None
+        }
+      case functions.Cos =>
+        compile(c.args.head) match {
+          case Some(arg) =>
+            Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("cos"), arg))
+          case _ => None
+        }
+      case functions.Cot =>
+        compile(c.args.head) match {
+          case Some(arg) =>
+            Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("cot"), arg))
+          case _ => None
+        }
+      case functions.Asin =>
+        compile(c.args.head) match {
+          case Some(arg) =>
+            Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("asin"), arg))
+          case _ => None
+        }
+      case functions.Haversin =>
+        compile(c.args.head) match {
+          case Some(arg) =>
+            Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("haversin"), arg))
+          case _ => None
+        }
+      case functions.Sin =>
+        compile(c.args.head) match {
+          case Some(arg) =>
+            Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("sin"), arg))
+          case _ => None
+        }
+      case functions.Atan =>
+        compile(c.args.head) match {
+          case Some(arg) =>
+            Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("atan"), arg))
+          case _ => None
+        }
+      case functions.Atan2 =>
+        compile(c.args.head) match {
+          case Some(arg) =>
+            Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("atan2"), arg))
+          case _ => None
+        }
+      case functions.Tan =>
+        compile(c.args.head) match {
+          case Some(arg) =>
+            Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("tan"), arg))
+          case _ => None
+        }
+      case functions.Round =>
+        compile(c.args.head) match {
+          case Some(arg) =>
+            Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("round"), arg))
+          case _ => None
+        }
+      case functions.Rand =>
+        Some(invokeStatic(method[CypherFunctions, DoubleValue]("rand")))
+      case functions.Abs =>
+        compile(c.args.head) match {
+          case Some(arg) =>
+            Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("abs"), arg))
+          case _ => None
+        }
+      case functions.Ceil =>
+        compile(c.args.head) match {
+          case Some(arg) =>
+            Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("ceil"), arg))
+          case _ => None
+        }
+      case functions.Floor =>
+        compile(c.args.head) match {
+          case Some(arg) =>
+            Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("floor"), arg))
+          case _ => None
+        }
 
-    case c: FunctionInvocation if c.function == functions.Cos =>
-      compile(c.args.head) match {
-        case Some(arg) =>
-          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("cos"), arg))
-        case _ => None
-      }
-
-    case c: FunctionInvocation if c.function == functions.Cot =>
-      compile(c.args.head) match {
-        case Some(arg) =>
-          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("cot"), arg))
-        case _ => None
-      }
-
-    case c: FunctionInvocation if c.function == functions.Asin =>
-      compile(c.args.head) match {
-        case Some(arg) =>
-          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("asin"), arg))
-        case _ => None
-      }
-
-    case c: FunctionInvocation if c.function == functions.Haversin =>
-      compile(c.args.head) match {
-        case Some(arg) =>
-          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("haversin"), arg))
-        case _ => None
-      }
-
-    case c: FunctionInvocation if c.function == functions.Sin =>
-      compile(c.args.head) match {
-        case Some(arg) =>
-          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("sin"), arg))
-        case _ => None
-      }
-
-    case c: FunctionInvocation if c.function == functions.Atan =>
-      compile(c.args.head) match {
-        case Some(arg) =>
-          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("atan"), arg))
-        case _ => None
-      }
-
-    case c: FunctionInvocation if c.function == functions.Atan2 =>
-      compile(c.args.head) match {
-        case Some(arg) =>
-          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("atan2"), arg))
-        case _ => None
-      }
-
-    case c: FunctionInvocation if c.function == functions.Tan =>
-      compile(c.args.head) match {
-        case Some(arg) =>
-          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("tan"), arg))
-        case _ => None
-      }
-
-    case c: FunctionInvocation if c.function == functions.Round =>
-      compile(c.args.head) match {
-        case Some(arg) =>
-          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("round"), arg))
-        case _ => None
-      }
-
-    case c: FunctionInvocation if c.function == functions.Rand =>
-      Some(invokeStatic(method[CypherFunctions, DoubleValue]("rand")))
-
-    case c: FunctionInvocation if c.function == functions.Abs =>
-      compile(c.args.head) match {
-        case Some(arg) =>
-          Some(invokeStatic(method[CypherFunctions, Value, AnyValue]("abs"), arg))
-        case _ => None
-      }
+      case _ => None
+    }
 
     //math
     case Multiply(lhs, rhs) =>
@@ -145,7 +150,6 @@ object IntermediateCodeGeneration {
         case _ => None
       }
 
-
     //literals
     case d: DoubleLiteral => Some(float(doubleValue(d.value)))
     case i: IntegerLiteral => Some(integer(longValue(i.value)))
@@ -166,7 +170,7 @@ object IntermediateCodeGeneration {
       val compiled = exprs.flatMap(compile).toIndexedSeq
       //we bail if some of the expressions weren't compiled
       if (compiled.size < exprs.size) None
-      else  Some(invokeStatic(method[CypherBoolean, Value, Array[AnyValue]]("or"), arrayOf(compiled:_*)))
+      else Some(invokeStatic(method[CypherBoolean, Value, Array[AnyValue]]("or"), arrayOf(compiled: _*)))
 
     case Xor(lhs, rhs) =>
       (compile(lhs), compile(rhs)) match {
@@ -186,7 +190,7 @@ object IntermediateCodeGeneration {
       val compiled = exprs.flatMap(compile).toIndexedSeq
       //we bail if some of the expressions weren't compiled
       if (compiled.size < exprs.size) None
-      else  Some(invokeStatic(method[CypherBoolean, Value, Array[AnyValue]]("and"), arrayOf(compiled:_*)))
+      else Some(invokeStatic(method[CypherBoolean, Value, Array[AnyValue]]("and"), arrayOf(compiled: _*)))
 
     case Not(arg) =>
       compile(arg) match {
