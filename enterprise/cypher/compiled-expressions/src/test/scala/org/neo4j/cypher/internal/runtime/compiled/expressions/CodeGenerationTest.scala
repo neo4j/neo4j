@@ -182,7 +182,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.compute(ctx, tx, map(Array("prop"), Array(stringValue("foo")))) should equal(stringValue("foo"))
   }
 
-  test("Null") {
+  test("NULL") {
     // Given
     val expression = noValue
 
@@ -193,7 +193,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.compute(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
   }
 
-  test("True") {
+  test("TRUE") {
     // Given
     val expression = t
 
@@ -204,7 +204,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
   }
 
-  test("False") {
+  test("FALSE") {
     // Given
     val expression = f
 
@@ -215,7 +215,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
   }
 
-  test("or") {
+  test("OR") {
     compile(or(t, t)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
     compile(or(f, t)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
     compile(or(t, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
@@ -228,7 +228,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(or(f, noValue)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
   }
 
-  test("xor") {
+  test("XOR") {
     compile(xor(t, t)).compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
     compile(xor(f, t)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
     compile(xor(t, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
@@ -241,14 +241,14 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(xor(f, noValue)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
   }
 
-  test("ors") {
+  test("ORS") {
     compile(ors(f, f, f, f, f, f, t, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
     compile(ors(f, f, f, f, f, f, f, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
     compile(ors(f, f, f, f, noValue, f, f, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
     compile(ors(f, f, f, t, noValue, t, f, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
   }
 
-  test("and") {
+  test("AND") {
     compile(and(t, t)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
     compile(and(f, t)).compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
     compile(and(t, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
@@ -261,7 +261,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(and(f, noValue)).compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
   }
 
-  test("ands") {
+  test("ANDS") {
     compile(ands(t, t, t, t, t)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
     compile(ands(t, t, t, t, t, f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
     compile(ands(t, t, t, t, noValue, t)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
@@ -272,6 +272,14 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(not(f)).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
     compile(not(t)).compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
     compile(not(noValue)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
+  }
+
+  test("EQUALS") {
+    compile(equals(literalInt(42), literalInt(42))).compute(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
+    compile(equals(literalInt(42), literalInt(43))).compute(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
+    compile(equals(noValue, literalInt(43))).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(equals(literalInt(42), noValue)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(equals(noValue, noValue)).compute(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
   }
 
   private def compile(e: Expression) =
@@ -308,4 +316,6 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   private def ands(es: Expression*) = Ands(es.toSet)(pos)
 
   private def not(e: Expression) = Not(e)(pos)
+
+  private def equals(lhs: Expression, rhs: Expression) = Equals(lhs, rhs)(pos)
 }
