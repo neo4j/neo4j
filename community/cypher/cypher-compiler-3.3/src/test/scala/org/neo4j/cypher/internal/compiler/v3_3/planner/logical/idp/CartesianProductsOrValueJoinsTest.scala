@@ -32,6 +32,8 @@ class CartesianProductsOrValueJoinsTest
   val planC = allNodesScan("c")
 
   private def allNodesScan(n: String): LogicalPlan = {
+    // The cardinality is tied to the first letter in the node variables. n.head is the first char of the variable name.
+    // 'a' has number ASCII number 97, so that would produce cardinality 1000
     val cardinality = (n.head.toInt - 96) * 1000
     val solved = CardinalityEstimation.lift(RegularPlannerQuery(queryGraph = QueryGraph(patternNodes = Set(n))), Cardinality(cardinality))
     AllNodesScan(n, Set.empty)(solved)
@@ -133,7 +135,7 @@ class CartesianProductsOrValueJoinsTest
         case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a") => 1000.0
         case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
         case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("c") => 3000.0
-        case x => 100.0
+        case _ => 100.0
       }
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val x = ctx
