@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
-import org.neo4j.collection.primitive.Primitive
+import org.eclipse.collections.impl.factory.primitive.LongSets
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{Slot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.PrefetchingIterator
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
@@ -52,7 +52,7 @@ case class DistinctSlottedSinglePrimitivePipe(source: Pipe,
                                       state: QueryState): Iterator[ExecutionContext] = {
 
     new PrefetchingIterator[ExecutionContext] {
-      private val seen = Primitive.longSet()
+      private val seen = LongSets.mutable.empty()
 
       override def produceNext(): Option[ExecutionContext] = {
         while (input.nonEmpty) { // Let's pull data until we find something not already seen
