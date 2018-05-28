@@ -45,6 +45,7 @@ import org.neo4j.kernel.configuration.Migrator;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.configuration.ssl.SslPolicyConfigValidator;
+import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogTimeZone;
 
@@ -934,6 +935,18 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "The maximum amount of time to wait for the database state represented by the bookmark." )
     public static final Setting<Duration> bookmark_ready_timeout = buildSetting(
             "dbms.transaction.bookmark_ready_timeout", DURATION, "30s" ).constraint( min( Duration.ofSeconds( 1 ) ) ).build();
+
+    @Internal
+    public static final Setting<Boolean> ephemeral = setting( "unsupported.dbms.ephemeral", BOOLEAN, Settings.FALSE );
+
+    @Internal
+    public static final Setting<String> lock_manager = setting( "unsupported.dbms.lock_manager", STRING, "" );
+
+    @Internal
+    public static final Setting<String> tracer = setting( "unsupported.dbms.tracer", STRING, Settings.NO_DEFAULT );
+
+    @Internal
+    public static final Setting<String> editionName = setting( "unsupported.dbms.edition", STRING, Edition.unknown.toString() );
 
     public enum TransactionStateMemoryAllocation
     {

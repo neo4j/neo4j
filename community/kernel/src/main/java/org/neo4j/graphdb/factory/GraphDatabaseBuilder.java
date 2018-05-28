@@ -68,9 +68,6 @@ public class GraphDatabaseBuilder
     protected DatabaseCreator creator;
     protected Map<String,String> config = new HashMap<>();
 
-    /**
-     * @deprecated Use {@link GraphDatabaseFactory} to get instances of this class.
-     */
     @Deprecated
     public GraphDatabaseBuilder( DatabaseCreator creator )
     {

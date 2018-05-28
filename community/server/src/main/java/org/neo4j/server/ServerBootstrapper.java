@@ -31,7 +31,6 @@ import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationValidator;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
@@ -40,6 +39,7 @@ import org.neo4j.kernel.info.JvmMetadataRepository;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.platform.GraphDatabaseDependencies;
 import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
 

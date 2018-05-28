@@ -67,7 +67,6 @@ import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFo
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
@@ -82,7 +81,7 @@ public class LuceneDataSource extends LifecycleAdapter
     public abstract static class Configuration
     {
         public static final Setting<Integer> lucene_searcher_cache_size = GraphDatabaseSettings.lucene_searcher_cache_size;
-        public static final Setting<Boolean> ephemeral = GraphDatabaseFacadeFactory.Configuration.ephemeral;
+        public static final Setting<Boolean> ephemeral = GraphDatabaseSettings.ephemeral;
     }
 
     /**

@@ -134,7 +134,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     private Schema schema;
     private Supplier<IndexManager> indexManager;
     private ThreadToStatementContextBridge statementContext;
-    protected EditionModule editionModule;
     private SPI spi;
     private TransactionalContextFactory contextFactory;
     private Config config;
@@ -200,10 +199,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     /**
      * Create a new Core API facade, backed by the given SPI and using pre-resolved dependencies
      */
-    public void init( EditionModule editionModule, SPI spi, ThreadToStatementContextBridge txBridge, Config config,
+    public void init( SPI spi, ThreadToStatementContextBridge txBridge, Config config,
             RelationshipTypeTokenHolder relationshipTypeTokenHolder )
     {
-        this.editionModule = editionModule;
         this.spi = spi;
         this.config = config;
         this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;

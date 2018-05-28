@@ -23,11 +23,11 @@ import java.util.Collection;
 import java.util.Collections;
 import javax.annotation.Nonnull;
 
-import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationValidator;
 import org.neo4j.kernel.configuration.ServerConfigurationValidator;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.platform.GraphDatabaseDependencies;
 
 public class CommunityBootstrapper extends ServerBootstrapper
 {

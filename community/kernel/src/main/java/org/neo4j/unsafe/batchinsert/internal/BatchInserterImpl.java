@@ -150,7 +150,6 @@ import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.ValueUtils;
-import org.neo4j.kernel.internal.EmbeddedGraphDatabase;
 import org.neo4j.kernel.internal.locker.GlobalStoreLocker;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -718,8 +717,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     {
         if ( parseBoolean( params.get( GraphDatabaseSettings.allow_upgrade.name() ) ) )
         {
-            throw new IllegalArgumentException( "Batch inserter is not allowed to do upgrade of a store" +
-                                                ", use " + EmbeddedGraphDatabase.class.getSimpleName() + " instead" );
+            throw new IllegalArgumentException( "Batch inserter is not allowed to do upgrade of a store." );
         }
     }
 

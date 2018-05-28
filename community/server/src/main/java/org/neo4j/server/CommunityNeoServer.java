@@ -26,10 +26,10 @@ import java.util.List;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.platform.CommunityEditionModule;
+import org.neo4j.platform.GraphDatabaseFacadeFactory;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
 import org.neo4j.server.modules.AuthorizationModule;

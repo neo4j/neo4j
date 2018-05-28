@@ -22,10 +22,16 @@ package org.neo4j.kernel.impl.util;
 import org.junit.Test;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import static org.neo4j.kernel.impl.traversal.TraversalTestBase.assertContains;
+import org.neo4j.helpers.collection.Iterators;
+
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasKey;
+import static org.junit.Assert.assertThat;
 
 public class TestCopyOnWriteHashMap
 {
@@ -37,11 +43,14 @@ public class TestCopyOnWriteHashMap
         map.put( 1, "1" );
         map.put( 2, "2" );
 
-        assertContains( map.keySet(), 0, 1, 2 );
+        assertThat( map, hasKey( 0 ) );
+        assertThat( map, hasKey( 1 ) );
+        assertThat( map, hasKey( 2 ) );
 
         Iterator<Integer> keys = map.keySet().iterator();
         map.remove( 1 );
-        assertContains( keys, 0, 1, 2 );
+        List<Integer> keysBeforeDeletion = Iterators.asList( keys );
+        assertThat( keysBeforeDeletion, contains( 0, 1, 2 ) );
     }
 
     @Test
@@ -54,10 +63,11 @@ public class TestCopyOnWriteHashMap
         @SuppressWarnings( "unchecked" )
         Map.Entry<Integer, String>[] allEntries = map.entrySet().toArray( new Map.Entry[0] );
 
-        assertContains( map.entrySet(), allEntries );
+        assertThat( map.entrySet(), containsInAnyOrder( allEntries ) );
 
         Iterator<Entry<Integer, String>> entries = map.entrySet().iterator();
         map.remove( 1 );
-        assertContains( entries, allEntries );
+        List<Entry<Integer,String>> entriesBeforeRemoval = Iterators.asList( entries );
+        assertThat( entriesBeforeRemoval, containsInAnyOrder( allEntries ) );
     }
 }

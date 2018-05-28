@@ -27,9 +27,9 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.platform.GraphDatabaseDependencies;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.enterprise.OpenEnterpriseNeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;

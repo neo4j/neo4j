@@ -23,8 +23,8 @@ import java.io.File;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.platform.GraphDatabaseFacadeFactory;
 
 public interface Database extends Lifecycle
 {

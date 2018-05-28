@@ -35,16 +35,16 @@ import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.platform.GraphDatabaseFacadeFactory;
+import org.neo4j.platform.PlatformModule;
 
 import static java.util.stream.Collectors.toList;
-import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
+import static org.neo4j.platform.GraphDatabaseFacadeFactory.Dependencies;
 
 public class GraphDatabaseFactoryWithCustomBoltKernelExtension extends GraphDatabaseFactory
 {

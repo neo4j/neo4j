@@ -25,8 +25,8 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.Log;
+import org.neo4j.platform.GraphDatabaseFacadeFactory;
 
 /**
  * Wraps a neo4j database in lifecycle management. This is intermediate, and will go away once we have an internal
