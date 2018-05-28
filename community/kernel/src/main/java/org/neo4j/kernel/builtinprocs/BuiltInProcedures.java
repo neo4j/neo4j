@@ -236,6 +236,21 @@ public class BuiltInProcedures
         }
     }
 
+    @Description( "Create a unique property constraint with index backed by specified index provider " +
+            "(for example: CALL db.createUniquePropertyConstraint(\":Person(name)\", \"lucene+native-2.0\")) - " +
+            "YIELD index, providerName, status" )
+    @Procedure( name = "db.createUniquePropertyConstraint", mode = SCHEMA )
+    public Stream<BuiltInProcedures.SchemaIndexInfo> createUniquePropertyConstraint(
+            @Name( "index" ) String index,
+            @Name( "providerName" ) String providerName )
+            throws ProcedureException
+    {
+        try ( IndexProcedures indexProcedures = indexProcedures() )
+        {
+            return indexProcedures.createUniquePropertyConstraint( index, providerName );
+        }
+    }
+
     @Description( "Get node from explicit index. Replaces `START n=node:nodes(key = 'A')`" )
     @Procedure( name = "db.index.explicit.seekNodes", mode = READ )
     public Stream<NodeResult> nodeManualIndexSeek( @Name( "indexName" ) String explicitIndexName,
