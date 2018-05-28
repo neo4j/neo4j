@@ -104,11 +104,11 @@ public final class CypherMath
         }
         else if ( lhsIsListValue )
         {
-            return VirtualValues.appendToList( (ListValue) lhs, rhs );
+            return ((ListValue) lhs).append( rhs );
         }
         else if ( rhs instanceof ListValue )
         {
-            return VirtualValues.prependToList( (ListValue) rhs, lhs );
+            return ((ListValue) rhs).prepend( lhs );
         }
 
         // String addition
