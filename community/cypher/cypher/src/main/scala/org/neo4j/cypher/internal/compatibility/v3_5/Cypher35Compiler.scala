@@ -33,20 +33,19 @@ import org.neo4j.cypher.internal.compiler.v3_5
 import org.neo4j.cypher.internal.compiler.v3_5._
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
-import org.opencypher.v9_0.ast.Statement
-import org.opencypher.v9_0.frontend.phases._
 import org.neo4j.cypher.internal.planner.v3_5.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted._
-import org.opencypher.v9_0.util.attribution.SequentialIdGen
-import org.opencypher.v9_0.expressions.Parameter
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
+import org.opencypher.v9_0.ast.Statement
+import org.opencypher.v9_0.expressions.Parameter
+import org.opencypher.v9_0.frontend.phases._
 import org.opencypher.v9_0.rewriting.RewriterStepSequencer
+import org.opencypher.v9_0.util.InputPosition
+import org.opencypher.v9_0.util.attribution.SequentialIdGen
 
-import scala.util.Try
-
-case class Compatibility[CONTEXT <: CommunityRuntimeContext,
+case class Cypher35Compiler[CONTEXT <: CommunityRuntimeContext,
                     T <: Transformer[CONTEXT, LogicalPlanState, CompilationState]](config: CypherPlannerConfiguration,
                                                                                    clock: Clock,
                                                                                    kernelMonitors: KernelMonitors,
@@ -66,7 +65,7 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
                                                                            updateStrategy,
                                                                            runtimeBuilder,
                                                                            contextCreatorv3_5,
-                                                                           txIdProvider) {
+                                                                           txIdProvider) with CachingCompiler[BaseState]  {
 
   val monitors: Monitors = WrappedMonitors(kernelMonitors)
   monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), "cypher3.4")
@@ -82,6 +81,9 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
     case _ => None
   }
 
+  override def parserCacheSize: Int = config.queryCacheSize
+  override def plannerCacheSize: Int = config.queryCacheSize
+
   protected val rewriterSequencer: (String) => RewriterStepSequencer = {
     import RewriterStepSequencer._
     import org.neo4j.helpers.Assertion._
@@ -96,70 +98,94 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
   private def queryGraphSolver = LatestRuntimeVariablePlannerCompatibility.
     createQueryGraphSolver(maybePlannerNamev3_5.getOrElse(CostBasedPlannerName.default), monitors, config)
 
-  def produceParsedQuery(preParsedQuery: PreParsedQuery, preparationTracer: CompilationPhaseTracer,
-                         preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
-    val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
-
-    // The "preparationTracer" can get closed, even if a ParsedQuery is cached and reused. It should not
-    // be used inside ParsedQuery.plan. There, use the "planningTracer" instead
-    val preparedSyntacticQueryForV_3_4 =
-      Try(compiler.parseQuery(preParsedQuery.statement,
-                              preParsedQuery.rawStatement,
-                              notificationLogger, preParsedQuery.planner.name,
-                              preParsedQuery.debugOptions,
-                              Some(preParsedQuery.offset), preparationTracer))
-    new ParsedQuery {
-      override def plan(transactionalContext: TransactionalContext, planningTracer: CompilationPhaseTracer):
-        (ExecutionPlan, Map[String, Any], Seq[String]) = runSafely {
-        val syntacticQuery = preparedSyntacticQueryForV_3_4.get
-
-        //Context used for db communication during planning
-        val planContext = new ExceptionTranslatingPlanContext(TransactionBoundPlanContext(
-                                    TransactionalContextWrapper(transactionalContext), notificationLogger))
-        //Context used to create logical plans
-        val logicalPlanIdGen = new SequentialIdGen()
-        val context = contextCreatorv3_5.create(planningTracer, notificationLogger, planContext,
-                                                        syntacticQuery.queryText, preParsedQuery.debugOptions,
-                                                        Some(preParsedQuery.offset), monitors,
-                                                        CachedMetricsFactory(SimpleMetricsFactory), queryGraphSolver,
-                                                        config, maybeUpdateStrategy.getOrElse(defaultUpdateStrategy),
-                                                        clock, logicalPlanIdGen, simpleExpressionEvaluator)
-        //Prepare query for caching
-        val preparedQuery = compiler.normalizeQuery(syntacticQuery, context)
-        val queryParamNames: Seq[String] = preparedQuery.statement().findByAllClass[Parameter].map(x => x.name)
-
-        checkForSchemaChanges(planContext)
-
-        //Just in the case the query is not in the cache do we want to do the full planning + creating executable plan
-        def createPlan(): ExecutionPlan_v3_5 = {
-          val logicalPlanState = compiler.planPreparedQuery(preparedQuery, context)
-          LogicalPlanNotifications
-            .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
-            .foreach(notificationLogger.log)
-
-          val result = createExecPlan.transform(logicalPlanState, context)
-          result.maybeExecutionPlan.get
-        }
-
-        val executionPlan =
-          if (preParsedQuery.debugOptions.isEmpty)
-            planCache.computeIfAbsentOrStale(syntacticQuery.statement(),
-                                             transactionalContext,
-                                             createPlan,
-                                             syntacticQuery.queryText).executableQuery
-          else
-            createPlan()
-
-        (new ExecutionPlanWrapper(executionPlan, preParsingNotifications), preparedQuery.extractedParams(), queryParamNames)
-      }
-
-      override protected val trier: Try[BaseState] = preparedSyntacticQueryForV_3_4
-    }
-  }
-
   private def checkForSchemaChanges(planContext: PlanContext): Unit =
     planContext.getOrCreateFromSchemaState(this, planCache.clear())
 
   override val runSafelyDuringPlanning: RunSafely = runSafely
   override val runSafelyDuringRuntime: RunSafely = runSafely
+
+  override def clearCaches(): Long = {
+    Math.max(super.clearCaches(), planCache.clear())
+  }
+
+  override def compile(preParsedQuery: PreParsedQuery,
+                       tracer: CompilationPhaseTracer,
+                       preParsingNotifications: Set[org.neo4j.graphdb.Notification],
+                       transactionalContext: TransactionalContext
+                      ): CacheableExecutableQuery = {
+
+    val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
+
+    runSafely {
+      val syntacticQuery =
+        getOrParse(preParsedQuery, new Parser3_5(compiler, notificationLogger, preParsedQuery.offset, tracer))
+
+      // Context used for db communication during planning
+      val planContext = new ExceptionTranslatingPlanContext(TransactionBoundPlanContext(
+        TransactionalContextWrapper(transactionalContext), notificationLogger))
+
+      // Context used to create logical plans
+      val logicalPlanIdGen = new SequentialIdGen()
+      val context = contextCreatorv3_5.create(tracer,
+                                              notificationLogger,
+                                              planContext,
+                                              syntacticQuery.queryText,
+                                              preParsedQuery.debugOptions,
+                                              Some(preParsedQuery.offset),
+                                              monitors,
+                                              CachedMetricsFactory(SimpleMetricsFactory),
+                                              queryGraphSolver,
+                                              config,
+                                              maybeUpdateStrategy.getOrElse(defaultUpdateStrategy),
+                                              clock,
+                                              logicalPlanIdGen,
+                                              simpleExpressionEvaluator)
+
+      // Prepare query for caching
+      val preparedQuery = compiler.normalizeQuery(syntacticQuery, context)
+      val queryParamNames: Seq[String] = preparedQuery.statement().findByAllClass[Parameter].map(x => x.name)
+
+      checkForSchemaChanges(planContext)
+
+      // If the query is not cached we want to do the full planning + creating executable plan
+      def createPlan(): ExecutionPlan_v3_5 = {
+        val logicalPlanState = compiler.planPreparedQuery(preparedQuery, context)
+        LogicalPlanNotifications
+          .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
+          .foreach(notificationLogger.log)
+
+        val result = createExecPlan.transform(logicalPlanState, context)
+        result.maybeExecutionPlan.get
+      }
+
+      val executionPlan3_5 =
+        if (preParsedQuery.debugOptions.isEmpty)
+          planCache.computeIfAbsentOrStale(syntacticQuery.statement(),
+                                           transactionalContext,
+                                           createPlan,
+                                           syntacticQuery.queryText).executableQuery
+        else
+          createPlan()
+
+      val executionPlan = new ExecutionPlanWrapper(executionPlan3_5, preParsingNotifications)
+      CacheableExecutableQuery(executionPlan, queryParamNames, ValueConversion.asValues(preparedQuery.extractedParams()))
+    }
+  }
+}
+
+class Parser3_5[CONTEXT3_5 <: v3_5.phases.PlannerContext](compiler: v3_5.CypherPlanner[CONTEXT3_5],
+                                                           notificationLogger: RecordingNotificationLogger,
+                                                           offset: InputPosition,
+                                                           tracer: CompilationPhaseTracer
+                                                          ) extends Parser[BaseState] {
+
+  override def parse(preParsedQuery: PreParsedQuery): BaseState = {
+    compiler.parseQuery(preParsedQuery.statement,
+                        preParsedQuery.rawStatement,
+                        notificationLogger,
+                        preParsedQuery.planner.name,
+                        preParsedQuery.debugOptions,
+                        Some(offset),
+                        tracer)
+  }
 }

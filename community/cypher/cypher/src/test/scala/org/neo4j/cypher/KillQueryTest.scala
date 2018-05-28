@@ -23,7 +23,7 @@ import java.util
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
-import org.neo4j.cypher.internal.{CommunityCompatibilityFactory, ExecutionEngine}
+import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.graphdb.{TransactionTerminatedException, TransientTransactionFailureException}
 import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED

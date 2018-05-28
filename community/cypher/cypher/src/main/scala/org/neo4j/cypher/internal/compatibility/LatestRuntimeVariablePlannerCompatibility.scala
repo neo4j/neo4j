@@ -49,8 +49,8 @@ import org.neo4j.values.virtual.MapValue
 
 import scala.collection.JavaConverters._
 
-abstract class LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4 <: CommunityRuntimeContextv3_5,
-T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState],
+abstract class LatestRuntimeVariablePlannerCompatibility[CONTEXT3_5 <: CommunityRuntimeContextv3_5,
+T <: Transformer[CONTEXT3_5, LogicalPlanState, CompilationState],
 STATEMENT <: AnyRef](configv3_5: CypherPlannerConfiguration,
                      clock: Clock,
                      kernelMonitors: KernelMonitors,
@@ -59,7 +59,7 @@ STATEMENT <: AnyRef](configv3_5: CypherPlannerConfiguration,
                      runtime: CypherRuntimeOption,
                      updateStrategy: CypherUpdateStrategy,
                      runtimeBuilder: RuntimeBuilder[T],
-                     contextCreatorV3_5: ContextCreator[CONTEXT3_4],
+                     contextCreatorV3_5: ContextCreator[CONTEXT3_5],
                      txIdProvider: () => Long) {
 
   // abstract stuff
@@ -67,16 +67,13 @@ STATEMENT <: AnyRef](configv3_5: CypherPlannerConfiguration,
   protected val runSafelyDuringPlanning: RunSafely
   protected val runSafelyDuringRuntime: RunSafely
 
-  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
-                         preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery
-
   // concrete stuff
   protected val logger: InfoLogger = new StringInfoLogger(log)
   protected val monitorsv3_5: Monitors = WrappedMonitorsv3_5(kernelMonitors)
 
   protected val cacheTracer: CacheTracer[STATEMENT] = monitorsv3_5.newMonitor[CacheTracer[STATEMENT]]("cypher3.4")
 
-  protected lazy val planCache: AstQueryCache[STATEMENT] =
+  protected val planCache: AstQueryCache[STATEMENT] =
     new AstQueryCache(configv3_5.queryCacheSize,
                       cacheTracer,
                       clock,
@@ -88,7 +85,7 @@ STATEMENT <: AnyRef](configv3_5: CypherPlannerConfiguration,
     monitorsv3_5,
     configv3_5)
 
-  protected def createExecPlan: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState] = {
+  protected def createExecPlan: Transformer[CONTEXT3_5, LogicalPlanState, CompilationState] = {
     ProcedureCallOrSchemaCommandExecutionPlanBuilder andThen
       If((s: CompilationState) => s.maybeExecutionPlan.isFailure) {
         val maybeRuntimeName: Option[RuntimeName] = runtime match {

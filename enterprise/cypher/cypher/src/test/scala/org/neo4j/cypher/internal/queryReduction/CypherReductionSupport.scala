@@ -41,7 +41,7 @@ import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.SingleThreadedExecutor
 import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, NormalMode}
 import org.neo4j.cypher.internal.spi.codegen.GeneratedQueryStructure
-import org.neo4j.cypher.internal.{CompilerEngineDelegator, ExecutionPlan, RewindableExecutionResult}
+import org.neo4j.cypher.internal.{MasterCompiler, ExecutionPlan, RewindableExecutionResult}
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
@@ -80,8 +80,8 @@ object CypherReductionSupport {
     nonIndexedLabelWarningThreshold = 0,
     planWithMinimumCardinalityEstimates = true)
   private val kernelMonitors = new Monitors
-  private val planner = CypherPlanner(astRewriter, WrappedMonitors(kernelMonitors), stepSequencer, metricsFactory, config, defaultUpdateStrategy,
-    CompilerEngineDelegator.CLOCK, CommunityRuntimeContextCreator)
+  private val compiler = CypherPlanner(astRewriter, WrappedMonitors(kernelMonitors), stepSequencer, metricsFactory, config, defaultUpdateStrategy,
+    MasterCompiler.CLOCK, CommunityRuntimeContextCreator)
 
   private val monitor = kernelMonitors.newMonitor(classOf[IDPQueryGraphSolverMonitor])
   private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
@@ -190,7 +190,7 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
 
     baseState = rewriting.transform(baseState, planningContext)
 
-    val logicalPlanState = CypherReductionSupport.planner.planPreparedQuery(baseState, planningContext)
+    val logicalPlanState = CypherReductionSupport.compiler.planPreparedQuery(baseState, planningContext)
 
 
     val compilationState = createExecPlan.transform(logicalPlanState, planningContext)
@@ -208,10 +208,10 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
     if (enterprise) {
       val dispatcher = new SingleThreadedExecutor(1)
       EnterpriseRuntimeContextCreator(GeneratedQueryStructure, dispatcher).create(NO_TRACING, devNullLogger, planContext, query, Set(),
-        None, WrappedMonitors(new Monitors), metricsFactory, queryGraphSolver, config, defaultUpdateStrategy, CompilerEngineDelegator.CLOCK, logicalPlanIdGen, null)
+        None, WrappedMonitors(new Monitors), metricsFactory, queryGraphSolver, config, defaultUpdateStrategy, MasterCompiler.CLOCK, logicalPlanIdGen, null)
     } else {
     CommunityRuntimeContextCreator.create(NO_TRACING, devNullLogger, planContext, query, Set(),
-      None, WrappedMonitors(new Monitors), metricsFactory, queryGraphSolver, config = config, updateStrategy = defaultUpdateStrategy, clock = CompilerEngineDelegator.CLOCK, logicalPlanIdGen, evaluator = null)
+      None, WrappedMonitors(new Monitors), metricsFactory, queryGraphSolver, config = config, updateStrategy = defaultUpdateStrategy, clock = MasterCompiler.CLOCK, logicalPlanIdGen, evaluator = null)
     }
   }
 }

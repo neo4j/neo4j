@@ -23,7 +23,7 @@ import java.time.Clock;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.internal.CacheTracer;
-import org.neo4j.cypher.internal.CompatibilityFactory;
+import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.CypherConfiguration;
 import org.neo4j.cypher.internal.StringCacheMonitor;
 import org.neo4j.cypher.internal.tracing.CompilationTracer;
@@ -57,7 +57,7 @@ public class ExecutionEngine implements QueryExecutionEngine
      * @param queryService The database to wrap
      * @param logProvider A {@link LogProvider} for cypher-statements
      */
-    public ExecutionEngine( GraphDatabaseQueryService queryService, LogProvider logProvider, CompatibilityFactory compatibilityFactory )
+    public ExecutionEngine( GraphDatabaseQueryService queryService, LogProvider logProvider, CompilerFactory compilerFactory )
     {
         DependencyResolver resolver = queryService.getDependencyResolver();
         Monitors monitors = resolver.resolveDependency( Monitors.class );
@@ -71,7 +71,7 @@ public class ExecutionEngine implements QueryExecutionEngine
                                                                tracer,
                                                                cacheTracer,
                                                                cypherConfiguration,
-                                                               compatibilityFactory,
+                                                               compilerFactory,
                                                                logProvider,
                                                                Clock.systemUTC() );
     }

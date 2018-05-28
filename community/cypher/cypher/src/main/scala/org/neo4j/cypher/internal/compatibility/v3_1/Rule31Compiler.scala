@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.compiler.v3_1.{CypherCompilerConfiguration, Cyp
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
-case class RuleCompatibility(graph: GraphDatabaseQueryService,
-                             config: CypherCompilerConfiguration,
-                             clock: Clock,
-                             kernelMonitors: KernelMonitors) extends Compatibility {
+case class Rule31Compiler(graph: GraphDatabaseQueryService,
+                          config: CypherCompilerConfiguration,
+                          clock: Clock,
+                          kernelMonitors: KernelMonitors) extends Cypher31Compiler {
   protected val compiler = {
     val monitors = WrappedMonitors(kernelMonitors)
     CypherCompilerFactory.ruleBasedCompiler(graph, config, clock, monitors, rewriterSequencer, typeConversions)

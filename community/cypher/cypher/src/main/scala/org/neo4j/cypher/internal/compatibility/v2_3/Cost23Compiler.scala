@@ -28,13 +28,13 @@ import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 
-case class CostCompatibility(graph: GraphDatabaseQueryService,
-                             config: CypherCompilerConfiguration,
-                             clock: Clock,
-                             kernelMonitors: KernelMonitors,
-                             log: Log,
-                             planner: CypherPlannerOption,
-                             runtime: CypherRuntimeOption) extends Compatibility {
+case class Cost23Compiler(graph: GraphDatabaseQueryService,
+                          config: CypherCompilerConfiguration,
+                          clock: Clock,
+                          kernelMonitors: KernelMonitors,
+                          log: Log,
+                          planner: CypherPlannerOption,
+                          runtime: CypherRuntimeOption) extends Cypher23Compiler {
 
   protected val compiler = {
     val plannerName = planner match {
