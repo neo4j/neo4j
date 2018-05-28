@@ -43,21 +43,6 @@ public class EnterpriseBuiltInProcedures
     @Context
     public DependencyResolver resolver;
 
-    @Description( "Create a unique property constraint with index backed by specified index provider " +
-            "(for example: CALL db.createUniquePropertyConstraint(\":Person(name)\", \"lucene+native-2.0\")) - " +
-            "YIELD index, providerName, status" )
-    @Procedure( name = "db.createUniquePropertyConstraint", mode = SCHEMA )
-    public Stream<BuiltInProcedures.SchemaIndexInfo> createUniquePropertyConstraint(
-            @Name( "index" ) String index,
-            @Name( "providerName" ) String providerName )
-            throws ProcedureException
-    {
-        try ( IndexProcedures indexProcedures = indexProcedures() )
-        {
-            return indexProcedures.createUniquePropertyConstraint( index, providerName );
-        }
-    }
-
     @Description( "Create a node key constraint with index backed by specified index provider " +
             "(for example: CALL db.createNodeKey(\":Person(name)\", \"lucene+native-2.0\")) - " +
             "YIELD index, providerName, status" )

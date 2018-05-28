@@ -51,8 +51,7 @@ public class EnterpriseCreateIndexProcedureIT extends CreateIndexProcedureIT
     public static Collection<Object[]> parameters()
     {
         return Arrays.asList(
-                new Object[]{ false, "createUniquePropertyConstraint", "uniqueness constraint online" },
-                new Object[]{ true, "createNodeKey", "node key constraint online" }
+                (Object[][]) new Object[]{true, "createNodeKey", "node key constraint online"}
         );
     }
 
