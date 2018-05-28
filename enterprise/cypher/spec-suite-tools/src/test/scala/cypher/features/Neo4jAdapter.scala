@@ -24,6 +24,7 @@ package cypher.features
 
 import cypher.features.Neo4jExceptionToExecutionFailed._
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_hints_error
 import org.neo4j.graphdb.{Result => Neo4jResult}
@@ -33,6 +34,7 @@ import org.opencypher.tools.tck.api._
 import org.opencypher.tools.tck.values.CypherValue
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
 import scala.util.{Failure, Success, Try}
 
 object Neo4jAdapter {
@@ -81,13 +83,14 @@ class Neo4jAdapter(service: GraphDatabaseCypherService, executionPrefix: String)
 
   def convertResult(result: Neo4jResult): Result = {
     val header = result.columns().asScala.toList
-    val rows: List[Map[String, String]] = result.asScala.map {
-      row =>
-        row.asScala.map {
-          case (k, v) => (k, Neo4jValueToString(v))
-        }.toMap
-    }.toList
-    StringRecords(header, rows)
+    val rows = ArrayBuffer[Map[String, String]]()
+    result.accept(new ResultVisitor[RuntimeException] {
+      override def visit(row: Neo4jResult.ResultRow): Boolean = {
+        rows.append(header.map(k => k -> Neo4jValueToString(row.get(k))).toMap)
+        true
+      }
+    })
+    StringRecords(header, rows.toList)
   }
 
   override def close(): Unit = {
