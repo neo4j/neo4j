@@ -50,7 +50,6 @@ import org.neo4j.metrics.source.db.CypherMetrics;
 import org.neo4j.metrics.source.db.EntityCountMetrics;
 import org.neo4j.metrics.source.db.TransactionMetrics;
 import org.neo4j.metrics.source.jvm.ThreadMetrics;
-import org.neo4j.platform.GraphDatabaseFacadeFactory;
 import org.neo4j.test.ha.ClusterRule;
 
 import static java.lang.System.currentTimeMillis;
@@ -241,7 +240,7 @@ public class MetricsKernelExtensionFactoryIT
         GraphDatabaseService nullTracerDatabase =
                 builder.setConfig( MetricsSettings.neoEnabled, Settings.TRUE ).setConfig( csvEnabled, Settings.TRUE )
                         .setConfig( csvPath, outputPath.getAbsolutePath() )
-                        .setConfig( GraphDatabaseFacadeFactory.Configuration.tracer, "null" ) // key point!
+                        .setConfig( GraphDatabaseSettings.tracer, "null" ) // key point!
                         .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                         .newGraphDatabase();
         try ( Transaction tx = nullTracerDatabase.beginTx() )

@@ -32,12 +32,12 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.lock.trace.LockRecord;
 import org.neo4j.kernel.ha.lock.trace.RecordingLockTracer;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -54,7 +54,7 @@ public class SlaveStatementLocksFactoryIT
 
     @Rule
     public final ClusterRule clusterRule = new ClusterRule()
-            .withSharedSetting( GraphDatabaseFacadeFactory.Configuration.tracer, "slaveLocksTracer" )
+            .withSharedSetting( GraphDatabaseSettings.tracer, "slaveLocksTracer" )
             .withSharedSetting( HaSettings.tx_push_factor, "2" );
     private ClusterManager.ManagedCluster managedCluster;
 

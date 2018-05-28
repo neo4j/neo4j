@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_4
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.interpreted.commands._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{NonEmpty, True}

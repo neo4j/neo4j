@@ -11,7 +11,7 @@
   <artifactId>neo4j</artifactId>
   <version>3.5.0-SNAPSHOT</version>
 
-  <name>Neo4j - Community</name>
+  <name>Neo4j - Community Edition</name>
   <packaging>jar</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
   <description>A meta package containing the most used Neo4j libraries. Intended use: as a Maven dependency.</description>

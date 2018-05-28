@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -100,6 +101,7 @@ import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
  * is the number of updates in the larges transaction and that should be the larges error since we check if the index is
  * online between each transaction.
  */
+@Ignore
 @RunWith( Parameterized.class )
 public class IndexStatisticsTest
 {

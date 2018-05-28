@@ -4,17 +4,23 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
+  Apache Commons Compress
   Apache Commons Lang
   Apache Commons Text
   Caffeine cache
   ConcurrentLinkedHashMap
+  Data Mapper for Jackson
   FindBugs-jsr305
+  Jackson
+  jPowerShell
+  jProcesses
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
   Lucene Memory
   Lucene QueryParsers
   Netty/All-in-One
+  Objenesis
   opencsv
   openCypher AST for the Cypher Query Language
   openCypher Expressions
@@ -25,6 +31,7 @@ Apache Software License, Version 2.0
   openCypher Utils
   parboiled-core
   parboiled-scala
+  WMI4Java
 ------------------------------------------------------------------------------
 
                                  Apache License

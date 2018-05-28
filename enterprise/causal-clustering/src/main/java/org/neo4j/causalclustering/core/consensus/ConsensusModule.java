@@ -27,10 +27,10 @@ import java.time.Duration;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.EnterpriseCoreEditionModule;
-import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.MonitoredRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCacheFactory;
 import org.neo4j.causalclustering.core.consensus.log.segmented.CoreLogPruningStrategy;
 import org.neo4j.causalclustering.core.consensus.log.segmented.CoreLogPruningStrategyFactory;
@@ -53,11 +53,11 @@ import org.neo4j.causalclustering.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.platform.PlatformModule;
+import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.catchup_batch_size;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.join_catch_up_timeout;

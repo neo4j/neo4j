@@ -28,17 +28,18 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
-import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.platform.GraphDatabaseDependencies;
+import org.neo4j.platform.GraphDatabaseFacadeFactory;
+import org.neo4j.platform.PlatformModule;
 
 /**
  * Factory for test graph database.
@@ -53,7 +54,7 @@ public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
         {
             Config config = Config.builder()
                     .withSettings( params )
-                    .withSetting( GraphDatabaseFacadeFactory.Configuration.ephemeral, "false" ).build();
+                    .withSetting( GraphDatabaseSettings.ephemeral, "false" ).build();
             return new GraphDatabaseFacadeFactory( DatabaseInfo.ENTERPRISE, EnterpriseEditionModule::new )
             {
                 @Override

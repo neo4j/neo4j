@@ -48,7 +48,6 @@ import static org.junit.Assert.assertEquals;
 
 public class ExportTest
 {
-
     private GraphDatabaseService gdb;
     private Transaction tx;
 

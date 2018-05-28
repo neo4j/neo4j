@@ -33,6 +33,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.info.LockInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

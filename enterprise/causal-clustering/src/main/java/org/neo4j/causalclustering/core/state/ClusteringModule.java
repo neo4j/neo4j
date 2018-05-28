@@ -40,10 +40,10 @@ import org.neo4j.causalclustering.identity.DatabaseName;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.platform.PlatformModule;
 import org.neo4j.time.Clocks;
 
 import static java.lang.Thread.sleep;

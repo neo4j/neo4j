@@ -21,6 +21,7 @@ package org.neo4j.internal.kernel.api;
 
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -454,6 +455,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
+    @Ignore
     public void shouldPerformSpatialRangeSearch() throws KernelException
     {
         assumeTrue( spatialRangeSupport() );
@@ -579,6 +581,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
+    @Ignore
     public void shouldRespectOrderCapabilitiesForSpatial() throws KernelException
     {
         assumeTrue( spatialRangeSupport() );
@@ -757,6 +760,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
+    @Ignore
     public void shouldGetVersionAndKeyFromIndexReference()
     {
         // Given
