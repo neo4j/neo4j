@@ -36,6 +36,20 @@ object Transformer {
 
     override def name: String = "identity"
   }
+
+  /**
+    * Transformer that can be inserted when debugging, to help detect
+    * what part of the compilation that introduces an ast issue.
+    */
+  def printAst(tag: String) = new Transformer[BaseContext, BaseState, BaseState] {
+    override def transform(from: BaseState, context: BaseContext) = {
+      println("     |||||||| PRINT AST: "+tag)
+      println(from.maybeStatement.get)
+      from
+    }
+
+    override def name: String = "print ast"
+  }
 }
 
 class PipeLine[-C <: BaseContext, FROM, MID, TO](first: Transformer[C, FROM, MID], after: Transformer[C, MID, TO]) extends Transformer[C, FROM, TO] {

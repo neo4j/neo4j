@@ -23,8 +23,6 @@ import org.neo4j.cypher.internal.util.v3_4.Foldable._
 import org.neo4j.cypher.internal.util.v3_4.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.v3_4.expressions._
 
-import scala.annotation.tailrec
-
 /**
   * Transitive closure of where clauses.
   *
@@ -53,6 +51,7 @@ case object transitiveClosure extends StatementRewriter {
       case _: And => (acc) => (acc, Some(identity))
       case Equals(p1: Property, p2: Property) => (acc) => (acc.withEquivalence(p1 -> p2), None)
       case Equals(p: Property, other) => (acc) => (acc.withMapping(p -> other), None)
+      case Not(Equals(_,_)) => (acc) => (acc, None)
     }
 
     //NOTE that this might introduce duplicate predicates, however at a later rewrite
@@ -70,10 +69,17 @@ case object transitiveClosure extends StatementRewriter {
         }
     })
 
-    private def andRewriter(closures: Closures): Rewriter = bottomUp(Rewriter.lift {
-      case equals@Equals(p1: Property, p2: Property) if closures.mapping.contains(p2) =>
-        equals.copy(rhs = closures.mapping(p2))(equals.position)
-    })
+    private def andRewriter(closures: Closures): Rewriter = {
+      val stopOnNotEquals: AnyRef => Boolean = {
+        case not@Not(Equals(_, _)) => true
+        case _ => false
+      }
+
+      bottomUp(Rewriter.lift {
+        case equals@Equals(p1: Property, p2: Property) if closures.mapping.contains(p2) =>
+          equals.copy(rhs = closures.mapping(p2))(equals.position)
+      }, stopOnNotEquals)
+    }
   }
 
   case class Closures(mapping: Map[Property, Expression] = Map.empty,
