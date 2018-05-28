@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.format.standard;
 
-import java.io.IOException;
-
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
@@ -35,7 +33,6 @@ public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<Rela
     // first_prev_rel_id(int)+first_next_rel_id+second_prev_rel_id(int)+
     // second_next_rel_id+next_prop_id(int)+first-in-chain-markers(1)
     public static final int RECORD_SIZE = 34;
-    private static final int HEADER_SIZE = 1;
 
     public RelationshipRecordFormat()
     {

@@ -30,7 +30,6 @@ public class NodeRecordFormat extends BaseOneByteHeaderRecordFormat<NodeRecord>
 {
     // in_use(byte)+next_rel_id(int)+next_prop_id(int)+labels(5)+extra(byte)
     public static final int RECORD_SIZE = 15;
-    private static final int HEADER_SIZE = 1;
 
     public NodeRecordFormat()
     {
