@@ -113,7 +113,7 @@ public final class CypherFunctions
         }
         else if ( in instanceof NumberValue )
         {
-            return doubleValue( (1.0 - Math.cos( ((NumberValue) in).doubleValue() ) )/ 2 );
+            return doubleValue( (1.0 - Math.cos( ((NumberValue) in).doubleValue() )) / 2 );
         }
         else
         {
