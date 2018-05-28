@@ -30,88 +30,29 @@ import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.NullLog;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.udc.UsageData;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class BoltFactoryImplTest
 {
     private static final Clock CLOCK = Clock.systemUTC();
-    private static final BoltChannel boltChannel = mock( BoltChannel.class );
+    private static final BoltChannel CHANNEL = mock( BoltChannel.class );
 
     @Test
-    public void newMachineThrowsWhenNotStarted()
+    public void shouldCreateBoltStateMachines()
     {
-        BoltFactoryImpl boltFactory = newBoltFactory();
+        BoltFactoryImpl factory = newBoltFactory();
 
-        try
-        {
-            boltFactory.newMachine( boltChannel, CLOCK );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            // expected
-        }
-    }
+        BoltStateMachine boltStateMachine = factory.newMachine( CHANNEL, CLOCK );
 
-    @Test
-    public void newMachineThrowsWhenStopped()
-    {
-        BoltFactoryImpl boltFactory = newBoltFactory();
-
-        boltFactory.start();
-
-        BoltStateMachine stateMachine = boltFactory.newMachine( boltChannel, CLOCK );
-
-        assertNotNull( stateMachine );
-
-        boltFactory.stop();
-
-        try
-        {
-            boltFactory.newMachine( boltChannel, CLOCK );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            // expected
-        }
-    }
-
-    @Test
-    public void txIdStoreRefreshedAfterRestart()
-    {
-        GraphDatabaseAPI db = newDbMock();
-        DependencyResolver dependencyResolver = db.getDependencyResolver();
-        TransactionIdStore txIdStoreBeforeRestart = mock( TransactionIdStore.class );
-        when( txIdStoreBeforeRestart.getLastClosedTransactionId() ).thenReturn( 42L );
-        TransactionIdStore txIdStoreAfterRestart = mock( TransactionIdStore.class );
-        when( txIdStoreAfterRestart.getLastClosedTransactionId() ).thenReturn( 4242L );
-        when( dependencyResolver.provideDependency( TransactionIdStore.class ) )
-                .thenReturn( () -> txIdStoreBeforeRestart ).thenReturn( () -> txIdStoreAfterRestart );
-
-        BoltFactoryImpl boltFactory = newBoltFactory( db );
-
-        boltFactory.start();
-
-        BoltStateMachine stateMachine1 = boltFactory.newMachine( boltChannel, CLOCK );
-        assertEquals( 42, stateMachine1.spi.transactionSpi().newestEncounteredTxId() );
-
-        boltFactory.stop();
-        boltFactory.start();
-
-        BoltStateMachine stateMachine2 = boltFactory.newMachine( boltChannel, CLOCK );
-        assertEquals( 4242, stateMachine2.spi.transactionSpi().newestEncounteredTxId() );
+        assertNotNull( boltStateMachine );
     }
 
     private static BoltFactoryImpl newBoltFactory()
@@ -121,9 +62,8 @@ public class BoltFactoryImplTest
 
     private static BoltFactoryImpl newBoltFactory( GraphDatabaseAPI db )
     {
-        return new BoltFactoryImpl( db, new UsageData( new OnDemandJobScheduler() ), NullLogService.getInstance(),
-                new ThreadToStatementContextBridge( mock( AvailabilityGuard.class ) ), mock( Authentication.class ), BoltConnectionTracker.NOOP,
-                Config.defaults() );
+        return new BoltFactoryImpl( db, new UsageData( new OnDemandJobScheduler() ), new AvailabilityGuard( CLOCK, NullLog.getInstance() ),
+                mock( Authentication.class ), BoltConnectionTracker.NOOP, Config.defaults(), NullLogService.getInstance() );
     }
 
     private static GraphDatabaseAPI newDbMock()
