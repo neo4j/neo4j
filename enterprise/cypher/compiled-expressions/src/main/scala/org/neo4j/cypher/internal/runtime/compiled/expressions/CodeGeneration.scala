@@ -24,11 +24,12 @@ package org.neo4j.cypher.internal.runtime.compiled.expressions
 
 import org.neo4j.codegen
 import org.neo4j.codegen.CodeGenerator.generateCode
-import org.neo4j.codegen.Expression.{getStatic, invoke}
+import org.neo4j.codegen.Expression.{constant, getStatic, invoke, newArray}
 import org.neo4j.codegen.FieldReference.staticField
 import org.neo4j.codegen.MethodDeclaration.method
 import org.neo4j.codegen.MethodReference.methodReference
 import org.neo4j.codegen.Parameter.param
+import org.neo4j.codegen.TypeReference.typeReference
 import org.neo4j.codegen._
 import org.neo4j.codegen.bytecode.ByteCode.BYTECODE
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
@@ -79,26 +80,26 @@ object CodeGeneration {
     //Values.longValue(value)
     case Integer(value) =>
       invoke(methodReference(VALUES, LONG,
-                             "longValue", classOf[Long]), Expression.constant(value.longValue()))
+                             "longValue", classOf[Long]), constant(value.longValue()))
     //Values.doubleValue(value)
     case Float(value) =>
       invoke(methodReference(VALUES, DOUBLE,
-                             "doubleValue", classOf[Double]), Expression.constant(value.doubleValue()))
+                             "doubleValue", classOf[Double]), constant(value.doubleValue()))
     //Values.stringValue(value)
     case StringLiteral(value) =>
       invoke(methodReference(VALUES, TEXT,
-                             "stringValue", classOf[String]), Expression.constant(value.stringValue()))
+                             "stringValue", classOf[String]), constant(value.stringValue()))
     //loads a given constant
-    case Constant(value) => Expression.constant(value)
+    case Constant(value) => constant(value)
     //Values.NO_VALUE
     case NULL => getStatic(staticField(VALUES, VALUE, "NO_VALUE"))
     //Values.TRUE
     case TRUE => getStatic(staticField(VALUES, classOf[BooleanValue], "TRUE"))
     //Values.FALSE
     case FALSE => getStatic(staticField(VALUES, classOf[BooleanValue], "FALSE"))
-      //Loads an AnyValue[]
-    case ArrayLiteral(values) => Expression.newArray(TypeReference.typeReference(classOf[AnyValue]),
-                                                     values.map(v => compileExpression(v, block)):_*)
+      //new ArrayValue[]{p1, p2,...}
+    case ArrayLiteral(values) => newArray(typeReference(classOf[AnyValue]),
+                                          values.map(v => compileExpression(v, block)):_*)
   }
 
 

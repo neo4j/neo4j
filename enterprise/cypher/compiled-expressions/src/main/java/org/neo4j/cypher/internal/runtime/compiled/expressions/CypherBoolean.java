@@ -57,7 +57,7 @@ import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 /**
- * This class contains static helper math methods used by the compiled expressions
+ * This class contains static helper boolean methods used by the compiled expressions
  */
 @SuppressWarnings( "unused" )
 public final class CypherBoolean

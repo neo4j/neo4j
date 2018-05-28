@@ -103,6 +103,10 @@ case object TRUE extends IntermediateRepresentation
   */
 case object FALSE extends IntermediateRepresentation
 
+/**
+  * Loads an array literal of the given inputs
+  * @param values
+  */
 case class ArrayLiteral(values: Array[IntermediateRepresentation]) extends IntermediateRepresentation
 
 /**
