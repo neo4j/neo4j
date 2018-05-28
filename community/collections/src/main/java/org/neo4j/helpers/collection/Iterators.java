@@ -588,6 +588,68 @@ public final class Iterators
         return asIterator( maxItems, items );
     }
 
+    public static <T> Iterator<T> appendTo( Iterator<T> iterator, T... appended )
+    {
+        return new Iterator<T>()
+        {
+            private int index;
+
+            @Override
+            public boolean hasNext()
+            {
+                return iterator.hasNext() || index < appended.length;
+            }
+
+            @Override
+            public T next()
+            {
+                if ( iterator.hasNext() )
+                {
+                    return iterator.next();
+                }
+                else if ( index < appended.length )
+                {
+                    return appended[index++];
+                }
+                else
+                {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
+    }
+
+    public static <T> Iterator<T> prependTo( Iterator<T> iterator, T... prepended )
+    {
+        return new Iterator<T>()
+        {
+            private int index;
+
+            @Override
+            public boolean hasNext()
+            {
+                return index < prepended.length || iterator.hasNext();
+            }
+
+            @Override
+            public T next()
+            {
+                if ( index < prepended.length )
+                {
+                    return prepended[index++];
+                }
+                else if ( iterator.hasNext() )
+                {
+                    return iterator.next();
+                }
+                else
+                {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
+    }
+
     @SuppressWarnings( "unchecked" )
     public static <T> ResourceIterator<T> emptyResourceIterator()
     {

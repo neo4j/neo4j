@@ -63,37 +63,6 @@ public final class VirtualValues
         return new ListValue.ArrayValueListValue( arrayValue );
     }
 
-    public static ListValue dropNoValues( ListValue list )
-    {
-        return new ListValue.DropNoValuesListValue( list );
-    }
-
-    public static ListValue slice( ListValue list, int from, int to )
-    {
-        int f = Math.max( from, 0 );
-        int t = Math.min( to, list.size() );
-        if ( f > t )
-        {
-            return EMPTY_LIST;
-        }
-        else
-        {
-            return new ListValue.ListSlice( list, f, t );
-        }
-    }
-
-    public static ListValue drop( ListValue list, int n )
-    {
-        int start = Math.max( 0, Math.min( n, list.size() ) );
-        return new ListValue.ListSlice( list, start, list.size() );
-    }
-
-    public static ListValue take( ListValue list, int n )
-    {
-        int end = Math.max( 0, Math.min( n, list.size() ) );
-        return new ListValue.ListSlice( list, 0, end );
-    }
-
     /*
     TOMBSTONE: TransformedListValue & FilteredListValue
 
@@ -106,30 +75,9 @@ public final class VirtualValues
 
     */
 
-    public static ListValue reverse( ListValue list )
-    {
-        return new ListValue.ReversedList( list );
-    }
-
     public static ListValue concat( ListValue... lists )
     {
         return new ListValue.ConcatList( lists );
-    }
-
-    public static ListValue appendToList( ListValue list, AnyValue value )
-    {
-        AnyValue[] newValues = new AnyValue[list.size() + 1];
-        System.arraycopy( list.asArray(), 0, newValues, 0, list.size() );
-        newValues[list.size()] = value;
-        return VirtualValues.list( newValues );
-    }
-
-    public static ListValue prependToList( ListValue list, AnyValue value )
-    {
-        AnyValue[] newValues = new AnyValue[list.size() + 1];
-        newValues[0] = value;
-        System.arraycopy( list.asArray(), 0, newValues, 1, list.size() );
-        return VirtualValues.list( newValues );
     }
 
     public static MapValue emptyMap()

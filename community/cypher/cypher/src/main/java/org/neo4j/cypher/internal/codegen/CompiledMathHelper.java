@@ -78,11 +78,11 @@ public final class CompiledMathHelper
             }
             else if ( rhs instanceof AnyValue )
             {
-                return VirtualValues.appendToList( (ListValue) lhs, (AnyValue) rhs );
+                return ((ListValue) lhs).append( (AnyValue) rhs );
             }
             else
             {
-                return VirtualValues.appendToList( (ListValue) lhs, ValueUtils.of( rhs ) );
+                return ((ListValue) lhs).append( ValueUtils.of( rhs ) );
             }
         }
         else if ( rhs instanceof ListValue )
@@ -93,11 +93,11 @@ public final class CompiledMathHelper
             }
             else if ( lhs instanceof AnyValue )
             {
-                return VirtualValues.prependToList( (ListValue) rhs, (AnyValue) lhs );
+                return ( (ListValue) rhs).prepend( (AnyValue) lhs );
             }
             else
             {
-                return VirtualValues.prependToList( (ListValue) rhs, ValueUtils.of( lhs ) );
+                return ((ListValue) rhs).prepend( ValueUtils.of( lhs ) );
             }
         }
         else if ( lhs instanceof List<?> && rhs instanceof List<?> )
