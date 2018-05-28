@@ -17,6 +17,10 @@
   <name>Neo4j - Metrics Kernel Extension</name>
   <packaging>jar</packaging>
 
+  <properties>
+    <license-text.header>../../build/AGPL-3-header.txt</license-text.header>
+  </properties>
+
   <build>
     <plugins>
       <plugin>
