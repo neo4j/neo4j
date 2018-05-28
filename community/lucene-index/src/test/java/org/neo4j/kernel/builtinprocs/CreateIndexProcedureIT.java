@@ -21,8 +21,11 @@ package org.neo4j.kernel.builtinprocs;
 
 import org.hamcrest.Matchers;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.StringJoiner;
 import java.util.concurrent.TimeUnit;
 
@@ -56,8 +59,18 @@ import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE10;
 import static org.neo4j.values.storable.Values.stringValue;
 
+@RunWith( Parameterized.class )
 public class CreateIndexProcedureIT extends KernelIntegrationTest
 {
+    @Parameterized.Parameters( name = "{1}")
+    public static Collection<Object[]> parameters()
+    {
+        return Arrays.asList(
+                new Object[]{ true, "createIndex", "index created" }
+                new Object[]{ false, "createUniquePropertyConstraint", "uniqueness constraint online" },
+        );
+    }
+
     @Test
     public void createIndexWithGivenProvider() throws KernelException
     {

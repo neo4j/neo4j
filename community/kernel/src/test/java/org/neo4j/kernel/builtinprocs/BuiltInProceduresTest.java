@@ -327,6 +327,12 @@ public class BuiltInProceduresTest
                 record( "db.createIndex",
                         "db.createIndex(index :: STRING?, providerName :: STRING?) :: (index :: STRING?, providerName :: STRING?, status :: STRING?)",
                         "Create a schema index with specified index provider (for example: CALL db.createIndex(\":Person(name)\", \"lucene+native-2.0\")) - " +
+                                "YIELD index, providerName, status", "SCHEMA" ),
+                record( "db.createUniquePropertyConstraint",
+                        "db.createUniquePropertyConstraint(index :: STRING?, providerName :: STRING?) :: " +
+                                "(index :: STRING?, providerName :: STRING?, status :: STRING?)",
+                        "Create a unique property constraint with index backed by specified index provider " +
+                                "(for example: CALL db.createUniquePropertyConstraint(\":Person(name)\", \"lucene+native-2.0\")) - " +
                                 "YIELD index, providerName, status", "SCHEMA" )
         ) );
     }
