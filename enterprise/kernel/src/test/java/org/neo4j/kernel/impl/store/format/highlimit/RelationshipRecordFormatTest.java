@@ -79,10 +79,10 @@ public class RelationshipRecordFormatTest
         long recordId = 0xF1F1F1F1F1F1L;
         int recordOffset = cursor.getOffset();
 
-        RelationshipRecord record = createRecord( format, recordId, false, false );
-        RelationshipRecord firstInSecondChain = createRecord( format, recordId, false, true );
-        RelationshipRecord firstInFirstChain = createRecord( format, recordId, true, false );
-        RelationshipRecord firstInBothChains = createRecord( format, recordId, true, true );
+        RelationshipRecord record = createCompactRecord( format, recordId, false, false );
+        RelationshipRecord firstInSecondChain = createCompactRecord( format, recordId, false, true );
+        RelationshipRecord firstInFirstChain = createCompactRecord( format, recordId, true, false );
+        RelationshipRecord firstInBothChains = createCompactRecord( format, recordId, true, true );
 
         checkRecord( format, recordSize, cursor, recordId, recordOffset, record );
         checkRecord( format, recordSize, cursor, recordId, recordOffset, firstInSecondChain );
@@ -316,7 +316,8 @@ public class RelationshipRecordFormatTest
         cursor.setOffset( recordOffset );
     }
 
-    private RelationshipRecord createRecord( RelationshipRecordFormat format, long recordId,
+    // Create high-limit record which fits in one record
+    private RelationshipRecord createCompactRecord( RelationshipRecordFormat format, long recordId,
             boolean firstInFirstChain, boolean firstInSecondChain )
     {
         RelationshipRecord record = format.newRecord();
@@ -324,12 +325,12 @@ public class RelationshipRecordFormatTest
         record.setFirstInFirstChain( firstInFirstChain );
         record.setFirstInSecondChain( firstInSecondChain );
         record.setId( recordId );
-        record.setFirstNextRel( 1L );
-        record.setFirstNode( 2L );
-        record.setFirstPrevRel( 3L );
-        record.setSecondNextRel( 4L );
-        record.setSecondNode( 5L );
-        record.setSecondPrevRel( 6L );
+        record.setFirstNextRel( recordId + 1L );
+        record.setFirstNode( recordId + 2L );
+        record.setFirstPrevRel( recordId + 3L );
+        record.setSecondNextRel( recordId + 4L );
+        record.setSecondNode( recordId + 5L );
+        record.setSecondPrevRel( recordId + 6L );
         record.setType( 7 );
         return record;
     }
