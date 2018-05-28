@@ -173,4 +173,21 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
         }, Configs.AllRulePlanners))
     }
   }
+
+  test("should handle null with locking unique index seeks") {
+    //GIVEN
+    createLabeledNode("Person")
+    UniquenessConstraintCreator.createConstraint(graph, "Person", "name")
+    graph should not(haveConstraints(s"${UniquenessConstraintCreator.other.typeName}:Person(name)"))
+    graph should haveConstraints(s"${UniquenessConstraintCreator.typeName}:Person(name)")
+
+    val query = "MATCH (n:Person) WHERE n.name = null SET n:FOO"
+    //WHEN
+    executeWith(Configs.Interpreted - Configs.Cost2_3, query, planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+      //THEN
+      plan shouldNot useOperators("NodeIndexSeek")
+      plan shouldNot useOperators("NodeByLabelScan")
+      plan should useOperators("NodeUniqueIndexSeek(Locking)")
+    }, Configs.AllRulePlanners + Configs.Cost3_1))
+  }
 }
