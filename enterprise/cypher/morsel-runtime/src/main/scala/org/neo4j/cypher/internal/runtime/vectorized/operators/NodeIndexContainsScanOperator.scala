@@ -42,7 +42,7 @@ class NodeIndexContainsScanOperator(longsPerRow: Int, refsPerRow: Int, offset: I
     val read = context.transactionalContext.dataRead
     val index = context.transactionalContext.schemaRead.index(label, propertyKey)
 
-    var exprIsString: Boolean = true
+    var nullExpression: Boolean = false
 
     message match {
       case StartLeafLoop(is) =>
@@ -56,7 +56,7 @@ class NodeIndexContainsScanOperator(longsPerRow: Int, refsPerRow: Int, offset: I
             read.nodeIndexSeek(index, valueIndexCursor, IndexOrder.NONE, IndexQuery.stringContains(index.properties()(0), value.stringValue()))
           case Values.NO_VALUE =>
             // CONTAINS null does not produce any rows
-            exprIsString = false
+            nullExpression = true
           case x => throw new CypherTypeException(s"Expected a string value, but got $x")
         }
 
@@ -67,7 +67,7 @@ class NodeIndexContainsScanOperator(longsPerRow: Int, refsPerRow: Int, offset: I
       case _ => throw new IllegalStateException()
     }
 
-    if(exprIsString)
+    if(!nullExpression)
       iterate(data, valueIndexCursor, iterationState)
     else
       EndOfLoop(iterationState)
