@@ -60,8 +60,8 @@ import static org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing.getSna
  */
 public class FulltextProviderImpl implements FulltextProvider
 {
-    private final static int ASIDE = 0;
-    private final static int BSIDE = 1;
+    private static final int ASIDE = 0;
+    private static final int BSIDE = 1;
 
     private final GraphDatabaseService db;
     private final Log log;
@@ -73,8 +73,10 @@ public class FulltextProviderImpl implements FulltextProvider
     private final ReadWriteLock configurationLock;
     private static final JobScheduler.Group FLIPPER = new JobScheduler.Group( "FulltextIndexSideFlipper" );
     private final JobScheduler.JobHandle flipperJob;
-    private volatile boolean flipper;
+    private volatile boolean closed;
     private volatile int side;
+    //Used in order to not give awaitFlip false positives.
+    private volatile int tentativeSide;
 
     /**
      * Creates a provider of fulltext indices for the given database. This is the entry point for all fulltext index
@@ -101,7 +103,6 @@ public class FulltextProviderImpl implements FulltextProvider
         writableNodeIndices = new Map[]{new ConcurrentHashMap<>(), new ConcurrentHashMap<>()};
         writableRelationshipIndices = new Map[]{new ConcurrentHashMap<>(), new ConcurrentHashMap<>()};
         configurationLock = new ReentrantReadWriteLock( true );
-        flipper = true;
         flipperJob = jobScheduler.schedule( FLIPPER, () ->
         {
             boolean isAvailable;
@@ -110,7 +111,7 @@ public class FulltextProviderImpl implements FulltextProvider
                 isAvailable = availabilityGuard.isAvailable( 100 );
             }
             while ( !isAvailable && !availabilityGuard.isShutdown() );
-            while ( flipper )
+            while ( !closed )
             {
                 try
                 {
@@ -118,7 +119,7 @@ public class FulltextProviderImpl implements FulltextProvider
                 }
                 catch ( IOException e )
                 {
-                    e.printStackTrace();
+                    log.error( "Unable to flip fulltext index", e );
                 }
             }
         } );
@@ -158,25 +159,38 @@ public class FulltextProviderImpl implements FulltextProvider
     public void openIndex( String identifier, FulltextIndexType type ) throws IOException
     {
         LuceneFulltext a = factory.openFulltextIndex( identifier, ASIDE, type );
-        register( a, ASIDE );
         LuceneFulltext b = factory.openFulltextIndex( identifier, BSIDE, type );
-        register( b, BSIDE );
+        configurationLock.writeLock().lock();
+        try
+        {
+            register( a, ASIDE );
+            register( b, BSIDE );
+        }
+        finally
+        {
+            configurationLock.writeLock().unlock();
+        }
     }
 
     @Override
     public void createIndex( String identifier, FulltextIndexType type, List<String> properties ) throws IOException
     {
         LuceneFulltext a = factory.createFulltextIndex( identifier, ASIDE, type, properties );
-        register( a, ASIDE );
         LuceneFulltext b = factory.createFulltextIndex( identifier, BSIDE, type, properties );
-        register( b, BSIDE );
+        configurationLock.writeLock().lock();
+        try
+        {
+            register( a, ASIDE );
+            register( b, BSIDE );
+        }
+        finally
+        {
+            configurationLock.writeLock().unlock();
+        }
     }
 
     private void register( LuceneFulltext fulltextIndex, int side ) throws IOException
     {
-        configurationLock.writeLock().lock();
-        try
-        {
             WritableFulltext writableFulltext = new WritableFulltext( fulltextIndex );
             writableFulltext.open();
             if ( fulltextIndex.getType() == FulltextIndexType.NODES )
@@ -205,17 +219,12 @@ public class FulltextProviderImpl implements FulltextProvider
                 }
                 writableRelationshipIndices[side].put( fulltextIndex.getIdentifier(), writableFulltext );
             }
-        }
-        finally
-        {
-            configurationLock.writeLock().unlock();
-        }
     }
 
     @Override
     public ReadOnlyFulltext getReader( String identifier, FulltextIndexType type ) throws IOException
     {
-        //Lock to protect from flips before we register the reader.
+        //Lock to protect from flips before we get the reader.
         Lock lock = configurationLock.readLock();
         lock.lock();
         try
@@ -225,7 +234,10 @@ public class FulltextProviderImpl implements FulltextProvider
             {
                 throw new IllegalArgumentException( "No such " + type + " index '" + identifier + "'." );
             }
-            return writableFulltext.getIndexReader();
+            Lock readerLock = configurationLock.readLock();
+            readerLock.lock();
+            ReadOnlyFulltext indexReader = writableFulltext.getIndexReader();
+            return lockedIndexReader( readerLock, indexReader );
         }
         finally
         {
@@ -327,10 +339,10 @@ public class FulltextProviderImpl implements FulltextProvider
     @Override
     public void awaitFlip()
     {
-        int startSide = side;
-        while ( startSide == side )
+        int startSide = tentativeSide;
+        synchronized ( this )
         {
-            synchronized ( this )
+            while ( startSide == tentativeSide || side != tentativeSide )
             {
                 try
                 {
@@ -350,56 +362,58 @@ public class FulltextProviderImpl implements FulltextProvider
         configurationLock.writeLock().lock();
         try
         {
-            applier.writeBarrier().awaitCompletion();
-            int currentSide = side;
             List<AsyncFulltextIndexOperation> populations = new ArrayList<>();
-            int newSide = (currentSide + 1) % 2;
-            for ( WritableFulltext writableFulltext : writableNodeIndices[newSide].values() )
+            synchronized ( this )
             {
-                writableFulltext.awaitNoReaders();
-                writableFulltext.drop();
-                writableFulltext.open();
-                populations.add( applier.populateNodes( writableFulltext, db ) );
+                int currentSide = side;
+                tentativeSide = (currentSide + 1) % 2;
+                notifyAll();
             }
-            for ( WritableFulltext writableFulltext : writableRelationshipIndices[newSide].values() )
+            try
             {
-                writableFulltext.awaitNoReaders();
-                writableFulltext.drop();
-                writableFulltext.open();
-                populations.add( applier.populateRelationships( writableFulltext, db ) );
+                applier.writeBarrier().awaitCompletion();
+                for ( WritableFulltext writableFulltext : writableNodeIndices[tentativeSide].values() )
+                {
+                    writableFulltext.drop();
+                    writableFulltext.open();
+                    populations.add( applier.populateNodes( writableFulltext, db ) );
+                }
+                for ( WritableFulltext writableFulltext : writableRelationshipIndices[tentativeSide].values() )
+                {
+                    writableFulltext.drop();
+                    writableFulltext.open();
+                    populations.add( applier.populateRelationships( writableFulltext, db ) );
+                }
             }
-
+            finally
+            {
+                configurationLock.writeLock().unlock();
+            }
             for ( AsyncFulltextIndexOperation population : populations )
             {
                 population.awaitCompletion();
             }
-            side = newSide;
             synchronized ( this )
             {
+                side = tentativeSide;
                 notifyAll();
             }
         }
-        catch ( ExecutionException | InterruptedException e )
+        catch ( ExecutionException e )
         {
             throw new IOException( "Unable to flip fulltext indexes", e );
-        }
-        finally
-        {
-            configurationLock.writeLock().unlock();
         }
     }
 
     private Resource snapshotStoreFiles( Collection<StoreFileMetadata> files ) throws IOException
     {
         final Collection<ResourceIterator<File>> snapshots = new ArrayList<>();
-        Lock lock = configurationLock.readLock();
-        lock.lock();
-        try
-        {
             for ( WritableFulltext index : Iterables.concat( writableNodeIndices[ASIDE].values(), writableNodeIndices[BSIDE].values(),
                     writableRelationshipIndices[ASIDE].values(), writableRelationshipIndices[BSIDE].values() ) )
             {
                 // Save the last committed transaction, then drain the update queue to make sure that we have applied _at least_ the commits the config claims.
+                Lock listingLock = configurationLock.readLock();
+                listingLock.lock();
                 index.saveConfiguration( transactionIdStore.getLastCommittedTransactionId() );
                 try
                 {
@@ -407,20 +421,72 @@ public class FulltextProviderImpl implements FulltextProvider
                 }
                 catch ( ExecutionException e )
                 {
-                    throw new IOException( "Unable to prepare index for snapshot." );
+                    throw new IOException( "Unable to prepare index for snapshot.", e );
                 }
                 index.flush();
                 ResourceIterator<File> snapshot = index.snapshot();
-                snapshots.add( snapshot );
-                files.addAll( getSnapshotFilesMetadata( snapshot ) );
+                ResourceIterator<File> lockedSnapshot = lockedSnapshot( listingLock, snapshot );
+                snapshots.add( lockedSnapshot );
+                files.addAll( getSnapshotFilesMetadata( lockedSnapshot ) );
             }
-        }
-        finally
-        {
-            lock.unlock();
-        }
         // Intentionally don't close the snapshots here, return them for closing by the consumer of the targetFiles list.
         return new MultiResource( snapshots );
+    }
+
+    private ResourceIterator<File> lockedSnapshot( Lock listingLock, ResourceIterator<File> snapshot )
+    {
+        return new ResourceIterator<File>()
+        {
+            @Override
+            public void close()
+            {
+                snapshot.close();
+                listingLock.unlock();
+            }
+
+            @Override
+            public boolean hasNext()
+            {
+                return snapshot.hasNext();
+            }
+
+            @Override
+            public File next()
+            {
+                return snapshot.next();
+            }
+        };
+    }
+
+    private ReadOnlyFulltext lockedIndexReader( Lock readerLock, ReadOnlyFulltext indexReader ) throws IOException
+    {
+        return new ReadOnlyFulltext()
+        {
+            @Override
+            public ScoreEntityIterator query( Collection<String> terms, boolean matchAll )
+            {
+                return indexReader.query( terms, matchAll );
+            }
+
+            @Override
+            public ScoreEntityIterator fuzzyQuery( Collection<String> terms, boolean matchAll )
+            {
+                return indexReader.fuzzyQuery( terms, matchAll );
+            }
+
+            @Override
+            public void close()
+            {
+                indexReader.close();
+                readerLock.unlock();
+            }
+
+            @Override
+            public FulltextIndexConfiguration getConfigurationDocument() throws IOException
+            {
+                return indexReader.getConfigurationDocument();
+            }
+        };
     }
 
     /**
@@ -429,14 +495,14 @@ public class FulltextProviderImpl implements FulltextProvider
     @Override
     public void close()
     {
-        flipper = false;
+        closed = true;
         try
         {
             flipperJob.waitTermination();
         }
         catch ( InterruptedException | ExecutionException e )
         {
-            e.printStackTrace();
+            log.error( "Unable stop the fulltext index flipper", e );
         }
         applier.stop();
         Consumer<WritableFulltext> fulltextCloser = luceneFulltextIndex ->

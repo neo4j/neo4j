@@ -700,6 +700,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
                 tx.success();
             }
 
+            provider.awaitFlip();
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
                 assertExactQueryFindsIds( reader, Arrays.asList( "thing", "zebra" ), false, firstID, secondID, fourthID );

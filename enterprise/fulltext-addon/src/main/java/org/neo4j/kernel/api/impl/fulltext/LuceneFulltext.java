@@ -24,7 +24,6 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.Analyzer;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,9 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
@@ -51,7 +48,6 @@ class LuceneFulltext extends AbstractLuceneIndex
     private final FulltextIndexType type;
     private Set<String> properties;
     private volatile InternalIndexState state;
-    private final AtomicInteger activeReaders;
 
     LuceneFulltext( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, Collection<String> properties, Analyzer analyzer,
             String identifier, FulltextIndexType type )
@@ -62,7 +58,6 @@ class LuceneFulltext extends AbstractLuceneIndex
         this.identifier = identifier;
         this.type = type;
         state = InternalIndexState.POPULATING;
-        activeReaders = new AtomicInteger();
     }
 
     LuceneFulltext( PartitionedIndexStorage indexStorage, WritableIndexPartitionFactory partitionFactory, Analyzer analyzer, String identifier,
@@ -129,7 +124,6 @@ class LuceneFulltext extends AbstractLuceneIndex
     ReadOnlyFulltext getIndexReader() throws IOException
     {
         ensureOpen();
-        activeReaders.incrementAndGet();
         List<AbstractIndexPartition> partitions = getPartitions();
         return hasSinglePartition( partitions ) ? createSimpleReader( partitions ) : createPartitionedReader( partitions );
     }
@@ -153,13 +147,13 @@ class LuceneFulltext extends AbstractLuceneIndex
     {
         AbstractIndexPartition singlePartition = getFirstPartition( partitions );
         PartitionSearcher partitionSearcher = singlePartition.acquireSearcher();
-        return new SimpleFulltextReader( partitionSearcher, properties.toArray( new String[0] ), analyzer, this::closed );
+        return new SimpleFulltextReader( partitionSearcher, properties.toArray( new String[0] ), analyzer );
     }
 
     private PartitionedFulltextReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         List<PartitionSearcher> searchers = acquireSearchers( partitions );
-        return new PartitionedFulltextReader( searchers, properties.toArray( new String[0] ), analyzer, this::closed );
+        return new PartitionedFulltextReader( searchers, properties.toArray( new String[0] ), analyzer );
     }
 
     void saveConfiguration( long txId ) throws IOException
@@ -188,56 +182,5 @@ class LuceneFulltext extends AbstractLuceneIndex
     void setFailed()
     {
         state = InternalIndexState.FAILED;
-    }
-
-    public void awaitNoReaders() throws InterruptedException
-    {
-        synchronized ( activeReaders )
-        {
-            while ( activeReaders.get() > 0 )
-            {
-                activeReaders.wait();
-            }
-        }
-    }
-
-    void closed( ReadOnlyFulltext closed )
-    {
-        activeReaders.decrementAndGet();
-        synchronized ( activeReaders )
-        {
-            activeReaders.notifyAll();
-        }
-    }
-
-    @Override
-    public ResourceIterator<File> snapshot() throws IOException
-    {
-        activeReaders.incrementAndGet();
-        ResourceIterator<File> snapshot = super.snapshot();
-        return new ResourceIterator<File>()
-        {
-            @Override
-            public void close()
-            {
-                activeReaders.decrementAndGet();
-                synchronized ( activeReaders )
-                {
-                    activeReaders.notifyAll();
-                }
-            }
-
-            @Override
-            public boolean hasNext()
-            {
-                return snapshot.hasNext();
-            }
-
-            @Override
-            public File next()
-            {
-                return snapshot.next();
-            }
-        };
     }
 }

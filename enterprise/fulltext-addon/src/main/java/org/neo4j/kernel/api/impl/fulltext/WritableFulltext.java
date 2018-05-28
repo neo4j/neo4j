@@ -98,9 +98,4 @@ class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>
     {
         return luceneIndex.getState();
     }
-
-    void awaitNoReaders() throws InterruptedException
-    {
-        luceneIndex.awaitNoReaders();
-    }
 }
