@@ -44,14 +44,13 @@ import org.neo4j.test.rule.EnterpriseDatabaseRule;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
-import static org.junit.Assert.assertTrue;
 
 public class MorselRuntimeStressIT
 {
     private static final int N_THREADS = 10;
-    private static final int ITERATIONS = 100;
+    private static final int ITERATIONS = 10;
     private static final int CHUNKS = 100;
-    private static final int N_NODES = 1000;
+    private static final int N_NODES = 100;
     private static final Label LABEL = Label.label( "LABEL" );
     private static final String EXPAND_QUERY = "CYPHER runtime=morsel MATCH (:LABEL)-->(n:LABEL) RETURN n";
     private static final String MATCH_NODE_QUERY = "CYPHER runtime=morsel MATCH (n:LABEL) RETURN n";
@@ -164,6 +163,4 @@ public class MorselRuntimeStressIT
             previous = node;
         }
     }
-
-
 }
