@@ -27,7 +27,18 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 
+/**
+ * Interface implemented by compiled expressions.
+ */
 public interface CompiledExpression
 {
+    /**
+     * Computes the result of an expression
+     *
+     * @param context the current context.
+     * @param tx the current transaction
+     * @param params the parameters of the query
+     * @return a computed result given the expression and input.
+     */
     AnyValue compute( ExecutionContext context, Transaction tx, MapValue params );
 }
