@@ -42,12 +42,8 @@ class CompiledExpressionConverter(log: Log) extends ExpressionConverter {
     case f: FunctionInvocation if f.function.isInstanceOf[AggregatingFunction] => None
 
     case e => try {
-      IntermediateCodeGeneration.compile(e) match {
-        case Some(ir) =>
-          Some(CompileWrappingExpression(CodeGeneration.compile(ir),
-                                         inner.toCommandExpression(expression)))
-        case _ => None
-      }
+      IntermediateCodeGeneration.compile(e).map(ir => CompileWrappingExpression(CodeGeneration.compile(ir),
+                                                                                inner.toCommandExpression(expression)))
     } catch {
       case t: Throwable =>
         //Something horrible happened, maybe we exceeded the bytecode size or introduced a bug so that we tried

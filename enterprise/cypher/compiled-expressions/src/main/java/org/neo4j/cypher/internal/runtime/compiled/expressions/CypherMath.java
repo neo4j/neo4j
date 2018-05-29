@@ -24,44 +24,18 @@ package org.neo4j.cypher.internal.runtime.compiled.expressions;
 
 import org.opencypher.v9_0.util.CypherTypeException;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
-
-import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.internal.kernel.api.RelationshipScanCursor;
-import org.neo4j.internal.kernel.api.Transaction;
-import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.SequenceValue;
-import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.ArrayValue;
-import org.neo4j.values.storable.BooleanValue;
-import org.neo4j.values.storable.DateTimeValue;
-import org.neo4j.values.storable.DateValue;
-import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.storable.DurationValue;
-import org.neo4j.values.storable.LocalDateTimeValue;
-import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
-import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
-import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.PathValue;
-import org.neo4j.values.virtual.VirtualNodeValue;
-import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;
-import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 /**
@@ -233,6 +207,6 @@ public final class CypherMath
             }
         }
         throw new CypherTypeException(
-                String.format( "Don't know how to subtract `%s` and `%s`", lhs, rhs ), null );
+                String.format( "Don't know how to multiply `%s` and `%s`", lhs, rhs ), null );
     }
 }

@@ -26,41 +26,15 @@ import org.opencypher.v9_0.util.CypherTypeException;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.internal.kernel.api.RelationshipScanCursor;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.SequenceValue;
-import org.neo4j.values.ValueMapper;
-import org.neo4j.values.storable.BooleanValue;
-import org.neo4j.values.storable.DateTimeValue;
-import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DoubleValue;
-import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.IntegralValue;
-import org.neo4j.values.storable.LocalDateTimeValue;
-import org.neo4j.values.storable.LocalTimeValue;
-import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.NumberValue;
-import org.neo4j.values.storable.PointValue;
-import org.neo4j.values.storable.TemporalValue;
-import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.ListValue;
-import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.PathValue;
-import org.neo4j.values.virtual.VirtualNodeValue;
-import org.neo4j.values.virtual.VirtualRelationshipValue;
-import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.longValue;
-import static org.neo4j.values.storable.Values.stringValue;
 
 /**
  * This class contains static helper methods for the set of Cypher functions
@@ -85,7 +59,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( "sin requires numbers", null );
+            throw needsNumbers( "sin()" );
         }
     }
 
@@ -101,7 +75,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( "asin requires numbers", null );
+            throw needsNumbers( "asin()" );
         }
     }
 
@@ -117,7 +91,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( "asin requires numbers", null );
+            throw needsNumbers( "haversin()" );
         }
     }
 
@@ -133,7 +107,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( "cos requires numbers", null );
+            throw needsNumbers( "cos()" );
         }
     }
 
@@ -149,7 +123,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( "cot requires numbers", null );
+            throw needsNumbers( "cot()" );
         }
     }
 
@@ -165,7 +139,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( "acos requires numbers", null );
+            throw needsNumbers( "acos()" );
         }
     }
 
@@ -181,7 +155,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( "tan requires numbers", null );
+            throw needsNumbers( "tan()" );
         }
     }
 
@@ -197,7 +171,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( "atan requires numbers", null );
+            throw needsNumbers( "atan()" );
         }
     }
 
@@ -213,7 +187,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( "ceil requires numbers", null );
+            throw needsNumbers( "ceil()" );
         }
     }
 
@@ -229,7 +203,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( "ceil requires numbers", null );
+            throw needsNumbers( "floor()" );
         }
     }
 
@@ -245,7 +219,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( "round requires numbers", null );
+            throw needsNumbers( "round()" );
         }
     }
 
@@ -268,12 +242,17 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( "abs requires numbers", null );
+            throw needsNumbers( "abs()" );
         }
     }
 
     public static DoubleValue rand()
     {
         return doubleValue( ThreadLocalRandom.current().nextDouble() );
+    }
+
+    private static CypherTypeException needsNumbers( String method )
+    {
+        return new CypherTypeException( String.format( "%s requires numbers", method ), null );
     }
 }
