@@ -576,7 +576,6 @@ public class EntityUpdatesTest
                 ) );
     }
 
-
     @Test
     public void shouldNotGenerateUpdateAnyEntityTokenIndexWithIrrelevantProperty()
     {
