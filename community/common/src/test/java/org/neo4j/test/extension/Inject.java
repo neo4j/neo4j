@@ -17,26 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.muninn;
+package org.neo4j.test.extension;
 
-import org.junit.jupiter.api.extension.ExtendWith;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
-import org.neo4j.test.rule.TestDirectory;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-@ExtendWith( TestDirectoryExtension.class )
-class MuninnPageCacheSlowTestWithRealFileSystemIT extends MuninnPageCacheSlowIT
+@Target( FIELD )
+@Retention( RUNTIME )
+public @interface Inject
 {
-    @Inject
-    TestDirectory directory;
-
-    @Override
-    protected Fixture<MuninnPageCache> createFixture()
-    {
-        return super.createFixture()
-                    .withFileSystemAbstraction( DefaultFileSystemAbstraction::new )
-                    .withFileConstructor( directory::file );
-    }
 }

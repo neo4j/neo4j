@@ -19,11 +19,12 @@
  */
 package org.neo4j.io.pagecache.impl;
 
-import org.apache.commons.lang3.SystemUtils;
-import org.junit.After;
 import org.junit.AssumptionViolatedException;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -54,12 +55,13 @@ import org.neo4j.io.pagecache.PageSwapperTest;
 import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 
 public class SingleFilePageSwapperTest extends PageSwapperTest
@@ -68,16 +70,16 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     private DefaultFileSystemAbstraction fileSystem;
     private File file;
 
-    @Before
-    public void setUp() throws IOException
+    @BeforeEach
+    void setUp() throws IOException
     {
         file = new File( "file" ).getCanonicalFile();
         ephemeralFileSystem = new EphemeralFileSystemAbstraction();
         fileSystem = new DefaultFileSystemAbstraction();
     }
 
-    @After
-    public void tearDown() throws Exception
+    @AfterEach
+    void tearDown() throws Exception
     {
         IOUtils.closeAll( ephemeralFileSystem, fileSystem );
     }
@@ -120,12 +122,12 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         return getEphemeralFileSystem();
     }
 
-    protected FileSystemAbstraction getEphemeralFileSystem()
+    private FileSystemAbstraction getEphemeralFileSystem()
     {
         return ephemeralFileSystem;
     }
 
-    protected FileSystemAbstraction getRealFileSystem()
+    FileSystemAbstraction getRealFileSystem()
     {
         return fileSystem;
     }
@@ -147,7 +149,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     }
 
     @Test
-    public void swappingInMustFillPageWithData() throws Exception
+    void swappingInMustFillPageWithData() throws Exception
     {
         byte[] bytes = new byte[] { 1, 2, 3, 4 };
         StoreChannel channel = getFs().create( getFile() );
@@ -163,7 +165,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     }
 
     @Test
-    public void mustZeroFillPageBeyondEndOfFile() throws Exception
+    void mustZeroFillPageBeyondEndOfFile() throws Exception
     {
         byte[] bytes = new byte[] {
                 // --- page 0:
@@ -184,7 +186,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     }
 
     @Test
-    public void swappingOutMustWritePageToFile() throws Exception
+    void swappingOutMustWritePageToFile() throws Exception
     {
         getFs().create( getFile() ).close();
 
@@ -210,7 +212,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     }
 
     @Test
-    public void swappingOutMustNotOverwriteDataBeyondPage() throws Exception
+    void swappingOutMustNotOverwriteDataBeyondPage() throws Exception
     {
         byte[] initialData = new byte[] {
                 // --- page 0:
@@ -250,10 +252,9 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
      * The OverlappingFileLockException is thrown when tryLock is called on the same file *in the same JVM*.
      */
     @Test
-    public void creatingSwapperForFileMustTakeLockOnFile() throws Exception
+    @DisabledOnOs( OS.WINDOWS )
+    void creatingSwapperForFileMustTakeLockOnFile() throws Exception
     {
-        assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS );
-
         PageSwapperFactory factory = createSwapperFactory();
         factory.open( fileSystem, Configuration.EMPTY );
         File file = testDir.file( "file" );
@@ -264,8 +265,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         try
         {
             StoreChannel channel = fileSystem.open( file, OpenMode.READ_WRITE );
-            expectedException.expect( OverlappingFileLockException.class );
-            channel.tryLock();
+            assertThrows( OverlappingFileLockException.class, channel::tryLock );
         }
         finally
         {
@@ -274,10 +274,9 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     }
 
     @Test
-    public void creatingSwapperForInternallyLockedFileMustThrow() throws Exception
+    @DisabledOnOs( OS.WINDOWS )
+    void creatingSwapperForInternallyLockedFileMustThrow() throws Exception
     {
-        assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS ); // no file locking on Windows.
-
         PageSwapperFactory factory = createSwapperFactory();
         factory.open( fileSystem, Configuration.EMPTY );
         File file = testDir.file( "file" );
@@ -287,16 +286,14 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         try ( FileLock fileLock = channel.tryLock() )
         {
             assertThat( fileLock, is( not( nullValue() ) ) );
-            expectedException.expect( FileLockException.class );
-            createSwapper( factory, file, 4, NO_CALLBACK, true );
+            assertThrows( FileLockException.class, () -> createSwapper( factory, file, 4, NO_CALLBACK, true ) );
         }
     }
 
     @Test
-    public void creatingSwapperForExternallyLockedFileMustThrow() throws Exception
+    @DisabledOnOs( OS.WINDOWS )
+    void creatingSwapperForExternallyLockedFileMustThrow() throws Exception
     {
-        assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS ); // no file locking on Windows.
-
         PageSwapperFactory factory = createSwapperFactory();
         factory.open( fileSystem, Configuration.EMPTY );
         File file = testDir.file( "file" );
@@ -332,8 +329,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
         try
         {
-            expectedException.expect( FileLockException.class );
-            createSwapper( factory, file, 4, NO_CALLBACK, true );
+            assertThrows( FileLockException.class, () -> createSwapper( factory, file, 4, NO_CALLBACK, true ) );
         }
         finally
         {
@@ -344,10 +340,9 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     }
 
     @Test
-    public void mustUnlockFileWhenThePageSwapperIsClosed() throws Exception
+    @DisabledOnOs( OS.WINDOWS )
+    void mustUnlockFileWhenThePageSwapperIsClosed() throws Exception
     {
-        assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS ); // no file locking on Windows.
-
         PageSwapperFactory factory = createSwapperFactory();
         factory.open( fileSystem, Configuration.EMPTY );
         File file = testDir.file( "file" );
@@ -363,10 +358,9 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     }
 
     @Test
-    public void fileMustRemainLockedEvenIfChannelIsClosedByStrayInterrupt() throws Exception
+    @DisabledOnOs( OS.WINDOWS )
+    void fileMustRemainLockedEvenIfChannelIsClosedByStrayInterrupt() throws Exception
     {
-        assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS ); // no file locking on Windows.
-
         PageSwapperFactory factory = createSwapperFactory();
         factory.open( fileSystem, Configuration.EMPTY );
         File file = testDir.file( "file" );
@@ -381,8 +375,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
             Thread.currentThread().interrupt();
             pageSwapper.force();
 
-            expectedException.expect( OverlappingFileLockException.class );
-            channel.tryLock();
+            assertThrows( OverlappingFileLockException.class, channel::tryLock );
         }
         finally
         {
@@ -391,10 +384,9 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     }
 
     @Test
-    public void mustCloseFilesIfTakingFileLockThrows() throws Exception
+    @DisabledOnOs( OS.WINDOWS )
+    void mustCloseFilesIfTakingFileLockThrows() throws Exception
     {
-        assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS ); // no file locking on Windows.
-
         final AtomicInteger openFilesCounter = new AtomicInteger();
         PageSwapperFactory factory = createSwapperFactory();
         factory.open( new DelegatingFileSystemAbstraction( fileSystem )
@@ -451,7 +443,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     }
 
     @Test
-    public void mustHandleMischiefInPositionedRead() throws Exception
+    void mustHandleMischiefInPositionedRead() throws Exception
     {
         int bytesTotal = 512;
         byte[] data = new byte[bytesTotal];
@@ -493,7 +485,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     }
 
     @Test
-    public void mustHandleMischiefInPositionedWrite() throws Exception
+    void mustHandleMischiefInPositionedWrite() throws Exception
     {
         int bytesTotal = 512;
         byte[] data = new byte[bytesTotal];
@@ -531,7 +523,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     }
 
     @Test
-    public void mustHandleMischiefInPositionedVectoredRead() throws Exception
+    void mustHandleMischiefInPositionedVectoredRead() throws Exception
     {
         int bytesTotal = 512;
         int bytesPerPage = 32;
@@ -587,7 +579,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     }
 
     @Test
-    public void mustHandleMischiefInPositionedVectoredWrite() throws Exception
+    void mustHandleMischiefInPositionedVectoredWrite() throws Exception
     {
         int bytesTotal = 512;
         int bytesPerPage = 32;

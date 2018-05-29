@@ -27,9 +27,9 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.StubPageCursor;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
-import static org.junit.Assert.assertThat;
 
 public abstract class RecordFormat
 {

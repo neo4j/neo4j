@@ -19,8 +19,8 @@
  */
 package org.neo4j.io.pagecache.tracing.linear;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
@@ -28,11 +28,11 @@ import org.neo4j.io.pagecache.randomharness.RandomPageCacheTestHarness;
 
 public class LinearHistoryPageCacheTracerTest
 {
-    @Ignore( "This test is only here for checking that the output from the LinearHistoryPageCacheTracer looks good. " +
+    @Disabled( "This test is only here for checking that the output from the LinearHistoryPageCacheTracer looks good. " +
              "This is pretty subjective and requires manual inspection. Therefore there's no point in running it " +
              "automatically in all our builds. Instead, run it as needed when you make changes to the printout code." )
     @Test
-    public void makeSomeTestOutput() throws Exception
+    void makeSomeTestOutput() throws Exception
     {
         LinearTracers linearTracers = LinearHistoryTracerFactory.pageCacheTracer();
         try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
