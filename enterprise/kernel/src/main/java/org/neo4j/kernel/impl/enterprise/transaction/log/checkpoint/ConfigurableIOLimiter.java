@@ -191,7 +191,7 @@ public class ConfigurableIOLimiter implements IOLimiter
     @Override
     public boolean isLimited()
     {
-        return getDisabledCounter( state ) > 0;
+        return getDisabledCounter( state ) == 0;
     }
 
     private long currentTimeMillis()
