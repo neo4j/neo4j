@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.util.Map;
+import java.util.StringJoiner;
 
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.logging.Log;
 
-import static java.lang.String.format;
+import static org.neo4j.helpers.Format.duration;
 
 public class LoggingMonitor implements SchemaIndexProvider.Monitor
 {
@@ -42,12 +42,14 @@ public class LoggingMonitor implements SchemaIndexProvider.Monitor
     }
 
     @Override
-    public void recoveryCompleted( long indexId, IndexDescriptor indexDescriptor, Map<String,Object> data )
+    public void recoveryCleanupFinished( long indexId, IndexDescriptor indexDescriptor,
+            long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
     {
-        StringBuilder builder =
-                new StringBuilder(
-                        "Schema index recovery completed: indexId: " + indexId + " descriptor: " + indexDescriptor.toString() );
-        data.forEach( ( key, value ) -> builder.append( format( " %s: %s", key, value ) ) );
-        log.info( builder.toString() );
+        StringJoiner joiner =
+                new StringJoiner( ", ", "Schema index cleanup job finished: indexId: " + indexId + " descriptor: " + indexDescriptor.toString(), "" );
+        joiner.add( "Number of pages visited: " + numberOfPagesVisited );
+        joiner.add( "Number of cleaned crashed pointers: " + numberOfCleanedCrashPointers );
+        joiner.add( "Time spent: " + duration( durationMillis ) );
+        log.info( joiner.toString() );
     }
 }

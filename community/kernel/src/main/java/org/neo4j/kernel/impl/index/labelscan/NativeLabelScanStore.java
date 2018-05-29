@@ -48,10 +48,8 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
-import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
-import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 
 /**
@@ -383,10 +381,7 @@ public class NativeLabelScanStore implements LabelScanStore
             public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
                     long durationMillis )
             {
-                monitor.recoveryCompleted( map(
-                        "Number of pages visited", numberOfPagesVisited,
-                        "Number of cleaned crashed pointers", numberOfCleanedCrashPointers,
-                        "Time spent", duration( durationMillis ) ) );
+                monitor.recoveryCleanupFinished( numberOfPagesVisited, numberOfCleanedCrashPointers, durationMillis );
             }
         };
     }

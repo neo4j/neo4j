@@ -273,7 +273,7 @@ public class RecoveryCleanupIT
         }
 
         @Override
-        public void recoveryCompleted( Map<String,Object> data )
+        public void recoveryCleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
         {
             barrier.reached();
         }

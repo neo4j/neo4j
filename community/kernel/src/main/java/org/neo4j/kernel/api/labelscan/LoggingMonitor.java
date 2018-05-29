@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.api.labelscan;
 
-import java.util.Map;
+import java.util.StringJoiner;
 
 import org.neo4j.kernel.api.labelscan.LabelScanStore.Monitor;
 import org.neo4j.logging.Log;
 
-import static java.lang.String.format;
+import static org.neo4j.helpers.Format.duration;
 
 /**
  * Logs about important events about {@link LabelScanStore} {@link Monitor}.
@@ -69,10 +69,12 @@ public class LoggingMonitor extends Monitor.Adaptor
     }
 
     @Override
-    public void recoveryCompleted( Map<String,Object> data )
+    public void recoveryCleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
     {
-        StringBuilder builder = new StringBuilder( "Scan store recovery completed:" );
-        data.forEach( ( key, value ) -> builder.append( format( " %s: %s", key, value ) ) );
-        log.info( builder.toString() );
+        StringJoiner joiner = new StringJoiner( ", ", "Scan store recovery cleanup job finished:", "" );
+        joiner.add( "Number of pages visited: " + numberOfPagesVisited );
+        joiner.add( "Number of cleaned crashed pointers: " + numberOfCleanedCrashPointers );
+        joiner.add( "Time spent: " + duration( durationMillis ) );
+        log.info( joiner.toString() );
     }
 }

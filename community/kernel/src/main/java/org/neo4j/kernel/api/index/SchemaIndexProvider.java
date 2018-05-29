@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.index;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
@@ -105,14 +104,16 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
             }
 
             @Override
-            public void recoveryCompleted( long indexId, IndexDescriptor indexDescriptor, Map<String,Object> data )
+            public void recoveryCleanupFinished( long indexId, IndexDescriptor indexDescriptor,
+                    long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
             {   // no-op
             }
         }
 
         void failedToOpenIndex( long indexId, IndexDescriptor indexDescriptor, String action, Exception cause );
 
-        void recoveryCompleted( long indexId, IndexDescriptor indexDescriptor, Map<String,Object> data );
+        void recoveryCleanupFinished( long indexId, IndexDescriptor indexDescriptor,
+                long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis );
     }
 
     public static final SchemaIndexProvider NO_INDEX_PROVIDER =

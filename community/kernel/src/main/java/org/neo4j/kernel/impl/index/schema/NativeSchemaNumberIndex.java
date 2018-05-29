@@ -34,8 +34,6 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.index.GBPTreeFileUtil;
 
-import static org.neo4j.helpers.Format.duration;
-import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 
 class NativeSchemaNumberIndex<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
@@ -77,10 +75,7 @@ class NativeSchemaNumberIndex<KEY extends SchemaNumberKey, VALUE extends SchemaN
             @Override
             public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
             {
-                monitor.recoveryCompleted( indexId, descriptor, map(
-                        "Number of pages visited", numberOfPagesVisited,
-                        "Number of cleaned crashed pointers", numberOfCleanedCrashPointers,
-                        "Time spent", duration( durationMillis ) ) );
+                monitor.recoveryCleanupFinished( indexId, descriptor, numberOfPagesVisited, numberOfCleanedCrashPointers, durationMillis );
             }
         };
     }
