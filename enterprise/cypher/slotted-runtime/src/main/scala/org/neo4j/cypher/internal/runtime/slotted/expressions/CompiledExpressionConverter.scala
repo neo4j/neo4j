@@ -77,11 +77,3 @@ case class CompileWrappingExpression(ce: CompiledExpression, legacy: Expression)
     case _              => false
   }
 }
-
-
-
-
-
-
-
-

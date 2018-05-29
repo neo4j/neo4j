@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.values.storable.Values._
 import org.neo4j.values.storable.{DoubleValue, Values}
-import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.virtual.VirtualValues.{EMPTY_MAP, list, map}
 import org.opencypher.v9_0.ast.AstConstructionTestSupport
 import org.opencypher.v9_0.expressions._
@@ -46,6 +45,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(function("round", literalFloat(PI))).compute(ctx, tx, EMPTY_MAP) should equal(doubleValue(3.0))
     compile(function("round", noValue)).compute(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
   }
+
   test("rand function") {
     // Given
     val expression = function("rand")
