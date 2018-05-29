@@ -193,7 +193,6 @@ public class FusionIndexProvider extends IndexProvider
          *
          * @param indexId the index id, for which directory to drop.
          * @param archiveExistentIndex create archive with content of dropped directories
-         * @throws IOException on I/O error.
          * @see GraphDatabaseSettings#archive_failed_index
          */
         void drop( long indexId, boolean archiveExistentIndex );
@@ -202,7 +201,6 @@ public class FusionIndexProvider extends IndexProvider
          * Deletes the index directory and everything in it, as last part of dropping an index.
          *
          * @param indexId the index id, for which directory to drop.
-         * @throws IOException on I/O error.
          */
         default void drop( long indexId )
         {
