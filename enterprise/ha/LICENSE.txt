@@ -3,18 +3,15 @@ This package contains software licensed under different
 licenses, please refer to the NOTICE.txt file for further
 information and LICENSES.txt for full license texts.
 
-The software ("Software") is developed and owned by Network Engine
-for Objects in Lund AB (referred to in this notice as "Neo Technology").
-If you have executed an End User Software License and Services Agreement,
-an OEM Software License and Support Services Agreement, or another
-commercial license agreement (including an Evaluation Agreement) with
-Neo Technology or one of its affiliates (each, a "Commercial Agreement"),
-you may use the Software solely pursuant to the terms of the relevant
-Commercial Agreement.
+Neo4j Enterprise object code can be licensed independently from
+the source under separate commercial terms. Email inquiries can be
+directed to: licensing@neo4j.com. More information is also
+available at:https://neo4j.com/licensing/
 
-If you have not executed a Commercial Agreement with Neo Technology, the
-Software is subject to the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
-Version 3, as follows:
+The software ("Software") is developed and owned by Neo4j Sweden AB
+(referred to in this notice as “Neo4j”) and is subject to the terms
+of the GNU AFFERO GENERAL PUBLIC LICENSE Version 3, with the Commons Clause as follows:
+
 
 
                     GNU AFFERO GENERAL PUBLIC LICENSE
@@ -679,3 +676,18 @@ specific requirements.
 if any, to sign a "copyright disclaimer" for the program, if necessary.
 For more information on this, and how to apply and follow the GNU AGPL, see
 <http://www.gnu.org/licenses/>.
+
+
+"Commons Clause" License Condition
+
+The Software is provided to you by the Licensor under the License, as
+defined below, subject to the following condition. Without limiting
+other conditions in the License, the grant of rights under the License
+will not include, and the License does not grant to you, the right to
+Sell the Software.  For purposes of the foregoing, "Sell" means
+practicing any or all of the rights granted to you under the License
+to provide to third parties, for a fee or other consideration,
+a product or service that consists, entirely or substantially,
+of the Software or the functionality of the Software. Any license
+notice or attribution required by the License must also include
+this Commons Cause License Condition notice.

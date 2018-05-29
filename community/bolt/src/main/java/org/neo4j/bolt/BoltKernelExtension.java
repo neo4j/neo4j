@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,15 +19,15 @@
  */
 package org.neo4j.bolt;
 
-import io.netty.channel.Channel;
-import io.netty.handler.ssl.SslContext;
-import io.netty.util.internal.logging.InternalLoggerFactory;
-
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+
+import io.netty.channel.Channel;
+import io.netty.handler.ssl.SslContext;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;

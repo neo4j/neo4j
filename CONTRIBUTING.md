@@ -1,6 +1,6 @@
 # Contributing to the Neo4j Ecosystem
 
-At [Neo Technology](https://neo4j.com/), we develop our software in the open at GitHub.
+At [Neo4j](https://neo4j.com/), we develop our software in the open at GitHub.
 This provides transparency for you, our users, and allows you to fork the software to make your own additions and enhancements.
 We also provide areas specifically for community contributions, in particular the [neo4j-contrib](https://github.com/neo4j-contrib) space.
 

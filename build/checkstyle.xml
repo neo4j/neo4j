@@ -11,7 +11,7 @@
   <!-- Require license headers (GPL, AGPL or Apache 2.0) -->
   <module name="RegexpSingleline">
     <property name="format"
-              value="^(\s|\*)*Copyright \(c\) 2002-[0-9]{4} &quot;Neo Technology,&quot;*$|^(\s|\*)*Licensed to Neo Technology under one or more contributor*$"/>
+              value="^(\s|\*)*Copyright \(c\) 2002-[0-9]{4} &quot;Neo4j,&quot;*$|^(\s|\*)*Licensed to Neo4j under one or more contributor*$"/>
     <property name="minimum" value="1"/>
     <property name="maximum" value="1"/>
     <property name="message" value="Missing, wrong or duplicated license header"/>
