@@ -48,7 +48,7 @@ class CompiledExpressionTest extends ExecutionEngineFunSuite with AstConstructio
 
     // Then
     graph.inTx(
-      compiled.compute(ctx, transaction, EMPTY_MAP) should equal(stringValue("hello"))
+      compiled.evaluate(ctx, transaction, EMPTY_MAP) should equal(stringValue("hello"))
     )
   }
 
@@ -66,7 +66,7 @@ class CompiledExpressionTest extends ExecutionEngineFunSuite with AstConstructio
     // Then
     graph.inTx {
       node.delete()
-      an[EntityNotFoundException] should be thrownBy compiled.compute(ctx, transaction, EMPTY_MAP)
+      an[EntityNotFoundException] should be thrownBy compiled.evaluate(ctx, transaction, EMPTY_MAP)
     }
   }
 
@@ -83,7 +83,7 @@ class CompiledExpressionTest extends ExecutionEngineFunSuite with AstConstructio
 
     // Then
     graph.inTx(
-      compiled.compute(ctx, transaction, EMPTY_MAP) should equal(stringValue("hello"))
+      compiled.evaluate(ctx, transaction, EMPTY_MAP) should equal(stringValue("hello"))
     )
   }
 
@@ -101,7 +101,7 @@ class CompiledExpressionTest extends ExecutionEngineFunSuite with AstConstructio
     // Then
     graph.inTx {
       relationship.delete()
-      an[EntityNotFoundException] should be thrownBy compiled.compute(ctx, transaction, EMPTY_MAP)
+      an[EntityNotFoundException] should be thrownBy compiled.evaluate(ctx, transaction, EMPTY_MAP)
     }
   }
 

@@ -50,7 +50,7 @@ object CodeGeneration {
   private val TEXT = classOf[TextValue]
   private val PACKAGE_NAME = "org.neo4j.cypher.internal.compiler.v3_5.generated"
   private val INTERFACE = classOf[CompiledExpression]
-  private val COMPUTE_METHOD = method(classOf[AnyValue], "compute",
+  private val COMPUTE_METHOD = method(classOf[AnyValue], "evaluate",
                                       param(classOf[ExecutionContext], "context"),
                                       param(classOf[Transaction], "tx"),
                                       param(classOf[MapValue], "params"))

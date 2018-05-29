@@ -33,12 +33,12 @@ import org.neo4j.values.virtual.MapValue;
 public interface CompiledExpression
 {
     /**
-     * Computes the result of an expression
+     * Evaluates the result of an expression
      *
      * @param context the current context.
      * @param tx the current transaction
      * @param params the parameters of the query
-     * @return a computed result given the expression and input.
+     * @return an evaluated result from the compiled expression and given input.
      */
-    AnyValue compute( ExecutionContext context, Transaction tx, MapValue params );
+    AnyValue evaluate( ExecutionContext context, Transaction tx, MapValue params );
 }
