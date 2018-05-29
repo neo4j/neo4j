@@ -23,7 +23,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.CypherRuntimeOption
-import org.neo4j.cypher.internal.compatibility.{FallbackRuntime, InterpretedRuntime, TemporaryRuntime}
+import org.neo4j.cypher.internal.compatibility.{FallbackRuntime, InterpretedRuntime, CypherRuntime}
 import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContext
 
 object EnterpriseRuntimeFactory {
@@ -36,7 +36,7 @@ object EnterpriseRuntimeFactory {
   val morsel = new FallbackRuntime(List(MorselRuntime, CompiledRuntime, SlottedRuntime), CypherRuntimeOption.morsel)
   val default = new FallbackRuntime(List(CompiledRuntime, SlottedRuntime), CypherRuntimeOption.default)
 
-  def getRuntime(cypherRuntime: CypherRuntimeOption, disallowFallback: Boolean): TemporaryRuntime[EnterpriseRuntimeContext] =
+  def getRuntime(cypherRuntime: CypherRuntimeOption, disallowFallback: Boolean): CypherRuntime[EnterpriseRuntimeContext] =
     cypherRuntime match {
       case CypherRuntimeOption.interpreted => interpreted
 

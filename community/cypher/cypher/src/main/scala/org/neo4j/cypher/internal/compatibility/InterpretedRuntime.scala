@@ -36,8 +36,8 @@ import org.opencypher.v9_0.frontend.PlannerName
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 import org.opencypher.v9_0.util.PeriodicCommitInOpenTransactionException
 
-object InterpretedRuntime extends TemporaryRuntime[CommunityRuntimeContext] {
-  override def googldiblopp(state: LogicalPlanState, context: CommunityRuntimeContext): ExecutionPlan = {
+object InterpretedRuntime extends CypherRuntime[CommunityRuntimeContext] {
+  override def compileToExecutable(state: LogicalPlanState, context: CommunityRuntimeContext): ExecutionPlan = {
     val readOnly = state.solveds(state.logicalPlan.id).readOnly
     val cardinalities = state.cardinalities
     val logicalPlan = state.logicalPlan

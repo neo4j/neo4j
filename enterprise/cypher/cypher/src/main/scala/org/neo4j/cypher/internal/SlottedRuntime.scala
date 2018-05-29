@@ -25,7 +25,7 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotAllocation.PhysicalPlan
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{PeriodicCommitInfo, ExecutionPlan => ExecutionPlan_V35}
-import org.neo4j.cypher.internal.compatibility.{InterpretedRuntime, TemporaryRuntime}
+import org.neo4j.cypher.internal.compatibility.{InterpretedRuntime, CypherRuntime}
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContext
@@ -40,7 +40,7 @@ import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.frontend.PlannerName
 import org.opencypher.v9_0.util.CypherException
 
-object SlottedRuntime extends TemporaryRuntime[EnterpriseRuntimeContext] with DebugPrettyPrinter {
+object SlottedRuntime extends CypherRuntime[EnterpriseRuntimeContext] with DebugPrettyPrinter {
 
   val ENABLE_DEBUG_PRINTS = false // NOTE: false toggles all debug prints off, overriding the individual settings below
 
@@ -56,7 +56,7 @@ object SlottedRuntime extends TemporaryRuntime[EnterpriseRuntimeContext] with De
   override val PRINT_FAILURE_STACK_TRACE = true
 
   @throws[CantCompileQueryException]
-  override def googldiblopp(state: LogicalPlanState, context: EnterpriseRuntimeContext): ExecutionPlan_V35 = {
+  override def compileToExecutable(state: LogicalPlanState, context: EnterpriseRuntimeContext): ExecutionPlan_V35 = {
     try {
       if (ENABLE_DEBUG_PRINTS && PRINT_PLAN_INFO_EARLY) {
         printPlanInfo(state)

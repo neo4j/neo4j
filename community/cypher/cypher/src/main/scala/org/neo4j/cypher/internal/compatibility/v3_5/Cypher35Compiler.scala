@@ -52,7 +52,7 @@ case class Cypher35Compiler[CONTEXT <: CommunityRuntimeContext,
                                                                                    log: Log,
                                                                                    planner: CypherPlannerOption,
                                                                                    updateStrategy: CypherUpdateStrategy,
-                                                                                   runtime: TemporaryRuntime[CONTEXT],
+                                                                                   runtime: CypherRuntime[CONTEXT],
                                                                                    contextCreatorv3_5: ContextCreator[CONTEXT],
                                                                                    txIdProvider: () => Long)
   extends LatestRuntimeVariablePlannerCompatibility[CONTEXT, T, Statement](config,
@@ -151,7 +151,7 @@ case class Cypher35Compiler[CONTEXT <: CommunityRuntimeContext,
           notification.LogicalPlanNotifications
           .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
           .foreach(notificationLogger.log)
-       runtime.googldiblopp(logicalPlanState, context)
+       runtime.compileToExecutable(logicalPlanState, context)
       }
 
       val executionPlan3_5 =

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.CypherRuntimeOption
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.CommunityRuntimeContext
-import org.neo4j.cypher.internal.compatibility.{FallbackRuntime, InterpretedRuntime, TemporaryRuntime, UnknownRuntime}
+import org.neo4j.cypher.internal.compatibility.{FallbackRuntime, InterpretedRuntime, CypherRuntime, UnknownRuntime}
 import org.opencypher.v9_0.util.InvalidArgumentException
 
 object CommunityRuntimeFactory {
@@ -30,7 +30,7 @@ object CommunityRuntimeFactory {
   val default = new FallbackRuntime(List(InterpretedRuntime), CypherRuntimeOption.default)
   val unsupportedWithFallback = new FallbackRuntime(List(UnknownRuntime, InterpretedRuntime), CypherRuntimeOption.default)
 
-  def getRuntime(cypherRuntime: CypherRuntimeOption, disallowFallback: Boolean): TemporaryRuntime[CommunityRuntimeContext] =
+  def getRuntime(cypherRuntime: CypherRuntimeOption, disallowFallback: Boolean): CypherRuntime[CommunityRuntimeContext] =
     cypherRuntime match {
       case CypherRuntimeOption.interpreted => interpreted
 

@@ -190,7 +190,7 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
 
 
     val runtime = CommunityRuntimeFactory.getRuntime(CypherRuntimeOption.default, planningContext.config.useErrorsOverWarnings)
-    val executionPlan = runtime.googldiblopp(logicalPlanState, planningContext)
+    val executionPlan = runtime.compileToExecutable(logicalPlanState, planningContext)
 
     val queryContext = new TransactionBoundQueryContext(txContextWrapper)(CypherReductionSupport.searchMonitor)
 

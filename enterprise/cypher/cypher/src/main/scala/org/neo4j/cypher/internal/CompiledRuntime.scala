@@ -23,8 +23,8 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.codegen.profiling.ProfilingTracer
-import org.neo4j.cypher.internal.compatibility.TemporaryRuntime
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{Provider, ExecutionPlan => ExecutionPlan_V35}
+import org.neo4j.cypher.internal.compatibility.CypherRuntime
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{Provider, ExecutionPlan => ExecutionPlanv3_5}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{CompiledRuntimeName, ExplainExecutionResult, RuntimeName}
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
@@ -41,10 +41,10 @@ import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.frontend.PlannerName
 import org.opencypher.v9_0.util.TaskCloser
 
-object CompiledRuntime extends TemporaryRuntime[EnterpriseRuntimeContext] {
+object CompiledRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
 
   @throws[CantCompileQueryException]
-  override def googldiblopp(state: LogicalPlanState, context: EnterpriseRuntimeContext): ExecutionPlan_V35 = {
+  override def compileToExecutable(state: LogicalPlanState, context: EnterpriseRuntimeContext): ExecutionPlanv3_5 = {
     val codeGen = new CodeGenerator(context.codeStructure, context.clock, CodeGenConfiguration(context.debugOptions))
     val readOnly = state.solveds(state.logicalPlan.id).readOnly
     val compiled: CompiledPlan = codeGen.generate(
@@ -70,7 +70,7 @@ object CompiledRuntime extends TemporaryRuntime[EnterpriseRuntimeContext] {
     */
   class CompiledExecutionPlan(val compiled: CompiledPlan,
                               val fingerprint: PlanFingerprintReference,
-                              val notifications: Set[Notification]) extends ExecutionPlan_V35 {
+                              val notifications: Set[Notification]) extends ExecutionPlanv3_5 {
 
     override def run(queryContext: QueryContext,
                      executionMode: ExecutionMode, params: MapValue): InternalExecutionResult = {

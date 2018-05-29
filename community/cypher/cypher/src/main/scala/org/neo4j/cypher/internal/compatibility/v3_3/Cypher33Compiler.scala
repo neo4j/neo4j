@@ -60,7 +60,7 @@ T <: Transformer[CONTEXT3_5, LogicalPlanState, CompilationState]](configv3_5: Cy
                                                                   log: Log,
                                                                   planner: CypherPlannerOption,
                                                                   updateStrategy: CypherUpdateStrategy,
-                                                                  runtime: TemporaryRuntime[CONTEXT3_5],
+                                                                  runtime: CypherRuntime[CONTEXT3_5],
                                                                   contextCreatorV3_3: v3_3.ContextCreator[CONTEXT3_3],
                                                                   contextCreatorV3_5: ContextCreator[CONTEXT3_5],
                                                                   txIdProvider: () => Long)
@@ -202,7 +202,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_5, T, StatementV3_3](
         LogicalPlanNotifications
           .checkForNotifications(logicalPlanStatev3_5.maybeLogicalPlan.get, planContextv3_5, configv3_5)
           .foreach(notificationLoggerv3_5.log)
-        runtime.googldiblopp(logicalPlanStatev3_5, contextv3_5)
+        runtime.compileToExecutable(logicalPlanStatev3_5, contextv3_5)
       }
 
       val executionPlan3_5 =

@@ -56,7 +56,7 @@ STATEMENT <: AnyRef](configv3_5: CypherPlannerConfiguration,
                      log: Log,
                      planner: CypherPlannerOption,
                      updateStrategy: CypherUpdateStrategy,
-                     runtime: TemporaryRuntime[CONTEXT3_5],
+                     runtime: CypherRuntime[CONTEXT3_5],
                      contextCreatorV3_5: ContextCreator[CONTEXT3_5],
                      txIdProvider: () => Long) {
 

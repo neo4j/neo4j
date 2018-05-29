@@ -22,7 +22,7 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compatibility.TemporaryRuntime
+import org.neo4j.cypher.internal.compatibility.CypherRuntime
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotAllocation.PhysicalPlan
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
@@ -51,8 +51,8 @@ import org.opencypher.v9_0.frontend.PlannerName
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 import org.opencypher.v9_0.util.TaskCloser
 
-object MorselRuntime extends TemporaryRuntime[EnterpriseRuntimeContext] {
-  override def googldiblopp(state: LogicalPlanState, context: EnterpriseRuntimeContext): ExecutionPlan_V35 = {
+object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
+  override def compileToExecutable(state: LogicalPlanState, context: EnterpriseRuntimeContext): ExecutionPlan_V35 = {
     val (physicalPlan, pipelines) = rewritePlan(context, state.logicalPlan, state.semanticTable())
     val converters: ExpressionConverters = new ExpressionConverters(
       new CompiledExpressionConverter(context.log),
