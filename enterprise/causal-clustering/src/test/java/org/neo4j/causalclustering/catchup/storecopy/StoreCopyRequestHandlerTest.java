@@ -23,11 +23,14 @@
 package org.neo4j.causalclustering.catchup.storecopy;
 
 import io.netty.channel.embedded.EmbeddedChannel;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
@@ -59,7 +62,7 @@ public class StoreCopyRequestHandlerTest
     private final DefaultFileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
 
     private final NeoStoreDataSource neoStoreDataSource = mock( NeoStoreDataSource.class );
-    private final CheckPointer checkPointer = new FakeCheckPointer();
+    private final FakeCheckPointer checkPointer = new FakeCheckPointer();
     private final PageCache pageCache = mock( PageCache.class );
     private EmbeddedChannel embeddedChannel;
     private CatchupServerProtocol catchupServerProtocol;
@@ -143,6 +146,23 @@ public class StoreCopyRequestHandlerTest
         assertTrue( catchupServerProtocol.isExpecting( CatchupServerProtocol.State.MESSAGE_TYPE ) );
     }
 
+    @Test
+    public void transactionsTooFarBehindStartCheckpointAsynchronously() throws IOException
+    {
+        // given checkpoint will fail if performed
+        checkPointer._tryCheckPoint = Optional.empty();
+
+        // when
+        embeddedChannel.writeInbound( new GetStoreFileRequest( STORE_ID_MATCHING, new File( "some-file" ), 123 ) );
+
+        // then should have received error message
+        assertEquals( ResponseMessageType.STORE_COPY_FINISHED, embeddedChannel.readOutbound() );
+
+        // and should have failed on async TODO
+        Assert.assertEquals( 1, checkPointer.invocationCounter.get() );
+        assertEquals( 1, checkPointer.failCounter.get() );
+    }
+
     private class NiceStoreCopyRequestHandler extends StoreCopyRequestHandler<StoreCopyRequest>
     {
         private NiceStoreCopyRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource,
@@ -177,28 +197,50 @@ public class StoreCopyRequestHandlerTest
 
     private class FakeCheckPointer implements CheckPointer
     {
+        Optional<Long> _checkPointIfNeeded = Optional.of( 1L );
+        Optional<Long> _tryCheckPoint = Optional.of( 1L );
+        Optional<Long> _forceCheckPoint = Optional.of( 1L );
+        Optional<Long> _lastCheckPointedTransactionId = Optional.of( 1L );
+        Supplier<RuntimeException> exceptionIfEmpty = () -> new RuntimeException( "FakeCheckPointer" );
+        AtomicInteger invocationCounter = new AtomicInteger();
+        AtomicInteger failCounter = new AtomicInteger();
+
         @Override
         public long checkPointIfNeeded( TriggerInfo triggerInfo )
         {
-            return 1;
+            incrementInvocationCounter( _checkPointIfNeeded );
+            return _checkPointIfNeeded.orElseThrow( exceptionIfEmpty );
         }
 
         @Override
         public long tryCheckPoint( TriggerInfo triggerInfo )
         {
-            return 1;
+            incrementInvocationCounter( _tryCheckPoint );
+            return _tryCheckPoint.orElseThrow( exceptionIfEmpty );
         }
 
         @Override
         public long forceCheckPoint( TriggerInfo triggerInfo )
         {
-            return 1;
+            incrementInvocationCounter( _forceCheckPoint );
+            return _forceCheckPoint.orElseThrow( exceptionIfEmpty );
         }
 
         @Override
         public long lastCheckPointedTransactionId()
         {
-            return 1;
+            incrementInvocationCounter( _lastCheckPointedTransactionId );
+            return _lastCheckPointedTransactionId.orElseThrow( exceptionIfEmpty );
+        }
+
+        private void incrementInvocationCounter( Optional<Long> variable )
+        {
+            if ( variable.isPresent() )
+            {
+                invocationCounter.getAndIncrement();
+                return;
+            }
+            failCounter.getAndIncrement();
         }
     }
 }

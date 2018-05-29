@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -41,13 +42,13 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
 import static java.lang.String.format;
 import static org.neo4j.causalclustering.catchup.storecopy.DataSourceChecks.hasSameStoreId;
-import static org.neo4j.causalclustering.catchup.storecopy.DataSourceChecks.isTransactionWithinReach;
 import static org.neo4j.io.fs.FileUtils.relativePath;
 
 public abstract class StoreCopyRequestHandler<T extends StoreCopyRequest> extends SimpleChannelInboundHandler<T>
@@ -84,9 +85,10 @@ public abstract class StoreCopyRequestHandler<T extends StoreCopyRequest> extend
             {
                 responseStatus = StoreCopyFinishedResponse.Status.E_STORE_ID_MISMATCH;
             }
-            else if ( !isTransactionWithinReach( request.requiredTransactionId(), checkpointerSupplier.get() ) )
+            else if ( !isTransactionWithinReach( request.requiredTransactionId() ) )
             {
                 responseStatus = StoreCopyFinishedResponse.Status.E_TOO_FAR_BEHIND;
+                asyncCheckpoint();
             }
             else
             {
@@ -109,6 +111,26 @@ public abstract class StoreCopyRequestHandler<T extends StoreCopyRequest> extend
             storeFileStreamingProtocol.end( ctx, responseStatus );
             protocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
         }
+    }
+
+    private boolean isTransactionWithinReach( long transactionId )
+    {
+        return checkpointerSupplier.get().lastCheckPointedTransactionId() >= transactionId;
+    }
+
+    private void asyncCheckpoint() throws IOException
+    {
+        CompletableFuture.runAsync( () ->
+        {
+            try
+            {
+                checkpointerSupplier.get().tryCheckPoint( new SimpleTriggerInfo( "Store file copy" ) );
+            }
+            catch ( IOException e )
+            {
+                e.printStackTrace();
+            }
+        } );
     }
 
     abstract ResourceIterator<StoreFileMetadata> files( T request, NeoStoreDataSource neoStoreDataSource ) throws IOException;
