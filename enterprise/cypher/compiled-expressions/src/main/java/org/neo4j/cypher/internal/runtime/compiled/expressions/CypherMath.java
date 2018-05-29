@@ -103,7 +103,6 @@ public final class CypherMath
                 }
                 else
                 {
-                    //TODO this seems wrong but it is what we currently do in compiled runtime
                     return stringValue( ((TextValue) lhs).stringValue() + String.valueOf( rhs ) );
                 }
             }
@@ -120,7 +119,6 @@ public final class CypherMath
                 }
                 else
                 {
-                    //TODO this seems wrong but it is what we currently do in compiled runtime
                     return stringValue( String.valueOf( lhs ) + ((TextValue) rhs).stringValue() );
                 }
             }

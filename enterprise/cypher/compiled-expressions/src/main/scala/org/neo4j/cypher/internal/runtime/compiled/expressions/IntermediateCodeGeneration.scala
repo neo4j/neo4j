@@ -108,11 +108,9 @@ object IntermediateCodeGeneration {
 
     //boolean operators
     case Or(lhs, rhs) =>
-      (compile(lhs), compile(rhs)) match {
-        case (Some(l), Some(r)) =>
-          Some(invokeStatic(method[CypherBoolean, Value, Array[AnyValue]]("or"), arrayOf(l, r)))
-        case _ => None
-      }
+      for {l <- compile(lhs)
+           r <- compile(rhs)
+      } yield invokeStatic(method[CypherBoolean, Value, Array[AnyValue]]("or"), arrayOf(l, r))
 
     case Ors(exprs) =>
       val compiled = exprs.flatMap(compile).toIndexedSeq
@@ -121,18 +119,14 @@ object IntermediateCodeGeneration {
       else Some(invokeStatic(method[CypherBoolean, Value, Array[AnyValue]]("or"), arrayOf(compiled: _*)))
 
     case Xor(lhs, rhs) =>
-      (compile(lhs), compile(rhs)) match {
-        case (Some(l), Some(r)) =>
-          Some(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("xor"), l, r))
-        case _ => None
-      }
+      for {l <- compile(lhs)
+           r <- compile(rhs)
+      } yield invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("xor"), l, r)
 
     case And(lhs, rhs) =>
-      (compile(lhs), compile(rhs)) match {
-        case (Some(l), Some(r)) =>
-          Some(invokeStatic(method[CypherBoolean, Value, Array[AnyValue]]("and"), arrayOf(l, r)))
-        case _ => None
-      }
+      for {l <- compile(lhs)
+           r <- compile(rhs)
+      } yield invokeStatic(method[CypherBoolean, Value, Array[AnyValue]]("and"), arrayOf(l, r))
 
     case Ands(expressions) =>
       val compiled = expressions.flatMap(compile).toIndexedSeq
@@ -144,18 +138,14 @@ object IntermediateCodeGeneration {
       compile(arg).map(invokeStatic(method[CypherBoolean, Value, AnyValue]("not"), _))
 
     case Equals(lhs, rhs) =>
-      (compile(lhs), compile(rhs)) match {
-        case (Some(l), Some(r)) =>
-          Some(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("equals"), l, r))
-        case _ => None
-      }
+      for {l <- compile(lhs)
+           r <- compile(rhs)
+      } yield invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("equals"), l, r)
 
     case NotEquals(lhs, rhs) =>
-      (compile(lhs), compile(rhs)) match {
-        case (Some(l), Some(r)) =>
-          Some(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("notEquals"), l, r))
-        case _ => None
-      }
+      for {l <- compile(lhs)
+           r <- compile(rhs)
+      } yield invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("notEquals"), l, r)
 
     //data access
     case Parameter(name, _) =>
