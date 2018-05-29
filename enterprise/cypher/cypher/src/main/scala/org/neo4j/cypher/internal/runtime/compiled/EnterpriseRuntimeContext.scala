@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.executionplan.GeneratedQuery
 import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
 import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.Dispatcher
+import org.neo4j.logging.Log
 import org.opencypher.v9_0.util.attribution.IdGen
 import org.opencypher.v9_0.util.{CypherException, InputPosition}
 
@@ -48,12 +49,13 @@ class EnterpriseRuntimeContext(override val exceptionCreator: (String, InputPosi
                                override val clock: Clock,
                                override val logicalPlanIdGen: IdGen,
                                val codeStructure: CodeStructure[GeneratedQuery],
-                               val dispatcher: Dispatcher)
+                               val dispatcher: Dispatcher,
+                               val log: Log)
   extends CommunityRuntimeContext(exceptionCreator, tracer,
                                   notificationLogger, planContext, monitors, metrics,
                                   config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen)
 
-case class EnterpriseRuntimeContextCreator(codeStructure: CodeStructure[GeneratedQuery], dispatcher: Dispatcher) extends ContextCreator[EnterpriseRuntimeContext] {
+case class EnterpriseRuntimeContextCreator(codeStructure: CodeStructure[GeneratedQuery], dispatcher: Dispatcher, log: Log) extends ContextCreator[EnterpriseRuntimeContext] {
 
   override def create(tracer: CompilationPhaseTracer,
                       notificationLogger: InternalNotificationLogger,
@@ -77,6 +79,6 @@ case class EnterpriseRuntimeContextCreator(codeStructure: CodeStructure[Generate
       metricsFactory.newMetrics(planContext.statistics, evaluator, config)
 
     new EnterpriseRuntimeContext(exceptionCreator, tracer, notificationLogger, planContext,
-                                monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, codeStructure, dispatcher)
+                                monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, codeStructure, dispatcher, log)
   }
 }

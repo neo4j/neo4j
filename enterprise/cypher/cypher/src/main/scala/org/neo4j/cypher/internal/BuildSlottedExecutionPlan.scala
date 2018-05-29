@@ -80,7 +80,7 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
         printRewrittenPlanInfo(logicalPlan)
       }
 
-      val converters = new ExpressionConverters(CompiledExpressionConverters,
+      val converters = new ExpressionConverters(new CompiledExpressionConverters(context.log),
                                                 SlottedExpressionConverters, CommunityExpressionConverter)
       val pipeBuilderFactory = SlottedPipeBuilder.Factory(physicalPlan)
       val executionPlanBuilder = new PipeExecutionPlanBuilder(expressionConverters = converters,

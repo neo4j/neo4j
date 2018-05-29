@@ -24,12 +24,13 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, RandFunction}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.logging.Log
 import org.neo4j.values.AnyValue
 import org.opencypher.v9_0.expressions.FunctionInvocation
 import org.opencypher.v9_0.expressions.functions.AggregatingFunction
 import org.opencypher.v9_0.{expressions => ast}
 
-object CompiledExpressionConverters extends ExpressionConverter {
+class CompiledExpressionConverters(log: Log) extends ExpressionConverter {
 
   //uses an inner converter to simplify compliance with Expression trait
   private val inner = new ExpressionConverters(SlottedExpressionConverters, CommunityExpressionConverter)
@@ -48,10 +49,11 @@ object CompiledExpressionConverters extends ExpressionConverter {
         case _ => None
       }
     } catch {
-      case _: Throwable =>
+      case t: Throwable =>
         //Something horrible happened, maybe we exceeded the bytecode size or introduced a bug so that we tried
         //to load invalid bytecode, whatever is the case we should silently fallback to the next expression
         //converter
+        log.debug(s"Failed to compile expression: $e", t)
         None
     }
   }
