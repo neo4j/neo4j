@@ -411,6 +411,18 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    public IndexReference indexGetForName( String name )
+    {
+        ktx.assertOpen();
+
+        // This is only used for querying, and thus is is "fine" (at least for now) that it is not tx-state aware
+
+        IndexDescriptor index = storageReader.indexGetForName( name );
+        //TODO locking
+        return index;
+    }
+
+    @Override
     public Iterator<IndexReference> indexesGetAll()
     {
         ktx.assertOpen();

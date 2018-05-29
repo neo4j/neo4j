@@ -43,7 +43,12 @@ import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
+import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.IndexReader;
 
+import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -55,9 +60,13 @@ import static java.util.stream.Collectors.toList;
  * @see WritableAbstractDatabaseIndex
  * @see ReadOnlyAbstractDatabaseIndex
  */
-public abstract class AbstractLuceneIndex
+public abstract class AbstractLuceneIndex<READER extends IndexReader>
 {
+    private static final String KEY_STATUS = "status";
+    private static final String ONLINE = "online";
+    private static final Map<String,String> ONLINE_COMMIT_USER_DATA = singletonMap( KEY_STATUS, ONLINE );
     protected final PartitionedIndexStorage indexStorage;
+    protected final IndexDescriptor descriptor;
     private final IndexPartitionFactory partitionFactory;
 
     // Note that we rely on the thread-safe internal snapshot feature of the CopyOnWriteArrayList
@@ -66,10 +75,11 @@ public abstract class AbstractLuceneIndex
 
     private volatile boolean open;
 
-    public AbstractLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory )
+    public AbstractLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, IndexDescriptor descriptor )
     {
         this.indexStorage = indexStorage;
         this.partitionFactory = partitionFactory;
+        this.descriptor = descriptor;
     }
 
     /**
@@ -177,6 +187,24 @@ public abstract class AbstractLuceneIndex
             IOUtils.closeAllSilently( directories );
         }
         return true;
+    }
+
+    public LuceneIndexWriter getIndexWriter( WritableAbstractDatabaseIndex writableAbstractDatabaseIndex )
+    {
+        ensureOpen();
+        return new PartitionedIndexWriter( writableAbstractDatabaseIndex );
+    }
+
+    public READER getIndexReader() throws IOException
+    {
+        ensureOpen();
+        List<AbstractIndexPartition> partitions = getPartitions();
+        return hasSinglePartition( partitions ) ? createSimpleReader( partitions ) : createPartitionedReader( partitions );
+    }
+
+    public IndexDescriptor getDescriptor()
+    {
+        return descriptor;
     }
 
     /**
@@ -399,4 +427,51 @@ public abstract class AbstractLuceneIndex
         indexStorage.prepareFolder( partitionFolder );
         return partitionFolder;
     }
+
+    /**
+     * Check if this index is marked as online.
+     *
+     * @return <code>true</code> if index is online, <code>false</code> otherwise
+     * @throws IOException
+     */
+    public boolean isOnline() throws IOException
+    {
+        ensureOpen();
+        AbstractIndexPartition partition = getFirstPartition( getPartitions() );
+        Directory directory = partition.getDirectory();
+        try ( DirectoryReader reader = DirectoryReader.open( directory ) )
+        {
+            Map<String,String> userData = reader.getIndexCommit().getUserData();
+            return ONLINE.equals( userData.get( KEY_STATUS ) );
+        }
+    }
+
+    /**
+     * Marks index as online by including "status" -> "online" map into commit metadata of the first partition.
+     *
+     * @throws IOException
+     */
+    public void markAsOnline() throws IOException
+    {
+        ensureOpen();
+        AbstractIndexPartition partition = getFirstPartition( getPartitions() );
+        IndexWriter indexWriter = partition.getIndexWriter();
+        indexWriter.setCommitData( ONLINE_COMMIT_USER_DATA );
+        flush( false );
+    }
+
+    /**
+     * Writes the given failure message to the failure storage.
+     *
+     * @param failure the failure message.
+     * @throws IOException
+     */
+    public void markAsFailed( String failure ) throws IOException
+    {
+        indexStorage.storeIndexFailure( failure );
+    }
+
+    protected abstract READER createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException;
+
+    protected abstract READER createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException;
 }

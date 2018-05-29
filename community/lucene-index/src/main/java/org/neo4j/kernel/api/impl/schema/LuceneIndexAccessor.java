@@ -19,17 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
-import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.impl.schema.reader.LuceneAllEntriesIndexAccessorReader;
-import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
-import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.impl.index.AbstractLuceneIndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -38,81 +32,24 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 
-public class LuceneIndexAccessor implements IndexAccessor
+public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<IndexReader,SchemaIndex>
 {
-    private final LuceneIndexWriter writer;
-    private final SchemaIndex luceneIndex;
-    private final IndexDescriptor descriptor;
 
     public LuceneIndexAccessor( SchemaIndex luceneIndex, IndexDescriptor descriptor )
     {
-        this.luceneIndex = luceneIndex;
-        this.descriptor = descriptor;
-        this.writer = luceneIndex.isReadOnly() ? null : luceneIndex.getIndexWriter();
+        super( luceneIndex, descriptor );
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode )
+    protected IndexUpdater getIndexUpdater( IndexUpdateMode mode )
     {
-        if ( luceneIndex.isReadOnly() )
-        {
-            throw new UnsupportedOperationException( "Can't create updater for read only index." );
-        }
-        return new LuceneIndexUpdater( mode.requiresIdempotency(), mode.requiresRefresh() );
-    }
-
-    @Override
-    public void drop() throws IOException
-    {
-        luceneIndex.drop();
-    }
-
-    @Override
-    public void force( IOLimiter ioLimiter ) throws IOException
-    {
-        // We never change status of read-only indexes.
-        if ( !luceneIndex.isReadOnly() )
-        {
-            luceneIndex.markAsOnline();
-        }
-        luceneIndex.maybeRefreshBlocking();
-    }
-
-    @Override
-    public void refresh() throws IOException
-    {
-        luceneIndex.maybeRefreshBlocking();
-    }
-
-    @Override
-    public void close() throws IOException
-    {
-        luceneIndex.close();
-    }
-
-    @Override
-    public IndexReader newReader()
-    {
-        try
-        {
-            return luceneIndex.getIndexReader();
-        }
-        catch ( IOException e )
-        {
-            throw new LuceneIndexReaderAcquisitionException( "Can't acquire index reader", e );
-        }
+        return new LuceneSchemaIndexUpdater( mode.requiresIdempotency(), mode.requiresRefresh() );
     }
 
     @Override
     public BoundedIterable<Long> newAllEntriesReader()
     {
-        return new LuceneAllEntriesIndexAccessorReader( luceneIndex.allDocumentsReader() );
-    }
-
-    @Override
-    public ResourceIterator<File> snapshotFiles() throws IOException
-    {
-        return luceneIndex.snapshot();
+        return super.newAllEntriesReader( LuceneDocumentStructure::getNodeId );
     }
 
     @Override
@@ -120,12 +57,6 @@ public class LuceneIndexAccessor implements IndexAccessor
             throws IndexEntryConflictException, IOException
     {
         luceneIndex.verifyUniqueness( nodePropertyAccessor, descriptor.schema().getPropertyIds() );
-    }
-
-    @Override
-    public boolean isDirty()
-    {
-        return !luceneIndex.isValid();
     }
 
     @Override
@@ -138,75 +69,35 @@ public class LuceneIndexAccessor implements IndexAccessor
         }
     }
 
-    private class LuceneIndexUpdater implements IndexUpdater
+    private class LuceneSchemaIndexUpdater extends AbstractLuceneIndexUpdater
     {
-        private final boolean idempotent;
-        private final boolean refresh;
 
-        private boolean hasChanges;
-
-        private LuceneIndexUpdater( boolean idempotent, boolean refresh )
+        protected LuceneSchemaIndexUpdater( boolean idempotent, boolean refresh )
         {
-            this.idempotent = idempotent;
-            this.refresh = refresh;
+            super( idempotent, refresh );
         }
 
         @Override
-        public void process( IndexEntryUpdate<?> update ) throws IOException
-        {
-            // we do not support adding partial entries
-            assert update.indexKey().schema().equals( descriptor.schema() );
-
-            switch ( update.updateMode() )
-            {
-            case ADDED:
-                if ( idempotent )
-                {
-                    addIdempotent( update.getEntityId(), update.values() );
-                }
-                else
-                {
-                    add( update.getEntityId(), update.values() );
-                }
-                break;
-            case CHANGED:
-                change( update.getEntityId(), update.values() );
-                break;
-            case REMOVED:
-                remove( update.getEntityId() );
-                break;
-            default:
-                throw new UnsupportedOperationException();
-            }
-            hasChanges = true;
-        }
-
-        @Override
-        public void close() throws IOException
-        {
-            if ( hasChanges && refresh )
-            {
-                luceneIndex.maybeRefreshBlocking();
-            }
-        }
-
-        private void addIdempotent( long nodeId, Value[] values ) throws IOException
+        protected void addIdempotent( long nodeId, Value[] values ) throws IOException
         {
             writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
                     LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
         }
 
-        private void add( long nodeId, Value[] values ) throws IOException
+        @Override
+        protected void add( long nodeId, Value[] values ) throws IOException
         {
             writer.addDocument( LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
         }
 
-        private void change( long nodeId, Value[] values ) throws IOException
+        @Override
+        protected void change( long nodeId, Value[] values ) throws IOException
         {
             writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
                     LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
         }
 
+        @Override
         protected void remove( long nodeId ) throws IOException
         {
             writer.deleteDocuments( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );

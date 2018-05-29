@@ -188,6 +188,12 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
+    public CapableIndexDescriptor indexGetForName( String name )
+    {
+        throw new UnsupportedOperationException( "Not implemented yet" );
+    }
+
+    @Override
     public Iterator<CapableIndexDescriptor> indexesGetAll()
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
