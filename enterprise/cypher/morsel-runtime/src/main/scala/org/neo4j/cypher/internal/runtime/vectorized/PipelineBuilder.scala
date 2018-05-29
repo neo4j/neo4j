@@ -122,6 +122,13 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
           source = source.addOperator(preSorting)
           new MergeSortOperator(ordering, slots)
 
+        case Top(_, sortItems, limit) =>
+          val ordering = sortItems.map(translateColumnOrder(slots, _))
+          val countExpression = converters.toCommandExpression(limit)
+          val preTop = new PreSortOperator(ordering, slots, Some(countExpression))
+          source = source.addOperator(preTop)
+          new MergeSortOperator(ordering, slots, Some(countExpression))
+
         case plans.Aggregation(_, groupingExpressions, aggregationExpression) if groupingExpressions.isEmpty =>
           val aggregations = aggregationExpression.map {
             case (key, expression) =>

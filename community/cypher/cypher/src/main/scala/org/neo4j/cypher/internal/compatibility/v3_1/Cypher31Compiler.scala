@@ -22,17 +22,18 @@ package org.neo4j.cypher.internal.compatibility.v3_1
 import java.util.Collections.emptyList
 
 import org.neo4j.cypher.CypherExecutionMode
+import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
 import org.neo4j.cypher.internal.compiler.v3_1
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{InternalExecutionResult, ExecutionPlan => ExecutionPlan_v3_1}
 import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v3_1.{CompilationPhaseTracer, InfoLogger, ExplainMode => ExplainModev3_1, NormalMode => NormalModev3_1, ProfileMode => ProfileModev3_1, _}
+import org.neo4j.cypher.internal.compiler.v3_1.{InfoLogger, ExplainMode => ExplainModev3_1, NormalMode => NormalModev3_1, ProfileMode => ProfileModev3_1, _}
+import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition => InputPosition3_1}
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
-import org.neo4j.cypher.internal.runtime.interpreted.{TransactionalContextWrapper => TransactionalContextWrapperV3_5}
+import org.neo4j.cypher.internal.runtime.interpreted.ValueConversion
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_1.{TransactionalContextWrapper => TransactionalContextWrapperV3_1, _}
-import org.neo4j.cypher.internal.{frontend, _}
 import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -45,13 +46,15 @@ import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.{frontend => v3_5}
 
 import scala.collection.mutable
-import scala.util.Try
 
-trait Compatibility {
+trait Cypher31Compiler extends CachingCompiler[PreparedQuerySyntax] {
 
   val graph: GraphDatabaseQueryService
   val queryCacheSize: Int
   val kernelMonitors: KernelMonitors
+
+  override def parserCacheSize: Int = queryCacheSize
+  override def plannerCacheSize: Int = 0
 
   protected val rewriterSequencer: (String) => RewriterStepSequencer = {
     import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer._
@@ -64,38 +67,7 @@ trait Compatibility {
 
   implicit val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
-                         preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
-    val notificationLogger = new RecordingNotificationLogger
-    val preparedSyntacticQueryForV_3_1: Try[PreparedQuerySyntax] =
-      Try(compiler.prepareSyntacticQuery(preParsedQuery.statement,
-                                         preParsedQuery.rawStatement,
-                                         notificationLogger,
-                                         preParsedQuery.planner.name,
-                                         Some(helpers.as3_1(preParsedQuery.offset)), tracer))
-    new ParsedQuery {
-      override def plan(transactionalContext: TransactionalContext,
-                        tracer: v3_5.phases.CompilationPhaseTracer):
-      (ExecutionPlan, Map[String, Any], Seq[String]) =
-        exceptionHandler.runSafely {
-          val tc = TransactionalContextWrapperV3_1(transactionalContext)
-          val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(tc, notificationLogger))
-          val syntacticQuery = preparedSyntacticQueryForV_3_1.get
-          val (planImpl, extractedParameters) = compiler
-            .planPreparedQuery(syntacticQuery, notificationLogger, planContext, Some(as3_1(preParsedQuery.offset)),
-                               as3_1(tracer))
-
-          // Log notifications/warnings from planning
-          planImpl.notifications(planContext).foreach(notificationLogger += _)
-
-          (new ExecutionPlanWrapper(planImpl, preParsingNotifications, as3_1(preParsedQuery.offset)), extractedParameters, Seq.empty[String])
-        }
-
-      override protected val trier: Try[PreparedQuerySyntax] = preparedSyntacticQueryForV_3_1
-    }
-  }
-
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v3_1, preParsingNotifications: Set[org.neo4j.graphdb.Notification], offSet: frontend.v3_1.InputPosition)
+  class ExecutionPlanWrapper(inner: ExecutionPlan_v3_1, preParsingNotifications: Set[org.neo4j.graphdb.Notification], offSet: InputPosition3_1)
     extends ExecutionPlan {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
@@ -148,6 +120,48 @@ trait Compatibility {
     }
   }
 
+  override def compile(preParsedQuery: PreParsedQuery,
+                       tracer: v3_5.phases.CompilationPhaseTracer,
+                       preParsingNotifications: Set[org.neo4j.graphdb.Notification],
+                       transactionalContext: TransactionalContext
+                      ): CacheableExecutableQuery = {
+
+    exceptionHandler.runSafely {
+      val notificationLogger = new RecordingNotificationLogger
+      val position3_1 = as3_1(preParsedQuery.offset)
+      val tracer3_1 = as3_1(tracer)
+
+      val syntacticQuery3_1: PreparedQuerySyntax =
+        getOrParse(preParsedQuery, new Parser3_1(compiler, notificationLogger, position3_1, tracer3_1))
+
+      val tc = TransactionalContextWrapperV3_1(transactionalContext)
+      val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(tc, notificationLogger))
+      val (executionPlan3_1, extractedParameters) =
+        compiler.planPreparedQuery(syntacticQuery3_1, notificationLogger, planContext, Some(position3_1), tracer3_1)
+
+      // Log notifications/warnings from planning
+      executionPlan3_1.notifications(planContext).foreach(notificationLogger += _)
+
+      val executionPlan = new ExecutionPlanWrapper(executionPlan3_1, preParsingNotifications, position3_1)
+      CacheableExecutableQuery(executionPlan, Seq.empty[String], ValueConversion.asValues(extractedParameters))
+    }
+  }
+}
+
+class Parser3_1(compiler: CypherCompiler,
+                notificationLogger: InternalNotificationLogger,
+                offset: InputPosition3_1,
+                tracer: v3_1.CompilationPhaseTracer
+               ) extends Parser[PreparedQuerySyntax] {
+
+  override def parse(preParsedQuery: PreParsedQuery): PreparedQuerySyntax = {
+    compiler.prepareSyntacticQuery(preParsedQuery.statement,
+                                  preParsedQuery.rawStatement,
+                                  notificationLogger,
+                                  preParsedQuery.planner.name,
+                                  Some(offset),
+                                  tracer)
+  }
 }
 
 class StringInfoLogger(log: Log) extends InfoLogger {

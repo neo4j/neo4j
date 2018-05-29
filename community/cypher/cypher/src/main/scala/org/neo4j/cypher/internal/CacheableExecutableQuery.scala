@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal
 
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
-import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.values.virtual.MapValue
 
-import scala.util.Try
-
-trait ParsedQuery {
-  protected def trier: Try[{ def isPeriodicCommit: Boolean }]
-  def plan(transactionContext: TransactionalContext, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any], Seq[String])
-  final def hasErrors: Boolean = trier.isFailure
-  final def onError[T](f: Throwable => T): Option[T] = trier.failed.toOption.map(f)
-}
+/**
+  * A fully compiled query in executable form.
+  *
+  * @param plan The executable plan.
+  * @param paramNames Names of all parameters for this query, explicit and auto-parametrized.
+  * @param extractedParams The names and values of the auto-parametrized parameters for this query.
+  */
+case class CacheableExecutableQuery(plan: ExecutionPlan,
+                                    paramNames: Seq[String],
+                                    extractedParams: MapValue)

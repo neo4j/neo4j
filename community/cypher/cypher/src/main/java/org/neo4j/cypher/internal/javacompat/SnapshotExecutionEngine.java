@@ -19,9 +19,7 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import java.util.Map;
-
-import org.neo4j.cypher.internal.CompatibilityFactory;
+import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
@@ -44,9 +42,9 @@ public class SnapshotExecutionEngine extends ExecutionEngine
     private final int maxQueryExecutionAttempts;
 
     SnapshotExecutionEngine( GraphDatabaseQueryService queryService, Config config, LogProvider logProvider,
-            CompatibilityFactory compatibilityFactory )
+                             CompilerFactory compilerFactory )
     {
-        super( queryService, logProvider, compatibilityFactory );
+        super( queryService, logProvider, compilerFactory );
         this.maxQueryExecutionAttempts = config.get( GraphDatabaseSettings.snapshot_query_retries );
     }
 

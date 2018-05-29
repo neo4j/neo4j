@@ -19,35 +19,44 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
- * This is meant to serve as the bridge that makes the Beans API tie transactions to threads. The Beans API
- * will use this to get the appropriate {@link Statement} when it performs operations.
+ * This is meant to serve as the bridge that tie transactions to threads.
+ * APIs will use this to get the appropriate {@link Statement} when it performs operations.
  */
-public class ThreadToStatementContextBridge extends LifecycleAdapter implements Supplier<Statement>
+public class ThreadToStatementContextBridge implements Supplier<Statement>
 {
     private final ThreadLocal<KernelTransaction> threadToTransactionMap = new ThreadLocal<>();
-    private boolean isShutdown;
+    private final AvailabilityGuard availabilityGuard;
+
+    public ThreadToStatementContextBridge( AvailabilityGuard availabilityGuard )
+    {
+        this.availabilityGuard = availabilityGuard;
+    }
 
     public boolean hasTransaction()
     {
-        checkIfShutdown();
-        return threadToTransactionMap.get() != null;
+        KernelTransaction kernelTransaction = threadToTransactionMap.get();
+        if ( kernelTransaction != null )
+        {
+            assertInUnterminatedTransaction( kernelTransaction );
+            return true;
+        }
+        return false;
     }
 
     public void bindTransactionToCurrentThread( KernelTransaction transaction )
     {
-        if ( threadToTransactionMap.get() != null )
+        if ( hasTransaction() )
         {
             throw new IllegalStateException( Thread.currentThread() + " already has a transaction bound" );
         }
@@ -62,12 +71,30 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
     @Override
     public Statement get()
     {
-        checkIfShutdown();
         return getKernelTransactionBoundToThisThread( true ).acquireStatement();
     }
 
-    private static void assertInUnterminatedTransaction( KernelTransaction transaction )
+    public void assertInUnterminatedTransaction()
     {
+        assertInUnterminatedTransaction( threadToTransactionMap.get() );
+    }
+
+    public KernelTransaction getKernelTransactionBoundToThisThread( boolean strict )
+    {
+        KernelTransaction transaction = threadToTransactionMap.get();
+        if ( strict )
+        {
+            assertInUnterminatedTransaction( transaction );
+        }
+        return transaction;
+    }
+
+    private void assertInUnterminatedTransaction( KernelTransaction transaction )
+    {
+        if ( availabilityGuard.isShutdown() )
+        {
+            throw new DatabaseShutdownException();
+        }
         if ( transaction == null )
         {
             throw new BridgeNotInTransactionException();
@@ -79,59 +106,12 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         }
     }
 
-    public void assertInUnterminatedTransaction()
-    {
-        checkIfShutdown();
-        assertInUnterminatedTransaction( threadToTransactionMap.get() );
-    }
-
-    @Override
-    public void shutdown()
-    {
-        isShutdown = true;
-    }
-
-    private void checkIfShutdown()
-    {
-        if ( isShutdown )
-        {
-            throw new BridgeDatabaseShutdownException();
-        }
-    }
-
-    public KernelTransaction getTopLevelTransactionBoundToThisThread( boolean strict )
-    {
-        KernelTransaction transaction = threadToTransactionMap.get();
-        if ( strict )
-        {
-            assertInUnterminatedTransaction( transaction );
-        }
-        return transaction;
-    }
-
-    public KernelTransaction getKernelTransactionBoundToThisThread( boolean strict )
-    {
-        checkIfShutdown();
-        return getTopLevelTransactionBoundToThisThread( strict );
-    }
-
-    // Exceptions below extend the public API exceptions with versions that have status codes.
-    // TODO why not add this status to the super exceptions?
     private static class BridgeNotInTransactionException extends NotInTransactionException implements Status.HasStatus
     {
         @Override
         public Status status()
         {
             return Status.Request.TransactionRequired;
-        }
-    }
-
-    private static class BridgeDatabaseShutdownException extends DatabaseShutdownException implements Status.HasStatus
-    {
-        @Override
-        public Status status()
-        {
-            return Status.General.DatabaseUnavailable;
         }
     }
 }

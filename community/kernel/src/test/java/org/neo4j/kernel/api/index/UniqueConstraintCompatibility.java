@@ -945,7 +945,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     private void suspend( Transaction tx )
     {
         ThreadToStatementContextBridge txManager = getTransactionManager();
-        txMap.put( tx, txManager.getTopLevelTransactionBoundToThisThread( true ) );
+        txMap.put( tx, txManager.getKernelTransactionBoundToThisThread( true ) );
         txManager.unbindTransactionFromCurrentThread();
     }
 

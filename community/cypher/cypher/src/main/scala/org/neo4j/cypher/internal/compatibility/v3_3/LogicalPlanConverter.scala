@@ -100,24 +100,24 @@ object LogicalPlanConverter {
           convertVersion("v3_3", "v3_5", plan, children, ids.convertId(plan), classOf[IdGen])
 
         case (inp: astV3_3.InvalidNodePattern, children: Seq[AnyRef]) =>
-          new expressionsv3_5.InvalidNodePattern(children.head.asInstanceOf[Option[expressionsv3_5.Variable]].get)(helpers.as3_4(inp.position))
+          new expressionsv3_5.InvalidNodePattern(children.head.asInstanceOf[Option[expressionsv3_5.Variable]].get)(helpers.as3_5(inp.position))
         case (mp: astV3_3.MapProjection, children: Seq[AnyRef]) =>
           expressionsv3_5.MapProjection(children(0).asInstanceOf[expressionsv3_5.Variable],
-            children(1).asInstanceOf[Seq[expressionsv3_5.MapProjectionElement]])(helpers.as3_4(mp.position))
+            children(1).asInstanceOf[Seq[expressionsv3_5.MapProjectionElement]])(helpers.as3_5(mp.position))
 
         case (item@(_: compilerV3_3.ast.PrefixSeekRangeWrapper |
                     _: compilerV3_3.ast.InequalitySeekRangeWrapper |
                     _: compilerV3_3.ast.NestedPlanExpression |
                     _: compilerV3_3.ast.ResolvedFunctionInvocation), children: Seq[AnyRef]) =>
-          convertVersion("compiler.v3_3.ast", "v3_5.logical.plans", item, children, helpers.as3_4(item.asInstanceOf[astV3_3.ASTNode].position), classOf[InputPosition])
+          convertVersion("compiler.v3_3.ast", "v3_5.logical.plans", item, children, helpers.as3_5(item.asInstanceOf[astV3_3.ASTNode].position), classOf[InputPosition])
         case (item: astV3_3.rewriters.DesugaredMapProjection, children: Seq[AnyRef]) =>
-          convertVersion("org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters", "org.opencypher.v9_0.expressions", item, children, helpers.as3_4(item.position), classOf[InputPosition])
+          convertVersion("org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters", "org.opencypher.v9_0.expressions", item, children, helpers.as3_5(item.position), classOf[InputPosition])
         case (item: astV3_3.ProcedureResultItem, children: Seq[AnyRef]) =>
-          convertVersion(v3_3_AST, "org.opencypher.v9_0.ast", item, children, helpers.as3_4(item.position), classOf[InputPosition])
+          convertVersion(v3_3_AST, "org.opencypher.v9_0.ast", item, children, helpers.as3_5(item.position), classOf[InputPosition])
         case (item: plansV3_3.ResolvedCall, children: Seq[AnyRef]) =>
-          convertVersion("org.neo4j.cypher.internal.v3_3.logical.plans", "org.neo4j.cypher.internal.v3_5.logical.plans", item, children, helpers.as3_4(item.position), classOf[InputPosition])
+          convertVersion("org.neo4j.cypher.internal.v3_3.logical.plans", "org.neo4j.cypher.internal.v3_5.logical.plans", item, children, helpers.as3_5(item.position), classOf[InputPosition])
         case (expressionV3_3: astV3_3.ASTNode, children: Seq[AnyRef]) =>
-          convertVersion(v3_3_AST, "org.opencypher.v9_0.expressions", expressionV3_3, children, helpers.as3_4(expressionV3_3.position), classOf[InputPosition])
+          convertVersion(v3_3_AST, "org.opencypher.v9_0.expressions", expressionV3_3, children, helpers.as3_5(expressionV3_3.position), classOf[InputPosition])
         case (symbolsV3_3.CTAny, _) => symbolsv3_5.CTAny
         case (symbolsV3_3.CTBoolean, _) => symbolsv3_5.CTBoolean
         case (symbolsV3_3.CTFloat, _) => symbolsv3_5.CTFloat
@@ -202,7 +202,7 @@ object LogicalPlanConverter {
             val plan3_4 = rewritten.asInstanceOf[LogicalPlanv3_5]
             // Set other attributes that were part of the plan in 3.3
             solveds.set(plan3_4.id, new PlannerQueryWrapper(plan.solved))
-            cardinalities.set(plan3_4.id, helpers.as3_4(plan.solved.estimatedCardinality))
+            cardinalities.set(plan3_4.id, helpers.as3_5(plan.solved.estimatedCardinality))
           } catch {
             case (_: frontendV3_3.InternalException) =>
             // ProcedureOrSchema plans have no assigned IDs. That's ok.

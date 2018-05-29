@@ -25,7 +25,7 @@ import org.junit.Test;
 
 import java.util.Collections;
 
-import org.neo4j.cypher.internal.CompatibilityFactory;
+import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Result;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
@@ -52,7 +52,7 @@ public class SnapshotExecutionEngineTest
     @Rule
     public final DatabaseRule database = new ImpermanentDatabaseRule();
 
-    private CompatibilityFactory compatibilityFactory;
+    private CompilerFactory compilerFactory;
     private TestSnapshotExecutionEngine executionEngine;
     private VersionContext versionContext;
     private SnapshotExecutionEngine.ParametrizedQueryExecutor executor;
@@ -64,7 +64,7 @@ public class SnapshotExecutionEngineTest
     {
         GraphDatabaseQueryService cypherService = new GraphDatabaseCypherService( this.database.getGraphDatabaseAPI() );
 
-        compatibilityFactory = mock( CompatibilityFactory.class );
+        compilerFactory = mock( CompilerFactory.class );
         transactionalContext = mock( TransactionalContext.class );
         KernelStatement kernelStatement = mock( KernelStatement.class );
         executor = mock( SnapshotExecutionEngine.ParametrizedQueryExecutor.class );
@@ -121,7 +121,7 @@ public class SnapshotExecutionEngineTest
     {
 
         TestSnapshotExecutionEngine( GraphDatabaseQueryService queryService, Config config, LogProvider logProvider,
-                CompatibilityFactory compatibilityFactory )
+                                     CompilerFactory compatibilityFactory )
         {
             super( queryService, config, logProvider, compatibilityFactory );
         }
@@ -137,6 +137,6 @@ public class SnapshotExecutionEngineTest
     private TestSnapshotExecutionEngine createExecutionEngine( GraphDatabaseQueryService cypherService )
     {
         return new TestSnapshotExecutionEngine( cypherService, config, NullLogProvider.getInstance(),
-                compatibilityFactory );
+                                                compilerFactory );
     }
 }

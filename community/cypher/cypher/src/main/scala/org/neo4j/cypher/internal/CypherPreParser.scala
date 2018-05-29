@@ -25,7 +25,7 @@ import org.parboiled.scala._
 
 final case class PreParsedStatement(statement: String, options: Seq[PreParserOption], offset: InputPosition)
 
-case object CypherPreParser extends Parser with Base {
+case object CypherPreParser extends org.parboiled.scala.Parser with Base {
   def apply(input: String): PreParsedStatement = parseOrThrow(input, None, QueryWithOptions)
 
   def QueryWithOptions: Rule1[Seq[PreParsedStatement]] =

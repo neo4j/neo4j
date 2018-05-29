@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -26,35 +27,30 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class TxStateCheckerTestSupport
+class TxStateCheckerTestSupport
 {
-    protected static final TransitionalPeriodTransactionMessContainer TPTPMC =
-            mock( TransitionalPeriodTransactionMessContainer.class );
+    static final TransitionalPeriodTransactionMessContainer TPTPMC = mock( TransitionalPeriodTransactionMessContainer.class );
+    private static FakeBridge fakeBridge = new FakeBridge();
 
     static
     {
-        // a problem with Mockito prevents inlining
-        FakeBridge bridge = new FakeBridge();
-        when( TPTPMC.getBridge() ).thenReturn( bridge );
+        when( TPTPMC.getBridge() ).thenReturn( fakeBridge );
     }
 
-    protected TxStateCheckerTestSupport()
-    {
-    }
-
-    protected static class FakeBridge extends ThreadToStatementContextBridge
+    static class FakeBridge extends ThreadToStatementContextBridge
     {
         private final KernelTransaction tx = mock( KernelTransaction.class );
         private final KernelStatement statement = mock( KernelStatement.class );
 
-        public FakeBridge()
+        FakeBridge()
         {
+            super( mock( AvailabilityGuard.class ) );
             when( tx.acquireStatement() ).thenReturn( statement );
             when( statement.hasTxStateWithChanges() ).thenReturn( false );
         }
 
         @Override
-        public KernelTransaction getTopLevelTransactionBoundToThisThread( boolean strict )
+        public KernelTransaction getKernelTransactionBoundToThisThread( boolean strict )
         {
             return tx;
         }

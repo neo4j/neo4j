@@ -65,7 +65,7 @@ object helpers {
   /** This is awful but needed until 3_0 is updated no to send in the tracer here */
   def as3_3(tracer: CompilationPhaseTracer): CompilationPhaseTracer3_3 = {
     new CompilationPhaseTracer3_3 {
-      override def beginPhase(phase: CompilationPhaseTracer3_3.CompilationPhase) = {
+      override def beginPhase(phase: CompilationPhaseTracer3_3.CompilationPhase): CompilationPhaseTracer3_3.CompilationPhaseEvent = {
         val wrappedPhase = phase match {
           case v3_3Phase.AST_REWRITE => v3_5Phase.AST_REWRITE
           case v3_3Phase.CODE_GENERATION => v3_5Phase.CODE_GENERATION
@@ -97,35 +97,35 @@ object helpers {
 
   def as3_3(pos: InputPosition): InputPositionV3_3 = InputPositionV3_3(pos.offset, pos.line, pos.column)
 
-  def as3_4(pos: InputPositionV3_3): InputPosition = if(pos == null) null else InputPosition(pos.offset, pos.line, pos.column)
+  def as3_5(pos: InputPositionV3_3): InputPosition = if(pos == null) null else InputPosition(pos.offset, pos.line, pos.column)
 
-  def as3_4(planId: LogicalPlanIdV3_3) : Id = Id(planId.underlying)
+  def as3_5(planId: LogicalPlanIdV3_3) : Id = Id(planId.underlying)
 
-  def as3_4(plannerName: PlannerNameV3_3) : PlannerName = plannerName match {
+  def as3_5(plannerName: PlannerNameV3_3) : PlannerName = plannerName match {
     case IDPPlannerNameV3_3 => IDPPlannerName
     case DPPlannerNameV3_3 => DPPlannerName
     case ProcedurePlannerNameV3_3 => ProcedurePlannerName
   }
 
-  def as3_4(updateStrategy: UpdateStrategyV3_3): UpdateStrategy = updateStrategy match {
+  def as3_5(updateStrategy: UpdateStrategyV3_3): UpdateStrategy = updateStrategy match {
     case org.neo4j.cypher.internal.compiler.v3_3.eagerUpdateStrategy => eagerUpdateStrategy
     case org.neo4j.cypher.internal.compiler.v3_3.defaultUpdateStrategy => defaultUpdateStrategy
   }
 
-  def as3_4(periodicCommit: irV3_3.PeriodicCommit): irv3_5.PeriodicCommit = {
+  def as3_5(periodicCommit: irV3_3.PeriodicCommit): irv3_5.PeriodicCommit = {
     irv3_5.PeriodicCommit(periodicCommit.batchSize)
   }
 
-  def as3_4(cardinality: CardinalityV3_3) : Cardinality = {
+  def as3_5(cardinality: CardinalityV3_3) : Cardinality = {
     Cardinality(cardinality.amount)
   }
 
-  def as3_4(statement: astV3_3.Statement) : astv3_5.Statement = StatementWrapper(statement)
+  def as3_5(statement: astV3_3.Statement) : astv3_5.Statement = StatementWrapper(statement)
 
-  def as3_4(notification: nfV3_3.InternalNotification): nfv3_5.InternalNotification = notification match {
-    case nfV3_3.DeprecatedStartNotification(position, alternativeQuery) => nfv3_5.DeprecatedStartNotification(as3_4(position), alternativeQuery)
-    case nfV3_3.CartesianProductNotification(position, isolatedVariables) => nfv3_5.CartesianProductNotification(as3_4(position), isolatedVariables)
-    case nfV3_3.LengthOnNonPathNotification(position) => nfv3_5.LengthOnNonPathNotification(as3_4(position))
+  def as3_5(notification: nfV3_3.InternalNotification): nfv3_5.InternalNotification = notification match {
+    case nfV3_3.DeprecatedStartNotification(position, alternativeQuery) => nfv3_5.DeprecatedStartNotification(as3_5(position), alternativeQuery)
+    case nfV3_3.CartesianProductNotification(position, isolatedVariables) => nfv3_5.CartesianProductNotification(as3_5(position), isolatedVariables)
+    case nfV3_3.LengthOnNonPathNotification(position) => nfv3_5.LengthOnNonPathNotification(as3_5(position))
     case nfV3_3.PlannerUnsupportedNotification => compilerv3_5.PlannerUnsupportedNotification
     case nfV3_3.RuntimeUnsupportedNotification => compilerv3_5.RuntimeUnsupportedNotification
     case nfV3_3.IndexHintUnfulfillableNotification(label, propertyKeys) => compilerv3_5.IndexHintUnfulfillableNotification(label, propertyKeys)
@@ -134,24 +134,24 @@ object helpers {
     case nfV3_3.IndexLookupUnfulfillableNotification(labels) => compilerv3_5.IndexLookupUnfulfillableNotification(labels)
     case nfV3_3.EagerLoadCsvNotification => compilerv3_5.EagerLoadCsvNotification
     case nfV3_3.LargeLabelWithLoadCsvNotification => compilerv3_5.LargeLabelWithLoadCsvNotification
-    case nfV3_3.MissingLabelNotification(position, label) => compilerv3_5.MissingLabelNotification(as3_4(position), label)
-    case nfV3_3.MissingRelTypeNotification(position, relType) => compilerv3_5.MissingRelTypeNotification(as3_4(position), relType)
-    case nfV3_3.MissingPropertyNameNotification(position, name) => compilerv3_5.MissingPropertyNameNotification(as3_4(position), name)
-    case nfV3_3.UnboundedShortestPathNotification(position) => nfv3_5.UnboundedShortestPathNotification(as3_4(position))
-    case nfV3_3.ExhaustiveShortestPathForbiddenNotification(position) => compilerv3_5.ExhaustiveShortestPathForbiddenNotification(as3_4(position))
-    case nfV3_3.DeprecatedFunctionNotification(position, oldName, newName) => nfv3_5.DeprecatedFunctionNotification(as3_4(position), oldName, newName)
-    case nfV3_3.DeprecatedProcedureNotification(position, oldName, newName) => compilerv3_5.DeprecatedProcedureNotification(as3_4(position), oldName, newName)
-    case nfV3_3.ProcedureWarningNotification(position, procedure, warning) => compilerv3_5.ProcedureWarningNotification(as3_4(position), procedure, warning)
-    case nfV3_3.DeprecatedFieldNotification(position, procedure, field) => compilerv3_5.DeprecatedFieldNotification(as3_4(position), procedure, field)
-    case nfV3_3.DeprecatedVarLengthBindingNotification(position, variable) => nfv3_5.DeprecatedVarLengthBindingNotification(as3_4(position), variable)
-    case nfV3_3.DeprecatedRelTypeSeparatorNotification(position) => nfv3_5.DeprecatedRelTypeSeparatorNotification(as3_4(position))
+    case nfV3_3.MissingLabelNotification(position, label) => compilerv3_5.MissingLabelNotification(as3_5(position), label)
+    case nfV3_3.MissingRelTypeNotification(position, relType) => compilerv3_5.MissingRelTypeNotification(as3_5(position), relType)
+    case nfV3_3.MissingPropertyNameNotification(position, name) => compilerv3_5.MissingPropertyNameNotification(as3_5(position), name)
+    case nfV3_3.UnboundedShortestPathNotification(position) => nfv3_5.UnboundedShortestPathNotification(as3_5(position))
+    case nfV3_3.ExhaustiveShortestPathForbiddenNotification(position) => compilerv3_5.ExhaustiveShortestPathForbiddenNotification(as3_5(position))
+    case nfV3_3.DeprecatedFunctionNotification(position, oldName, newName) => nfv3_5.DeprecatedFunctionNotification(as3_5(position), oldName, newName)
+    case nfV3_3.DeprecatedProcedureNotification(position, oldName, newName) => compilerv3_5.DeprecatedProcedureNotification(as3_5(position), oldName, newName)
+    case nfV3_3.ProcedureWarningNotification(position, procedure, warning) => compilerv3_5.ProcedureWarningNotification(as3_5(position), procedure, warning)
+    case nfV3_3.DeprecatedFieldNotification(position, procedure, field) => compilerv3_5.DeprecatedFieldNotification(as3_5(position), procedure, field)
+    case nfV3_3.DeprecatedVarLengthBindingNotification(position, variable) => nfv3_5.DeprecatedVarLengthBindingNotification(as3_5(position), variable)
+    case nfV3_3.DeprecatedRelTypeSeparatorNotification(position) => nfv3_5.DeprecatedRelTypeSeparatorNotification(as3_5(position))
     case nfV3_3.DeprecatedPlannerNotification => compilerv3_5.DeprecatedPlannerNotification
   }
 
-  def as3_4(logicalPlanState: LogicalPlanStateV3_3) : LogicalPlanState = {
-    val startPosition = logicalPlanState.startPosition.map(as3_4)
+  def as3_5(logicalPlanState: LogicalPlanStateV3_3) : LogicalPlanState = {
+    val startPosition = logicalPlanState.startPosition.map(as3_5)
     // Wrap the planner name to correctly report version 3.3.
-    val plannerName = PlannerNameWithVersion(as3_4(logicalPlanState.plannerName), v3_3.name)
+    val plannerName = PlannerNameWithVersion(as3_5(logicalPlanState.plannerName), v3_3.name)
 
     val solveds = new Solveds
     val cardinalities = new Cardinalities
@@ -160,18 +160,18 @@ object helpers {
     val statement3_3 = logicalPlanState.maybeStatement.get
 
     LogicalPlanState(logicalPlanState.queryText,
-      startPosition,
-      plannerName,
-      solveds,
-      cardinalities,
-      Some(as3_4(statement3_3)),
-      None,
-      logicalPlanState.maybeExtractedParams,
-      Some(semanticTable3_4),
-      None,
-      Some(plan3_4),
-      Some(logicalPlanState.maybePeriodicCommit.flatten.map(x => as3_4(x))),
-      Set.empty)
+                     startPosition,
+                     plannerName,
+                     solveds,
+                     cardinalities,
+                     Some(as3_5(statement3_3)),
+                     None,
+                     logicalPlanState.maybeExtractedParams,
+                     Some(semanticTable3_4),
+                     None,
+                     Some(plan3_4),
+                     Some(logicalPlanState.maybePeriodicCommit.flatten.map(x => as3_5(x))),
+                     Set.empty)
   }
 
   private def convertLogicalPlan(logicalPlanState: LogicalPlanStateV3_3,

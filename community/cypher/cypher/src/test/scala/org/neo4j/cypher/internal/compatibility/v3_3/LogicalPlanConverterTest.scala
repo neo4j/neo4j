@@ -240,7 +240,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
                           a3_3, solveds, cardinalities, new MaxIdConverter
                         )._1
     solveds.get(rewrittenPlan.id).readOnly should equal(solved.readOnly)
-    cardinalities.get(rewrittenPlan.id) should equal(helpers.as3_4(solved.estimatedCardinality))
+    cardinalities.get(rewrittenPlan.id) should equal(helpers.as3_5(solved.estimatedCardinality))
   }
 
   test("should convert AllNodeScan and keep id") {
@@ -251,7 +251,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
 
     val rewrittenPlan = convert[plansv3_5.AllNodesScan](a3_3)
     rewrittenPlan should be(a3_4)
-    rewrittenPlan.id should be(helpers.as3_4(id3_3))
+    rewrittenPlan.id should be(helpers.as3_5(id3_3))
   }
 
   test("should convert Aggregation and keep ids") {
@@ -270,8 +270,8 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
 
     val rewrittenPlan = convert[plansv3_5.Aggregation](ag3_3)
     rewrittenPlan should be(ag3_4)
-    rewrittenPlan.id should be(helpers.as3_4(ag_id))
-    rewrittenPlan.lhs.get.id should be(helpers.as3_4(ans_id))
+    rewrittenPlan.id should be(helpers.as3_5(ag_id))
+    rewrittenPlan.lhs.get.id should be(helpers.as3_5(ans_id))
   }
 
   test("should convert ProduceResult and keep ids") {
@@ -287,8 +287,8 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
 
     val rewrittenPlan = convert[plansv3_5.ProduceResult](p3_3)
     rewrittenPlan should be(p3_4)
-    rewrittenPlan.id should be(helpers.as3_4(p3_3_id))
-    rewrittenPlan.lhs.get.id should be(helpers.as3_4(s3_3_id))
+    rewrittenPlan.id should be(helpers.as3_5(p3_3_id))
+    rewrittenPlan.lhs.get.id should be(helpers.as3_5(s3_3_id))
   }
 
   test("should convert ErrorPlan") {

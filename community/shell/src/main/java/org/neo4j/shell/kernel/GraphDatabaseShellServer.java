@@ -128,7 +128,7 @@ public class GraphDatabaseShellServer extends AbstractAppServer
         if ( !clients.containsKey( clientId ) )
         {
             ThreadToStatementContextBridge threadToStatementContextBridge = getThreadToStatementContextBridge();
-            KernelTransaction tx = threadToStatementContextBridge.getTopLevelTransactionBoundToThisThread( false );
+            KernelTransaction tx = threadToStatementContextBridge.getKernelTransactionBoundToThisThread( false );
             clients.put( clientId, tx );
         }
     }
@@ -148,7 +148,7 @@ public class GraphDatabaseShellServer extends AbstractAppServer
         try
         {
             ThreadToStatementContextBridge threadToStatementContextBridge = getThreadToStatementContextBridge();
-            KernelTransaction tx = threadToStatementContextBridge.getTopLevelTransactionBoundToThisThread( false );
+            KernelTransaction tx = threadToStatementContextBridge.getKernelTransactionBoundToThisThread( false );
             threadToStatementContextBridge.unbindTransactionFromCurrentThread();
             if ( tx == null )
             {
