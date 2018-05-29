@@ -226,6 +226,33 @@ class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
     result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
   }
 
+  test("should support top n < morsel size") {
+    //Given
+    1 to 100 foreach(i => createNode("prop" -> i))
+
+    //When
+    val result = graph.execute("CYPHER runtime=morsel MATCH (n) RETURN n.prop ORDER BY n.prop DESC LIMIT 2")
+
+    //Then
+    val scalaresult = asScalaResult(result).toList
+    scalaresult should equal(List(Map("n.prop" -> 100), Map("n.prop" -> 99)))
+    result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
+  }
+
+  test("should support top n > morsel size") {
+    //Given
+    1 to 100 foreach(i => createNode("prop" -> i))
+
+    //When
+    val result = graph.execute("CYPHER runtime=morsel MATCH (n) RETURN n.prop ORDER BY n.prop DESC LIMIT 6")
+
+    //Then
+    val scalaresult = asScalaResult(result).toList
+    scalaresult should equal(List(Map("n.prop" -> 100), Map("n.prop" -> 99), Map("n.prop" -> 98),
+      Map("n.prop" -> 97), Map("n.prop" -> 96), Map("n.prop" -> 95)))
+    result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
+  }
+
   test("should support collect with grouping") {
     //Given
     10 to 100 by 10 foreach(i => createNode("prop" -> i, "group" -> (if (i > 50) "FOO" else "BAR")))
