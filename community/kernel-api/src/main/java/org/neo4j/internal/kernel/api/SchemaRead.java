@@ -72,6 +72,14 @@ public interface SchemaRead
     Iterator<IndexReference> indexesGetForLabel( int labelId );
 
     /**
+     * Returns the index with the given name
+     *
+     * @param name The name of the index you are looking for
+     * @return The index associated with the given name
+     */
+    IndexReference indexGetForName( String name );
+
+    /**
      * Returns all indexes used in the database
      *
      * @return all indexes used in the database

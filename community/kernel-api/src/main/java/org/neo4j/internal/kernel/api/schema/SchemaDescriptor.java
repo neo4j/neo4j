@@ -38,6 +38,75 @@ import org.neo4j.storageengine.api.lock.ResourceType;
  */
 public interface SchemaDescriptor extends SchemaDescriptorSupplier
 {
+    SchemaDescriptor NO_SCHEMA = new SchemaDescriptor()
+    {
+        @Override
+        public boolean isAffected( long[] entityIds )
+        {
+            return false;
+        }
+
+        @Override
+        public <R> R computeWith( SchemaComputer<R> computer )
+        {
+            return null;
+        }
+
+        @Override
+        public void processWith( SchemaProcessor processor )
+        {
+
+        }
+
+        @Override
+        public String userDescription( TokenNameLookup tokenNameLookup )
+        {
+            return "NO_SCHEMA";
+        }
+
+        @Override
+        public int[] getPropertyIds()
+        {
+            return new int[0];
+        }
+
+        @Override
+        public int[] getEntityTokenIds()
+        {
+            return new int[0];
+        }
+
+        @Override
+        public int keyId()
+        {
+            return 0;
+        }
+
+        @Override
+        public ResourceType keyType()
+        {
+            return null;
+        }
+
+        @Override
+        public EntityType entityType()
+        {
+            return null;
+        }
+
+        @Override
+        public PropertySchemaType propertySchemaType()
+        {
+            return null;
+        }
+
+        @Override
+        public SchemaDescriptor schema()
+        {
+            return null;
+        }
+    };
+
     int[] ANY_ENTITY_TOKEN = new int[0];
 
     static boolean isAnyEntityTokenSchema( SchemaDescriptor schema )

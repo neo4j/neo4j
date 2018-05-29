@@ -676,6 +676,12 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
+    public IndexReference indexGetForName( String name )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
     public Iterator<IndexReference> indexesGetAll()
     {
         throw new UnsupportedOperationException( "not implemented" );

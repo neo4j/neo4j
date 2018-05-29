@@ -36,7 +36,7 @@ import org.neo4j.storageengine.api.schema.IndexSample;
  * Verifies uniqueness of added and changed values using
  * {@link SchemaIndex#verifyUniqueness(NodePropertyAccessor, int[])} method.
  */
-public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
+public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator<SchemaIndex>
 {
     private final int[] propertyKeyIds;
     private final UniqueIndexSampler sampler;

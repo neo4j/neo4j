@@ -25,22 +25,15 @@ import java.util.List;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.verification.UniquenessVerifier;
-import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 
 /**
  * Partitioned lucene schema index.
  */
-public interface SchemaIndex extends DatabaseIndex
+public interface SchemaIndex extends DatabaseIndex<IndexReader>
 {
-    LuceneIndexWriter getIndexWriter();
-
-    IndexReader getIndexReader() throws IOException;
-
-    IndexDescriptor getDescriptor();
 
     /**
      * Verifies uniqueness of property values present in this index.
@@ -66,27 +59,4 @@ public interface SchemaIndex extends DatabaseIndex
      */
     void verifyUniqueness( NodePropertyAccessor accessor, int[] propertyKeyIds, List<Value[]> updatedValueTuples )
                     throws IOException, IndexEntryConflictException;
-
-    /**
-     * Check if this index is marked as online.
-     *
-     * @return <code>true</code> if index is online, <code>false</code> otherwise
-     * @throws IOException
-     */
-    boolean isOnline() throws IOException;
-
-    /**
-     * Marks index as online by including "status" -> "online" map into commit metadata of the first partition.
-     *
-     * @throws IOException
-     */
-    void markAsOnline() throws IOException;
-
-    /**
-     * Writes the given failure message to the failure storage.
-     *
-     * @param failure the failure message.
-     * @throws IOException
-     */
-    void markAsFailed( String failure ) throws IOException;
 }

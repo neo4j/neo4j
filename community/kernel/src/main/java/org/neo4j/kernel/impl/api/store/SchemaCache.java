@@ -176,6 +176,11 @@ public class SchemaCache
         return schemaCacheState.indexesByProperty( propertyId );
     }
 
+    public CapableIndexDescriptor indexDescriptorForName( String name )
+    {
+        return schemaCacheState.indexDescriptorByName( name );
+    }
+
     private static class SchemaCacheState
     {
         private final ConstraintSemantics constraintSemantics;
@@ -186,6 +191,7 @@ public class SchemaCache
 
         private final Map<SchemaDescriptor,CapableIndexDescriptor> indexDescriptors;
         private final MutableIntObjectMap<Set<CapableIndexDescriptor>> indexDescriptorsByLabel;
+        private final Map<String,CapableIndexDescriptor> indexDescriptorsByName;
 
         private final Map<Class<?>,Object> dependantState;
         private final MutableIntObjectMap<List<CapableIndexDescriptor>> indexByProperty;
@@ -200,6 +206,7 @@ public class SchemaCache
 
             this.indexDescriptors = new HashMap<>();
             this.indexDescriptorsByLabel = new IntObjectHashMap<>();
+            this.indexDescriptorsByName = new HashMap<>();
             this.dependantState = new ConcurrentHashMap<>();
             this.indexByProperty = new IntObjectHashMap<>();
             load( rules );
@@ -214,6 +221,7 @@ public class SchemaCache
 
             this.indexDescriptors = new HashMap<>( schemaCacheState.indexDescriptors );
             this.indexDescriptorsByLabel = IntObjectHashMap.newMap( schemaCacheState.indexDescriptorsByLabel );
+            this.indexDescriptorsByName = new HashMap<>( schemaCacheState.indexDescriptorsByName );
             this.dependantState = new ConcurrentHashMap<>();
             this.indexByProperty = IntObjectHashMap.newMap( schemaCacheState.indexByProperty );
             this.indexProviderMap = schemaCacheState.indexProviderMap;
@@ -262,6 +270,11 @@ public class SchemaCache
             return indexDescriptors.get( descriptor );
         }
 
+        CapableIndexDescriptor indexDescriptorByName( String name )
+        {
+            return indexDescriptorsByName.get( name );
+        }
+
         Iterator<CapableIndexDescriptor> indexesByProperty( int propertyId )
         {
             List<CapableIndexDescriptor> indexes = indexByProperty.get( propertyId );
@@ -293,6 +306,14 @@ public class SchemaCache
                 indexDescriptorById.put( index.getId(), index );
                 SchemaDescriptor schemaDescriptor = index.schema();
                 indexDescriptors.put( schemaDescriptor, index );
+                indexDescriptorsByName.put( rule.getName(), index );
+                for ( int entityTokenId : schemaDescriptor.getEntityTokenIds() )
+                {
+                    Set<CapableIndexDescriptor> forLabel =
+                            indexDescriptorsByLabel.getIfAbsent( entityTokenId, HashSet::new );
+                    forLabel.add( index );
+                }
+
 
                 Set<CapableIndexDescriptor> forLabel =
                         indexDescriptorsByLabel.getIfAbsentPut( schemaDescriptor.keyId(), HashSet::new );
@@ -319,12 +340,16 @@ public class SchemaCache
                 CapableIndexDescriptor index = indexDescriptorById.remove( id );
                 SchemaDescriptor schema = index.schema();
                 indexDescriptors.remove( schema );
+                indexDescriptorsByName.remove( index.getName() );
 
-                Set<CapableIndexDescriptor> forLabel = indexDescriptorsByLabel.get( schema.keyId() );
-                forLabel.remove( index );
-                if ( forLabel.isEmpty() )
+                for ( int entityTokenId : schema.getEntityTokenIds() )
                 {
-                    indexDescriptorsByLabel.remove( schema.keyId() );
+                    Set<CapableIndexDescriptor> forLabel = indexDescriptorsByLabel.get( entityTokenId );
+                    forLabel.remove( index );
+                    if ( forLabel.isEmpty() )
+                    {
+                        indexDescriptorsByLabel.remove( entityTokenId );
+                    }
                 }
 
                 for ( int propertyId : index.schema().getPropertyIds() )

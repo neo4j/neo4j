@@ -25,21 +25,22 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.neo4j.io.IOUtils;
+import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
-import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.storageengine.api.schema.IndexReader;
 
 /**
  * An {@link IndexPopulator} used to create, populate and mark as online a Lucene schema index.
  */
-public abstract class LuceneIndexPopulator implements IndexPopulator
+public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> implements IndexPopulator
 {
-    protected SchemaIndex luceneIndex;
+    protected INDEX luceneIndex;
     protected LuceneIndexWriter writer;
 
-    LuceneIndexPopulator( SchemaIndex luceneIndex )
+    protected LuceneIndexPopulator( INDEX luceneIndex )
     {
         this.luceneIndex = luceneIndex;
     }

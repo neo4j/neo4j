@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.values.storable.ValueCategory;
 
@@ -48,6 +49,11 @@ public interface IndexReference extends IndexCapability
      * Returns the propertyKeyIds associated with this index.
      */
     int[] properties();
+
+    /**
+     * Returns the schema of this index.
+     */
+    SchemaDescriptor schema();
 
     /**
      * Returns the key (or name) of the index provider that backs this index.
@@ -115,6 +121,12 @@ public interface IndexReference extends IndexCapability
         public int[] properties()
         {
             return new int[0];
+        }
+
+        @Override
+        public SchemaDescriptor schema()
+        {
+            return SchemaDescriptor.NO_SCHEMA;
         }
 
         @Override
