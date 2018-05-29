@@ -359,6 +359,22 @@ class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
     asScalaResult(result).toList should not be empty
   }
 
+  test("foo") {
+    // Given
+    graph.execute( """
+                     |CREATE (zadie: AUTHOR {name: "Zadie Smith"})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "White teeth", rating: 5})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "The Autograph Man", rating: 3})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "On Beauty", rating: 4})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "NW"})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "Swing Time", rating: 5})""".stripMargin)
+
+    // When
+    val result = graph.execute("CYPHER runtime=morsel  MATCH (b:BOOK) RETURN b.book as book, count(b.rating) ORDER BY book")
+
+    // Then
+    println(result.resultAsString())
+  }
   //we use a ridiculously small morsel size in order to trigger as many morsel overflows as possible
   override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_morsel_size -> "4")
 }

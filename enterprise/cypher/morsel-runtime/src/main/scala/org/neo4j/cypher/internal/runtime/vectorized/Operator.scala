@@ -67,6 +67,7 @@ case class Lazy(pipeline: Pipeline) extends Dependency {
 
 case class Eager(pipeline: Pipeline) extends Dependency {
   override def foreach(f: Pipeline => Unit): Unit = f(pipeline)
+  lazy val eagerData = new java.util.concurrent.ConcurrentLinkedQueue[Morsel]()
 }
 
 case object NoDependencies extends Dependency {
@@ -77,6 +78,12 @@ case object NoDependencies extends Dependency {
 
 case class QueryState(params: MapValue, visitor: QueryResultVisitor[_])
 
+object PipeLineWithEagerDependency {
+  def unapply(arg: Pipeline): Option[java.util.Queue[Morsel]] = arg match {
+    case Pipeline(_,_,_, eager@Eager(_)) => Some(eager.eagerData)
+    case _ => None
+  }
+}
 
 case class Pipeline(start: Operator,
                     operators: IndexedSeq[MiddleOperator],
