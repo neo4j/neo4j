@@ -30,7 +30,7 @@ import org.opencypher.v9_0.expressions.FunctionInvocation
 import org.opencypher.v9_0.expressions.functions.AggregatingFunction
 import org.opencypher.v9_0.{expressions => ast}
 
-class CompiledExpressionConverters(log: Log) extends ExpressionConverter {
+class CompiledExpressionConverter(log: Log) extends ExpressionConverter {
 
   //uses an inner converter to simplify compliance with Expression trait
   private val inner = new ExpressionConverters(SlottedExpressionConverters, CommunityExpressionConverter)

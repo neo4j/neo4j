@@ -25,12 +25,12 @@ import org.opencypher.v9_0.ast.AstConstructionTestSupport
 import org.opencypher.v9_0.expressions.StringLiteral
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
-class CompiledExpressionConvertersTest extends CypherFunSuite with AstConstructionTestSupport {
+class CompiledExpressionConverterTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("should log unexpected errors") {
     // Given
     val log = new BufferingLog
-    val converter = new CompiledExpressionConverters(log)
+    val converter = new CompiledExpressionConverter(log)
 
     // When
     //There is a limit of 65535 on the length of a String literal, so by exceeding that limit
