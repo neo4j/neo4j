@@ -59,11 +59,6 @@ import org.neo4j.causalclustering.handlers.DuplexPipelineWrapperFactory;
 import org.neo4j.causalclustering.handlers.PipelineWrapper;
 import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.routing.load_balancing.LoadBalancingPluginLoader;
-import org.neo4j.causalclustering.routing.load_balancing.LoadBalancingProcessor;
-import org.neo4j.causalclustering.routing.load_balancing.procedure.GetServersProcedureForMultiDC;
-import org.neo4j.causalclustering.routing.load_balancing.procedure.GetServersProcedureForSingleDC;
-import org.neo4j.causalclustering.routing.load_balancing.procedure.LegacyGetServersProcedure;
 import org.neo4j.causalclustering.logging.BetterMessageLogger;
 import org.neo4j.causalclustering.logging.MessageLogger;
 import org.neo4j.causalclustering.logging.NullMessageLogger;
@@ -83,6 +78,11 @@ import org.neo4j.causalclustering.protocol.handshake.HandshakeClientInitializer;
 import org.neo4j.causalclustering.protocol.handshake.ModifierProtocolRepository;
 import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
 import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
+import org.neo4j.causalclustering.routing.load_balancing.LoadBalancingPluginLoader;
+import org.neo4j.causalclustering.routing.load_balancing.LoadBalancingProcessor;
+import org.neo4j.causalclustering.routing.load_balancing.procedure.GetServersProcedureForMultiDC;
+import org.neo4j.causalclustering.routing.load_balancing.procedure.GetServersProcedureForSingleDC;
+import org.neo4j.causalclustering.routing.load_balancing.procedure.LegacyGetServersProcedure;
 import org.neo4j.causalclustering.routing.multi_cluster.procedure.GetRoutersForAllDatabasesProcedure;
 import org.neo4j.causalclustering.routing.multi_cluster.procedure.GetRoutersForDatabaseProcedure;
 import org.neo4j.causalclustering.upstream.NoOpUpstreamDatabaseStrategiesLoader;
@@ -129,7 +129,6 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -471,7 +470,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
     private KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
             Config config, GraphDatabaseAPI graphAPI, LifeSupport life )
     {
-        DefaultKernelData kernelData = new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphAPI );
+        KernelData kernelData = new KernelData( fileSystem, pageCache, storeDir, config, graphAPI );
         return life.add( kernelData );
     }
 
