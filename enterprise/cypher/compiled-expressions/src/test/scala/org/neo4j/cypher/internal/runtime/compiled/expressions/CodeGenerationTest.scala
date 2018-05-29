@@ -23,10 +23,12 @@
 package org.neo4j.cypher.internal.runtime.compiled.expressions
 
 import java.lang.Math.PI
+import java.time.Duration
 import java.util.concurrent.ThreadLocalRandom
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.internal.kernel.api.Transaction
+import org.neo4j.values.storable.LocalTimeValue.localTime
 import org.neo4j.values.storable.Values._
 import org.neo4j.values.storable.{DoubleValue, Values}
 import org.neo4j.values.virtual.VirtualValues.{EMPTY_MAP, list, map}
@@ -55,7 +57,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
     // Then
     val value = compiled.evaluate(ctx, tx, EMPTY_MAP).asInstanceOf[DoubleValue].doubleValue()
-    value should (be > 0.0 and be <= 1.0)
+    value should (be >= 0.0 and be <1.0)
   }
 
   test("sin function") {
@@ -137,6 +139,25 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, tx, EMPTY_MAP) should equal(longValue(52))
   }
 
+  test("add temporals") {
+    val compiled = compile(add(parameter("a"), parameter("b")))
+
+    // temporal + duration
+    compiled.evaluate(ctx, tx, map(Array("a", "b"), Array(temporalValue(localTime(0)),
+                                   durationValue(Duration.ofHours(10))))) should
+      equal(localTime(10, 0, 0, 0))
+
+    // duration + temporal
+    compiled.evaluate(ctx, tx, map(Array("a", "b"), Array(durationValue(Duration.ofHours(10)),
+                                         temporalValue(localTime(0))))) should
+      equal(localTime(10, 0, 0, 0))
+
+    //duration + duration
+    compiled.evaluate(ctx, tx, map(Array("a", "b"), Array(durationValue(Duration.ofHours(10)),
+                                                          durationValue(Duration.ofHours(10))))) should
+      equal(durationValue(Duration.ofHours(20)))
+  }
+
   test("add with NO_VALUE") {
     // Given
     val expression = add(parameter("a"), parameter("b"))
@@ -150,16 +171,24 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   }
 
   test("add strings") {
-    // Given
-    val expression = add(parameter("a"), parameter("b"))
-
     // When
-    val compiled = compile(expression)
+    val compiled = compile(add(parameter("a"), parameter("b")))
 
-    // Then
+    // string1 + string2
     compiled.evaluate(ctx, tx,
                       map(Array("a", "b"), Array(stringValue("hello "), stringValue("world")))) should
       equal(stringValue("hello world"))
+    //string + other
+    compiled.evaluate(ctx, tx,
+                      map(Array("a", "b"),
+                          Array(stringValue("hello "), longValue(1337)))) should
+      equal(stringValue("hello 1337"))
+    //other + string
+    compiled.evaluate(ctx, tx,
+                      map(Array("a", "b"),
+                          Array(longValue(1337), stringValue(" hello")))) should
+      equal(stringValue("1337 hello"))
+
   }
 
   test("add arrays") {
@@ -176,7 +205,29 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
       equal(list(longValue(42), longValue(43), longValue(44), longValue(45)))
   }
 
-  test("subtract function") {
+  test("list addition") {
+    // When
+    val compiled = compile(add(parameter("a"), parameter("b")))
+
+    // [a1,a2 ..] + [b1,b2 ..]
+    compiled.evaluate(ctx, tx, map(Array("a", "b"),
+                                   Array(list(longValue(42), longValue(43)),
+                                         list(longValue(44), longValue(45))))) should
+      equal(list(longValue(42), longValue(43), longValue(44), longValue(45)))
+
+    // [a1,a2 ..] + b
+    compiled.evaluate(ctx, tx, map(Array("a", "b"),
+                                   Array(list(longValue(42), longValue(43)), longValue(44)))) should
+      equal(list(longValue(42), longValue(43), longValue(44)))
+
+    // a + [b1,b2 ..]
+    compiled.evaluate(ctx, tx, map(Array("a", "b"),
+                                   Array(longValue(43),
+                                         list(longValue(44), longValue(45))))) should
+      equal(list(longValue(43), longValue(44), longValue(45)))
+  }
+
+  test("subtract numbers") {
     // Given
     val expression = subtract(literalInt(42), literalInt(10))
 
@@ -197,6 +248,20 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     // Then
     compiled.evaluate(ctx, tx, map(Array("a", "b"), Array(longValue(42), NO_VALUE))) should equal(NO_VALUE)
     compiled.evaluate(ctx, tx, map(Array("a", "b"), Array(NO_VALUE, longValue(42)))) should equal(NO_VALUE)
+  }
+
+  test("subtract temporals") {
+    val compiled = compile(subtract(parameter("a"), parameter("b")))
+
+    // temporal - duration
+    compiled.evaluate(ctx, tx, map(Array("a", "b"), Array(temporalValue(localTime(20, 0, 0, 0)),
+                                                          durationValue(Duration.ofHours(10))))) should
+      equal(localTime(10, 0, 0, 0))
+
+    //duration - duration
+    compiled.evaluate(ctx, tx, map(Array("a", "b"), Array(durationValue(Duration.ofHours(10)),
+                                                          durationValue(Duration.ofHours(10))))) should
+      equal(durationValue(Duration.ofHours(0)))
   }
 
   test("multiply function") {
