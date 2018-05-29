@@ -23,7 +23,6 @@
 package org.neo4j.bolt;
 
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -44,7 +43,6 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.rule.SuppressOutput;
 
@@ -56,8 +54,8 @@ public class CypherOverBoltIT
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
-    @ClassRule
-    public static final Neo4jRule graphDb = new Neo4jRule().withConfig( ServerSettings.script_enabled, Settings.TRUE );
+    @Rule
+    public Neo4jRule graphDb = new Neo4jRule().withConfig( ServerSettings.script_enabled, "true" );
 
     private URL url;
     private final int lineCountInCSV = 3; // needs to be >= 2
