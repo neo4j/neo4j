@@ -23,9 +23,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.EnumMap;
-import java.util.stream.StreamSupport;
+import java.util.List;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -141,13 +142,14 @@ public class FusionIndexProvider extends IndexProvider
     @Override
     public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
     {
-        Iterable<InternalIndexState> states = providers.flatMap( p -> p.getInitialState( descriptor ) );
-        if ( StreamSupport.stream( states.spliterator(), false ).anyMatch( state -> state == FAILED ) )
+        Iterable<InternalIndexState> statesIterable = providers.flatMap( p -> p.getInitialState( descriptor ) );
+        List<InternalIndexState> states = Iterables.asList( statesIterable );
+        if ( states.contains( FAILED ) )
         {
             // One of the state is FAILED, the whole state must be considered FAILED
             return FAILED;
         }
-        if ( StreamSupport.stream( states.spliterator(), false ).anyMatch( state -> state == POPULATING ) )
+        if ( states.contains( POPULATING ) )
         {
             // No state is FAILED and one of the state is POPULATING, the whole state must be considered POPULATING
             return POPULATING;

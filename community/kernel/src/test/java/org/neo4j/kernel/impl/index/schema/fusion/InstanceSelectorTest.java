@@ -30,8 +30,8 @@ import java.util.stream.Collectors;
 import org.neo4j.helpers.collection.Iterables;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.STRING;
 
