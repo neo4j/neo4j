@@ -30,7 +30,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 
 import scala.collection.Map
 
-class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
+abstract class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should not use morsel by default") {
     //Given
@@ -359,7 +359,7 @@ class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
     asScalaResult(result).toList should not be empty
   }
 
-  test("foo") {
+  test("should not duplicate results in queries with multiple eager pipelines") {
     // Given
     graph.execute( """
                      |CREATE (zadie: AUTHOR {name: "Zadie Smith"})
@@ -373,8 +373,22 @@ class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
     val result = graph.execute("CYPHER runtime=morsel  MATCH (b:BOOK) RETURN b.book as book, count(b.rating) ORDER BY book")
 
     // Then
-    println(result.resultAsString())
+    asScalaResult(result).toList should have size 5
   }
+}
+
+class ParallelMorselRuntimeAcceptanceTest extends MorselRuntimeAcceptanceTest {
   //we use a ridiculously small morsel size in order to trigger as many morsel overflows as possible
-  override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_morsel_size -> "4")
+  override def databaseConfig(): Map[Setting[_], String] = Map(
+    GraphDatabaseSettings.cypher_morsel_size -> "4",
+    GraphDatabaseSettings.cypher_worker_count -> "0"
+  )
+}
+
+class SequentialMorselRuntimeAcceptanceTest extends MorselRuntimeAcceptanceTest {
+  //we use a ridiculously small morsel size in order to trigger as many morsel overflows as possible
+  override def databaseConfig(): Map[Setting[_], String] = Map(
+    GraphDatabaseSettings.cypher_morsel_size -> "4",
+    GraphDatabaseSettings.cypher_worker_count -> "1"
+  )
 }
