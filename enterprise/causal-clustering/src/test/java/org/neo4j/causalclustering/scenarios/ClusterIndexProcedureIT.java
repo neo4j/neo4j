@@ -34,7 +34,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -215,7 +215,7 @@ public class ClusterIndexProcedureIT
         int labelId = tokenRead.nodeLabel( label.name() );
         int propId = tokenRead.propertyKey( property );
         SchemaRead schemaRead = kernelTransaction.schemaRead();
-        CapableIndexReference index = schemaRead.index( labelId, propId );
+        IndexReference index = schemaRead.index( labelId, propId );
         assertEquals( "correct provider key", "lucene+native", index.providerKey() );
         assertEquals( "correct provider version", "1.0", index.providerVersion() );
     }

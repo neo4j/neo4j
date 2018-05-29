@@ -33,9 +33,9 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -280,13 +280,13 @@ public class EnterpriseCreateIndexProcedureIT extends KernelIntegrationTest
         // and then
         transaction = newTransaction( AnonymousContext.read() );
         SchemaRead schemaRead = transaction.schemaRead();
-        CapableIndexReference index = schemaRead.index( labelId, propertyKeyIds );
+        IndexReference index = schemaRead.index( labelId, propertyKeyIds );
         assertCorrectIndex( labelId, propertyKeyIds, uniquenessConstraint, index );
         assertIndexData( transaction, propertyKeyIds, value, node, index );
         commit();
     }
 
-    private void assertIndexData( Transaction transaction, int[] propertyKeyIds, TextValue value, long node, CapableIndexReference index )
+    private void assertIndexData( Transaction transaction, int[] propertyKeyIds, TextValue value, long node, IndexReference index )
             throws KernelException
     {
         try ( NodeValueIndexCursor indexCursor = transaction.cursors().allocateNodeValueIndexCursor() )
@@ -303,7 +303,7 @@ public class EnterpriseCreateIndexProcedureIT extends KernelIntegrationTest
         }
     }
 
-    private void assertCorrectIndex( int labelId, int[] propertyKeyIds, boolean expectedUnique, CapableIndexReference index )
+    private void assertCorrectIndex( int labelId, int[] propertyKeyIds, boolean expectedUnique, IndexReference index )
     {
         assertEquals( "provider key", "lucene+native", index.providerKey() );
         assertEquals( "provider version", "1.0", index.providerVersion() );
