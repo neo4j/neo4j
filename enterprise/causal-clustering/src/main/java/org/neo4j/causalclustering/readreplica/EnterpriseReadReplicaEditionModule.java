@@ -387,7 +387,6 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
     public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
     {
         procedures.registerProcedure( EnterpriseBuiltInDbmsProcedures.class, true );
-        // todo should readReplicas have access to those procedures?
         procedures.registerProcedure( EnterpriseBuiltInProcedures.class, true );
         procedures.register( new ReadReplicaRoleProcedure() );
     }
