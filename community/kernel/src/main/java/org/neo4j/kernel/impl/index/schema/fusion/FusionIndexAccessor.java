@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.stream.StreamSupport;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
@@ -150,8 +149,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     @Override
     public boolean isDirty()
     {
-        return StreamSupport.stream( instanceSelector.flatMap( IndexAccessor::isDirty ).spliterator(), false )
-                .anyMatch( Boolean::booleanValue );
+        return Iterables.stream( instanceSelector.flatMap( IndexAccessor::isDirty ) ).anyMatch( Boolean::booleanValue );
     }
 
     @Override
