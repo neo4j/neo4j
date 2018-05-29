@@ -114,9 +114,9 @@ case class unnestApply(solveds: Solveds, attributes: Attributes) extends Rewrite
       solveds.copy(apply.id, res.id)
       res
 
-    // L Ax (CN R) => CN Ax (L R)
-    case apply@Apply(lhs, create@CreateNode(rhs, name, labels, props)) =>
-      val res = CreateNode(Apply(lhs, rhs)(SameId(apply.id)), name, labels, props)(attributes.copy(create.id))
+    // L Ax (Cr R) => Cr Ax (L R)
+    case apply@Apply(lhs, create@Create(rhs, nodes, relationships)) =>
+      val res = Create(Apply(lhs, rhs)(SameId(apply.id)), nodes, relationships)(attributes.copy(create.id))
       solveds.copy(apply.id, res.id)
       res
   })

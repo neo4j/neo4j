@@ -17,25 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.v3_5.logical.plans
+package org.neo4j.cypher.internal.ir.v3_5
 
-import org.neo4j.cypher.internal.ir.v3_5.StrictnessMode
-import org.opencypher.v9_0.util.attribution.IdGen
 import org.opencypher.v9_0.expressions.{Expression, LabelName}
 
 /**
-  * For each input row, create a new node with the provided labels and properties,
-  * and assign it to the variable 'idName'.
+  * Create a new node with the provided labels and properties and assign it to the variable 'idName'.
   */
-case class CreateNode(source: LogicalPlan, idName: String, labels: Seq[LabelName], properties: Option[Expression])(implicit idGen: IdGen) extends LogicalPlan(idGen) {
-
-  override def lhs: Option[LogicalPlan] = Some(source)
-
-  override val availableSymbols: Set[String] = {
-    source.availableSymbols + idName
-  }
-
-  override def rhs: Option[LogicalPlan] = None
-
-  override def strictness: StrictnessMode = source.strictness
+case class CreateNode(idName: String, labels: Seq[LabelName], properties: Option[Expression]) {
+  def dependencies: Set[String] = properties.map(_.dependencies.map(_.name)).getOrElse(Set.empty)
 }

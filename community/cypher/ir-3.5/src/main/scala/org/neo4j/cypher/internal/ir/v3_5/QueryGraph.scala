@@ -97,12 +97,17 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
     nodes
   }
 
-  def collectAllPatternNodes(f: (String) => Unit): Unit = {
+  def collectAllPatternNodes(f: String => Unit): Unit = {
     patternNodes.foreach(f)
     optionalMatches.foreach(m => m.allPatternNodes.foreach(f))
-    createNodePatterns.foreach(p => f(p.nodeName))
-    mergeNodePatterns.foreach(p => f(p.createNodePattern.nodeName))
-    mergeRelationshipPatterns.foreach(p => p.createNodePatterns.foreach(pp => f(pp.nodeName)))
+    for {
+      create <- createPatterns
+      createNode <- create.nodes
+    } {
+      f(createNode.idName)
+    }
+    mergeNodePatterns.foreach(p => f(p.createNode.idName))
+    mergeRelationshipPatterns.foreach(p => p.createNodes.foreach(pp => f(pp.idName)))
   }
 
   def allPatternRelationshipsRead: Set[PatternRelationship] =

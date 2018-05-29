@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.{v3_3 => compilerV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression => ExpressionV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3, SemanticDirection => SemanticDirectionV3_3, ast => astV3_3, symbols => symbolsV3_3}
 import org.neo4j.cypher.internal.frontend.{v3_3 => frontendV3_3}
-import org.neo4j.cypher.internal.ir.v3_5.CSVFormat
+import org.neo4j.cypher.internal.ir.v3_5.{CSVFormat, CreateNode, CreateRelationship}
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_5 => irv3_5}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
@@ -37,7 +37,7 @@ import org.opencypher.v9_0.util.{symbols => symbolsv3_5, _}
 import org.opencypher.v9_0.{util => utilv3_5}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan => LogicalPlanV3_3}
 import org.neo4j.cypher.internal.v3_3.logical.{plans => plansV3_3}
-import org.opencypher.v9_0.expressions.{Expression => Expressionv3_5}
+import org.opencypher.v9_0.expressions.{Expression => Expressionv3_5, LabelName => LabelNamev3_5, RelTypeName => RelTypeNamev3_5, SemanticDirection => SemanticDirectionv3_5}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{FieldSignature, ProcedureAccessMode, QualifiedName, LogicalPlan => LogicalPlanv3_5}
 import org.neo4j.cypher.internal.v3_5.logical.{plans => plansv3_5}
 import org.opencypher.v9_0.{expressions => expressionsv3_5}
@@ -74,13 +74,45 @@ object LogicalPlanConverter {
                             children(4).asInstanceOf[Option[String]],
                             children(5).asInstanceOf[Boolean],
                             CSVResources.DEFAULT_BUFFER_SIZE)(ids.convertId(plan))
+
         case (plan: plansV3_3.Argument, children: Seq[AnyRef]) =>
           plansv3_5.Argument(children.head.asInstanceOf[Set[String]])(ids.convertId(plan))
+
         case (plan: plansV3_3.SingleRow, _) =>
           plansv3_5.Argument()(ids.convertId(plan))
+
+        case (plan: plansV3_3.CreateNode, children: Seq[AnyRef]) =>
+          flattenCreates(
+            children(0).asInstanceOf[LogicalPlanv3_5],
+            Some(CreateNode(
+              plan.idName,
+              children(2).asInstanceOf[Seq[LabelNamev3_5]],
+              children(3).asInstanceOf[Option[Expressionv3_5]]
+            )),
+            None,
+            ids.convertId(plan)
+          )
+
+        case (plan: plansV3_3.CreateRelationship, children: Seq[AnyRef]) =>
+          flattenCreates(
+            children(0).asInstanceOf[LogicalPlanv3_5],
+            None,
+            Some(CreateRelationship(
+              plan.idName,
+              plan.startNode,
+              children(3).asInstanceOf[RelTypeNamev3_5],
+              plan.endNode,
+              SemanticDirectionv3_5.OUTGOING, // as we always provide the start node as "left" and
+                                              // the end node and "right", the direction is always OUTGOING
+              children(5).asInstanceOf[Option[Expressionv3_5]]
+            )),
+            ids.convertId(plan)
+          )
+
         case (plan: plansV3_3.ProduceResult, children: Seq[AnyRef]) =>
           plansv3_5.ProduceResult(source = children(1).asInstanceOf[LogicalPlanv3_5],
             columns = children(0).asInstanceOf[Seq[String]])(ids.convertId(plan))
+
         case (plan: plansV3_3.TriadicSelection, children: Seq[AnyRef]) =>
           plansv3_5.TriadicSelection(left = children(1).asInstanceOf[LogicalPlanv3_5],
             right = children(5).asInstanceOf[LogicalPlanv3_5],
@@ -88,19 +120,23 @@ object LogicalPlanConverter {
             sourceId = children(2).asInstanceOf[String],
             seenId = children(3).asInstanceOf[String],
             targetId = children(4).asInstanceOf[String])(ids.convertId(plan))
+
         case (plan: plansV3_3.ProceduralLogicalPlan, children: Seq[AnyRef]) =>
           convertVersion("v3_3", "v3_5", plan, children, procedureOrSchemaIdGen, classOf[IdGen])
+
         case (plan: plansV3_3.OuterHashJoin, children: Seq[AnyRef]) =>
           plansv3_5.LeftOuterHashJoin(
             children(0).asInstanceOf[Set[String]],
             children(1).asInstanceOf[LogicalPlanv3_5],
             children(2).asInstanceOf[LogicalPlanv3_5]
           )(ids.convertId(plan))
+
         case (plan: plansV3_3.LogicalPlan, children: Seq[AnyRef]) =>
           convertVersion("v3_3", "v3_5", plan, children, ids.convertId(plan), classOf[IdGen])
 
         case (inp: astV3_3.InvalidNodePattern, children: Seq[AnyRef]) =>
           new expressionsv3_5.InvalidNodePattern(children.head.asInstanceOf[Option[expressionsv3_5.Variable]].get)(helpers.as3_5(inp.position))
+
         case (mp: astV3_3.MapProjection, children: Seq[AnyRef]) =>
           expressionsv3_5.MapProjection(children(0).asInstanceOf[expressionsv3_5.Variable],
             children(1).asInstanceOf[Seq[expressionsv3_5.MapProjectionElement]])(helpers.as3_5(mp.position))
@@ -110,14 +146,19 @@ object LogicalPlanConverter {
                     _: compilerV3_3.ast.NestedPlanExpression |
                     _: compilerV3_3.ast.ResolvedFunctionInvocation), children: Seq[AnyRef]) =>
           convertVersion("compiler.v3_3.ast", "v3_5.logical.plans", item, children, helpers.as3_5(item.asInstanceOf[astV3_3.ASTNode].position), classOf[InputPosition])
+
         case (item: astV3_3.rewriters.DesugaredMapProjection, children: Seq[AnyRef]) =>
           convertVersion("org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters", "org.opencypher.v9_0.expressions", item, children, helpers.as3_5(item.position), classOf[InputPosition])
+
         case (item: astV3_3.ProcedureResultItem, children: Seq[AnyRef]) =>
           convertVersion(v3_3_AST, "org.opencypher.v9_0.ast", item, children, helpers.as3_5(item.position), classOf[InputPosition])
+
         case (item: plansV3_3.ResolvedCall, children: Seq[AnyRef]) =>
           convertVersion("org.neo4j.cypher.internal.v3_3.logical.plans", "org.neo4j.cypher.internal.v3_5.logical.plans", item, children, helpers.as3_5(item.position), classOf[InputPosition])
+
         case (expressionV3_3: astV3_3.ASTNode, children: Seq[AnyRef]) =>
           convertVersion(v3_3_AST, "org.opencypher.v9_0.expressions", expressionV3_3, children, helpers.as3_5(expressionV3_3.position), classOf[InputPosition])
+
         case (symbolsV3_3.CTAny, _) => symbolsv3_5.CTAny
         case (symbolsV3_3.CTBoolean, _) => symbolsv3_5.CTBoolean
         case (symbolsV3_3.CTFloat, _) => symbolsv3_5.CTFloat
@@ -153,12 +194,17 @@ object LogicalPlanConverter {
         case (spp: irV3_3.ShortestPathPattern, children: Seq[AnyRef]) =>
           val sp3_4 = convertASTNode[expressionsv3_5.ShortestPaths](spp.expr, expressionMap, solveds, cardinalities, ids, isImportant)
           irv3_5.ShortestPathPattern(children(0).asInstanceOf[Option[String]], children(1).asInstanceOf[irv3_5.PatternRelationship], children(2).asInstanceOf[Boolean])(sp3_4)
+
         case (astV3_3.NilPathStep, _) => expressionsv3_5.NilPathStep
+
         case (item@(_: astV3_3.PathStep | _: astV3_3.NameToken[_]), children: Seq[AnyRef]) =>
           convertVersion(v3_3_AST, "org.opencypher.v9_0.expressions", item, children)
+
         case (nameId: frontendV3_3.NameId, children: Seq[AnyRef]) =>
           convertVersion("org.neo4j.cypher.internal.frontend.v3_3", "org.opencypher.v9_0.util", nameId, children)
+
         case (frontendV3_3.helpers.Fby(head, tail), children: Seq[AnyRef]) => utilv3_5.Fby(children(0), children(1).asInstanceOf[utilv3_5.NonEmptyList[_]])
+
         case (frontendV3_3.helpers.Last(head), children: Seq[AnyRef]) => utilv3_5.Last(children(0))
 
         case ( _:plansV3_3.ProcedureSignature, children: Seq[AnyRef]) =>
@@ -191,11 +237,14 @@ object LogicalPlanConverter {
                     _: irV3_3.VarPatternLength |
                     _: plansV3_3.ColumnOrder), children: Seq[AnyRef]) =>
           convertVersion("v3_3", "v3_5", item, children)
+
         case (item: frontendV3_3.Bound[_], children: Seq[AnyRef]) =>
           convertVersion("frontend.v3_3", "v3_5.logical.plans", item, children)
+
         case (item: compilerV3_3.SeekRange[_], children: Seq[AnyRef]) =>
           convertVersion("compiler.v3_3", "v3_5.logical.plans", item, children)
       }.apply(before)
+
       before._1 match {
         case plan: LogicalPlanV3_3 =>
           try {
@@ -298,6 +347,25 @@ object LogicalPlanConverter {
       case Success(i) => i
       case Failure(e) =>
         throw new IllegalArgumentException(s"Could not construct ${thingClass.getSimpleName} with arguments ${ctorArgs.toList}", e)
+    }
+  }
+
+  /**
+    * Converts a 3.3 CreateNode or CreateRelationship logical plan operator into a 3.5 Create operator.
+    *
+    * If the source operator is a Create operator, the create command is added to that operator instead of creating a
+    * new one, effectively squashing deep tree of 3.3 CreateNode and CreateRelationship operators into on 3.5 Create.
+    */
+  private def flattenCreates(source: LogicalPlanv3_5,
+                             createNode: Option[CreateNode],
+                             createRelationship: Option[CreateRelationship],
+                             id: IdGen): plansv3_5.Create = {
+    source match {
+      case plansv3_5.Create(source, nodes, relationships) =>
+        plansv3_5.Create(source, nodes ++ createNode, relationships ++ createRelationship)(id)
+
+      case nonCreate =>
+        plansv3_5.Create(nonCreate, createNode.toSeq, createRelationship.toSeq)(id)
     }
   }
 }

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration.Size
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.ir.v3_5.CreateNode
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.opencypher.v9_0.expressions._
@@ -238,10 +239,13 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
   private def applyLeft(lhs:LogicalPlan, rhs:LogicalPlan) = SemiApply(lhs, rhs)
   private def break(source:LogicalPlan) = Eager(source)
   private def pipe(source:LogicalPlan, nLongs:Int, nRefs:Int) = {
-    var curr = source
-    for ( i <- 0 until nLongs ) {
-      curr = CreateNode(curr, "long"+i, Nil, None)
-    }
+    var curr: LogicalPlan =
+      Create(
+        source,
+        (0 until nLongs).map(i => CreateNode("long"+i, Nil, None)),
+        Nil
+      )
+
     for ( i <- 0 until nRefs ) {
       curr = UnwindCollection(curr, "ref"+i, listOf(literalInt(1)))
     }
