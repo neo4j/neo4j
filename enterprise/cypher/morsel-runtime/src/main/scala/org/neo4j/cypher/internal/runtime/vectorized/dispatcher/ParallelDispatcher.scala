@@ -91,10 +91,9 @@ class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) exte
 
         }
       } catch {
-        case e: Exception =>
+        case e: Throwable =>
           query.markFailure(e)
           query.releaseBlockedThreads()
-          throw e
       }
     }
   }
@@ -136,6 +135,7 @@ class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) exte
     private val loopCount = new concurrent.ConcurrentHashMap[Iteration, AtomicInteger]()
     private val error = new AtomicReference[Throwable]()
     private val latch = new BinaryLatch
+    private val name = Thread.currentThread().getName
     var eagerReceiver: Option[Pipeline] = None
     lazy val eagerData = new java.util.concurrent.ConcurrentLinkedQueue[Morsel]()
 

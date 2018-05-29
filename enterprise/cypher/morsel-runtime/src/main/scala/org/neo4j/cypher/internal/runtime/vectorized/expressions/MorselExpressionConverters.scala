@@ -25,10 +25,10 @@ package org.neo4j.cypher.internal.runtime.vectorized.expressions
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{ExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.opencypher.v9_0.expressions._
+import org.neo4j.cypher.internal.v3_5.logical.plans.NestedPlanExpression
+import org.opencypher.v9_0.expressions.{functions, _}
 import org.opencypher.v9_0.expressions.functions.AggregatingFunction
 import org.opencypher.v9_0.{expressions => ast}
-import org.opencypher.v9_0.expressions.functions
 
 object MorselExpressionConverters extends ExpressionConverter {
 
@@ -46,7 +46,11 @@ object MorselExpressionConverters extends ExpressionConverter {
     case c: FunctionInvocation if c.function == functions.Collect =>
       Some(CollectOperatorExpression(self.toCommandExpression(c.arguments.head)))
     case _: CountStar => Some(CountStarOperatorExpression)
+
+    //Queries containing these expression cant be handled by morsel runtime yet
     case f: FunctionInvocation if f.function.isInstanceOf[AggregatingFunction] => throw new CantCompileQueryException()
+    case e: NestedPlanExpression => throw new CantCompileQueryException(s"$e is not yet supported by the morsel runtime")
+
     case _ => None
   }
 }
