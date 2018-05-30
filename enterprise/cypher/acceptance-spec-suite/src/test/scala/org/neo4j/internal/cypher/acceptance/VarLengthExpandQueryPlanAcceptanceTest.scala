@@ -57,7 +57,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = Configs.OldAndRule))
+      }, expectPlansToFail = Configs.Before3_3AndRule))
   }
 
   test("Plan pruning var expand on distinct var-length match with projection and aggregation") {
@@ -65,7 +65,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = Configs.OldAndRule))
+      }, expectPlansToFail = Configs.Before3_3AndRule))
   }
 
   test("query with distinct aggregation") {
@@ -73,7 +73,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = Configs.OldAndRule))
+      }, expectPlansToFail = Configs.Before3_3AndRule))
   }
 
   test("Simple query that filters between expand and distinct") {
@@ -81,7 +81,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = Configs.OldAndRule))
+      }, expectPlansToFail = Configs.Before3_3AndRule))
   }
 
   test("Query that aggregates before making the result DISTINCT") {
@@ -97,7 +97,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = Configs.OldAndRule))
+      }, expectPlansToFail = Configs.Before3_3AndRule))
   }
 
   test("var expand followed by normal expand") {
@@ -105,7 +105,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = Configs.OldAndRule))
+      }, expectPlansToFail = Configs.Before3_3AndRule))
   }
 
   test("optional match can be solved with PruningVarExpand") {
@@ -113,7 +113,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = Configs.OldAndRule))
+      }, expectPlansToFail = Configs.Before3_3AndRule))
   }
 
   test("should not rewrite when doing non-distinct aggregation") {
@@ -129,7 +129,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = Configs.OldAndRule))
+      }, expectPlansToFail = Configs.Before3_3AndRule))
   }
 
   test("Do not plan pruning var expand for length=1") {

@@ -29,7 +29,7 @@ import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
 class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
   val pointConfig = Configs.Interpreted - Configs.Version2_3
-  val distanceConfig = Configs.Interpreted - Configs.OldAndRule
+  val distanceConfig = Configs.Interpreted - Configs.Before3_3AndRule
 
   test("distance function should work on co-located points") {
     val result = executeWith(pointConfig, "WITH point({latitude: 12.78, longitude: 56.7}) as point RETURN distance(point,point) as dist",
@@ -123,7 +123,7 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
   }
 
   test("distance function should not fail if provided with points from different CRS") {
-    val localConfig = pointConfig - Configs.OldAndRule
+    val localConfig = pointConfig - Configs.Before3_3AndRule
       val res = executeWith(localConfig,
         """WITH point({x: 2.3, y: 4.5, crs: 'cartesian'}) as p1, point({longitude: 1.1, latitude: 5.4, crs: 'WGS-84'}) as p2
         |RETURN distance(p1,p2) as dist""".stripMargin)
