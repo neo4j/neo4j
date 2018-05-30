@@ -689,7 +689,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
     result.notifications should not contain SUBOPTIMAL_INDEX_FOR_WILDCARD_QUERY.notification(graphdb.InputPosition.empty, suboptimalIndex("Person", "name"))
   }
 
-  test("should not warn when using starts with on a unqiue index with SLOW_CONTAINS limitation") {
+  test("should not warn when using starts with on a unique index with SLOW_CONTAINS limitation") {
     graph.createConstraint("Person", "name")
     val query = "EXPLAIN MATCH (a:Person) WHERE a.name STARTS WITH 'er' RETURN a"
     val result = innerExecuteDeprecated(query, Map.empty)
