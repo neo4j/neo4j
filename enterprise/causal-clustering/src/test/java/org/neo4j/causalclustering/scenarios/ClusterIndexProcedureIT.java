@@ -24,7 +24,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 
+import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.ReadReplica;
@@ -82,6 +84,7 @@ public class ClusterIndexProcedureIT
             db.execute( "CALL db.createIndex( \":Person(name)\", \"lucene+native-1.0\")" ).close();
             tx.success();
         } );
+        awaitIndexOnline( leader );
 
         // then
         Cluster.dataMatchesEventually( leader, cluster.coreMembers() );
@@ -159,6 +162,16 @@ public class ClusterIndexProcedureIT
         {
             verifyIndexes( readReplica.database() );
             verifyConstraints( readReplica.database(), ConstraintType.NODE_KEY );
+        }
+    }
+
+    private void awaitIndexOnline( CoreClusterMember member )
+    {
+        CoreGraphDatabase db = member.database();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.success();
         }
     }
 
