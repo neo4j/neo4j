@@ -62,7 +62,7 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
     @Override
     public IndexSampler createSampler()
     {
-        return new FusionIndexSampler( instanceSelector.flatMap( IndexReader::createSampler ) );
+        return new FusionIndexSampler( instanceSelector.transform( IndexReader::createSampler ) );
     }
 
     @Override
@@ -71,7 +71,7 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
         IndexSlot slot = slotSelector.selectSlot( predicates, IndexQuery::valueGroup );
         return slot != null
                ? instanceSelector.select( slot ).query( predicates )
-               : concat( instanceSelector.flatMap( reader -> reader.query( predicates ) ) );
+               : concat( instanceSelector.transform( reader -> reader.query( predicates ) ) );
     }
 
     @Override

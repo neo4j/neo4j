@@ -84,7 +84,7 @@ public class InstanceSelectorTest
         // when
         try
         {
-            selector.flatMap( Integer::parseInt );
+            selector.transform( Integer::parseInt );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -120,7 +120,7 @@ public class InstanceSelectorTest
         InstanceSelector<String> selector = selectorFilledWithOrdinal();
 
         // when
-        List<Integer> actual = Iterables.asList( selector.flatMap( Integer::parseInt ) );
+        List<Integer> actual = Iterables.asList( selector.transform( Integer::parseInt ) );
         List<Integer> expected = Arrays.stream( IndexSlot.values() ).map( Enum::ordinal ).collect( Collectors.toList() );
 
         // then
