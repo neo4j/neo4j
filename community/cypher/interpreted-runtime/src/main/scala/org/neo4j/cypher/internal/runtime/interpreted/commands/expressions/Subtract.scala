@@ -21,24 +21,14 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.opencypher.v9_0.util.CypherTypeException
+import org.neo4j.cypher.operations.CypherMath
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{DurationValue, NumberValue, TemporalValue}
+import org.neo4j.values.storable.NumberValue
 
 case class Subtract(a: Expression, b: Expression) extends Arithmetics(a, b) {
 
-  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
-    val aVal = a(ctx, state)
-    val bVal = b(ctx, state)
-
-    (aVal, bVal) match {
-      case (x: TemporalValue[_,_], y: DurationValue) => x.minus(y)
-      case (x: DurationValue, y: DurationValue) => x.sub(y)
-      case (x: TemporalValue[_,_], y: TemporalValue[_,_]) => throw new CypherTypeException("You cannot subtract a temporal instant from another. " +
-        "To obtain the duration, use 'duration.between(temporal1, temporal2)' instead.")
-      case _ => applyWithValues(aVal, bVal)
-    }
-  }
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue =
+    CypherMath.subtract(a(ctx, state), b(ctx, state))
 
   def calc(a: NumberValue, b: NumberValue) = a.minus(b)
 
