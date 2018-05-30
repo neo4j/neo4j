@@ -56,7 +56,7 @@ public class FilteringNativeHitIndexProgressorTest
             keys.add( random.nextString() );
         }
 
-        RawCursor<Hit<StringSchemaKey,NativeSchemaValue>,IOException> cursor = new ResultCursor( keys.iterator() );
+        RawCursor<Hit<StringIndexKey,NativeIndexValue>,IOException> cursor = new ResultCursor( keys.iterator() );
         NodeValueIterator valueClient = new NodeValueIterator()
         {
             @Override
@@ -68,7 +68,7 @@ public class FilteringNativeHitIndexProgressorTest
         IndexQuery[] predicates = new IndexQuery[]{mock( IndexQuery.class )};
         Predicate<String> filter = string -> string.contains( "a" );
         when( predicates[0].acceptsValue( any( Value.class ) ) ).then( invocation -> filter.test( ((TextValue)invocation.getArgument( 0 )).stringValue() ) );
-        FilteringNativeHitIndexProgressor<StringSchemaKey,NativeSchemaValue> progressor = new FilteringNativeHitIndexProgressor<>( cursor, valueClient,
+        FilteringNativeHitIndexProgressor<StringIndexKey,NativeIndexValue> progressor = new FilteringNativeHitIndexProgressor<>( cursor, valueClient,
                 new ArrayList<>(), predicates );
         valueClient.initialize( TestIndexDescriptorFactory.forLabel( 0, 0 ), progressor, predicates );
         List<Long> result = new ArrayList<>();

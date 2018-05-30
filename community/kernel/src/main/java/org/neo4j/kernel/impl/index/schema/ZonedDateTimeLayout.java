@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * {@link Layout} for absolute date times.
  */
-class ZonedDateTimeLayout extends SchemaLayout<ZonedDateTimeSchemaKey>
+class ZonedDateTimeLayout extends IndexLayout<ZonedDateTimeIndexKey>
 {
     // A 1 signals a named time zone is stored, a 0 that an offset is stored
     private static final int ZONE_ID_FLAG = 0x0100_0000;
@@ -43,13 +43,13 @@ class ZonedDateTimeLayout extends SchemaLayout<ZonedDateTimeSchemaKey>
     }
 
     @Override
-    public ZonedDateTimeSchemaKey newKey()
+    public ZonedDateTimeIndexKey newKey()
     {
-        return new ZonedDateTimeSchemaKey();
+        return new ZonedDateTimeIndexKey();
     }
 
     @Override
-    public ZonedDateTimeSchemaKey copyKey( ZonedDateTimeSchemaKey key, ZonedDateTimeSchemaKey into )
+    public ZonedDateTimeIndexKey copyKey( ZonedDateTimeIndexKey key, ZonedDateTimeIndexKey into )
     {
         into.epochSecondUTC = key.epochSecondUTC;
         into.nanoOfSecond = key.nanoOfSecond;
@@ -61,13 +61,13 @@ class ZonedDateTimeLayout extends SchemaLayout<ZonedDateTimeSchemaKey>
     }
 
     @Override
-    public int keySize( ZonedDateTimeSchemaKey key )
+    public int keySize( ZonedDateTimeIndexKey key )
     {
-        return ZonedDateTimeSchemaKey.SIZE;
+        return ZonedDateTimeIndexKey.SIZE;
     }
 
     @Override
-    public void writeKey( PageCursor cursor, ZonedDateTimeSchemaKey key )
+    public void writeKey( PageCursor cursor, ZonedDateTimeIndexKey key )
     {
         cursor.putLong( key.epochSecondUTC );
         cursor.putInt( key.nanoOfSecond );
@@ -83,7 +83,7 @@ class ZonedDateTimeLayout extends SchemaLayout<ZonedDateTimeSchemaKey>
     }
 
     @Override
-    public void readKey( PageCursor cursor, ZonedDateTimeSchemaKey into, int keySize )
+    public void readKey( PageCursor cursor, ZonedDateTimeIndexKey into, int keySize )
     {
         into.epochSecondUTC = cursor.getLong();
         into.nanoOfSecond = cursor.getInt();

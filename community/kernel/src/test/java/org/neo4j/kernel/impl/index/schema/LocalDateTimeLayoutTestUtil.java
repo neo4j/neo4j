@@ -34,7 +34,7 @@ import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-public class LocalDateTimeLayoutTestUtil extends LayoutTestUtil<LocalDateTimeSchemaKey, NativeSchemaValue>
+public class LocalDateTimeLayoutTestUtil extends LayoutTestUtil<LocalDateTimeIndexKey,NativeIndexValue>
 {
     private static final LocalDateTime[] ALL_EXTREME_VALUES = new LocalDateTime[]
     {
@@ -52,7 +52,7 @@ public class LocalDateTimeLayoutTestUtil extends LayoutTestUtil<LocalDateTimeSch
     }
 
     @Override
-    Layout<LocalDateTimeSchemaKey,NativeSchemaValue> createLayout()
+    Layout<LocalDateTimeIndexKey,NativeIndexValue> createLayout()
     {
         return new LocalDateTimeLayout();
     }
@@ -70,7 +70,7 @@ public class LocalDateTimeLayoutTestUtil extends LayoutTestUtil<LocalDateTimeSch
     }
 
     @Override
-    int compareIndexedPropertyValue( LocalDateTimeSchemaKey key1, LocalDateTimeSchemaKey key2 )
+    int compareIndexedPropertyValue( LocalDateTimeIndexKey key1, LocalDateTimeIndexKey key2 )
     {
         return Values.COMPARATOR.compare( key1.asValue(), key2.asValue() );
     }

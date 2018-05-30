@@ -120,7 +120,7 @@ public class SpatialIndexProvider extends IndexProvider
         {
             for ( SpatialIndexFiles.SpatialFileLayout subIndex : spatialIndexFiles.existing() )
             {
-                String indexFailure = NativeSchemaIndexes.readFailureMessage( pageCache, subIndex.indexFile );
+                String indexFailure = NativeIndexes.readFailureMessage( pageCache, subIndex.indexFile );
                 if ( indexFailure != null )
                 {
                     return indexFailure;
@@ -145,7 +145,7 @@ public class SpatialIndexProvider extends IndexProvider
         {
             try
             {
-                switch ( NativeSchemaIndexes.readState( pageCache, subIndex.indexFile ) )
+                switch ( NativeIndexes.readState( pageCache, subIndex.indexFile ) )
                 {
                 case FAILED:
                     return InternalIndexState.FAILED;

@@ -27,7 +27,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 /**
  * {@link Layout} for PointValues.
  */
-class SpatialLayout extends SchemaLayout<SpatialSchemaKey>
+class SpatialLayout extends IndexLayout<SpatialIndexKey>
 {
     private SpaceFillingCurve curve;
     CoordinateReferenceSystem crs;
@@ -45,13 +45,13 @@ class SpatialLayout extends SchemaLayout<SpatialSchemaKey>
     }
 
     @Override
-    public SpatialSchemaKey newKey()
+    public SpatialIndexKey newKey()
     {
-        return new SpatialSchemaKey( crs, curve );
+        return new SpatialIndexKey( crs, curve );
     }
 
     @Override
-    public SpatialSchemaKey copyKey( SpatialSchemaKey key, SpatialSchemaKey into )
+    public SpatialIndexKey copyKey( SpatialIndexKey key, SpatialIndexKey into )
     {
         into.rawValueBits = key.rawValueBits;
         into.setEntityId( key.getEntityId() );
@@ -62,20 +62,20 @@ class SpatialLayout extends SchemaLayout<SpatialSchemaKey>
     }
 
     @Override
-    public int keySize( SpatialSchemaKey key )
+    public int keySize( SpatialIndexKey key )
     {
-        return SpatialSchemaKey.SIZE;
+        return SpatialIndexKey.SIZE;
     }
 
     @Override
-    public void writeKey( PageCursor cursor, SpatialSchemaKey key )
+    public void writeKey( PageCursor cursor, SpatialIndexKey key )
     {
         cursor.putLong( key.rawValueBits );
         cursor.putLong( key.getEntityId() );
     }
 
     @Override
-    public void readKey( PageCursor cursor, SpatialSchemaKey into, int keySize )
+    public void readKey( PageCursor cursor, SpatialIndexKey into, int keySize )
     {
         into.rawValueBits = cursor.getLong();
         into.setEntityId( cursor.getLong() );

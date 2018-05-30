@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * {@link Layout} for dates.
  */
-class DateLayout extends SchemaLayout<DateSchemaKey>
+class DateLayout extends IndexLayout<DateIndexKey>
 {
     DateLayout()
     {
@@ -33,13 +33,13 @@ class DateLayout extends SchemaLayout<DateSchemaKey>
     }
 
     @Override
-    public DateSchemaKey newKey()
+    public DateIndexKey newKey()
     {
-        return new DateSchemaKey();
+        return new DateIndexKey();
     }
 
     @Override
-    public DateSchemaKey copyKey( DateSchemaKey key, DateSchemaKey into )
+    public DateIndexKey copyKey( DateIndexKey key, DateIndexKey into )
     {
         into.epochDay = key.epochDay;
         into.setEntityId( key.getEntityId() );
@@ -48,20 +48,20 @@ class DateLayout extends SchemaLayout<DateSchemaKey>
     }
 
     @Override
-    public int keySize( DateSchemaKey key )
+    public int keySize( DateIndexKey key )
     {
-        return DateSchemaKey.SIZE;
+        return DateIndexKey.SIZE;
     }
 
     @Override
-    public void writeKey( PageCursor cursor, DateSchemaKey key )
+    public void writeKey( PageCursor cursor, DateIndexKey key )
     {
         cursor.putLong( key.epochDay );
         cursor.putLong( key.getEntityId() );
     }
 
     @Override
-    public void readKey( PageCursor cursor, DateSchemaKey into, int keySize )
+    public void readKey( PageCursor cursor, DateIndexKey into, int keySize )
     {
         into.epochDay = cursor.getLong();
         into.setEntityId( cursor.getLong() );

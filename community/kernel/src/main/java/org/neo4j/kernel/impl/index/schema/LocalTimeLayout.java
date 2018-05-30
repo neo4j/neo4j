@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * {@link Layout} for local times.
  */
-class LocalTimeLayout extends SchemaLayout<LocalTimeSchemaKey>
+class LocalTimeLayout extends IndexLayout<LocalTimeIndexKey>
 {
     LocalTimeLayout()
     {
@@ -33,13 +33,13 @@ class LocalTimeLayout extends SchemaLayout<LocalTimeSchemaKey>
     }
 
     @Override
-    public LocalTimeSchemaKey newKey()
+    public LocalTimeIndexKey newKey()
     {
-        return new LocalTimeSchemaKey();
+        return new LocalTimeIndexKey();
     }
 
     @Override
-    public LocalTimeSchemaKey copyKey( LocalTimeSchemaKey key, LocalTimeSchemaKey into )
+    public LocalTimeIndexKey copyKey( LocalTimeIndexKey key, LocalTimeIndexKey into )
     {
         into.nanoOfDay = key.nanoOfDay;
         into.setEntityId( key.getEntityId() );
@@ -48,20 +48,20 @@ class LocalTimeLayout extends SchemaLayout<LocalTimeSchemaKey>
     }
 
     @Override
-    public int keySize( LocalTimeSchemaKey key )
+    public int keySize( LocalTimeIndexKey key )
     {
-        return LocalTimeSchemaKey.SIZE;
+        return LocalTimeIndexKey.SIZE;
     }
 
     @Override
-    public void writeKey( PageCursor cursor, LocalTimeSchemaKey key )
+    public void writeKey( PageCursor cursor, LocalTimeIndexKey key )
     {
         cursor.putLong( key.nanoOfDay );
         cursor.putLong( key.getEntityId() );
     }
 
     @Override
-    public void readKey( PageCursor cursor, LocalTimeSchemaKey into, int keySize )
+    public void readKey( PageCursor cursor, LocalTimeIndexKey into, int keySize )
     {
         into.nanoOfDay = cursor.getLong();
         into.setEntityId( cursor.getLong() );

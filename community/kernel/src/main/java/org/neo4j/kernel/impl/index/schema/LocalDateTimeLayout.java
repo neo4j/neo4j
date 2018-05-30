@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * {@link Layout} for local date times.
  */
-class LocalDateTimeLayout extends SchemaLayout<LocalDateTimeSchemaKey>
+class LocalDateTimeLayout extends IndexLayout<LocalDateTimeIndexKey>
 {
     LocalDateTimeLayout()
     {
@@ -33,13 +33,13 @@ class LocalDateTimeLayout extends SchemaLayout<LocalDateTimeSchemaKey>
     }
 
     @Override
-    public LocalDateTimeSchemaKey newKey()
+    public LocalDateTimeIndexKey newKey()
     {
-        return new LocalDateTimeSchemaKey();
+        return new LocalDateTimeIndexKey();
     }
 
     @Override
-    public LocalDateTimeSchemaKey copyKey( LocalDateTimeSchemaKey key, LocalDateTimeSchemaKey into )
+    public LocalDateTimeIndexKey copyKey( LocalDateTimeIndexKey key, LocalDateTimeIndexKey into )
     {
         into.epochSecond = key.epochSecond;
         into.nanoOfSecond = key.nanoOfSecond;
@@ -49,13 +49,13 @@ class LocalDateTimeLayout extends SchemaLayout<LocalDateTimeSchemaKey>
     }
 
     @Override
-    public int keySize( LocalDateTimeSchemaKey key )
+    public int keySize( LocalDateTimeIndexKey key )
     {
-        return LocalDateTimeSchemaKey.SIZE;
+        return LocalDateTimeIndexKey.SIZE;
     }
 
     @Override
-    public void writeKey( PageCursor cursor, LocalDateTimeSchemaKey key )
+    public void writeKey( PageCursor cursor, LocalDateTimeIndexKey key )
     {
         cursor.putLong( key.epochSecond );
         cursor.putInt( key.nanoOfSecond );
@@ -63,7 +63,7 @@ class LocalDateTimeLayout extends SchemaLayout<LocalDateTimeSchemaKey>
     }
 
     @Override
-    public void readKey( PageCursor cursor, LocalDateTimeSchemaKey into, int keySize )
+    public void readKey( PageCursor cursor, LocalDateTimeIndexKey into, int keySize )
     {
         into.epochSecond = cursor.getLong();
         into.nanoOfSecond = cursor.getInt();

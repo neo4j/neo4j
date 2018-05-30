@@ -23,12 +23,12 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.impl.index.schema.StringSchemaKey.ENTITY_ID_SIZE;
+import static org.neo4j.kernel.impl.index.schema.StringIndexKey.ENTITY_ID_SIZE;
 
 /**
  * {@link Layout} for strings.
  */
-class StringLayout extends SchemaLayout<StringSchemaKey>
+class StringLayout extends IndexLayout<StringIndexKey>
 {
     StringLayout()
     {
@@ -36,33 +36,33 @@ class StringLayout extends SchemaLayout<StringSchemaKey>
     }
 
     @Override
-    public StringSchemaKey newKey()
+    public StringIndexKey newKey()
     {
-        return new StringSchemaKey();
+        return new StringIndexKey();
     }
 
     @Override
-    public StringSchemaKey copyKey( StringSchemaKey key, StringSchemaKey into )
+    public StringIndexKey copyKey( StringIndexKey key, StringIndexKey into )
     {
         into.copyFrom( key );
         return into;
     }
 
     @Override
-    public int keySize( StringSchemaKey key )
+    public int keySize( StringIndexKey key )
     {
         return key.size();
     }
 
     @Override
-    public void writeKey( PageCursor cursor, StringSchemaKey key )
+    public void writeKey( PageCursor cursor, StringIndexKey key )
     {
         cursor.putLong( key.getEntityId() );
         cursor.putBytes( key.bytes, 0, key.bytesLength );
     }
 
     @Override
-    public void readKey( PageCursor cursor, StringSchemaKey into, int keySize )
+    public void readKey( PageCursor cursor, StringIndexKey into, int keySize )
     {
         if ( keySize < ENTITY_ID_SIZE )
         {
@@ -106,7 +106,7 @@ class StringLayout extends SchemaLayout<StringSchemaKey>
     }
 
     @Override
-    int compareValue( StringSchemaKey o1, StringSchemaKey o2 )
+    int compareValue( StringIndexKey o1, StringIndexKey o2 )
     {
         return o1.compareValueTo( o2 );
     }

@@ -27,7 +27,7 @@ import org.neo4j.index.internal.gbptree.Hit;
 
 import static org.neo4j.values.storable.Values.stringValue;
 
-class ResultCursor implements RawCursor<Hit<StringSchemaKey,NativeSchemaValue>,IOException>
+class ResultCursor implements RawCursor<Hit<StringIndexKey,NativeIndexValue>,IOException>
 {
     private final Iterator<String> iterator;
     private String current;
@@ -57,10 +57,10 @@ class ResultCursor implements RawCursor<Hit<StringSchemaKey,NativeSchemaValue>,I
     }
 
     @Override
-    public Hit<StringSchemaKey,NativeSchemaValue> get()
+    public Hit<StringIndexKey,NativeIndexValue> get()
     {
-        StringSchemaKey key = new StringSchemaKey();
+        StringIndexKey key = new StringIndexKey();
         key.from( pos, stringValue( current ) );
-        return new SimpleHit<>( key, NativeSchemaValue.INSTANCE );
+        return new SimpleHit<>( key, NativeIndexValue.INSTANCE );
     }
 }

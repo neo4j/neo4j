@@ -34,7 +34,7 @@ import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-public class DateLayoutTestUtil extends LayoutTestUtil<DateSchemaKey, NativeSchemaValue>
+public class DateLayoutTestUtil extends LayoutTestUtil<DateIndexKey,NativeIndexValue>
 {
     private static final LocalDate[] ALL_EXTREME_VALUES = new LocalDate[]
     {
@@ -46,13 +46,13 @@ public class DateLayoutTestUtil extends LayoutTestUtil<DateSchemaKey, NativeSche
             LocalDate.of( -1, 12, 31)
     };
 
-    DateLayoutTestUtil( IndexDescriptor schemaIndexDescriptor )
+    DateLayoutTestUtil( IndexDescriptor indexDescriptor )
     {
-        super( schemaIndexDescriptor );
+        super( indexDescriptor );
     }
 
     @Override
-    Layout<DateSchemaKey,NativeSchemaValue> createLayout()
+    Layout<DateIndexKey,NativeIndexValue> createLayout()
     {
         return new DateLayout();
     }
@@ -70,7 +70,7 @@ public class DateLayoutTestUtil extends LayoutTestUtil<DateSchemaKey, NativeSche
     }
 
     @Override
-    int compareIndexedPropertyValue( DateSchemaKey key1, DateSchemaKey key2 )
+    int compareIndexedPropertyValue( DateIndexKey key1, DateIndexKey key2 )
     {
         return Values.COMPARATOR.compare( key1.asValue(), key2.asValue() );
     }

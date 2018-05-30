@@ -46,7 +46,7 @@ class FailureHeaderWriter implements Consumer<PageCursor>
     public void accept( PageCursor cursor )
     {
         byte[] bytesToWrite = failureBytes;
-        cursor.putByte( NativeSchemaIndexPopulator.BYTE_FAILED );
+        cursor.putByte( NativeIndexPopulator.BYTE_FAILED );
         int availableSpace = cursor.getCurrentPageSize() - cursor.getOffset();
         if ( bytesToWrite.length + HEADER_LENGTH_FIELD_LENGTH > availableSpace )
         {

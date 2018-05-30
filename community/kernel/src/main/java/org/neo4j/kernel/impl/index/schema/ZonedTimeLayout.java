@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * {@link Layout} for absolute times.
  */
-class ZonedTimeLayout extends SchemaLayout<ZonedTimeSchemaKey>
+class ZonedTimeLayout extends IndexLayout<ZonedTimeIndexKey>
 {
     ZonedTimeLayout()
     {
@@ -33,13 +33,13 @@ class ZonedTimeLayout extends SchemaLayout<ZonedTimeSchemaKey>
     }
 
     @Override
-    public ZonedTimeSchemaKey newKey()
+    public ZonedTimeIndexKey newKey()
     {
-        return new ZonedTimeSchemaKey();
+        return new ZonedTimeIndexKey();
     }
 
     @Override
-    public ZonedTimeSchemaKey copyKey( ZonedTimeSchemaKey key, ZonedTimeSchemaKey into )
+    public ZonedTimeIndexKey copyKey( ZonedTimeIndexKey key, ZonedTimeIndexKey into )
     {
         into.nanosOfDayUTC = key.nanosOfDayUTC;
         into.zoneOffsetSeconds = key.zoneOffsetSeconds;
@@ -49,13 +49,13 @@ class ZonedTimeLayout extends SchemaLayout<ZonedTimeSchemaKey>
     }
 
     @Override
-    public int keySize( ZonedTimeSchemaKey key )
+    public int keySize( ZonedTimeIndexKey key )
     {
-        return ZonedTimeSchemaKey.SIZE;
+        return ZonedTimeIndexKey.SIZE;
     }
 
     @Override
-    public void writeKey( PageCursor cursor, ZonedTimeSchemaKey key )
+    public void writeKey( PageCursor cursor, ZonedTimeIndexKey key )
     {
         cursor.putLong( key.nanosOfDayUTC );
         cursor.putInt( key.zoneOffsetSeconds );
@@ -63,7 +63,7 @@ class ZonedTimeLayout extends SchemaLayout<ZonedTimeSchemaKey>
     }
 
     @Override
-    public void readKey( PageCursor cursor, ZonedTimeSchemaKey into, int keySize )
+    public void readKey( PageCursor cursor, ZonedTimeIndexKey into, int keySize )
     {
         into.nanosOfDayUTC = cursor.getLong();
         into.zoneOffsetSeconds = cursor.getInt();
