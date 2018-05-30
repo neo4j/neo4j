@@ -71,6 +71,7 @@ import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaE
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
@@ -81,6 +82,7 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -127,6 +129,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     private final DefaultCursors cursors;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final ConstraintSemantics constraintSemantics;
+    private final IndexProviderMap indexProviderMap;
 
     public Operations(
             AllStoreHolder allStoreHolder,
@@ -137,7 +140,8 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             DefaultCursors cursors,
             AutoIndexing autoIndexing,
             ConstraintIndexCreator constraintIndexCreator,
-            ConstraintSemantics constraintSemantics )
+            ConstraintSemantics constraintSemantics,
+            IndexProviderMap indexProviderMap )
     {
         this.token = token;
         this.autoIndexing = autoIndexing;
@@ -148,6 +152,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         this.cursors = cursors;
         this.constraintIndexCreator = constraintIndexCreator;
         this.constraintSemantics = constraintSemantics;
+        this.indexProviderMap = indexProviderMap;
     }
 
     public void initialize()
@@ -873,7 +878,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     }
 
     @Override
-    public IndexReference indexCreate( SchemaDescriptor descriptor ) throws SchemaKernelException
+    public IndexReference indexCreate( SchemaDescriptor descriptor, String providerName ) throws SchemaKernelException
     {
         acquireExclusiveLabelLock( descriptor.keyId() );
         ktx.assertOpen();
@@ -881,7 +886,8 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, descriptor );
 
         SchemaIndexDescriptor indexDescriptor = SchemaIndexDescriptorFactory.forSchema( descriptor );
-        ktx.txState().indexRuleDoAdd( indexDescriptor );
+        IndexProvider.Descriptor providerDescriptor = providerByName( providerName );
+        ktx.txState().indexRuleDoAdd( indexDescriptor, providerDescriptor );
         return DefaultIndexReference.fromDescriptor( indexDescriptor );
     }
 
@@ -918,7 +924,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     }
 
     @Override
-    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor )
+    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor, String providerName )
             throws SchemaKernelException
     {
         //Lock
@@ -933,12 +939,13 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.CONSTRAINT_CREATION, descriptor );
 
         // Create constraints
-        indexBackedConstraintCreate( constraint );
+        IndexProvider.Descriptor providerDescriptor = providerByName( providerName );
+        indexBackedConstraintCreate( constraint, providerDescriptor );
         return constraint;
     }
 
     @Override
-    public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor ) throws SchemaKernelException
+    public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor, String providerName ) throws SchemaKernelException
     {
         //Lock
         acquireExclusiveLabelLock( descriptor.getLabelId() );
@@ -959,7 +966,8 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
 
         //create constraint
-        indexBackedConstraintCreate( constraint );
+        IndexProvider.Descriptor providerDescriptor = providerByName( providerName );
+        indexBackedConstraintCreate( constraint, providerDescriptor );
         return constraint;
     }
 
@@ -1188,7 +1196,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         return SchemaDescriptorFactory.forLabel( index.label(), index.properties() );
     }
 
-    private void indexBackedConstraintCreate( IndexBackedConstraintDescriptor constraint )
+    private void indexBackedConstraintCreate( IndexBackedConstraintDescriptor constraint, IndexProvider.Descriptor providerDescriptor )
             throws CreateConstraintFailureException
     {
         SchemaDescriptor descriptor = constraint.schema();
@@ -1213,7 +1221,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
                         return;
                     }
                 }
-                long indexId = constraintIndexCreator.createUniquenessConstraintIndex( ktx, descriptor );
+                long indexId = constraintIndexCreator.createUniquenessConstraintIndex( ktx, descriptor, providerDescriptor );
                 if ( !allStoreHolder.constraintExists( constraint ) )
                 {
                     // This looks weird, but since we release the label lock while awaiting population of the index
@@ -1238,5 +1246,10 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         {
             throw new NoSuchIndexException( SchemaDescriptorFactory.forLabel( index.label(), index.properties() ) );
         }
+    }
+
+    private IndexProvider.Descriptor providerByName( String providerName )
+    {
+        return providerName != null ? indexProviderMap.lookup( providerName ).getProviderDescriptor() : null;
     }
 }

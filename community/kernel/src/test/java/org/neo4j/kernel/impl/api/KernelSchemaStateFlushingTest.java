@@ -160,7 +160,7 @@ public class KernelSchemaStateFlushingTest
         try ( Transaction transaction = session.beginTransaction( KernelTransaction.Type.implicit ) )
         {
             IndexReference reference = transaction.schemaWrite().indexCreate(
-                    SchemaDescriptorFactory.forLabel( 1, 1 ) );
+                    SchemaDescriptorFactory.forLabel( 1, 1 ), null );
             transaction.success();
             return reference;
         }
