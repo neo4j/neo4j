@@ -76,7 +76,7 @@ public class JmxDump
     /**
      * Captures a thread dump of the running instance.
      *
-     * @return a diagnostics source the will emmit a thread dump.
+     * @return a diagnostics source the will emit a thread dump.
      */
     public DiagnosticsReportSource threadDump()
     {

@@ -603,7 +603,7 @@ public class CompositePageCursorTest
     }
 
     @Test
-    public void overlappingOffsettedGetAccess()
+    public void overlappingOffsetGetAccess()
     {
         PageCursor c = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         assertThat( c.getInt( PAGE_SIZE - 2 ), is( 0xAEAFB0B1 ) );
@@ -642,7 +642,7 @@ public class CompositePageCursorTest
     }
 
     @Test
-    public void overlappingOffsettedPutAccess()
+    public void overlappingOffsetPutAccess()
     {
         PageCursor c = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         c.putInt( PAGE_SIZE - 2, 0x01020304 );
@@ -872,7 +872,7 @@ public class CompositePageCursorTest
     }
 
     @Test
-    public void getByteOffsettedBeyondEndOfViewMustRaiseBoundsFlag()
+    public void getByteOffsetBeyondEndOfViewMustRaiseBoundsFlag()
     {
         PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
@@ -896,7 +896,7 @@ public class CompositePageCursorTest
     }
 
     @Test
-    public void putByteOffsettedBeyondEndOfViewMustRaiseBoundsFlag()
+    public void putByteOffsetBeyondEndOfViewMustRaiseBoundsFlag()
     {
         PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
@@ -908,7 +908,7 @@ public class CompositePageCursorTest
     }
 
     @Test
-    public void getByteOffsettedBeforeFirstPageMustRaiseBoundsFlag()
+    public void getByteOffsetBeforeFirstPageMustRaiseBoundsFlag()
     {
         PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         pageCursor.getByte( -1 );
@@ -917,7 +917,7 @@ public class CompositePageCursorTest
     }
 
     @Test
-    public void putByteOffsettedBeforeFirstPageMustRaiseBoundsFlag()
+    public void putByteOffsetBeforeFirstPageMustRaiseBoundsFlag()
     {
         PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         pageCursor.putByte( -1, (byte) 1 );
@@ -938,7 +938,7 @@ public class CompositePageCursorTest
     }
 
     @Test
-    public void getShortOffsettedBeyondEndOfViewMustRaiseBoundsFlag()
+    public void getShortOffsetBeyondEndOfViewMustRaiseBoundsFlag()
     {
         PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
@@ -962,7 +962,7 @@ public class CompositePageCursorTest
     }
 
     @Test
-    public void putShortOffsettedBeyondEndOfViewMustRaiseBoundsFlag()
+    public void putShortOffsetBeyondEndOfViewMustRaiseBoundsFlag()
     {
         PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
@@ -974,7 +974,7 @@ public class CompositePageCursorTest
     }
 
     @Test
-    public void getShortOffsettedBeforeFirstPageMustRaiseBoundsFlag()
+    public void getShortOffsetBeforeFirstPageMustRaiseBoundsFlag()
     {
         PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         pageCursor.getShort( -1 );
@@ -983,7 +983,7 @@ public class CompositePageCursorTest
     }
 
     @Test
-    public void putShortOffsettedBeforeFirstPageMustRaiseBoundsFlag()
+    public void putShortOffsetBeforeFirstPageMustRaiseBoundsFlag()
     {
         PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         pageCursor.putShort( -1, (short) 1 );
@@ -1004,7 +1004,7 @@ public class CompositePageCursorTest
     }
 
     @Test
-    public void getIntOffsettedBeyondEndOfViewMustRaiseBoundsFlag()
+    public void getIntOffsetBeyondEndOfViewMustRaiseBoundsFlag()
     {
         PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
@@ -1028,7 +1028,7 @@ public class CompositePageCursorTest
     }
 
     @Test
-    public void putIntOffsettedBeyondEndOfViewMustRaiseBoundsFlag()
+    public void putIntOffsetBeyondEndOfViewMustRaiseBoundsFlag()
     {
         PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
@@ -1040,7 +1040,7 @@ public class CompositePageCursorTest
     }
 
     @Test
-    public void getIntOffsettedBeforeFirstPageMustRaiseBoundsFlag()
+    public void getIntOffsetBeforeFirstPageMustRaiseBoundsFlag()
     {
         PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         pageCursor.getInt( -1 );
@@ -1049,7 +1049,7 @@ public class CompositePageCursorTest
     }
 
     @Test
-    public void putIntOffsettedBeforeFirstPageMustRaiseBoundsFlag()
+    public void putIntOffsetBeforeFirstPageMustRaiseBoundsFlag()
     {
         PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         pageCursor.putInt( -1, 1 );
@@ -1070,7 +1070,7 @@ public class CompositePageCursorTest
     }
 
     @Test
-    public void getLongOffsettedBeyondEndOfViewMustRaiseBoundsFlag()
+    public void getLongOffsetBeyondEndOfViewMustRaiseBoundsFlag()
     {
         PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
@@ -1094,7 +1094,7 @@ public class CompositePageCursorTest
     }
 
     @Test
-    public void putLongOffsettedBeyondEndOfViewMustRaiseBoundsFlag()
+    public void putLongOffsetBeyondEndOfViewMustRaiseBoundsFlag()
     {
         PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
@@ -1106,7 +1106,7 @@ public class CompositePageCursorTest
     }
 
     @Test
-    public void getLongOffsettedBeforeFirstPageMustRaiseBoundsFlag()
+    public void getLongOffsetBeforeFirstPageMustRaiseBoundsFlag()
     {
         PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         pageCursor.getLong( -1 );
@@ -1115,7 +1115,7 @@ public class CompositePageCursorTest
     }
 
     @Test
-    public void putLongOffsettedBeforeFirstPageMustRaiseBoundsFlag()
+    public void putLongOffsetBeforeFirstPageMustRaiseBoundsFlag()
     {
         PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
         pageCursor.putLong( -1, (long) 1 );

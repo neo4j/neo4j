@@ -73,7 +73,7 @@ public class ClusterBinderTest
     }
 
     @Test
-    public void shouldTimeoutWhenNotBootrappableAndNobodyElsePublishesClusterId() throws Throwable
+    public void shouldTimeoutWhenNotBootstrappableAndNobodyElsePublishesClusterId() throws Throwable
     {
         // given
         CoreTopology unboundTopology = new CoreTopology( null, false, emptyMap() );

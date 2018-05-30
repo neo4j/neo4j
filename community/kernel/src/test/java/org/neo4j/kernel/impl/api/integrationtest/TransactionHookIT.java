@@ -41,7 +41,7 @@ import static org.mockito.Mockito.when;
 public class TransactionHookIT extends KernelIntegrationTest
 {
     @Test
-    public void shouldRecieveTxStateOnCommit() throws Exception
+    public void shouldReceiveTxStateOnCommit() throws Exception
     {
         // Given
         TransactionHook hook = mock( TransactionHook.class );

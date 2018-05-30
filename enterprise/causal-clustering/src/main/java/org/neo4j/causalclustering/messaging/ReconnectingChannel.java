@@ -180,7 +180,7 @@ public class ReconnectingChannel implements Channel
             }
             else
             {
-                writer = ( channel, mmessage ) -> chain( channel.write( msg ), promise );
+                writer = ( channel, message ) -> chain( channel.write( msg ), promise );
             }
 
             deferredWrite( msg, fChannel, promise, true, writer );

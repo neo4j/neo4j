@@ -105,8 +105,8 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
         // Get the relationship from the indexed URI (Location in header)
         response = httpGet( indexUri );
         assertEquals( 200, response.getStatus() );
-        String discovredEntity = response.getEntity();
-        Map<String, Object> map = JsonHelper.jsonToMap( discovredEntity );
+        String discoveredEntity = response.getEntity();
+        Map<String, Object> map = JsonHelper.jsonToMap( discoveredEntity );
         assertNotNull( map.get( "self" ) );
     }
 
@@ -122,7 +122,7 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldGet404WhenDeletingNonExtistentIndex()
+    public void shouldGet404WhenDeletingNonExistentIndex()
     {
         String indexName = indexes.newInstance();
         String indexUri = functionalTestHelper.relationshipIndexUri() + indexName;

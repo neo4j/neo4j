@@ -309,7 +309,7 @@ public class FibonacciHeap<KeyType>
     /**
      * Raises the priority for an entry.
      * @param node
-     *            The entry to recieve a higher priority.
+     *            The entry to receive a higher priority.
      * @param newKey
      *            The new value.
      */

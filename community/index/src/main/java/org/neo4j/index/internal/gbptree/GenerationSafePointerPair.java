@@ -34,7 +34,7 @@ import static org.neo4j.index.internal.gbptree.GenerationSafePointer.readPointer
  * Generally a GSP fall into one out of these categories:
  * <ul>
  * <li>STABLE: generation made durable and safe by a checkpoint</li>
- * <li>UNSTABLE: generation which is currently under evolution and isn't safe until next checkoint</li>
+ * <li>UNSTABLE: generation which is currently under evolution and isn't safe until next checkpoint</li>
  * <li>EMPTY: have never been written</li>
  * </ul>
  * There are variations of pointers written in UNSTABLE generation:

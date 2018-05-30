@@ -85,7 +85,7 @@ public class GlobalStoreLockerTest
     }
 
     @Test
-    public void allowMultipleCallstoActuallStoreLocker() throws IOException
+    public void allowMultipleCallstoActuallyStoreLocker() throws IOException
     {
         File directory = testDirectory.directory( "multipleCalls" );
         try ( GlobalStoreLocker storeLocker = new GlobalStoreLocker( fileSystemRule.get(), directory ) )

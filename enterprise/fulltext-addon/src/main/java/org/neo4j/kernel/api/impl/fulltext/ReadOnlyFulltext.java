@@ -32,7 +32,7 @@ public interface ReadOnlyFulltext extends AutoCloseable
      *
      *
      * @param terms The terms to query for.
-     * @param matchAll If true, only resluts that match all the given terms will be returned
+     * @param matchAll If true, only results that match all the given terms will be returned
      * @return An iterator over the matching entityIDs, ordered by lucene scoring of the match.
      */
     ScoreEntityIterator query( Collection<String> terms, boolean matchAll );
@@ -42,7 +42,7 @@ public interface ReadOnlyFulltext extends AutoCloseable
      *
      *
      * @param terms The terms to query for.
-     * @param matchAll If true, only resluts that match all the given terms will be returned
+     * @param matchAll If true, only results that match all the given terms will be returned
      * @return An iterator over the matching entityIDs, ordered by lucene scoring of the match.
      */
     ScoreEntityIterator fuzzyQuery( Collection<String> terms, boolean matchAll );

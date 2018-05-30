@@ -106,7 +106,7 @@ public class BloomBackupIT
         try ( Transaction transaction = db.beginTx() )
         {
             Node node1 = db.createNode();
-            node1.setProperty( "prop", "Addiditional data" );
+            node1.setProperty( "prop", "Additional data" );
             additionalId1 = node1.getId();
             Node node2 = db.createNode();
             node2.setProperty( "prop", "Even more additional data" );

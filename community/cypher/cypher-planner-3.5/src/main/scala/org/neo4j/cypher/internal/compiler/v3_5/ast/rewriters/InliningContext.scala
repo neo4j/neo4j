@@ -74,7 +74,7 @@ case class InliningContext(projections: Map[LogicalVariable, Expression] = Map.e
       }
   })
 
-  def isAliasedVarible(variable: LogicalVariable) = alias(variable).nonEmpty
+  def isAliasedVariable(variable: LogicalVariable) = alias(variable).nonEmpty
 
   def alias(variable: LogicalVariable): Option[LogicalVariable] = projections.get(variable) match {
     case Some(other: Variable) => Some(other.copyId)

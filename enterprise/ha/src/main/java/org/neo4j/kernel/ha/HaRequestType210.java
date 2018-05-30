@@ -101,7 +101,7 @@ public class HaRequestType210 extends AbstractHaRequestTypes
 
     private void registerAcquireExclusiveLock( ObjectSerializer<LockResult> lockResultObjectSerializer )
     {
-        register( Type.ACQUIRE_EXCLUSIVE_LOCK, new AquireLockCall()
+        register( Type.ACQUIRE_EXCLUSIVE_LOCK, new AcquireLockCall()
         {
             @Override
             protected Response<LockResult> lock( Master master, RequestContext context, ResourceType type,
@@ -114,7 +114,7 @@ public class HaRequestType210 extends AbstractHaRequestTypes
 
     private void registerAcquireSharedLock( ObjectSerializer<LockResult> lockResultObjectSerializer )
     {
-        register( Type.ACQUIRE_SHARED_LOCK, new AquireLockCall()
+        register( Type.ACQUIRE_SHARED_LOCK, new AcquireLockCall()
         {
             @Override
             protected Response<LockResult> lock( Master master, RequestContext context, ResourceType type,

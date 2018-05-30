@@ -50,7 +50,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.metrics.MetricsTestHelper.metricsCsv;
 import static org.neo4j.metrics.MetricsTestHelper.readLongValue;
 import static org.neo4j.metrics.source.db.BoltMetrics.MESSAGES_DONE;
-import static org.neo4j.metrics.source.db.BoltMetrics.MESSAGES_RECIEVED;
+import static org.neo4j.metrics.source.db.BoltMetrics.MESSAGES_RECEIVED;
 import static org.neo4j.metrics.source.db.BoltMetrics.MESSAGES_STARTED;
 import static org.neo4j.metrics.source.db.BoltMetrics.SESSIONS_STARTED;
 import static org.neo4j.metrics.source.db.BoltMetrics.TOTAL_PROCESSING_TIME;
@@ -99,7 +99,7 @@ public class BoltMetricsIT
         assertEventually( "session shows up as started",
                 () -> readLongValue( metricsCsv( metricsFolder, SESSIONS_STARTED ) ), equalTo( 1L ), 5, SECONDS );
         assertEventually( "init request shows up as received",
-                () -> readLongValue( metricsCsv( metricsFolder, MESSAGES_RECIEVED ) ), equalTo( 1L ), 5, SECONDS );
+                () -> readLongValue( metricsCsv( metricsFolder, MESSAGES_RECEIVED ) ), equalTo( 1L ), 5, SECONDS );
         assertEventually( "init request shows up as started",
                 () -> readLongValue( metricsCsv( metricsFolder, MESSAGES_STARTED ) ), equalTo( 1L ), 5, SECONDS );
         assertEventually( "init request shows up as done",

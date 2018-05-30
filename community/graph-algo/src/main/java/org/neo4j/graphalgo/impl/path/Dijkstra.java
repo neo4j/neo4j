@@ -79,7 +79,7 @@ public class Dijkstra implements PathFinder<WeightedPath>
     private final PathInterest<Double> interest;
     private final boolean stateInUse;
     // TODO: Remove stateInUse when removing deprecated constructors that uses InitialBranchState.
-    // TODO: ALso set traverser to always use DijkstaPathExpander and DijkstraEvaluator.
+    // TODO: ALso set traverser to always use DijkstraPathExpander and DijkstraEvaluator.
 
     /**
      * @deprecated Dijkstra should not be used with state

@@ -32,7 +32,7 @@ import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
-abstract class AquireLockCall implements TargetCaller<Master, LockResult>
+abstract class AcquireLockCall implements TargetCaller<Master, LockResult>
 {
     @Override
     public Response<LockResult> call( Master master, RequestContext context,

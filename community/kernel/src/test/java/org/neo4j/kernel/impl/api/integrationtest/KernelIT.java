@@ -158,7 +158,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void txReturnsCorrectIdWhenFailedlAndMarkedForTermination() throws Exception
+    public void txReturnsCorrectIdWhenFailedAndMarkedForTermination() throws Exception
     {
         executeDummyTxs( db, 42 );
 

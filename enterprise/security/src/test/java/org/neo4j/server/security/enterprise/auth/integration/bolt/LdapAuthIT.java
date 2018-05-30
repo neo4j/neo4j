@@ -215,7 +215,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     }
 
     @Test
-    public void shoulFailToLoginWithLdapIfInvalidCredentialsFollowingSuccessfulLogin() throws Throwable
+    public void shouldFailToLoginWithLdapIfInvalidCredentialsFollowingSuccessfulLogin() throws Throwable
     {
         assertAuth( "neo4j", "abc123" );
         reconnect();

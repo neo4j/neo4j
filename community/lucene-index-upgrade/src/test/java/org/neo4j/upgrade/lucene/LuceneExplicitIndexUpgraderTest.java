@@ -113,11 +113,11 @@ public class LuceneExplicitIndexUpgraderTest
         @Override
         protected boolean matchesSafely( ExplicitIndexMigrationException item, Description mismatchDescription )
         {
-            String brokendIndexName = item.getFailedIndexName();
-            boolean matched = Arrays.asList(failedIndexNames).contains( brokendIndexName );
+            String brokenIndexName = item.getFailedIndexName();
+            boolean matched = Arrays.asList(failedIndexNames).contains( brokenIndexName );
             if ( !matched )
             {
-                mismatchDescription.appendText( "Failed index is: " ).appendText( brokendIndexName );
+                mismatchDescription.appendText( "Failed index is: " ).appendText( brokenIndexName );
             }
             return matched;
         }

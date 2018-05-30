@@ -191,7 +191,7 @@ public class DetectAllRelationshipInconsistenciesIT
         @Override
         public String toString()
         {
-            return "Sabotabed " + before + " --> " + after + ", other relationship " + other;
+            return "Sabotaged " + before + " --> " + after + ", other relationship " + other;
         }
     }
 

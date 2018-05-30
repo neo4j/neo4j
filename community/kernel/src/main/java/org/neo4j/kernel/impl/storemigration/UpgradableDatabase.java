@@ -66,7 +66,7 @@ public class UpgradableDatabase
      * format found.
      * @throws DatabaseNotCleanlyShutDownException if store cannot be upgraded due to not being cleanly shut down.
      */
-    public RecordFormats checkUpgradeable( File storeDirectory )
+    public RecordFormats checkUpgradable( File storeDirectory )
     {
         Result result = storeVersionCheck.hasVersion( new File( storeDirectory, MetaDataStore.DEFAULT_NAME ),
                 format.storeVersion() );

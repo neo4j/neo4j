@@ -92,6 +92,6 @@ public class RelationshipExpanderBuilder
                 }
             }
         }
-        throw new RuntimeException( "Unregognized " + enumClass.getSimpleName() + " '" + name + "'" );
+        throw new RuntimeException( "Unrecognized " + enumClass.getSimpleName() + " '" + name + "'" );
     }
 }

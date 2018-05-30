@@ -107,7 +107,7 @@ public class AccessStatistics
             // but keep here as a reminder to do so
 //          if ( scatterIndex > 0.5 )
 //          {
-//              buf.append( format( "%n *** Property Store reorgization is recommended for optimal performance ***" ) );
+//              buf.append( format( "%n *** Property Store reorganization is recommended for optimal performance ***" ) );
 //          }
 
             return buf.toString();

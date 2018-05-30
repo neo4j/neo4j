@@ -638,9 +638,9 @@ class LoadCsvAcceptanceTest
     // isWindows?
     if ('\\' == File.separatorChar) {
       // http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247%28v=vs.85%29.aspxs
-      val illegalCharsInWidnowsFilePath = "/?<>\\:*|\""
+      val illegalCharsInWindowsFilePath = "/?<>\\:*|\""
       // just replace the illegal chars with a 'a'
-      illegalCharsInWidnowsFilePath.foldLeft(filename)((current, c) => current.replace(c, 'a'))
+      illegalCharsInWindowsFilePath.foldLeft(filename)((current, c) => current.replace(c, 'a'))
     } else {
       filename
     }

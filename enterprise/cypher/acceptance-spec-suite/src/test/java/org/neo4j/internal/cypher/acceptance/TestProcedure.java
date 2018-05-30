@@ -126,9 +126,9 @@ public class TestProcedure
         return Stream.of( new NodeResult( node ) );
     }
 
-    @Procedure( name = "org.neo4j.graphAlgosDjikstra" )
-    @Description( "org.neo4j.graphAlgosDjikstra" )
-    public Stream<NodeResult> graphAlgosDjikstra(
+    @Procedure( name = "org.neo4j.graphAlgosDijkstra" )
+    @Description( "org.neo4j.graphAlgosDijkstra" )
+    public Stream<NodeResult> graphAlgosDijkstra(
             @Name( "startNode" ) Node start,
             @Name( "endNode" ) Node end,
             @Name( "relType" ) String relType,

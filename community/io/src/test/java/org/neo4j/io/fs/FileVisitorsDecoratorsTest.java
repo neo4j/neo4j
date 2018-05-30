@@ -52,7 +52,7 @@ public class FileVisitorsDecoratorsTest
     public String name;
 
     @Parameterized.Parameter( 1 )
-    public Function<FileVisitor<Path>, FileVisitor<Path>> decoratorConstrutor;
+    public Function<FileVisitor<Path>, FileVisitor<Path>> decoratorConstructor;
 
     @Parameterized.Parameter( 2 )
     public boolean throwsExceptions;
@@ -93,7 +93,7 @@ public class FileVisitorsDecoratorsTest
     @Before
     public void setup()
     {
-        decorator = decoratorConstrutor.apply( wrapped );
+        decorator = decoratorConstructor.apply( wrapped );
     }
 
     @Test

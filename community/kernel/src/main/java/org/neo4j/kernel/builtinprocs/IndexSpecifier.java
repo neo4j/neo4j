@@ -59,9 +59,9 @@ public class IndexSpecifier
     {
         // Note that this now matches all properties in a single group, in order to split them later.
         Pattern pattern = Pattern.compile(
-                ":\\s*" + or( identifier(true), qoutedIdentifier(true) ) + // Match the label
-                "\\((" + or( identifier(false), qoutedIdentifier(false) ) + // Match the first property
-                "(?:,\\s*" + or( identifier(false), qoutedIdentifier(false) ) + ")*)\\)" // Match following properties
+                ":\\s*" + or( identifier(true), quotedIdentifier(true) ) + // Match the label
+                "\\((" + or( identifier(false), quotedIdentifier(false) ) + // Match the first property
+                "(?:,\\s*" + or( identifier(false), quotedIdentifier(false) ) + ")*)\\)" // Match following properties
         );
         Matcher matcher = pattern.matcher( specification );
         if ( !matcher.find() )
@@ -102,7 +102,7 @@ public class IndexSpecifier
         }
     }
 
-    private static String qoutedIdentifier( boolean capture )
+    private static String quotedIdentifier( boolean capture )
     {
         if ( capture )
         {

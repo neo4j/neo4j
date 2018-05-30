@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /**
- * Tools for performing low-level, unsafe operations - read isntructions before using.
+ * Tools for performing low-level, unsafe operations - read instructions before using.
  */
 package org.neo4j.unsafe;
 

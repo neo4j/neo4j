@@ -47,7 +47,7 @@ import org.neo4j.graphdb.RelationshipType;
 public class SingleSourceShortestPathDijkstra<CostType> extends
     Dijkstra<CostType> implements SingleSourceShortestPath<CostType>
 {
-    DijstraIterator dijstraIterator;
+    DijkstraIterator dijkstraIterator;
 
     /**
      * @see Dijkstra
@@ -73,7 +73,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
         HashMap<Node,CostType> seen1 = new HashMap<>();
         HashMap<Node,CostType> seen2 = new HashMap<>();
         HashMap<Node,CostType> dists2 = new HashMap<>();
-        dijstraIterator = new DijstraIterator( startNode, predecessors1, seen1,
+        dijkstraIterator = new DijkstraIterator( startNode, predecessors1, seen1,
             seen2, distances, dists2, false );
     }
 
@@ -105,9 +105,9 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
     public boolean calculate( Node targetNode )
     {
         while ( (targetNode == null || !distances.containsKey( targetNode ))
-            && dijstraIterator.hasNext() && !limitReached() )
+            && dijkstraIterator.hasNext() && !limitReached() )
         {
-            dijstraIterator.next();
+            dijkstraIterator.next();
         }
         return true;
     }

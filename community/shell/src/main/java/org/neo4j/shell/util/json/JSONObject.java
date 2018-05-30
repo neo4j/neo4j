@@ -149,13 +149,13 @@ public class JSONObject
     }
 
     /**
-     * Construct a JSONObject from a JSONTokener.
+     * Construct a JSONObject from a JSONTokenizer.
      *
-     * @param x A JSONTokener object containing the source string.
+     * @param x A JSONTokenizer object containing the source string.
      * @throws JSONException If there is a syntax error in the source string
      * or a duplicated key.
      */
-    public JSONObject( JSONTokener x ) throws JSONException
+    public JSONObject( JSONTokenizer x ) throws JSONException
     {
         this();
         char c;
@@ -347,7 +347,7 @@ public class JSONObject
      */
     public JSONObject( String source ) throws JSONException
     {
-        this( new JSONTokener( source ) );
+        this( new JSONTokenizer( source ) );
     }
 
     static boolean isStandardProperty( Class clazz )
@@ -1345,7 +1345,7 @@ public class JSONObject
     /**
      * Get an optional string associated with a key.
      * It returns an empty string if there is no such key. If the value is not
-     * a string and is not null, then it is coverted to a string.
+     * a string and is not null, then it is converted to a string.
      *
      * @param key A key string.
      * @return A string which is the value.

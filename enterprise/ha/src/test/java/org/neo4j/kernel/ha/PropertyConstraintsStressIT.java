@@ -465,7 +465,7 @@ public class PropertyConstraintsStressIT
     {
         @Override
         public void createEntity( HighlyAvailableGraphDatabase db, String type, String propertyKey, Object value,
-                boolean constraintComplient )
+                boolean constraintCompliant )
         {
             db.createNode( label( type ) ).setProperty( propertyKey, value );
         }

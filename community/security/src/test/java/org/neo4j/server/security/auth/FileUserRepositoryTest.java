@@ -79,7 +79,7 @@ public class FileUserRepositoryTest
     }
 
     @Test
-    public void shouldStoreAndRetriveUsersByName() throws Exception
+    public void shouldStoreAndRetrieveUsersByName() throws Exception
     {
         // Given
         FileUserRepository users = new FileUserRepository( fs, authFile, logProvider );
@@ -160,7 +160,7 @@ public class FileUserRepositoryTest
     {
         // Given
         final IOException exception = new IOException( "simulated IO Exception on create" );
-        FileSystemAbstraction craschingFileSystem =
+        FileSystemAbstraction crashingFileSystem =
             new DelegatingFileSystemAbstraction( fs )
             {
                 @Override
@@ -174,7 +174,7 @@ public class FileUserRepositoryTest
                 }
             };
 
-        FileUserRepository users = new FileUserRepository( craschingFileSystem, authFile, logProvider );
+        FileUserRepository users = new FileUserRepository( crashingFileSystem, authFile, logProvider );
         users.start();
         User user = new User.Builder( "jake", Credential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
 
@@ -190,8 +190,8 @@ public class FileUserRepositoryTest
         }
 
         // Then
-        assertFalse( craschingFileSystem.fileExists( authFile ) );
-        assertThat( craschingFileSystem.listFiles( authFile.getParentFile() ).length, equalTo( 0 ) );
+        assertFalse( crashingFileSystem.fileExists( authFile ) );
+        assertThat( crashingFileSystem.listFiles( authFile.getParentFile() ).length, equalTo( 0 ) );
     }
 
     @Test

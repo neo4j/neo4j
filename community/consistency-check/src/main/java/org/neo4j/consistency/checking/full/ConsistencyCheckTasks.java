@@ -101,7 +101,7 @@ public class ConsistencyCheckTasks
                     multiPass.processor( CheckStage.Stage1_NS_PropsLabels, PROPERTIES );
             tasks.add( create( CheckStage.Stage1_NS_PropsLabels.name(), nativeStores.getNodeStore(),
                     processor, ROUND_ROBIN ) );
-            //ReltionshipStore pass - check label counts using cached labels, check properties, skip nodes and relationships
+            //RelationshipStore pass - check label counts using cached labels, check properties, skip nodes and relationships
             processor = multiPass.processor( CheckStage.Stage2_RS_Labels, LABELS );
             multiPass.reDecorateRelationship( processor, RelationshipRecordCheck.relationshipRecordCheckForwardPass() );
             tasks.add( create( CheckStage.Stage2_RS_Labels.name(), nativeStores.getRelationshipStore(),

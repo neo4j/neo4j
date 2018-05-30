@@ -413,7 +413,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldThrowWhenMulitpleResultsForSingleNode()
+    public void shouldThrowWhenMultipleResultsForSingleNode()
     {
         // given
         GraphDatabaseService graph = dbRule.getGraphDatabaseAPI();

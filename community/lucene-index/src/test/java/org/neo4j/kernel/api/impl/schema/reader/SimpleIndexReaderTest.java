@@ -143,7 +143,7 @@ public class SimpleIndexReaderTest
     }
 
     @Test
-    public void nonUuniqueIndexSamplerForNonUniqueIndex()
+    public void nonUniqueIndexSamplerForNonUniqueIndex()
     {
         SimpleIndexReader uniqueSimpleReader = getNonUniqueSimpleReader();
         assertThat( uniqueSimpleReader.createSampler(), instanceOf( NonUniqueLuceneIndexSampler.class ) );

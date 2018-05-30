@@ -236,7 +236,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                 return true;
             }
 
-            private final ZonedDateTime defaulZonedDateTime =
+            private final ZonedDateTime defaultZonedDateTime =
                     ZonedDateTime.of( Field.year.defaultValue, Field.month.defaultValue, Field.day.defaultValue, Field.hour.defaultValue,
                             Field.minute.defaultValue, Field.second.defaultValue, Field.nanosecond.defaultValue, timezone() );
 
@@ -328,7 +328,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                 }
                 else
                 {
-                    result = defaulZonedDateTime;
+                    result = defaultZonedDateTime;
                     selectingTimeZone = false;
                 }
 

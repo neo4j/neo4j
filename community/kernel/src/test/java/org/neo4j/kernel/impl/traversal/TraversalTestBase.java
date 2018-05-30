@@ -228,7 +228,7 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
 
         if ( !expected.isEmpty() )
         {
-            fail( "The exepected elements " + expected + " were not returned. Returned were: " + encounteredItems );
+            fail( "The expected elements " + expected + " were not returned. Returned were: " + encounteredItems );
         }
     }
 

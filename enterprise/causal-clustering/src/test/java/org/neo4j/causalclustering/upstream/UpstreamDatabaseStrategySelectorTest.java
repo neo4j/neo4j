@@ -51,7 +51,7 @@ public class UpstreamDatabaseStrategySelectorTest
     private MemberId dummyMemberId = new MemberId( UUID.randomUUID() );
 
     @Test
-    public void shouldReturnTheMemberIdFromFirstSucessfulStrategy() throws Exception
+    public void shouldReturnTheMemberIdFromFirstSuccessfulStrategy() throws Exception
     {
         // given
         UpstreamDatabaseSelectionStrategy badOne = mock( UpstreamDatabaseSelectionStrategy.class );

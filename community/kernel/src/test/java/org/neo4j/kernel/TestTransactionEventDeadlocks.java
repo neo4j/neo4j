@@ -80,7 +80,7 @@ public class TestTransactionEventDeadlocks
         public Void beforeCommit( TransactionData data )
         {
             // TODO Hmm, makes me think... should we really call transaction event handlers
-            // for these relationship type / property index transasctions?
+            // for these relationship type / property index transactions?
             if ( Iterables.count( data.createdRelationships() ) == 0 )
             {
                 return null;

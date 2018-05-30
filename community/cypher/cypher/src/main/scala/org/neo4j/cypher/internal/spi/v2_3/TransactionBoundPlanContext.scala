@@ -28,7 +28,7 @@ import org.neo4j.graphdb.Node
 import org.neo4j.internal.kernel.api.exceptions.KernelException
 import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
-import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor
+import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptor
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 
 import scala.collection.JavaConverters._

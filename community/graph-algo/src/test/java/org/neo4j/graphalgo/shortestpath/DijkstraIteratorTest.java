@@ -52,7 +52,7 @@ public class DijkstraIteratorTest extends Neo4jAlgoTestCase
                 MyRelTypes.R1 );
         }
 
-        protected class TestIterator extends Dijkstra<Double>.DijstraIterator
+        protected class TestIterator extends Dijkstra<Double>.DijkstraIterator
         {
             public TestIterator( Node startNode,
                 HashMap<Node,List<Relationship>> predecessors,
@@ -82,7 +82,7 @@ public class DijkstraIteratorTest extends Neo4jAlgoTestCase
             HashMap<Node,Double> seen2 = new HashMap<>();
             HashMap<Node,Double> dists1 = new HashMap<>();
             HashMap<Node,Double> dists2 = new HashMap<>();
-            DijstraIterator iter1 = new TestIterator( graph.getNode( "start" ),
+            DijkstraIterator iter1 = new TestIterator( graph.getNode( "start" ),
                 predecessors1, seen1, seen2, dists1, dists2, false );
             // while ( iter1.hasNext() && !limitReached() && !iter1.isDone() )
             assertTrue( iter1.next().equals( graph.getNode( "start" ) ) );

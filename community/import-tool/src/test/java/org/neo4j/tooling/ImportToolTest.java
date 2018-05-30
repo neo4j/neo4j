@@ -2151,7 +2151,7 @@ public class ImportToolTest
                 Node endNode = nodesById.get( relationship.endNodeId );
                 if ( startNode == null || endNode == null )
                 {
-                    // OK this is a relationship refering to a missing node, skip it
+                    // OK this is a relationship referring to a missing node, skip it
                     continue;
                 }
                 assertNotNull( relationship.toString(), findRelationship( startNode, endNode, relationship ) );

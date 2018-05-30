@@ -258,7 +258,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case _: SetProperty |
            _: SetNodeProperty |
-           _: SetRelationshipPropery =>
+           _: SetRelationshipProperty =>
         PlanDescriptionImpl(id, "SetProperty", children, Seq.empty, variables)
 
       case _: SetRelationshipPropertiesFromMap =>

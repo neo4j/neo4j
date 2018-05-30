@@ -69,7 +69,7 @@ public class Man extends AbstractApp
 
         App app = this.getApp( parser );
         out.println( "" );
-        for ( String line : splitLongLine( fixDesciption( app.getDescription() ),
+        for ( String line : splitLongLine( fixDescription( app.getDescription() ),
                 CONSOLE_WIDTH ) )
         {
             out.println( line );
@@ -79,7 +79,7 @@ public class Man extends AbstractApp
         for ( String option : app.getAvailableOptions() )
         {
             hasOptions = true;
-            String description = fixDesciption( app.getDescription( option ) );
+            String description = fixDescription( app.getDescription( option ) );
             String[] descriptionLines = splitLongLine( description, CONSOLE_WIDTH );
             for ( int i = 0; i < descriptionLines.length; i++ )
             {
@@ -106,7 +106,7 @@ public class Man extends AbstractApp
         return "man <command>";
     }
 
-    private String fixDesciption( String description )
+    private String fixDescription( String description )
     {
         if ( description == null )
         {
@@ -180,7 +180,7 @@ public class Man extends AbstractApp
      *
      * @param server
      *            the {@link ShellServer}.
-     * @return a list of available commands a client can execute, whre the
+     * @return a list of available commands a client can execute, where the
      *         server is an {@link AppShellServer}.
      */
     public static synchronized Collection<String> getAvailableCommands(

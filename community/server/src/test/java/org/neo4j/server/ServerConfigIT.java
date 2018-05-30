@@ -70,7 +70,7 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldPickupRelativeUrisForMangementApiAndRestApi() throws IOException
+    public void shouldPickupRelativeUrisForManagementApiAndRestApi() throws IOException
     {
         String dataUri = "a/different/data/uri/";
         String managementUri = "a/different/management/uri/";

@@ -32,7 +32,7 @@ InModuleScope Neo4j-Management {
       }
     }
 
-    Context "Stop service succesfully but didn't stop" {
+    Context "Stop service successfully but didn't stop" {
       Mock Stop-Service { throw "Called Stop-Service incorrectly"}
       Mock Stop-Service -Verifiable { @{ Status = 'Stop Pending'} } -ParameterFilter { $Name -eq $global:mockServiceName}
 
@@ -48,7 +48,7 @@ InModuleScope Neo4j-Management {
       }
     }
 
-    Context "Stop service succesfully" {
+    Context "Stop service successfully" {
       Mock Stop-Service { throw "Called Stop-Service incorrectly"}
       Mock Stop-Service -Verifiable { @{ Status = 'Stopped'} } -ParameterFilter { $Name -eq $global:mockServiceName}
 

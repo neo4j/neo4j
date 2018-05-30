@@ -158,7 +158,7 @@ public class SchemaStorage implements SchemaRuleAccess
      *
      * @param predicate filter when loading.
      * @param returnType type of {@link SchemaRule} to load.
-     * @param ignoreMalformed whether or not to ignore inconsistent records (used in concsistency checking).
+     * @param ignoreMalformed whether or not to ignore inconsistent records (used in consistency checking).
      * @return {@link Iterator} of the loaded schema rules, lazily loaded when advancing the iterator.
      */
     <ReturnType extends SchemaRule> Iterator<ReturnType> loadAllSchemaRules(

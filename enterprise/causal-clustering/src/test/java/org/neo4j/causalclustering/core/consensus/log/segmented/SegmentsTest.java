@@ -161,7 +161,7 @@ public class SegmentsTest
             segments.prune( 10 );
 
             // Then
-            // the truncate file is part of the deletes that happen while prunning
+            // the truncate file is part of the deletes that happen while pruning
             verify( fsa, times( segmentFiles.size() ) ).deleteFile(
                     fileNames.getForVersion( toBePruned.header().version() ) );
         }
