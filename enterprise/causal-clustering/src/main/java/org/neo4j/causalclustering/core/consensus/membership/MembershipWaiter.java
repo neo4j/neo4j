@@ -30,6 +30,7 @@ import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.state.ExposedRaftState;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
@@ -54,15 +55,25 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 public class MembershipWaiter
 {
+    public interface Monitor
+    {
+        void waitingToHearFromLeader();
+
+        void waitingToCatchupWithLeader( long localCommitIndex, long leaderCommitIndex );
+
+        void joinedRaftGroup();
+    }
+
     private final MemberId myself;
     private final JobScheduler jobScheduler;
     private final Supplier<DatabaseHealth> dbHealthSupplier;
     private final long maxCatchupLag;
     private long currentCatchupDelayInMs;
     private final Log log;
+    private final Monitor monitor;
 
     public MembershipWaiter( MemberId myself, JobScheduler jobScheduler, Supplier<DatabaseHealth> dbHealthSupplier,
-            long maxCatchupLag, LogProvider logProvider )
+            long maxCatchupLag, LogProvider logProvider, Monitors monitors )
     {
         this.myself = myself;
         this.jobScheduler = jobScheduler;
@@ -70,6 +81,7 @@ public class MembershipWaiter
         this.maxCatchupLag = maxCatchupLag;
         this.currentCatchupDelayInMs = maxCatchupLag;
         this.log = logProvider.getLog( getClass() );
+        this.monitor = monitors.newMonitor( Monitor.class );
     }
 
     CompletableFuture<Boolean> waitUntilCaughtUpMember( RaftMachine raft )
@@ -114,6 +126,7 @@ public class MembershipWaiter
             else if ( iAmAVotingMember() && caughtUpWithLeader() )
             {
                 catchUpFuture.complete( Boolean.TRUE );
+                monitor.joinedRaftGroup();
             }
             else
             {
@@ -145,12 +158,11 @@ public class MembershipWaiter
             if ( lastLeaderCommit != -1 )
             {
                 caughtUpWithLeader = localCommit == lastLeaderCommit;
-                long gap = lastLeaderCommit - localCommit;
-                log.info( "%s Catchup: %d => %d (%d behind)", myself, localCommit, lastLeaderCommit, gap );
+                monitor.waitingToCatchupWithLeader( localCommit, lastLeaderCommit );
             }
             else
             {
-                log.info( "Leader commit unknown" );
+                monitor.waitingToHearFromLeader();
             }
             return caughtUpWithLeader;
         }

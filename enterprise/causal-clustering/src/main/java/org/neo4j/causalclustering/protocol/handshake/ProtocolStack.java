@@ -27,6 +27,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import org.neo4j.causalclustering.protocol.Protocol;
+
+import static java.lang.String.format;
+import static java.lang.String.join;
+import static java.util.stream.Collectors.toList;
 import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocol;
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocol;
 
@@ -75,7 +80,15 @@ public class ProtocolStack
     @Override
     public String toString()
     {
-        return "ProtocolStack{" + "applicationProtocol=" + applicationProtocol + ", modifierProtocols=" + modifierProtocols + '}';
+        String desc = format( "%s version:%d", applicationProtocol.category(), applicationProtocol.implementation() );
+        List<String> modifierNames = modifierProtocols.stream().map( Protocol::implementation ).collect( toList() );
+
+        if ( modifierNames.size() > 0 )
+        {
+            desc = format( "%s (%s)", desc, join( ", ", modifierNames ) );
+        }
+
+        return desc;
     }
 
     public static Builder builder()

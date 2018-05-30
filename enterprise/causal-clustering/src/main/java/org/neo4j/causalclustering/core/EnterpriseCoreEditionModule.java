@@ -49,6 +49,7 @@ import org.neo4j.causalclustering.core.state.ClusterStateException;
 import org.neo4j.causalclustering.core.state.ClusteringModule;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachinesModule;
 import org.neo4j.causalclustering.core.state.machines.id.FreeIdFilteredIdGeneratorFactory;
+import org.neo4j.causalclustering.diagnostics.CoreMonitor;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.TopologyService;
@@ -208,6 +209,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         final File storeDir = platformModule.storeDir;
         final LifeSupport life = platformModule.life;
 
+        CoreMonitor.register( logging.getInternalLogProvider(), logging.getUserLogProvider(), platformModule.monitors );
+
         final File dataDir = config.get( GraphDatabaseSettings.data_directory );
         final ClusterStateDirectory clusterStateDirectory = new ClusterStateDirectory( dataDir, storeDir, false );
         try
@@ -274,7 +277,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         Duration handshakeTimeout = config.get( CausalClusteringSettings.handshake_timeout );
         HandshakeClientInitializer channelInitializer = new HandshakeClientInitializer( applicationProtocolRepository, modifierProtocolRepository,
-                protocolInstallerRepository, clientPipelineBuilderFactory, handshakeTimeout, logProvider );
+                protocolInstallerRepository, clientPipelineBuilderFactory, handshakeTimeout, logProvider, platformModule.logging.getUserLogProvider() );
         final SenderService raftSender = new SenderService( channelInitializer, logProvider );
         life.add( raftSender );
         this.clientInstalledProtocols = raftSender::installedProtocols;

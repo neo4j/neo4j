@@ -129,8 +129,8 @@ public class BackupSupportingClassesFactory
         Collection<ModifierSupportedProtocols> supportedModifierProtocols = supportedProtocolCreator.createSupportedModifierProtocols();
         NettyPipelineBuilderFactory clientPipelineBuilderFactory = new NettyPipelineBuilderFactory( createPipelineWrapper( config ) );
         Duration handshakeTimeout = config.get( CausalClusteringSettings.handshake_timeout );
-        return new CatchupClientBuilder( supportedCatchupProtocols, supportedModifierProtocols, clientPipelineBuilderFactory, handshakeTimeout, logProvider,
-                clock ).build();
+        return new CatchupClientBuilder( supportedCatchupProtocols, supportedModifierProtocols, clientPipelineBuilderFactory, handshakeTimeout,
+                logProvider, logProvider, clock ).build();
     }
 
     private static BackupDelegator backupDelegator(
