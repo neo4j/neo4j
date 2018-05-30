@@ -41,7 +41,6 @@ import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
-import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
@@ -129,7 +128,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR,
                 fs, transactionMonitor, databaseHealth,
                 mock( LogFileCreationMonitor.class ), TransactionHeaderInformationFactory.DEFAULT,
-                new StartupStatisticsProvider(), new CommunityCommitProcessFactory(), mock( InternalAutoIndexing.class ), pageCache,
+                new CommunityCommitProcessFactory(), mock( InternalAutoIndexing.class ), pageCache,
                 new StandardConstraintSemantics(), monitors,
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler, clock ),
                 mock( Procedures.class ),
