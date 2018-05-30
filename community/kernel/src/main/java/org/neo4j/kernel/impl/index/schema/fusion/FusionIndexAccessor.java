@@ -96,7 +96,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     @Override
     public BoundedIterable<Long> newAllEntriesReader()
     {
-        Iterable<BoundedIterable<Long>> entries = instanceSelector.flatMap( IndexAccessor::newAllEntriesReader );
+        Iterable<BoundedIterable<Long>> entries = instanceSelector.transform( IndexAccessor::newAllEntriesReader );
         return new BoundedIterable<Long>()
         {
             @Override
@@ -133,7 +133,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     @Override
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
-        return concatResourceIterators( instanceSelector.flatMap( IndexAccessor::snapshotFiles ).iterator() );
+        return concatResourceIterators( instanceSelector.transform( IndexAccessor::snapshotFiles ).iterator() );
     }
 
     @Override
@@ -149,7 +149,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     @Override
     public boolean isDirty()
     {
-        return Iterables.stream( instanceSelector.flatMap( IndexAccessor::isDirty ) ).anyMatch( Boolean::booleanValue );
+        return Iterables.stream( instanceSelector.transform( IndexAccessor::isDirty ) ).anyMatch( Boolean::booleanValue );
     }
 
     @Override

@@ -110,7 +110,7 @@ class InstanceSelector<T>
      * @throws E exception from converter.
      */
     @SuppressWarnings( "unchecked" )
-    <R,E extends Exception> Iterable<R> flatMap( ThrowingFunction<T,R,E> converter ) throws E
+    <R,E extends Exception> Iterable<R> transform( ThrowingFunction<T,R,E> converter ) throws E
     {
         List<R> result = new ArrayList<>();
         for ( IndexSlot slot : IndexSlot.values() )

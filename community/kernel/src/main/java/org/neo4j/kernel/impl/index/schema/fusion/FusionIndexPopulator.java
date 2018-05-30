@@ -122,6 +122,6 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     @Override
     public IndexSample sampleResult()
     {
-        return combineSamples( instanceSelector.flatMap( IndexPopulator::sampleResult ) );
+        return combineSamples( instanceSelector.transform( IndexPopulator::sampleResult ) );
     }
 }

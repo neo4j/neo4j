@@ -142,7 +142,7 @@ public class FusionIndexProvider extends IndexProvider
     @Override
     public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
     {
-        Iterable<InternalIndexState> statesIterable = providers.flatMap( p -> p.getInitialState( descriptor ) );
+        Iterable<InternalIndexState> statesIterable = providers.transform( p -> p.getInitialState( descriptor ) );
         List<InternalIndexState> states = Iterables.asList( statesIterable );
         if ( states.contains( FAILED ) )
         {
@@ -161,7 +161,7 @@ public class FusionIndexProvider extends IndexProvider
     @Override
     public IndexCapability getCapability()
     {
-        Iterable<IndexCapability> capabilities = providers.flatMap( IndexProvider::getCapability );
+        Iterable<IndexCapability> capabilities = providers.transform( IndexProvider::getCapability );
         return new UnionIndexCapability( capabilities )
         {
             @Override
