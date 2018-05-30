@@ -48,7 +48,11 @@ public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWork
     @Override
     public void init() throws Throwable
     {
-        jobs.clear();
+        CleanupJob job;
+        while ( (job = jobs.poll()) != null )
+        {
+            job.close();
+        }
     }
 
     @Override
