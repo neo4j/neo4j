@@ -30,6 +30,7 @@ import org.neo4j.causalclustering.core.consensus.LeaderListener;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
+import org.neo4j.causalclustering.core.replication.monitoring.ReplicationMonitor;
 import org.neo4j.causalclustering.core.replication.session.LocalSessionPool;
 import org.neo4j.causalclustering.core.replication.session.OperationContext;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
@@ -38,6 +39,7 @@ import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -56,10 +58,11 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, Lead
     private final TimeoutStrategy leaderTimeoutStrategy;
     private final Log log;
     private final Throttler throttler;
+    private final ReplicationMonitor replicationMonitor;
 
     public RaftReplicator( LeaderLocator leaderLocator, MemberId me, Outbound<MemberId,RaftMessages.RaftMessage> outbound, LocalSessionPool sessionPool,
             ProgressTracker progressTracker, TimeoutStrategy progressTimeoutStrategy, TimeoutStrategy leaderTimeoutStrategy,
-            AvailabilityGuard availabilityGuard, LogProvider logProvider, long replicationLimit )
+            AvailabilityGuard availabilityGuard, LogProvider logProvider, long replicationLimit, Monitors monitors )
     {
         this.me = me;
         this.outbound = outbound;
@@ -72,6 +75,7 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, Lead
         this.leaderLocator = leaderLocator;
         leaderLocator.registerListener( this );
         log = logProvider.getLog( getClass() );
+        replicationMonitor = monitors.newMonitor( ReplicationMonitor.class );
     }
 
     @Override
@@ -106,58 +110,68 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, Lead
 
     private Future<Object> replicate0( ReplicatedContent command, boolean trackResult, MemberId leader ) throws ReplicationFailureException
     {
-        assertNoLeaderSwitch( leader );
-
-        OperationContext session = sessionPool.acquireSession();
-
-        DistributedOperation operation = new DistributedOperation( command, session.globalSession(), session.localOperationId() );
-        Progress progress = progressTracker.start( operation );
-
-        TimeoutStrategy.Timeout progressTimeout = progressTimeoutStrategy.newTimeout();
-        TimeoutStrategy.Timeout leaderTimeout = leaderTimeoutStrategy.newTimeout();
+        replicationMonitor.startReplication( command );
         try
         {
-            do
+            assertNoLeaderSwitch( leader );
+
+            OperationContext session = sessionPool.acquireSession();
+
+            DistributedOperation operation = new DistributedOperation( command, session.globalSession(), session.localOperationId() );
+            Progress progress = progressTracker.start( operation );
+
+            TimeoutStrategy.Timeout progressTimeout = progressTimeoutStrategy.newTimeout();
+            TimeoutStrategy.Timeout leaderTimeout = leaderTimeoutStrategy.newTimeout();
+            try
             {
-                assertDatabaseNotShutdown();
-                try
+                do
                 {
-                    // blocking at least until the send has succeeded or failed before retrying
-                    outbound.send( leader, new RaftMessages.NewEntry.Request( me, operation ), true );
+                    replicationMonitor.replicationAttempt();
+                    assertDatabaseNotShutdown();
+                    try
+                    {
+                        // blocking at least until the send has succeeded or failed before retrying
+                        outbound.send( leader, new RaftMessages.NewEntry.Request( me, operation ), true );
 
-                    leaderTimeout = leaderTimeoutStrategy.newTimeout();
+                        leaderTimeout = leaderTimeoutStrategy.newTimeout();
 
-                    progress.awaitReplication( progressTimeout.getMillis() );
-                    progressTimeout.increment();
-                    leader = leaderLocator.getLeader();
+                        progress.awaitReplication( progressTimeout.getMillis() );
+                        progressTimeout.increment();
+                        leader = leaderLocator.getLeader();
+                    }
+                    catch ( NoLeaderFoundException e )
+                    {
+                        log.debug( "Could not replicate operation " + operation + " because no leader was found. Retrying.", e );
+                        Thread.sleep( leaderTimeout.getMillis() );
+                        leaderTimeout.increment();
+                    }
                 }
-                catch ( NoLeaderFoundException e )
-                {
-                    log.debug( "Could not replicate operation " + operation + " because no leader was found. Retrying.", e );
-                    Thread.sleep( leaderTimeout.getMillis() );
-                    leaderTimeout.increment();
-                }
+                while ( !progress.isReplicated() );
             }
-            while ( !progress.isReplicated() );
-        }
-        catch ( InterruptedException e )
-        {
-            progressTracker.abort( operation );
-            throw new ReplicationFailureException( "Interrupted while replicating", e );
-        }
+            catch ( InterruptedException e )
+            {
+                progressTracker.abort( operation );
+                throw new ReplicationFailureException( "Interrupted while replicating", e );
+            }
 
-        BiConsumer<Object,Throwable> cleanup = ( ignored1, ignored2 ) -> sessionPool.releaseSession( session );
+            BiConsumer<Object,Throwable> cleanup = ( ignored1, ignored2 ) -> sessionPool.releaseSession( session );
 
-        if ( trackResult )
-        {
-            progress.futureResult().whenComplete( cleanup );
+            if ( trackResult )
+            {
+                progress.futureResult().whenComplete( cleanup );
+            }
+            else
+            {
+                cleanup.accept( null, null );
+            }
+            replicationMonitor.successfulReplication();
+            return progress.futureResult();
         }
-        else
+        catch ( Throwable t )
         {
-            cleanup.accept( null, null );
+            replicationMonitor.failedReplication( t );
+            throw t;
         }
-
-        return progress.futureResult();
     }
 
     private void assertNoLeaderSwitch( MemberId originalLeader ) throws ReplicationFailureException
