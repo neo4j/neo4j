@@ -28,13 +28,13 @@ import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContext
 
 object EnterpriseRuntimeFactory {
 
-  val interpreted = new FallbackRuntime(List(InterpretedRuntime), CypherRuntimeOption.interpreted)
-  val slotted = new FallbackRuntime(List(SlottedRuntime), CypherRuntimeOption.slotted)
-  val compiledWithoutFallback = new FallbackRuntime(List(CompiledRuntime), CypherRuntimeOption.compiled)
-  val compiled = new FallbackRuntime(List(CompiledRuntime, SlottedRuntime), CypherRuntimeOption.compiled)
-  val morselWithoutFallback = new FallbackRuntime(List(MorselRuntime), CypherRuntimeOption.morsel)
-  val morsel = new FallbackRuntime(List(MorselRuntime, CompiledRuntime, SlottedRuntime), CypherRuntimeOption.morsel)
-  val default = new FallbackRuntime(List(CompiledRuntime, SlottedRuntime), CypherRuntimeOption.default)
+  val interpreted = new FallbackRuntime[EnterpriseRuntimeContext](List(InterpretedRuntime), CypherRuntimeOption.interpreted)
+  val slotted = new FallbackRuntime[EnterpriseRuntimeContext](List(SlottedRuntime), CypherRuntimeOption.slotted)
+  val compiledWithoutFallback = new FallbackRuntime[EnterpriseRuntimeContext](List(CompiledRuntime), CypherRuntimeOption.compiled)
+  val compiled = new FallbackRuntime[EnterpriseRuntimeContext](List(CompiledRuntime, SlottedRuntime), CypherRuntimeOption.compiled)
+  val morselWithoutFallback = new FallbackRuntime[EnterpriseRuntimeContext](List(MorselRuntime), CypherRuntimeOption.morsel)
+  val morsel = new FallbackRuntime[EnterpriseRuntimeContext](List(MorselRuntime, CompiledRuntime, SlottedRuntime), CypherRuntimeOption.morsel)
+  val default = new FallbackRuntime[EnterpriseRuntimeContext](List(CompiledRuntime, SlottedRuntime), CypherRuntimeOption.default)
 
   def getRuntime(cypherRuntime: CypherRuntimeOption, disallowFallback: Boolean): CypherRuntime[EnterpriseRuntimeContext] =
     cypherRuntime match {

@@ -19,16 +19,14 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.CypherRuntimeOption
+import org.neo4j.cypher.{CypherRuntimeOption, InvalidArgumentException}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.CommunityRuntimeContext
-import org.neo4j.cypher.internal.compatibility.{FallbackRuntime, InterpretedRuntime, CypherRuntime, UnknownRuntime}
-import org.opencypher.v9_0.util.InvalidArgumentException
+import org.neo4j.cypher.internal.compatibility.{CypherRuntime, FallbackRuntime, InterpretedRuntime, UnknownRuntime}
 
 object CommunityRuntimeFactory {
 
-  val interpreted = new FallbackRuntime(List(InterpretedRuntime), CypherRuntimeOption.interpreted)
-  val default = new FallbackRuntime(List(InterpretedRuntime), CypherRuntimeOption.default)
-  val unsupportedWithFallback = new FallbackRuntime(List(UnknownRuntime, InterpretedRuntime), CypherRuntimeOption.default)
+  val interpreted = new FallbackRuntime[CommunityRuntimeContext](List(InterpretedRuntime), CypherRuntimeOption.interpreted)
+  val default = new FallbackRuntime[CommunityRuntimeContext](List(InterpretedRuntime), CypherRuntimeOption.default)
 
   def getRuntime(cypherRuntime: CypherRuntimeOption, disallowFallback: Boolean): CypherRuntime[CommunityRuntimeContext] =
     cypherRuntime match {
@@ -39,6 +37,6 @@ object CommunityRuntimeFactory {
       case unsupported if disallowFallback =>
         throw new InvalidArgumentException(s"This version of Neo4j does not support requested runtime: $unsupported")
 
-      case unsupported => unsupportedWithFallback
+      case unsupported => new FallbackRuntime[CommunityRuntimeContext](List(UnknownRuntime, InterpretedRuntime), unsupported)
     }
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility
 
-import org.neo4j.cypher.CypherRuntimeOption
+import org.neo4j.cypher.{CypherRuntimeOption, InvalidArgumentException, exceptionHandler}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
@@ -67,17 +67,30 @@ object UnknownRuntime extends CypherRuntime[CommunityRuntimeContext] {
 class FallbackRuntime[CONTEXT <: CommunityRuntimeContext](runtimes: Seq[CypherRuntime[CONTEXT]],
                                                           requestedRuntime: CypherRuntimeOption) extends CypherRuntime[CONTEXT] {
 
-  val cantCompile = new CantCompileQueryException(s"This version of Neo4j does not support requested runtime: ${requestedRuntime.name}")
+  private val PublicCannotCompile =
+    {
+      val message = s"This version of Neo4j does not support requested runtime: ${requestedRuntime.name}"
+      val invalidArgument = new InvalidArgumentException(message)
+      new org.neo4j.graphdb.QueryExecutionException(message, invalidArgument, invalidArgument.status.code().serialize())
+    }
 
   override def compileToExecutable(logicalPlan: LogicalPlanState, context: CONTEXT): ExecutionPlan = {
     var executionPlan: Try[ExecutionPlan] = Try(ProcedureCallOrSchemaCommandRuntime.compileToExecutable(logicalPlan, context))
 
     for (runtime <- runtimes if executionPlan.isFailure) {
-      executionPlan = Try(runtime.compileToExecutable(logicalPlan, context))
-      if (executionPlan.isFailure)
+      executionPlan =
+        Try(
+          exceptionHandler.runSafely(
+            runtime.compileToExecutable(logicalPlan, context)
+          )
+        )
+
+      if (executionPlan.isFailure && requestedRuntime != CypherRuntimeOption.default)
         context.notificationLogger.log(RuntimeUnsupportedNotification)
     }
 
-    executionPlan.orElse(Failure(cantCompile)).get
+    executionPlan.recover({
+      case e: CantCompileQueryException => throw PublicCannotCompile
+    }).get
   }
 }
