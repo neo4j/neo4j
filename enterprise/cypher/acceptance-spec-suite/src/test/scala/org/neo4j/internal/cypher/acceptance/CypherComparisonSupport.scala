@@ -644,9 +644,9 @@ object CypherComparisonSupport {
     def Procs: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.ProcedureOrSchema)
 
     /**
-      * Handy configs for things only supported from 3.3 (not rule) and for checking plans
+      * Handy configs for things not supported in older versions
       */
-    def OldAndRule: TestConfiguration = Cost2_3 + Cost3_1 + AllRulePlanners
+    def OldAndRule: TestConfiguration = BackwardsCompatibility + AllRulePlanners
 
     /**
       * Configs which support CREATE, DELETE, SET, REMOVE, MERGE etc.

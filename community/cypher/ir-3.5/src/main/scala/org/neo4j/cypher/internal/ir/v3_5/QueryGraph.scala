@@ -360,7 +360,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
   override def toString: String = {
     var added = false
     val builder = new StringBuilder("QueryGraph {")
-    val stringifier = ExpressionStringifier()
+    val stringifier = ExpressionStringifier(_.asCanonicalStringVal)
 
     def prettyPattern(p: PatternRelationship): String = {
       val lArrow = if (p.dir == SemanticDirection.INCOMING) "<" else ""

@@ -107,14 +107,14 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
   }
 
   private def createLogicalPlan(idName: String,
-                  hints: Seq[Hint],
-                  argumentIds: Set[String],
-                  labelPredicate: HasLabels,
-                  labelName: LabelName,
-                  labelId: LabelId,
-                  plannables: Seq[IndexPlannableExpression],
-                  context: LogicalPlanningContext,
-                  semanticTable: SemanticTable ): LogicalPlan = {
+                                hints: Seq[Hint],
+                                argumentIds: Set[String],
+                                labelPredicate: HasLabels,
+                                labelName: LabelName,
+                                labelId: LabelId,
+                                plannables: Seq[IndexPlannableExpression],
+                                context: LogicalPlanningContext,
+                                semanticTable: SemanticTable): LogicalPlan = {
     val hint = {
       val name = idName
       val propertyNames = plannables.map(_.propertyKeyName.name)
@@ -139,7 +139,6 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     if (plannables.length == 1)
       plannables.head.queryExpression
     else {
-      val expressions: Seq[Expression] = plannables.flatMap(_.queryExpression.expressions)
       CompositeQueryExpression(plannables.map(_.queryExpression))
     }
 
@@ -169,7 +168,8 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       IndexPlannableExpression(seekable.name, propertyKey, partialPredicate, queryExpression, hints, argumentIds, solvesPredicate = true)
 
     // n.prop <|<=|>|>= value
-    case predicate@AsValueRangeSeekable(seekable) =>
+    case predicate@AsValueRangeSeekable(seekable)
+      if predicate.asInstanceOf[AndedPropertyInequalities].inequalities.forall(x => (x.rhs.dependencies -- arguments).isEmpty) =>
       val queryExpression = seekable.asQueryExpression
       val keyName = seekable.propertyKeyName
       IndexPlannableExpression(seekable.name, keyName, predicate, queryExpression, hints, argumentIds, solvesPredicate = true)
