@@ -187,10 +187,13 @@ _read_config() {
       if [[ "${key}" =~ ^(.*)_([0-9]+)$ ]]; then
         key="${BASH_REMATCH[1]}"
       fi
-      if [[ "${!key:-}" ]]; then
-        export ${key}="${!key} ${value}"
-      else
-        export ${key}="${value}"
+      # Ignore keys that start with a number because export ${key}= will fail - it is not valid for a bash env var to start with a digit
+      if [[ ! "${key}" =~ ^[0-9]+.*$ ]]; then
+        if [[ "${!key:-}" ]]; then
+          export ${key}="${!key} ${value}"
+        else
+          export ${key}="${value}"
+        fi
       fi
     fi
   }
