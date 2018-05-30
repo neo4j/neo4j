@@ -646,6 +646,8 @@ object CypherComparisonSupport {
     /**
       * Handy configs for things not supported in older versions
       */
+    def Before3_3AndRule: TestConfiguration = Cost2_3 + Cost3_1 + AllRulePlanners
+
     def OldAndRule: TestConfiguration = BackwardsCompatibility + AllRulePlanners
 
     /**

@@ -194,7 +194,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val r1 = relate(node1, node2)
 
     val query = "MATCH (a)-[r]-(b) RETURN a, r, b, count(a) ORDER BY a, r, b"
-    val result = executeWith(Configs.All - Configs.OldAndRule, query) // Neo4j version <= 3.1 cannot order by nodes
+    val result = executeWith(Configs.All - Configs.Before3_3AndRule, query) // Neo4j version <= 3.1 cannot order by nodes
     result.toList should equal(List(
       Map("a" -> node1, "r" -> r1, "b" -> node2, "count(a)" -> 1),
       Map("a" -> node2, "r" -> r1, "b" -> node1, "count(a)" -> 1)
@@ -207,7 +207,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val r1 = relate(node1, node2)
 
     val query = "MATCH (a)-[r]-(b) RETURN a, r, b, a.prop as s, count(a) ORDER BY a, r, b, s"
-    val result = executeWith(Configs.All - Configs.OldAndRule, query) // Neo4j version <= 3.1 cannot order by nodes
+    val result = executeWith(Configs.All - Configs.Before3_3AndRule, query) // Neo4j version <= 3.1 cannot order by nodes
     result.toList should equal(List(
       Map("a" -> node1, "r" -> r1, "b" -> node2, "s" -> "alice", "count(a)" -> 1),
       Map("a" -> node2, "r" -> r1, "b" -> node1, "s" -> "bob", "count(a)" -> 1)

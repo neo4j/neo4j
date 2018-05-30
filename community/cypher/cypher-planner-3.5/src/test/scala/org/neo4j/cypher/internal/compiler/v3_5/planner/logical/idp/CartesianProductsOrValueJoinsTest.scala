@@ -205,7 +205,6 @@ class CartesianProductsOrValueJoinsTest
     val qg1 = QueryGraph.empty.withPatternNodes(Set("n"))
     val qg2 = QueryGraph.empty.withPatternNodes(Set("x"))
 
-     
     // when
     val result = cartesianProductsOrValueJoins.predicatesDependendingOnBothSides(Seq(predicate1, predicate2), qg1, qg2)
 

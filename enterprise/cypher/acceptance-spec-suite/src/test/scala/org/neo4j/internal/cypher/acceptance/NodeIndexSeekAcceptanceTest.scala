@@ -79,7 +79,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         plan should useOperatorTimes("NodeIndexSeek", 2)
         plan should useOperators("Union")
-    }, expectPlansToFail = Configs.OldAndRule))
+    }, expectPlansToFail = Configs.Before3_3AndRule))
 
     result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
   }
@@ -99,7 +99,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         plan should useOperatorTimes("NodeIndexScan", 2)
         plan should useOperators("Union")
-      }, expectPlansToFail = Configs.OldAndRule))
+      }, expectPlansToFail = Configs.Before3_3AndRule))
 
     result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
   }
@@ -119,7 +119,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         plan should useOperatorTimes("NodeIndexSeekByRange", 2)
         plan should useOperators("Union")
-      }, expectPlansToFail = Configs.OldAndRule))
+      }, expectPlansToFail = Configs.Before3_3AndRule))
 
     result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
   }
@@ -139,7 +139,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         plan should useOperatorTimes("NodeIndexScan", 2)
         plan should useOperators("Union")
-      }, expectPlansToFail = Configs.OldAndRule))
+      }, expectPlansToFail = Configs.Before3_3AndRule))
 
     result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
   }
@@ -157,7 +157,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         plan should useOperatorTimes("NodeIndexScan", 2)
         plan should useOperators("Union")
-      }, expectPlansToFail = Configs.OldAndRule))
+      }, expectPlansToFail = Configs.Before3_3AndRule))
 
     result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
   }
@@ -309,7 +309,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     // When
     val result = executeWith(Configs.All,
       "MATCH (root:Company) WHERE root.uuid IN {uuids} RETURN DISTINCT root",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeIndexSeek", 1), expectPlansToFail = Configs.OldAndRule),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeIndexSeek", 1), expectPlansToFail = Configs.Before3_3AndRule),
       params = Map("uuids" -> Array("a", "b", "c")))
 
     //Then
@@ -327,7 +327,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     // When
     val result = executeWith(Configs.All,
       "MATCH (root:Company) WHERE root.uuid IN {uuids} RETURN DISTINCT root",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeIndexSeek", 1), expectPlansToFail = Configs.OldAndRule),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeIndexSeek", 1), expectPlansToFail = Configs.Before3_3AndRule),
       params = Map("uuids" -> Array(1, 2, 3)))
 
     //Then
