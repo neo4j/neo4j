@@ -79,18 +79,18 @@ class FulltextFactory
         return analyzer;
     }
 
-    LuceneFulltext createFulltextIndex( String identifier, FulltextIndexType type, List<String> properties )
+    LuceneFulltext createFulltextIndex( String identifier, int side, FulltextIndexType type, List<String> properties )
     {
-        File indexRootFolder = new File( indexDir, identifier );
+        File indexRootFolder = new File( indexDir, identifier + side );
         LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
         storageBuilder.withFileSystem( fileSystem ).withIndexFolder( indexRootFolder );
         PartitionedIndexStorage storage = storageBuilder.build();
         return new LuceneFulltext( storage, partitionFactory, properties, analyzer, identifier, type );
     }
 
-    LuceneFulltext openFulltextIndex( String identifier, FulltextIndexType type ) throws IOException
+    LuceneFulltext openFulltextIndex( String identifier, int side, FulltextIndexType type ) throws IOException
     {
-        File indexRootFolder = new File( indexDir, identifier );
+        File indexRootFolder = new File( indexDir, identifier + side );
         LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
         storageBuilder.withFileSystem( fileSystem ).withIndexFolder( indexRootFolder );
         PartitionedIndexStorage storage = storageBuilder.build();

@@ -50,8 +50,7 @@ class LuceneFulltext extends AbstractLuceneIndex
     private volatile InternalIndexState state;
 
     LuceneFulltext( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, Collection<String> properties, Analyzer analyzer,
-            String identifier,
-                    FulltextIndexType type )
+            String identifier, FulltextIndexType type )
     {
         super( indexStorage, partitionFactory );
         this.properties = Collections.unmodifiableSet( new HashSet<>( properties ) );

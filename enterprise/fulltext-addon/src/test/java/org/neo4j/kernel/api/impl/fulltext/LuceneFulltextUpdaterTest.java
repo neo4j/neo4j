@@ -45,7 +45,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( "nodes", NODES, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
 
             long firstID;
             long secondID;
@@ -58,7 +57,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 
                 tx.success();
             }
-
+            provider.awaitFlip();
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
                 assertExactQueryFindsIds( reader, "hello", false, firstID );
@@ -75,7 +74,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( "nodes", NODES, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
 
             long firstID;
             long secondID;
@@ -86,7 +84,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 
                 tx.success();
             }
-
+            provider.awaitFlip();
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
                 assertExactQueryFindsIds( reader, "1", false, firstID );
@@ -101,7 +99,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( "nodes", NODES, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
 
             long firstID;
             long secondID;
@@ -112,7 +109,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 
                 tx.success();
             }
-
+            provider.awaitFlip();
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
                 assertExactQueryFindsIds( reader, "true", false, firstID );
@@ -127,7 +124,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( "nodes", NODES, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
 
             long firstID;
             long secondID;
@@ -140,6 +136,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 
                 tx.success();
             }
+            provider.awaitFlip();
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
@@ -156,7 +153,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( "nodes", NODES, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
 
             long firstID;
             long secondID;
@@ -176,6 +172,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 
                 tx.success();
             }
+            provider.awaitFlip();
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
@@ -196,7 +193,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( "nodes", NODES, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
 
             long firstID;
             long secondID;
@@ -209,7 +205,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 
                 tx.success();
             }
-
+            provider.awaitFlip();
             try ( Transaction tx = db.beginTx() )
             {
                 db.getNodeById( firstID ).delete();
@@ -217,7 +213,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 
                 tx.success();
             }
-
+            provider.awaitFlip();
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
                 assertExactQueryFindsNothing( reader, "hello" );
@@ -234,7 +230,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( "nodes", NODES, Arrays.asList( "prop", "prop2" ) );
-            provider.registerTransactionEventHandler();
 
             long firstID;
             long secondID;
@@ -269,7 +264,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 
                 tx.success();
             }
-
+            provider.awaitFlip();
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
                 assertExactQueryFindsIds( reader, "hello", false, secondID );
@@ -283,10 +278,9 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     @Test
     public void shouldOnlyIndexIndexedProperties() throws Exception
     {
-        try ( FulltextProvider provider = createProvider() )
+        try ( FulltextProvider provider = createProvider(); )
         {
             provider.createIndex( "nodes", NODES, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
 
             long firstID;
             try ( Transaction tx = db.beginTx() )
@@ -300,6 +294,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 
                 tx.success();
             }
+            provider.awaitFlip();
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
@@ -315,7 +310,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( "nodes", NODES, Arrays.asList( "prop", "prop2" ) );
-            provider.registerTransactionEventHandler();
 
             long firstID;
             long secondID;
@@ -332,6 +326,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 
                 tx.success();
             }
+            provider.awaitFlip();
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
@@ -346,7 +341,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( "nodes", NODES, Arrays.asList( "first", "last" ) );
-            provider.registerTransactionEventHandler();
 
             long firstID;
             long secondID;
@@ -369,7 +363,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 
                 tx.success();
             }
-
+            provider.awaitFlip();
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
                 assertExactQueryFindsIdsInOrder( reader, Arrays.asList( "Tom", "Hanks" ), false, fourthID, thirdID, firstID, secondID );
@@ -384,7 +378,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         {
             provider.createIndex( "nodes", NODES, singletonList( "prop" ) );
             provider.createIndex( "relationships", RELATIONSHIPS, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
 
             long firstNodeID;
             long secondNodeID;
@@ -403,7 +396,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 
                 tx.success();
             }
-
+            provider.awaitFlip();
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
                 assertExactQueryFindsIds( reader, "hello", false, firstNodeID );
@@ -425,7 +418,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( "nodes", NODES, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
 
             long firstID;
             long secondID;
@@ -438,6 +430,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 
                 tx.success();
             }
+            provider.awaitFlip();
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
@@ -459,7 +452,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( "nodes", NODES, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
 
             long firstID;
             long secondID;
@@ -474,7 +466,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 
                 tx.success();
             }
-
+            provider.awaitFlip();
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
                 assertFuzzyQueryFindsIdsInOrder( reader, "zebra", true, thirdID, secondID, fourthID, firstID );
@@ -489,7 +481,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         {
             provider.createIndex( "nodes", NODES, singletonList( "prop" ) );
             provider.createIndex( "relationships", RELATIONSHIPS, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
 
             try ( Transaction tx = db.beginTx() )
             {
@@ -543,7 +534,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         {
             provider.createIndex( "nodes", NODES, singletonList( "prop" ) );
             provider.createIndex( "relationships", RELATIONSHIPS, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
             provider.awaitPopulation();
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
@@ -569,7 +559,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( "nodes", NODES, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
             String[] luceneSyntaxElements =
                     {"+", "-", "&&", "||", "!", "(", ")", "{", "}", "[", "]", "^", "\"", "~", "*", "?", ":", "\\"};
 
@@ -583,7 +572,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             for ( String elm : luceneSyntaxElements )
             {
                 setNodeProp( nodeId, "Hello" + elm + " How are you " + elm + "today?" );
-
+                provider.awaitFlip();
                 try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
                 {
                     assertExactQueryFindsIds( reader, "Hello" + elm, false, nodeId );
@@ -599,7 +588,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( "nodes", NODES, Arrays.asList( "first", "last" ) );
-            provider.registerTransactionEventHandler();
 
             long firstID;
             long secondID;
@@ -626,7 +614,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 
                 tx.success();
             }
-
+            provider.awaitFlip();
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
                 assertExactQueryFindsIds( reader, Arrays.asList( "Tom", "Hanks" ), true, thirdID, fourthID, fifthID );
@@ -640,7 +628,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( "nodes", NODES, Arrays.asList( "first", "last" ) );
-            provider.registerTransactionEventHandler();
 
             long firstID;
             long secondID;
@@ -667,7 +654,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 
                 tx.success();
             }
-
+            provider.awaitFlip();
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
                 assertFuzzyQueryFindsIds( reader, Arrays.asList( "Tom", "Hanks" ), true, thirdID, fourthID, fifthID );
@@ -681,7 +668,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( "nodes", NODES, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
 
             long firstID;
             long secondID;
@@ -697,14 +683,14 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
                 thirdID = createNodeIndexableByPropertyValue( "zebra" );
                 tx.success();
             }
-
+            provider.awaitFlip();
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
                 assertExactQueryFindsIds( reader, Arrays.asList( "thing", "zebra" ), false, firstID, thirdID );
             }
 
             provider.changeIndexedProperties( "nodes", NODES, Collections.singletonList( "prop2" ) );
-
+            provider.awaitPopulation();
             try ( Transaction tx = db.beginTx() )
             {
                 setNodeProp( firstID, "prop2", "thing" );
@@ -714,6 +700,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
                 tx.success();
             }
 
+            provider.awaitFlip();
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
                 assertExactQueryFindsIds( reader, Arrays.asList( "thing", "zebra" ), false, firstID, secondID, fourthID );
@@ -727,7 +714,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         try ( FulltextProviderImpl provider = createProvider() )
         {
             provider.createIndex( "nodes", NODES, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
 
             long firstID;
             long secondID;
@@ -758,7 +744,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( "nodes", NODES, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
 
             int aliceThreads = 10;
             int bobthreads = 10;
@@ -802,7 +787,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             race.addContestant( changeConfig );
             race.addContestants( bobthreads, bobWork );
             race.go();
-
+            provider.awaitFlip();
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
                 ScoreEntityIterator bob = reader.query( singletonList( "bob" ), true );

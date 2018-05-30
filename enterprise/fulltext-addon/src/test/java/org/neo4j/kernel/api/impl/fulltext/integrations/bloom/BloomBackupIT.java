@@ -39,6 +39,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -46,6 +47,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomFulltextConfig.bloom_enabled;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.AWAIT_POPULATION;
+import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.AWAIT_REFRESH;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.ENTITYID;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.NODES;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.RELS;
@@ -54,11 +56,14 @@ import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.SET_
 import static org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings.online_backup_enabled;
 import static org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings.online_backup_server;
 import static org.neo4j.ports.allocation.PortAuthority.allocatePort;
+import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class BloomBackupIT
 {
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Rule
+    public SuppressOutput suppressOutput = suppressAll();
     private GraphDatabaseAPI db;
     private int backupPort;
 
@@ -78,6 +83,7 @@ public class BloomBackupIT
     {
         registerProcedures( db );
         setupIndicesAndInitialData();
+        db.execute( AWAIT_REFRESH );
 
         File backupDir = new File( db.getStoreDir().getParentFile(), "backup" );
         OnlineBackup.from( "127.0.0.1", backupPort ).backup( backupDir );
@@ -94,6 +100,7 @@ public class BloomBackupIT
     {
         registerProcedures( db );
         setupIndicesAndInitialData();
+        db.execute( AWAIT_REFRESH );
 
         // Full backup
         File backupDir = new File( db.getStoreDir().getParentFile(), "backup" );
@@ -116,6 +123,7 @@ public class BloomBackupIT
             additionalRelId = relationship.getId();
             transaction.success();
         }
+        db.execute( AWAIT_REFRESH );
 
         //Incremental backup
         OnlineBackup.from( "127.0.0.1", backupPort ).backup( backupDir );

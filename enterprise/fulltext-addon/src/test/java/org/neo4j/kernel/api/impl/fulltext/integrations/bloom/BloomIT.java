@@ -76,6 +76,7 @@ public class BloomIT
     static final String GET_NODE_KEYS = "CALL bloom.getIndexedNodePropertyKeys";
     static final String GET_REL_KEYS = "CALL bloom.getIndexedRelationshipPropertyKeys";
     static final String AWAIT_POPULATION = "CALL bloom.awaitPopulation";
+    static final String AWAIT_REFRESH = "CALL bloom.awaitRefresh";
     static final String STATUS = "CALL bloom.indexStatus";
 
     @Rule
@@ -128,6 +129,7 @@ public class BloomIT
             relationship.setProperty( "relprop", "They relate" );
             transaction.success();
         }
+        db.execute( AWAIT_REFRESH );
 
         Result result = db.execute( String.format( NODES, "\"integration\"") );
         assertTrue( result.hasNext() );
@@ -157,6 +159,7 @@ public class BloomIT
             relationship.setProperty( "prop", "They relate" );
             transaction.success();
         }
+        db.execute( AWAIT_REFRESH );
 
         Result result = db.execute( String.format( NODES_ADVANCED, "\"integration\"", false, false ) );
         assertEquals( 0L, result.next().get( ENTITYID ) );
@@ -188,6 +191,7 @@ public class BloomIT
             relationship.setProperty( "prop", "They relate" );
             transaction.success();
         }
+        db.execute( AWAIT_REFRESH );
 
         Result result = db.execute( String.format( NODES_ADVANCED, "\"integration\", \"related\"", false, true ) );
         assertEquals( 1L, result.next().get( ENTITYID ) );
@@ -213,7 +217,7 @@ public class BloomIT
             node2.setProperty( "prop", "tase" );
             transaction.success();
         }
-
+        db.execute( AWAIT_REFRESH );
         Result result = db.execute( String.format( NODES, "\"integration\", \"test\", \"involves\", \"scoring\", \"needs\", \"sentence\"" ) );
         assertTrue( result.hasNext() );
         Map<String,Object> firstResult = result.next();
@@ -238,6 +242,7 @@ public class BloomIT
             node2.setProperty( "prop", "tase" );
             transaction.success();
         }
+        db.execute( AWAIT_REFRESH );
 
         Result result = db.execute( String.format( NODES, "\"integration test involves scoring needs sentence\"" ) );
         assertTrue( result.hasNext() );
@@ -264,6 +269,7 @@ public class BloomIT
             node2.setProperty( "prop", "There is a sentance" );
             transaction.success();
         }
+        db.execute( AWAIT_REFRESH );
 
         Result result = db.execute( String.format( NODES, "\"is\"") );
         assertEquals( 1L, result.next().get( ENTITYID ) );
@@ -324,6 +330,7 @@ public class BloomIT
 
         // Verify it's indexed exactly once
         db.execute( AWAIT_POPULATION ).close();
+        db.execute( AWAIT_REFRESH );
         Result result = db.execute( String.format( NODES, "\"Jyllingevej\"") );
         assertTrue( result.hasNext() );
         assertEquals( nodeId, result.next().get( ENTITYID ) );
@@ -356,14 +363,14 @@ public class BloomIT
         }
 
         // Verify it's indexed exactly once
-        db.execute( AWAIT_POPULATION ).close();
+        db.execute( AWAIT_REFRESH ).close();
         Result result = db.execute( String.format( NODES, "\"Jyllingevej\"" ) );
         assertTrue( result.hasNext() );
         assertEquals( nodeId, result.next().get( ENTITYID ) );
         assertFalse( result.hasNext() );
         db.execute( String.format( SET_NODE_KEYS, "" ) );
 
-        db.execute( AWAIT_POPULATION ).close();
+        db.execute( AWAIT_REFRESH ).close();
         // Verify it's nowhere to be found now
         result = db.execute( String.format( NODES, "\"Jyllingevej\"" ) );
         assertFalse( result.hasNext() );
@@ -460,6 +467,7 @@ public class BloomIT
             db.createNode().setProperty( "prop", "Langelinie Pavillinen" );
             tx.success();
         }
+        db.execute( AWAIT_REFRESH );
 
         try ( Transaction ignore = db.beginTx() )
         {
@@ -478,6 +486,7 @@ public class BloomIT
             } );
             th.start();
             th.join();
+            db.execute( AWAIT_REFRESH );
 
             try ( Result result = db.execute( String.format( NODES, "\"Langelinie\"") ) )
             {
@@ -533,6 +542,7 @@ public class BloomIT
 
             tx.success();
         }
+        db.execute( AWAIT_REFRESH );
         try ( Transaction ignore = db.beginTx() )
         {
             try ( Result result = db.execute( String.format( NODES_ADVANCED, "\"and\"", false, false ) ) )
@@ -620,6 +630,7 @@ public class BloomIT
             db.createNode().setProperty( "prop", "Hello and hello again." );
             tx.success();
         }
+        db.execute( AWAIT_REFRESH );
 
         try ( Transaction ignore = db.beginTx() )
         {

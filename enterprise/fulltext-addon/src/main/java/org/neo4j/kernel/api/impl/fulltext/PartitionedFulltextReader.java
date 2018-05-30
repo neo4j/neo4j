@@ -47,13 +47,8 @@ class PartitionedFulltextReader implements ReadOnlyFulltext
 
     PartitionedFulltextReader( List<PartitionSearcher> partitionSearchers, String[] properties, Analyzer analyzer )
     {
-        this( partitionSearchers.stream().map( partitionSearcher -> new SimpleFulltextReader( partitionSearcher, properties, analyzer ) ).collect(
-                Collectors.toList() ) );
-    }
-
-    private PartitionedFulltextReader( List<ReadOnlyFulltext> readers )
-    {
-        this.indexReaders = readers;
+        this.indexReaders = partitionSearchers.stream().map( partitionSearcher -> new SimpleFulltextReader( partitionSearcher, properties, analyzer ) ).collect(
+                Collectors.toList() );
     }
 
     @Override

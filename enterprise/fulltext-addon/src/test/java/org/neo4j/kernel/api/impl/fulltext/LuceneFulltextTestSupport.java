@@ -155,12 +155,16 @@ public class LuceneFulltextTestSupport
     protected void assertQueryResultsMatch( ScoreEntityIterator result, long[] ids )
     {
         PrimitiveLongSet set = PrimitiveLongCollections.setOf( ids );
+        int expectedSize = ids.length;
+        int actualSize = 0;
         while ( result.hasNext() )
         {
+            actualSize++;
             long next = result.next().entityId();
+
             assertTrue( String.format( "Result returned node id %d, expected one of %s", next, Arrays.toString( ids ) ), set.remove( next ) );
         }
-        assertTrue( "Number of results differ from expected", set.isEmpty() );
+        assertTrue( String.format( "Number of results differ from expected, expected %d, was %d", expectedSize, actualSize ), set.isEmpty() );
     }
 
     protected void assertQueryResultsMatchInOrder( ScoreEntityIterator result, long[] ids )

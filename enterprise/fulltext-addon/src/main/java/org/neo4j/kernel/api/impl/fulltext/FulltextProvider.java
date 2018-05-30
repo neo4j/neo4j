@@ -23,6 +23,7 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Set;
 
@@ -34,11 +35,6 @@ public interface FulltextProvider extends AutoCloseable
 {
     FulltextProvider NULL_PROVIDER = new FulltextProvider()
     {
-        @Override
-        public void registerTransactionEventHandler()
-        {
-            throw noProvider();
-        }
 
         @Override
         public void awaitPopulation()
@@ -89,6 +85,12 @@ public interface FulltextProvider extends AutoCloseable
         }
 
         @Override
+        public void awaitFlip()
+        {
+            throw noProvider();
+        }
+
+        @Override
         public void close()
         {
             throw noProvider();
@@ -103,15 +105,13 @@ public interface FulltextProvider extends AutoCloseable
     String LUCENE_FULLTEXT_ADDON_PREFIX = "__lucene__fulltext__addon__";
     String FIELD_ENTITY_ID = LUCENE_FULLTEXT_ADDON_PREFIX + "internal__id__";
 
-    void registerTransactionEventHandler();
-
     /**
      * Wait for the asynchronous background population, if one is on-going, to complete.
      * <p>
      * Such population, where the entire store is scanned for data to write to the index, will be started if the index
      * needs to recover after an unclean shut-down, or a configuration change.
      *
-     * @throws RuntimeException If it was not possible to wait for the population to finish, for some reason.
+     * @throws UncheckedIOException If it was not possible to wait for the population to finish, for some reason.
      */
     void awaitPopulation();
 
@@ -136,4 +136,6 @@ public interface FulltextProvider extends AutoCloseable
     void changeIndexedProperties( String identifier, FulltextIndexType type, List<String> propertyKeys ) throws IOException, InvalidArgumentsException;
 
     void registerFileListing( NeoStoreFileListing fileListing );
+
+    void awaitFlip();
 }

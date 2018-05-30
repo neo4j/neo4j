@@ -44,7 +44,6 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
 
             long id;
             try ( Transaction tx = db.beginTx() )
@@ -54,7 +53,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
 
                 tx.success();
             }
-
+            provider.awaitFlip();
             try ( ReadOnlyFulltext reader = provider.getReader( BLOOM_NODES, NODES ) )
             {
                 assertExactQueryFindsNothing( reader, "and" );
@@ -74,7 +73,6 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
 
             long id;
             try ( Transaction tx = db.beginTx() )
@@ -84,7 +82,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
 
                 tx.success();
             }
-
+            provider.awaitFlip();
             try ( ReadOnlyFulltext reader = provider.getReader( BLOOM_NODES, NODES ) )
             {
                 assertExactQueryFindsIds( reader, "and", false, id );
@@ -106,7 +104,6 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
 
             try ( Transaction tx = db.beginTx() )
             {
@@ -115,7 +112,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
 
                 tx.success();
             }
-
+            provider.awaitFlip();
             try ( ReadOnlyFulltext reader = provider.getReader( BLOOM_NODES, NODES ) )
             {
 
@@ -132,9 +129,8 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
             provider.awaitPopulation();
-
+            provider.awaitFlip();
             try ( ReadOnlyFulltext reader = provider.getReader( BLOOM_NODES, NODES ) )
             {
                 assertExactQueryFindsIds( reader, "and",  false, firstID );
