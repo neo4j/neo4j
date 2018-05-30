@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -300,7 +302,7 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey<KEY
     {
         if ( failureBytes == null )
         {
-            failureBytes = new byte[0];
+            failureBytes = ArrayUtils.EMPTY_BYTE_ARRAY;
         }
         tree.checkpoint( IOLimiter.unlimited(), new FailureHeaderWriter( failureBytes ) );
     }

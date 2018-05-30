@@ -19,11 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
 
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -74,26 +70,9 @@ public class SchemaIndexTestHelper
         }
     }
 
-    public static IndexProxy mockIndexProxy() throws IOException
+    public static IndexProxy mockIndexProxy()
     {
         return mock( IndexProxy.class );
-    }
-
-    public static <T> T awaitFuture( Future<T> future )
-    {
-        try
-        {
-            return future.get( 10, SECONDS );
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.interrupted();
-            throw new RuntimeException( e );
-        }
-        catch ( ExecutionException | TimeoutException e )
-        {
-            throw new RuntimeException( e );
-        }
     }
 
     public static boolean awaitLatch( CountDownLatch latch )
@@ -113,12 +92,8 @@ public class SchemaIndexTestHelper
             throws IndexNotFoundKernelException
     {
         long start = System.currentTimeMillis();
-        while ( true )
+        while ( schemaRead.indexGetState( index ) != InternalIndexState.ONLINE )
         {
-            if ( schemaRead.indexGetState( index ) == InternalIndexState.ONLINE )
-            {
-                break;
-            }
 
             if ( start + 1000 * 10 < System.currentTimeMillis() )
             {

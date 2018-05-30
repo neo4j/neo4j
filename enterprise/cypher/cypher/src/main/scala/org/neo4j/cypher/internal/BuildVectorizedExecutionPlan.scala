@@ -65,7 +65,8 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
       val converters: ExpressionConverters = new ExpressionConverters(MorselExpressionConverters,
                                                                       SlottedExpressionConverters,
                                                                       CommunityExpressionConverter)
-      val operatorBuilder = new PipelineBuilder(pipelines, converters)
+      val readOnly = from.solveds(from.logicalPlan.id).readOnly
+      val operatorBuilder = new PipelineBuilder(pipelines, converters, readOnly)
       val operators = operatorBuilder.create(physicalPlan)
       val dispatcher =
         if (context.debugOptions.contains("singlethreaded")) new SingleThreadedExecutor()
@@ -74,7 +75,6 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
 
       context.notificationLogger.log(
         ExperimentalFeatureNotification("use the morsel runtime at your own peril, not recommended to be run on production systems"))
-      val readOnly = from.solveds(from.logicalPlan.id).readOnly
       val execPlan = VectorizedExecutionPlan(from.plannerName, operators, pipelines, physicalPlan, fieldNames,
                                              dispatcher, context.notificationLogger, readOnly, from.cardinalities)
       new CompilationState(from, Success(execPlan))

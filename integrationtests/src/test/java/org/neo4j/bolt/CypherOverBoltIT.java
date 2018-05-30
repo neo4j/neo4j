@@ -52,6 +52,7 @@ public class CypherOverBoltIT
 {
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+
     @Rule
     public Neo4jRule graphDb = new Neo4jRule();
 
