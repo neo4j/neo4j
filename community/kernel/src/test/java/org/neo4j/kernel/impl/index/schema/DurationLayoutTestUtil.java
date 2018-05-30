@@ -33,7 +33,7 @@ import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-public class DurationLayoutTestUtil extends LayoutTestUtil<DurationSchemaKey, NativeSchemaValue>
+public class DurationLayoutTestUtil extends LayoutTestUtil<DurationIndexKey,NativeIndexValue>
 {
     private static final DurationValue[] ALL_EXTREME_VALUES = new DurationValue[]
     {
@@ -53,7 +53,7 @@ public class DurationLayoutTestUtil extends LayoutTestUtil<DurationSchemaKey, Na
     }
 
     @Override
-    Layout<DurationSchemaKey,NativeSchemaValue> createLayout()
+    Layout<DurationIndexKey,NativeIndexValue> createLayout()
     {
         return new DurationLayout();
     }
@@ -71,7 +71,7 @@ public class DurationLayoutTestUtil extends LayoutTestUtil<DurationSchemaKey, Na
     }
 
     @Override
-    int compareIndexedPropertyValue( DurationSchemaKey key1, DurationSchemaKey key2 )
+    int compareIndexedPropertyValue( DurationIndexKey key1, DurationIndexKey key2 )
     {
         return Values.COMPARATOR.compare( key1.asValue(), key2.asValue() );
     }

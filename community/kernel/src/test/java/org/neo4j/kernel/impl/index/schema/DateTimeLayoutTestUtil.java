@@ -37,7 +37,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.time.ZoneOffset.UTC;
 
-public class DateTimeLayoutTestUtil extends LayoutTestUtil<ZonedDateTimeSchemaKey, NativeSchemaValue>
+public class DateTimeLayoutTestUtil extends LayoutTestUtil<ZonedDateTimeIndexKey,NativeIndexValue>
 {
     private static final ZonedDateTime[] ALL_EXTREME_VALUES = new ZonedDateTime[]
     {
@@ -55,7 +55,7 @@ public class DateTimeLayoutTestUtil extends LayoutTestUtil<ZonedDateTimeSchemaKe
     }
 
     @Override
-    Layout<ZonedDateTimeSchemaKey,NativeSchemaValue> createLayout()
+    Layout<ZonedDateTimeIndexKey,NativeIndexValue> createLayout()
     {
         return new ZonedDateTimeLayout();
     }
@@ -73,7 +73,7 @@ public class DateTimeLayoutTestUtil extends LayoutTestUtil<ZonedDateTimeSchemaKe
     }
 
     @Override
-    int compareIndexedPropertyValue( ZonedDateTimeSchemaKey key1, ZonedDateTimeSchemaKey key2 )
+    int compareIndexedPropertyValue( ZonedDateTimeIndexKey key1, ZonedDateTimeIndexKey key2 )
     {
         return Values.COMPARATOR.compare( key1.asValue(), key2.asValue() );
     }

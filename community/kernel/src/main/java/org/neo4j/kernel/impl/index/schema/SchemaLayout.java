@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 
-abstract class SchemaLayout<KEY extends NativeSchemaKey<KEY>> extends Layout.Adapter<KEY,NativeSchemaValue>
+abstract class SchemaLayout<KEY extends NativeIndexKey<KEY>> extends Layout.Adapter<KEY,NativeIndexValue>
 {
     private final long identifier;
     private final int majorVersion;
@@ -38,29 +38,29 @@ abstract class SchemaLayout<KEY extends NativeSchemaKey<KEY>> extends Layout.Ada
 
     SchemaLayout( String layoutName, int majorVersion, int minorVersion )
     {
-        this( Layout.namedIdentifier( layoutName, NativeSchemaValue.SIZE ), majorVersion, minorVersion );
+        this( Layout.namedIdentifier( layoutName, NativeIndexValue.SIZE ), majorVersion, minorVersion );
     }
 
     @Override
-    public NativeSchemaValue newValue()
+    public NativeIndexValue newValue()
     {
-        return NativeSchemaValue.INSTANCE;
+        return NativeIndexValue.INSTANCE;
     }
 
     @Override
-    public int valueSize( NativeSchemaValue nativeSchemaValue )
+    public int valueSize( NativeIndexValue nativeIndexValue )
     {
-        return NativeSchemaValue.SIZE;
+        return NativeIndexValue.SIZE;
     }
 
     @Override
-    public void writeValue( PageCursor cursor, NativeSchemaValue nativeSchemaValue )
+    public void writeValue( PageCursor cursor, NativeIndexValue nativeIndexValue )
     {
         // nothing to write
     }
 
     @Override
-    public void readValue( PageCursor cursor, NativeSchemaValue into, int valueSize )
+    public void readValue( PageCursor cursor, NativeIndexValue into, int valueSize )
     {
         // nothing to read
     }

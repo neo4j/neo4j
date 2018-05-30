@@ -28,10 +28,10 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-class TemporalIndexPartReader<KEY extends NativeSchemaKey<KEY>> extends NativeSchemaIndexReader<KEY,NativeSchemaValue>
+class TemporalIndexPartReader<KEY extends NativeIndexKey<KEY>> extends NativeIndexReader<KEY,NativeIndexValue>
 {
-    TemporalIndexPartReader( GBPTree<KEY,NativeSchemaValue> tree,
-                             Layout<KEY,NativeSchemaValue> layout,
+    TemporalIndexPartReader( GBPTree<KEY,NativeIndexValue> tree,
+                             Layout<KEY,NativeIndexValue> layout,
                              IndexSamplingConfig samplingConfig,
                              IndexDescriptor descriptor )
     {

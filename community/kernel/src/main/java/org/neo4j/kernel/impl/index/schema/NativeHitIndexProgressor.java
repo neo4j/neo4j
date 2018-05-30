@@ -28,7 +28,7 @@ import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
-public class NativeHitIndexProgressor<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue> implements IndexProgressor
+public class NativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> implements IndexProgressor
 {
     private final RawCursor<Hit<KEY,VALUE>,IOException> seeker;
     private final NodeValueClient client;

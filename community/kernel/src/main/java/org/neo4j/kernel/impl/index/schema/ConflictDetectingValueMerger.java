@@ -34,7 +34,7 @@ import org.neo4j.values.storable.ValueTuple;
  *
  * @param <VALUE> type of values being merged.
  */
-class ConflictDetectingValueMerger<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue> implements ValueMerger<KEY,VALUE>
+class ConflictDetectingValueMerger<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> implements ValueMerger<KEY,VALUE>
 {
     private final boolean compareEntityIds;
 

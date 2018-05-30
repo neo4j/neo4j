@@ -45,8 +45,8 @@ public class ZonedDateTimeSchemaKeyTest
                           DateTimeValue.datetime( 10000, 100, ZoneId.of( "+03:00" ) ),
                           DateTimeValue.datetime( 10000, 101, ZoneId.of( "-18:00" ) )};
 
-        ZonedDateTimeSchemaKey keyI = new ZonedDateTimeSchemaKey();
-        ZonedDateTimeSchemaKey keyJ = new ZonedDateTimeSchemaKey();
+        ZonedDateTimeIndexKey keyI = new ZonedDateTimeIndexKey();
+        ZonedDateTimeIndexKey keyJ = new ZonedDateTimeIndexKey();
 
         int len = values.length;
 

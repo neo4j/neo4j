@@ -42,12 +42,12 @@ import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 
-public class SpatialIndexPartReader<VALUE extends NativeSchemaValue> extends NativeSchemaIndexReader<SpatialSchemaKey,VALUE>
+public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends NativeIndexReader<SpatialIndexKey,VALUE>
 {
     private final SpatialLayout spatial;
     private final SpaceFillingCurveConfiguration configuration;
 
-    SpatialIndexPartReader( GBPTree<SpatialSchemaKey,VALUE> tree, Layout<SpatialSchemaKey,VALUE> layout,
+    SpatialIndexPartReader( GBPTree<SpatialIndexKey,VALUE> tree, Layout<SpatialIndexKey,VALUE> layout,
             IndexSamplingConfig samplingConfig, IndexDescriptor descriptor,
             SpaceFillingCurveConfiguration configuration )
     {
@@ -68,7 +68,7 @@ public class SpatialIndexPartReader<VALUE extends NativeSchemaValue> extends Nat
     }
 
     @Override
-    boolean initializeRangeForQuery( SpatialSchemaKey treeKeyFrom, SpatialSchemaKey treeKeyTo, IndexQuery[] predicates )
+    boolean initializeRangeForQuery( SpatialIndexKey treeKeyFrom, SpatialIndexKey treeKeyTo, IndexQuery[] predicates )
     {
         throw new UnsupportedOperationException( "Cannot initialize 1D range in multidimensional spatial index reader" );
     }
@@ -110,8 +110,8 @@ public class SpatialIndexPartReader<VALUE extends NativeSchemaValue> extends Nat
 
     private void startSeekForExists( IndexProgressor.NodeValueClient client, IndexQuery... predicates )
     {
-        SpatialSchemaKey treeKeyFrom = layout.newKey();
-        SpatialSchemaKey treeKeyTo = layout.newKey();
+        SpatialIndexKey treeKeyFrom = layout.newKey();
+        SpatialIndexKey treeKeyTo = layout.newKey();
         treeKeyFrom.initAsLowest();
         treeKeyTo.initAsHighest();
         startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, predicates, false );
@@ -119,8 +119,8 @@ public class SpatialIndexPartReader<VALUE extends NativeSchemaValue> extends Nat
 
     private void startSeekForExact( IndexProgressor.NodeValueClient client, Value value, IndexQuery... predicates )
     {
-        SpatialSchemaKey treeKeyFrom = layout.newKey();
-        SpatialSchemaKey treeKeyTo = layout.newKey();
+        SpatialIndexKey treeKeyFrom = layout.newKey();
+        SpatialIndexKey treeKeyTo = layout.newKey();
         treeKeyFrom.from( Long.MIN_VALUE, value );
         treeKeyTo.from( Long.MAX_VALUE, value );
         startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, predicates, false );
@@ -138,11 +138,11 @@ public class SpatialIndexPartReader<VALUE extends NativeSchemaValue> extends Nat
             List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( from, to, configuration );
             for ( SpaceFillingCurve.LongRange range : ranges )
             {
-                SpatialSchemaKey treeKeyFrom = layout.newKey();
-                SpatialSchemaKey treeKeyTo = layout.newKey();
+                SpatialIndexKey treeKeyFrom = layout.newKey();
+                SpatialIndexKey treeKeyTo = layout.newKey();
                 treeKeyFrom.fromDerivedValue( Long.MIN_VALUE, range.min );
                 treeKeyTo.fromDerivedValue( Long.MAX_VALUE, range.max + 1 );
-                RawCursor<Hit<SpatialSchemaKey,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo );
+                RawCursor<Hit<SpatialIndexKey,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo );
                 IndexProgressor hitProgressor = new SpatialHitIndexProgressor<>( seeker, client, openSeekers );
                 multiProgressor.initialize( descriptor, hitProgressor, query );
             }
@@ -159,8 +159,8 @@ public class SpatialIndexPartReader<VALUE extends NativeSchemaValue> extends Nat
     }
 
     @Override
-    void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, SpatialSchemaKey treeKeyFrom,
-            SpatialSchemaKey treeKeyTo, IndexQuery[] query, boolean needFilter )
+    void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, SpatialIndexKey treeKeyFrom,
+            SpatialIndexKey treeKeyTo, IndexQuery[] query, boolean needFilter )
     {
         if ( layout.compare( treeKeyFrom, treeKeyTo ) > 0 )
         {
@@ -169,7 +169,7 @@ public class SpatialIndexPartReader<VALUE extends NativeSchemaValue> extends Nat
         }
         try
         {
-            RawCursor<Hit<SpatialSchemaKey,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo );
+            RawCursor<Hit<SpatialIndexKey,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo );
             IndexProgressor hitProgressor = new SpatialHitIndexProgressor<>( seeker, client, openSeekers );
             client.initialize( descriptor, hitProgressor, query );
         }

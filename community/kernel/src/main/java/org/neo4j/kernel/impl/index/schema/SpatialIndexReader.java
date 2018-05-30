@@ -37,7 +37,7 @@ import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
-class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<NativeSchemaValue>> implements IndexReader
+class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<NativeIndexValue>> implements IndexReader
 {
     private final IndexDescriptor descriptor;
 
@@ -56,7 +56,7 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Native
     @Override
     public long countIndexedNodes( long nodeId, Value... propertyValues )
     {
-        NativeSchemaIndexReader<SpatialSchemaKey,NativeSchemaValue> partReader =
+        NativeIndexReader<SpatialIndexKey,NativeIndexValue> partReader =
                 uncheckedSelect( ((PointValue) propertyValues[0]).getCoordinateReferenceSystem() );
         return partReader == null ? 0L : partReader.countIndexedNodes( nodeId, propertyValues );
     }
@@ -88,7 +88,7 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Native
             loadAll();
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
             cursor.initialize( descriptor, multiProgressor, predicates );
-            for ( NativeSchemaIndexReader<SpatialSchemaKey,NativeSchemaValue> reader : this )
+            for ( NativeIndexReader<SpatialIndexKey,NativeIndexValue> reader : this )
             {
                 reader.query( multiProgressor, indexOrder, predicates );
             }
@@ -110,7 +110,7 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Native
                 {
                     throw new IllegalArgumentException( "Wrong type of predicate, couldn't get CoordinateReferenceSystem" );
                 }
-                SpatialIndexPartReader<NativeSchemaValue> part = uncheckedSelect( crs );
+                SpatialIndexPartReader<NativeIndexValue> part = uncheckedSelect( crs );
                 if ( part != null )
                 {
                     part.query( cursor, indexOrder, predicates );
@@ -142,7 +142,7 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Native
      * To create TemporalIndexPartReaders on demand, the PartFactory maintains a reference to the parent TemporalIndexAccessor.
      * The creation of a part reader can then be delegated to the correct PartAccessor.
      */
-    static class PartFactory implements Factory<SpatialIndexPartReader<NativeSchemaValue>>
+    static class PartFactory implements Factory<SpatialIndexPartReader<NativeIndexValue>>
     {
         private final SpatialIndexAccessor accessor;
 
@@ -152,7 +152,7 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Native
         }
 
         @Override
-        public SpatialIndexPartReader<NativeSchemaValue> newSpatial( CoordinateReferenceSystem crs )
+        public SpatialIndexPartReader<NativeIndexValue> newSpatial( CoordinateReferenceSystem crs )
         {
             return accessor.selectOrElse( crs, SpatialIndexAccessor.PartAccessor::newReader, null );
         }

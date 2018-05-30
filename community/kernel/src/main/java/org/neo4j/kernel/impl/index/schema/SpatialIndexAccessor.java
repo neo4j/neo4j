@@ -77,7 +77,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
     @Override
     public void drop() throws IOException
     {
-        forAll( NativeSchemaIndexAccessor::drop, this );
+        forAll( NativeIndexAccessor::drop, this );
     }
 
     @Override
@@ -89,7 +89,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
     @Override
     public void force( IOLimiter ioLimiter ) throws IOException
     {
-        for ( NativeSchemaIndexAccessor part : this )
+        for ( NativeIndexAccessor part : this )
         {
             part.force( ioLimiter );
         }
@@ -105,7 +105,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
     public void close() throws IOException
     {
         closeInstantiateCloseLock();
-        forAll( NativeSchemaIndexAccessor::close, this );
+        forAll( NativeIndexAccessor::close, this );
     }
 
     @Override
@@ -118,7 +118,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
     public BoundedIterable<Long> newAllEntriesReader()
     {
         ArrayList<BoundedIterable<Long>> allEntriesReader = new ArrayList<>();
-        for ( NativeSchemaIndexAccessor<?,?> part : this )
+        for ( NativeIndexAccessor<?,?> part : this )
         {
             allEntriesReader.add( part.newAllEntriesReader() );
         }
@@ -159,7 +159,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
     public ResourceIterator<File> snapshotFiles()
     {
         List<ResourceIterator<File>> snapshotFiles = new ArrayList<>();
-        for ( NativeSchemaIndexAccessor<?,?> part : this )
+        for ( NativeIndexAccessor<?,?> part : this )
         {
             snapshotFiles.add( part.snapshotFiles() );
         }
@@ -175,12 +175,12 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
     @Override
     public boolean isDirty()
     {
-        return Iterators.stream( iterator() ).anyMatch( NativeSchemaIndexAccessor::isDirty );
+        return Iterators.stream( iterator() ).anyMatch( NativeIndexAccessor::isDirty );
     }
 
-    static class PartAccessor extends NativeSchemaIndexAccessor<SpatialSchemaKey, NativeSchemaValue>
+    static class PartAccessor extends NativeIndexAccessor<SpatialIndexKey,NativeIndexValue>
     {
-        private final Layout<SpatialSchemaKey,NativeSchemaValue> layout;
+        private final Layout<SpatialIndexKey,NativeIndexValue> layout;
         private final StoreIndexDescriptor descriptor;
         private final IndexSamplingConfig samplingConfig;
         private final SpaceFillingCurveConfiguration searchConfiguration;
@@ -197,7 +197,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
         }
 
         @Override
-        public SpatialIndexPartReader<NativeSchemaValue> newReader()
+        public SpatialIndexPartReader<NativeIndexValue> newReader()
         {
             assertOpen();
             return new SpatialIndexPartReader<>( tree, layout, samplingConfig, descriptor, searchConfiguration );

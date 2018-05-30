@@ -64,7 +64,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
     @Override
     public void drop() throws IOException
     {
-        forAll( NativeSchemaIndexAccessor::drop, this );
+        forAll( NativeIndexAccessor::drop, this );
     }
 
     @Override
@@ -76,7 +76,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
     @Override
     public void force( IOLimiter ioLimiter ) throws IOException
     {
-        for ( NativeSchemaIndexAccessor part : this )
+        for ( NativeIndexAccessor part : this )
         {
             part.force( ioLimiter );
         }
@@ -92,7 +92,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
     public void close() throws IOException
     {
         closeInstantiateCloseLock();
-        forAll( NativeSchemaIndexAccessor::close, this );
+        forAll( NativeIndexAccessor::close, this );
     }
 
     @Override
@@ -105,7 +105,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
     public BoundedIterable<Long> newAllEntriesReader()
     {
         ArrayList<BoundedIterable<Long>> allEntriesReader = new ArrayList<>();
-        for ( NativeSchemaIndexAccessor<?,?> part : this )
+        for ( NativeIndexAccessor<?,?> part : this )
         {
             allEntriesReader.add( part.newAllEntriesReader() );
         }
@@ -146,7 +146,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
     public ResourceIterator<File> snapshotFiles()
     {
         List<ResourceIterator<File>> snapshotFiles = new ArrayList<>();
-        for ( NativeSchemaIndexAccessor<?,?> part : this )
+        for ( NativeIndexAccessor<?,?> part : this )
         {
             snapshotFiles.add( part.snapshotFiles() );
         }
@@ -162,12 +162,12 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
     @Override
     public boolean isDirty()
     {
-        return Iterators.stream( iterator() ).anyMatch( NativeSchemaIndexAccessor::isDirty );
+        return Iterators.stream( iterator() ).anyMatch( NativeIndexAccessor::isDirty );
     }
 
-    static class PartAccessor<KEY extends NativeSchemaKey<KEY>> extends NativeSchemaIndexAccessor<KEY, NativeSchemaValue>
+    static class PartAccessor<KEY extends NativeIndexKey<KEY>> extends NativeIndexAccessor<KEY,NativeIndexValue>
     {
-        private final Layout<KEY,NativeSchemaValue> layout;
+        private final Layout<KEY,NativeIndexValue> layout;
         private final IndexDescriptor descriptor;
         private final IndexSamplingConfig samplingConfig;
 
@@ -247,7 +247,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
             return createPartAccessor( temporalIndexFiles.duration() );
         }
 
-        private <KEY extends NativeSchemaKey<KEY>> PartAccessor<KEY> createPartAccessor( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
+        private <KEY extends NativeIndexKey<KEY>> PartAccessor<KEY> createPartAccessor( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
         {
             if ( !fs.fileExists( fileLayout.indexFile ) )
             {
@@ -256,7 +256,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
             return new PartAccessor<>( pageCache, fs, fileLayout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );
         }
 
-        private <KEY extends NativeSchemaKey<KEY>> void createEmptyIndex( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
+        private <KEY extends NativeIndexKey<KEY>> void createEmptyIndex( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
         {
             IndexPopulator populator = new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor, samplingConfig );
             populator.create();

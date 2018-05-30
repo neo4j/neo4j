@@ -32,7 +32,7 @@ class NumberNonUniqueLayoutTestUtil extends NumberLayoutTestUtil
     }
 
     @Override
-    Layout<NumberSchemaKey,NativeSchemaValue> createLayout()
+    Layout<NumberIndexKey,NativeIndexValue> createLayout()
     {
         return new NumberLayoutNonUnique();
     }

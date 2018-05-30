@@ -32,7 +32,7 @@ public class StringSchemaKeyTest
     public void shouldReuseByteArrayForFairlySimilarSizedKeys()
     {
         // given
-        StringSchemaKey key = new StringSchemaKey();
+        StringIndexKey key = new StringIndexKey();
         key.setBytesLength( 20 );
         byte[] first = key.bytes;
 
@@ -49,7 +49,7 @@ public class StringSchemaKeyTest
     public void shouldCreateNewByteArrayForVastlyDifferentKeySizes()
     {
         // given
-        StringSchemaKey key = new StringSchemaKey();
+        StringIndexKey key = new StringIndexKey();
         key.setBytesLength( 20 );
         byte[] first = key.bytes;
 
@@ -67,7 +67,7 @@ public class StringSchemaKeyTest
     public void shouldDereferenceByteArrayWhenMaterializingValue()
     {
         // given
-        StringSchemaKey key = new StringSchemaKey();
+        StringIndexKey key = new StringIndexKey();
         key.setBytesLength( 20 );
         byte[] first = key.bytes;
 

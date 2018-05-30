@@ -38,7 +38,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 
-public class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialSchemaKey,NativeSchemaValue>
+public class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialIndexKey,NativeIndexValue>
 {
     private static final PointValue[] ALL_EXTREME_VALUES = new PointValue[]
     {
@@ -63,7 +63,7 @@ public class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialSchemaKey,Nativ
     }
 
     @Override
-    Layout<SpatialSchemaKey,NativeSchemaValue> createLayout()
+    Layout<SpatialIndexKey,NativeIndexValue> createLayout()
     {
         return new SpatialLayout( crs, curve );
     }
@@ -81,7 +81,7 @@ public class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialSchemaKey,Nativ
     }
 
     @Override
-    int compareIndexedPropertyValue( SpatialSchemaKey key1, SpatialSchemaKey key2 )
+    int compareIndexedPropertyValue( SpatialIndexKey key1, SpatialIndexKey key2 )
     {
         return Long.compare( key1.rawValueBits, key2.rawValueBits );
     }

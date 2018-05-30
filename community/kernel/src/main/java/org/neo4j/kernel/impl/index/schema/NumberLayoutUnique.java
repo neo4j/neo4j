@@ -32,6 +32,6 @@ class NumberLayoutUnique extends NumberLayout
 
     NumberLayoutUnique()
     {
-        super( Layout.namedIdentifier( IDENTIFIER_NAME, NumberSchemaKey.SIZE ), MAJOR_VERSION, MINOR_VERSION );
+        super( Layout.namedIdentifier( IDENTIFIER_NAME, NumberIndexKey.SIZE ), MAJOR_VERSION, MINOR_VERSION );
     }
 }

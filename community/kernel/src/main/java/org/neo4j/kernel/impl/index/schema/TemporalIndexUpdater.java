@@ -29,7 +29,7 @@ import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
-public class TemporalIndexUpdater extends TemporalIndexCache<NativeSchemaIndexUpdater<?, NativeSchemaValue>> implements IndexUpdater
+public class TemporalIndexUpdater extends TemporalIndexCache<NativeIndexUpdater<?,NativeIndexValue>> implements IndexUpdater
 {
     TemporalIndexUpdater( TemporalIndexAccessor accessor, IndexUpdateMode mode )
     {
@@ -69,10 +69,10 @@ public class TemporalIndexUpdater extends TemporalIndexCache<NativeSchemaIndexUp
     @Override
     public void close() throws IOException
     {
-        forAll( NativeSchemaIndexUpdater::close, this );
+        forAll( NativeIndexUpdater::close, this );
     }
 
-    static class PartFactory implements TemporalIndexCache.Factory<NativeSchemaIndexUpdater<?, NativeSchemaValue>>
+    static class PartFactory implements TemporalIndexCache.Factory<NativeIndexUpdater<?,NativeIndexValue>>
     {
 
         private final TemporalIndexAccessor accessor;
@@ -85,37 +85,37 @@ public class TemporalIndexUpdater extends TemporalIndexCache<NativeSchemaIndexUp
         }
 
         @Override
-        public NativeSchemaIndexUpdater<?, NativeSchemaValue> newDate() throws IOException
+        public NativeIndexUpdater<?,NativeIndexValue> newDate() throws IOException
         {
             return accessor.select( ValueGroup.DATE ).newUpdater( mode );
         }
 
         @Override
-        public NativeSchemaIndexUpdater<?, NativeSchemaValue> newLocalDateTime() throws IOException
+        public NativeIndexUpdater<?,NativeIndexValue> newLocalDateTime() throws IOException
         {
             return accessor.select(ValueGroup.LOCAL_DATE_TIME).newUpdater( mode );
         }
 
         @Override
-        public NativeSchemaIndexUpdater<?, NativeSchemaValue> newZonedDateTime() throws IOException
+        public NativeIndexUpdater<?,NativeIndexValue> newZonedDateTime() throws IOException
         {
             return accessor.select(ValueGroup.ZONED_DATE_TIME).newUpdater( mode );
         }
 
         @Override
-        public NativeSchemaIndexUpdater<?, NativeSchemaValue> newLocalTime() throws IOException
+        public NativeIndexUpdater<?,NativeIndexValue> newLocalTime() throws IOException
         {
             return accessor.select(ValueGroup.LOCAL_TIME).newUpdater( mode );
         }
 
         @Override
-        public NativeSchemaIndexUpdater<?, NativeSchemaValue> newZonedTime() throws IOException
+        public NativeIndexUpdater<?,NativeIndexValue> newZonedTime() throws IOException
         {
             return accessor.select(ValueGroup.ZONED_TIME).newUpdater( mode );
         }
 
         @Override
-        public NativeSchemaIndexUpdater<?, NativeSchemaValue> newDuration() throws IOException
+        public NativeIndexUpdater<?,NativeIndexValue> newDuration() throws IOException
         {
             return accessor.select(ValueGroup.DURATION).newUpdater( mode );
         }

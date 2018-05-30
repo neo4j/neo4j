@@ -34,10 +34,10 @@ import org.neo4j.values.storable.Value;
 /**
  * Wraps number key/value results in a {@link LongIterator}.
  *
- * @param <KEY> type of {@link NumberSchemaKey}.
- * @param <VALUE> type of {@link NativeSchemaValue}.
+ * @param <KEY> type of {@link NumberIndexKey}.
+ * @param <VALUE> type of {@link NativeIndexValue}.
  */
-public class NativeHitIterator<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>
+public class NativeHitIterator<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
         extends PrimitiveLongCollections.PrimitiveLongBaseIterator
         implements PrimitiveLongResourceIterator
 {

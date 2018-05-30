@@ -37,7 +37,7 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
 import static org.neo4j.values.storable.Values.values;
 
-public class NumberFullScanNonUniqueIndexSamplerTest extends NativeSchemaIndexTestUtil<NumberSchemaKey,NativeSchemaValue>
+public class NumberFullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil<NumberIndexKey,NativeIndexValue>
 {
     @Test
     public void shouldIncludeAllValuesInTree() throws Exception
@@ -48,10 +48,10 @@ public class NumberFullScanNonUniqueIndexSamplerTest extends NativeSchemaIndexTe
 
         // WHEN
         IndexSample sample;
-        try ( GBPTree<NumberSchemaKey,NativeSchemaValue> gbpTree = getTree() )
+        try ( GBPTree<NumberIndexKey,NativeIndexValue> gbpTree = getTree() )
         {
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-            FullScanNonUniqueIndexSampler<NumberSchemaKey,NativeSchemaValue> sampler =
+            FullScanNonUniqueIndexSampler<NumberIndexKey,NativeIndexValue> sampler =
                     new FullScanNonUniqueIndexSampler<>( gbpTree, layout, samplingConfig );
             sample = sampler.result();
         }
@@ -75,12 +75,12 @@ public class NumberFullScanNonUniqueIndexSamplerTest extends NativeSchemaIndexTe
 
     private void buildTree( Number[] values ) throws IOException
     {
-        try ( GBPTree<NumberSchemaKey,NativeSchemaValue> gbpTree = getTree() )
+        try ( GBPTree<NumberIndexKey,NativeIndexValue> gbpTree = getTree() )
         {
-            try ( Writer<NumberSchemaKey,NativeSchemaValue> writer = gbpTree.writer() )
+            try ( Writer<NumberIndexKey,NativeIndexValue> writer = gbpTree.writer() )
             {
-                NumberSchemaKey key = layout.newKey();
-                NativeSchemaValue value = layout.newValue();
+                NumberIndexKey key = layout.newKey();
+                NativeIndexValue value = layout.newValue();
                 long nodeId = 0;
                 for ( Number number : values )
                 {
@@ -95,7 +95,7 @@ public class NumberFullScanNonUniqueIndexSamplerTest extends NativeSchemaIndexTe
     }
 
     @Override
-    protected LayoutTestUtil<NumberSchemaKey,NativeSchemaValue> createLayoutTestUtil()
+    protected LayoutTestUtil<NumberIndexKey,NativeIndexValue> createLayoutTestUtil()
     {
         return new NumberNonUniqueLayoutTestUtil();
     }

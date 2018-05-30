@@ -35,7 +35,7 @@ import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-public class TimeLayoutTestUtil extends LayoutTestUtil<ZonedTimeSchemaKey, NativeSchemaValue>
+public class TimeLayoutTestUtil extends LayoutTestUtil<ZonedTimeIndexKey,NativeIndexValue>
 {
     static long MAX_NANOS_PER_DAY = 86399999999999L;
 
@@ -55,7 +55,7 @@ public class TimeLayoutTestUtil extends LayoutTestUtil<ZonedTimeSchemaKey, Nativ
     }
 
     @Override
-    Layout<ZonedTimeSchemaKey,NativeSchemaValue> createLayout()
+    Layout<ZonedTimeIndexKey,NativeIndexValue> createLayout()
     {
         return new ZonedTimeLayout();
     }
@@ -73,7 +73,7 @@ public class TimeLayoutTestUtil extends LayoutTestUtil<ZonedTimeSchemaKey, Nativ
     }
 
     @Override
-    int compareIndexedPropertyValue( ZonedTimeSchemaKey key1, ZonedTimeSchemaKey key2 )
+    int compareIndexedPropertyValue( ZonedTimeIndexKey key1, ZonedTimeIndexKey key2 )
     {
         return Values.COMPARATOR.compare( key1.asValue(), key2.asValue() );
     }

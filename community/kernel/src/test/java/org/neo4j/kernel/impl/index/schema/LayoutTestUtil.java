@@ -40,7 +40,7 @@ import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-abstract class LayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>
+abstract class LayoutTestUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
 {
     private static final Comparator<IndexEntryUpdate<IndexDescriptor>> UPDATE_COMPARATOR = ( u1, u2 ) ->
             Values.COMPARATOR.compare( u1.values()[0], u2.values()[0] );

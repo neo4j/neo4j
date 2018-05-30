@@ -94,7 +94,7 @@ class SpatialIndexFiles
         final File indexFile;
         final SpaceFillingCurveSettings settings;
         private final CoordinateReferenceSystem crs;
-        Layout<SpatialSchemaKey,NativeSchemaValue> layout;
+        Layout<SpatialIndexKey,NativeIndexValue> layout;
 
         SpatialFileLayout( CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings, File indexDirectory )
         {
@@ -107,7 +107,7 @@ class SpatialIndexFiles
 
         public void readHeader( PageCache pageCache ) throws IOException
         {
-            GBPTree.readHeader( pageCache, indexFile, settings.headerReader( NativeSchemaIndexHeaderReader::readFailureMessage ) );
+            GBPTree.readHeader( pageCache, indexFile, settings.headerReader( NativeIndexHeaderReader::readFailureMessage ) );
             if ( settings.isFailed() )
             {
                 throw new IOException( settings.getFailureMessage() );

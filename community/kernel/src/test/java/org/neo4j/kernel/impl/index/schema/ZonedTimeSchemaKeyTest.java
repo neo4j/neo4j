@@ -42,8 +42,8 @@ public class ZonedTimeSchemaKeyTest
                           TimeValue.time( 10000, ZoneOffset.of( "+03:00" ) ),
                           TimeValue.time( 10000, ZoneOffset.of( "-18:00" ) )};
 
-        ZonedTimeSchemaKey keyI = new ZonedTimeSchemaKey();
-        ZonedTimeSchemaKey keyJ = new ZonedTimeSchemaKey();
+        ZonedTimeIndexKey keyI = new ZonedTimeIndexKey();
+        ZonedTimeIndexKey keyJ = new ZonedTimeIndexKey();
 
         for ( Value vi : values )
         {
