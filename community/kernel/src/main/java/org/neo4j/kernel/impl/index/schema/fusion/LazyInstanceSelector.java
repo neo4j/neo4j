@@ -60,12 +60,11 @@ class LazyInstanceSelector<T> extends InstanceSelector<T>
     @Override
     T select( IndexSlot slot )
     {
-        if ( !instances.containsKey( slot ) )
+        return instances.computeIfAbsent( slot, s ->
         {
             assertOpen();
-            instances.put( slot, factory.apply( slot ) );
-        }
-        return super.select( slot );
+            return factory.apply( s );
+        } );
     }
 
     /**
