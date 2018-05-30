@@ -146,7 +146,7 @@ object ClauseConverters {
         allMutatingPatterns.appendAll(rels)
 
         acc
-          .amendQueryGraph(_.addMutatingPatterns(allMutatingPatterns))
+          .amendQueryGraph(_.addMutatingPatterns(allMutatingPatterns: _*))
 
       case x => throw new InternalException(s"Received an AST-clause that has no representation the QG: $clause")
     }
@@ -200,7 +200,7 @@ object ClauseConverters {
   }
 
   private def addDeleteToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Delete): PlannerQueryBuilder = {
-    acc.amendQueryGraph(_.addMutatingPatterns(clause.expressions.map(DeleteExpression(_, clause.forced))))
+    acc.amendQueryGraph(_.addMutatingPatterns(clause.expressions.map(DeleteExpression(_, clause.forced)):_*))
   }
 
   private def asReturnItems(current: QueryGraph, returnItems: ReturnItemsDef): Seq[ReturnItem] = returnItems match {

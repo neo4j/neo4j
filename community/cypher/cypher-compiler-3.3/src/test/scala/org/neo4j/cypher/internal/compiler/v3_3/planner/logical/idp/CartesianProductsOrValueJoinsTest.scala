@@ -32,7 +32,10 @@ class CartesianProductsOrValueJoinsTest
   val planC = allNodesScan("c")
 
   private def allNodesScan(n: String): LogicalPlan = {
-    val solved = CardinalityEstimation.lift(RegularPlannerQuery(queryGraph = QueryGraph(patternNodes = Set(n))), Cardinality(0))
+    // The cardinality is tied to the first letter in the node variables. n.head is the first char of the variable name.
+    // 'a' has number ASCII number 97, so that would produce cardinality 1000
+    val cardinality = (n.head.toInt - 96) * 1000
+    val solved = CardinalityEstimation.lift(RegularPlannerQuery(queryGraph = QueryGraph(patternNodes = Set(n))), Cardinality(cardinality))
     AllNodesScan(n, Set.empty)(solved)
   }
 
@@ -61,13 +64,13 @@ class CartesianProductsOrValueJoinsTest
         PlannedComponent(QueryGraph(patternNodes = Set("c")), planC)),
       expectedPlans =
         List(planA, planB, planC).permutations.map { l =>
-          val (a, b, c) = (l.head, l(1), l(2))
+          val (x, y, z) = (l.head, l(1), l(2))
           CartesianProduct(
-            b,
             CartesianProduct(
-              a,
-              c
-            )(solved)
+              y,
+              z
+            )(solved),
+            x
           )(solved)
         }.toSeq : _*)
   }
@@ -117,16 +120,12 @@ class CartesianProductsOrValueJoinsTest
         PlannedComponent(QueryGraph(patternNodes = Set("b")), planB),
         PlannedComponent(QueryGraph(patternNodes = Set("c")), planC)),
       expectedPlans =
-        List((planA, "a"), (planB, "b"), (planC, "c")).permutations.flatMap { l =>
-          val ((a, aName), (b, bName), (c, cName)) = (l.head, l(1), l(2))
-          // permutate equals order
-          List(prop(bName, "id"), prop(cName, "id")).permutations.map { l2 =>
-            val (prop1, prop2) = (l2.head, l2(1))
-            Selection(Seq(Equals(prop(aName, "id"), prop2)(pos)),
-              ValueHashJoin(a,
-                ValueHashJoin(b, c, Equals(prop(bName, "id"), prop(cName, "id"))(pos))(solved), Equals(prop(aName, "id"), prop1)(pos))(solved))(solved)
-          }
-        }.toSeq : _*)
+        Selection(Seq(Equals(prop("a", "id"), prop("c", "id"))(pos)),
+          ValueHashJoin(
+            ValueHashJoin(
+              planA,
+              planB, Equals(prop("a", "id"), prop("b", "id"))(pos))(solved),
+            planC, Equals(prop("b", "id"), prop("c", "id"))(pos))(solved))(solved))
   }
 
   private def testThis(graph: QueryGraph, input: Set[PlannedComponent], assertion: LogicalPlan => Unit): Unit = {
