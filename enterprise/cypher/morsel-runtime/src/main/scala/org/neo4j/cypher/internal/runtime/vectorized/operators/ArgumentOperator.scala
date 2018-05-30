@@ -22,16 +22,20 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.opencypher.v9_0.util.InternalException
 
-class ArgumentOperator extends Operator {
+class ArgumentOperator(longsPerRow: Int, refsPerRow: Int, argumentSize: SlotConfiguration.Size) extends Operator {
   override def operate(message: Message, data: Morsel, context: QueryContext, state: QueryState): Continuation = {
     data.validRows = 1
 
     if(!message.isInstanceOf[StartLeafLoop])
       throw new InternalException("Weird message received")
+
+    val currentRow = new MorselExecutionContext(data, longsPerRow, refsPerRow, currentRow = 0)
+    message.iterationState.copyArgumentStateTo(currentRow, argumentSize.nLongs, argumentSize.nReferences)
 
     EndOfLoop(message.iterationState)
   }

@@ -22,7 +22,6 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized
 
-import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
 import org.opencypher.v9_0.util.InternalException
 
 sealed trait Message {
@@ -64,4 +63,8 @@ case class NoOp(iteration: Iteration) extends Continuation
 /* Response used to signal that all input has been consumed - no more output from this iteration */
 case class EndOfLoop(iteration: Iteration) extends Continuation
 
-class Iteration(argument: Option[SlottedExecutionContext])
+case class Iteration(argument: Option[MorselExecutionContext]) {
+  def copyArgumentStateTo(row: MorselExecutionContext, nLongs: Int, nRefs: Int): Unit = {
+    argument.foreach(row.copyFrom(_, nLongs, nRefs))
+  }
+}

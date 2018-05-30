@@ -82,7 +82,8 @@ class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) exte
           pipeline.parent match {
             case Some(eagerConsumingPipeline@PipeLineWithEagerDependency(eagerData)) =>
               val startEager = StartLoopWithEagerData(eagerData.asScala.toArray, incoming.iterationState)
-              executor.execute(createAction(query, startEager, eagerConsumingPipeline, queryContext, state))
+              val action = createAction(query, startEager, eagerConsumingPipeline, queryContext, state)
+              executor.execute(action)
             case _ =>
               // We where the last pipeline! Cool! Let's signal the query that we are done here.
               query.releaseBlockedThreads()
@@ -97,7 +98,7 @@ class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) exte
     }
   }
 
-  private def execute(query: Query, pipeline: Pipeline, message: Message, queryContext: QueryContext, state: QueryState) = {
+  private def execute(query: Query, pipeline: Pipeline, message: Message, queryContext: QueryContext, state: QueryState): Continuation = {
     val data = Morsel.create(pipeline.slots, morselSize)
     val continuation = pipeline.operate(message, data, queryContext, state)
 

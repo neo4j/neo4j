@@ -22,6 +22,7 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
@@ -30,7 +31,8 @@ import org.neo4j.internal.kernel.api.{IndexOrder, IndexQuery, NodeValueIndexCurs
 import org.neo4j.values.storable.{TextValue, Values}
 import org.opencypher.v9_0.util.CypherTypeException
 
-class NodeIndexContainsScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, label: Int, propertyKey: Int, valueExpr: Expression)
+class NodeIndexContainsScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, label: Int, propertyKey: Int, valueExpr: Expression,
+                                    argumentSize: SlotConfiguration.Size)
   extends NodeIndexOperator[NodeValueIndexCursor](longsPerRow, refsPerRow, offset) {
 
   override def operate(message: Message,
@@ -68,7 +70,7 @@ class NodeIndexContainsScanOperator(longsPerRow: Int, refsPerRow: Int, offset: I
     }
 
     if(!nullExpression)
-      iterate(data, valueIndexCursor, iterationState)
+      iterate(data, valueIndexCursor, iterationState, argumentSize)
     else
       EndOfLoop(iterationState)
   }

@@ -22,12 +22,13 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor
 
-class LabelScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, label: LazyLabel)
+class LabelScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, label: LazyLabel, argumentSize: SlotConfiguration.Size)
   extends NodeIndexOperator[NodeLabelIndexCursor](longsPerRow, refsPerRow, offset) {
 
   override def operate(message: Message,
@@ -52,7 +53,7 @@ class LabelScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, label: L
 
     }
 
-    iterate(data, nodeCursor, iterationState)
+    iterate(data, nodeCursor, iterationState, argumentSize)
   }
 
   override def addDependency(pipeline: Pipeline): Dependency = NoDependencies

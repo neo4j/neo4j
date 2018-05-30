@@ -22,6 +22,7 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{IndexSeek, IndexSeekMode, NodeIndexSeeker, QueryState => OldQueryState}
@@ -34,6 +35,7 @@ import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
 class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
                             label: LabelToken,
                             propertyKeys: Seq[PropertyKeyToken],
+                            argumentSize: SlotConfiguration.Size,
                             override val valueExpr: QueryExpression[Expression],
                             override val indexMode: IndexSeekMode = IndexSeek)
   extends Operator with NodeIndexSeeker {
@@ -75,9 +77,12 @@ class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
   protected def iterate(data: Morsel, nodeIterator: Iterator[NodeValue], iterationState: Iteration): Continuation = {
     val longs: Array[Long] = data.longs
     var processedRows = 0
+    val currentRow = new MorselExecutionContext(data, longsPerRow, refsPerRow, currentRow = processedRows)
     while (processedRows < data.validRows && nodeIterator.hasNext) {
+      iterationState.copyArgumentStateTo(currentRow, argumentSize.nLongs, argumentSize.nReferences)
       longs(processedRows * longsPerRow + offset) = nodeIterator.next().id()
       processedRows += 1
+      currentRow.moveToNextRow()
     }
 
     data.validRows = processedRows

@@ -22,8 +22,8 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RefSlot
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotAllocation.PhysicalPlan
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{IndexSeekModeFactory, LazyLabel, LazyTypes}
@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.util.InternalException
 
-class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: ExpressionConverters, readOnly: Boolean)
+class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverters, readOnly: Boolean)
   extends TreeBuilder[Pipeline] {
 
   override def create(plan: LogicalPlan): Pipeline = {
@@ -44,21 +44,24 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
   }
 
   override protected def build(plan: LogicalPlan): Pipeline = {
-    val slots = slotConfigurations(plan.id)
+    val slots = physicalPlan.slotConfigurations(plan.id)
+    val argumentSize = physicalPlan.argumentSizes(plan.id)
 
     val thisOp = plan match {
       case plans.AllNodesScan(column, _) =>
         new AllNodeScanOperator(
           slots.numberOfLongs,
           slots.numberOfReferences,
-          slots.getLongOffsetFor(column))
+          slots.getLongOffsetFor(column),
+          argumentSize)
 
       case plans.NodeByLabelScan(column, label, _) =>
         new LabelScanOperator(
           slots.numberOfLongs,
           slots.numberOfReferences,
           slots.getLongOffsetFor(column),
-          LazyLabel(label)(SemanticTable()))
+          LazyLabel(label)(SemanticTable()),
+          argumentSize)
 
       case plans.NodeIndexScan(column, labelToken, propertyKey, _) =>
         new NodeIndexScanOperator(
@@ -66,7 +69,8 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
           slots.numberOfReferences,
           slots.getLongOffsetFor(column),
           labelToken.nameId.id,
-          propertyKey.nameId.id)
+          propertyKey.nameId.id,
+          argumentSize)
 
       case NodeIndexContainsScan(column, labelToken, propertyKey, valueExpr, _) =>
         new NodeIndexContainsScanOperator(
@@ -75,7 +79,8 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
           slots.getLongOffsetFor(column),
           labelToken.nameId.id,
           propertyKey.nameId.id,
-          converters.toCommandExpression(valueExpr))
+          converters.toCommandExpression(valueExpr),
+          argumentSize)
 
       case plans.NodeIndexSeek(column, label, propertyKeys, valueExpr,  _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
@@ -85,6 +90,7 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
           slots.getLongOffsetFor(column),
           label,
           propertyKeys,
+          argumentSize,
           valueExpr.map(converters.toCommandExpression),
           indexSeekMode)
 
@@ -96,11 +102,15 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
           slots.getLongOffsetFor(column),
           label,
           propertyKeys,
+          argumentSize,
           valueExpr.map(converters.toCommandExpression),
           indexSeekMode)
 
       case plans.Argument(_) =>
-        new ArgumentOperator
+        new ArgumentOperator(
+          slots.numberOfLongs,
+          slots.numberOfReferences,
+          argumentSize)
 
       case p => throw new CantCompileQueryException(s"$p not supported in morsel runtime")
     }
@@ -110,7 +120,7 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
 
   override protected def build(plan: LogicalPlan, from: Pipeline): Pipeline = {
     var source = from
-    val slots = slotConfigurations(plan.id)
+    val slots = physicalPlan.slotConfigurations(plan.id)
 
       val thisOp = plan match {
         case plans.ProduceResult(_, columns) =>
@@ -124,7 +134,7 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
           val fromOffset = slots.getLongOffsetFor(fromName)
           val relOffset = slots.getLongOffsetFor(relName)
           val toOffset = slots.getLongOffsetFor(to)
-          val fromPipe = slotConfigurations(lhs.id)
+          val fromPipe = physicalPlan.slotConfigurations(lhs.id)
           val lazyTypes = LazyTypes(types.toArray)(SemanticTable())
           new ExpandAllOperator(slots, fromPipe, fromOffset, relOffset, toOffset, dir, lazyTypes)
 
@@ -193,7 +203,7 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
               throw new InternalException("Weird slot found for UNWIND")
           }
           val runtimeExpression = converters.toCommandExpression(collection)
-          new UnwindOperator(runtimeExpression, offset, slotConfigurations(src.id), slots)
+          new UnwindOperator(runtimeExpression, offset, physicalPlan.slotConfigurations(src.id), slots)
 
         case p => throw new CantCompileQueryException(s"$p not supported in morsel runtime")
       }

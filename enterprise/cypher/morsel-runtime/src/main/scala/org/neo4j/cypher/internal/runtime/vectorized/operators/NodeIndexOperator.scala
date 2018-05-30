@@ -22,20 +22,28 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.internal.kernel.api.NodeIndexCursor
+import org.neo4j.values.AnyValue
 
 abstract class NodeIndexOperator[CURSOR <: NodeIndexCursor](longsPerRow: Int, refsPerRow: Int, offset: Int) extends Operator {
 
-  protected def iterate(data: Morsel, cursor: CURSOR, iterationState: Iteration): Continuation = {
+  protected def iterate(data: Morsel, cursor: CURSOR, iterationState: Iteration, argumentSize: SlotConfiguration.Size): Continuation = {
     val longs: Array[Long] = data.longs
+    val refs: Array[AnyValue] = data.refs
+
     var processedRows = 0
     var hasMore = true
+    val currentRow = new MorselExecutionContext(data, longsPerRow, refsPerRow, currentRow = processedRows)
     while (processedRows < data.validRows && hasMore) {
       hasMore = cursor.next()
       if (hasMore) {
+        iterationState.copyArgumentStateTo(currentRow, argumentSize.nLongs, argumentSize.nReferences)
+
         longs(processedRows * longsPerRow + offset) = cursor.nodeReference()
         processedRows += 1
+        currentRow.moveToNextRow()
       }
     }
 

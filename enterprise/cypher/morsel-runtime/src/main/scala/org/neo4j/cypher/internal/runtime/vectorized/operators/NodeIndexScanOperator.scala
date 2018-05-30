@@ -22,12 +22,13 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.internal.kernel.api.{IndexOrder, NodeValueIndexCursor}
 
 
-class NodeIndexScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, label: Int, propertyKey: Int)
+class NodeIndexScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, label: Int, propertyKey: Int, argumentSize: SlotConfiguration.Size)
   extends NodeIndexOperator[NodeValueIndexCursor](longsPerRow, refsPerRow, offset) {
 
   override def operate(message: Message,
@@ -50,7 +51,7 @@ class NodeIndexScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, labe
       case _ => throw new IllegalStateException()
     }
 
-    iterate(data, valueIndexCursor, iterationState)
+    iterate(data, valueIndexCursor, iterationState, argumentSize)
   }
 
 

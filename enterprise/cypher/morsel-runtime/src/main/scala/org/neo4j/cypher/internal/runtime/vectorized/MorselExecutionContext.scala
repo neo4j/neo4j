@@ -24,17 +24,28 @@ package org.neo4j.cypher.internal.runtime.vectorized
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.values.AnyValue
+import org.opencypher.v9_0.util.InternalException
 
-class MorselExecutionContext(morsel: Morsel, longsPerRow: Int, refsPerRow: Int, var currentRow: Int) extends ExecutionContext {
+// TODO use this everywhere and hide Morsel from operators
+class MorselExecutionContext(private val morsel: Morsel, longsPerRow: Int, refsPerRow: Int, var currentRow: Int) extends ExecutionContext {
 
-  def moveToNextRow(): Int = {
+  //TODO use this instead of currentRow directly
+  def moveToNextRow(): Unit = {
     currentRow += 1
-    currentRow
   }
 
   override def copyTo(target: ExecutionContext, fromLongOffset: Int = 0, fromRefOffset: Int = 0, toLongOffset: Int = 0, toRefOffset: Int = 0): Unit = ???
 
-  override def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit = ???
+  override def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit = input match {
+    case other:MorselExecutionContext =>
+      if (nLongs > longsPerRow || nRefs > refsPerRow)
+        throw new InternalException("Tried to copy too much data.")
+      else {
+        System.arraycopy(other.morsel.longs, other.longsAtCurrentRow, morsel.longs, longsAtCurrentRow, nLongs)
+        System.arraycopy(other.morsel.refs, other.refsAtCurrentRow, morsel.refs, refsAtCurrentRow, nRefs)
+      }
+    case _ => fail()
+  }
 
   override def setLongAt(offset: Int, value: Long): Unit = morsel.longs(currentRow * longsPerRow + offset) = value
 
@@ -79,4 +90,10 @@ class MorselExecutionContext(morsel: Morsel, longsPerRow: Int, refsPerRow: Int, 
   override def boundEntities(materializeNode: Long => AnyValue, materializeRelationship: Long => AnyValue): Map[String, AnyValue] = ???
 
   override def isNull(key: String): Boolean = ???
+
+  private def longsAtCurrentRow: Int = currentRow * longsPerRow
+
+  private def refsAtCurrentRow: Int = currentRow * refsPerRow
+
+  private def fail(): Nothing = throw new InternalException("Tried using a wrong context.")
 }
