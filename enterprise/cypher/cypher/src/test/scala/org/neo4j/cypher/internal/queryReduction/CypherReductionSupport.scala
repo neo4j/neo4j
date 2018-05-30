@@ -41,13 +41,14 @@ import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.SingleThreadedExecutor
 import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, NormalMode}
 import org.neo4j.cypher.internal.spi.codegen.GeneratedQueryStructure
-import org.neo4j.cypher.internal.{MasterCompiler, ExecutionPlan, RewindableExecutionResult}
+import org.neo4j.cypher.internal.{ExecutionPlan, MasterCompiler, RewindableExecutionResult}
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo.EMBEDDED_CONNECTION
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, TransactionalContextFactory}
 import org.neo4j.kernel.monitoring.Monitors
+import org.neo4j.logging.NullLog
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.opencypher.v9_0.ast._
@@ -207,8 +208,8 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
     val logicalPlanIdGen = new SequentialIdGen()
     if (enterprise) {
       val dispatcher = new SingleThreadedExecutor(1)
-      EnterpriseRuntimeContextCreator(GeneratedQueryStructure, dispatcher).create(NO_TRACING, devNullLogger, planContext, query, Set(),
-        None, WrappedMonitors(new Monitors), metricsFactory, queryGraphSolver, config, defaultUpdateStrategy, MasterCompiler.CLOCK, logicalPlanIdGen, null)
+      EnterpriseRuntimeContextCreator(GeneratedQueryStructure, dispatcher, NullLog.getInstance()).create(NO_TRACING, devNullLogger, planContext, query, Set(),
+                                                                                              None, WrappedMonitors(new Monitors), metricsFactory, queryGraphSolver, config, defaultUpdateStrategy, MasterCompiler.CLOCK, logicalPlanIdGen, null)
     } else {
     CommunityRuntimeContextCreator.create(NO_TRACING, devNullLogger, planContext, query, Set(),
       None, WrappedMonitors(new Monitors), metricsFactory, queryGraphSolver, config = config, updateStrategy = defaultUpdateStrategy, clock = MasterCompiler.CLOCK, logicalPlanIdGen, evaluator = null)
