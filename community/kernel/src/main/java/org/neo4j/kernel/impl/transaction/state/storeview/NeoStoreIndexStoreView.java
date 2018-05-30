@@ -198,11 +198,10 @@ public class NeoStoreIndexStoreView implements IndexStoreView
             for ( PropertyBlock block : propertyRecord )
             {
                 int currentPropertyId = block.getKeyIndexId();
-                if ( propertyIds.contains( currentPropertyId ) )
+                if ( propertyIds.remove( currentPropertyId ) )
                 {
                     Value currentValue = block.getType().value( block, propertyStore );
                     sink.onProperty( currentPropertyId, currentValue );
-                    propertyIds.remove( currentPropertyId );
                 }
             }
         }

@@ -44,9 +44,9 @@ public class RelationTypeSchemaDescriptor implements org.neo4j.internal.kernel.a
     }
 
     @Override
-    public boolean isAffected( long[] entityIds )
+    public boolean isAffected( long[] entityTokenIds )
     {
-        return ArrayUtils.contains( entityIds, relTypeId );
+        return ArrayUtils.contains( entityTokenIds, relTypeId );
     }
 
     @Override

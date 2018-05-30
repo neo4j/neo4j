@@ -51,7 +51,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 public abstract class PropertyAwareEntityStoreScan<RECORD extends PrimitiveRecord, FAILURE extends Exception> implements StoreScan<FAILURE>
 {
     private final RecordStore<RECORD> store;
-    private boolean continueScanning;
+    private volatile boolean continueScanning;
     private long count;
     private long totalCount;
     private final IntPredicate propertyKeyIdFilter;
