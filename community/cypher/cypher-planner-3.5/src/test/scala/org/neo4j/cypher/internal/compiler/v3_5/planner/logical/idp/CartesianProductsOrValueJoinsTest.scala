@@ -26,7 +26,7 @@ import org.opencypher.v9_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.opencypher.v9_0.util.Cardinality
-import org.opencypher.v9_0.expressions.Equals
+import org.opencypher.v9_0.expressions.{Contains, Equals}
 
 class CartesianProductsOrValueJoinsTest
   extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {
@@ -135,6 +135,82 @@ class CartesianProductsOrValueJoinsTest
                 ValueHashJoin(b, c, Equals(prop(bName, "id"), prop(cName, "id"))(pos)), Equals(prop(aName, "id"), prop1)(pos)))
           }
         }.toSeq : _*)
+  }
+
+  test("should recognize value joins") {
+    // given WHERE x.id = z.id
+    val lhs = prop("x", "id")
+    val rhs = prop("z", "id")
+    val equalityComparison = Equals(lhs, rhs)(pos)
+    val selections = Selections.from(equalityComparison)
+
+    // when
+    val result = cartesianProductsOrValueJoins.valueJoins(Seq(equalityComparison))
+
+    // then
+    result should equal(Set(equalityComparison))
+  }
+
+  test("if one side is a literal, it's not a value join") {
+    // given WHERE x.id = 42
+    val equalityComparison = propEquality("x","id", 42)
+
+    // when
+    val result = cartesianProductsOrValueJoins.valueJoins(Seq(equalityComparison))
+
+    // then
+    result should be(empty)
+  }
+
+  test("if both lhs and rhs come from the same variable, it's not a value join") {
+    // given WHERE x.id1 = x.id2
+    val lhs = prop("x", "id1")
+    val rhs = prop("x", "id2")
+    val equalityComparison = Equals(lhs, rhs)(pos)
+    val selections = Selections.from(equalityComparison)
+
+    // when
+    val result = cartesianProductsOrValueJoins.valueJoins(Seq(equalityComparison))
+
+    // then
+    result should be(empty)
+  }
+
+  test("combination of predicates is not a problem") {
+    // given WHERE x.id1 = z.id AND x.id1 = x.id2 AND x.id2 = 42
+    val x_id1 = prop("x", "id1")
+    val x_id2 = prop("x", "id2")
+    val z_id = prop("z", "id")
+    val lit = literalInt(42)
+
+    val pred1 = Equals(x_id1, x_id2)(pos)
+    val pred2 = Equals(x_id1, z_id)(pos)
+    val pred3 = Equals(x_id2, lit)(pos)
+
+    // when
+    val result = cartesianProductsOrValueJoins.valueJoins(Seq(pred1, pred2, pred3))
+
+    // then
+    result should be(Set(pred2))
+  }
+
+  test("find predicates that depend on two different qgs is possible") {
+    // given WHERE n.prop CONTAINS x.prop
+    val nProp = prop("n", "prop")
+    val xProp = prop("x", "prop")
+
+    val predicate1 = Contains(nProp, xProp)(pos)
+    val predicate2 = propEquality("n", "prop", 42)
+
+    val qg1 = QueryGraph.empty.withPatternNodes(Set("n"))
+    val qg2 = QueryGraph.empty.withPatternNodes(Set("x"))
+
+     
+    // when
+    val result = cartesianProductsOrValueJoins.predicatesDependendingOnBothSides(Seq(predicate1, predicate2), qg1, qg2)
+
+    // then
+    result should be(List(predicate1))
   }
 
   private def testThis(graph: QueryGraph, input: (Solveds, Cardinalities) => Set[PlannedComponent], assertion: LogicalPlan => Unit): Unit = {
