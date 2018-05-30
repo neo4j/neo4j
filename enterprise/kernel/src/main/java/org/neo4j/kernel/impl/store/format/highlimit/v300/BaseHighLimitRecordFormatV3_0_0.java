@@ -147,6 +147,8 @@ abstract class BaseHighLimitRecordFormatV3_0_0<RECORD extends AbstractBaseRecord
         {
             doReadInternal( record, primaryCursor, recordSize, headerByte, inUse );
         }
+
+        primaryCursor.setOffset( primaryStartOffset + recordSize );
     }
 
     private String illegalSecondaryReferenceMessage( long secondaryId )

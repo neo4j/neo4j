@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.format.standard;
 
-import java.io.IOException;
-
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
@@ -101,6 +99,11 @@ public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<Rela
                     BaseRecordFormat.longFromIntAndMod( secondNextRel, secondNextRelMod ),
                     (extraByte & 0x1) != 0,
                     (extraByte & 0x2) != 0 );
+        }
+        else
+        {
+            int nextOffset = cursor.getOffset() + recordSize - HEADER_SIZE;
+            cursor.setOffset( nextOffset );
         }
     }
 

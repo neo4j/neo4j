@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
  */
 public abstract class BaseOneByteHeaderRecordFormat<RECORD extends AbstractBaseRecord> extends BaseRecordFormat<RECORD>
 {
+    protected static final int HEADER_SIZE = 1;
     private final int inUseBitMaskForFirstByte;
 
     protected BaseOneByteHeaderRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize,

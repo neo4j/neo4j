@@ -44,6 +44,7 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
     private PageCursor pageCursor;
     private long next;
     private long highMark;
+    private long nextStoreReference;
     private HasChanges hasChanges = HasChanges.MAYBE;
     private LongSet addedNodes;
     private PropertyCursor propertyCursor;
@@ -68,6 +69,7 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
         }
         this.next = 0;
         this.highMark = read.nodeHighMark();
+        this.nextStoreReference = NO_ID;
         this.read = read;
         this.hasChanges = HasChanges.MAYBE;
         this.addedNodes = LongSets.immutable.empty();
@@ -86,6 +88,7 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
         this.next = reference;
         //This marks the cursor as a "single cursor"
         this.highMark = NO_ID;
+        this.nextStoreReference = NO_ID;
         this.read = read;
         this.hasChanges = HasChanges.MAYBE;
         this.addedNodes = LongSets.immutable.empty();
@@ -235,9 +238,16 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
                 next++;
                 setInUse( false );
             }
+            else if ( nextStoreReference == next )
+            {
+                read.nodeAdvance( this, pageCursor );
+                next++;
+                nextStoreReference++;
+            }
             else
             {
                 read.node( this, next++, pageCursor );
+                nextStoreReference = next;
             }
 
             if ( next > highMark )
