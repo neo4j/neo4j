@@ -35,16 +35,14 @@ import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.internal.Version;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.management.ClusterDatabaseInfo;
 import org.neo4j.management.ClusterMemberInfo;
 
 import static org.neo4j.helpers.collection.Iterables.asArray;
 import static org.neo4j.helpers.collection.Iterables.map;
 
-public class HighlyAvailableKernelData extends KernelData implements Lifecycle
+public class HighlyAvailableKernelData extends KernelData
 {
-    private final GraphDatabaseAPI db;
     private final ClusterMembers memberInfo;
     private final ClusterDatabaseInfoProvider memberInfoProvider;
 
@@ -52,31 +50,9 @@ public class HighlyAvailableKernelData extends KernelData implements Lifecycle
             ClusterDatabaseInfoProvider databaseInfo, FileSystemAbstraction fileSystem, PageCache pageCache,
             File storeDir, Config config )
     {
-        super( fileSystem, pageCache, storeDir, config );
-        this.db = db;
+        super( fileSystem, pageCache, storeDir, config, db );
         this.memberInfo = memberInfo;
         this.memberInfoProvider = databaseInfo;
-    }
-
-    @Override
-    public void init()
-    {
-    }
-
-    @Override
-    public void start()
-    {
-    }
-
-    @Override
-    public void stop()
-    {
-    }
-
-    @Override
-    public void shutdown()
-    {
-        super.shutdown();
     }
 
     @Override
@@ -85,13 +61,7 @@ public class HighlyAvailableKernelData extends KernelData implements Lifecycle
         return Version.getKernel();
     }
 
-    @Override
-    public GraphDatabaseAPI graphDatabase()
-    {
-        return db;
-    }
-
-    public ClusterMemberInfo[] getClusterInfo()
+    ClusterMemberInfo[] getClusterInfo()
     {
         List<ClusterMemberInfo> clusterMemberInfos = new ArrayList<>();
         Function<Object,String> nullSafeToString = from -> from == null ? "" : from.toString();
@@ -107,7 +77,7 @@ public class HighlyAvailableKernelData extends KernelData implements Lifecycle
         return clusterMemberInfos.toArray( new ClusterMemberInfo[clusterMemberInfos.size()] );
     }
 
-    public ClusterDatabaseInfo getMemberInfo()
+    ClusterDatabaseInfo getMemberInfo()
     {
         return memberInfoProvider.getInfo();
     }
