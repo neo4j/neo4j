@@ -37,7 +37,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
     TestConfiguration(Versions.V3_3, Planners.Default, Runtimes(Runtimes.Interpreted))
 
-  test("handle big CREATE queries") {
+  test("handle big CREATE clause") {
     var query = "CREATE (x)"
     for (i <- 1 to 5000) {
       query += s" ,(a$i)-[:R]->(b$i)"
@@ -48,10 +48,37 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesCreated = 10001, relationshipsCreated = 5000)
   }
 
-  test("PROFILE big CREATE queries") {
+  test("handle many CREATE clauses") {
+    var query = "CREATE (x)"
+    for (i <- 1 to 5000) {
+      query += s" CREATE (a$i)-[:R]->(b$i)"
+    }
+
+    val futureResult = Future(executeWith(BIG_CREATE_CONFIGS, query, executeExpectedFailures = false))
+    val result = Await.result(futureResult, 30 seconds)
+    assertStats(result, nodesCreated = 10001, relationshipsCreated = 5000)
+  }
+
+  test("PROFILE big CREATE clause") {
     var query = "PROFILE CREATE (x)"
     for (i <- 1 to 5000) {
       query += s" ,(a$i)-[:R]->(b$i)"
+    }
+
+    val futureResult = Future(executeWith(BIG_CREATE_CONFIGS, query, executeExpectedFailures = false))
+    val result = Await.result(futureResult, 30 seconds)
+    assertStats(result, nodesCreated = 10001, relationshipsCreated = 5000)
+
+    val planDescription = Await.result(Future(result.executionPlanDescription()), 30 seconds)
+    val creates = planDescription.find("Create")
+    creates.size should equal(1)
+    creates.head.totalDbHits.get should be > 15000L
+  }
+
+  test("PROFILE many CREATE clauses") {
+    var query = "PROFILE CREATE (x)"
+    for (i <- 1 to 5000) {
+      query += s" CREATE (a$i)-[:R]->(b$i)"
     }
 
     val futureResult = Future(executeWith(BIG_CREATE_CONFIGS, query, executeExpectedFailures = false))

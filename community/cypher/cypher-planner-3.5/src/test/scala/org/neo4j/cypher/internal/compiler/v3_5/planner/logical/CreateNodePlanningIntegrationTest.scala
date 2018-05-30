@@ -51,21 +51,16 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
     )
   }
 
-  // This could in principle be planned as one Create, but that's not yet supported
   test("should plan for multiple creates via multiple statements") {
     planFor("CREATE (a) CREATE (b) CREATE (c)")._2 should equal(
       EmptyResult(
         Create(
-          Create(
-            Create(
-              Argument(),
-              List(CreateNode("a",Seq.empty,None)),
-              Nil
-            ),
-            List(CreateNode("b",Seq.empty,None)),
-            Nil
+          Argument(),
+          List(
+            CreateNode("a",Seq.empty,None),
+            CreateNode("b",Seq.empty,None),
+            CreateNode("c",Seq.empty,None)
           ),
-          List(CreateNode("c",Seq.empty,None)),
           Nil
         )
       )

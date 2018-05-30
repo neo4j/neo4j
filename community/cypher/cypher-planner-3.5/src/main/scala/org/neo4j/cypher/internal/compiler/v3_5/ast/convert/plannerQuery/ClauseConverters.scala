@@ -452,9 +452,11 @@ object ClauseConverters {
                         .addArgumentIds(foreachVariable.name +: currentlyAvailableVariables.toIndexedSeq))
       .withHorizon(projectionToInnerUpdates)
 
-    val innerPlannerQuery = clause.updates.foldLeft(innerBuilder) {
-      case (acc, innerClause) => addToLogicalPlanInput(acc, innerClause)
-    }.build()
+    val innerPlannerQuery =
+      StatementConverters.flattenCreates(clause.updates)
+        .foldLeft(innerBuilder) {
+          case (acc, innerClause) => addToLogicalPlanInput(acc, innerClause)
+        }.build()
 
     val foreachPattern = ForeachPattern(
       variable = clause.variable.name,
