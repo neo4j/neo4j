@@ -29,20 +29,18 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
+import org.neo4j.causalclustering.catchup.CheckPointerService;
 import org.neo4j.causalclustering.messaging.StoreCopyRequest;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StoreFileMetadata;
@@ -55,22 +53,22 @@ public abstract class StoreCopyRequestHandler<T extends StoreCopyRequest> extend
 {
     private final CatchupServerProtocol protocol;
     private final Supplier<NeoStoreDataSource> dataSource;
-    private final Supplier<CheckPointer> checkpointerSupplier;
+    private final CheckPointerService checkPointerService;
     private final StoreFileStreamingProtocol storeFileStreamingProtocol;
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
     private final Log log;
 
-    StoreCopyRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource, Supplier<CheckPointer> checkpointerSupplier,
+    StoreCopyRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource, CheckPointerService checkPointerService,
             StoreFileStreamingProtocol storeFileStreamingProtocol, PageCache pageCache, FileSystemAbstraction fs, LogProvider logProvider )
     {
         this.protocol = protocol;
         this.dataSource = dataSource;
-        this.checkpointerSupplier = checkpointerSupplier;
         this.storeFileStreamingProtocol = storeFileStreamingProtocol;
         this.pageCache = pageCache;
         this.fs = fs;
         this.log = logProvider.getLog( StoreCopyRequestHandler.class );
+        this.checkPointerService = checkPointerService;
     }
 
     @Override
@@ -88,7 +86,8 @@ public abstract class StoreCopyRequestHandler<T extends StoreCopyRequest> extend
             else if ( !isTransactionWithinReach( request.requiredTransactionId() ) )
             {
                 responseStatus = StoreCopyFinishedResponse.Status.E_TOO_FAR_BEHIND;
-                asyncCheckpoint();
+                checkPointerService.tryAsyncCheckpoint(
+                        e -> log.error( "Failed to do a checkpoint that was invoked after a too far behind error on store copy request", e ) );
             }
             else
             {
@@ -115,22 +114,7 @@ public abstract class StoreCopyRequestHandler<T extends StoreCopyRequest> extend
 
     private boolean isTransactionWithinReach( long transactionId )
     {
-        return checkpointerSupplier.get().lastCheckPointedTransactionId() >= transactionId;
-    }
-
-    private void asyncCheckpoint() throws IOException
-    {
-        CompletableFuture.runAsync( () ->
-        {
-            try
-            {
-                checkpointerSupplier.get().tryCheckPoint( new SimpleTriggerInfo( "Store file copy" ) );
-            }
-            catch ( IOException e )
-            {
-                e.printStackTrace();
-            }
-        } );
+        return checkPointerService.lastCheckPointedTransactionId() >= transactionId;
     }
 
     abstract ResourceIterator<StoreFileMetadata> files( T request, NeoStoreDataSource neoStoreDataSource ) throws IOException;
@@ -151,10 +135,11 @@ public abstract class StoreCopyRequestHandler<T extends StoreCopyRequest> extend
 
     public static class GetStoreFileRequestHandler extends StoreCopyRequestHandler<GetStoreFileRequest>
     {
-        public GetStoreFileRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource, Supplier<CheckPointer> checkpointerSupplier,
-                StoreFileStreamingProtocol storeFileStreamingProtocol, PageCache pageCache, FileSystemAbstraction fs, LogProvider logProvider )
+        public GetStoreFileRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource,
+                CheckPointerService checkPointerService, StoreFileStreamingProtocol storeFileStreamingProtocol, PageCache pageCache,
+                FileSystemAbstraction fs, LogProvider logProvider )
         {
-            super( protocol, dataSource, checkpointerSupplier, storeFileStreamingProtocol, pageCache, fs, logProvider );
+            super( protocol, dataSource, checkPointerService, storeFileStreamingProtocol, pageCache, fs, logProvider );
         }
 
         @Override
@@ -172,10 +157,10 @@ public abstract class StoreCopyRequestHandler<T extends StoreCopyRequest> extend
     public static class GetIndexSnapshotRequestHandler extends StoreCopyRequestHandler<GetIndexFilesRequest>
     {
         public GetIndexSnapshotRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource,
-                Supplier<CheckPointer> checkpointerSupplier, StoreFileStreamingProtocol storeFileStreamingProtocol, PageCache pageCache,
+                CheckPointerService checkPointerService, StoreFileStreamingProtocol storeFileStreamingProtocol, PageCache pageCache,
                 FileSystemAbstraction fs, LogProvider logProvider )
         {
-            super( protocol, dataSource, checkpointerSupplier, storeFileStreamingProtocol, pageCache, fs, logProvider );
+            super( protocol, dataSource, checkPointerService, storeFileStreamingProtocol, pageCache, fs, logProvider );
         }
 
         @Override

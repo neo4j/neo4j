@@ -22,14 +22,8 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import java.io.IOException;
-import java.util.Optional;
-import java.util.concurrent.Future;
-
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 
 class DataSourceChecks
 {
