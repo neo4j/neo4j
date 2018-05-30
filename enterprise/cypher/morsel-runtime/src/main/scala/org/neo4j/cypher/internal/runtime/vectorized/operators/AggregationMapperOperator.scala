@@ -53,27 +53,27 @@ class AggregationMapperOperator(slots: SlotConfiguration, aggregations: Array[Ag
     val queryState = new OldQueryState(context, resources = null, params = state.params)
 
     //loop over the entire morsel and apply the aggregation
-    while (currentRow.currentRow < data.validRows) {
+    while (currentRow.getCurrentRow < data.validRows) {
       val groupingValue: AnyValue = groupingFunction(currentRow, queryState)
       val functions = result
         .getOrElseUpdate(groupingValue, aggregations.map(a => a.incoming -> a.aggregation.createAggregationMapper))
       functions.foreach(f => f._2.map(currentRow, queryState))
-      currentRow.currentRow += 1
+      currentRow.moveToNextRow()
     }
 
     //reuse and reset morsel context
-    currentRow.currentRow = 0
+    currentRow.resetToFirstRow()
     result.foreach {
       case (key, aggregator) =>
         addGroupingValuesToResult(currentRow, key)
         var i = 0
         while (i < aggregations.length) {
           val (offset, mapper) = aggregator(i)
-          data.refs(currentRow.currentRow * refCount + offset) = mapper.result
+          data.refs(currentRow.getCurrentRow * refCount + offset) = mapper.result
           i += 1
         }
-        currentRow.currentRow += 1
+        currentRow.moveToNextRow()
     }
-    data.validRows = currentRow.currentRow
+    data.validRows = currentRow.getCurrentRow
   }
 }

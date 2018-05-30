@@ -36,23 +36,20 @@ class FilterOperator(slots: SlotConfiguration, predicate: Predicate) extends Mid
                        context: QueryContext,
                        state: QueryState): Unit = {
 
-    var readingPos = 0
     var writingPos = 0
     val longCount = slots.numberOfLongs
     val refCount = slots.numberOfReferences
-    val currentRow = new MorselExecutionContext(data, longCount, refCount, currentRow = readingPos)
+    val currentRow = new MorselExecutionContext(data, longCount, refCount, currentRow = 0)
     val queryState = new OldQueryState(context, resources = null, params = state.params)
 
-    while (readingPos < data.validRows) {
-      currentRow.currentRow = readingPos
+    while (currentRow.getCurrentRow < data.validRows) {
       val matches = predicate.isTrue(currentRow, queryState)
       if (matches) {
-        System.arraycopy(data.longs, readingPos * longCount, data.longs, writingPos * longCount, longCount)
-        System.arraycopy(data.refs, readingPos * refCount, data.refs, writingPos * refCount, refCount)
+        System.arraycopy(data.longs, currentRow.getCurrentRow * longCount, data.longs, writingPos * longCount, longCount)
+        System.arraycopy(data.refs, currentRow.getCurrentRow * refCount, data.refs, writingPos * refCount, refCount)
         writingPos += 1
       }
-      readingPos += 1
-      currentRow.currentRow = readingPos
+      currentRow.moveToNextRow()
     }
 
     data.validRows = writingPos

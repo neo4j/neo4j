@@ -73,7 +73,7 @@ class UnwindOperator(collection: Expression,
 
     do {
       if (unwoundValues == null) {
-        currentRow.currentRow = readPos
+        currentRow.moveToRow(readPos)
         val value = collection(currentRow, queryState)
         unwoundValues = makeTraversable(value).iterator
       }

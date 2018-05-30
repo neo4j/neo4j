@@ -65,11 +65,11 @@ class AggregationReduceOperator(slots: SlotConfiguration, aggregations: Array[Ag
       var i = 0
       while (i < aggregations.length) {
         val (_, offset, reducer) = aggregator(i)
-        output.refs(currentRow.currentRow * refCount + offset) = reducer.result
+        output.refs(currentRow.getCurrentRow * refCount + offset) = reducer.result
         i += 1
       }
       writePos +=1
-      currentRow.currentRow += 1
+      currentRow.moveToNextRow()
     }
     output.validRows = writePos
 
@@ -83,17 +83,17 @@ class AggregationReduceOperator(slots: SlotConfiguration, aggregations: Array[Ag
     while (morselPos < morsels.length) {
       val data = morsels(morselPos)
       val currentRow = new MorselExecutionContext(data, longCount, refCount, currentRow = 0)
-      while (currentRow.currentRow < data.validRows) {
+      while (currentRow.getCurrentRow < data.validRows) {
         val key = getGroupingKey(currentRow)
         val functions = result.getOrElseUpdate(key, aggregations
           .map(a => (a.incoming, a.outgoing, a.aggregation.createAggregationReducer)))
         var i = 0
         while (i < functions.length) {
           val (incoming, _, reducer) = functions(i)
-          reducer.reduce(data.refs(currentRow.currentRow * refCount + incoming))
+          reducer.reduce(data.refs(currentRow.getCurrentRow * refCount + incoming))
           i += 1
         }
-        currentRow.currentRow += 1
+        currentRow.moveToNextRow()
       }
       morselPos += 1
     }

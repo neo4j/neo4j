@@ -44,13 +44,13 @@ class AggregationMapperOperatorNoGrouping(slots: SlotConfiguration, aggregations
     val queryState = new OldQueryState(context, resources = null, params = state.params)
 
     //loop over the entire morsel and apply the aggregation
-    while (currentRow.currentRow < data.validRows) {
+    while (currentRow.getCurrentRow < data.validRows) {
       var accCount = 0
       while (accCount < aggregations.length) {
         aggregationMappers(accCount).map(currentRow, queryState)
         accCount += 1
       }
-      currentRow.currentRow += 1
+      currentRow.moveToNextRow()
     }
 
     //Write the local aggregation value to the morsel in order for the

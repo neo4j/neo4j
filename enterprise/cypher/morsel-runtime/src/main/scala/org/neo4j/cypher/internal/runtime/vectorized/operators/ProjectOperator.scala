@@ -43,16 +43,14 @@ class ProjectOperator(val projectionOps: Map[Slot, Expression], slots: SlotConfi
   }.toArray
 
   override def operate(iterationState: Iteration, data: Morsel, context: QueryContext, state: QueryState): Unit = {
-    var currentRow = 0
     val longCount = slots.numberOfLongs
     val refCount = slots.numberOfReferences
-    val executionContext = new MorselExecutionContext(data, longCount, refCount, currentRow = currentRow)
+    val currentRow = new MorselExecutionContext(data, longCount, refCount, currentRow = 0)
     val queryState = new OldQueryState(context, resources = null, params = state.params)
 
-    while(currentRow < data.validRows) {
-      executionContext.currentRow = currentRow
-      project.foreach(p => p(executionContext, queryState))
-      currentRow += 1
+    while(currentRow.getCurrentRow < data.validRows) {
+      project.foreach(p => p(currentRow, queryState))
+      currentRow.moveToNextRow()
     }
   }
 }

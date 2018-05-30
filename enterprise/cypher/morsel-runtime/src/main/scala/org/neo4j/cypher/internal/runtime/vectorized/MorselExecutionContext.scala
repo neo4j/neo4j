@@ -27,12 +27,17 @@ import org.neo4j.values.AnyValue
 import org.opencypher.v9_0.util.InternalException
 
 // TODO use this everywhere and hide Morsel from operators
-class MorselExecutionContext(private val morsel: Morsel, longsPerRow: Int, refsPerRow: Int, var currentRow: Int) extends ExecutionContext {
+class MorselExecutionContext(private val morsel: Morsel, longsPerRow: Int, refsPerRow: Int, private var currentRow: Int) extends ExecutionContext {
 
-  //TODO use this instead of currentRow directly
   def moveToNextRow(): Unit = {
     currentRow += 1
   }
+
+  def getCurrentRow: Int = currentRow
+
+  def moveToRow(row: Int): Unit = currentRow = row
+
+  def resetToFirstRow(): Unit = currentRow = 0
 
   override def copyTo(target: ExecutionContext, fromLongOffset: Int = 0, fromRefOffset: Int = 0, toLongOffset: Int = 0, toRefOffset: Int = 0): Unit = ???
 
