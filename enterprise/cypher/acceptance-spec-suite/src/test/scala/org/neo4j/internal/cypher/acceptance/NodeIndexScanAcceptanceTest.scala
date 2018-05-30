@@ -93,4 +93,20 @@ class NodeIndexScanAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     // Then
     result should evaluateTo(List(Map("count(n)" -> 3)))
   }
+
+  test("should work just fine and use an index scan") {
+    graph.createIndex("Method", "arg0")
+    val query =
+      """
+        |match (f:XMLElement:Function)<-[r:Use]-
+        | (p:XMLElement:Product)-[:ReferTo]->
+        | (pc:Class)-[:Declares]->
+        | (pm:Method)
+        | WHERE pm.arg0 = r.name
+        | merge (pm)-[:Call]->(f);
+      """.stripMargin
+
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
+    result.toList should be(empty)
+  }
 }
