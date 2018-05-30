@@ -45,12 +45,6 @@ public class LoggingMonitor extends Monitor.Adaptor
     }
 
     @Override
-    public void lockedIndex( Exception e )
-    {
-        log.error( "Scan store is locked by another process or database", e );
-    }
-
-    @Override
     public void notValidIndex()
     {
         log.warn( "Scan store could not be read. Preparing to rebuild." );
@@ -69,12 +63,30 @@ public class LoggingMonitor extends Monitor.Adaptor
     }
 
     @Override
+    public void recoveryCleanupRegistered()
+    {
+        log.info( "Scan store cleanup job registered" );
+    }
+
+    @Override
+    public void recoveryCleanupStarted()
+    {
+        log.info( "Scan store cleanup job started" );
+    }
+
+    @Override
     public void recoveryCleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
     {
-        StringJoiner joiner = new StringJoiner( ", ", "Scan store recovery cleanup job finished:", "" );
+        StringJoiner joiner = new StringJoiner( ", ", "Scan store cleanup job finished: ", "" );
         joiner.add( "Number of pages visited: " + numberOfPagesVisited );
         joiner.add( "Number of cleaned crashed pointers: " + numberOfCleanedCrashPointers );
         joiner.add( "Time spent: " + duration( durationMillis ) );
         log.info( joiner.toString() );
+    }
+
+    @Override
+    public void recoveryCleanupClosed()
+    {
+        log.info( "Scan store cleanup job closed" );
     }
 }

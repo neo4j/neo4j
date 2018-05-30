@@ -51,11 +51,6 @@ public interface LabelScanStore extends Lifecycle
             }
 
             @Override
-            public void lockedIndex( Exception e )
-            {   // empty
-            }
-
-            @Override
             public void notValidIndex()
             {   // empty
             }
@@ -71,7 +66,22 @@ public interface LabelScanStore extends Lifecycle
             }
 
             @Override
+            public void recoveryCleanupRegistered()
+            {   // empty
+            }
+
+            @Override
+            public void recoveryCleanupStarted()
+            {   // empty
+            }
+
+            @Override
             public void recoveryCleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
+            {   // empty
+            }
+
+            @Override
+            public void recoveryCleanupClosed()
             {   // empty
             }
         }
@@ -80,15 +90,19 @@ public interface LabelScanStore extends Lifecycle
 
         void noIndex();
 
-        void lockedIndex( Exception e );
-
         void notValidIndex();
 
         void rebuilding();
 
         void rebuilt( long roughNodeCount );
 
+        void recoveryCleanupRegistered();
+
+        void recoveryCleanupStarted();
+
         void recoveryCleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis );
+
+        void recoveryCleanupClosed();
     }
 
     /**

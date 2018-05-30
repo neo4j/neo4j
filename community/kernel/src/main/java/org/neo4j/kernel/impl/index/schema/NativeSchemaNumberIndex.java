@@ -73,9 +73,27 @@ class NativeSchemaNumberIndex<KEY extends SchemaNumberKey, VALUE extends SchemaN
         return new GBPTree.Monitor.Adaptor()
         {
             @Override
+            public void cleanupRegistered()
+            {
+                monitor.recoveryCleanupRegistered( indexId, descriptor );
+            }
+
+            @Override
+            public void cleanupStarted()
+            {
+                monitor.recoveryCleanupStarted( indexId, descriptor );
+            }
+
+            @Override
             public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
             {
                 monitor.recoveryCleanupFinished( indexId, descriptor, numberOfPagesVisited, numberOfCleanedCrashPointers, durationMillis );
+            }
+
+            @Override
+            public void cleanupClosed()
+            {
+                monitor.recoveryCleanupClosed( indexId, descriptor );
             }
         };
     }

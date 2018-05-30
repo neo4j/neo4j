@@ -378,10 +378,28 @@ public class NativeLabelScanStore implements LabelScanStore
         return new GBPTree.Monitor.Adaptor()
         {
             @Override
+            public void cleanupRegistered()
+            {
+                monitor.recoveryCleanupRegistered();
+            }
+
+            @Override
+            public void cleanupStarted()
+            {
+                monitor.recoveryCleanupStarted();
+            }
+
+            @Override
             public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
                     long durationMillis )
             {
                 monitor.recoveryCleanupFinished( numberOfPagesVisited, numberOfCleanedCrashPointers, durationMillis );
+            }
+
+            @Override
+            public void cleanupClosed()
+            {
+                monitor.recoveryCleanupClosed();
             }
         };
     }

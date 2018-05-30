@@ -23,17 +23,20 @@ class GBPTreeCleanupJob implements CleanupJob
 {
     private final CrashGenerationCleaner crashGenerationCleaner;
     private final GBPTreeLock gbpTreeLock;
+    private final GBPTree.Monitor monitor;
     private volatile boolean needed;
     private volatile Exception failure;
 
     /**
      * @param crashGenerationCleaner {@link CrashGenerationCleaner} to use for cleaning.
      * @param gbpTreeLock {@link GBPTreeLock} to be released when job has either successfully finished or failed.
+     * @param monitor
      */
-    GBPTreeCleanupJob( CrashGenerationCleaner crashGenerationCleaner, GBPTreeLock gbpTreeLock )
+    GBPTreeCleanupJob( CrashGenerationCleaner crashGenerationCleaner, GBPTreeLock gbpTreeLock, GBPTree.Monitor monitor )
     {
         this.crashGenerationCleaner = crashGenerationCleaner;
         this.gbpTreeLock = gbpTreeLock;
+        this.monitor = monitor;
         this.needed = true;
 
     }
@@ -59,6 +62,7 @@ class GBPTreeCleanupJob implements CleanupJob
     @Override
     public void close()
     {
+        monitor.cleanupClosed();
         gbpTreeLock.cleanerUnlock();
     }
 

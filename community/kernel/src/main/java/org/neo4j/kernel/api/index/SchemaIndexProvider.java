@@ -104,16 +104,37 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
             }
 
             @Override
+            public void recoveryCleanupRegistered( long indexId, IndexDescriptor indexDescriptor )
+            {   // no-op
+            }
+
+            @Override
+            public void recoveryCleanupStarted( long indexId, IndexDescriptor indexDescriptor )
+            {   // no-op
+            }
+
+            @Override
             public void recoveryCleanupFinished( long indexId, IndexDescriptor indexDescriptor,
                     long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
+            {   // no-op
+            }
+
+            @Override
+            public void recoveryCleanupClosed( long indexId, IndexDescriptor descriptor )
             {   // no-op
             }
         }
 
         void failedToOpenIndex( long indexId, IndexDescriptor indexDescriptor, String action, Exception cause );
 
+        void recoveryCleanupRegistered( long indexId, IndexDescriptor indexDescriptor );
+
+        void recoveryCleanupStarted( long indexId, IndexDescriptor indexDescriptor );
+
         void recoveryCleanupFinished( long indexId, IndexDescriptor indexDescriptor,
                 long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis );
+
+        void recoveryCleanupClosed( long indexId, IndexDescriptor descriptor );
     }
 
     public static final SchemaIndexProvider NO_INDEX_PROVIDER =

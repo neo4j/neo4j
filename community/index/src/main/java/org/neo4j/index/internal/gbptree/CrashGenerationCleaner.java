@@ -72,6 +72,7 @@ class CrashGenerationCleaner
 
     public void clean() throws IOException
     {
+        monitor.cleanupStarted();
         assert unstableGeneration > stableGeneration;
         assert unstableGeneration - stableGeneration > 1;
 

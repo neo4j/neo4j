@@ -134,7 +134,14 @@ public class RecoveryCleanupIT
         startDatabase().shutdown();
 
         // then
-        logProvider.assertContainsLogCallContaining( "Scan store recovery completed" );
+        logProvider.assertContainsLogCallContaining( "Scan store cleanup job registered" );
+        logProvider.assertContainsLogCallContaining( "Scan store cleanup job started" );
+        logProvider.assertContainsMessageMatching( Matchers.stringContainsInOrder( Iterables.asIterable(
+                "Scan store cleanup job finished",
+                "Number of pages visited",
+                "Number of cleaned crashed pointers",
+                "Time spent" ) ) );
+        logProvider.assertContainsLogCallContaining( "Scan store cleanup job closed" );
     }
 
     @Test
@@ -151,11 +158,14 @@ public class RecoveryCleanupIT
         startDatabase().shutdown();
 
         // then
+        logProvider.assertContainsLogCallContaining( "Schema index cleanup job registered" );
+        logProvider.assertContainsLogCallContaining( "Schema index cleanup job started" );
         logProvider.assertContainsMessageMatching( Matchers.stringContainsInOrder( Iterables.asIterable(
-                "Schema index recovery completed",
-                "cleaned crashed pointers",
-                "pages visited",
+                "Schema index cleanup job finished",
+                "Number of pages visited",
+                "Number of cleaned crashed pointers",
                 "Time spent" ) ) );
+        logProvider.assertContainsLogCallContaining( "Schema index cleanup job closed" );
     }
 
     private void dirtyDatabase() throws IOException

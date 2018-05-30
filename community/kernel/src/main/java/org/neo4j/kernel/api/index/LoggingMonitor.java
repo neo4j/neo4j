@@ -42,14 +42,37 @@ public class LoggingMonitor implements SchemaIndexProvider.Monitor
     }
 
     @Override
+    public void recoveryCleanupRegistered( long indexId, IndexDescriptor indexDescriptor )
+    {
+        log.info( "Schema index cleanup job registered: " + indexDescription( indexId, indexDescriptor ) );
+    }
+
+    @Override
+    public void recoveryCleanupStarted( long indexId, IndexDescriptor indexDescriptor )
+    {
+        log.info( "Schema index cleanup job started: " + indexDescription( indexId, indexDescriptor ) );
+    }
+
+    @Override
     public void recoveryCleanupFinished( long indexId, IndexDescriptor indexDescriptor,
             long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
     {
         StringJoiner joiner =
-                new StringJoiner( ", ", "Schema index cleanup job finished: indexId: " + indexId + " descriptor: " + indexDescriptor.toString(), "" );
+                new StringJoiner( ", ", "Schema index cleanup job finished: " + indexDescription( indexId, indexDescriptor ) + " ", "" );
         joiner.add( "Number of pages visited: " + numberOfPagesVisited );
         joiner.add( "Number of cleaned crashed pointers: " + numberOfCleanedCrashPointers );
         joiner.add( "Time spent: " + duration( durationMillis ) );
         log.info( joiner.toString() );
+    }
+
+    @Override
+    public void recoveryCleanupClosed( long indexId, IndexDescriptor descriptor )
+    {
+        log.info( "Schema index cleanup job closed: " + indexDescription( indexId, descriptor ) );
+    }
+
+    private String indexDescription( long indexId, IndexDescriptor indexDescriptor )
+    {
+        return "indexId: " + indexId + " descriptor: " + indexDescriptor.toString();
     }
 }
