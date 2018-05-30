@@ -51,13 +51,20 @@ public class MultiTokenSchemaDescriptor implements org.neo4j.internal.kernel.api
     }
 
     @Override
-    public boolean isAffected( long[] entityIds )
+    public boolean isAffected( long[] entityTokenIds )
     {
-        if ( entityTokens.length == 0 )
+        if ( Arrays.equals( entityTokens, ANY_ENTITY_TOKEN ) )
         {
             return true;
         }
-        return Arrays.stream( entityTokens ).anyMatch( id -> ArrayUtils.contains( entityIds, id ) );
+        for ( int id : entityTokens )
+        {
+            if ( ArrayUtils.contains( entityTokenIds, id ) )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

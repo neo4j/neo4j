@@ -43,9 +43,9 @@ public class LabelSchemaDescriptor implements org.neo4j.internal.kernel.api.sche
     }
 
     @Override
-    public boolean isAffected( long[] entityIds )
+    public boolean isAffected( long[] entityTokenIds )
     {
-        return ArrayUtils.contains( entityIds, labelId );
+        return ArrayUtils.contains( entityTokenIds, labelId );
     }
 
     @Override

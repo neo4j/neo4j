@@ -33,6 +33,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,6 +46,8 @@ import java.util.function.Function;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.EntityType;
+
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.ANY_ENTITY_TOKEN;
 
 /**
  * Bundles various mappings to IndexProxy. Used by IndexingService via IndexMapReference.
@@ -59,7 +62,7 @@ public final class IndexMap implements Cloneable
     private final MutableObjectLongMap<SchemaDescriptor> indexIdsByDescriptor;
     private final MutableIntObjectMap<Set<SchemaDescriptor>> descriptorsByLabel;
     private final MutableIntObjectMap<Set<SchemaDescriptor>> descriptorsByReltype;
-    private final MutableIntObjectMap<Set<SchemaDescriptor>> descriptorsByProperty;
+    private final MutableIntObjectMap<Set<SchemaDescriptor>> nodeDescriptorsByProperty;
     private final MutableIntObjectMap<Set<SchemaDescriptor>> relationshipDescriptorsByProperty;
     private final Set<SchemaDescriptor> descriptorsForAllLabels;
     private final Set<SchemaDescriptor> descriptorsForAllReltypes;
@@ -84,7 +87,7 @@ public final class IndexMap implements Cloneable
         this.indexIdsByDescriptor = indexIdsByDescriptor;
         this.descriptorsByLabel = new IntObjectHashMap<>();
         this.descriptorsByReltype = new IntObjectHashMap<>();
-        this.descriptorsByProperty = new IntObjectHashMap<>();
+        this.nodeDescriptorsByProperty = new IntObjectHashMap<>();
         this.relationshipDescriptorsByProperty = new IntObjectHashMap<>();
         this.descriptorsForAllLabels = new HashSet<>();
         this.descriptorsForAllReltypes = new HashSet<>();
@@ -131,7 +134,7 @@ public final class IndexMap implements Cloneable
         indexesByDescriptor.remove( schema );
         if ( schema.entityType() == EntityType.NODE )
         {
-            if ( schema.getEntityTokenIds() == SchemaDescriptor.ANY_ENTITY_TOKEN )
+            if ( Arrays.equals(schema.getEntityTokenIds(), ANY_ENTITY_TOKEN ) )
             {
                 descriptorsForAllLabels.remove( schema );
             }
@@ -141,12 +144,12 @@ public final class IndexMap implements Cloneable
             }
             for ( int propertyId : schema.getPropertyIds() )
             {
-                removeFromLookup( propertyId, schema, descriptorsByProperty );
+                removeFromLookup( propertyId, schema, nodeDescriptorsByProperty );
             }
         }
         else if ( schema.entityType() == EntityType.RELATIONSHIP )
         {
-            if ( schema.getEntityTokenIds().length == 0 )
+            if ( Arrays.equals(schema.getEntityTokenIds(), ANY_ENTITY_TOKEN ) )
             {
                 descriptorsForAllReltypes.remove( schema );
             }
@@ -181,38 +184,37 @@ public final class IndexMap implements Cloneable
      * @param changedEntityTokens set of labels that have changed
      * @param unchangedEntityTokens set of labels that are unchanged
      * @param properties set of properties
-     * @param entityType
+     * @param entityType type of indexes to get
      * @return set of SchemaDescriptors describing the potentially affected indexes
      */
-    public Set<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, IntSet properties,
-            EntityType entityType )
+    public Set<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, IntSet properties, EntityType entityType )
     {
-        Function<long[],Set<SchemaDescriptor>> byEnitiyIds;
-        BiFunction<long[],IntSet,Set<SchemaDescriptor>> byProperties;
+        Function<long[],Set<SchemaDescriptor>> indexesByEntityIds;
+        BiFunction<long[],IntSet,Set<SchemaDescriptor>> indexesByProperties;
         if ( entityType == EntityType.NODE )
         {
-            byEnitiyIds = labels -> extractIndexesByEntityTokens( labels, descriptorsByLabel, descriptorsForAllLabels );
-            byProperties = ( unchangedLabels, changedProperties ) -> getDescriptorsByProperties( unchangedLabels, changedProperties, descriptorsByLabel,
-                    descriptorsForAllLabels, descriptorsByProperty );
+            indexesByEntityIds = labels -> extractIndexesByEntityTokens( labels, descriptorsByLabel, descriptorsForAllLabels );
+            indexesByProperties = ( unchangedLabels, changedProperties ) -> getDescriptorsByProperties( unchangedLabels, changedProperties,
+                    descriptorsByLabel, descriptorsForAllLabels, nodeDescriptorsByProperty );
         }
         else
         {
-            byEnitiyIds = reltypes -> extractIndexesByEntityTokens( reltypes, descriptorsByReltype, descriptorsForAllReltypes );
-            byProperties = ( unchangedLabels, changedProperties ) -> getDescriptorsByProperties( unchangedLabels, changedProperties, descriptorsByReltype,
-                    descriptorsForAllReltypes, relationshipDescriptorsByProperty );
+            indexesByEntityIds = reltypes -> extractIndexesByEntityTokens( reltypes, descriptorsByReltype, descriptorsForAllReltypes );
+            indexesByProperties = ( unchangedLabels, changedProperties ) -> getDescriptorsByProperties( unchangedLabels, changedProperties,
+                    descriptorsByReltype, descriptorsForAllReltypes, relationshipDescriptorsByProperty );
         }
 
         if ( properties.isEmpty() )
         {
-            Set<SchemaDescriptor> descriptors = byEnitiyIds.apply( changedEntityTokens );
+            Set<SchemaDescriptor> descriptors = indexesByEntityIds.apply( changedEntityTokens );
             return descriptors == null ? Collections.emptySet() : descriptors;
         }
         if ( changedEntityTokens.length == 0 )
         {
-            return byProperties.apply( unchangedEntityTokens, properties );
+            return indexesByProperties.apply( unchangedEntityTokens, properties );
         }
-        Set<SchemaDescriptor> descriptors = byEnitiyIds.apply( changedEntityTokens );
-        descriptors.addAll( byProperties.apply( unchangedEntityTokens, properties ) );
+        Set<SchemaDescriptor> descriptors = indexesByEntityIds.apply( changedEntityTokens );
+        descriptors.addAll( indexesByProperties.apply( unchangedEntityTokens, properties ) );
 
         return descriptors;
     }
@@ -251,7 +253,7 @@ public final class IndexMap implements Cloneable
     {
         if ( schema.entityType() == EntityType.NODE )
         {
-            if ( schema.getEntityTokenIds().length == 0 )
+            if ( Arrays.equals(schema.getEntityTokenIds(), ANY_ENTITY_TOKEN ) )
             {
                 descriptorsForAllLabels.add( schema );
             }
@@ -261,12 +263,12 @@ public final class IndexMap implements Cloneable
             }
             for ( int propertyId : schema.getPropertyIds() )
             {
-                addToLookup( propertyId, schema, descriptorsByProperty );
+                addToLookup( propertyId, schema, nodeDescriptorsByProperty );
             }
         }
         else if ( schema.entityType() == EntityType.RELATIONSHIP )
         {
-            if ( schema.getEntityTokenIds().length == 0 )
+            if ( Arrays.equals(schema.getEntityTokenIds(), ANY_ENTITY_TOKEN ) )
             {
                 descriptorsForAllReltypes.add( schema );
             }
@@ -329,33 +331,36 @@ public final class IndexMap implements Cloneable
      * the lookup using the unchanged labels or the changed properties given the smallest final
      * set of indexes, and chooses the best way.
      *
-     * @param unchangedLabels set of labels that are unchanged
+     * @param unchangedEntityTokens set of labels that are unchanged
      * @param properties set of properties that have changed
-     * @param descriptorsByEntityToken
-     * @param descriptorsForAllEntityTokens
-     * @param descriptorsByProperty
+     * @param descriptorsByEntityToken map from entity token id to descriptors
+     * @param descriptorsForAllEntityTokens set of descriptors for all entity tokens
+     * @param descriptorsByProperty map from property ids to descriptors
      * @return set of SchemaDescriptors describing the potentially affected indexes
      */
-    private Set<SchemaDescriptor> getDescriptorsByProperties( long[] unchangedLabels, IntSet properties,
+    private Set<SchemaDescriptor> getDescriptorsByProperties( long[] unchangedEntityTokens, IntSet properties,
             IntObjectMap<Set<SchemaDescriptor>> descriptorsByEntityToken, Set<SchemaDescriptor> descriptorsForAllEntityTokens,
             IntObjectMap<Set<SchemaDescriptor>> descriptorsByProperty )
     {
-        int nIndexesForLabels = countIndexesByEntityTokens( unchangedLabels, descriptorsByEntityToken, descriptorsForAllEntityTokens );
+        int nIndexesForEntityTokens = countIndexesByEntityTokens( unchangedEntityTokens, descriptorsByEntityToken, descriptorsForAllEntityTokens );
         int nIndexesForProperties = countIndexesByProperties( properties, descriptorsByProperty );
 
-        if ( nIndexesForLabels == 0 || nIndexesForProperties == 0 )
+        // Our lowest bound is zero applicable indexes, i.e. no indexes are relevant.
+        if ( nIndexesForEntityTokens == 0 || nIndexesForProperties == 0 )
         {
             return Collections.emptySet();
         }
-        if ( unchangedLabels.length == 0 )
+        // Even if we don't have any token ids, we still need to return the anytoken indexes for the given properties.
+        if ( unchangedEntityTokens.length == 0 )
         {
             Set<SchemaDescriptor> descriptors = extractIndexesByProperties( properties, descriptorsByProperty );
             descriptors.retainAll( descriptorsForAllEntityTokens );
             return descriptors;
         }
-        if ( nIndexesForLabels < nIndexesForProperties )
+        // Grab indexes in the fashion that results in the smallest set of indexes.
+        if ( nIndexesForEntityTokens < nIndexesForProperties )
         {
-            return extractIndexesByEntityTokens( unchangedLabels, descriptorsByEntityToken, descriptorsForAllEntityTokens );
+            return extractIndexesByEntityTokens( unchangedEntityTokens, descriptorsByEntityToken, descriptorsForAllEntityTokens );
         }
         else
         {

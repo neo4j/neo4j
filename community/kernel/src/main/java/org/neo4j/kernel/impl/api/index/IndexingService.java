@@ -292,14 +292,13 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             while ( iterator.hasNext() )
             {
                 StoreIndexDescriptor descriptor = iterator.next();
-                StoreIndexDescriptor indexDescriptor = descriptor;
-                if ( indexDescriptor.schema().entityType() == EntityType.NODE )
+                if ( descriptor.schema().entityType() == EntityType.NODE )
                 {
-                    rebuildingNodeDescriptors.put( indexDescriptor.getId(), descriptor );
+                    rebuildingNodeDescriptors.put( descriptor.getId(), descriptor );
                 }
                 else
                 {
-                    rebuildingRelationshipDescriptors.put( indexDescriptor.getId(), descriptor );
+                    rebuildingRelationshipDescriptors.put( descriptor.getId(), descriptor );
                 }
             }
 
@@ -377,12 +376,11 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     }
 
     private void populate( MutableLongObjectMap<StoreIndexDescriptor> rebuildingDescriptors, IndexMap indexMap, IndexPopulationJob populationJob )
-
     {
         rebuildingDescriptors.forEachKeyValue( ( indexId, descriptor ) ->
         {
-            IndexProxy proxy = indexProxyCreator.createPopulatingIndexProxy( descriptor, false,
-                    // never pass through a tentative online state during recovery
+            IndexProxy proxy = indexProxyCreator.createPopulatingIndexProxy( descriptor,
+         false,// never pass through a tentative online state during recovery
                     monitor, populationJob );
             proxy.start();
             indexMap.putIndexProxy( proxy );
@@ -528,7 +526,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                                                 entityUpdates.entityTokensChanged(),
                                                 entityUpdates.entityTokensUnchanged(),
                                                 entityUpdates.propertiesChanged(),
-                                                type);
+                                                type );
 
         return entityUpdates.forIndexKeys( relatedIndexes, storeView, type );
     }

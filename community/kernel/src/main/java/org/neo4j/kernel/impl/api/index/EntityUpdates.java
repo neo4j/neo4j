@@ -46,8 +46,8 @@ import static org.neo4j.kernel.impl.api.index.EntityUpdates.PropertyValueType.No
 import static org.neo4j.kernel.impl.api.index.EntityUpdates.PropertyValueType.UnChanged;
 
 /**
- * Subclasses of this represent events related to property changes due to node addition, deletion or update.
- * This is of use in populating indexes that might be relevant to node label and property combinations.
+ * Subclasses of this represent events related to property changes due to entity addition, deletion or update.
+ * This is of use in populating indexes that might be relevant to label/reltype and property combinations.
  */
 public class EntityUpdates implements PropertyLoader.PropertyLoadSink
 {
@@ -175,10 +175,10 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
     }
 
     /**
-     * Matches the provided schema descriptors to the node updates in this object, and generates an IndexEntryUpdate
+     * Matches the provided schema descriptors to the entity updates in this object, and generates an IndexEntryUpdate
      * for any index that needs to be updated.
      *
-     * In some cases the updates to a node are not enough to determine whether some index should be affected. For
+     * In some cases the updates to an entity are not enough to determine whether some index should be affected. For
      * example if we have and index of label :A and property p1, and :A is added to this node, we cannot say whether
      * this should affect the index unless we know if this node has property p1. This get even more complicated for
      * composite indexes. To solve this problem, a propertyLoader is used to load any additional properties needed to
@@ -186,6 +186,7 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
      *
      * @param indexKeys The index keys to generate entry updates for
      * @param propertyLoader The property loader used to fetch needed additional properties
+     * @param type EntityType of the indexes
      * @return IndexEntryUpdates for all relevant index keys
      */
     public <INDEX_KEY extends SchemaDescriptorSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> forIndexKeys(
@@ -211,6 +212,7 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
         return gatherUpdatesForPotentials( potentiallyRelevant );
     }
 
+    @SuppressWarnings( "ConstantConditions" )
     private <INDEX_KEY extends SchemaDescriptorSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> gatherUpdatesForPotentials(
             Iterable<INDEX_KEY> potentiallyRelevant )
     {
@@ -231,7 +233,7 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
                 indexUpdates.add( IndexEntryUpdate.add( entityId, indexKey, valuesAfter( propertyIds )
                 ) );
             }
-            else if ( relevantBefore )
+            else if ( relevantBefore && relevantAfter )
             {
                 if ( valuesChanged( propertyIds, schema.propertySchemaType() ) )
                 {
@@ -359,10 +361,14 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
         return values;
     }
 
+    /**
+     * This method should only be called in a context where you know that your entity is relevant both before and after
+     */
     private boolean valuesChanged( int[] propertyIds, SchemaDescriptor.PropertySchemaType propertySchemaType )
     {
         if ( propertySchemaType == COMPLETE_ALL_TOKENS )
         {
+            // In the case of indexes were all entries must have all indexed tokens, one of the properties must have changed for us to generate a change.
             for ( int propertyId : propertyIds )
             {
                 if ( knownProperties.get( propertyId ).type == Changed )
@@ -374,9 +380,11 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
         }
         else
         {
+            // In the case of indexes were we index incomplete index entries, we need to update as long as _anything_ happened to one of the indexed properties.
             for ( int propertyId : propertyIds )
             {
-                if ( knownProperties.get( propertyId ).type != UnChanged )
+                PropertyValueType type = knownProperties.get( propertyId ).type;
+                if ( type != UnChanged && type != NoValue )
                 {
                     return true;
                 }

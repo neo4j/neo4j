@@ -39,7 +39,12 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
 {
     int[] ANY_ENTITY_TOKEN = new int[0];
 
-    boolean isAffected( long[] entityIds );
+    /**
+     * Returns true if any of the given entity token ids are part of this schema unit.
+     * @param entityTokenIds entity token ids to check against.
+     * @return true if the supplied ids are relevant to this schema unit.
+     */
+    boolean isAffected( long[] entityTokenIds );
 
     /**
      * This enum signifies how this schema should behave in regards to updates.
