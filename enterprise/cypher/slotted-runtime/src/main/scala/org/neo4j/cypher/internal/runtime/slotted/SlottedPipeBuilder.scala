@@ -475,8 +475,8 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         ForeachSlottedPipe(lhs, rhs, innerVariableSlot, convertExpressions(expression))(id)
 
       case Union(_, _) =>
-        val lhsSlots = slotConfigs(lhs.id())
-        val rhsSlots = slotConfigs(rhs.id())
+        val lhsSlots = slotConfigs(lhs.id)
+        val rhsSlots = slotConfigs(rhs.id)
         UnionSlottedPipe(lhs, rhs,
           SlottedPipeBuilder.computeUnionMapping(lhsSlots, slots),
           SlottedPipeBuilder.computeUnionMapping(rhsSlots, slots))(id = id)
