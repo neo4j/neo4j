@@ -221,6 +221,12 @@ public abstract class StringValue extends TextValue
         }
 
         @Override
+        public TextValue plus( TextValue other )
+        {
+            return other;
+        }
+
+        @Override
         public TextValue toLower()
         {
             return this;

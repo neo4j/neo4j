@@ -24,6 +24,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.hashing.HashFunction;
+import org.neo4j.values.utils.UTF8Utils;
 
 /*
  * Just as a normal StringValue but is backed by a byte array and does string
@@ -316,6 +317,17 @@ public final class UTF8StringValue extends StringValue
             return StringValue.EMTPY;
         }
         return new UTF8StringValue( values, offset, endIndex + 1 - offset );
+    }
+
+    @Override
+    public TextValue plus( TextValue other )
+    {
+        if ( other instanceof UTF8StringValue )
+        {
+            return UTF8Utils.add( this, (UTF8StringValue) other );
+        }
+
+        return Values.stringValue( stringValue() + other.stringValue() );
     }
 
     @Override

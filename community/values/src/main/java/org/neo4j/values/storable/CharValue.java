@@ -193,6 +193,12 @@ public final class CharValue extends TextValue
         return this;
     }
 
+    @Override
+    public TextValue plus( TextValue other )
+    {
+        return Values.stringValue( value + other.stringValue() );
+    }
+
     public char value()
     {
         return value;

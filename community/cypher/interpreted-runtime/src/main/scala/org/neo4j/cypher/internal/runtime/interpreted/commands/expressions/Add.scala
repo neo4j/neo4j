@@ -29,7 +29,6 @@ case class Add(a: Expression, b: Expression) extends Expression {
 
   def rewrite(f: (Expression) => Expression) = f(Add(a.rewrite(f), b.rewrite(f)))
 
-
   def arguments = Seq(a, b)
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies

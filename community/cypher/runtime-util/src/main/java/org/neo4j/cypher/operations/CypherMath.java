@@ -85,8 +85,7 @@ public final class CypherMath
         // String addition
         if ( lhs instanceof TextValue && rhs instanceof TextValue )
         {
-            return stringValue( ((TextValue) lhs).stringValue() + ((TextValue) rhs).stringValue() );
-
+            return ((TextValue) lhs).plus( (TextValue) rhs );
         }
         else if ( lhs instanceof TextValue )
         {
