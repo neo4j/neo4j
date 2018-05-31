@@ -19,16 +19,14 @@
  */
 package org.neo4j.kernel.impl.api;
 
-
-import org.neo4j.internal.kernel.api.Modes;
 import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
@@ -38,15 +36,12 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.storageengine.api.StorageEngine;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_timeout;
 
 /**
  * This is the Neo4j Kernel, an implementation of the Kernel API which is an internal component used by Cypher and the
  * Core API (the API under org.neo4j.graphdb).
- *
- * WARNING: This class is under transition.
  *
  * <h1>Structure</h1>
  *
@@ -68,8 +63,8 @@ public class KernelImpl extends LifecycleAdapter implements InwardKernel
 
     private final NewKernel newKernel;
 
-    public KernelImpl( KernelTransactions transactionFactory, TransactionHooks hooks, DatabaseHealth health,
-            TransactionMonitor transactionMonitor, Procedures procedures, Config config, StorageEngine engine )
+    public KernelImpl( KernelTransactions transactionFactory, TransactionHooks hooks, DatabaseHealth health, TransactionMonitor transactionMonitor,
+            Procedures procedures, Config config )
     {
         this.transactions = transactionFactory;
         this.hooks = hooks;
@@ -77,7 +72,7 @@ public class KernelImpl extends LifecycleAdapter implements InwardKernel
         this.transactionMonitor = transactionMonitor;
         this.procedures = procedures;
         this.config = config;
-        this.newKernel = new NewKernel( engine, this );
+        this.newKernel = new NewKernel( this );
     }
 
     @Override
@@ -139,9 +134,4 @@ public class KernelImpl extends LifecycleAdapter implements InwardKernel
         return newKernel.beginSession( loginContext );
     }
 
-    @Override
-    public Modes modes()
-    {
-        return newKernel;
-    }
 }

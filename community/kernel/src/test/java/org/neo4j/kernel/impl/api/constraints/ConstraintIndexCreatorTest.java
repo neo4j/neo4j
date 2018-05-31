@@ -27,7 +27,6 @@ import java.util.Optional;
 
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.internal.kernel.api.Modes;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.Session;
@@ -345,12 +344,6 @@ public class ConstraintIndexCreatorTest
         public Session beginSession( LoginContext loginContext )
         {
             return this;
-        }
-
-        @Override
-        public Modes modes()
-        {
-            return null;
         }
 
         @Override

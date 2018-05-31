@@ -22,7 +22,6 @@ package org.neo4j.internal.kernel.api;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
@@ -47,7 +46,6 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
     protected static final TemporaryFolder folder = new TemporaryFolder();
     protected static KernelAPIWriteTestSupport testSupport;
     protected Session session;
-    protected Modes modes;
     protected static GraphDatabaseService graphDb;
 
     /**
@@ -68,7 +66,6 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
         testSupport.clearGraph();
         Kernel kernel = testSupport.kernelToTest();
         session = kernel.beginSession( LoginContext.AUTH_DISABLED );
-        modes = kernel.modes();
     }
 
     @After

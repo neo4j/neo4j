@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5
 
-import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IndexDescriptor, PlanContext}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
+import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 
 class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext with ExceptionTranslationSupport {
 
@@ -95,7 +95,4 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
 
   override def notificationLogger(): InternalNotificationLogger =
     translateException(inner.notificationLogger())
-
-  override def twoLayerTransactionState(): Boolean =
-    translateException(inner.twoLayerTransactionState())
 }

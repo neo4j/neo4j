@@ -218,12 +218,6 @@ public class Neo4jTransactionalContext implements TransactionalContext
     }
 
     @Override
-    public boolean twoLayerTransactionState()
-    {
-        return kernel.modes().twoLayerTransactionState();
-    }
-
-    @Override
     public TransactionalContext getOrBeginNewIfClosed()
     {
         checkNotTerminated();
