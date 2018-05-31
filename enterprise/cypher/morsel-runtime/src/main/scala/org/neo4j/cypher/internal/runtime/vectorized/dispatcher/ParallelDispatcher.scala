@@ -104,7 +104,7 @@ class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) exte
 
     pipeline.parent match {
       case Some(PipeLineWithEagerDependency(eagerData)) =>
-        eagerData.add(data)
+        eagerData.add(MorselExecutionContext(data, pipeline))
 
       case Some(mother@Pipeline(_,_,_, Lazy(_))) =>
         val nextStep = StartLoopWithSingleMorsel(MorselExecutionContext(data, pipeline), message.iterationState)

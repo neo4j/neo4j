@@ -87,6 +87,10 @@ class MorselExecutionContext(private val morsel: Morsel, private val longsPerRow
     case _ => fail()
   }
 
+  override def toString(): String = {
+    s"MorselExecutionContext(morsel=$morsel, longsPerRow=$longsPerRow, refsPerRow=$refsPerRow, currentRow=$currentRow)"
+  }
+
   /**
     * Copies the whole row from input to this.
     * @param input
