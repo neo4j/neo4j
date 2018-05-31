@@ -40,7 +40,6 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.collection.PrimitiveLongCollections.asSet;
 import static org.neo4j.graphdb.SpatialMocks.mockCartesian;
 import static org.neo4j.graphdb.SpatialMocks.mockCartesian_3D;
 import static org.neo4j.graphdb.SpatialMocks.mockWGS84;
