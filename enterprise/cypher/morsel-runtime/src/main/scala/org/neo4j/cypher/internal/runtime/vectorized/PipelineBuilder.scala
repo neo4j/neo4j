@@ -50,23 +50,17 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
     val thisOp = plan match {
       case plans.AllNodesScan(column, _) =>
         new AllNodeScanOperator(
-          slots.numberOfLongs,
-          slots.numberOfReferences,
           slots.getLongOffsetFor(column),
           argumentSize)
 
       case plans.NodeByLabelScan(column, label, _) =>
         new LabelScanOperator(
-          slots.numberOfLongs,
-          slots.numberOfReferences,
           slots.getLongOffsetFor(column),
           LazyLabel(label)(SemanticTable()),
           argumentSize)
 
       case plans.NodeIndexScan(column, labelToken, propertyKey, _) =>
         new NodeIndexScanOperator(
-          slots.numberOfLongs,
-          slots.numberOfReferences,
           slots.getLongOffsetFor(column),
           labelToken.nameId.id,
           propertyKey.nameId.id,
@@ -74,8 +68,6 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
 
       case NodeIndexContainsScan(column, labelToken, propertyKey, valueExpr, _) =>
         new NodeIndexContainsScanOperator(
-          slots.numberOfLongs,
-          slots.numberOfReferences,
           slots.getLongOffsetFor(column),
           labelToken.nameId.id,
           propertyKey.nameId.id,
@@ -85,8 +77,6 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
       case plans.NodeIndexSeek(column, label, propertyKeys, valueExpr,  _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         new NodeIndexSeekOperator(
-          slots.numberOfLongs,
-          slots.numberOfReferences,
           slots.getLongOffsetFor(column),
           label,
           propertyKeys,
@@ -97,8 +87,6 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
       case plans.NodeUniqueIndexSeek(column, label, propertyKeys, valueExpr,  _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
         new NodeIndexSeekOperator(
-          slots.numberOfLongs,
-          slots.numberOfReferences,
           slots.getLongOffsetFor(column),
           label,
           propertyKeys,
@@ -107,10 +95,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
           indexSeekMode)
 
       case plans.Argument(_) =>
-        new ArgumentOperator(
-          slots.numberOfLongs,
-          slots.numberOfReferences,
-          argumentSize)
+        new ArgumentOperator(argumentSize)
 
       case p => throw new CantCompileQueryException(s"$p not supported in morsel runtime")
     }
@@ -128,34 +113,33 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
 
         case plans.Selection(predicates, _) =>
           val predicate = predicates.map(converters.toCommandPredicate).reduce(_ andWith _)
-          new FilterOperator(slots, predicate)
+          new FilterOperator(predicate)
 
         case plans.Expand(lhs, fromName, dir, types, to, relName, ExpandAll) =>
           val fromOffset = slots.getLongOffsetFor(fromName)
           val relOffset = slots.getLongOffsetFor(relName)
           val toOffset = slots.getLongOffsetFor(to)
-          val fromPipe = physicalPlan.slotConfigurations(lhs.id)
           val lazyTypes = LazyTypes(types.toArray)(SemanticTable())
-          new ExpandAllOperator(slots, fromPipe, fromOffset, relOffset, toOffset, dir, lazyTypes)
+          new ExpandAllOperator(fromOffset, relOffset, toOffset, dir, lazyTypes)
 
         case plans.Projection(_, expressions) =>
           val projectionOps = expressions.map {
             case (key, e) => slots(key) -> converters.toCommandExpression(e)
           }
-          new ProjectOperator(projectionOps, slots)
+          new ProjectOperator(projectionOps)
 
         case plans.Sort(_, sortItems) =>
           val ordering = sortItems.map(translateColumnOrder(slots, _))
-          val preSorting = new PreSortOperator(ordering, slots)
+          val preSorting = new PreSortOperator(ordering)
           source = source.addOperator(preSorting)
-          new MergeSortOperator(ordering, slots)
+          new MergeSortOperator(ordering)
 
         case Top(_, sortItems, limit) =>
           val ordering = sortItems.map(translateColumnOrder(slots, _))
           val countExpression = converters.toCommandExpression(limit)
-          val preTop = new PreSortOperator(ordering, slots, Some(countExpression))
+          val preTop = new PreSortOperator(ordering, Some(countExpression))
           source = source.addOperator(preTop)
-          new MergeSortOperator(ordering, slots, Some(countExpression))
+          new MergeSortOperator(ordering, Some(countExpression))
 
         case plans.Aggregation(_, groupingExpressions, aggregationExpression) if groupingExpressions.isEmpty =>
           val aggregations = aggregationExpression.map {
@@ -169,8 +153,8 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
           }.toArray
 
           //add mapper to source
-          source = source.addOperator(new AggregationMapperOperatorNoGrouping(source.slots, aggregations))
-          new AggregationReduceOperatorNoGrouping(slots, aggregations)
+          source = source.addOperator(new AggregationMapperOperatorNoGrouping(aggregations))
+          new AggregationReduceOperatorNoGrouping(aggregations)
 
         case plans.Aggregation(_, groupingExpressions, aggregationExpression) =>
           val grouping = groupingExpressions.map {
@@ -193,8 +177,8 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
           }.toArray
 
           //add mapper to source
-          source = source.addOperator(new AggregationMapperOperator(source.slots, aggregations, grouping))
-          new AggregationReduceOperator(slots, aggregations, grouping)
+          source = source.addOperator(new AggregationMapperOperator(aggregations, grouping))
+          new AggregationReduceOperator(aggregations, grouping)
 
         case plans.UnwindCollection(src, variable, collection) =>
           val offset = slots.get(variable) match {
@@ -203,7 +187,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
               throw new InternalException("Weird slot found for UNWIND")
           }
           val runtimeExpression = converters.toCommandExpression(collection)
-          new UnwindOperator(runtimeExpression, offset, physicalPlan.slotConfigurations(src.id), slots)
+          new UnwindOperator(runtimeExpression, offset)
 
         case p => throw new CantCompileQueryException(s"$p not supported in morsel runtime")
       }
@@ -222,8 +206,6 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
     val thisOp = plan match {
       case Apply(_, _) =>
         new ApplyOperator(
-          slots.numberOfLongs,
-          slots.numberOfReferences,
           lhs,
           rhs)
 

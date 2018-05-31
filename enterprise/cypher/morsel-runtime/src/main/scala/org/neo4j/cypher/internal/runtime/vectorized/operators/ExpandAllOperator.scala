@@ -22,18 +22,15 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyTypes
 import org.neo4j.cypher.internal.runtime.slotted.helpers.NullChecker.entityIsNull
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.opencypher.v9_0.util.InternalException
-import org.opencypher.v9_0.expressions.SemanticDirection
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
+import org.opencypher.v9_0.expressions.SemanticDirection
+import org.opencypher.v9_0.util.InternalException
 
-class ExpandAllOperator(toSlots: SlotConfiguration,
-                        fromSlots: SlotConfiguration,
-                        fromOffset: Int,
+class ExpandAllOperator(fromOffset: Int,
                         relOffset: Int,
                         toOffset: Int,
                         dir: SemanticDirection,
@@ -68,11 +65,6 @@ class ExpandAllOperator(toSlots: SlotConfiguration,
         throw new InternalException("Unknown continuation received")
     }
 
-    val inputLongCount = fromSlots.numberOfLongs
-    val inputRefCount = fromSlots.numberOfReferences
-    val outputLongCount = toSlots.numberOfLongs
-    val outputRefCount = toSlots.numberOfReferences
-
     while (inputRow.hasMoreRows && outputRow.hasMoreRows) {
 
       val fromNode = inputRow.getLongAt(fromOffset)
@@ -87,7 +79,7 @@ class ExpandAllOperator(toSlots: SlotConfiguration,
           val otherSide = relationships.otherNodeReference()
 
           // Now we have everything needed to create a row.
-          outputRow.copyFrom(inputRow, inputLongCount, inputRefCount)
+          outputRow.copyFrom(inputRow)
           outputRow.setLongAt(relOffset, relId)
           outputRow.setLongAt(toOffset, otherSide)
           outputRow.moveToNextRow()

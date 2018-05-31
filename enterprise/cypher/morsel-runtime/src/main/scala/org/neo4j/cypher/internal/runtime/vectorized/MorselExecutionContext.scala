@@ -33,13 +33,17 @@ object MorselExecutionContext {
     numberOfLongs, numberOfRows, 0)
 }
 
-class MorselExecutionContext(private val morsel: Morsel, longsPerRow: Int, refsPerRow: Int, private var currentRow: Int) extends ExecutionContext {
+class MorselExecutionContext(private val morsel: Morsel, private val longsPerRow: Int, private val refsPerRow: Int, private var currentRow: Int) extends ExecutionContext {
 
   def moveToNextRow(): Unit = {
     currentRow += 1
   }
 
   def getCurrentRow: Int = currentRow
+
+  def getLongsPerRow: Int = longsPerRow
+
+  def getRefsPerRow: Int = refsPerRow
 
   def moveToRow(row: Int): Unit = currentRow = row
 
@@ -72,7 +76,6 @@ class MorselExecutionContext(private val morsel: Morsel, longsPerRow: Int, refsP
 
   override def copyTo(target: ExecutionContext, fromLongOffset: Int = 0, fromRefOffset: Int = 0, toLongOffset: Int = 0, toRefOffset: Int = 0): Unit = ???
 
-  // TODO duplicate with only input
   override def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit = input match {
     case other:MorselExecutionContext =>
       if (nLongs > longsPerRow || nRefs > refsPerRow)
@@ -83,6 +86,12 @@ class MorselExecutionContext(private val morsel: Morsel, longsPerRow: Int, refsP
       }
     case _ => fail()
   }
+
+  /**
+    * Copies the whole row from input to this.
+    * @param input
+    */
+  def copyFrom(input: MorselExecutionContext): Unit = copyFrom(input, input.longsPerRow, input.refsPerRow)
 
   override def setLongAt(offset: Int, value: Long): Unit = morsel.longs(currentRow * longsPerRow + offset) = value
 

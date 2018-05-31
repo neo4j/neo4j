@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.internal.kernel.api.NodeIndexCursor
 
-abstract class NodeIndexOperator[CURSOR <: NodeIndexCursor](longsPerRow: Int, refsPerRow: Int, offset: Int) extends Operator {
+abstract class NodeIndexOperator[CURSOR <: NodeIndexCursor](offset: Int) extends Operator {
 
   protected def iterate(currentRow: MorselExecutionContext, cursor: CURSOR, iterationState: Iteration, argumentSize: SlotConfiguration.Size): Continuation = {
     var cursorHasMore = true

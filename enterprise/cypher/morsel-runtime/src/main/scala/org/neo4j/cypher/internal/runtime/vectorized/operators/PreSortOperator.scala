@@ -24,13 +24,12 @@ package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import java.util.Comparator
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.slotted.DefaultComparatorTopTable
 import org.neo4j.cypher.internal.runtime.slotted.pipes.ColumnOrder
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 import org.neo4j.values.storable.NumberValue
 
 import scala.collection.JavaConverters._
@@ -39,7 +38,7 @@ import scala.collection.JavaConverters._
  * Responsible for sorting the Morsel in place, which will then be merged together with other sorted Morsels
  * If countExpression != None, this sorts the first N rows of the morsel in place. If N > morselSize, this is equivalent to sorting everything.
  */
-class PreSortOperator(orderBy: Seq[ColumnOrder], slots: SlotConfiguration, countExpression: Option[Expression] = None) extends MiddleOperator {
+class PreSortOperator(orderBy: Seq[ColumnOrder], countExpression: Option[Expression] = None) extends MiddleOperator {
 
   override def operate(iterationState: Iteration,
                        currentRow: MorselExecutionContext,
@@ -83,6 +82,6 @@ class PreSortOperator(orderBy: Seq[ColumnOrder], slots: SlotConfiguration, count
     }
     // Now that we have a sorted array, we need to shuffle the morsel rows around until they follow the same order
     // as the sorted array
-    MorselSorting.createSortedMorselData(currentRow, arrayToSort, slots)
+    MorselSorting.createSortedMorselData(currentRow, arrayToSort)
   }
 }

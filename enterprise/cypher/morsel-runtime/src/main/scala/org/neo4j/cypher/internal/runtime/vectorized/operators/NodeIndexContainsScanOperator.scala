@@ -31,9 +31,9 @@ import org.neo4j.internal.kernel.api.{IndexOrder, IndexQuery, NodeValueIndexCurs
 import org.neo4j.values.storable.{TextValue, Values}
 import org.opencypher.v9_0.util.CypherTypeException
 
-class NodeIndexContainsScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, label: Int, propertyKey: Int, valueExpr: Expression,
+class NodeIndexContainsScanOperator(offset: Int, label: Int, propertyKey: Int, valueExpr: Expression,
                                     argumentSize: SlotConfiguration.Size)
-  extends NodeIndexOperator[NodeValueIndexCursor](longsPerRow, refsPerRow, offset) {
+  extends NodeIndexOperator[NodeValueIndexCursor](offset) {
 
   override def operate(message: Message,
                        currentRow: MorselExecutionContext,

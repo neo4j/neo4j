@@ -22,15 +22,11 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{LongSlot, RefSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.vectorized.{Iteration, Morsel, MorselExecutionContext, QueryState}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
-import org.opencypher.v9_0.util.symbols.{CTAny, CTNode}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-
-import scala.collection.mutable
 
 class AggregationMapperOperatorNoGroupingTest extends CypherFunSuite {
 
@@ -38,9 +34,7 @@ class AggregationMapperOperatorNoGroupingTest extends CypherFunSuite {
     // Given
     val numberOfLongs = 1
     val numberOfReferences = 1
-    val slots = new SlotConfiguration(mutable.Map("node" -> LongSlot(0, nullable = false, CTNode),
-                                                  "aggregate" -> RefSlot(0, nullable = false, CTAny)), numberOfLongs, numberOfReferences)
-    val aggregation = new AggregationMapperOperatorNoGrouping(slots, Array(AggregationOffsets(0, 0, DummyEvenNodeIdAggregation(0))))
+    val aggregation = new AggregationMapperOperatorNoGrouping(Array(AggregationOffsets(0, 0, DummyEvenNodeIdAggregation(0))))
     val longs = Array[Long](0,1,2,3,4,5,6,7,8,9)
     val refs = new Array[AnyValue](10)
     val data = new Morsel(longs, refs, longs.length)
@@ -55,11 +49,8 @@ class AggregationMapperOperatorNoGroupingTest extends CypherFunSuite {
   test("multiple aggregations on a single morsel") {
     val numberOfLongs = 2
     val numberOfReferences = 1
-    val slots = new SlotConfiguration(mutable.Map("n1" -> LongSlot(0, nullable = false, CTNode),
-                                                  "n2" -> LongSlot(1, nullable = false, CTNode),
-                                                  "aggregate" -> RefSlot(0, nullable = false, CTAny)), numberOfLongs, numberOfReferences)
 
-    val aggregation = new AggregationMapperOperatorNoGrouping(slots, Array(
+    val aggregation = new AggregationMapperOperatorNoGrouping(Array(
       AggregationOffsets(0, 0, DummyEvenNodeIdAggregation(0)),
       AggregationOffsets(1, 1, DummyEvenNodeIdAggregation(1))
     ))

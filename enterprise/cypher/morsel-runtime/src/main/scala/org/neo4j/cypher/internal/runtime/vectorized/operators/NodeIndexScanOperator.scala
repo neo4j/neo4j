@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.internal.kernel.api.{IndexOrder, NodeValueIndexCursor}
 
 
-class NodeIndexScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, label: Int, propertyKey: Int, argumentSize: SlotConfiguration.Size)
-  extends NodeIndexOperator[NodeValueIndexCursor](longsPerRow, refsPerRow, offset) {
+class NodeIndexScanOperator(offset: Int, label: Int, propertyKey: Int, argumentSize: SlotConfiguration.Size)
+  extends NodeIndexOperator[NodeValueIndexCursor](offset) {
 
   override def operate(message: Message,
                        currentRow: MorselExecutionContext,

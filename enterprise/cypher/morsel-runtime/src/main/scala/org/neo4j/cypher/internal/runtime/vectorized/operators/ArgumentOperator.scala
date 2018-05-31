@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.opencypher.v9_0.util.InternalException
 
-class ArgumentOperator(longsPerRow: Int, refsPerRow: Int, argumentSize: SlotConfiguration.Size) extends Operator {
+class ArgumentOperator(argumentSize: SlotConfiguration.Size) extends Operator {
   override def operate(message: Message,
                        outputRow: MorselExecutionContext,
                        context: QueryContext,

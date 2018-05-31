@@ -22,16 +22,11 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{RefSlot, SlotConfiguration}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.opencypher.v9_0.util.symbols.CTAny
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
-
-import scala.collection.mutable
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class AggregationReducerOperatorNoGroupingTest extends CypherFunSuite {
 
@@ -39,8 +34,7 @@ class AggregationReducerOperatorNoGroupingTest extends CypherFunSuite {
     // Given
     val numberOfLongs = 1
     val numberOfReferences = 1
-    val slots = new SlotConfiguration(mutable.Map("aggregate" -> RefSlot(0, nullable = false, CTAny)), numberOfLongs, numberOfReferences)
-    val aggregation = new AggregationReduceOperatorNoGrouping(slots,
+    val aggregation = new AggregationReduceOperatorNoGrouping(
                                                               Array(AggregationOffsets(0, 0, DummyEvenNodeIdAggregation(0))))
     val refs = new Array[AnyValue](10)
     refs(0) = Values.longArray(Array(2,4,42))
@@ -59,8 +53,7 @@ class AggregationReducerOperatorNoGroupingTest extends CypherFunSuite {
     // Given
     val numberOfLongs = 1
     val numberOfReferences = 1
-    val slots = new SlotConfiguration(mutable.Map("aggregate" -> RefSlot(0, nullable = false, CTAny)), numberOfLongs, numberOfReferences)
-    val aggregation = new AggregationReduceOperatorNoGrouping(slots,
+    val aggregation = new AggregationReduceOperatorNoGrouping(
                                                               Array(AggregationOffsets(0, 0, DummyEvenNodeIdAggregation(0))))
     val in = 1 to 10 map ( i => {
       val refs = new Array[AnyValue](10)

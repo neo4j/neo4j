@@ -24,7 +24,7 @@ package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import java.util.Comparator
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{LongSlot, RefSlot, SlotConfiguration}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{LongSlot, RefSlot}
 import org.neo4j.cypher.internal.runtime.slotted.pipes.ColumnOrder
 import org.neo4j.cypher.internal.runtime.vectorized.{Morsel, MorselExecutionContext}
 import org.neo4j.values.AnyValue
@@ -69,24 +69,21 @@ object MorselSorting {
 
 
   /**
-    * Sorts the morsel data from aarray of ordered indices.
+    * Sorts the morsel data from array of ordered indices.
     *
     * Does this by sorting into a temp morsel first and then copying back the sorted data.
     */
-  def createSortedMorselData(inputRow: MorselExecutionContext, arrayToSort: Array[Integer], slots: SlotConfiguration): Unit = {
-
-    val longCount = slots.numberOfLongs
-    val refCount = slots.numberOfReferences
+  def createSortedMorselData(inputRow: MorselExecutionContext, arrayToSort: Array[Integer]): Unit = {
     // Create a temporary morsel
     // TODO: Do this without creating extra arrays
-    val tempMorsel = new Morsel(new Array[Long](inputRow.numberOfRows * longCount), new Array[AnyValue](inputRow.numberOfRows * refCount), inputRow.numberOfRows)
-    val outputRow = new MorselExecutionContext(tempMorsel, longCount, refCount, 0)
+    val tempMorsel = new Morsel(new Array[Long](inputRow.numberOfRows * inputRow.getLongsPerRow), new Array[AnyValue](inputRow.numberOfRows * inputRow.getRefsPerRow), inputRow.numberOfRows)
+    val outputRow = MorselExecutionContext(tempMorsel, inputRow.getLongsPerRow, inputRow.getRefsPerRow)
 
     while (outputRow.hasMoreRows) {
       val fromIndex = arrayToSort(outputRow.getCurrentRow)
       inputRow.moveToRow(fromIndex)
 
-      outputRow.copyFrom(inputRow, longCount, refCount)
+      outputRow.copyFrom(inputRow)
       outputRow.moveToNextRow()
     }
 

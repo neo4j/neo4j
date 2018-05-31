@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor
 
-class LabelScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, label: LazyLabel, argumentSize: SlotConfiguration.Size)
-  extends NodeIndexOperator[NodeLabelIndexCursor](longsPerRow, refsPerRow, offset) {
+class LabelScanOperator(offset: Int, label: LazyLabel, argumentSize: SlotConfiguration.Size)
+  extends NodeIndexOperator[NodeLabelIndexCursor](offset) {
 
   override def operate(message: Message,
                        currentRow: MorselExecutionContext,

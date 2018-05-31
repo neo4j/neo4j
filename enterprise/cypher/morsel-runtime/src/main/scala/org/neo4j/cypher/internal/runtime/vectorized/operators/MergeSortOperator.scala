@@ -24,19 +24,18 @@ package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import java.util.{Comparator, PriorityQueue}
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.slotted.pipes.ColumnOrder
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.values.storable.NumberValue
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 
 /**
   * This operator takes pre-sorted inputs, and merges them together, producing a stream of Morsels with the sorted data
   * If countExpression != None, this expression evaluates to a limit for TopN
   */
-class MergeSortOperator(orderBy: Seq[ColumnOrder], slots: SlotConfiguration, countExpression: Option[Expression] = None) extends Operator {
+class MergeSortOperator(orderBy: Seq[ColumnOrder], countExpression: Option[Expression] = None) extends Operator {
 
   private val comparator: Comparator[MorselExecutionContext] = orderBy
     .map(MorselSorting.createMorselComparator)
@@ -70,8 +69,6 @@ class MergeSortOperator(orderBy: Seq[ColumnOrder], slots: SlotConfiguration, cou
       case _ => throw new IllegalStateException()
 
     }
-    val longCount = slots.numberOfLongs
-    val refCount = slots.numberOfReferences
 
     // potentially calculate the limit
     val limit = countExpression.map { count =>
@@ -83,8 +80,7 @@ class MergeSortOperator(orderBy: Seq[ColumnOrder], slots: SlotConfiguration, cou
 
     while(!sortedInputs.isEmpty && outputRow.hasMoreRows && limitNotReached) {
       val nextRow: MorselExecutionContext = sortedInputs.poll()
-      //TODO this should use counts from nextRow instead
-      outputRow.copyFrom(nextRow, longCount, refCount )
+      outputRow.copyFrom(nextRow)
       totalPos += 1
       nextRow.moveToNextRow()
       outputRow.moveToNextRow()

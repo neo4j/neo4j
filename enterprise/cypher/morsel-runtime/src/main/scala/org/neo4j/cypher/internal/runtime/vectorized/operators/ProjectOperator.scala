@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.vectorized._
 
-class ProjectOperator(val projectionOps: Map[Slot, Expression], slots: SlotConfiguration) extends MiddleOperator {
+class ProjectOperator(val projectionOps: Map[Slot, Expression]) extends MiddleOperator {
 
   private val project = projectionOps.map {
     case (LongSlot(_, _, _),_) =>
@@ -46,8 +46,6 @@ class ProjectOperator(val projectionOps: Map[Slot, Expression], slots: SlotConfi
                        currentRow: MorselExecutionContext,
                        context: QueryContext,
                        state: QueryState): Unit = {
-    val longCount = slots.numberOfLongs
-    val refCount = slots.numberOfReferences
     val queryState = new OldQueryState(context, resources = null, params = state.params)
 
     while(currentRow.hasMoreRows) {

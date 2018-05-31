@@ -22,7 +22,6 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.vectorized._
@@ -33,13 +32,11 @@ Responsible for aggregating the data coming from a single morsel. This is equiva
 step of map-reduce. Each thread performs it its local aggregation on the data local to it. In
 the subsequent reduce steps these local aggregations are merged into a single global aggregate.
  */
-class AggregationMapperOperatorNoGrouping(slots: SlotConfiguration, aggregations: Array[AggregationOffsets]) extends MiddleOperator {
+class AggregationMapperOperatorNoGrouping(aggregations: Array[AggregationOffsets]) extends MiddleOperator {
 
 
   override def operate(iterationState: Iteration, currentRow: MorselExecutionContext, context: QueryContext, state: QueryState): Unit = {
     val aggregationMappers = aggregations.map(_.aggregation.createAggregationMapper)
-    val longCount = slots.numberOfLongs
-    val refCount = slots.numberOfReferences
     val queryState = new OldQueryState(context, resources = null, params = state.params)
 
     //loop over the entire morsel and apply the aggregation

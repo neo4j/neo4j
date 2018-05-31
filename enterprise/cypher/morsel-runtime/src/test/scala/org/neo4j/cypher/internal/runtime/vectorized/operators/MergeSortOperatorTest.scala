@@ -22,7 +22,7 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{LongSlot, SlotConfiguration}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.LongSlot
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.slotted.pipes.Ascending
 import org.neo4j.cypher.internal.runtime.vectorized._
@@ -31,8 +31,6 @@ import org.neo4j.values.virtual.VirtualValues
 import org.opencypher.v9_0.util.symbols.CTNode
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
-import scala.collection.mutable
-
 class MergeSortOperatorTest extends CypherFunSuite {
 
   test("sort a single morsel") {
@@ -40,13 +38,12 @@ class MergeSortOperatorTest extends CypherFunSuite {
     val numberOfReferences = 0
     val slot = LongSlot(0, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot))
-    val info = new SlotConfiguration(mutable.Map("apa" -> slot), numberOfLongs, numberOfReferences)
 
     val longs = Array[Long](1, 2, 3, 4, 5, 6, 7, 8, 9)
     val in = new Morsel(longs, Array[AnyValue](), longs.length)
     val out = new Morsel(new Array[Long](longs.length), Array[AnyValue](), longs.length)
 
-    val operator = new MergeSortOperator(columnOrdering, info)
+    val operator = new MergeSortOperator(columnOrdering)
     val continuation = operator.operate(StartLoopWithEagerData(Array(MorselExecutionContext(in, numberOfLongs, numberOfReferences)), Iteration(None)), MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, null )
 
     continuation shouldBe an[EndOfLoop]
@@ -58,13 +55,12 @@ class MergeSortOperatorTest extends CypherFunSuite {
     val numberOfReferences = 0
     val slot = LongSlot(0, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot))
-    val info = new SlotConfiguration(mutable.Map("apa" -> slot), numberOfLongs, numberOfReferences)
 
     val longs = Array[Long](1, 2, 3, 4, 5, 6, 7, 8, 9)
     val in = new Morsel(longs, Array[AnyValue](), longs.length)
     val out = new Morsel(new Array[Long](longs.length), Array[AnyValue](), longs.length)
 
-    val operator = new MergeSortOperator(columnOrdering, info, Some(Literal(3)))
+    val operator = new MergeSortOperator(columnOrdering, Some(Literal(3)))
     val continuation = operator.operate(StartLoopWithEagerData(Array(MorselExecutionContext(in, numberOfLongs, numberOfReferences)), Iteration(None)), MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null) )
 
     continuation shouldBe an[EndOfLoop]
@@ -77,7 +73,6 @@ class MergeSortOperatorTest extends CypherFunSuite {
     val numberOfReferences = 0
     val slot = LongSlot(0, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot))
-    val info = new SlotConfiguration(mutable.Map("apa" -> slot), numberOfLongs, numberOfReferences)
 
     val long1 = Array[Long](1, 2, 3, 4, 6, 7, 8, 9)
     val long2 = Array[Long](5, 7, 9, 14, 86, 92)
@@ -85,7 +80,7 @@ class MergeSortOperatorTest extends CypherFunSuite {
     val in2 = new Morsel(long2, Array[AnyValue](), long2.length)
     val out = new Morsel(new Array[Long](5), Array[AnyValue](), 5)
 
-    val operator = new MergeSortOperator(columnOrdering, info)
+    val operator = new MergeSortOperator(columnOrdering)
 
     val continuation1 = operator.operate(StartLoopWithEagerData(Array(MorselExecutionContext(in1, numberOfLongs, numberOfReferences), MorselExecutionContext(in2, numberOfLongs, numberOfReferences)), Iteration(None)), MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, null )
     continuation1 shouldBe a[ContinueWithSource[_]]
@@ -110,7 +105,6 @@ class MergeSortOperatorTest extends CypherFunSuite {
     val slot1 = LongSlot(0, nullable = false, CTNode)
     val slot2 = LongSlot(1, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot1))
-    val info = new SlotConfiguration(mutable.Map("apa1" -> slot1, "apa2" -> slot2), numberOfLongs, numberOfReferences)
 
     val long1 = Array[Long](
       1, 101,
@@ -132,7 +126,7 @@ class MergeSortOperatorTest extends CypherFunSuite {
     val outputRowsPerMorsel = 4
     val out = new Morsel(new Array[Long](numberOfLongs * outputRowsPerMorsel), Array[AnyValue](), outputRowsPerMorsel)
 
-    val operator = new MergeSortOperator(columnOrdering, info)
+    val operator = new MergeSortOperator(columnOrdering)
 
     val continuation1 = operator.operate(StartLoopWithEagerData(Array(MorselExecutionContext(in1, numberOfLongs, numberOfReferences), MorselExecutionContext(in2, numberOfLongs, numberOfReferences)), Iteration(None)), MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, null )
     continuation1 shouldBe a[ContinueWithSource[_]]
@@ -157,7 +151,6 @@ class MergeSortOperatorTest extends CypherFunSuite {
     val slot1 = LongSlot(0, nullable = false, CTNode)
     val slot2 = LongSlot(1, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot1), Ascending(slot2))
-    val info = new SlotConfiguration(mutable.Map("apa1" -> slot1, "apa2" -> slot2), numberOfLongs, numberOfReferences)
 
     val long1 = Array[Long](
       1, 101,
@@ -179,7 +172,7 @@ class MergeSortOperatorTest extends CypherFunSuite {
     val outputRowsPerMorsel = 4
     val out = new Morsel(new Array[Long](numberOfLongs * outputRowsPerMorsel), Array[AnyValue](), outputRowsPerMorsel)
 
-    val operator = new MergeSortOperator(columnOrdering, info)
+    val operator = new MergeSortOperator(columnOrdering)
 
     val continuation1 = operator.operate(StartLoopWithEagerData(Array(MorselExecutionContext(in1, numberOfLongs, numberOfReferences), MorselExecutionContext(in2, numberOfLongs, numberOfReferences)), Iteration(None)), MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, null )
     continuation1 shouldBe a[ContinueWithSource[_]]
@@ -202,7 +195,6 @@ class MergeSortOperatorTest extends CypherFunSuite {
     val numberOfReferences = 0
     val slot = LongSlot(0, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot))
-    val info = new SlotConfiguration(mutable.Map("apa" -> slot), numberOfLongs, numberOfReferences)
 
     val long1 = Array[Long](1, 2, 3, 4, 6, 7, 8, 9)
     val long2 = Array[Long](5, 7, 9, 14, 86, 92)
@@ -210,7 +202,7 @@ class MergeSortOperatorTest extends CypherFunSuite {
     val in2 = new Morsel(long2, Array[AnyValue](), long2.length)
     val out = new Morsel(new Array[Long](5), Array[AnyValue](), 5)
 
-    val operator = new MergeSortOperator(columnOrdering, info, Some(Literal(9)))
+    val operator = new MergeSortOperator(columnOrdering, Some(Literal(9)))
 
     val continuation1 = operator.operate(StartLoopWithEagerData(Array(MorselExecutionContext(in1, numberOfLongs, numberOfReferences), MorselExecutionContext(in2, numberOfLongs, numberOfReferences)), Iteration(None)), MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null) )
     continuation1 shouldBe a[ContinueWithSource[_]]
@@ -228,7 +220,6 @@ class MergeSortOperatorTest extends CypherFunSuite {
     val numberOfReferences = 0
     val slot = LongSlot(0, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot))
-    val info = new SlotConfiguration(mutable.Map("apa" -> slot), numberOfLongs, numberOfReferences)
 
     val long1 = Array[Long](1, 2, 3, 4, 5, 6, 7, 8, 9)
     val long2 = Array.empty[Long]
@@ -236,7 +227,7 @@ class MergeSortOperatorTest extends CypherFunSuite {
     val in2 = new Morsel(long2, Array[AnyValue](), long2.length)
     val out = new Morsel(new Array[Long](9), Array[AnyValue](), 9)
 
-    val operator = new MergeSortOperator(columnOrdering, info)
+    val operator = new MergeSortOperator(columnOrdering)
     val continuation = operator.operate(StartLoopWithEagerData(Array(MorselExecutionContext(in1, numberOfLongs, numberOfReferences), MorselExecutionContext(in2, numberOfLongs, numberOfReferences)), Iteration(None)), MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, null )
 
     continuation shouldBe an[EndOfLoop]
@@ -248,13 +239,12 @@ class MergeSortOperatorTest extends CypherFunSuite {
     val numberOfReferences = 0
     val slot = LongSlot(0, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot))
-    val info = new SlotConfiguration(mutable.Map("apa" -> slot), numberOfLongs, numberOfReferences)
 
     val longs = Array[Long](1, 2, 3, 4, 5, 6, 7, 8, 9)
     val in = new Morsel(longs, Array[AnyValue](), longs.length)
     val out = new Morsel(new Array[Long](longs.length + 5), Array[AnyValue](), longs.length + 5)
 
-    val operator = new MergeSortOperator(columnOrdering, info)
+    val operator = new MergeSortOperator(columnOrdering)
     val continuation = operator.operate(StartLoopWithEagerData(Array(MorselExecutionContext(in, numberOfLongs, numberOfReferences)), Iteration(None)), MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, null )
 
     continuation shouldBe an[EndOfLoop]

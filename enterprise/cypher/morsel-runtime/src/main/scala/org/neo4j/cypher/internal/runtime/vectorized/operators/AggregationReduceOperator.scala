@@ -22,7 +22,6 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.runtime.vectorized.expressions.{AggregationHelper, AggregationReducer}
@@ -34,7 +33,7 @@ import scala.collection.mutable.{Map => MutableMap}
 /*
 Responsible for reducing the output of AggregationMapperOperatorNoGrouping
  */
-class AggregationReduceOperator(slots: SlotConfiguration, aggregations: Array[AggregationOffsets], groupings: Array[GroupingOffsets]) extends Operator {
+class AggregationReduceOperator(aggregations: Array[AggregationOffsets], groupings: Array[GroupingOffsets]) extends Operator {
 
   //These are assigned at compile time to save some time at runtime
   private val addGroupingValuesToResult = AggregationHelper.computeGroupingSetter(groupings)
@@ -42,14 +41,12 @@ class AggregationReduceOperator(slots: SlotConfiguration, aggregations: Array[Ag
 
   override def operate(message: Message, outputRow: MorselExecutionContext, context: QueryContext, state: QueryState): Continuation = {
     var iterationState: Iteration = null
-    val longCount = slots.numberOfLongs
-    val refCount = slots.numberOfReferences
     var iterator: Iterator[(AnyValue, Array[(Int, Int, AggregationReducer)])] = null
 
     message match {
       case StartLoopWithEagerData(inputs, is) =>
         iterationState = is
-        iterator = getIterator(inputs, longCount, refCount)
+        iterator = getIterator(inputs)
 
       case ContinueLoopWith(ContinueWithSource(it: Iterator[_], is)) =>
         iterator = it.asInstanceOf[Iterator[(AnyValue, Array[(Int, Int, AggregationReducer)])]]
@@ -74,7 +71,7 @@ class AggregationReduceOperator(slots: SlotConfiguration, aggregations: Array[Ag
     else EndOfLoop(iterationState)
   }
 
-  private def getIterator(inputRows: Array[MorselExecutionContext], longCount: Int, refCount: Int) = {
+  private def getIterator(inputRows: Array[MorselExecutionContext]) = {
     var morselPos = 0
     val result = MutableMap[AnyValue, Array[(Int, Int, AggregationReducer)]]()
     while (morselPos < inputRows.length) {

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.internal.kernel.api.NodeCursor
 
-class AllNodeScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, argumentSize: SlotConfiguration.Size) extends Operator {
+class AllNodeScanOperator(offset: Int, argumentSize: SlotConfiguration.Size) extends Operator {
 
   override def operate(message: Message,
                        currentRow: MorselExecutionContext,

@@ -22,14 +22,13 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
 
 /*
 Responsible for reducing the output of AggregationMapperOperatorNoGrouping
  */
-class AggregationReduceOperatorNoGrouping(slots: SlotConfiguration, aggregations: Array[AggregationOffsets]) extends Operator {
+class AggregationReduceOperatorNoGrouping(aggregations: Array[AggregationOffsets]) extends Operator {
 
   override def operate(message: Message, currentRow: MorselExecutionContext, context: QueryContext, state: QueryState): Continuation = {
     val reducers = aggregations.map(_.aggregation.createAggregationReducer)

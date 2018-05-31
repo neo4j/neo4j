@@ -64,6 +64,7 @@ case class NoOp(iteration: Iteration) extends Continuation
 case class EndOfLoop(iteration: Iteration) extends Continuation
 
 case class Iteration(argument: Option[MorselExecutionContext]) {
+  // the number of longs/refs in the argument can be fewer than the whole row, thus they need to be provided here
   def copyArgumentStateTo(row: MorselExecutionContext, nLongs: Int, nRefs: Int): Unit = {
     argument.foreach(row.copyFrom(_, nLongs, nRefs))
   }

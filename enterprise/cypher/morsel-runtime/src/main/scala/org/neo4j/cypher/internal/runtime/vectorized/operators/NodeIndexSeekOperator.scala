@@ -32,7 +32,7 @@ import org.neo4j.internal.kernel.api._
 import org.neo4j.values.virtual.NodeValue
 import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
 
-class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
+class NodeIndexSeekOperator(offset: Int,
                             label: LabelToken,
                             propertyKeys: Seq[PropertyKeyToken],
                             argumentSize: SlotConfiguration.Size,
