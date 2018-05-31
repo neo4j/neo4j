@@ -27,6 +27,4 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 public interface Kernel
 {
     Session beginSession( LoginContext loginContext );
-
-    Modes modes();
 }

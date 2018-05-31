@@ -20,25 +20,21 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.internal.kernel.api.Modes;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.InwardKernel;
-import org.neo4j.storageengine.api.StorageEngine;
 
 /**
  * This is a temporary implementation of the Kernel API, used to enable early testing. The plan is to merge this
  * class with org.neo4j.kernel.impl.api.Kernel.
  */
-public class NewKernel implements Kernel, Modes
+public class NewKernel implements Kernel
 {
-    private final StorageEngine engine;
     private final InwardKernel kernel;
 
     private volatile boolean isRunning;
 
-    public NewKernel( StorageEngine engine, InwardKernel kernel )
+    public NewKernel( InwardKernel kernel )
     {
-        this.engine = engine;
         this.kernel = kernel;
         this.isRunning = false;
     }
@@ -48,12 +44,6 @@ public class NewKernel implements Kernel, Modes
     {
         assert isRunning : "kernel is not running, so it is not possible to use it";
         return new KernelSession( kernel, loginContext );
-    }
-
-    @Override
-    public Modes modes()
-    {
-        return this;
     }
 
     public void start()
@@ -68,11 +58,5 @@ public class NewKernel implements Kernel, Modes
             throw new IllegalStateException( "kernel is not running, so it is not possible to stop it" );
         }
         isRunning = false;
-    }
-
-    @Override
-    public boolean twoLayerTransactionState()
-    {
-        return false;
     }
 }
