@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.opencypher.v9_0.util.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.opencypher.v9_0.util.symbols._
+import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values._
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.VirtualValues
+import org.opencypher.v9_0.util.symbols._
+import org.opencypher.v9_0.util.{CypherTypeException, InvalidArgumentException}
 
 abstract class MathFunction(arg: Expression) extends Expression with NumericHelper {
 
@@ -69,36 +70,32 @@ trait NumericHelper {
 
 case class AbsFunction(argument: Expression) extends MathFunction(argument) {
 
-  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
-    val value = argument(ctx, state)
-    if (Values.NO_VALUE == value) Values.NO_VALUE
-    else value match {
-      case f: IntegralValue => Values.longValue(Math.abs(f.longValue()))
-      case d: NumberValue =>  Values.doubleValue(Math.abs(d.doubleValue()))
-      case x => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got: " + x.toString)
-    }
-  }
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue =
+    CypherFunctions.abs(argument(ctx, state))
 
   override def rewrite(f: (Expression) => Expression) = f(AbsFunction(argument.rewrite(f)))
 }
 
-case class AcosFunction(argument: Expression) extends NullSafeMathFunction(argument) {
+case class AcosFunction(argument: Expression) extends MathFunction(argument) {
 
-  override def apply(value: Double): Double = Math.acos(value)
+  override def apply(ctx: ExecutionContext,
+                     state: QueryState): AnyValue = CypherFunctions.acos(argument(ctx, state))
 
   override def rewrite(f: (Expression) => Expression) = f(AcosFunction(argument.rewrite(f)))
 }
 
-case class AsinFunction(argument: Expression) extends NullSafeMathFunction(argument) {
+case class AsinFunction(argument: Expression) extends MathFunction(argument) {
 
-  override def apply(value: Double): Double = Math.asin(value)
+  override def apply(ctx: ExecutionContext,
+                     state: QueryState): AnyValue = CypherFunctions.asin(argument(ctx, state))
 
   override def rewrite(f: (Expression) => Expression) = f(AsinFunction(argument.rewrite(f)))
 }
 
-case class AtanFunction(argument: Expression) extends NullSafeMathFunction(argument) {
+case class AtanFunction(argument: Expression) extends MathFunction(argument) {
 
-  override def apply(value: Double): Double = Math.atan(value)
+  override def apply(ctx: ExecutionContext,
+                     state: QueryState): AnyValue = CypherFunctions.atan(argument(ctx, state))
 
   override def rewrite(f: (Expression) => Expression) = f(AtanFunction(argument.rewrite(f)))
 }
@@ -121,23 +118,26 @@ case class Atan2Function(y: Expression, x: Expression) extends Expression with N
   override def symbolTableDependencies = x.symbolTableDependencies ++ y.symbolTableDependencies
 }
 
-case class CeilFunction(argument: Expression) extends NullSafeMathFunction(argument) {
+case class CeilFunction(argument: Expression) extends MathFunction(argument) {
 
-  override def apply(value: Double) = math.ceil(value)
+  override def apply(ctx: ExecutionContext,
+                     state: QueryState): AnyValue = CypherFunctions.ceil(argument(ctx, state))
 
   override def rewrite(f: (Expression) => Expression) = f(CeilFunction(argument.rewrite(f)))
 }
 
-case class CosFunction(argument: Expression) extends NullSafeMathFunction(argument) {
+case class CosFunction(argument: Expression) extends MathFunction(argument) {
 
-  override def apply(value: Double): Double = math.cos(value)
+  override def apply(ctx: ExecutionContext,
+                     state: QueryState): AnyValue = CypherFunctions.cos(argument(ctx, state))
 
   override def rewrite(f: (Expression) => Expression) = f(CosFunction(argument.rewrite(f)))
 }
 
-case class CotFunction(argument: Expression) extends NullSafeMathFunction(argument) {
+case class CotFunction(argument: Expression)extends MathFunction(argument) {
 
-  override def apply(value: Double): Double = 1.0 / math.tan(value)
+  override def apply(ctx: ExecutionContext,
+                     state: QueryState): AnyValue = CypherFunctions.cot(argument(ctx, state))
 
   override def rewrite(f: (Expression) => Expression) = f(CotFunction(argument.rewrite(f)))
 }
@@ -167,9 +167,10 @@ case class ExpFunction(argument: Expression) extends NullSafeMathFunction(argume
   override def rewrite(f: (Expression) => Expression) = f(ExpFunction(argument.rewrite(f)))
 }
 
-case class FloorFunction(argument: Expression) extends NullSafeMathFunction(argument) {
+case class FloorFunction(argument: Expression) extends MathFunction(argument) {
 
-  override def apply(value: Double) = math.floor(value)
+  override def apply(ctx: ExecutionContext,
+                     state: QueryState): AnyValue = CypherFunctions.floor(argument(ctx, state))
 
   override def rewrite(f: (Expression) => Expression) = f(FloorFunction(argument.rewrite(f)))
 }
@@ -206,30 +207,33 @@ case class RadiansFunction(argument: Expression) extends NullSafeMathFunction(ar
   override def rewrite(f: (Expression) => Expression) = f(RadiansFunction(argument.rewrite(f)))
 }
 
-case class SinFunction(argument: Expression) extends NullSafeMathFunction(argument) {
+case class SinFunction(argument: Expression) extends MathFunction(argument) {
 
-  override def apply(value: Double) = math.sin(value)
+  override def apply(ctx: ExecutionContext,
+                     state: QueryState): AnyValue = CypherFunctions.sin(argument(ctx, state))
 
   override def rewrite(f: (Expression) => Expression) = f(SinFunction(argument.rewrite(f)))
 }
 
-case class HaversinFunction(argument: Expression) extends NullSafeMathFunction(argument) {
+case class HaversinFunction(argument: Expression) extends MathFunction(argument) {
 
-  override def apply(value: Double) = (1.0d - math.cos(value)) / 2
+  override def apply(ctx: ExecutionContext,
+                     state: QueryState): AnyValue = CypherFunctions.haversin(argument(ctx, state))
 
   override def rewrite(f: (Expression) => Expression) = f(HaversinFunction(argument.rewrite(f)))
 }
 
-case class TanFunction(argument: Expression) extends NullSafeMathFunction(argument) {
+case class TanFunction(argument: Expression) extends MathFunction(argument) {
 
-  override def apply(value: Double) = math.tan(value)
+  override def apply(ctx: ExecutionContext,
+                     state: QueryState): AnyValue = CypherFunctions.tan(argument(ctx, state))
 
   override def rewrite(f: (Expression) => Expression) = f(TanFunction(argument.rewrite(f)))
 }
 
 case class RandFunction() extends Expression {
 
-  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = Values.doubleValue(math.random)
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = CypherFunctions.rand()
 
   override def arguments = Seq()
 
@@ -274,9 +278,10 @@ case class SignFunction(argument: Expression) extends MathFunction(argument) {
   override def rewrite(f: (Expression) => Expression) = f(SignFunction(argument.rewrite(f)))
 }
 
-case class RoundFunction(expression: Expression) extends NullSafeMathFunction(expression) {
+case class RoundFunction(expression: Expression) extends MathFunction(expression) {
 
-  override def apply(value: Double) = math.round(value)
+  override def apply(ctx: ExecutionContext,
+                     state: QueryState): AnyValue = CypherFunctions.round(expression(ctx, state))
 
   override def rewrite(f: (Expression) => Expression) = f(RoundFunction(expression.rewrite(f)))
 }
