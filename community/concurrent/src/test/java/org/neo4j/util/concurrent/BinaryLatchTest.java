@@ -58,7 +58,7 @@ class BinaryLatchTest
     @Test
     void releaseMustUnblockAwaiters()
     {
-        assertTimeout( ofSeconds( 1 ), () ->
+        assertTimeout( ofSeconds( 10 ), () ->
         {
             final BinaryLatch latch = new BinaryLatch();
             Runnable awaiter = latch::await;

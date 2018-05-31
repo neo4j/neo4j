@@ -26,6 +26,7 @@ import java.util
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.vectorized.Pipeline.DEBUG
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.values.virtual.MapValue
 
@@ -66,6 +67,7 @@ case class Lazy(pipeline: Pipeline) extends Dependency {
 
 case class Eager(pipeline: Pipeline) extends Dependency {
   override def foreach(f: Pipeline => Unit): Unit = f(pipeline)
+  lazy val eagerData = new java.util.concurrent.ConcurrentLinkedQueue[Morsel]()
 }
 
 case object NoDependencies extends Dependency {
@@ -75,6 +77,13 @@ case object NoDependencies extends Dependency {
 }
 
 case class QueryState(params: MapValue, visitor: QueryResultVisitor[_])
+
+object PipeLineWithEagerDependency {
+  def unapply(arg: Pipeline): Option[java.util.Queue[Morsel]] = arg match {
+    case Pipeline(_,_,_, eager@Eager(_)) => Some(eager.eagerData)
+    case _ => None
+  }
+}
 
 case class Pipeline(start: Operator,
                     operators: IndexedSeq[MiddleOperator],
@@ -86,6 +95,7 @@ case class Pipeline(start: Operator,
 
   def addOperator(operator: MiddleOperator): Pipeline = copy(operators = operators :+ operator)(parent)
 
+
   def operate(message: Message, data: Morsel, context: QueryContext, state: QueryState): Continuation = {
     val next = start.operate(message, data, context, state)
 
@@ -93,20 +103,19 @@ case class Pipeline(start: Operator,
       op.operate(next.iteration, data, context, state)
     }
 
-    if (false /*BEDUG!*/ ) {
+    if (DEBUG) {
       println(s"Message: $message")
       println(s"Pipeline: $this")
 
-
       val longCount = slots.numberOfLongs
-      val rows = for (i <- 0 until(data.validRows * longCount, longCount)) yield {
-        util.Arrays.toString(data.longs.slice(i, i + longCount))
+      val refCount = slots.numberOfReferences
+
+      println("Resulting rows")
+      for (i <- 0 until data.validRows) {
+        val ls =  util.Arrays.toString(data.longs.slice(i * longCount, (i + 1) * longCount))
+        val rs =  util.Arrays.toString(data.refs.slice(i * refCount, (i + 1) * refCount).asInstanceOf[Array[AnyRef]])
+        println(s"$ls $rs")
       }
-      val longValues = rows.mkString(System.lineSeparator())
-      println(
-        s"""Resulting rows:
-           |$longValues""".
-          stripMargin)
       println(s"Resulting continuation: $next")
       println()
       println("-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/")
@@ -131,4 +140,8 @@ case class Pipeline(start: Operator,
     val x = (start +: operators).map(x => x.getClass.getSimpleName)
     s"Pipeline(${x.mkString(",")})"
   }
+}
+
+object Pipeline {
+  private val DEBUG = false
 }

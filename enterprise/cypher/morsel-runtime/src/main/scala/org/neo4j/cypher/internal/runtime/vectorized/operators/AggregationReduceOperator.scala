@@ -24,7 +24,6 @@ package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.runtime.vectorized.expressions.{AggregationHelper, AggregationReducer}
 import org.neo4j.values.AnyValue
@@ -43,23 +42,44 @@ class AggregationReduceOperator(slots: SlotConfiguration, aggregations: Array[Ag
 
   override def operate(message: Message, output: Morsel, context: QueryContext, state: QueryState): Continuation = {
     var iterationState: Iteration = null
-    var morselPos = 0
-    var morsels: Array[Morsel] = null
     val longCount = slots.numberOfLongs
     val refCount = slots.numberOfReferences
+    var writePos = 0
+    var iterator: Iterator[(AnyValue, Array[(Int, Int, AggregationReducer)])] = null
 
-    //This operator will never be "interrupted" since it will never overflow the morsel
     message match {
       case StartLoopWithEagerData(inputs, is) =>
         iterationState = is
-        morsels = inputs
+        iterator = getIterator(inputs, longCount, refCount)
+
+      case ContinueLoopWith(ContinueWithSource(it: Iterator[_], is)) =>
+        iterator = it.asInstanceOf[Iterator[(AnyValue, Array[(Int, Int, AggregationReducer)])]]
+        iterationState = is
       case _ => throw new IllegalStateException()
     }
 
-    //Go through the morsels and collect the output from the map step
-    //and reduce the values
-    val result = MutableMap[AnyValue, Array[(Int,Int,AggregationReducer)]]()
+    val currentRow = new MorselExecutionContext(output, longCount, refCount, currentRow = 0)
+    while (iterator.hasNext && writePos < output.validRows) {
+      val (key, aggregator) = iterator.next()
+      addGroupingValuesToResult(currentRow, key)
+      var i = 0
+      while (i < aggregations.length) {
+        val (_, offset, reducer) = aggregator(i)
+        output.refs(currentRow.currentRow * refCount + offset) = reducer.result
+        i += 1
+      }
+      writePos +=1
+      currentRow.currentRow += 1
+    }
+    output.validRows = writePos
 
+    if (iterator.hasNext) ContinueWithSource(iterator, iterationState)
+    else EndOfLoop(iterationState)
+  }
+
+  private def getIterator(morsels: Array[Morsel], longCount: Int, refCount: Int) = {
+    var morselPos = 0
+    val result = MutableMap[AnyValue, Array[(Int, Int, AggregationReducer)]]()
     while (morselPos < morsels.length) {
       val data = morsels(morselPos)
       val currentRow = new MorselExecutionContext(data, longCount, refCount, currentRow = 0)
@@ -77,25 +97,7 @@ class AggregationReduceOperator(slots: SlotConfiguration, aggregations: Array[Ag
       }
       morselPos += 1
     }
-
-    //Write the reduced value to output
-    //reuse and reset morsel context
-    val currentRow = new MorselExecutionContext(output, longCount, refCount, currentRow = 0)
-    result.foreach {
-      case (key, aggregator) =>
-        addGroupingValuesToResult(currentRow, key)
-        var i = 0
-        while (i < aggregations.length) {
-          val (_, offset, reducer) = aggregator(i)
-          output.refs(currentRow.currentRow * refCount + offset) = reducer.result
-          i += 1
-        }
-        currentRow.currentRow += 1
-    }
-    output.validRows = currentRow.currentRow
-
-    //we are done
-    EndOfLoop(iterationState)
+    result.iterator
   }
 
   override def addDependency(pipeline: Pipeline): Dependency = Eager(pipeline)

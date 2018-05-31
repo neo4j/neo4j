@@ -30,23 +30,19 @@ import org.neo4j.helpers.HostnamePort;
 
 import static org.neo4j.ext.udc.UdcConstants.PING;
 
-public class Pinger
+class Pinger
 {
     private final HostnamePort address;
     private final UdcInformationCollector collector;
     private int pingCount;
 
-    public Pinger( HostnamePort address, UdcInformationCollector collector )
+    Pinger( HostnamePort address, UdcInformationCollector collector )
     {
         this.address = address;
         this.collector = collector;
-        if ( collector.getCrashPing() )
-        {
-            pingCount = -1;
-        }
     }
 
-    public void ping() throws IOException
+    void ping() throws IOException
     {
         pingCount++;
 
@@ -62,16 +58,7 @@ public class Pinger
             uri.append( "+" );
         }
 
-        // append counts
-        if ( pingCount == 0 )
-        {
-            uri.append( PING + "=-1" );
-            pingCount++;
-        }
-        else
-        {
-            uri.append( PING + "=" ).append( pingCount );
-        }
+        uri.append( PING + "=" ).append( pingCount );
 
         URL url = new URL( uri.toString() );
         URLConnection con = url.openConnection();
@@ -84,7 +71,7 @@ public class Pinger
         con.getInputStream().close();
     }
 
-    public Integer getPingCount()
+    int getPingCount()
     {
         return pingCount;
     }

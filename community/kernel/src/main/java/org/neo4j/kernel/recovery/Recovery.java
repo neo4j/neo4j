@@ -21,7 +21,6 @@ package org.neo4j.kernel.recovery;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
@@ -43,19 +42,16 @@ public class Recovery extends LifecycleAdapter
 
     private final RecoveryService recoveryService;
     private final RecoveryMonitor monitor;
-    private final StartupStatisticsProvider startupStatistics;
     private final CorruptedLogsTruncator logsTruncator;
     private final ProgressReporter progressReporter;
     private final boolean failOnCorruptedLogFiles;
     private int numberOfRecoveredTransactions;
 
-    public Recovery( RecoveryService recoveryService, StartupStatisticsProvider startupStatistics,
-            CorruptedLogsTruncator logsTruncator, RecoveryMonitor monitor, ProgressReporter progressReporter,
+    public Recovery( RecoveryService recoveryService, CorruptedLogsTruncator logsTruncator, RecoveryMonitor monitor, ProgressReporter progressReporter,
             boolean failOnCorruptedLogFiles )
     {
         this.recoveryService = recoveryService;
         this.monitor = monitor;
-        this.startupStatistics = startupStatistics;
         this.logsTruncator = logsTruncator;
         this.progressReporter = progressReporter;
         this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
@@ -138,7 +134,6 @@ public class Recovery extends LifecycleAdapter
         logsTruncator.truncate( recoveryToPosition );
 
         recoveryService.transactionsRecovered( lastTransaction, recoveryToPosition );
-        startupStatistics.setNumberOfRecoveredTransactions( numberOfRecoveredTransactions );
         monitor.recoveryCompleted( numberOfRecoveredTransactions );
     }
 

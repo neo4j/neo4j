@@ -48,7 +48,6 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
-import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.ProcedureConfig;
@@ -128,8 +127,6 @@ public class DataSourceModule
         // Factories for things that needs to be created later
         PageCache pageCache = platformModule.pageCache;
 
-        StartupStatisticsProvider startupStatistics = deps.satisfyDependency( new StartupStatisticsProvider() );
-
         SchemaWriteGuard schemaWriteGuard = deps.satisfyDependency( editionModule.schemaWriteGuard );
 
         DatabasePanicEventGenerator databasePanicEventGenerator = deps.satisfyDependency(
@@ -171,7 +168,6 @@ public class DataSourceModule
                 databaseHealth,
                 platformModule.monitors.newMonitor( LogFileCreationMonitor.class ),
                 editionModule.headerInformationFactory,
-                startupStatistics,
                 editionModule.commitProcessFactory,
                 autoIndexing,
                 pageCache,

@@ -36,7 +36,6 @@ import java.util.stream.Collectors;
 import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.StartupStatistics;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -70,7 +69,7 @@ public class DefaultUdcInformationCollectorTest
     private final UsageData usageData = new UsageData( mock( JobScheduler.class ) );
     private final DefaultUdcInformationCollector collector = new DefaultUdcInformationCollector(
             Config.defaults(), null,
-            new StubIdGeneratorFactory(), mock( StartupStatistics.class ), usageData );
+            new StubIdGeneratorFactory(), usageData );
 
     @Test
     public void shouldIncludeTheMacAddress()
@@ -168,13 +167,7 @@ public class DefaultUdcInformationCollectorTest
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
         dataSourceManager.start();
 
-        UdcInformationCollector collector = new DefaultUdcInformationCollector(
-                Config.defaults(),
-                dataSourceManager,
-                new StubIdGeneratorFactory(),
-                mock(StartupStatistics.class),
-                usageData
-        );
+        UdcInformationCollector collector = new DefaultUdcInformationCollector( Config.defaults(), dataSourceManager, new StubIdGeneratorFactory(), usageData );
 
         when( dataSource.getStoreId() ).thenReturn( StoreId.DEFAULT );
         dataSourceManager.register( dataSource );

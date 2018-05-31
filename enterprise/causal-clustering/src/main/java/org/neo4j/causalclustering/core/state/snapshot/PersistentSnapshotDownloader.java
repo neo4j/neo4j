@@ -29,10 +29,18 @@ import org.neo4j.causalclustering.catchup.storecopy.DatabaseShutdownException;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 
-class PersistentSnapshotDownloader implements Runnable
+public class PersistentSnapshotDownloader implements Runnable
 {
+    public interface Monitor
+    {
+        void startedDownloadingSnapshot();
+
+        void downloadSnapshotComplete();
+    }
+
     static final String OPERATION_NAME = "download of snapshot";
 
     private final CommandApplicationProcess applicationProcess;
@@ -41,11 +49,13 @@ class PersistentSnapshotDownloader implements Runnable
     private final Log log;
     private final TimeoutStrategy.Timeout timeout;
     private final Supplier<DatabaseHealth> dbHealth;
+    private final Monitor monitor;
     private volatile State state;
     private volatile boolean keepRunning;
 
     PersistentSnapshotDownloader( CatchupAddressProvider addressProvider, CommandApplicationProcess applicationProcess,
-            CoreStateDownloader downloader, Log log, TimeoutStrategy.Timeout pauseStrategy, Supplier<DatabaseHealth> dbHealth )
+            CoreStateDownloader downloader, Log log, TimeoutStrategy.Timeout pauseStrategy,
+            Supplier<DatabaseHealth> dbHealth, Monitors monitors )
     {
         this.applicationProcess = applicationProcess;
         this.addressProvider = addressProvider;
@@ -53,6 +63,7 @@ class PersistentSnapshotDownloader implements Runnable
         this.log = log;
         this.timeout = pauseStrategy;
         this.dbHealth = dbHealth;
+        this.monitor = monitors.newMonitor( Monitor.class );
         this.state = State.INITIATED;
         this.keepRunning = true;
     }
@@ -74,6 +85,7 @@ class PersistentSnapshotDownloader implements Runnable
 
         try
         {
+            monitor.startedDownloadingSnapshot();
             applicationProcess.pauseApplier( OPERATION_NAME );
             while ( keepRunning && !downloader.downloadSnapshot( addressProvider ) )
             {
@@ -98,6 +110,7 @@ class PersistentSnapshotDownloader implements Runnable
         finally
         {
             applicationProcess.resumeApplier( OPERATION_NAME );
+            monitor.downloadSnapshotComplete();
             state = State.COMPLETED;
         }
     }

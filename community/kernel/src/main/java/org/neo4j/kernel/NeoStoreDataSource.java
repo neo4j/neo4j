@@ -69,7 +69,6 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
-import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
@@ -251,7 +250,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final DatabaseHealth databaseHealth;
     private final LogFileCreationMonitor physicalLogMonitor;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
-    private final StartupStatisticsProvider startupStatistics;
     private final CommitProcessFactory commitProcessFactory;
     private final PageCache pageCache;
     private final Map<String,IndexImplementation> indexProviders = new HashMap<>();
@@ -288,7 +286,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             FileSystemAbstraction fs, TransactionMonitor transactionMonitor, DatabaseHealth databaseHealth,
             LogFileCreationMonitor physicalLogMonitor,
             TransactionHeaderInformationFactory transactionHeaderInformationFactory,
-            StartupStatisticsProvider startupStatistics, CommitProcessFactory commitProcessFactory,
+            CommitProcessFactory commitProcessFactory,
             AutoIndexing autoIndexing, PageCache pageCache, ConstraintSemantics constraintSemantics, Monitors monitors,
             Tracers tracers, Procedures procedures, IOLimiter ioLimiter, AvailabilityGuard availabilityGuard,
             SystemNanoClock clock, AccessCapability accessCapability, StoreCopyCheckPointMutex storeCopyCheckPointMutex,
@@ -317,7 +315,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.databaseHealth = databaseHealth;
         this.physicalLogMonitor = physicalLogMonitor;
         this.transactionHeaderInformationFactory = transactionHeaderInformationFactory;
-        this.startupStatistics = startupStatistics;
         this.constraintSemantics = constraintSemantics;
         this.monitors = monitors;
         this.tracers = tracers;
@@ -450,7 +447,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     tailScanner,
                     monitors.newMonitor( RecoveryMonitor.class ),
                     monitors.newMonitor( RecoveryStartInformationProvider.Monitor.class ),
-                    logFiles, startupStatistics,
+                    logFiles,
                     storageEngine, transactionLogModule.logicalTransactionStore(), logVersionRepository
             );
 
@@ -631,7 +628,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             RecoveryMonitor recoveryMonitor,
             RecoveryStartInformationProvider.Monitor positionMonitor,
             final LogFiles logFiles,
-            final StartupStatisticsProvider startupStatistics,
             StorageEngine storageEngine,
             LogicalTransactionStore logicalTransactionStore,
             LogVersionRepository logVersionRepository )
@@ -640,8 +636,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 logicalTransactionStore, logVersionRepository, positionMonitor );
         CorruptedLogsTruncator logsTruncator = new CorruptedLogsTruncator( storeDir, logFiles, fileSystemAbstraction );
         ProgressReporter progressReporter = new LogProgressReporter( logService.getInternalLog( Recovery.class ) );
-        Recovery recovery = new Recovery( recoveryService, startupStatistics, logsTruncator, recoveryMonitor,
-                progressReporter, failOnCorruptedLogFiles );
+        Recovery recovery = new Recovery( recoveryService, logsTruncator, recoveryMonitor, progressReporter, failOnCorruptedLogFiles );
         life.add( recovery );
     }
 

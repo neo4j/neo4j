@@ -24,16 +24,17 @@ package org.neo4j.cypher.internal.spi.codegen
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.{PlanFingerprint, PlanFingerprintReference}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_5.{CypherPlannerConfiguration, NotImplementedPlanContext, UpdateStrategy}
 import org.neo4j.cypher.internal.executionplan.GeneratedQuery
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.NO_TRACING
-import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors, devNullLogger}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
 import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.runtime.compiled.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.SingleThreadedExecutor
+import org.neo4j.cypher.internal.{PlanFingerprint, PlanFingerprintReference}
+import org.neo4j.logging.NullLog
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.NO_TRACING
+import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors, devNullLogger}
 import org.opencypher.v9_0.util.attribution.{IdGen, SequentialIdGen}
 import org.opencypher.v9_0.util.{CypherException, InputPosition, InternalException}
 import org.scalatest.mock.MockitoSugar
@@ -55,7 +56,7 @@ object CompiledRuntimeContextHelper extends MockitoSugar {
                codeStructure: CodeStructure[GeneratedQuery] = mock[CodeStructure[GeneratedQuery]]): EnterpriseRuntimeContext = {
       new EnterpriseRuntimeContext(exceptionCreator, tracer, notificationLogger, planContext,
                                    monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, codeStructure,
-                                   new SingleThreadedExecutor())
+                                   new SingleThreadedExecutor(), NullLog.getInstance())
     }
 
 }

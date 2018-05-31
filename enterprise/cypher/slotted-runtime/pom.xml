@@ -114,6 +114,11 @@
       <artifactId>neo4j-cypher-physical-planning</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-compiled-expressions</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
 
     <!-- neo4j testing -->

@@ -19,15 +19,14 @@
  */
 package org.neo4j.ext.udc.impl;
 
-
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
-import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.localserver.LocalServerTestBase;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,6 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.helpers.HostnamePort;
@@ -42,7 +42,6 @@ import org.neo4j.helpers.HostnamePort;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.ext.udc.UdcConstants.ID;
@@ -71,68 +70,46 @@ public class PingerTest extends LocalServerTestBase
         serverUrl = "http://" + hostname + ":" + target.getPort();
     }
 
-    /**
-     * Test that the LocalTestServer actually works.
-     *
-     * @throws Exception
-     */
+    @After
+    public void shutDown() throws Exception
+    {
+        if ( httpclient != null )
+        {
+            httpclient.close();
+        }
+        if ( server != null )
+        {
+            server.shutdown( 0, TimeUnit.MILLISECONDS );
+        }
+    }
+
     @Test
     public void shouldRespondToHttpClientGet() throws Exception
     {
-        HttpClient httpclient = new DefaultHttpClient();
-        HttpGet httpget = new HttpGet( serverUrl + "/?id=storeId+v=kernelVersion" );
-        HttpResponse response = httpclient.execute( httpget );
-        HttpEntity entity = response.getEntity();
-        if ( entity != null )
+        try ( DefaultHttpClient httpclient = new DefaultHttpClient() )
         {
-            InputStream instream = entity.getContent();
-            int l;
-            byte[] tmp = new byte[2048];
-            while ( (l = instream.read( tmp )) != -1 )
+            HttpGet httpget = new HttpGet( serverUrl + "/?id=storeId+v=kernelVersion" );
+            try ( CloseableHttpResponse response = httpclient.execute( httpget ) )
             {
+                HttpEntity entity = response.getEntity();
+                if ( entity != null )
+                {
+                    try ( InputStream instream = entity.getContent() )
+                    {
+                        byte[] tmp = new byte[2048];
+                        while ( (instream.read( tmp )) != -1 )
+                        {
+                        }
+                    }
+                }
+                assertThat( response, notNullValue() );
+                assertThat( response.getStatusLine().getStatusCode(), is( HttpStatus.SC_OK ) );
             }
-        }
-        assertThat( response, notNullValue() );
-        assertThat( response.getStatusLine().getStatusCode(), is( HttpStatus.SC_OK ) );
-    }
-
-    static class TestUdcCollector implements UdcInformationCollector
-    {
-        private final Map<String,String> params;
-        private boolean crashed;
-
-        TestUdcCollector( Map<String,String> params )
-        {
-            this.params = params;
-        }
-
-        @Override
-        public Map<String,String> getUdcParams()
-        {
-            return params;
-        }
-
-        @Override
-        public String getStoreId()
-        {
-            return getUdcParams().get( ID );
-        }
-
-        @Override
-        public boolean getCrashPing()
-        {
-            return crashed;
-        }
-
-        public UdcInformationCollector withCrash()
-        {
-            crashed = true;
-            return this;
         }
     }
 
     @Test
-    public void shouldPingServer()
+    public void shouldPingServer() throws IOException
     {
         final HostnamePort hostURL = new HostnamePort( hostname, server.getLocalPort() );
         final Map<String,String> udcFields = new HashMap<>();
@@ -140,22 +117,11 @@ public class PingerTest extends LocalServerTestBase
         udcFields.put( UdcConstants.VERSION, EXPECTED_KERNEL_VERSION );
 
         Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ) );
-        Exception thrownException = null;
-        try
-        {
-            p.ping();
-        }
-        catch ( IOException e )
-        {
-            thrownException = e;
-            e.printStackTrace();
-        }
-        assertThat( thrownException, nullValue() );
+        p.ping();
 
         Map<String,String> actualQueryMap = handler.getQueryMap();
         assertThat( actualQueryMap, notNullValue() );
         assertThat( actualQueryMap.get( ID ), is( EXPECTED_STORE_ID ) );
-
     }
 
     @Test
@@ -193,19 +159,26 @@ public class PingerTest extends LocalServerTestBase
         }
     }
 
-    @Test
-    public void crashPingSequenceShouldBeMinusOneThenTwoThenThreeEtc() throws Exception
+    static class TestUdcCollector implements UdcInformationCollector
     {
-        int[] expectedSequence = {-1, 2, 3, 4};
-        final HostnamePort hostURL = new HostnamePort( hostname, server.getLocalPort() );
-        final Map<String,String> udcFields = new HashMap<>();
+        private final Map<String,String> params;
 
-        Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ).withCrash() );
-        for ( int s : expectedSequence )
+        TestUdcCollector( Map<String,String> params )
         {
-            p.ping();
-            int count = Integer.parseInt( handler.getQueryMap().get( UdcConstants.PING ) );
-            assertEquals( s, count );
+            this.params = params;
         }
+
+        @Override
+        public Map<String,String> getUdcParams()
+        {
+            return params;
+        }
+
+        @Override
+        public String getStoreId()
+        {
+            return getUdcParams().get( ID );
+        }
+
     }
 }

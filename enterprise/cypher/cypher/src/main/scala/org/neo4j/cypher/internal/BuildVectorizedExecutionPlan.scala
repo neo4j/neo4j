@@ -32,25 +32,25 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationSt
 import org.neo4j.cypher.internal.compiler.v3_5.ExperimentalFeatureNotification
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
-import org.opencypher.v9_0.frontend.PlannerName
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
-import org.opencypher.v9_0.frontend.phases._
-import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, LogicalPlan2PlanDescription}
-import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedExpressionConverters
+import org.neo4j.cypher.internal.runtime.slotted.expressions.{CompiledExpressionConverter, SlottedExpressionConverters}
 import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.{Dispatcher, SingleThreadedExecutor}
 import org.neo4j.cypher.internal.runtime.vectorized.expressions.MorselExpressionConverters
 import org.neo4j.cypher.internal.runtime.vectorized.{Pipeline, PipelineBuilder}
 import org.neo4j.cypher.internal.runtime.{QueryStatistics, _}
-import org.opencypher.v9_0.util.TaskCloser
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb._
 import org.neo4j.values.virtual.MapValue
+import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.opencypher.v9_0.frontend.PlannerName
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
+import org.opencypher.v9_0.frontend.phases._
+import org.opencypher.v9_0.util.TaskCloser
 
 import scala.util.{Failure, Success}
 
@@ -62,11 +62,14 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
   override def process(from: LogicalPlanState, context: EnterpriseRuntimeContext): CompilationState = {
     try {
       val (physicalPlan, pipelines) = rewritePlan(context, from.logicalPlan, from.semanticTable())
-      val converters: ExpressionConverters = new ExpressionConverters(MorselExpressionConverters,
-                                                                      SlottedExpressionConverters,
-                                                                      CommunityExpressionConverter)
+      val converters: ExpressionConverters = new ExpressionConverters(
+        new CompiledExpressionConverter(context.log),
+        MorselExpressionConverters,
+        SlottedExpressionConverters,
+        CommunityExpressionConverter)
       val readOnly = from.solveds(from.logicalPlan.id).readOnly
       val operatorBuilder = new PipelineBuilder(pipelines, converters, readOnly)
+
       val operators = operatorBuilder.create(physicalPlan)
       val dispatcher =
         if (context.debugOptions.contains("singlethreaded")) new SingleThreadedExecutor()

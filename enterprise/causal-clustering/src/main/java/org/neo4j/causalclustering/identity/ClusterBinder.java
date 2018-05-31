@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.time.Clock;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
@@ -37,20 +36,28 @@ import org.neo4j.causalclustering.core.state.storage.SimpleStorage;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.function.ThrowingAction;
-import org.neo4j.kernel.impl.util.CappedLogger;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.String.format;
 
 public class ClusterBinder implements Supplier<Optional<ClusterId>>
 {
+    public interface Monitor
+    {
+        void waitingForCoreMembers( int minimumCount );
+
+        void waitingForBootstrap();
+
+        void bootstrapped( CoreSnapshot snapshot, ClusterId clusterId );
+
+        void boundToCluster( ClusterId clusterId );
+    }
+
     private final SimpleStorage<ClusterId> clusterIdStorage;
     private final SimpleStorage<DatabaseName> dbNameStorage;
     private final CoreTopologyService topologyService;
     private final CoreBootstrapper coreBootstrapper;
-    private final Log log;
-    private final CappedLogger cappedLog;
+    private final Monitor monitor;
     private final Clock clock;
     private final ThrowingAction<InterruptedException> retryWaiter;
     private final long timeoutMillis;
@@ -59,16 +66,15 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
 
     private ClusterId clusterId;
 
-    public ClusterBinder( SimpleStorage<ClusterId> clusterIdStorage, SimpleStorage<DatabaseName> dbNameStorage, CoreTopologyService topologyService,
-            Clock clock, ThrowingAction<InterruptedException> retryWaiter, long timeoutMillis, CoreBootstrapper coreBootstrapper, String dbName,
-            int minCoreHosts, LogProvider logProvider )
+    public ClusterBinder( SimpleStorage<ClusterId> clusterIdStorage, SimpleStorage<DatabaseName> dbNameStorage,
+            CoreTopologyService topologyService, Clock clock, ThrowingAction<InterruptedException> retryWaiter,
+            long timeoutMillis, CoreBootstrapper coreBootstrapper, String dbName, int minCoreHosts, Monitors monitors )
     {
+        this.monitor = monitors.newMonitor( Monitor.class );
         this.clusterIdStorage = clusterIdStorage;
         this.dbNameStorage = dbNameStorage;
         this.topologyService = topologyService;
         this.coreBootstrapper = coreBootstrapper;
-        this.log = logProvider.getLog( getClass() );
-        this.cappedLog = new CappedLogger( log ).setTimeLimit( 5, TimeUnit.SECONDS, clock );
         this.clock = clock;
         this.retryWaiter = retryWaiter;
         this.timeoutMillis = timeoutMillis;
@@ -91,14 +97,12 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
         int memberCount = coreTopology.members().size();
         if ( memberCount < minCoreHosts )
         {
-            String message = "Waiting for %d members. Currently discovered %d members: %s. ";
-            cappedLog.info( format( message, minCoreHosts, memberCount, coreTopology.members() ) );
+            monitor.waitingForCoreMembers( minCoreHosts );
             return false;
         }
         else if ( !coreTopology.canBeBootstrapped() )
         {
-            String message = "Discovered sufficient members (%d) but waiting for bootstrap by other instance.";
-            cappedLog.info( format( message, memberCount ) );
+            monitor.waitingForBootstrap();
             return false;
         }
         else
@@ -122,7 +126,7 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
         dbNameStorage.writeOrVerify( newName, existing -> {
             if ( !newName.equals( existing ) )
             {
-                throw new IllegalStateException( format("Your configured database name has changed. Found %s but expected %s in %s.",
+                throw new IllegalStateException( format( "Your configured database name has changed. Found %s but expected %s in %s.",
                         dbName, existing.name(), CausalClusteringSettings.database.name() ) );
             }
         } );
@@ -131,7 +135,7 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
         {
             clusterId = clusterIdStorage.readState();
             publishClusterId( clusterId );
-            log.info( "Already bound to cluster: " + clusterId );
+            monitor.boundToCluster( clusterId );
             return new BoundState( clusterId );
         }
 
@@ -146,14 +150,13 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
             if ( topology.clusterId() != null )
             {
                 clusterId = topology.clusterId();
-                log.info( "Bound to cluster: " + clusterId );
+                monitor.boundToCluster( clusterId );
             }
             else if ( hostShouldBootstrapCluster( topology ) )
             {
                 clusterId = new ClusterId( UUID.randomUUID() );
                 snapshot = coreBootstrapper.bootstrap( topology.members().keySet() );
-                log.info( format( "Bootstrapped with snapshot: %s and clusterId: %s", snapshot, clusterId ) );
-
+                monitor.bootstrapped( snapshot, clusterId );
                 publishClusterId( clusterId );
             }
             else
@@ -185,10 +188,6 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
         if ( !success )
         {
             throw new BindingException( "Failed to publish: " + localClusterId );
-        }
-        else
-        {
-            log.info( "Published: " + localClusterId );
         }
     }
 }

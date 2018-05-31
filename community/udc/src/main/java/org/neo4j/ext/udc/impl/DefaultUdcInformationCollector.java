@@ -39,7 +39,6 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.StartupStatistics;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -75,22 +74,26 @@ import static org.neo4j.ext.udc.UdcConstants.VERSION;
 
 public class DefaultUdcInformationCollector implements UdcInformationCollector
 {
+    private static final Map<String,String> jarNamesForTags =
+            MapUtil.stringMap( "spring-", "spring", "(javax.ejb|ejb-jar)", "ejb",
+                    "(weblogic|glassfish|websphere|jboss)", "appserver", "openshift", "openshift", "cloudfoundry",
+                    "cloudfoundry", "(junit|testng)", "test", "jruby", "ruby", "clojure", "clojure", "jython", "python",
+                    "groovy", "groovy", "(tomcat|jetty)", "web", "spring-data-neo4j", "sdn" );
+
     private final Config config;
     private final UsageData usageData;
     private final IdGeneratorFactory idGeneratorFactory;
 
     private String storeId;
-    private boolean crashPing;
 
     private NeoStoreDataSource neoStoreDataSource;
 
-    public DefaultUdcInformationCollector( Config config, DataSourceManager dataSourceManager,
-            IdGeneratorFactory idGeneratorFactory, StartupStatistics startupStats, UsageData usageData )
+    DefaultUdcInformationCollector( Config config, DataSourceManager dataSourceManager,
+            IdGeneratorFactory idGeneratorFactory, UsageData usageData )
     {
         this.config = config;
         this.usageData = usageData;
         this.idGeneratorFactory = idGeneratorFactory;
-        final StartupStatistics startupStatistics = startupStats;
 
         if ( dataSourceManager != null )
         {
@@ -99,7 +102,6 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
                 @Override
                 public void registered( NeoStoreDataSource ds )
                 {
-                    crashPing = startupStatistics.numberOfRecoveredTransactions() > 0;
                     storeId = Long.toHexString( ds.getStoreId().getRandomId() );
 
                     neoStoreDataSource = ds;
@@ -108,7 +110,6 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
                 @Override
                 public void unregistered( NeoStoreDataSource ds )
                 {
-                    crashPing = false;
                     storeId = null;
 
                     neoStoreDataSource = null;
@@ -117,7 +118,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         }
     }
 
-    public static String filterVersionForUDC( String version )
+    static String filterVersionForUDC( String version )
     {
         if ( !version.contains( "+" ) )
         {
@@ -246,12 +247,6 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
             return null;
         }
     }
-
-    private final Map<String,String> jarNamesForTags =
-            MapUtil.stringMap( "spring-", "spring", "(javax.ejb|ejb-jar)", "ejb",
-                    "(weblogic|glassfish|websphere|jboss)", "appserver", "openshift", "openshift", "cloudfoundry",
-                    "cloudfoundry", "(junit|testng)", "test", "jruby", "ruby", "clojure", "clojure", "jython", "python",
-                    "groovy", "groovy", "(tomcat|jetty)", "web", "spring-data-neo4j", "sdn" );
 
     private String determineTags( Map<String,String> jarNamesForTags, String classPath )
     {
@@ -423,9 +418,4 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         return storeId;
     }
 
-    @Override
-    public boolean getCrashPing()
-    {
-        return crashPing;
-    }
 }

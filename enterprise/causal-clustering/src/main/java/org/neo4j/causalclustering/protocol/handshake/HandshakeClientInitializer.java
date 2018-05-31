@@ -40,6 +40,7 @@ import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel>
@@ -50,13 +51,15 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
     private final ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstaller;
     private final NettyPipelineBuilderFactory pipelineBuilderFactory;
     private final TimeoutStrategy handshakeDelay;
-    private final Log log;
+    private final Log debugLog;
+    private final Log userLog;
 
     public HandshakeClientInitializer( ApplicationProtocolRepository applicationProtocolRepository, ModifierProtocolRepository modifierProtocolRepository,
             ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstallerRepository, NettyPipelineBuilderFactory pipelineBuilderFactory,
-            Duration handshakeTimeout, LogProvider logProvider )
+            Duration handshakeTimeout, LogProvider debugLogProvider, LogProvider userLogProvider )
     {
-        this.log = logProvider.getLog( getClass() );
+        this.debugLog = debugLogProvider.getLog( getClass() );
+        this.userLog = userLogProvider.getLog( getClass() );
         this.applicationProtocolRepository = applicationProtocolRepository;
         this.modifierProtocolRepository = modifierProtocolRepository;
         this.timeout = handshakeTimeout;
@@ -67,7 +70,7 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
 
     private void installHandlers( Channel channel, HandshakeClient handshakeClient ) throws Exception
     {
-        pipelineBuilderFactory.client( channel, log )
+        pipelineBuilderFactory.client( channel, debugLog )
                 .addFraming()
                 .add( "handshake_client_encoder", new ClientMessageEncoder() )
                 .add( "handshake_client_decoder", new ClientMessageDecoder() )
@@ -82,7 +85,7 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
         HandshakeClient handshakeClient = new HandshakeClient();
         installHandlers( channel, handshakeClient );
 
-        log.info( "Scheduling handshake (and timeout) local %s remote %s", channel.localAddress(), channel.remoteAddress() );
+        debugLog.info( "Scheduling handshake (and timeout) local %s remote %s", channel.localAddress(), channel.remoteAddress() );
 
         scheduleHandshake( channel, handshakeClient, handshakeDelay.newTimeout() );
         scheduleTimeout( channel, handshakeClient );
@@ -116,16 +119,16 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
         ch.eventLoop().schedule( () -> {
             if ( handshakeClient.failIfNotDone( "Timed out after " + timeout ) )
             {
-                log.warn( "Failed handshake after timeout" );
+                debugLog.warn( "Failed handshake after timeout" );
             }
         }, timeout.toMillis(), TimeUnit.MILLISECONDS );
     }
 
     private void initiateHandshake( Channel channel, HandshakeClient handshakeClient )
     {
-        log.info( "Initiating handshake local %s remote %s", channel.localAddress(), channel.remoteAddress() );
+        debugLog.info( "Initiating handshake local %s remote %s", channel.localAddress(), channel.remoteAddress() );
 
-        SimpleNettyChannel channelWrapper = new SimpleNettyChannel( channel, log );
+        SimpleNettyChannel channelWrapper = new SimpleNettyChannel( channel, debugLog );
         CompletableFuture<ProtocolStack> handshake = handshakeClient.initiate( channelWrapper, applicationProtocolRepository, modifierProtocolRepository );
 
         handshake.whenComplete( ( protocolStack, failure ) -> onHandshakeComplete( protocolStack, channel, failure ) );
@@ -135,7 +138,7 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
     {
         if ( failure != null )
         {
-            log.error( "Error when negotiating protocol stack", failure );
+            debugLog.error( "Error when negotiating protocol stack", failure );
             channel.pipeline().fireUserEventTriggered( GateEvent.getFailure() );
             channel.close();
         }
@@ -143,7 +146,9 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
         {
             try
             {
-                log.info( "Installing: " + protocolStack );
+                userLog( protocolStack, channel );
+
+                debugLog.info( "Installing " + protocolStack );
                 protocolInstaller.installerFor( protocolStack ).install( channel );
                 channel.attr( ReconnectingChannel.PROTOCOL_STACK_KEY ).set( protocolStack );
 
@@ -152,9 +157,17 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
             }
             catch ( Exception e )
             {
-                log.error( "Error installing pipeline", e );
+                debugLog.error( "Error installing pipeline", e );
                 channel.close();
             }
         }
+    }
+
+    private void userLog( ProtocolStack protocolStack, Channel channel )
+    {
+        userLog.info( format(
+                "Connected to %s [%s]", channel.remoteAddress(), protocolStack ) );
+        channel.closeFuture().addListener( f -> userLog.info( format(
+                "Lost connection to %s [%s]", channel.remoteAddress(), protocolStack ) ) );
     }
 }

@@ -153,6 +153,20 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    public boolean nodeDeletedInTransaction( long node )
+    {
+        ktx.assertOpen();
+        return hasTxStateWithChanges() && txState().nodeIsDeletedInThisTx( node );
+    }
+
+    @Override
+    public boolean relationshipDeletedInTransaction( long relationship )
+    {
+        ktx.assertOpen();
+        return hasTxStateWithChanges() && txState().relationshipIsDeletedInThisTx( relationship );
+    }
+
+    @Override
     public long countsForNode( int labelId )
     {
         long count = countsForNodeWithoutTxState( labelId );
@@ -707,10 +721,23 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    void nodeAdvance( NodeRecord record, PageCursor pageCursor )
+    {
+        nodes.nextRecordByCursor( record, RecordLoad.CHECK, pageCursor );
+    }
+
+    @Override
     void relationship( RelationshipRecord record, long reference, PageCursor pageCursor )
     {
         // When scanning, we inspect RelationshipRecord.inUse(), so using RecordLoad.CHECK is fine
         relationships.getRecordByCursor( reference, record, RecordLoad.CHECK, pageCursor );
+    }
+
+    @Override
+    void relationshipAdvance( RelationshipRecord record, PageCursor pageCursor )
+    {
+        // When scanning, we inspect RelationshipRecord.inUse(), so using RecordLoad.CHECK is fine
+        relationships.nextRecordByCursor( record, RecordLoad.CHECK, pageCursor );
     }
 
     @Override

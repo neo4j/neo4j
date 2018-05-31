@@ -22,16 +22,16 @@ package org.neo4j.cypher
 import java.io.File
 
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
-import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.kernel.api.procs.{ProcedureSignature, UserFunctionSignature}
 import org.neo4j.kernel.api.InwardKernel
 import org.neo4j.kernel.api.proc._
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.kernel.{GraphDatabaseQueryService, monitoring}
 import org.neo4j.test.TestGraphDatabaseFactory
+import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.JavaConverters._
@@ -279,6 +279,11 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   def kernelMonitors: Monitors = graph.getDependencyResolver.resolveDependency(classOf[monitoring.Monitors])
+
+  def transaction: org.neo4j.internal.kernel.api.Transaction =
+    graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).getKernelTransactionBoundToThisThread(true)
+
+  def propertyToken(name: String): Int = graph.inTx(transaction.tokenRead().propertyKey(name))
 
   private def kernelAPI: InwardKernel = graph.getDependencyResolver.resolveDependency(classOf[InwardKernel])
 

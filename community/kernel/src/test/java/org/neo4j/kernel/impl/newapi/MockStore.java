@@ -259,6 +259,18 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
+    public boolean nodeDeletedInTransaction( long node )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public boolean relationshipDeletedInTransaction( long relationship )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
     public UserFunctionHandle functionGet( QualifiedName name )
     {
        throw new UnsupportedOperationException();
@@ -580,7 +592,19 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
+    void nodeAdvance( NodeRecord record, PageCursor pageCursor )
+    {
+        initialize( record, record.getId() + 1, nodes );
+    }
+
+    @Override
     void relationship( RelationshipRecord record, long reference, PageCursor pageCursor )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    void relationshipAdvance( RelationshipRecord record, PageCursor pageCursor )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

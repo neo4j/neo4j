@@ -48,7 +48,6 @@ import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory.VOID_WRAPPER;
 import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolCategory.CATCHUP;
 import static org.neo4j.time.Clocks.systemClock;
@@ -56,7 +55,8 @@ import static org.neo4j.time.Clocks.systemClock;
 public class CatchupClientBuilder
 {
     private Duration handshakeTimeout = Duration.ofSeconds( 5 );
-    private LogProvider logProvider = NullLogProvider.getInstance();
+    private LogProvider debugLogProvider = NullLogProvider.getInstance();
+    private LogProvider userLogProvider = NullLogProvider.getInstance();
     private NettyPipelineBuilderFactory pipelineBuilder = new NettyPipelineBuilderFactory( VOID_WRAPPER );
     private ApplicationSupportedProtocols catchupProtocols = new ApplicationSupportedProtocols( CATCHUP, emptyList() );
     private Collection<ModifierSupportedProtocols> modifierProtocols = emptyList();
@@ -67,13 +67,14 @@ public class CatchupClientBuilder
     }
 
     public CatchupClientBuilder( ApplicationSupportedProtocols catchupProtocols, Collection<ModifierSupportedProtocols> modifierProtocols,
-            NettyPipelineBuilderFactory pipelineBuilder, Duration handshakeTimeout, LogProvider logProvider, Clock clock )
+            NettyPipelineBuilderFactory pipelineBuilder, Duration handshakeTimeout, LogProvider debugLogProvider, LogProvider userLogProvider, Clock clock )
     {
         this.catchupProtocols = catchupProtocols;
         this.modifierProtocols = modifierProtocols;
         this.pipelineBuilder = pipelineBuilder;
         this.handshakeTimeout = handshakeTimeout;
-        this.logProvider = logProvider;
+        this.debugLogProvider = debugLogProvider;
+        this.userLogProvider = userLogProvider;
         this.clock = clock;
     }
 
@@ -101,9 +102,15 @@ public class CatchupClientBuilder
         return this;
     }
 
-    public CatchupClientBuilder logProvider( LogProvider logProvider )
+    public CatchupClientBuilder debugLogProvider( LogProvider debugLogProvider )
     {
-        this.logProvider = logProvider;
+        this.debugLogProvider = debugLogProvider;
+        return this;
+    }
+
+    public CatchupClientBuilder userLogProvider( LogProvider userLogProvider )
+    {
+        this.userLogProvider = userLogProvider;
         return this;
     }
 
@@ -120,15 +127,15 @@ public class CatchupClientBuilder
 
         Function<CatchUpResponseHandler,ChannelInitializer<SocketChannel>> channelInitializer = handler -> {
             List<ProtocolInstaller.Factory<Client,?>> installers = singletonList(
-                    new CatchupProtocolClientInstaller.Factory( pipelineBuilder, logProvider, handler ) );
+                    new CatchupProtocolClientInstaller.Factory( pipelineBuilder, debugLogProvider, handler ) );
 
             ProtocolInstallerRepository<Client> protocolInstallerRepository = new ProtocolInstallerRepository<>( installers,
                     ModifierProtocolInstaller.allClientInstallers );
 
             return new HandshakeClientInitializer( applicationProtocolRepository, modifierProtocolRepository, protocolInstallerRepository, pipelineBuilder,
-                    handshakeTimeout, logProvider );
+                    handshakeTimeout, debugLogProvider, userLogProvider );
         };
 
-        return new CatchUpClient( logProvider, clock, channelInitializer );
+        return new CatchUpClient( debugLogProvider, clock, channelInitializer );
     }
 }

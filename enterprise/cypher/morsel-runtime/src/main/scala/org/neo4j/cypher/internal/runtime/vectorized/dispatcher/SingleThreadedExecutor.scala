@@ -46,6 +46,7 @@ class SingleThreadedExecutor(morselSize: Int = 100000) extends Dispatcher {
     val iteration = new Iteration(None)
     jobStack.push((StartLeafLoop(iteration), leafOp))
     val state = QueryState(params, visitor)
+    // TODO use PipeLineWithEagerDependency(eagerData) instead
     val eagerAcc = new mutable.ArrayBuffer[Morsel]()
     var eagerRecipient: Pipeline = null
     do {
@@ -64,7 +65,7 @@ class SingleThreadedExecutor(morselSize: Int = 100000) extends Dispatcher {
         }
 
         pipeline.parent match {
-          case Some(mother) if mother.dependency.isInstanceOf[Eager] =>
+          case Some(mother@PipeLineWithEagerDependency(_)) =>
             if(eagerRecipient != null && mother != eagerRecipient) {
               taskCloser.close(success = false)
               throw new InternalException("oh noes")
@@ -72,7 +73,7 @@ class SingleThreadedExecutor(morselSize: Int = 100000) extends Dispatcher {
             eagerRecipient = mother
             eagerAcc.append(data)
 
-          case Some(mother) if mother.dependency.isInstanceOf[Lazy] =>
+          case Some(Pipeline(_,_,_, Lazy(_))) =>
             jobStack.push((StartLoopWithSingleMorsel(data, iteration), pipeline.parent.get))
 
           case _ =>
