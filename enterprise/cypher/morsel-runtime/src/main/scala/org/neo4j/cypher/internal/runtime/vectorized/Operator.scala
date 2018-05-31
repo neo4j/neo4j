@@ -32,7 +32,7 @@ import org.neo4j.values.virtual.MapValue
 
 trait Operator {
   def operate(message: Message,
-              data: Morsel,
+              currentRow: MorselExecutionContext,
               context: QueryContext,
               state: QueryState): Continuation
 
@@ -41,7 +41,7 @@ trait Operator {
 
 trait MiddleOperator {
   def operate(iterationState: Iteration,
-              data: Morsel,
+              currentRow: MorselExecutionContext,
               context: QueryContext,
               state: QueryState): Unit
 }
@@ -67,7 +67,7 @@ case class Lazy(pipeline: Pipeline) extends Dependency {
 
 case class Eager(pipeline: Pipeline) extends Dependency {
   override def foreach(f: Pipeline => Unit): Unit = f(pipeline)
-  lazy val eagerData = new java.util.concurrent.ConcurrentLinkedQueue[Morsel]()
+  lazy val eagerData = new java.util.concurrent.ConcurrentLinkedQueue[MorselExecutionContext]()
 }
 
 case object NoDependencies extends Dependency {
@@ -79,7 +79,7 @@ case object NoDependencies extends Dependency {
 case class QueryState(params: MapValue, visitor: QueryResultVisitor[_])
 
 object PipeLineWithEagerDependency {
-  def unapply(arg: Pipeline): Option[java.util.Queue[Morsel]] = arg match {
+  def unapply(arg: Pipeline): Option[java.util.Queue[MorselExecutionContext]] = arg match {
     case Pipeline(_,_,_, eager@Eager(_)) => Some(eager.eagerData)
     case _ => None
   }
@@ -97,10 +97,12 @@ case class Pipeline(start: Operator,
 
 
   def operate(message: Message, data: Morsel, context: QueryContext, state: QueryState): Continuation = {
-    val next = start.operate(message, data, context, state)
+    val currentRow = new MorselExecutionContext(data, slots.numberOfLongs, slots.numberOfReferences, 0)
+    val next = start.operate(message, currentRow, context, state)
 
     operators.foreach { op =>
-      op.operate(next.iteration, data, context, state)
+      currentRow.resetToFirstRow()
+      op.operate(next.iteration, currentRow, context, state)
     }
 
     if (DEBUG) {

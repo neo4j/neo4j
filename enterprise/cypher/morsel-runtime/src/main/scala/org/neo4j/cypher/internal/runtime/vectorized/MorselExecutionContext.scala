@@ -26,7 +26,13 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.values.AnyValue
 import org.opencypher.v9_0.util.InternalException
 
-// TODO use this everywhere and hide Morsel from operators
+object MorselExecutionContext {
+  def apply(morsel: Morsel, pipeline: Pipeline) = new MorselExecutionContext(morsel,
+    pipeline.slots.numberOfLongs, pipeline.slots.numberOfReferences, 0)
+  def apply(morsel: Morsel, numberOfLongs: Int, numberOfRows: Int) = new MorselExecutionContext(morsel,
+    numberOfLongs, numberOfRows, 0)
+}
+
 class MorselExecutionContext(private val morsel: Morsel, longsPerRow: Int, refsPerRow: Int, private var currentRow: Int) extends ExecutionContext {
 
   def moveToNextRow(): Unit = {
@@ -39,8 +45,34 @@ class MorselExecutionContext(private val morsel: Morsel, longsPerRow: Int, refsP
 
   def resetToFirstRow(): Unit = currentRow = 0
 
+  /**
+    * Checks if the morsel has more rows
+    */
+  def hasMoreRows: Boolean = currentRow < morsel.validRows
+
+  def numberOfRows: Int = morsel.validRows
+
+  /**
+    * Check so that there is at least one valid row of data
+    */
+  def hasData: Boolean = morsel.validRows > 0
+
+  /**
+    * Set the valid rows of the morsel to the current position, which usually
+    * happens after one operator finishes writing to a morsel.
+    */
+  def finishedWriting(): Unit = morsel.validRows = currentRow
+
+  def copyAllRowsFrom(input: ExecutionContext): Unit = input match {
+    case other:MorselExecutionContext =>
+      System.arraycopy(other.morsel.longs, 0, morsel.longs, 0, other.morsel.longs.length)
+      System.arraycopy(other.morsel.refs, 0, morsel.refs, 0, other.morsel.refs.length)
+    case _ => fail()
+  }
+
   override def copyTo(target: ExecutionContext, fromLongOffset: Int = 0, fromRefOffset: Int = 0, toLongOffset: Int = 0, toRefOffset: Int = 0): Unit = ???
 
+  // TODO duplicate with only input
   override def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit = input match {
     case other:MorselExecutionContext =>
       if (nLongs > longsPerRow || nRefs > refsPerRow)
@@ -74,7 +106,7 @@ class MorselExecutionContext(private val morsel: Morsel, longsPerRow: Int, refsP
 
   override def mergeWith(other: ExecutionContext): ExecutionContext = ???
 
-  override def createClone(): ExecutionContext = ???
+  override def createClone(): MorselExecutionContext = new MorselExecutionContext(morsel, longsPerRow, refsPerRow, currentRow)
 
   override def +=(kv: (String, AnyValue)): MorselExecutionContext.this.type = ???
 

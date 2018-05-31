@@ -36,7 +36,7 @@ class NodeIndexContainsScanOperator(longsPerRow: Int, refsPerRow: Int, offset: I
   extends NodeIndexOperator[NodeValueIndexCursor](longsPerRow, refsPerRow, offset) {
 
   override def operate(message: Message,
-                       data: Morsel,
+                       currentRow: MorselExecutionContext,
                        context: QueryContext,
                        state: QueryState): Continuation = {
     var valueIndexCursor: NodeValueIndexCursor  = null
@@ -48,7 +48,6 @@ class NodeIndexContainsScanOperator(longsPerRow: Int, refsPerRow: Int, offset: I
 
     message match {
       case StartLeafLoop(is) =>
-        val currentRow = new MorselExecutionContext(data, longsPerRow, refsPerRow, currentRow = 0)
         val queryState = new OldQueryState(context, resources = null, params = state.params)
         val value = valueExpr(currentRow, queryState)
 
@@ -70,7 +69,7 @@ class NodeIndexContainsScanOperator(longsPerRow: Int, refsPerRow: Int, offset: I
     }
 
     if(!nullExpression)
-      iterate(data, valueIndexCursor, iterationState, argumentSize)
+      iterate(currentRow, valueIndexCursor, iterationState, argumentSize)
     else
       EndOfLoop(iterationState)
   }

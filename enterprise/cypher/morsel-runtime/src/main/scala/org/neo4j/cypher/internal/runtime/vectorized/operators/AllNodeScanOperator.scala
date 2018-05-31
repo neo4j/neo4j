@@ -30,7 +30,7 @@ import org.neo4j.internal.kernel.api.NodeCursor
 class AllNodeScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, argumentSize: SlotConfiguration.Size) extends Operator {
 
   override def operate(message: Message,
-                       data: Morsel,
+                       currentRow: MorselExecutionContext,
                        context: QueryContext,
                        state: QueryState): Continuation = {
     var nodeCursor: NodeCursor = null
@@ -48,25 +48,20 @@ class AllNodeScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, argume
       case _ => throw new IllegalStateException()
     }
 
-    val longs: Array[Long] = data.longs
+    var cursorHasMore = true
 
-    var processedRows = 0
-    var hasMore = true
-    val currentRow = new MorselExecutionContext(data, longsPerRow, refsPerRow, currentRow = processedRows)
-
-    while (processedRows < data.validRows && hasMore) {
-      hasMore = nodeCursor.next()
-      if (hasMore) {
+    while (currentRow.hasMoreRows && cursorHasMore) {
+      cursorHasMore = nodeCursor.next()
+      if (cursorHasMore) {
         iterationState.copyArgumentStateTo(currentRow, argumentSize.nLongs, argumentSize.nReferences)
-        longs(processedRows * longsPerRow + offset) = nodeCursor.nodeReference()
-        processedRows += 1
+        currentRow.setLongAt(offset, nodeCursor.nodeReference())
         currentRow.moveToNextRow()
       }
     }
 
-    data.validRows = processedRows
+    currentRow.finishedWriting()
 
-    if (hasMore)
+    if (cursorHasMore)
       ContinueWithSource(nodeCursor, iterationState)
     else {
       if (nodeCursor != null) {

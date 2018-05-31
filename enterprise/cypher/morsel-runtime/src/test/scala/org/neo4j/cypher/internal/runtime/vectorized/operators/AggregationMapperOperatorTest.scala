@@ -24,7 +24,7 @@ package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{LongSlot, RefSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
-import org.neo4j.cypher.internal.runtime.vectorized.{Iteration, Morsel, QueryState}
+import org.neo4j.cypher.internal.runtime.vectorized.{Iteration, Morsel, MorselExecutionContext, QueryState}
 import org.opencypher.v9_0.util.symbols.{CTAny, CTNode}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
@@ -38,10 +38,12 @@ class AggregationMapperOperatorTest extends CypherFunSuite {
 
   test("single grouping key aggregation") {
     // Given
+    val numberOfLongs = 1
+    val numberOfReferences = 2
     val groupSlot = RefSlot(0, nullable = false, CTAny)
     val slots = new SlotConfiguration(mutable.Map("node" -> LongSlot(0, nullable = false, CTNode),
                                                   "aggregate" -> RefSlot(1, nullable = false, CTAny),
-                                                  "group" -> groupSlot), 1, 2)
+                                                  "group" -> groupSlot), numberOfLongs, numberOfReferences)
     val aggregation = new AggregationMapperOperator(slots,
                                                     Array(AggregationOffsets(1, 1, DummyEvenNodeIdAggregation(0))),
                                                     Array(GroupingOffsets(groupSlot, groupSlot,
@@ -51,7 +53,7 @@ class AggregationMapperOperatorTest extends CypherFunSuite {
     val data = new Morsel(longs, refs, longs.length)
 
     // When
-    aggregation.operate(new Iteration(None), data, null, QueryState(VirtualValues.EMPTY_MAP, null))
+    aggregation.operate(Iteration(None), MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
 
     // Then we expect {A -> [0,2, 4, 6, 8], B -> []}
     data.refs(0) should equal(stringValue("B"))
@@ -62,11 +64,13 @@ class AggregationMapperOperatorTest extends CypherFunSuite {
 
   test("two grouping keys") {
     // Given
+    val numberOfLongs = 1
+    val numberOfReferences = 3
     val groupSlot1 = RefSlot(0, nullable = false, CTAny)
     val groupSlot2 = RefSlot(1, nullable = false, CTAny)
     val slots = new SlotConfiguration(mutable.Map("node" -> LongSlot(0, nullable = false, CTNode),
                                                   "aggregate" -> RefSlot(2, nullable = false, CTAny),
-                                                  "group1" -> groupSlot1, "group2" -> groupSlot2), 1, 3)
+                                                  "group1" -> groupSlot1, "group2" -> groupSlot2), numberOfLongs, numberOfReferences)
     val aggregation = new AggregationMapperOperator(slots,
                                                     Array(AggregationOffsets(2, 2, DummyEvenNodeIdAggregation(0))),
                                                     Array(GroupingOffsets(groupSlot1, groupSlot1,
@@ -80,7 +84,7 @@ class AggregationMapperOperatorTest extends CypherFunSuite {
     val data = new Morsel(longs, refs, longs.length)
 
     // When
-    aggregation.operate(new Iteration(None), data, null, QueryState(VirtualValues.EMPTY_MAP, null))
+    aggregation.operate(Iteration(None), MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
 
     // Then we expect {AC -> [0,2, 4, 6, 8], BD -> []}
     data.refs(0) should equal(stringValue("B"))
@@ -93,12 +97,14 @@ class AggregationMapperOperatorTest extends CypherFunSuite {
 
   test("three grouping keys") {
     // Given
+    val numberOfLongs = 1
+    val numberOfReferences = 4
     val groupSlot1 = RefSlot(0, nullable = false, CTAny)
     val groupSlot2 = RefSlot(1, nullable = false, CTAny)
     val groupSlot3 = RefSlot(2, nullable = false, CTAny)
     val slots = new SlotConfiguration(mutable.Map("node" -> LongSlot(0, nullable = false, CTNode),
                                                   "aggregate" -> RefSlot(3, nullable = false, CTAny),
-                                                  "group1" -> groupSlot1, "group2" -> groupSlot2, "group3" -> groupSlot3), 1, 4)
+                                                  "group1" -> groupSlot1, "group2" -> groupSlot2, "group3" -> groupSlot3), numberOfLongs, numberOfReferences)
     val aggregation = new AggregationMapperOperator(slots,
                                                     Array(AggregationOffsets(3, 3, DummyEvenNodeIdAggregation(0))),
                                                     Array(GroupingOffsets(groupSlot1, groupSlot1,
@@ -115,7 +121,7 @@ class AggregationMapperOperatorTest extends CypherFunSuite {
     val data = new Morsel(longs, refs, longs.length)
 
     // When
-    aggregation.operate(new Iteration(None), data, null, QueryState(VirtualValues.EMPTY_MAP, null))
+    aggregation.operate(Iteration(None), MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
 
     // Then we expect {AC -> [0,2, 4, 6, 8], BD -> []}
     data.refs(0) should equal(stringValue("B"))
@@ -130,6 +136,9 @@ class AggregationMapperOperatorTest extends CypherFunSuite {
 
   test("more than three grouping keys") {
     // Given
+
+    val numberOfLongs = 1
+    val numberOfReferences = 6
     val groupSlot1 = RefSlot(0, nullable = false, CTAny)
     val groupSlot2 = RefSlot(1, nullable = false, CTAny)
     val groupSlot3 = RefSlot(2, nullable = false, CTAny)
@@ -138,7 +147,7 @@ class AggregationMapperOperatorTest extends CypherFunSuite {
     val slots = new SlotConfiguration(mutable.Map("node" -> LongSlot(0, nullable = false, CTNode),
                                                   "aggregate" -> RefSlot(5, nullable = false, CTAny),
                                                   "group1" -> groupSlot1, "group2" -> groupSlot2, "group3" -> groupSlot3,
-                                                  "group4" -> groupSlot4,  "group5" -> groupSlot5), 1, 6)
+                                                  "group4" -> groupSlot4,  "group5" -> groupSlot5), numberOfLongs, numberOfReferences)
     val aggregation = new AggregationMapperOperator(slots,
                                                     Array(AggregationOffsets(5, 5, DummyEvenNodeIdAggregation(0))),
                                                     Array(GroupingOffsets(groupSlot1, groupSlot1,
@@ -159,7 +168,7 @@ class AggregationMapperOperatorTest extends CypherFunSuite {
     val data = new Morsel(longs, refs, longs.length)
 
     // When
-    aggregation.operate(new Iteration(None), data, null, QueryState(VirtualValues.EMPTY_MAP, null))
+    aggregation.operate(Iteration(None), MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
 
     // Then we expect {AC -> [0,2, 4, 6, 8], BD -> []}
     data.refs(0) should equal(stringValue("B"))

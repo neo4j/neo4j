@@ -43,17 +43,16 @@ class AggregationMapperOperator(slots: SlotConfiguration, aggregations: Array[Ag
   private val groupingFunction = AggregationHelper.groupingFunction(groupings)
   private val addGroupingValuesToResult = AggregationHelper.computeGroupingSetter(groupings)
 
-  override def operate(iterationState: Iteration, data: Morsel, context: QueryContext, state: QueryState): Unit = {
+  override def operate(iterationState: Iteration, currentRow: MorselExecutionContext, context: QueryContext, state: QueryState): Unit = {
 
     val result = MutableMap[AnyValue, Array[(Int,AggregationMapper)]]()
 
     val longCount = slots.numberOfLongs
     val refCount = slots.numberOfReferences
-    val currentRow = new MorselExecutionContext(data, longCount, refCount, currentRow = 0)
     val queryState = new OldQueryState(context, resources = null, params = state.params)
 
     //loop over the entire morsel and apply the aggregation
-    while (currentRow.getCurrentRow < data.validRows) {
+    while (currentRow.hasMoreRows) {
       val groupingValue: AnyValue = groupingFunction(currentRow, queryState)
       val functions = result
         .getOrElseUpdate(groupingValue, aggregations.map(a => a.incoming -> a.aggregation.createAggregationMapper))
@@ -69,11 +68,11 @@ class AggregationMapperOperator(slots: SlotConfiguration, aggregations: Array[Ag
         var i = 0
         while (i < aggregations.length) {
           val (offset, mapper) = aggregator(i)
-          data.refs(currentRow.getCurrentRow * refCount + offset) = mapper.result
+          currentRow.setRefAt(offset, mapper.result)
           i += 1
         }
         currentRow.moveToNextRow()
     }
-    data.validRows = currentRow.getCurrentRow
+    currentRow.finishedWriting()
   }
 }

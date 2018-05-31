@@ -32,26 +32,24 @@ Takes an input morsel and compacts all rows to the beginning of it, only keeping
  */
 class FilterOperator(slots: SlotConfiguration, predicate: Predicate) extends MiddleOperator {
   override def operate(iterationState: Iteration,
-                       data: Morsel,
+                       readingRow: MorselExecutionContext,
                        context: QueryContext,
                        state: QueryState): Unit = {
 
-    var writingPos = 0
+    val writingRow = readingRow.createClone()
     val longCount = slots.numberOfLongs
     val refCount = slots.numberOfReferences
-    val currentRow = new MorselExecutionContext(data, longCount, refCount, currentRow = 0)
     val queryState = new OldQueryState(context, resources = null, params = state.params)
 
-    while (currentRow.getCurrentRow < data.validRows) {
-      val matches = predicate.isTrue(currentRow, queryState)
+    while (readingRow.hasMoreRows) {
+      val matches = predicate.isTrue(readingRow, queryState)
       if (matches) {
-        System.arraycopy(data.longs, currentRow.getCurrentRow * longCount, data.longs, writingPos * longCount, longCount)
-        System.arraycopy(data.refs, currentRow.getCurrentRow * refCount, data.refs, writingPos * refCount, refCount)
-        writingPos += 1
+        writingRow.copyFrom(readingRow, longCount, refCount)
+        writingRow.moveToNextRow()
       }
-      currentRow.moveToNextRow()
+      readingRow.moveToNextRow()
     }
 
-    data.validRows = writingPos
+    writingRow.finishedWriting()
   }
 }

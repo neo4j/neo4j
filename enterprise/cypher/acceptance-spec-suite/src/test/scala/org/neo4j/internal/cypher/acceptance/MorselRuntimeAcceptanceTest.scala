@@ -424,7 +424,30 @@ abstract class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
     // Then
     asScalaResult(result).toList should have size 5
   }
+
+  ignore("should support apply") {
+
+    graph.createIndex("Person", "name")
+    graph.inTx(graph.schema().awaitIndexesOnline(5, TimeUnit.SECONDS))
+
+    for(i <- 0 until 100) {
+      createLabeledNode(Map("name" -> "me", "secondName" -> s"me$i"), "Person")
+      createLabeledNode(Map("name" -> s"me$i", "secondName" -> "you"), "Person")
+    }
+
+    val query =
+      """MATCH (p:Person { name:'me' })
+        |MATCH (q:Person { name: p.secondName })
+        |RETURN p, q""".stripMargin
+
+    // When
+    val result = graph.execute(s"CYPHER runtime=morsel $query")
+    // Then
+    val resultSet = asScalaResult(result).toSet
+    println(result.getExecutionPlanDescription)
+  }
 }
+
 
 class ParallelMorselRuntimeAcceptanceTest extends MorselRuntimeAcceptanceTest {
   //we use a ridiculously small morsel size in order to trigger as many morsel overflows as possible

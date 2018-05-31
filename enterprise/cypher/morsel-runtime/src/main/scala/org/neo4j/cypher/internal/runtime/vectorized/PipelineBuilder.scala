@@ -216,8 +216,29 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
     }
   }
 
-  override protected def build(plan: LogicalPlan, lhs: Pipeline, rhs: Pipeline): Pipeline =
-    throw new CantCompileQueryException(s"$plan is not supported in morsel runtime")
+  override protected def build(plan: LogicalPlan, lhs: Pipeline, rhs: Pipeline): Pipeline = {
+    val slots = physicalPlan.slotConfigurations(plan.id)
+
+    val thisOp = plan match {
+      case Apply(_, _) =>
+        new ApplyOperator(
+          slots.numberOfLongs,
+          slots.numberOfReferences,
+          lhs,
+          rhs)
+
+      case p => throw new CantCompileQueryException(s"$p not supported in morsel runtime")
+    }
+
+    thisOp match {
+      case o: Operator =>
+        // TODO add transitive dependency on rhs??
+        Pipeline(o, IndexedSeq.empty, slots, o.addDependency(lhs))()
+      case mo: MiddleOperator =>
+        // TODO Is this correct?
+        lhs.addOperator(mo)
+    }
+  }
 }
 
 object IsPipelineBreaker {

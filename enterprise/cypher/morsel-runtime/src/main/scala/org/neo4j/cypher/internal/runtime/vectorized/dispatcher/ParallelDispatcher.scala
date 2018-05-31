@@ -42,7 +42,7 @@ class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) exte
                               params: MapValue,
                               taskCloser: TaskCloser)(visitor: QueryResultVisitor[E]): Unit = {
     val leaf = getLeaf(operators)
-    val iteration = new Iteration(None)
+    val iteration = Iteration(None)
     val query = new Query()
     val startMessage = StartLeafLoop(iteration)
     val state = QueryState(params, visitor)
@@ -78,10 +78,10 @@ class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) exte
         val loopsLeft = query.endLoop(message.iterationState)
         val weJustClosedTheLastLoop = loopsLeft == 0
         if (weJustClosedTheLastLoop) {
-
           pipeline.parent match {
             case Some(eagerConsumingPipeline@PipeLineWithEagerDependency(eagerData)) =>
-              val startEager = StartLoopWithEagerData(eagerData.asScala.toArray, incoming.iterationState)
+              val contexts = eagerData.asScala.toArray
+              val startEager = StartLoopWithEagerData(contexts, incoming.iterationState)
               val action = createAction(query, startEager, eagerConsumingPipeline, queryContext, state)
               executor.execute(action)
             case _ =>
@@ -107,7 +107,7 @@ class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) exte
         eagerData.add(data)
 
       case Some(mother@Pipeline(_,_,_, Lazy(_))) =>
-        val nextStep = StartLoopWithSingleMorsel(data, message.iterationState)
+        val nextStep = StartLoopWithSingleMorsel(MorselExecutionContext(data, pipeline), message.iterationState)
         executor.execute(createAction(query, nextStep, mother, queryContext, state))
 
       case _ =>
@@ -129,7 +129,6 @@ class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) exte
     private val error = new AtomicReference[Throwable]()
     private val latch = new BinaryLatch
     private val name = Thread.currentThread().getName
-
     def startLoop(iteration: Iteration): Unit = {
       loopCount.computeIfAbsent(iteration, createAtomicInteger).incrementAndGet()
     }

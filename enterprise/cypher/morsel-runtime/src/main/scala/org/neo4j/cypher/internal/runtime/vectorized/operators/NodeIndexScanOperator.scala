@@ -32,7 +32,7 @@ class NodeIndexScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, labe
   extends NodeIndexOperator[NodeValueIndexCursor](longsPerRow, refsPerRow, offset) {
 
   override def operate(message: Message,
-                       data: Morsel,
+                       currentRow: MorselExecutionContext,
                        context: QueryContext,
                        state: QueryState): Continuation = {
     var valueIndexCursor: NodeValueIndexCursor  = null
@@ -51,10 +51,8 @@ class NodeIndexScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, labe
       case _ => throw new IllegalStateException()
     }
 
-    iterate(data, valueIndexCursor, iterationState, argumentSize)
+    iterate(currentRow, valueIndexCursor, iterationState, argumentSize)
   }
-
-
 
   override def addDependency(pipeline: Pipeline): Dependency = NoDependencies
 }

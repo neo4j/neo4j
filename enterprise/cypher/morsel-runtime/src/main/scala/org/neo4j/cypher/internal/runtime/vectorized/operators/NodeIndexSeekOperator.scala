@@ -52,7 +52,7 @@ class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
   }
 
   override def operate(message: Message,
-                       data: Morsel,
+                       currentRow: MorselExecutionContext,
                        context: QueryContext,
                        state: QueryState): Continuation = {
     var nodeIterator: Iterator[NodeValue] = null
@@ -60,7 +60,6 @@ class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
 
     message match {
       case StartLeafLoop(is) =>
-        val currentRow = new MorselExecutionContext(data, longsPerRow, refsPerRow, currentRow = 0)
         val queryState = new OldQueryState(context, resources = null, params = state.params)
         val indexReference = reference(context)
         nodeIterator = indexSeek(queryState, indexReference, currentRow)
@@ -71,21 +70,17 @@ class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
       case _ => throw new IllegalStateException()
 
     }
-   iterate(data, nodeIterator, iterationState)
+   iterate(currentRow, nodeIterator, iterationState)
   }
 
-  protected def iterate(data: Morsel, nodeIterator: Iterator[NodeValue], iterationState: Iteration): Continuation = {
-    val longs: Array[Long] = data.longs
-    var processedRows = 0
-    val currentRow = new MorselExecutionContext(data, longsPerRow, refsPerRow, currentRow = processedRows)
-    while (processedRows < data.validRows && nodeIterator.hasNext) {
+  protected def iterate(currentRow: MorselExecutionContext, nodeIterator: Iterator[NodeValue], iterationState: Iteration): Continuation = {
+    while (currentRow.hasMoreRows && nodeIterator.hasNext) {
       iterationState.copyArgumentStateTo(currentRow, argumentSize.nLongs, argumentSize.nReferences)
-      longs(processedRows * longsPerRow + offset) = nodeIterator.next().id()
-      processedRows += 1
+      currentRow.setLongAt(offset, nodeIterator.next().id())
       currentRow.moveToNextRow()
     }
 
-    data.validRows = processedRows
+    currentRow.finishedWriting()
 
     if (nodeIterator.hasNext)
       ContinueWithSource(nodeIterator, iterationState)

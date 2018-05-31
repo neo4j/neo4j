@@ -41,32 +41,33 @@ import scala.collection.JavaConverters._
  */
 class PreSortOperator(orderBy: Seq[ColumnOrder], slots: SlotConfiguration, countExpression: Option[Expression] = None) extends MiddleOperator {
 
-  override def operate(iterationState: Iteration, data: Morsel, context: QueryContext, state: QueryState): Unit = {
+  override def operate(iterationState: Iteration,
+                       currentRow: MorselExecutionContext,
+                       context: QueryContext,
+                       state: QueryState): Unit = {
 
     val comparator: Comparator[Integer] = orderBy
-      .map(MorselSorting.compareMorselIndexesByColumnOrder(data, slots))
+      .map(MorselSorting.compareMorselIndexesByColumnOrder(currentRow.createClone()))
       .reduce((a, b) => a.thenComparing(b))
 
     // First we create an array of the same size as the rows in the morsel that we'll sort.
     // This array contains only the pointers to the morsel rows
-    var arrayToSort: Array[Integer] = MorselSorting.createMorselIndexesArray(data)
+    var arrayToSort: Array[Integer] = MorselSorting.createMorselIndexesArray(currentRow)
 
     // potentially calculate the limit
     val maybeLimit = countExpression.map { count =>
-      val firstRow = new MorselExecutionContext(data, slots.numberOfLongs, slots.numberOfReferences, currentRow = 0)
       val queryState = new OldQueryState(context, resources = null, params = state.params)
-      count(firstRow, queryState).asInstanceOf[NumberValue].longValue().toInt
+      count(currentRow, queryState).asInstanceOf[NumberValue].longValue().toInt
     }
 
     maybeLimit match {
-      case Some(limit) if limit < data.validRows =>
+      case Some(limit) if limit < currentRow.numberOfRows =>
         // a table to hold the top n entries
         val topTable = new DefaultComparatorTopTable(comparator, limit)
 
-        var readingPos = 0
-        while (readingPos < data.validRows) {
-          topTable.add(arrayToSort(readingPos))
-          readingPos += 1
+        while (currentRow.hasMoreRows) {
+          topTable.add(arrayToSort(currentRow.getCurrentRow))
+          currentRow.moveToNextRow()
         }
 
         topTable.sort()
@@ -74,18 +75,14 @@ class PreSortOperator(orderBy: Seq[ColumnOrder], slots: SlotConfiguration, count
         arrayToSort = topTable.iterator.asScala.toArray
 
         // only the first count elements stay valid
-        data.validRows = limit
+        currentRow.moveToRow(limit)
+        currentRow.finishedWriting()
       case _ =>
         // We have to sort everything
         java.util.Arrays.sort(arrayToSort, comparator)
     }
     // Now that we have a sorted array, we need to shuffle the morsel rows around until they follow the same order
     // as the sorted array
-    // TODO: Do this without creating extra arrays
-    val (newLongs, newRefs) = MorselSorting.createSortedMorselData(data, arrayToSort, slots)
-
-    // Copy the now sorted arrays into the Morsel
-    System.arraycopy(newLongs, 0, data.longs, 0, newLongs.length)
-    System.arraycopy(newRefs, 0, data.refs, 0, newRefs.length)
+    MorselSorting.createSortedMorselData(currentRow, arrayToSort, slots)
   }
 }

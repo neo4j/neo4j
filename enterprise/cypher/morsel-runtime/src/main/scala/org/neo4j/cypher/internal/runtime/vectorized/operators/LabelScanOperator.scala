@@ -32,7 +32,7 @@ class LabelScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, label: L
   extends NodeIndexOperator[NodeLabelIndexCursor](longsPerRow, refsPerRow, offset) {
 
   override def operate(message: Message,
-                       data: Morsel,
+                       currentRow: MorselExecutionContext,
                        context: QueryContext,
                        state: QueryState): Continuation = {
     var nodeCursor: NodeLabelIndexCursor  = null
@@ -53,7 +53,7 @@ class LabelScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, label: L
 
     }
 
-    iterate(data, nodeCursor, iterationState, argumentSize)
+    iterate(currentRow, nodeCursor, iterationState, argumentSize)
   }
 
   override def addDependency(pipeline: Pipeline): Dependency = NoDependencies

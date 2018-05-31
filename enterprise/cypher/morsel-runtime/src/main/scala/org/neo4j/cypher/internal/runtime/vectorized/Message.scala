@@ -33,8 +33,8 @@ sealed trait Message {
 * not other runs will be scheduled, giving the pipeline a chance to initialise global state.
 * */
 case class StartLeafLoop(iterationState: Iteration) extends Message
-case class StartLoopWithSingleMorsel(data: Morsel, iterationState: Iteration) extends Message
-case class StartLoopWithEagerData(data: Array[Morsel], iterationState: Iteration) extends Message
+case class StartLoopWithSingleMorsel(data: MorselExecutionContext, iterationState: Iteration) extends Message
+case class StartLoopWithEagerData(data: Array[MorselExecutionContext], iterationState: Iteration) extends Message
 
 case class ContinueLoopWith(continuation: Continuation) extends Message {
   override def iterationState: Iteration = continuation.iteration
@@ -52,11 +52,11 @@ sealed trait Continuation {
 
 trait Continue extends Continuation
 
-case class ContinueWithData(data: Morsel, index: Int, iteration: Iteration) extends Continue
+case class ContinueWithData(data: MorselExecutionContext, iteration: Iteration) extends Continue
 
 case class ContinueWithSource[T](source: T, iteration: Iteration) extends Continue
 
-case class ContinueWithDataAndSource[T](data: Morsel, index: Int, source: T, iteration: Iteration) extends Continue
+case class ContinueWithDataAndSource[T](data: MorselExecutionContext, source: T, iteration: Iteration) extends Continue
 
 case class NoOp(iteration: Iteration) extends Continuation
 

@@ -22,33 +22,26 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.neo4j.internal.kernel.api.NodeIndexCursor
 
-abstract class NodeIndexOperator[CURSOR <: NodeIndexCursor](longsPerRow: Int, refsPerRow: Int, offset: Int) extends Operator {
+class ApplyOperator(longsPerRow: Int, refsPerRow: Int, lhs: Pipeline, rhs: Pipeline) extends MiddleOperator {
 
-  protected def iterate(currentRow: MorselExecutionContext, cursor: CURSOR, iterationState: Iteration, argumentSize: SlotConfiguration.Size): Continuation = {
-    var cursorHasMore = true
-    while (currentRow.hasMoreRows && cursorHasMore) {
-      cursorHasMore = cursor.next()
-      if (cursorHasMore) {
-        iterationState.copyArgumentStateTo(currentRow, argumentSize.nLongs, argumentSize.nReferences)
+  override def operate(iterationState: Iteration,
+                       outputRow: MorselExecutionContext,
+                       context: QueryContext,
+                       state: QueryState): Unit = {
 
-        currentRow.setLongAt(offset, cursor.nodeReference())
-        currentRow.moveToNextRow()
-      }
-    }
-
-    currentRow.finishedWriting()
-
-    if (cursorHasMore)
-      ContinueWithSource(cursor, iterationState)
-    else {
-      if (cursor != null) {
-        cursor.close()
-      }
-      EndOfLoop(iterationState)
-    }
+//    var readingPos = 0
+//
+////    while (readingPos < data.validRows) {
+////      val currentRow = new MorselExecutionContext(data, longsPerRow, refsPerRow, currentRow = readingPos)
+//////      val rhsQueryState = state.copy(initialContext = Some(currentRow))
+//////      val startMessage = StartLeafLoop(iteration)
+//////      rhs.operate()
+////
+////      readingPos += 1
+////    }
   }
+
 }

@@ -36,15 +36,14 @@ the subsequent reduce steps these local aggregations are merged into a single gl
 class AggregationMapperOperatorNoGrouping(slots: SlotConfiguration, aggregations: Array[AggregationOffsets]) extends MiddleOperator {
 
 
-  override def operate(iterationState: Iteration, data: Morsel, context: QueryContext, state: QueryState): Unit = {
+  override def operate(iterationState: Iteration, currentRow: MorselExecutionContext, context: QueryContext, state: QueryState): Unit = {
     val aggregationMappers = aggregations.map(_.aggregation.createAggregationMapper)
     val longCount = slots.numberOfLongs
     val refCount = slots.numberOfReferences
-    val currentRow = new MorselExecutionContext(data, longCount, refCount, currentRow = 0)
     val queryState = new OldQueryState(context, resources = null, params = state.params)
 
     //loop over the entire morsel and apply the aggregation
-    while (currentRow.getCurrentRow < data.validRows) {
+    while (currentRow.hasMoreRows) {
       var accCount = 0
       while (accCount < aggregations.length) {
         aggregationMappers(accCount).map(currentRow, queryState)
@@ -56,13 +55,13 @@ class AggregationMapperOperatorNoGrouping(slots: SlotConfiguration, aggregations
     //Write the local aggregation value to the morsel in order for the
     //reducer to pick it up later
     var i = 0
+    currentRow.resetToFirstRow()
     while (i < aggregations.length) {
       val aggregation = aggregations(i)
-      data.refs(aggregation.incoming) = aggregationMappers(i).result
+      currentRow.setRefAt(aggregation.incoming, aggregationMappers(i).result)
       i += 1
     }
-
-    //we have written a single row
-    data.validRows = 1
+    currentRow.moveToNextRow()
+    currentRow.finishedWriting()
   }
 }
