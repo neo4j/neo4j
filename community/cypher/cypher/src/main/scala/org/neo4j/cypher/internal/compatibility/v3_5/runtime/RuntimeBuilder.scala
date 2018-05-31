@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
-import org.opencypher.v9_0.util.{InvalidArgumentException, RuntimeUnsupportedNotification}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
+import org.neo4j.cypher.internal.compiler.v3_5.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.compiler.v3_5.phases._
 import org.opencypher.v9_0.frontend.phases.{Do, Transformer}
+import org.opencypher.v9_0.util.InvalidArgumentException
 
 trait RuntimeBuilder[T <: Transformer[_, _, _]] {
   def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): T

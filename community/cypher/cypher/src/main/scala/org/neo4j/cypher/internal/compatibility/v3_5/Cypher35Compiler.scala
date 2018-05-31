@@ -147,12 +147,12 @@ case class Cypher35Compiler[CONTEXT <: CommunityRuntimeContext,
 
       checkForSchemaChanges(planContext)
 
-      // If the query is not cached we want to do the full planning + creating executable plan
-      def createPlan(): ExecutionPlan_v3_5 = {
-        val logicalPlanState = compiler.planPreparedQuery(preparedQuery, context)
-        LogicalPlanNotifications
-          .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
-          .foreach(notificationLogger.log)
+        //If the query is not cached we want to do the full planning + creating executable plan
+        def createPlan(): ExecutionPlan_v3_5 = {
+          val logicalPlanState = compiler.planPreparedQuery(preparedQuery, context)
+          notification.LogicalPlanNotifications
+            .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
+            .foreach(notificationLogger.log)
 
         val result = createExecPlan.transform(logicalPlanState, context)
         result.maybeExecutionPlan.get

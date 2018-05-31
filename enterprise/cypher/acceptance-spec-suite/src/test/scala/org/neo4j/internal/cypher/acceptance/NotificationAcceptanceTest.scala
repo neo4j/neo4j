@@ -23,6 +23,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.internal.compiler.v3_5.PlannerUnsupportedNotification
 import org.neo4j.cypher.internal.javacompat.NotificationAcceptanceTest.ChangedResults
 import org.neo4j.graphdb
 import org.neo4j.graphdb.config.Setting
@@ -33,13 +34,12 @@ import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.procedure.Procedure
-import org.opencypher.v9_0.util.PlannerUnsupportedNotification
 
 import scala.collection.JavaConverters._
 
 class NotificationAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
-  // Need to override so that grpah.execute will not throw an exception
+  // Need to override so that graph.execute will not throw an exception
   override def databaseConfig(): collection.Map[Setting[_], String] = super.databaseConfig() ++ Map(
     GraphDatabaseSettings.cypher_hints_error -> "false",
     GraphDatabaseSettings.query_non_indexed_label_warning_threshold -> "10"
@@ -652,6 +652,86 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
     val result = innerExecuteDeprecated(query, Map.empty)
     val notifications = result.notifications
     notifications should contain(RUNTIME_UNSUPPORTED.notification(new graphdb.InputPosition(61,1,62)))
+  }
+
+  test("should warn when using contains on an index with SLOW_CONTAINS limitation") {
+    graph.createIndex("Person", "name")
+    val query = "EXPLAIN MATCH (a:Person) WHERE a.name CONTAINS 'er' RETURN a"
+    val result = innerExecuteDeprecated(query, Map.empty)
+    result.notifications should contain(SUBOPTIMAL_INDEX_FOR_WILDCARD_QUERY.notification(graphdb.InputPosition.empty, suboptimalIndex("Person", "name")))
+  }
+
+  test("should warn when using ends with on an index with SLOW_CONTAINS limitation") {
+    graph.createIndex("Person", "name")
+    val query = "EXPLAIN MATCH (a:Person) WHERE a.name ENDS WITH 'son' RETURN a"
+    val result = innerExecuteDeprecated(query, Map.empty)
+    result.notifications should contain(SUBOPTIMAL_INDEX_FOR_WILDCARD_QUERY.notification(graphdb.InputPosition.empty, suboptimalIndex("Person", "name")))
+  }
+
+  test("should warn when using contains on a unique index with SLOW_CONTAINS limitation") {
+    graph.createConstraint("Person", "name")
+    val query = "EXPLAIN MATCH (a:Person) WHERE a.name CONTAINS 'er' RETURN a"
+    val result = innerExecuteDeprecated(query, Map.empty)
+    result.notifications should contain(SUBOPTIMAL_INDEX_FOR_WILDCARD_QUERY.notification(graphdb.InputPosition.empty, suboptimalIndex("Person", "name")))
+  }
+
+  test("should warn when using ends with on a unique index with SLOW_CONTAINS limitation") {
+    graph.createConstraint("Person", "name")
+    val query = "EXPLAIN MATCH (a:Person) WHERE a.name ENDS WITH 'son' RETURN a"
+    val result = innerExecuteDeprecated(query, Map.empty)
+    result.notifications should contain(SUBOPTIMAL_INDEX_FOR_WILDCARD_QUERY.notification(graphdb.InputPosition.empty, suboptimalIndex("Person", "name")))
+  }
+
+  test("should not warn when using starts with on an index with SLOW_CONTAINS limitation") {
+    graph.createIndex("Person", "name")
+    val query = "EXPLAIN MATCH (a:Person) WHERE a.name STARTS WITH 'er' RETURN a"
+    val result = innerExecuteDeprecated(query, Map.empty)
+    result.notifications should not contain SUBOPTIMAL_INDEX_FOR_WILDCARD_QUERY.notification(graphdb.InputPosition.empty, suboptimalIndex("Person", "name"))
+  }
+
+  test("should not warn when using starts with on a unique index with SLOW_CONTAINS limitation") {
+    graph.createConstraint("Person", "name")
+    val query = "EXPLAIN MATCH (a:Person) WHERE a.name STARTS WITH 'er' RETURN a"
+    val result = innerExecuteDeprecated(query, Map.empty)
+    result.notifications should not contain SUBOPTIMAL_INDEX_FOR_WILDCARD_QUERY.notification(graphdb.InputPosition.empty, suboptimalIndex("Person", "name"))
+  }
+}
+
+class LuceneIndexNotificationAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
+
+  // Need to override so that graph.execute will not throw an exception
+  override def databaseConfig(): collection.Map[Setting[_], String] = super.databaseConfig() ++ Map(
+    GraphDatabaseSettings.cypher_hints_error -> "false",
+    GraphDatabaseSettings.query_non_indexed_label_warning_threshold -> "10",
+    GraphDatabaseSettings.default_schema_provider -> "lucene-1.0"
+  )
+
+  test("should not warn when using contains on an index with no limitations") {
+    graph.createIndex("Person", "name")
+    val query = "EXPLAIN MATCH (a:Person) WHERE a.name CONTAINS 'er' RETURN a"
+    val result = innerExecuteDeprecated(query, Map.empty)
+    result.notifications should not contain SUBOPTIMAL_INDEX_FOR_WILDCARD_QUERY.notification(graphdb.InputPosition.empty, suboptimalIndex("Person", "name"))
+  }
+
+  test("should not warn when using ends with on an index with no limitations") {
+    graph.createIndex("Person", "name")
+    val query = "EXPLAIN MATCH (a:Person) WHERE a.name ENDS WITH 'son' RETURN a"
+    val result = innerExecuteDeprecated(query, Map.empty)
+    result.notifications should not contain SUBOPTIMAL_INDEX_FOR_WILDCARD_QUERY.notification(graphdb.InputPosition.empty, suboptimalIndex("Person", "name"))
+  }
+
+  test("should not warn when using contains on a unique index with no limitations") {
+    graph.createConstraint("Person", "name")
+    val query = "EXPLAIN MATCH (a:Person) WHERE a.name CONTAINS 'er' RETURN a"
+    val result = innerExecuteDeprecated(query, Map.empty)
+    result.notifications should not contain SUBOPTIMAL_INDEX_FOR_WILDCARD_QUERY.notification(graphdb.InputPosition.empty, suboptimalIndex("Person", "name"))
+  }
+
+  test("should not warn when using ends with on a unique index with no limitations") {
+    graph.createConstraint("Person", "name")
+    val query = "EXPLAIN MATCH (a:Person) WHERE a.name ENDS WITH 'son' RETURN a"
+    val result = innerExecuteDeprecated(query, Map.empty)
+    result.notifications should not contain SUBOPTIMAL_INDEX_FOR_WILDCARD_QUERY.notification(graphdb.InputPosition.empty, suboptimalIndex("Person", "name"))
   }
 }
 

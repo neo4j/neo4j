@@ -43,6 +43,16 @@ public class NotificationDetailTest
     }
 
     @Test
+    public void shouldConstructSuboptimalIndexDetails()
+    {
+        NotificationDetail detail = NotificationDetail.Factory.suboptimalIndex( "Person", "name" );
+
+        assertThat( detail.name(), equalTo( "index" ) );
+        assertThat( detail.value(), equalTo( "index on :Person(name)" ) );
+        assertThat( detail.toString(), equalTo( "index is: index on :Person(name)" ) );
+    }
+
+    @Test
     public void shouldConstructCartesianProductDetailsSingular()
     {
         Set<String> idents = new HashSet<>();

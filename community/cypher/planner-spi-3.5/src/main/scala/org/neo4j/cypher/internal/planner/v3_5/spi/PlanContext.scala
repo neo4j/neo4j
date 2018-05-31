@@ -47,6 +47,11 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
   def indexExistsForLabel(labelId: Int): Boolean
 
   /**
+    * Gets an index index if it exists (general or unique) for a given label and properties
+    */
+  def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
+
+  /**
     * Checks if an index exists (general or unique) for a given label and properties
     */
   def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean

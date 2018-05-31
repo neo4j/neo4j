@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.Standa
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{StandardInternalExecutionResult, ExecutionPlan => RuntimeExecutionPlan}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
+import org.neo4j.cypher.internal.compiler.v3_5.ExperimentalFeatureNotification
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
@@ -49,7 +50,7 @@ import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.frontend.PlannerName
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.opencypher.v9_0.frontend.phases._
-import org.opencypher.v9_0.util.{ExperimentalFeatureNotification, TaskCloser}
+import org.opencypher.v9_0.util.TaskCloser
 
 import scala.util.{Failure, Success}
 
@@ -76,8 +77,7 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
       val fieldNames = from.statement().returnColumns.toArray
 
       context.notificationLogger.log(
-        ExperimentalFeatureNotification("use the morsel runtime at your own peril, " +
-                                          "not recommended to be run on production systems"))
+        ExperimentalFeatureNotification("use the morsel runtime at your own peril, not recommended to be run on production systems"))
       val execPlan = VectorizedExecutionPlan(from.plannerName, operators, pipelines, physicalPlan, fieldNames,
                                              dispatcher, context.notificationLogger, readOnly, from.cardinalities)
       new CompilationState(from, Success(execPlan))
