@@ -47,7 +47,7 @@ import org.neo4j.logging.LogProvider;
 /**
  * A replicator implementation suitable in a RAFT context. Will handle resending due to timeouts and leader switches.
  */
-public class RaftReplicator extends LifecycleAdapter implements Replicator, LeaderListener
+public class RaftReplicator implements Replicator, LeaderListener
 {
     private final MemberId me;
     private final Outbound<MemberId,RaftMessages.RaftMessage> outbound;

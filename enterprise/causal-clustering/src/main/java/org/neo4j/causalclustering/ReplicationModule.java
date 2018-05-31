@@ -78,7 +78,7 @@ public class ReplicationModule
 
         TimeoutStrategy progressRetryStrategy = new ExponentialBackoffStrategy( initialBackoff, upperBoundBackoff );
         TimeoutStrategy leaderRetryStrategy = new ConstantTimeTimeoutStrategy( leaderBackoff );
-        replicator = life.add( new RaftReplicator(
+        replicator = new RaftReplicator(
                 consensusModule.raftMachine(),
                 myself,
                 outbound,
@@ -86,8 +86,7 @@ public class ReplicationModule
                 progressTracker,
                 progressRetryStrategy,
                 leaderRetryStrategy,
-                platformModule.availabilityGuard,
-                logProvider, replicationLimit, platformModule.monitors ) );
+                platformModule.availabilityGuard, logProvider, replicationLimit, platformModule.monitors );
     }
 
     public RaftReplicator getReplicator()
