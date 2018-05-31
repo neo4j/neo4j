@@ -31,12 +31,13 @@ import org.neo4j.causalclustering.core.consensus.ConsensusModule;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.replication.ProgressTrackerImpl;
 import org.neo4j.causalclustering.core.replication.RaftReplicator;
+import org.neo4j.causalclustering.core.replication.monitoring.LoggingReplicationMonitor;
 import org.neo4j.causalclustering.core.replication.session.GlobalSession;
 import org.neo4j.causalclustering.core.replication.session.GlobalSessionTrackerState;
 import org.neo4j.causalclustering.core.replication.session.LocalSessionPool;
+import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
 import org.neo4j.causalclustering.helper.ConstantTimeTimeoutStrategy;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
-import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Outbound;
@@ -44,6 +45,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 public class ReplicationModule
@@ -78,6 +80,10 @@ public class ReplicationModule
 
         TimeoutStrategy progressRetryStrategy = new ExponentialBackoffStrategy( initialBackoff, upperBoundBackoff );
         TimeoutStrategy leaderRetryStrategy = new ConstantTimeTimeoutStrategy( leaderBackoff );
+
+        Monitors monitors = platformModule.monitors;
+        monitors.addMonitorListener( new LoggingReplicationMonitor( logProvider.getLog( RaftReplicator.class ) ) );
+
         replicator = life.add( new RaftReplicator(
                 consensusModule.raftMachine(),
                 myself,
@@ -86,9 +92,7 @@ public class ReplicationModule
                 progressTracker,
                 progressRetryStrategy,
                 leaderRetryStrategy,
-                platformModule.availabilityGuard,
-                logProvider,
-                replicationLimit ) );
+                platformModule.availabilityGuard, logProvider, replicationLimit, monitors ) );
     }
 
     public RaftReplicator getReplicator()
