@@ -22,7 +22,7 @@
  */
 package org.neo4j.cypher.internal.runtime.compiled.expressions
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.{NodeProperty, RelationshipProperty}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.{NodeProperty, ReferenceFromSlot, RelationshipProperty}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.operations.{CypherBoolean, CypherDbAccess, CypherFunctions, CypherMath}
 import org.neo4j.internal.kernel.api.Transaction
@@ -164,6 +164,10 @@ object IntermediateCodeGeneration {
                         invoke(load("context"), method[ExecutionContext, Long, Int]("getLongAt"),
                                constantJavaValue(offset)), constantJavaValue(token)))
 
+      //slotted operations
+    case ReferenceFromSlot(offset, _) =>
+      Some(invoke(load("context"), method[ExecutionContext, AnyValue, Int]("getRefAt"),
+                                                     constantJavaValue(offset)))
     case _ => None
   }
 
