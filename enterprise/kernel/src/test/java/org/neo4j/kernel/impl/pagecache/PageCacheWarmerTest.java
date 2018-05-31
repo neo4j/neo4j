@@ -22,6 +22,9 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -38,9 +41,6 @@ import java.util.List;
 import java.util.OptionalLong;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.PageCache;
@@ -353,14 +353,14 @@ public class PageCacheWarmerTest
 
     private int[] randomSortedPageIds( int maxPagesInMemory )
     {
-        PrimitiveIntSet setIds = Primitive.intSet();
+        MutableIntSet setIds = new IntHashSet();
         ThreadLocalRandom rng = ThreadLocalRandom.current();
         for ( int i = 0; i < maxPagesInMemory; i++ )
         {
             setIds.add( rng.nextInt( maxPagesInMemory * 7 ) );
         }
         int[] pageIds = new int[setIds.size()];
-        PrimitiveIntIterator itr = setIds.iterator();
+        IntIterator itr = setIds.intIterator();
         int i = 0;
         while ( itr.hasNext() )
         {

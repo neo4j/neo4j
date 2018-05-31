@@ -5,7 +5,7 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>parent</artifactId>
-  <version>3.4.1-SNAPSHOT</version>
+  <version>3.5.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Neo4j</name>
   <description>Neo4j Graph Database</description>
@@ -68,7 +68,7 @@
     <lucene.version>5.5.5</lucene.version>
     <bouncycastle.version>1.59</bouncycastle.version>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
-    <java9.exports/>
+    <java.exports/>
     <test.runner.jvm/>
     <test.runner.jvm.settings.additional/>
     <test.runner.jvm.settings>-Xmx2G -XX:+UseG1GC -XX:-OmitStackTraceInFastThrow -XX:+HeapDumpOnOutOfMemoryError
@@ -77,7 +77,7 @@
       -Dorg.neo4j.io.pagecache.impl.muninn.usePreciseCursorErrorStackTraces=true
       -Dorg.neo4j.kernel.impl.api.KernelStatement.trackStatements=true
       -Dorg.org.neo4j.kernel.impl.newapi.DefaultCursors.trackCursors=true
-      -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${java9.exports} ${test.runner.jvm.settings.additional}
+      -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${java.exports} ${test.runner.jvm.settings.additional}
     </test.runner.jvm.settings>
     <jetty.version>9.4.8.v20171121</jetty.version>
     <findbugs.version>3.0.1</findbugs.version>
@@ -90,11 +90,13 @@
     <scala-maven-plugin.version>3.3.2</scala-maven-plugin.version>
     <scala.version>2.11.12</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
-    <asm.version>6.0</asm.version>
+    <asm.version>6.1.1</asm.version>
     <metrics.version>4.0.2</metrics.version>
     <scala.target.vm>1.8</scala.target.vm>
-    <scala.java9.arg/>
+    <scala.java.additional.args/>
     <jersey.version>1.19.3</jersey.version>
+    <junit.version>5.2.0</junit.version>
+    <junit.platform.version>1.2.0</junit.platform.version>
     <checkstyle.strict>true</checkstyle.strict>
   </properties>
 
@@ -241,7 +243,7 @@
         <plugin>
           <groupId>org.revapi</groupId>
           <artifactId>revapi-maven-plugin</artifactId>
-          <version>0.10.0</version>
+          <version>0.10.1</version>
           <configuration>
             <versionFormat>^\d+\.\d+\.\d+$</versionFormat>
             <analysisConfiguration>
@@ -281,8 +283,8 @@
                       <item>org\.neo4j\.procedure(\\..+)?</item>
                     </include>
                     <exclude>
-                      <item>.*\.impl\..*</item>
-                      <item>.*\.internal\..*</item>
+                      <item>.*\.impl(\..+)?</item>
+                      <item>.*\.internal(\..+)?</item>
                       <item>org\.neo4j\.helpers\.progress</item>
                       <item>org\.neo4j\.logging\.async</item>
                       <item>org\.neo4j\.server\.rest\.repr\.formats</item>
@@ -295,6 +297,37 @@
                 <item>
                   <!-- Ignore for now since some are already published, should be removed in 4.0 -->
                   <code>java.class.nonPublicPartOfAPI</code>
+                </item>
+                <item>
+                  <code>java.class.noLongerImplementsInterface</code>
+                  <class>org.neo4j.graphalgo.WeightedPath</class>
+                  <justification>Cleanup accidental Path exposure as a Resource.</justification>
+                </item>
+                <item>
+                  <code>java.class.removed</code>
+                  <old>interface org.neo4j.management.Cache</old>
+                  <classSimpleName>Cache</classSimpleName>
+                  <package>org.neo4j.management</package>
+                  <elementKind>interface</elementKind>
+                  <justification>The implemented class was removed in 3.0, but this interface lingered on.</justification>
+                </item>
+                <item>
+                  <code>java.method.removed</code>
+                  <classSimpleName>Neo4jManager</classSimpleName>
+                  <methodName>getCacheBeans</methodName>
+                  <package>org.neo4j.management</package>
+                  <elementKind>method</elementKind>
+                  <justification>The implemented class was removed in 3.0, but this interface lingered on.</justification>
+                </item>
+                <item>
+                  <code>java.class.removed</code>
+                  <class>org.neo4j.helpers.FailableConcurrentTransfer</class>
+                  <justification>Class is never used</justification>
+                </item>
+                <item>
+                  <code>java.field.nowFinal</code>
+                  <old>field org.neo4j.graphdb.InputPosition.empty</old>
+                  <justification>Changes to this field should not be allowed</justification>
                 </item>
               </revapi.ignore>
               <revapi.semver.ignore>
@@ -315,12 +348,12 @@
             <dependency>
               <groupId>org.revapi</groupId>
               <artifactId>revapi-java</artifactId>
-              <version>0.15.1</version>
+              <version>0.16.0</version>
             </dependency>
             <dependency>
               <groupId>org.revapi</groupId>
               <artifactId>revapi-basic-features</artifactId>
-              <version>0.7.0</version>
+              <version>0.7.1</version>
             </dependency>
           </dependencies>
           <executions>
@@ -352,6 +385,23 @@
               <exclude>**/*IntegrationTest.class</exclude>
             </excludes>
           </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.junit.platform</groupId>
+              <artifactId>junit-platform-surefire-provider</artifactId>
+              <version>${junit.platform.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>org.junit.vintage</groupId>
+              <artifactId>junit-vintage-engine</artifactId>
+              <version>${junit.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>org.junit.jupiter</groupId>
+              <artifactId>junit-jupiter-engine</artifactId>
+              <version>${junit.version}</version>
+            </dependency>
+          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -375,6 +425,23 @@
             </systemPropertyVariables>
             <jvm>${test.runner.jvm}</jvm>
           </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.junit.platform</groupId>
+              <artifactId>junit-platform-surefire-provider</artifactId>
+              <version>${junit.platform.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>org.junit.vintage</groupId>
+              <artifactId>junit-vintage-engine</artifactId>
+              <version>${junit.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>org.junit.jupiter</groupId>
+              <artifactId>junit-jupiter-engine</artifactId>
+              <version>${junit.version}</version>
+            </dependency>
+          </dependencies>
           <executions>
             <execution>
               <id>integration-test</id>
@@ -504,7 +571,7 @@
               <arg>100</arg>
               <arg>-Xlint</arg>
               <arg>-target:jvm-${scala.target.vm}</arg>
-              <arg>${scala.java9.arg}</arg>
+              <arg>${scala.java.additional.args}</arg>
             </args>
             <jvmArgs>
               <jvmArg>-Xms64m</jvmArg>
@@ -563,7 +630,7 @@
           <configuration>
             <showDeprecation>true</showDeprecation>
             <showWarnings>true</showWarnings>
-            <compilerArgument>${java9.exports}</compilerArgument>
+            <compilerArgument>${java.exports}</compilerArgument>
           </configuration>
         </plugin>
         <plugin>
@@ -671,7 +738,7 @@
           <dependency>
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>8.8</version>
+            <version>8.10</version>
           </dependency>
         </dependencies>
         <executions>
@@ -884,15 +951,15 @@
     </profile>
 
     <profile>
-      <id>java9</id>
+      <id>java9AndLater</id>
       <activation>
         <activeByDefault>false</activeByDefault>
-        <jdk>9</jdk>
+        <jdk>[9, )</jdk>
       </activation>
       <properties>
-        <java9.exports>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-modules java.xml.bind</java9.exports>
+        <java.exports>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-modules java.xml.bind</java.exports>
         <maven.javadoc.skip>true</maven.javadoc.skip>
-        <scala.java9.arg>-nobootcp</scala.java9.arg>
+        <scala.java.additional.args>-nobootcp</scala.java.additional.args>
       </properties>
     </profile>
 
@@ -1014,9 +1081,29 @@
 
       <!-- The JUnit-Hamcrest-Mockito combo -->
       <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit</artifactId>
-        <version>4.12</version>
+        <groupId>org.apache.maven.surefire</groupId>
+        <artifactId>surefire-logger-api</artifactId>
+        <version>2.21.0</version>
+        <!-- to get around bug https://github.com/junit-team/junit5/issues/801 -->
+        <scope>test</scope>
+        <optional>true</optional>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-params</artifactId>
+        <version>${junit.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-migrationsupport</artifactId>
+        <version>${junit.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-api</artifactId>
+        <version>${junit.version}</version>
         <scope>test</scope>
       </dependency>
 
@@ -1127,6 +1214,11 @@
       </dependency>
 
       <!-- other -->
+      <dependency>
+        <groupId>org.eclipse.collections</groupId>
+        <artifactId>eclipse-collections</artifactId>
+        <version>9.1.0</version>
+      </dependency>
       <dependency>
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>
@@ -1283,11 +1375,6 @@
         <version>${jetty.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.mozilla</groupId>
-        <artifactId>rhino</artifactId>
-        <version>1.7.9</version>
-      </dependency>
-      <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcprov-jdk15on</artifactId>
         <version>${bouncycastle.version}</version>
@@ -1328,6 +1415,12 @@
         <groupId>com.google.code.findbugs</groupId>
         <artifactId>annotations</artifactId>
         <version>${findbugs.version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.12</version>
         <scope>provided</scope>
       </dependency>
       <dependency>

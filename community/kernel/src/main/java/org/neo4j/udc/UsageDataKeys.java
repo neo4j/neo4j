@@ -21,11 +21,11 @@ package org.neo4j.udc;
 
 import java.util.function.Supplier;
 
-import org.neo4j.concurrent.DecayingFlags;
-import org.neo4j.concurrent.DecayingFlags.Key;
-import org.neo4j.concurrent.RecentK;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.util.concurrent.DecayingFlags;
+import org.neo4j.util.concurrent.DecayingFlags.Key;
+import org.neo4j.util.concurrent.RecentK;
 
 import static org.neo4j.udc.UsageDataKey.key;
 

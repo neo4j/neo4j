@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expre
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.{CastSupport, ExecutionContext, IsList, IsMap}
-import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, NonEmptyList}
+import org.opencypher.v9_0.util.{CypherTypeException, NonEmptyList}
 import org.neo4j.values.storable.{BooleanValue, TextValue, Value, Values}
 import org.neo4j.values.virtual.{VirtualRelationshipValue, VirtualNodeValue}
 

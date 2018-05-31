@@ -21,12 +21,10 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
-import org.neo4j.gis.spatial.index.Envelope;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -36,9 +34,8 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.GeometryRangePredicate;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.index.schema.fusion.BridgingIndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.Value;
@@ -51,7 +48,7 @@ public class SpatialIndexPartReader<VALUE extends NativeSchemaValue> extends Nat
     private final SpaceFillingCurveConfiguration configuration;
 
     SpatialIndexPartReader( GBPTree<SpatialSchemaKey,VALUE> tree, Layout<SpatialSchemaKey,VALUE> layout,
-            IndexSamplingConfig samplingConfig, SchemaIndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig, IndexDescriptor descriptor,
             SpaceFillingCurveConfiguration configuration )
     {
         super( tree, layout, samplingConfig, descriptor );

@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
-import org.neo4j.cypher.internal.util.v3_4.SyntaxException
+import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
+import org.opencypher.v9_0.util.SyntaxException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{CreateIndex, DropIndex, IndexOperation}
-import org.neo4j.cypher.internal.util.v3_4.attribution.Id
+import org.opencypher.v9_0.util.attribution.Id
 
 case class IndexOperationPipe(indexOp: IndexOperation)(val id: Id = Id.INVALID_ID) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {

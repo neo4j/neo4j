@@ -43,7 +43,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -68,7 +68,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 {
     public UniqueConstraintCompatibility( IndexProviderCompatibilityTestSuite testSuite )
     {
-        super( testSuite, SchemaIndexDescriptorFactory.uniqueForLabel( 1, 2 ) );
+        super( testSuite, TestIndexDescriptorFactory.uniqueForLabel( 1, 2 ) );
     }
 
     /*
@@ -945,7 +945,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     private void suspend( Transaction tx )
     {
         ThreadToStatementContextBridge txManager = getTransactionManager();
-        txMap.put( tx, txManager.getTopLevelTransactionBoundToThisThread( true ) );
+        txMap.put( tx, txManager.getKernelTransactionBoundToThisThread( true ) );
         txManager.unbindTransactionFromCurrentThread();
     }
 

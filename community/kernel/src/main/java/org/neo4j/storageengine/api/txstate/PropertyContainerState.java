@@ -19,9 +19,11 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
+import org.eclipse.collections.api.IntIterable;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
+
 import java.util.Iterator;
 
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.storageengine.api.StorageProperty;
 
 import static java.util.Collections.emptyIterator;
@@ -40,20 +42,9 @@ public interface PropertyContainerState
 
     Iterator<StorageProperty> changedProperties();
 
-    Iterator<Integer> removedProperties();
+    IntIterable removedProperties();
 
     Iterator<StorageProperty> addedAndChangedProperties();
-
-    Iterator<StorageProperty> augmentProperties( Iterator<StorageProperty> iterator );
-
-    void accept( Visitor visitor ) throws ConstraintValidationException;
-
-    interface Visitor
-    {
-        void visitPropertyChanges( long entityId, Iterator<StorageProperty> added,
-                Iterator<StorageProperty> changed,
-                Iterator<Integer> removed ) throws ConstraintValidationException;
-    }
 
     boolean hasPropertyChanges();
 
@@ -82,26 +73,15 @@ public interface PropertyContainerState
         }
 
         @Override
-        public Iterator<Integer> removedProperties()
+        public IntIterable removedProperties()
         {
-            return emptyIterator();
+            return IntSets.immutable.empty();
         }
 
         @Override
         public Iterator<StorageProperty> addedAndChangedProperties()
         {
             return emptyIterator();
-        }
-
-        @Override
-        public Iterator<StorageProperty> augmentProperties( Iterator<StorageProperty> iterator )
-        {
-            return iterator;
-        }
-
-        @Override
-        public void accept( Visitor visitor )
-        {
         }
 
         @Override

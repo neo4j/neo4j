@@ -28,10 +28,9 @@ import java.util.Set;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.test.Randoms;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -47,12 +46,7 @@ public class DateLayoutTestUtil extends LayoutTestUtil<DateSchemaKey, NativeSche
             LocalDate.of( -1, 12, 31)
     };
 
-    public static DateValue randomDate( Randoms random )
-    {
-        return DateValue.date( random.randomDate() );
-    }
-
-    DateLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )
+    DateLayoutTestUtil( IndexDescriptor schemaIndexDescriptor )
     {
         super( schemaIndexDescriptor );
     }
@@ -64,7 +58,7 @@ public class DateLayoutTestUtil extends LayoutTestUtil<DateSchemaKey, NativeSche
     }
 
     @Override
-    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdates()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
     {
         return someUpdatesWithDuplicateValues();
     }
@@ -82,12 +76,12 @@ public class DateLayoutTestUtil extends LayoutTestUtil<DateSchemaKey, NativeSche
     }
 
     @Override
-    Value newUniqueValue( RandomRule random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
+    Value newUniqueValue( RandomValues random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
     {
         DateValue candidate;
         do
         {
-            candidate = randomDate( random.randoms() );
+            candidate = random.nextDateValue();
         }
         while ( !uniqueCompareValues.add( candidate ) );
         uniqueValues.add( candidate );
@@ -95,13 +89,13 @@ public class DateLayoutTestUtil extends LayoutTestUtil<DateSchemaKey, NativeSche
     }
 
     @Override
-    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesNoDuplicateValues()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdatesNoDuplicateValues()
     {
         return generateAddUpdatesFor( ALL_EXTREME_VALUES );
     }
 
     @Override
-    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesWithDuplicateValues()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues()
     {
         return generateAddUpdatesFor( ArrayUtils.addAll( ALL_EXTREME_VALUES, ALL_EXTREME_VALUES ) );
     }

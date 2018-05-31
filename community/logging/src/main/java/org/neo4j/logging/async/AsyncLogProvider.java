@@ -19,9 +19,9 @@
  */
 package org.neo4j.logging.async;
 
-import org.neo4j.concurrent.AsyncEventSender;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.util.concurrent.AsyncEventSender;
 
 public class AsyncLogProvider implements LogProvider
 {

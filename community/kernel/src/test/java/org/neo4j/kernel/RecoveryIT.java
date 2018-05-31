@@ -178,6 +178,9 @@ public class RecoveryIT
         }
         logProvider.assertContainsMessageContaining( "10% completed" );
         logProvider.assertContainsMessageContaining( "100% completed" );
+
+        database.shutdown();
+        recoveredDatabase.shutdown();
     }
 
     @Test
@@ -555,7 +558,7 @@ public class RecoveryIT
                             Node node = db.createNode( random.nextBoolean() ? array( randomLabel() ) : new Label[0] );
                             if ( random.nextBoolean() )
                             {
-                                node.setProperty( randomKey(), random.propertyValue() );
+                                node.setProperty( randomKey(), random.nextValueAsObject() );
                             }
                         }
                         else
@@ -566,7 +569,7 @@ public class RecoveryIT
                                         .createRelationshipTo( random.among( nodes ), randomRelationshipType() );
                                 if ( random.nextBoolean() )
                                 {
-                                    relationship.setProperty( randomKey(), random.propertyValue() );
+                                    relationship.setProperty( randomKey(), random.nextValueAsObject() );
                                 }
                             }
                         }
@@ -583,12 +586,12 @@ public class RecoveryIT
                         }
                         else if ( operation < 0.75 )
                         {   // set node property
-                            random.among( nodes, node -> node.setProperty( randomKey(), random.propertyValue() ) );
+                            random.among( nodes, node -> node.setProperty( randomKey(), random.nextValueAsObject() ) );
                         }
                         else
                         {   // set relationship property
                             onRandomRelationship( nodes,
-                                    relationship -> relationship.setProperty( randomKey(), random.propertyValue() ) );
+                                    relationship -> relationship.setProperty( randomKey(), random.nextValueAsObject() ) );
                         }
                     }
                     else
@@ -712,7 +715,7 @@ public class RecoveryIT
                         {
                             if ( random.nextBoolean() )
                             {
-                                node.setProperty( key, random.propertyValue() );
+                                node.setProperty( key, random.nextValueAsObject() );
                             }
                         }
                         nodes.add( node );
@@ -727,7 +730,7 @@ public class RecoveryIT
                     }
                     else if ( operation < 0.85 )
                     {   // Set property
-                        random.among( nodes, node -> node.setProperty( random.among( keys ), random.propertyValue() ) );
+                        random.among( nodes, node -> node.setProperty( random.among( keys ), random.nextValueAsObject() ) );
                     }
                     else
                     {   // Remove property

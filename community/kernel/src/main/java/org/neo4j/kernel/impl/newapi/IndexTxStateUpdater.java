@@ -20,16 +20,17 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.Iterator;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 
@@ -41,17 +42,17 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
  */
 public class IndexTxStateUpdater
 {
-    private final StoreReadLayer storeReadLayer;
+    private final StorageReader storageReader;
     private final Read read;
-    private final IndexingService indexingService;
+    private final IndexingProvidersService indexProviders;
 
-    // We can use the StoreReadLayer directly instead of the SchemaReadOps, because we know that in transactions
+    // We can use the StorageReader directly instead of the SchemaReadOps, because we know that in transactions
     // where this class is needed we will never have index changes.
-    public IndexTxStateUpdater( StoreReadLayer storeReadLayer, Read read, IndexingService indexingService )
+    public IndexTxStateUpdater( StorageReader storageReader, Read read, IndexingProvidersService indexProviders )
     {
-        this.storeReadLayer = storeReadLayer;
+        this.storageReader = storageReader;
         this.read = read;
-        this.indexingService = indexingService;
+        this.indexProviders = indexProviders;
     }
 
     // LABEL CHANGES
@@ -75,7 +76,7 @@ public class IndexTxStateUpdater
         assert noSchemaChangedInTx();
 
         // Find properties of the changed node
-        PrimitiveIntSet nodePropertyIds = Primitive.intSet();
+        final MutableIntSet nodePropertyIds = new IntHashSet();
         node.properties( propertyCursor );
         while ( propertyCursor.next() )
         {
@@ -83,10 +84,10 @@ public class IndexTxStateUpdater
         }
 
         // Check all indexes of the changed label
-        Iterator<SchemaIndexDescriptor> indexes = storeReadLayer.indexesGetForLabel( labelId );
+        Iterator<? extends IndexDescriptor> indexes = storageReader.indexesGetForLabel( labelId );
         while ( indexes.hasNext() )
         {
-            SchemaIndexDescriptor index = indexes.next();
+            IndexDescriptor index = indexes.next();
             int[] indexPropertyIds = index.schema().getPropertyIds();
             if ( nodeHasIndexProperties( nodePropertyIds, indexPropertyIds ) )
             {
@@ -94,7 +95,7 @@ public class IndexTxStateUpdater
                 switch ( changeType )
                 {
                 case ADDED_LABEL:
-                    indexingService.validateBeforeCommit( index.schema(), values );
+                    indexProviders.validateBeforeCommit( index.schema(), values );
                     read.txState().indexDoUpdateEntry( index.schema(), node.nodeReference(), null, ValueTuple.of( values ) );
                     break;
                 case REMOVED_LABEL:
@@ -117,13 +118,13 @@ public class IndexTxStateUpdater
     void onPropertyAdd( NodeCursor node, PropertyCursor propertyCursor, int propertyKeyId, Value value )
     {
         assert noSchemaChangedInTx();
-        Iterator<SchemaIndexDescriptor> indexes =
-                storeReadLayer.indexesGetRelatedToProperty( propertyKeyId );
+        Iterator<? extends IndexDescriptor> indexes =
+                storageReader.indexesGetRelatedToProperty( propertyKeyId );
         NodeSchemaMatcher.onMatchingSchema( indexes, node, propertyCursor, propertyKeyId,
                 ( index, propertyKeyIds ) ->
                 {
                     Value[] values = getValueTuple( node, propertyCursor, propertyKeyId, value, index.schema().getPropertyIds() );
-                    indexingService.validateBeforeCommit( index.schema(), values );
+                    indexProviders.validateBeforeCommit( index.schema(), values );
                     read.txState().indexDoUpdateEntry( index.schema(), node.nodeReference(), null, ValueTuple.of( values ) );
                 } );
     }
@@ -131,8 +132,8 @@ public class IndexTxStateUpdater
     void onPropertyRemove( NodeCursor node, PropertyCursor propertyCursor, int propertyKeyId, Value value )
     {
         assert noSchemaChangedInTx();
-        Iterator<SchemaIndexDescriptor> indexes =
-                storeReadLayer.indexesGetRelatedToProperty( propertyKeyId );
+        Iterator<? extends IndexDescriptor> indexes =
+                storageReader.indexesGetRelatedToProperty( propertyKeyId );
         NodeSchemaMatcher.onMatchingSchema( indexes, node, propertyCursor, propertyKeyId,
                 ( index, propertyKeyIds ) ->
                 {
@@ -145,7 +146,7 @@ public class IndexTxStateUpdater
             Value beforeValue, Value afterValue )
     {
         assert noSchemaChangedInTx();
-        Iterator<SchemaIndexDescriptor> indexes = storeReadLayer.indexesGetRelatedToProperty( propertyKeyId );
+        Iterator<? extends IndexDescriptor> indexes = storageReader.indexesGetRelatedToProperty( propertyKeyId );
         NodeSchemaMatcher.onMatchingSchema( indexes, node, propertyCursor, propertyKeyId,
                 ( index, propertyKeyIds ) ->
                 {
@@ -176,7 +177,7 @@ public class IndexTxStateUpdater
                             valuesAfter[i] = value;
                         }
                     }
-                    indexingService.validateBeforeCommit( index.schema(), valuesAfter );
+                    indexProviders.validateBeforeCommit( index.schema(), valuesAfter );
                     read.txState().indexDoUpdateEntry( index.schema(), node.nodeReference(),
                             ValueTuple.of( valuesBefore ), ValueTuple.of( valuesAfter ) );
                 } );
@@ -214,7 +215,7 @@ public class IndexTxStateUpdater
         return values;
     }
 
-    private static boolean nodeHasIndexProperties( PrimitiveIntSet nodeProperties, int[] indexPropertyIds )
+    private static boolean nodeHasIndexProperties( IntSet nodeProperties, int[] indexPropertyIds )
     {
         for ( int indexPropertyId : indexPropertyIds )
         {

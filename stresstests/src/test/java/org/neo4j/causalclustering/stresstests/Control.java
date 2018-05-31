@@ -28,8 +28,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 
-import org.neo4j.concurrent.Futures;
 import org.neo4j.logging.Log;
+import org.neo4j.util.concurrent.Futures;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.neo4j.function.Suppliers.untilTimeExpired;

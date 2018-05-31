@@ -24,21 +24,27 @@ package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{IndexSeek, IndexSeekMode, NodeIndexSeeker, QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken}
+import org.neo4j.cypher.internal.v3_5.logical.plans.QueryExpression
 import org.neo4j.internal.kernel.api._
+import org.neo4j.values.virtual.NodeValue
+import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
 
 class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
                             label: LabelToken,
-                            propertyKey: PropertyKeyToken,
-                            valueExpr: Expression) extends Operator {
+                            propertyKeys: Seq[PropertyKeyToken],
+                            override val valueExpr: QueryExpression[Expression],
+                            override val indexMode: IndexSeekMode = IndexSeek)
+  extends Operator with NodeIndexSeeker {
 
-  private var reference: IndexReference = CapableIndexReference.NO_INDEX
+  override val propertyIds: Array[Int] = propertyKeys.map(_.nameId.id).toArray
+
+  private var reference: IndexReference = IndexReference.NO_INDEX
 
   private def reference(context: QueryContext): IndexReference = {
-    if (reference == CapableIndexReference.NO_INDEX) {
-      reference = context.indexReference(label.nameId.id, propertyKey.nameId.id)
+    if (reference == IndexReference.NO_INDEX) {
+      reference = context.indexReference(label.nameId.id, propertyIds:_*)
     }
     reference
   }
@@ -47,46 +53,38 @@ class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
                        data: Morsel,
                        context: QueryContext,
                        state: QueryState): Continuation = {
-    var nodeCursor: NodeValueIndexCursor  = null
+    var nodeIterator: Iterator[NodeValue] = null
     var iterationState: Iteration = null
-    val read = context.transactionalContext.dataRead
-    val currentRow = new MorselExecutionContext(data, longsPerRow, refsPerRow, currentRow = 0)
-    val queryState = new OldQueryState(context, resources = null, params = state.params)
 
     message match {
       case StartLeafLoop(is) =>
-        nodeCursor = context.transactionalContext.cursors.allocateNodeValueIndexCursor()
-        read.nodeIndexSeek(reference(context), nodeCursor, IndexOrder.NONE,
-                           IndexQuery.exact(propertyKey.nameId.id, valueExpr(currentRow, queryState) ))
+        val currentRow = new MorselExecutionContext(data, longsPerRow, refsPerRow, currentRow = 0)
+        val queryState = new OldQueryState(context, resources = null, params = state.params)
+        val indexReference = reference(context)
+        nodeIterator = indexSeek(queryState, indexReference, currentRow)
         iterationState = is
-      case ContinueLoopWith(ContinueWithSource(it, is, _)) =>
-        nodeCursor = it.asInstanceOf[NodeValueIndexCursor]
+      case ContinueLoopWith(ContinueWithSource(iterator, is)) =>
+        nodeIterator = iterator.asInstanceOf[Iterator[NodeValue]]
         iterationState = is
       case _ => throw new IllegalStateException()
 
     }
+   iterate(data, nodeIterator, iterationState)
+  }
 
+  protected def iterate(data: Morsel, nodeIterator: Iterator[NodeValue], iterationState: Iteration): Continuation = {
     val longs: Array[Long] = data.longs
-
     var processedRows = 0
-    var hasMore = true
-    while (processedRows < data.validRows && hasMore) {
-      hasMore = nodeCursor.next()
-      if (hasMore) {
-        longs(processedRows * longsPerRow + offset) = nodeCursor.nodeReference()
-        processedRows += 1
-      }
+    while (processedRows < data.validRows && nodeIterator.hasNext) {
+      longs(processedRows * longsPerRow + offset) = nodeIterator.next().id()
+      processedRows += 1
     }
 
     data.validRows = processedRows
 
-    if (hasMore)
-      ContinueWithSource(nodeCursor, iterationState, needsSameThread = false)
+    if (nodeIterator.hasNext)
+      ContinueWithSource(nodeIterator, iterationState)
     else {
-      if (nodeCursor != null) {
-        nodeCursor.close()
-        nodeCursor = null
-      }
       EndOfLoop(iterationState)
     }
   }

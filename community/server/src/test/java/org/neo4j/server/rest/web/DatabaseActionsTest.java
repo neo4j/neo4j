@@ -56,8 +56,6 @@ import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
-import org.neo4j.server.rest.domain.TraverserReturnType;
-import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.repr.IndexedEntityRepresentation;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.NodeRepresentation;
@@ -66,11 +64,9 @@ import org.neo4j.server.rest.repr.RelationshipRepresentation;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.time.Clocks;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -105,7 +101,7 @@ public class DatabaseActionsTest
                 .newGraphDatabase();
         database = new WrappedDatabase( graph );
         graphdbHelper = new GraphDbHelper( database );
-        actions = new TransactionWrappedDatabaseActions( new LeaseManager( Clocks.fakeClock() ), database.getGraph() );
+        actions = new TransactionWrappedDatabaseActions( database.getGraph() );
     }
 
     @AfterClass
@@ -764,28 +760,6 @@ public class DatabaseActionsTest
                 .size() );
     }
 
-    private long createBasicTraversableGraph()
-    {
-        // (Root)
-        // / \
-        // (Mattias) (Johan)
-        // / / \
-        // (Emil) (Peter) (Tobias)
-
-        long startNode = graphdbHelper.createNode( MapUtil.map( "name", "Root" ), LABEL );
-        long child1L1 = graphdbHelper.createNode( MapUtil.map( "name", "Mattias" ), LABEL  );
-        graphdbHelper.createRelationship( "knows", startNode, child1L1 );
-        long child2L1 = graphdbHelper.createNode( MapUtil.map( "name", "Johan" ), LABEL  );
-        graphdbHelper.createRelationship( "knows", startNode, child2L1 );
-        long child1L2 = graphdbHelper.createNode( MapUtil.map( "name", "Emil" ), LABEL  );
-        graphdbHelper.createRelationship( "knows", child2L1, child1L2 );
-        long child1L3 = graphdbHelper.createNode( MapUtil.map( "name", "Peter" ), LABEL  );
-        graphdbHelper.createRelationship( "knows", child1L2, child1L3 );
-        long child2L3 = graphdbHelper.createNode( MapUtil.map( "name", "Tobias" ), LABEL  );
-        graphdbHelper.createRelationship( "loves", child1L2, child2L3 );
-        return startNode;
-    }
-
     private long[] createMoreComplexGraph()
     {
         // (a)
@@ -861,161 +835,6 @@ public class DatabaseActionsTest
         createRelationshipWithProperties( e, f, map( "cost", (double) 2 ) );
         createRelationshipWithProperties( x, y, map( "cost", (double) 2 ) );
         return new long[]{start, x};
-    }
-
-    @Test
-    public void shouldBeAbleToTraverseWithDefaultParameters()
-    {
-        long startNode = createBasicTraversableGraph();
-
-        try ( Transaction transaction = graph.beginTx() )
-        {
-            assertEquals( 2, serialize( actions.traverse( startNode, new HashMap<>(),
-                    TraverserReturnType.node ) ).size() );
-        }
-    }
-
-    @Test
-    public void shouldBeAbleToTraverseDepthTwo()
-    {
-        long startNode = createBasicTraversableGraph();
-
-        try ( Transaction transaction = graph.beginTx() )
-        {
-            assertEquals( 3, serialize( actions.traverse( startNode, MapUtil.map( "max_depth", 2 ),
-                    TraverserReturnType.node ) ).size() );
-        }
-    }
-
-    @Test
-    public void shouldBeAbleToTraverseEverything()
-    {
-        long startNode = createBasicTraversableGraph();
-
-        try ( Transaction transaction = graph.beginTx() )
-        {
-            assertEquals( 6, serialize( actions.traverse(
-                    startNode,
-                    MapUtil.map( "return_filter", MapUtil.map( "language", "javascript", "body", "true;" ), "max_depth",
-                            10 ),
-                    TraverserReturnType.node ) ).size() );
-            assertEquals( 6, serialize( actions.traverse( startNode,
-                    MapUtil.map( "return_filter", MapUtil.map( "language", "builtin", "name", "all" ), "max_depth",
-                            10 ),
-                    TraverserReturnType.node ) ).size() );
-        }
-    }
-
-    @Test
-    public void shouldBeAbleToUseCustomReturnFilter()
-    {
-        long startNode = createBasicTraversableGraph();
-
-        try ( Transaction transaction = graph.beginTx() )
-        {
-            assertEquals( 3, serialize( actions.traverse( startNode, MapUtil.map( "prune_evaluator", MapUtil.map(
-                    "language", "builtin", "name", "none" ), "return_filter", MapUtil.map( "language", "javascript",
-                    "body", "position.endNode().getProperty( 'name' ).contains( 'o' )" ) ), TraverserReturnType.node ) )
-                    .size() );
-        }
-    }
-
-    @Test
-    public void shouldBeAbleToTraverseWithMaxDepthAndPruneEvaluatorCombined()
-    {
-        long startNode = createBasicTraversableGraph();
-
-        try ( Transaction transaction = graph.beginTx() )
-        {
-            assertEquals( 3, serialize( actions.traverse( startNode,
-                    MapUtil.map( "max_depth", 2, "prune_evaluator", MapUtil.map( "language", "javascript", "body",
-                            "position.endNode().getProperty('name').equals('Emil')" ) ),
-                    TraverserReturnType.node ) ).size() );
-            assertEquals( 2, serialize( actions.traverse( startNode,
-                    MapUtil.map( "max_depth", 1, "prune_evaluator", MapUtil.map( "language", "javascript", "body",
-                            "position.endNode().getProperty('name').equals('Emil')" ) ), TraverserReturnType.node ) )
-                    .size() );
-        }
-    }
-
-    @Test
-    public void shouldBeAbleToGetRelationshipsIfSpecified()
-    {
-        long startNode = createBasicTraversableGraph();
-
-        List<Object> hits;
-        try ( Transaction transaction = graph.beginTx() )
-        {
-            hits = serialize( actions.traverse( startNode, new HashMap<>(),
-                    TraverserReturnType.relationship ) );
-        }
-
-        for ( Object hit : hits )
-        {
-            @SuppressWarnings( "unchecked" )
-            Map<String, Object> map = (Map<String, Object>) hit;
-            RelationshipRepresentationTest.verifySerialisation( map );
-        }
-    }
-
-    @Test
-    public void shouldBeAbleToGetPathsIfSpecified()
-    {
-        long startNode = createBasicTraversableGraph();
-
-        List<Object> hits;
-        try ( Transaction transaction = graph.beginTx() )
-        {
-            hits = serialize( actions.traverse( startNode, new HashMap<>(),
-                    TraverserReturnType.path ) );
-        }
-
-        for ( Object hit : hits )
-        {
-            @SuppressWarnings( "unchecked" )
-            Map<String, Object> map = (Map<String, Object>) hit;
-            assertThat( map, hasKey( "start" ) );
-            assertThat( map, hasKey( "end" ) );
-            assertThat( map, hasKey( "length" ) );
-        }
-    }
-
-    @Test
-    public void shouldBeAbleToGetFullPathsIfSpecified()
-    {
-        long startNode = createBasicTraversableGraph();
-
-        List<Object> hits;
-        try ( Transaction transaction = graph.beginTx() )
-        {
-            hits = serialize( actions.traverse( startNode, new HashMap<>(),
-                    TraverserReturnType.fullpath ) );
-        }
-
-        for ( Object hit : hits )
-        {
-            @SuppressWarnings( "unchecked" )
-            Map<String, Object> map = (Map<String, Object>) hit;
-            @SuppressWarnings( "unchecked" )
-            Collection<Object> relationships = (Collection<Object>) map.get( "relationships" );
-            for ( Object rel : relationships )
-            {
-                @SuppressWarnings( "unchecked" )
-                Map<String, Object> relationship = (Map<String, Object>) rel;
-                RelationshipRepresentationTest.verifySerialisation( relationship );
-            }
-            @SuppressWarnings( "unchecked" )
-            Collection<Object> nodes = (Collection<Object>) map.get( "nodes" );
-            for ( Object n : nodes )
-            {
-                @SuppressWarnings( "unchecked" )
-                Map<String, Object> node = (Map<String, Object>) n;
-                NodeRepresentationTest.verifySerialisation( node );
-            }
-            assertThat( map, hasKey( "start" ) );
-            assertThat( map, hasKey( "end" ) );
-            assertThat( map, hasKey( "length" ) );
-        }
     }
 
     @Test

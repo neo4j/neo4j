@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -36,6 +35,7 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -80,7 +80,7 @@ public class RunOutOfDiskSpaceIT
         }
         finally
         {
-            Assert.assertNotNull( "Expected tx finish to throw TransactionFailureException when filesystem is full.",
+            assertNotNull( "Expected tx finish to throw TransactionFailureException when filesystem is full.",
                     exceptionThrown );
             assertTrue( Exceptions.contains( exceptionThrown, IOException.class ) );
         }
@@ -124,7 +124,7 @@ public class RunOutOfDiskSpaceIT
         }
         finally
         {
-            Assert.assertNotNull( "Expected tx finish to throw TransactionFailureException when filesystem is full.",
+            assertNotNull( "Expected tx finish to throw TransactionFailureException when filesystem is full.",
                     expectedCommitException );
         }
 
@@ -139,7 +139,7 @@ public class RunOutOfDiskSpaceIT
         }
         finally
         {
-            Assert.assertNotNull( "Expected tx begin to throw TransactionFailureException when tx manager breaks.",
+            assertNotNull( "Expected tx begin to throw TransactionFailureException when tx manager breaks.",
                     expectedStartException );
         }
 

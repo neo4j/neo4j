@@ -19,7 +19,8 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+
 import org.neo4j.kernel.impl.locking.Lock;
 
 /**
@@ -37,7 +38,7 @@ public interface NodeItem
      * @return label cursor for current node
      * @throws IllegalStateException if no current node is selected
      */
-    PrimitiveIntSet labels();
+    MutableLongSet labels();
 
     /**
      * @return whether or not this node has been marked as being dense, i.e. exceeding a certain threshold
@@ -49,7 +50,7 @@ public interface NodeItem
      * @param labelId label token id to check.
      * @return whether or not this node has the given label.
      */
-    boolean hasLabel( int labelId );
+    boolean hasLabel( long labelId );
 
     long nextGroupId();
 

@@ -22,13 +22,11 @@ package org.neo4j.kernel.impl.api.index;
 import java.io.File;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -60,12 +58,6 @@ public class IndexProxyAdapter implements IndexProxy
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public IndexCapability getIndexCapability()
-    {
-        return null;
-    }
-
     public void force( IOLimiter ioLimiter )
     {
     }
@@ -81,19 +73,7 @@ public class IndexProxyAdapter implements IndexProxy
     }
 
     @Override
-    public SchemaIndexDescriptor getDescriptor()
-    {
-        return null;
-    }
-
-    @Override
-    public LabelSchemaDescriptor schema()
-    {
-        return null;
-    }
-
-    @Override
-    public IndexProvider.Descriptor getProviderDescriptor()
+    public CapableIndexDescriptor getDescriptor()
     {
         return null;
     }
@@ -123,12 +103,6 @@ public class IndexProxyAdapter implements IndexProxy
     @Override
     public void validateBeforeCommit( Value[] tuple )
     {
-    }
-
-    @Override
-    public long getIndexId()
-    {
-        return 1;
     }
 
     @Override

@@ -22,13 +22,13 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.util.Random;
 import java.util.function.LongFunction;
 
-import org.neo4j.test.Randoms;
+import org.neo4j.values.storable.RandomValues;
 
 /**
  * Utility for generating deterministically randomized data, even though chunks may be reordered
  * during actual import.
  */
-public class RandomsStates implements LongFunction<Randoms>
+public class RandomsStates implements LongFunction<RandomValues>
 {
     private final long initialSeed;
 
@@ -38,8 +38,8 @@ public class RandomsStates implements LongFunction<Randoms>
     }
 
     @Override
-    public Randoms apply( long batch )
+    public RandomValues apply( long batch )
     {
-        return new Randoms( new Random( initialSeed + batch ), Randoms.DEFAULT );
+        return RandomValues.create( new Random( initialSeed + batch ) );
     }
 }

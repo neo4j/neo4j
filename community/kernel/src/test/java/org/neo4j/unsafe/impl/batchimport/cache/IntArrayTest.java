@@ -19,122 +19,123 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.function.ThrowingConsumer;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.Iterator;
 import java.util.Random;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.pagecache.PageCache;
 
 import static java.lang.System.currentTimeMillis;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.DynamicTest.stream;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.HEAP;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.OFF_HEAP;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.auto;
 
-@RunWith( Parameterized.class )
-public class IntArrayTest extends NumberArrayPageCacheTestSupport
+class IntArrayTest extends NumberArrayPageCacheTestSupport
 {
     private static Fixture fixture;
+    private final long seed = currentTimeMillis();
+    private final Random random = new Random( seed );
 
-    @Test
-    public void shouldHandleSomeRandomSetAndGet()
-    {
-        // GIVEN
-        int length = random.nextInt( 100_000 ) + 100;
-        int defaultValue = random.nextInt( 2 ) - 1; // 0 or -1
-        IntArray array = newArray( length, defaultValue );
-        long[] expected = new long[length];
-        Arrays.fill( expected, defaultValue );
-
-        // WHEN
-        int operations = random.nextInt( 1_000 ) + 10;
-        for ( int i = 0; i < operations; i++ )
-        {
-            // THEN
-            int index = random.nextInt( length );
-            int value = random.nextInt();
-            switch ( random.nextInt( 3 ) )
-            {
-            case 0: // set
-                array.set( index, value );
-                expected[index] = value;
-                break;
-            case 1: // get
-                assertEquals( "Seed:" + seed, expected[index], array.get( index ) );
-                break;
-            default: // swap
-                int toIndex = random.nextInt( length );
-                array.swap( index, toIndex );
-                swap( expected, index, toIndex );
-                break;
-            }
-        }
-    }
-
-    @Test
-    public void shouldHandleMultipleCallsToClose()
-    {
-        // GIVEN
-        NumberArray<?> array = newArray( 10, -1 );
-
-        // WHEN
-        array.close();
-
-        // THEN should also work
-        array.close();
-    }
-
-    private void swap( long[] expected, int fromIndex, int toIndex )
-    {
-        long fromValue = expected[fromIndex];
-        expected[fromIndex] = expected[toIndex];
-        expected[toIndex] = fromValue;
-    }
-
-    @Parameters
-    public static Collection<NumberArrayFactory> data() throws IOException
+    @BeforeAll
+    static void setUp() throws IOException
     {
         fixture = prepareDirectoryAndPageCache( IntArrayTest.class );
-        PageCache pageCache = fixture.pageCache;
-        File dir = fixture.directory;
-        NumberArrayFactory autoWithPageCacheFallback = auto( pageCache, dir, true );
-        NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, dir );
-        return Arrays.asList( HEAP, OFF_HEAP, autoWithPageCacheFallback, pageCacheArrayFactory );
     }
 
-    @AfterClass
-    public static void closeFixture() throws Exception
+    @AfterAll
+    static void tearDown() throws Exception
     {
         fixture.close();
     }
 
-    public IntArrayTest( NumberArrayFactory factory )
+    @TestFactory
+    Stream<DynamicTest> shouldHandleSomeRandomSetAndGet()
     {
-        this.factory = factory;
+        // GIVEN
+        ThrowingConsumer<NumberArrayFactory> arrayFactoryConsumer = factory ->
+        {
+            int length = random.nextInt( 100_000 ) + 100;
+            int defaultValue = random.nextInt( 2 ) - 1; // 0 or -1
+            try ( IntArray array = factory.newIntArray( length, defaultValue ) )
+            {
+                int[] expected = new int[length];
+                Arrays.fill( expected, defaultValue );
+
+                // WHEN
+                int operations = random.nextInt( 1_000 ) + 10;
+                for ( int i = 0; i < operations; i++ )
+                {
+                    // THEN
+                    int index = random.nextInt( length );
+                    int value = random.nextInt();
+                    switch ( random.nextInt( 3 ) )
+                    {
+                    case 0: // set
+                        array.set( index, value );
+                        expected[index] = value;
+                        break;
+                    case 1: // get
+                        assertEquals( expected[index], array.get( index ), "Seed:" + seed );
+                        break;
+                    default: // swap
+                        int toIndex = random.nextInt( length );
+                        array.swap( index, toIndex );
+                        swap( expected, index, toIndex );
+                        break;
+                    }
+                }
+            }
+        };
+        return stream( arrayFactories(), getNumberArrayFactoryName(), arrayFactoryConsumer );
     }
 
-    private IntArray newArray( int length, int defaultValue )
+    @TestFactory
+    Stream<DynamicTest> shouldHandleMultipleCallsToClose()
     {
-        return array = factory.newIntArray( length, defaultValue );
+        return DynamicTest.stream( arrayFactories(), getNumberArrayFactoryName(), factory ->
+        {
+            // GIVEN
+            NumberArray<?> array = factory.newIntArray( 10, -1 );
+
+            // WHEN
+            array.close();
+
+            // THEN should also work
+            array.close();
+        } );
     }
 
-    private final NumberArrayFactory factory;
-    private final long seed = currentTimeMillis();
-    private final Random random = new Random( seed );
-    private IntArray array;
-
-    @After
-    public void after()
+    private static Function<NumberArrayFactory,String> getNumberArrayFactoryName()
     {
-        array.close();
+        return factory -> factory.getClass().getName();
+    }
+
+    private static void swap( int[] expected, int fromIndex, int toIndex )
+    {
+        int fromValue = expected[fromIndex];
+        expected[fromIndex] = expected[toIndex];
+        expected[toIndex] = fromValue;
+    }
+
+    private static Iterator<NumberArrayFactory> arrayFactories()
+    {
+        PageCache pageCache = fixture.pageCache;
+        File dir = fixture.directory;
+        NumberArrayFactory autoWithPageCacheFallback = auto( pageCache, dir, true );
+        NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, dir );
+        return Iterators.iterator( HEAP, OFF_HEAP, autoWithPageCacheFallback, pageCacheArrayFactory );
     }
 }

@@ -19,22 +19,20 @@
  */
 package org.neo4j.helpers.collection;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 
-/**
- * @author mh
- * @since 21.04.12
- */
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 @SuppressWarnings( "unchecked" )
-public class ExceptionHandlingIterableTest
+class ExceptionHandlingIterableTest
 {
 
-    @Test( expected = IllegalStateException.class )
-    public void testHandleExceptionOnIteratorCreation()
+    @Test
+    void testHandleExceptionOnIteratorCreation()
     {
-        Iterables.count( new ExceptionHandlingIterable( () ->
+        assertThrows( IllegalStateException.class, () -> Iterables.count( new ExceptionHandlingIterable( () ->
         {
             throw new RuntimeException( "exception on iterator" );
         } )
@@ -45,70 +43,72 @@ public class ExceptionHandlingIterableTest
                 rethrow( new IllegalStateException() );
                 return super.exceptionOnIterator( t );
             }
-        } );
+        } ) );
     }
 
-    @Test( expected = IllegalStateException.class )
-    public void testHandleExceptionOnNext()
+    @Test
+    void testHandleExceptionOnNext()
     {
-        Iterables.count( new ExceptionHandlingIterable( () -> new Iterator()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return true;
-            }
+        assertThrows( IllegalStateException.class, () ->
+                Iterables.count( new ExceptionHandlingIterable( () -> new Iterator()
+                {
+                    @Override
+                    public boolean hasNext()
+                    {
+                        return true;
+                    }
 
-            @Override
-            public Object next()
-            {
-                throw new RuntimeException( "exception on next" );
-            }
+                    @Override
+                    public Object next()
+                    {
+                        throw new RuntimeException( "exception on next" );
+                    }
 
-            @Override
-            public void remove()
-            {
-            }
-        } )
-        {
-            @Override
-            protected Object exceptionOnNext( Throwable t )
-            {
-                rethrow( new IllegalStateException() );
-                return super.exceptionOnNext( t );
-            }
-        } );
+                    @Override
+                    public void remove()
+                    {
+                    }
+                } )
+                {
+                    @Override
+                    protected Object exceptionOnNext( Throwable t )
+                    {
+                        rethrow( new IllegalStateException() );
+                        return super.exceptionOnNext( t );
+                    }
+                } ) );
     }
 
-    @Test( expected = IllegalStateException.class )
-    public void testHandleExceptionOnHasNext()
+    @Test
+    void testHandleExceptionOnHasNext()
     {
-        Iterables.count( new ExceptionHandlingIterable( () -> new Iterator()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                throw new RuntimeException( "exception on next" );
-            }
+        assertThrows( IllegalStateException.class, () ->
+                Iterables.count( new ExceptionHandlingIterable( () -> new Iterator()
+                {
+                    @Override
+                    public boolean hasNext()
+                    {
+                        throw new RuntimeException( "exception on next" );
+                    }
 
-            @Override
-            public Object next()
-            {
-                return null;
-            }
+                    @Override
+                    public Object next()
+                    {
+                        return null;
+                    }
 
-            @Override
-            public void remove()
-            {
-            }
-        } )
-        {
-            @Override
-            protected boolean exceptionOnHasNext( Throwable t )
-            {
-                rethrow( new IllegalStateException() );
-                return super.exceptionOnHasNext( t );
-            }
-        } );
+                    @Override
+                    public void remove()
+                    {
+                    }
+                } )
+                {
+                    @Override
+                    protected boolean exceptionOnHasNext( Throwable t )
+                    {
+                        rethrow( new IllegalStateException() );
+                        return super.exceptionOnHasNext( t );
+                    }
+                } ) );
     }
 }

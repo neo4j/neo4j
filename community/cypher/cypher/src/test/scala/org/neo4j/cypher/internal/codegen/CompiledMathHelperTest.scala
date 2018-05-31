@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.codegen
 
 import java.util
 
-import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
+import org.opencypher.v9_0.util.CypherTypeException
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._

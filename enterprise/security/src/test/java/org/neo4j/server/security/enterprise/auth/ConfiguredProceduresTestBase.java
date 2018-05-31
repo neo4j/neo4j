@@ -22,7 +22,6 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -324,7 +323,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         expected.put( "queryId", valueOf( "query-9999999999" ) );
         expected.put( "username", valueOf( "n/a" ) );
         expected.put( "message", valueOf( "No Query found with this id" ) );
-        assertSuccess( adminSubject, query, r -> Assert.assertThat( r.next(), equalTo( expected ) ) );
+        assertSuccess( adminSubject, query, r -> assertThat( r.next(), equalTo( expected ) ) );
     }
 
     @Test
@@ -334,7 +333,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         String query = "CALL dbms.killQuery('query-9999999999')";
         assertSuccess( adminSubject, query, r ->
 
-                Assert.assertThat( r.hasNext(), is( false ) ) );
+                assertThat( r.hasNext(), is( false ) ) );
     }
 
     @Test
@@ -361,7 +360,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         assertSuccess( adminSubject, query, r ->
         {
             Set<Map<String,Object>> actual = r.stream().collect( toSet() );
-            Assert.assertThat( actual, equalTo( expected ) );
+            assertThat( actual, equalTo( expected ) );
         } );
     }
 

@@ -26,16 +26,13 @@ import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.bolt.messaging.StructType;
 import org.neo4j.bolt.v1.packstream.PackInput;
 import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.packstream.PackStream;
 import org.neo4j.bolt.v1.packstream.PackType;
-import org.neo4j.collection.primitive.PrimitiveLongIntKeyValueArray;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
@@ -45,6 +42,7 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
@@ -542,10 +540,10 @@ public class Neo4jPackV1 implements Neo4jPack
             {
                 return VirtualValues.EMPTY_MAP;
             }
-            Map<String,AnyValue> map;
+            MapValueBuilder map;
             if ( size == UNKNOWN_SIZE )
             {
-                map = new HashMap<>();
+                map = new MapValueBuilder(  );
                 boolean more = true;
                 while ( more )
                 {
@@ -561,7 +559,7 @@ public class Neo4jPackV1 implements Neo4jPack
                     case STRING:
                         key = unpackString();
                         val = unpack();
-                        if ( map.put( key, val ) != null )
+                        if ( map.add( key, val ) != null )
                         {
                             throw new BoltIOException( Status.Request.Invalid, "Duplicate map key `" + key + "`." );
                         }
@@ -575,7 +573,7 @@ public class Neo4jPackV1 implements Neo4jPack
             }
             else
             {
-                map = new HashMap<>( size, 1 );
+                map = new MapValueBuilder( size );
                 for ( int i = 0; i < size; i++ )
                 {
                     PackType keyType = peekNextType();
@@ -592,13 +590,13 @@ public class Neo4jPackV1 implements Neo4jPack
                     }
 
                     AnyValue val = unpack();
-                    if ( map.put( key, val ) != null )
+                    if ( map.add( key, val ) != null )
                     {
                         throw new BoltIOException( Status.Request.Invalid, "Duplicate map key `" + key + "`." );
                     }
                 }
             }
-            return VirtualValues.map( map );
+            return map.build();
         }
     }
 }

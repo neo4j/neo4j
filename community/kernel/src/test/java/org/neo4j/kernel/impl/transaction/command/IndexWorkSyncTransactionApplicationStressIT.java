@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -28,8 +29,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -50,7 +49,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.PageCacheRule;
@@ -63,6 +62,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.neo4j.helpers.TimeUtil.parseTimeMillis;
 import static org.neo4j.kernel.impl.transaction.command.Commands.createIndexRule;
 import static org.neo4j.kernel.impl.transaction.command.Commands.transactionRepresentation;
@@ -202,7 +202,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
             txState.nodeDoAddLabel( descriptor.getLabelId(), nodeId );
             txState.nodeDoAddProperty( nodeId, descriptor.getPropertyId(), propertyValue( id, progress ) );
             Collection<StorageCommand> commands = new ArrayList<>();
-            try ( StorageStatement statement = storageEngine.storeReadLayer().newStatement() )
+            try ( StorageReader statement = storageEngine.newReader() )
             {
                 storageEngine.createCommands( commands, txState, statement, null, 0 );
             }
@@ -220,9 +220,9 @@ public class IndexWorkSyncTransactionApplicationStressIT
 
                     Value propertyValue = propertyValue( id, base + i );
                     IndexQuery.ExactPredicate query = IndexQuery.exact( descriptor.getPropertyId(), propertyValue );
-                    PrimitiveLongIterator hits = reader.query( query );
-                    assertEquals( "Index doesn't contain " + visitor.nodeId + " " + propertyValue,
-                            visitor.nodeId, PrimitiveLongCollections.single( hits, -1 ) );
+                    LongIterator hits = reader.query( query );
+                    assertEquals( "Index doesn't contain " + visitor.nodeId + " " + propertyValue, visitor.nodeId, hits.next() );
+                    assertFalse( hits.hasNext() );
                     tx = tx.next();
                 }
             }

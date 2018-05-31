@@ -45,7 +45,6 @@ import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
@@ -99,7 +98,7 @@ public class StoreCopyClientTest
     @Parameters
     public static StoreCopyRequestFactory[] data()
     {
-        return new StoreCopyRequestFactory[]{LocalStoreCopyRequester::new, LocalStoreCopyRequesterForcePageCache::new};
+        return new StoreCopyRequestFactory[]{LocalStoreCopyRequester::new};
     }
 
     @Parameter
@@ -474,10 +473,8 @@ public class StoreCopyClientTest
             CheckPointer checkPointer =
                     original.getDependencyResolver().resolveDependency( CheckPointer.class );
 
-            PageCache pageCache = getPageCache();
-
             RequestContext requestContext = new StoreCopyServer( neoStoreDataSource, checkPointer, fs,
-                    originalDir, new Monitors().newMonitor( StoreCopyServer.Monitor.class ), pageCache,
+                    originalDir, new Monitors().newMonitor( StoreCopyServer.Monitor.class ),
                     new StoreCopyCheckPointMutex() )
                     .flushStoresAndStreamStoreFiles( "test", writer, includeLogs );
 
@@ -498,28 +495,6 @@ public class StoreCopyClientTest
             // Ensure response is closed before this method is called
             assertNotNull( response );
             verify( response, times( 1 ) ).close();
-        }
-    }
-
-    private static class LocalStoreCopyRequesterForcePageCache extends LocalStoreCopyRequester
-    {
-
-        LocalStoreCopyRequesterForcePageCache( GraphDatabaseAPI original, File originalDir, FileSystemAbstraction fs, boolean includeLogs )
-        {
-            super( original, originalDir, fs, includeLogs );
-        }
-
-        @Override
-        protected PageCache getPageCache()
-        {
-            return new DelegatingPageCache( super.getPageCache() )
-            {
-                @Override
-                public boolean fileSystemSupportsFileOperations()
-                {
-                    return false;
-                }
-            };
         }
     }
 }

@@ -73,6 +73,6 @@ public class TestConcurrentIteratorModification
         }
 
         // then does not throw and retains view from iterator creation time
-        assertEquals(asSet(node1, node2), result);
+        assertEquals( asSet( node1, node2, node3 ), result );
     }
 }

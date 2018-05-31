@@ -19,30 +19,29 @@
  */
 package org.neo4j.helpers.collection;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-/**
- * @author mh
- * @since 19.04.12
- */
-public class FirstItemIterableTest
+class FirstItemIterableTest
 {
     @Test
-    public void testEmptyIterator()
+    void testEmptyIterator()
     {
         FirstItemIterable<?> firstItemIterable = new FirstItemIterable<>( Collections.emptyList() );
         Iterator<?> empty = firstItemIterable.iterator();
-        assertEquals( false, empty.hasNext() );
+        assertFalse( empty.hasNext() );
         try
         {
             empty.next();
@@ -52,18 +51,18 @@ public class FirstItemIterableTest
         {
             assertThat( e, instanceOf( NoSuchElementException.class ) );
         }
-        assertEquals( null, firstItemIterable.getFirst() );
+        assertNull( firstItemIterable.getFirst() );
     }
 
     @Test
-    public void testSingleIterator()
+    void testSingleIterator()
     {
         FirstItemIterable<Boolean> firstItemIterable = new FirstItemIterable<>( Collections.singleton( Boolean.TRUE ) );
         Iterator<Boolean> empty = firstItemIterable.iterator();
-        assertEquals( true, empty.hasNext() );
+        assertTrue( empty.hasNext() );
         assertEquals( Boolean.TRUE, empty.next() );
         assertEquals( Boolean.TRUE, firstItemIterable.getFirst() );
-        assertEquals( false, empty.hasNext() );
+        assertFalse( empty.hasNext() );
         try
         {
             empty.next();
@@ -77,17 +76,17 @@ public class FirstItemIterableTest
     }
 
     @Test
-    public void testMultiIterator()
+    void testMultiIterator()
     {
         FirstItemIterable<Boolean> firstItemIterable = new FirstItemIterable<>( asList( Boolean.TRUE, Boolean.FALSE ) );
         Iterator<Boolean> empty = firstItemIterable.iterator();
-        assertEquals( true, empty.hasNext() );
+        assertTrue( empty.hasNext() );
         assertEquals( Boolean.TRUE, empty.next() );
         assertEquals( Boolean.TRUE, firstItemIterable.getFirst() );
-        assertEquals( true, empty.hasNext() );
+        assertTrue( empty.hasNext() );
         assertEquals( Boolean.FALSE, empty.next() );
         assertEquals( Boolean.TRUE, firstItemIterable.getFirst() );
-        assertEquals( false, empty.hasNext() );
+        assertFalse( empty.hasNext() );
         try
         {
             empty.next();

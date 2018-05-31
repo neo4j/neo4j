@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -33,13 +33,13 @@ public class LocalTimeNonUniqueSchemaIndexAccessorTest extends NativeSchemaIndex
     NativeSchemaIndexAccessor<LocalTimeSchemaKey,NativeSchemaValue> makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
     {
         TemporalIndexFiles.FileLayout<LocalTimeSchemaKey> fileLayout = new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.LOCAL_TIME );
-        return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, IMMEDIATE, monitor, schemaIndexDescriptor, indexId, samplingConfig );
+        return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, IMMEDIATE, monitor, indexDescriptor, samplingConfig );
     }
 
     @Override
     protected LayoutTestUtil<LocalTimeSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
-        return new LocalTimeLayoutTestUtil( SchemaIndexDescriptorFactory.forLabel( 42, 666 ) );
+        return new LocalTimeLayoutTestUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ) );
     }
 
 }

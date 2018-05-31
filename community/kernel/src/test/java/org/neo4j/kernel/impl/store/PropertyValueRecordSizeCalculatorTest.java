@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
-import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -88,7 +87,7 @@ public class PropertyValueRecordSizeCalculatorTest
 
     private String string( int length )
     {
-        return random.string( length, length, Randoms.CSA_LETTERS_AND_DIGITS );
+        return random.nextAlphaNumericString( length, length );
     }
 
     private PropertyValueRecordSizeCalculator newCalculator()

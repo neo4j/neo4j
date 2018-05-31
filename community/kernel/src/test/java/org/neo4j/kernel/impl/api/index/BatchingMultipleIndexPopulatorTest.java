@@ -34,9 +34,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -58,7 +57,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.internal.kernel.api.IndexCapability.NO_CAPABILITY;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator.AWAIT_TIMEOUT_MINUTES_NAME;
 import static org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator.BATCH_SIZE_NAME;
@@ -70,8 +68,8 @@ public class BatchingMultipleIndexPopulatorTest
 {
     public static final int propertyId = 1;
     public static final int labelId = 1;
-    private final SchemaIndexDescriptor index1 = SchemaIndexDescriptorFactory.forLabel(1, 1);
-    private final SchemaIndexDescriptor index42 = SchemaIndexDescriptorFactory.forLabel(42, 42);
+    private final IndexDescriptor index1 = TestIndexDescriptorFactory.forLabel( 1, 1);
+    private final IndexDescriptor index42 = TestIndexDescriptorFactory.forLabel( 42, 42);
 
     @After
     public void tearDown()
@@ -96,10 +94,10 @@ public class BatchingMultipleIndexPopulatorTest
 
         IndexEntryUpdate<?> update1 = add( 1, index1.schema(), "foo" );
         IndexEntryUpdate<?> update2 = add( 2, index1.schema(), "bar" );
-        batchingPopulator.queue( update1 );
-        batchingPopulator.queue( update2 );
+        batchingPopulator.queueUpdate( update1 );
+        batchingPopulator.queueUpdate( update2 );
 
-        batchingPopulator.populateFromQueueBatched( 42 );
+        batchingPopulator.populateFromUpdateQueueBatched( 42 );
 
         verify( updater, never() ).process( any() );
         verify( populator, never() ).newPopulatingUpdater( any() );
@@ -131,11 +129,11 @@ public class BatchingMultipleIndexPopulatorTest
         IndexEntryUpdate<?> update1 = add( 1, index1.schema(), "foo" );
         IndexEntryUpdate<?> update2 = add( 2, index42.schema(), "bar" );
         IndexEntryUpdate<?> update3 = add( 3, index1.schema(), "baz" );
-        batchingPopulator.queue( update1 );
-        batchingPopulator.queue( update2 );
-        batchingPopulator.queue( update3 );
+        batchingPopulator.queueUpdate( update1 );
+        batchingPopulator.queueUpdate( update2 );
+        batchingPopulator.queueUpdate( update3 );
 
-        batchingPopulator.populateFromQueue( 42 );
+        batchingPopulator.populateFromUpdateQueue( 42 );
 
         verify( updater1 ).process( update1 );
         verify( updater1 ).process( update3 );
@@ -256,7 +254,7 @@ public class BatchingMultipleIndexPopulatorTest
                     NullLogProvider.getInstance() );
 
             populator = addPopulator( batchingPopulator, index1 );
-            List<IndexEntryUpdate<SchemaIndexDescriptor>> expected = forUpdates( index1, update1, update2 );
+            List<IndexEntryUpdate<IndexDescriptor>> expected = forUpdates( index1, update1, update2 );
             doThrow( batchFlushError ).when( populator ).add( expected );
 
             batchingPopulator.indexAllNodes().run();
@@ -321,7 +319,7 @@ public class BatchingMultipleIndexPopulatorTest
         verify( executor, atLeast( 5 ) ).execute( any( Runnable.class ) );
     }
 
-    private List<IndexEntryUpdate<SchemaIndexDescriptor>> forUpdates( SchemaIndexDescriptor index, NodeUpdates... updates )
+    private List<IndexEntryUpdate<IndexDescriptor>> forUpdates( IndexDescriptor index, NodeUpdates... updates )
     {
         return Iterables.asList(
                 Iterables.concat(
@@ -339,7 +337,7 @@ public class BatchingMultipleIndexPopulatorTest
                 .build();
     }
 
-    private static IndexPopulator addPopulator( BatchingMultipleIndexPopulator batchingPopulator, SchemaIndexDescriptor descriptor )
+    private static IndexPopulator addPopulator( BatchingMultipleIndexPopulator batchingPopulator, IndexDescriptor descriptor )
     {
         IndexPopulator populator = mock( IndexPopulator.class );
 
@@ -348,10 +346,10 @@ public class BatchingMultipleIndexPopulatorTest
         FlippableIndexProxy flipper = new FlippableIndexProxy();
         flipper.setFlipTarget( indexProxyFactory );
 
-        batchingPopulator.addPopulator(
-                populator, descriptor.schema().keyId(),
-                new IndexMeta( 1, descriptor, new IndexProvider.Descriptor( "foo", "1" ), NO_CAPABILITY ),
-                flipper, failedIndexProxyFactory, "testIndex" );
+        batchingPopulator.addPopulator( populator,
+                                        descriptor.withId( 1 ).withoutCapabilities(),
+                                        flipper,
+                                        failedIndexProxyFactory, "testIndex" );
 
         return populator;
     }

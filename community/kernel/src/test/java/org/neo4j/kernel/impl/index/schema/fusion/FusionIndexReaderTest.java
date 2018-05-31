@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -27,18 +29,16 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.function.IntFunction;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.collection.PrimitiveLongResourceCollections;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringContainsPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringSuffixPredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -123,7 +123,7 @@ public class FusionIndexReaderTest
             }
         }
         fusionIndexReader = new FusionIndexReader( fusionVersion.slotSelector(), new LazyInstanceSelector<>( readers, throwingFactory() ),
-                SchemaIndexDescriptorFactory.forLabel( LABEL_KEY, PROP_KEY ) );
+                TestIndexDescriptorFactory.forLabel( LABEL_KEY, PROP_KEY ) );
     }
 
     private IntFunction<IndexReader> throwingFactory()
@@ -364,10 +364,11 @@ public class FusionIndexReaderTest
         }
 
         // when
-        PrimitiveLongIterator result = fusionIndexReader.query( exists );
+        LongIterator result = fusionIndexReader.query( exists );
 
         // then
-        PrimitiveLongSet resultSet = PrimitiveLongCollections.asSet( result );
+
+        LongSet resultSet = PrimitiveLongCollections.asSet( result );
         for ( long i = 0L; i < lastId; i++ )
         {
             assertTrue( "Expected to contain " + i + ", but was " + resultSet, resultSet.contains( i ) );

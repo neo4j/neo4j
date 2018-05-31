@@ -19,13 +19,15 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
+import org.eclipse.collections.api.IntIterable;
+import org.eclipse.collections.api.set.primitive.LongSet;
+
 import java.util.Iterator;
-import java.util.Set;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.StorageProperty;
 
 /**
@@ -43,30 +45,29 @@ public interface TxStateVisitor extends AutoCloseable
     void visitDeletedRelationship( long id );
 
     void visitNodePropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-                                   Iterator<Integer> removed ) throws ConstraintValidationException;
+            IntIterable removed ) throws ConstraintValidationException;
 
     void visitRelPropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-                                  Iterator<Integer> removed ) throws ConstraintValidationException;
+            IntIterable removed ) throws ConstraintValidationException;
 
     void visitGraphPropertyChanges( Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-                                    Iterator<Integer> removed );
+            IntIterable removed );
 
-    void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed ) throws
-            ConstraintValidationException;
+    void visitNodeLabelChanges( long id, LongSet added, LongSet removed ) throws ConstraintValidationException;
 
-    void visitAddedIndex( SchemaIndexDescriptor element );
+    void visitAddedIndex( IndexDescriptor element );
 
-    void visitRemovedIndex( SchemaIndexDescriptor element );
+    void visitRemovedIndex( IndexDescriptor element );
 
     void visitAddedConstraint( ConstraintDescriptor element ) throws CreateConstraintFailureException;
 
     void visitRemovedConstraint( ConstraintDescriptor element );
 
-    void visitCreatedLabelToken( String name, int id );
+    void visitCreatedLabelToken( long id, String name );
 
-    void visitCreatedPropertyKeyToken( String name, int id );
+    void visitCreatedPropertyKeyToken( long id, String name );
 
-    void visitCreatedRelationshipTypeToken( String name, int id );
+    void visitCreatedRelationshipTypeToken( long id, String name );
 
     @Override
     void close();
@@ -95,34 +96,34 @@ public interface TxStateVisitor extends AutoCloseable
 
         @Override
         public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added,
-                Iterator<StorageProperty> changed, Iterator<Integer> removed )
+                Iterator<StorageProperty> changed, IntIterable removed )
         {
         }
 
         @Override
         public void visitRelPropertyChanges( long id, Iterator<StorageProperty> added,
-                Iterator<StorageProperty> changed, Iterator<Integer> removed )
+                Iterator<StorageProperty> changed, IntIterable removed )
         {
         }
 
         @Override
         public void visitGraphPropertyChanges( Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-                Iterator<Integer> removed )
+                IntIterable removed )
         {
         }
 
         @Override
-        public void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed )
+        public void visitNodeLabelChanges( long id, LongSet added, LongSet removed )
         {
         }
 
         @Override
-        public void visitAddedIndex( SchemaIndexDescriptor index )
+        public void visitAddedIndex( IndexDescriptor index )
         {
         }
 
         @Override
-        public void visitRemovedIndex( SchemaIndexDescriptor index )
+        public void visitRemovedIndex( IndexDescriptor index )
         {
         }
 
@@ -137,17 +138,17 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitCreatedLabelToken( String name, int id )
+        public void visitCreatedLabelToken( long id, String name )
         {
         }
 
         @Override
-        public void visitCreatedPropertyKeyToken( String name, int id )
+        public void visitCreatedPropertyKeyToken( long id, String name )
         {
         }
 
         @Override
-        public void visitCreatedRelationshipTypeToken( String name, int id )
+        public void visitCreatedRelationshipTypeToken( long id, String name )
         {
         }
 
@@ -196,14 +197,14 @@ public interface TxStateVisitor extends AutoCloseable
 
         @Override
         public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added,
-                Iterator<StorageProperty> changed, Iterator<Integer> removed ) throws ConstraintValidationException
+                Iterator<StorageProperty> changed, IntIterable removed ) throws ConstraintValidationException
         {
             actual.visitNodePropertyChanges( id, added, changed, removed );
         }
 
         @Override
         public void visitRelPropertyChanges( long id, Iterator<StorageProperty> added,
-                Iterator<StorageProperty> changed, Iterator<Integer> removed )
+                Iterator<StorageProperty> changed, IntIterable removed )
                         throws ConstraintValidationException
         {
             actual.visitRelPropertyChanges( id, added, changed, removed );
@@ -211,26 +212,26 @@ public interface TxStateVisitor extends AutoCloseable
 
         @Override
         public void visitGraphPropertyChanges( Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-                Iterator<Integer> removed )
+                IntIterable removed )
         {
             actual.visitGraphPropertyChanges( added, changed, removed );
         }
 
         @Override
-        public void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed )
+        public void visitNodeLabelChanges( long id, LongSet added, LongSet removed )
                 throws ConstraintValidationException
         {
             actual.visitNodeLabelChanges( id, added, removed );
         }
 
         @Override
-        public void visitAddedIndex( SchemaIndexDescriptor index )
+        public void visitAddedIndex( IndexDescriptor index )
         {
             actual.visitAddedIndex( index );
         }
 
         @Override
-        public void visitRemovedIndex( SchemaIndexDescriptor index )
+        public void visitRemovedIndex( IndexDescriptor index )
         {
             actual.visitRemovedIndex( index );
         }
@@ -248,21 +249,21 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitCreatedLabelToken( String name, int id )
+        public void visitCreatedLabelToken( long id, String name )
         {
-            actual.visitCreatedLabelToken( name, id );
+            actual.visitCreatedLabelToken( id, name );
         }
 
         @Override
-        public void visitCreatedPropertyKeyToken( String name, int id )
+        public void visitCreatedPropertyKeyToken( long id, String name )
         {
-            actual.visitCreatedPropertyKeyToken( name, id );
+            actual.visitCreatedPropertyKeyToken( id, name );
         }
 
         @Override
-        public void visitCreatedRelationshipTypeToken( String name, int id )
+        public void visitCreatedRelationshipTypeToken( long id, String name )
         {
-            actual.visitCreatedRelationshipTypeToken( name, id );
+            actual.visitCreatedRelationshipTypeToken( id, name );
         }
 
         @Override

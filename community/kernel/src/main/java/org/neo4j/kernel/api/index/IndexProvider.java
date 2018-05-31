@@ -26,7 +26,8 @@ import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -42,7 +43,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  *
  * When an index rule is added, the {@link IndexingService} is notified. It will, in turn, ask
  * your {@link IndexProvider} for a
- * {@link #getPopulator(long, SchemaIndexDescriptor, IndexSamplingConfig) batch index writer}.
+ * {@link #getPopulator(StoreIndexDescriptor, IndexSamplingConfig) batch index writer}.
  *
  * A background index job is triggered, and all existing data that applies to the new rule, as well as new data
  * from the "outside", will be inserted using the writer. You are guaranteed that usage of this writer,
@@ -87,7 +88,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * <h3>Online operation</h3>
  *
  * Once the index is online, the database will move to using the
- * {@link #getOnlineAccessor(long, SchemaIndexDescriptor, IndexSamplingConfig) online accessor} to
+ * {@link #getOnlineAccessor(StoreIndexDescriptor, IndexSamplingConfig) online accessor} to
  * write to the index.
  */
 public abstract class IndexProvider extends LifecycleAdapter implements Comparable<IndexProvider>
@@ -99,19 +100,19 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
         class Adaptor implements Monitor
         {
             @Override
-            public void failedToOpenIndex( long indexId, SchemaIndexDescriptor schemaIndexDescriptor, String action, Exception cause )
+            public void failedToOpenIndex( StoreIndexDescriptor schemaIndexDescriptor, String action, Exception cause )
             {   // no-op
             }
 
             @Override
-            public void recoveryCompleted( SchemaIndexDescriptor schemaIndexDescriptor, String indexFile, Map<String,Object> data )
+            public void recoveryCompleted( IndexDescriptor schemaIndexDescriptor, String indexFile, Map<String,Object> data )
             {   // no-op
             }
         }
 
-        void failedToOpenIndex( long indexId, SchemaIndexDescriptor schemaIndexDescriptor, String action, Exception cause );
+        void failedToOpenIndex( StoreIndexDescriptor schemaIndexDescriptor, String action, Exception cause );
 
-        void recoveryCompleted( SchemaIndexDescriptor schemaIndexDescriptor, String indexFile, Map<String,Object> data );
+        void recoveryCompleted( IndexDescriptor schemaIndexDescriptor, String indexFile, Map<String,Object> data );
     }
 
     public static final IndexProvider EMPTY =
@@ -121,27 +122,25 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
                 private final IndexPopulator singlePopulator = IndexPopulator.EMPTY;
 
                 @Override
-                public IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor,
-                                                        IndexSamplingConfig samplingConfig )
+                public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
                 {
                     return singleWriter;
                 }
 
                 @Override
-                public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor,
-                                                    IndexSamplingConfig samplingConfig )
+                public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
                 {
                     return singlePopulator;
                 }
 
                 @Override
-                public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
+                public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
                 {
                     return InternalIndexState.ONLINE;
                 }
 
                 @Override
-                public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
+                public IndexCapability getCapability()
                 {
                     return IndexCapability.NO_CAPABILITY;
                 }
@@ -154,7 +153,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
                 }
 
                 @Override
-                public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
+                public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
                 {
                     throw new IllegalStateException();
                 }
@@ -189,40 +188,35 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
     /**
      * Used for initially populating a created index, using batch insertion.
      */
-    public abstract IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor,
-                                                 IndexSamplingConfig samplingConfig );
+    public abstract IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig );
 
     /**
      * Used for updating an index once initial population has completed.
      */
-    public abstract IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor,
-                                                     IndexSamplingConfig samplingConfig ) throws IOException;
+    public abstract IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException;
 
     /**
      * Returns a failure previously gotten from {@link IndexPopulator#markAsFailed(String)}
      *
      * Implementations are expected to persist this failure
-     * @param indexId the id of the index.
-     * @param descriptor {@link SchemaIndexDescriptor} of the index.
+     * @param descriptor {@link StoreIndexDescriptor} of the index.
      * @return failure, in the form of a stack trace, that happened during population.
      * @throws IllegalStateException If there was no failure during population.
      */
-    public abstract String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException;
+    public abstract String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException;
 
     /**
      * Called during startup to find out which state an index is in. If {@link InternalIndexState#FAILED}
-     * is returned then a further call to {@link #getPopulationFailure(long, SchemaIndexDescriptor)} is expected and should return
+     * is returned then a further call to {@link #getPopulationFailure(StoreIndexDescriptor)} is expected and should return
      * the failure accepted by any call to {@link IndexPopulator#markAsFailed(String)} call at the time
      * of failure.
      */
-    public abstract InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor );
+    public abstract InternalIndexState getInitialState( StoreIndexDescriptor descriptor );
 
     /**
-     * Return {@link IndexCapability} for this index provider for a given {@link SchemaIndexDescriptor}.
-     *
-     * @param schemaIndexDescriptor {@link SchemaIndexDescriptor} to get IndexCapability for.
+     * Return {@link IndexCapability} for this index provider.
      */
-    public abstract IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor );
+    public abstract IndexCapability getCapability();
 
     /**
      * @return a description of this index provider
@@ -307,6 +301,14 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
         public String getVersion()
         {
             return version;
+        }
+
+        /**
+         * @return a combination of {@link #getKey()} and {@link #getVersion()} with a '-' in between.
+         */
+        public String name()
+        {
+            return key + "-" + version;
         }
 
         @Override

@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, IsList}
-import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
-import org.neo4j.cypher.internal.util.v3_4.symbols._
+import org.opencypher.v9_0.util.CypherTypeException
+import org.opencypher.v9_0.util.symbols._
 import org.neo4j.values._
 import org.neo4j.values.storable.{UTF8StringValue, _}
 import org.neo4j.values.utils.UTF8Utils
@@ -39,8 +39,8 @@ case class Add(a: Expression, b: Expression) extends Expression {
       case (x: UTF8StringValue, y: UTF8StringValue) => UTF8Utils.add(x, y)
       case (x: TextValue, y: TextValue) => Values.stringValue(x.stringValue() + y.stringValue())
       case (IsList(x), IsList(y)) => VirtualValues.concat(x, y)
-      case (IsList(x), y)         => VirtualValues.appendToList(x, y)
-      case (x, IsList(y))         => VirtualValues.prependToList(y, x)
+      case (IsList(x), y)         => x.append(y)
+      case (x, IsList(y))         => y.prepend(x)
       case (x: TextValue, y: IntegralValue) => Values.stringValue(x.stringValue() + y.longValue())
       case (x: IntegralValue, y: TextValue) => Values.stringValue(x.longValue() + y.stringValue())
       case (x: TextValue, y: FloatValue) => Values.stringValue(x.stringValue() + y.doubleValue())
@@ -56,12 +56,6 @@ case class Add(a: Expression, b: Expression) extends Expression {
 
 
   def arguments = Seq(a, b)
-
-  private def mergeWithCollection(collection: CypherType, singleElement: CypherType):CypherType= {
-    val collectionType = collection.asInstanceOf[ListType]
-    val mergedInnerType = collectionType.innerType.leastUpperBound(singleElement)
-    CTList(mergedInnerType)
-  }
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 }

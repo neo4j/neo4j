@@ -24,7 +24,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
-import org.neo4j.cypher.internal.compiler.v3_4.helpers.ListSupport
+import org.neo4j.cypher.internal.compiler.v3_5.helpers.ListSupport
 import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 
 class UniqueConstraintValidationAcceptanceTest

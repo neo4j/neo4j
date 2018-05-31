@@ -36,6 +36,7 @@ import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -43,7 +44,6 @@ import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
-import org.neo4j.kernel.impl.index.GBPTreeFileUtil;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -133,7 +133,7 @@ public class NativeLabelScanStore implements LabelScanStore
     /**
      * Used for all file operations on the gbpTree file.
      */
-    private final GBPTreeFileUtil gbpTreeUtil;
+    private final FileSystemAbstraction fileSystem;
 
     /**
      * The index which backs this label scan store. Instantiated in {@link #init()} and considered
@@ -168,17 +168,17 @@ public class NativeLabelScanStore implements LabelScanStore
      */
     private static final Consumer<PageCursor> writeClean = pageCursor -> pageCursor.putByte( CLEAN );
 
-    public NativeLabelScanStore( PageCache pageCache, File storeDir, FullStoreChangeStream fullStoreChangeStream,
+    public NativeLabelScanStore( PageCache pageCache, File storeDir, FileSystemAbstraction fs, FullStoreChangeStream fullStoreChangeStream,
             boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
-        this( pageCache, storeDir, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
+        this( pageCache, storeDir, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
                 /*means no opinion about page size*/ 0 );
     }
 
     /*
      * Test access to be able to control page size.
      */
-    NativeLabelScanStore( PageCache pageCache, File storeDir,
+    NativeLabelScanStore( PageCache pageCache, File storeDir, FileSystemAbstraction fs,
                 FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors,
                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, int pageSize )
     {
@@ -191,7 +191,7 @@ public class NativeLabelScanStore implements LabelScanStore
         this.monitors = monitors;
         this.monitor = monitors.newMonitor( Monitor.class );
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
-        this.gbpTreeUtil = new GBPTreePageCacheFileUtil( pageCache );
+        this.fileSystem = fs;
     }
 
     /**
@@ -350,7 +350,7 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public boolean hasStore()
     {
-        return gbpTreeUtil.storeFileExists( storeFile );
+        return fileSystem.fileExists( storeFile );
     }
 
     @Override
@@ -410,7 +410,7 @@ public class NativeLabelScanStore implements LabelScanStore
             index.close();
             index = null;
         }
-        gbpTreeUtil.deleteFile( storeFile );
+        fileSystem.deleteFileOrThrow( storeFile );
     }
 
     /**

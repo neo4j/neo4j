@@ -30,7 +30,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 public class NumberArrayPageCacheTestSupport
 {
-    public static Fixture prepareDirectoryAndPageCache( Class<?> testClass ) throws IOException
+    static Fixture prepareDirectoryAndPageCache( Class<?> testClass ) throws IOException
     {
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         TestDirectory testDirectory = TestDirectory.testDirectory( testClass, fileSystem );

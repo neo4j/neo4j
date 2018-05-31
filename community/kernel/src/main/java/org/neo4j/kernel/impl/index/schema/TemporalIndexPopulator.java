@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -47,15 +47,10 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combi
 
 class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.PartPopulator<?>> implements IndexPopulator
 {
-    TemporalIndexPopulator( long indexId,
-                            SchemaIndexDescriptor descriptor,
-                            IndexSamplingConfig samplingConfig,
-                            TemporalIndexFiles temporalIndexFiles,
-                            PageCache pageCache,
-                            FileSystemAbstraction fs,
-                            IndexProvider.Monitor monitor )
+    TemporalIndexPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TemporalIndexFiles temporalIndexFiles, PageCache pageCache,
+                            FileSystemAbstraction fs, IndexProvider.Monitor monitor )
     {
-        super( new PartFactory( pageCache, fs, temporalIndexFiles, indexId, descriptor, samplingConfig, monitor ) );
+        super( new PartFactory( pageCache, fs, temporalIndexFiles, descriptor, samplingConfig, monitor ) );
     }
 
     @Override
@@ -72,7 +67,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     }
 
     @Override
-    public synchronized void drop() throws IOException
+    public synchronized void drop()
     {
         forAll( NativeSchemaIndexPopulator::drop, this );
     }
@@ -144,10 +139,10 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
 
     static class PartPopulator<KEY extends NativeSchemaKey<KEY>> extends NativeSchemaIndexPopulator<KEY, NativeSchemaValue>
     {
-        PartPopulator( PageCache pageCache, FileSystemAbstraction fs, TemporalIndexFiles.FileLayout<KEY> fileLayout,
-                       IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig )
+        PartPopulator( PageCache pageCache, FileSystemAbstraction fs, TemporalIndexFiles.FileLayout<KEY> fileLayout, IndexProvider.Monitor monitor,
+                       StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
         {
-            super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, monitor, descriptor, indexId, samplingConfig );
+            super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, monitor, descriptor, samplingConfig );
         }
 
         @Override
@@ -162,18 +157,16 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         private final PageCache pageCache;
         private final FileSystemAbstraction fs;
         private final TemporalIndexFiles temporalIndexFiles;
-        private final long indexId;
-        private final SchemaIndexDescriptor descriptor;
+        private final StoreIndexDescriptor descriptor;
         private final IndexSamplingConfig samplingConfig;
         private final IndexProvider.Monitor monitor;
 
-        PartFactory( PageCache pageCache, FileSystemAbstraction fs, TemporalIndexFiles temporalIndexFiles, long indexId,
-                     SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, IndexProvider.Monitor monitor )
+        PartFactory( PageCache pageCache, FileSystemAbstraction fs, TemporalIndexFiles temporalIndexFiles, StoreIndexDescriptor descriptor,
+                IndexSamplingConfig samplingConfig, IndexProvider.Monitor monitor )
         {
             this.pageCache = pageCache;
             this.fs = fs;
             this.temporalIndexFiles = temporalIndexFiles;
-            this.indexId = indexId;
             this.descriptor = descriptor;
             this.samplingConfig = samplingConfig;
             this.monitor = monitor;
@@ -217,7 +210,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
 
         private <KEY extends NativeSchemaKey<KEY>> PartPopulator<KEY> create( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
         {
-            PartPopulator<KEY> populator = new PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor, indexId, samplingConfig );
+            PartPopulator<KEY> populator = new PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor, samplingConfig );
             populator.create();
             return populator;
         }

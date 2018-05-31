@@ -33,7 +33,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -58,7 +57,6 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.Randoms;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -71,6 +69,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.toIntExact;
@@ -167,7 +166,7 @@ public class ParallelBatchImporterTest
     {
         // GIVEN
         ExecutionMonitor processorAssigner = eagerRandomSaturation( config.maxNumberOfProcessors() );
-        File storeDir = directory.directory( "dir" + random.string( 8, 8, Randoms.CSA_LETTERS_AND_DIGITS ) );
+        File storeDir = directory.directory( "dir" + random.nextAlphaNumericString( 8, 8 ) );
         storeDir.mkdirs();
         final BatchImporter inserter = new ParallelBatchImporter( storeDir,
                 fileSystemRule.get(), null, config, NullLogService.getInstance(),
@@ -264,15 +263,15 @@ public class ParallelBatchImporterTest
     {
         abstract void reset();
 
-        abstract Object nextNodeId( Random random, long item );
+        abstract Object nextNodeId( RandomValues random, long item );
 
-        abstract ExistingId randomExisting( Random random );
+        abstract ExistingId randomExisting( RandomValues random );
 
-        abstract Object miss( Random random, Object id, float chance );
+        abstract Object miss( RandomValues random, Object id, float chance );
 
         abstract boolean isMiss( Object id );
 
-        String randomType( Random random )
+        String randomType( RandomValues random )
         {
             return "TYPE" + random.nextInt( RELATIONSHIP_TYPES );
         }
@@ -292,20 +291,20 @@ public class ParallelBatchImporterTest
         }
 
         @Override
-        synchronized Object nextNodeId( Random random, long item )
+        synchronized Object nextNodeId( RandomValues random, long item )
         {
             return item;
         }
 
         @Override
-        ExistingId randomExisting( Random random )
+        ExistingId randomExisting( RandomValues random )
         {
             long index = random.nextInt( NODE_COUNT );
             return new ExistingId( index, index );
         }
 
         @Override
-        Object miss( Random random, Object id, float chance )
+        Object miss( RandomValues random, Object id, float chance )
         {
             return random.nextFloat() < chance ? (Long) id + 100_000_000 : id;
         }
@@ -328,24 +327,23 @@ public class ParallelBatchImporterTest
         }
 
         @Override
-        Object nextNodeId( Random random, long item )
+        Object nextNodeId( RandomValues random, long item )
         {
-            byte[] randomBytes = new byte[10];
-            random.nextBytes( randomBytes );
+            byte[] randomBytes = random.nextByteArray( 10, 10 ).asObjectCopy();
             String result = UUID.nameUUIDFromBytes( randomBytes ).toString();
             strings[toIntExact( item )] = result;
             return result;
         }
 
         @Override
-        ExistingId randomExisting( Random random )
+        ExistingId randomExisting( RandomValues random )
         {
             int index = random.nextInt( strings.length );
             return new ExistingId( strings[index], index );
         }
 
         @Override
-        Object miss( Random random, Object id, float chance )
+        Object miss( RandomValues random, Object id, float chance )
         {
             return random.nextFloat() < chance ? "_" + id : id;
         }
@@ -530,20 +528,20 @@ public class ParallelBatchImporterTest
         return replayable( () -> new GeneratingInputIterator<>( count, batchSize, new RandomsStates( randomSeed ),
                 ( randoms, visitor, id ) -> {
                     randomProperties( randoms, "Name " + id, visitor );
-                    ExistingId startNodeExistingId = idGenerator.randomExisting( randoms.random() );
+                    ExistingId startNodeExistingId = idGenerator.randomExisting( randoms );
                     Group startNodeGroup = groups.groupOf( startNodeExistingId.nodeIndex );
-                    ExistingId endNodeExistingId = idGenerator.randomExisting( randoms.random() );
+                    ExistingId endNodeExistingId = idGenerator.randomExisting( randoms );
                     Group endNodeGroup = groups.groupOf( endNodeExistingId.nodeIndex );
 
                     // miss some
-                    Object startNode = idGenerator.miss( randoms.random(), startNodeExistingId.id, 0.001f );
-                    Object endNode = idGenerator.miss( randoms.random(), endNodeExistingId.id, 0.001f );
+                    Object startNode = idGenerator.miss( randoms, startNodeExistingId.id, 0.001f );
+                    Object endNode = idGenerator.miss( randoms, endNodeExistingId.id, 0.001f );
 
                     visitor.startId( startNode, startNodeGroup );
                     visitor.endId( endNode, endNodeGroup );
 
-                    String type = idGenerator.randomType( randoms.random() );
-                    if ( randoms.random().nextFloat() < 0.00005 )
+                    String type = idGenerator.randomType( randoms );
+                    if ( randoms.nextFloat() < 0.00005 )
                     {
                         // Let there be a small chance of introducing a one-off relationship
                         // with a type that no, or at least very few, other relationships have.
@@ -558,7 +556,7 @@ public class ParallelBatchImporterTest
     {
         return replayable( () -> new GeneratingInputIterator<>( count, batchSize, new RandomsStates( randomSeed ),
                 ( randoms, visitor, id ) -> {
-                    Object nodeId = inputIdGenerator.nextNodeId( randoms.random(), id );
+                    Object nodeId = inputIdGenerator.nextNodeId( randoms, id );
                     Group group = groups.groupOf( id );
                     visitor.id( nodeId, group );
                     randomProperties( randoms, uniqueId( group, nodeId ), visitor );
@@ -568,12 +566,12 @@ public class ParallelBatchImporterTest
 
     private static final String[] TOKENS = {"token1", "token2", "token3", "token4", "token5", "token6", "token7"};
 
-    private void randomProperties( Randoms randoms, Object id, InputEntityVisitor visitor )
+    private void randomProperties( RandomValues randoms, Object id, InputEntityVisitor visitor )
     {
         String[] keys = randoms.selection( TOKENS, 0, TOKENS.length, false );
         for ( String key : keys )
         {
-            visitor.property( key, randoms.propertyValue() );
+            visitor.property( key, randoms.nextValue().asObject() );
         }
         visitor.property( "id", id );
     }

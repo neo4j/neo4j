@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.util.Arrays;
 
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
@@ -570,7 +569,7 @@ abstract class Read implements TxStateHolder,
     abstract ExplicitIndex explicitRelationshipIndex( String indexName ) throws ExplicitIndexNotFoundKernelException;
 
     @Override
-    public abstract CapableIndexReference index( int label, int... properties );
+    public abstract IndexReference index( int label, int... properties );
 
     abstract PageCursor nodePage( long reference );
 
@@ -588,7 +587,11 @@ abstract class Read implements TxStateHolder,
 
     abstract void node( NodeRecord record, long reference, PageCursor pageCursor );
 
+    abstract void nodeAdvance( NodeRecord record, PageCursor pageCursor );
+
     abstract void relationship( RelationshipRecord record, long reference, PageCursor pageCursor );
+
+    abstract void relationshipAdvance( RelationshipRecord record, PageCursor pageCursor );
 
     abstract void relationshipFull( RelationshipRecord record, long reference, PageCursor pageCursor );
 

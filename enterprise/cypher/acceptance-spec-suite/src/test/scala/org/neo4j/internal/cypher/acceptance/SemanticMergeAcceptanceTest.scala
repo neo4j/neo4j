@@ -22,7 +22,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
+import org.opencypher.v9_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.{ExecutionEngineFunSuite, PatternGen, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.ResourceIterator

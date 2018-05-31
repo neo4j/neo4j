@@ -33,6 +33,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContext;
+import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.CypherResultRepresentation;
@@ -41,6 +42,8 @@ import org.neo4j.server.rest.repr.InvalidArgumentsException;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.transactional.CommitOnSuccessfulStatusCodeRepresentationWriteHandler;
 import org.neo4j.udc.UsageData;
+import org.neo4j.values.VirtualValue;
+import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.udc.UsageDataKeys.Features.http_cypher_endpoint;
 import static org.neo4j.udc.UsageDataKeys.features;
@@ -95,10 +98,10 @@ public class CypherService
         }
 
         String query = (String) command.get( QUERY_KEY );
-        Map<String, Object> params;
+        Map<String, Object> paramsMap;
         try
         {
-            params = (Map<String, Object>) (command.containsKey( PARAMS_KEY ) && command.get( PARAMS_KEY ) != null ?
+            paramsMap = (Map<String, Object>) (command.containsKey( PARAMS_KEY ) && command.get( PARAMS_KEY ) != null ?
                     command.get( PARAMS_KEY ) :
                     new HashMap<String, Object>());
         }
@@ -118,6 +121,7 @@ public class CypherService
                 handler.closeTransaction();
             }
 
+            MapValue params = ValueUtils.asMapValue( paramsMap );
             TransactionalContext tc = cypherExecutor.createTransactionContext( query, params, request );
 
             Result result;

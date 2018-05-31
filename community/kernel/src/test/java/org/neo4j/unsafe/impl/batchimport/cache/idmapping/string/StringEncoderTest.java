@@ -19,10 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Test;
-
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 
 import static org.junit.Assert.assertTrue;
 
@@ -48,7 +47,7 @@ public class StringEncoderTest
         Encoder encoder = new StringEncoder();
 
         // WHEN
-        PrimitiveLongSet encoded = Primitive.longSet();
+        MutableLongSet encoded = new LongHashSet();
         int total = 1_000;
         int duplicates = 0;
         for ( int i = 0; i < total; i++ )

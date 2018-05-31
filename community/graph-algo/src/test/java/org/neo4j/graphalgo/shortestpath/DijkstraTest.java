@@ -35,7 +35,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         Double startCost, String startNode, String endNode )
     {
         return new Dijkstra<>( startCost, graph.getNode( startNode ), graph.getNode( endNode ), CommonEvaluators.doubleCostEvaluator( "cost" ),
-                new org.neo4j.graphalgo.impl.util.DoubleAdder(), new org.neo4j.graphalgo.impl.util.DoubleComparator(),
+                new org.neo4j.graphalgo.impl.util.DoubleAdder(), Double::compareTo,
                 Direction.BOTH, MyRelTypes.R1 );
     }
 

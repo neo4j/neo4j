@@ -19,16 +19,15 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import java.util.function.BiConsumer
-
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.util.v3_4.attribution.Id
-import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InternalException, InvalidSemanticsException}
+import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
+import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.util.{CypherTypeException, InternalException, InvalidSemanticsException}
 
 abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, typ: LazyType, endNode: String,
                                     properties: Option[Expression])
@@ -42,7 +41,6 @@ abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, t
     val end = getNode(context, endNode)
     val typeId = typ.typ(state.query)
     val relationship = state.query.createRelationship(start.id(), end.id(), typeId)
-    relationship.`type`() // we do this to make sure the relationship is loaded from the store into this object
     setProperties(context, state, relationship.id())
     context += key -> relationship
   }
@@ -59,7 +57,7 @@ abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, t
         case _: NodeValue | _: RelationshipValue =>
           throw new CypherTypeException("Parameter provided for relationship creation is not a Map")
         case IsMap(map) =>
-          map(state.query).foreach(new BiConsumer[String, AnyValue] {
+          map(state.query).foreach(new ThrowingBiConsumer[String, AnyValue, RuntimeException] {
             override def accept(k: String, v: AnyValue): Unit = setProperty(relId, k, v, state.query)
           })
         case _ =>

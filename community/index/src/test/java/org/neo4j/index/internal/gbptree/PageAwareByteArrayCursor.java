@@ -323,6 +323,18 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
+    public void mark()
+    {
+        current.mark();
+    }
+
+    @Override
+    public void setOffsetToMark()
+    {
+        current.setOffsetToMark();
+    }
+
+    @Override
     public void rewind()
     {
         current.rewind();

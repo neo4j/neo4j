@@ -23,9 +23,9 @@ import java.util
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
+import org.opencypher.v9_0.util.CypherTypeException
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.makeValueNeoSafe
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable._

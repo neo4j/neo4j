@@ -67,7 +67,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
 
 public class FileUtils
 {
-    private static final int WINDOWS_RETRY_COUNT = 5;
+    private static final int NUMBER_OF_RETRIES = 5;
 
     private FileUtils()
     {
@@ -91,7 +91,7 @@ public class FileUtils
             @Override
             public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
             {
-                deleteFileWithRetries( file, 0 );
+                deleteFile( file );
                 return FileVisitResult.CONTINUE;
             }
 
@@ -125,7 +125,7 @@ public class FileUtils
                 waitAndThenTriggerGC();
             }
         }
-        while ( !deleted && count <= WINDOWS_RETRY_COUNT );
+        while ( !deleted && count <= NUMBER_OF_RETRIES );
         return deleted;
     }
 
@@ -223,31 +223,9 @@ public class FileUtils
         Files.move( srcFile.toPath(), renameToFile.toPath(), copyOptions );
     }
 
-    public static void truncateFile( SeekableByteChannel fileChannel, long position )
-            throws IOException
+    public static void truncateFile( SeekableByteChannel fileChannel, long position ) throws IOException
     {
-        int count = 0;
-        boolean success = false;
-        IOException cause = null;
-        do
-        {
-            count++;
-            try
-            {
-                fileChannel.truncate( position );
-                success = true;
-            }
-            catch ( IOException e )
-            {
-                cause = e;
-            }
-
-        }
-        while ( !success && count <= WINDOWS_RETRY_COUNT );
-        if ( !success )
-        {
-            throw cause;
-        }
+        windowsSafeIOOperation( () -> fileChannel.truncate( position ) );
     }
 
     public static void truncateFile( File file, long position ) throws IOException
@@ -521,7 +499,7 @@ public class FileUtils
     public static void windowsSafeIOOperation( FileOperation operation ) throws IOException
     {
         IOException storedIoe = null;
-        for ( int i = 0; i < 10; i++ )
+        for ( int i = 0; i < NUMBER_OF_RETRIES; i++ )
         {
             try
             {
@@ -531,7 +509,7 @@ public class FileUtils
             catch ( IOException e )
             {
                 storedIoe = e;
-                System.gc();
+                waitAndThenTriggerGC();
             }
         }
         throw Objects.requireNonNull( storedIoe );
@@ -569,34 +547,9 @@ public class FileUtils
         return out.toString();
     }
 
-    private static void deleteFileWithRetries( Path file, int tries ) throws IOException
+    private static void deleteFile( Path path ) throws IOException
     {
-        try
-        {
-            Files.delete( file );
-        }
-        catch ( IOException e )
-        {
-            if ( SystemUtils.IS_OS_WINDOWS && mayBeWindowsMemoryMappedFileReleaseProblem( e ) )
-            {
-                if ( tries >= WINDOWS_RETRY_COUNT )
-                {
-                    throw new MaybeWindowsMemoryMappedFileReleaseProblem( e );
-                }
-                waitAndThenTriggerGC();
-                deleteFileWithRetries( file, tries + 1 );
-            }
-            else
-            {
-                throw e;
-            }
-        }
-    }
-
-    private static boolean mayBeWindowsMemoryMappedFileReleaseProblem( IOException e )
-    {
-        return e.getMessage()
-                .contains( "The process cannot access the file because it is being used by another process." );
+        windowsSafeIOOperation( () -> Files.delete( path ) );
     }
 
     /**
@@ -739,14 +692,6 @@ public class FileUtils
             options = new OpenOption[]{CREATE, WRITE};
         }
         return Files.newOutputStream( path, options );
-    }
-
-    public static class MaybeWindowsMemoryMappedFileReleaseProblem extends IOException
-    {
-        public MaybeWindowsMemoryMappedFileReleaseProblem( IOException e )
-        {
-            super( e );
-        }
     }
 
     /**

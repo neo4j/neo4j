@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
+
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -29,7 +31,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.ToIntFunction;
 
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
@@ -47,12 +48,14 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
@@ -143,7 +146,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
  *            seconds in next long block
  * </pre>
  */
-public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHeader> implements StorageStatement.Properties
+public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHeader> implements StorageReader.Properties
 {
     public static final String TYPE_DESCRIPTOR = "PropertyStore";
 
@@ -412,11 +415,11 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
 
     private static class PropertyBlockValueWriter extends TemporalValueWriterAdapter<IllegalArgumentException>
     {
+
         private final PropertyBlock block;
         private final int keyId;
         private final DynamicRecordAllocator stringAllocator;
         private final boolean allowStorePointsAndTemporal;
-
         PropertyBlockValueWriter( PropertyBlock block, int keyId, DynamicRecordAllocator stringAllocator, boolean allowStorePointsAndTemporal )
         {
             this.block = block;
@@ -634,8 +637,8 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
                 throw new UnsupportedFormatCapabilityException( Capability.TEMPORAL_PROPERTIES );
             }
         }
-    }
 
+    }
     public static void setSingleBlockValue( PropertyBlock block, int keyId, PropertyType type, long longValue )
     {
         block.setSingleBlock( singleBlockLongValue( keyId, type, longValue ) );
@@ -702,7 +705,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     }
 
     public Collection<PropertyRecord> getPropertyRecordChain( long firstRecordId,
-            PrimitiveLongObjectMap<PropertyRecord> propertyLookup )
+            LongObjectMap<PropertyRecord> propertyLookup )
     {
         long nextProp = firstRecordId;
         List<PropertyRecord> toReturn = new ArrayList<>();
@@ -736,5 +739,72 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     public ToIntFunction<Value[]> newValueEncodedSizeCalculator()
     {
         return new PropertyValueRecordSizeCalculator( this );
+    }
+
+    public static ArrayValue readArrayFromBuffer( ByteBuffer buffer )
+    {
+        if ( buffer.limit() <= 0 )
+        {
+            throw new IllegalStateException( "Given buffer is empty" );
+        }
+
+        byte typeId = buffer.get();
+        buffer.order( ByteOrder.BIG_ENDIAN );
+        try
+        {
+            if ( typeId == PropertyType.STRING.intValue() )
+            {
+                int arrayLength = buffer.getInt();
+                String[] result = new String[arrayLength];
+
+                for ( int i = 0; i < arrayLength; i++ )
+                {
+                    int byteLength = buffer.getInt();
+                    result[i] = UTF8.decode( buffer.array(), buffer.position(), byteLength );
+                    buffer.position( buffer.position() + byteLength );
+                }
+                return Values.stringArray( result );
+            }
+            else if ( typeId == PropertyType.GEOMETRY.intValue() )
+            {
+                GeometryType.GeometryHeader header = GeometryType.GeometryHeader.fromArrayHeaderByteBuffer( buffer );
+                byte[] byteArray = new byte[buffer.limit() - buffer.position()];
+                buffer.get( byteArray );
+                return GeometryType.decodeGeometryArray( header, byteArray );
+            }
+            else if ( typeId == PropertyType.TEMPORAL.intValue() )
+            {
+                TemporalType.TemporalHeader header = TemporalType.TemporalHeader.fromArrayHeaderByteBuffer( buffer );
+                byte[] byteArray = new byte[buffer.limit() - buffer.position()];
+                buffer.get( byteArray );
+                return TemporalType.decodeTemporalArray( header, byteArray );
+            }
+            else
+            {
+                ShortArray type = ShortArray.typeOf( typeId );
+                int bitsUsedInLastByte = buffer.get();
+                int requiredBits = buffer.get();
+                if ( requiredBits == 0 )
+                {
+                    return type.createEmptyArray();
+                }
+                if ( type == ShortArray.BYTE && requiredBits == Byte.SIZE )
+                {   // Optimization for byte arrays (probably large ones)
+                    byte[] byteArray = new byte[buffer.limit() - buffer.position()];
+                    buffer.get( byteArray );
+                    return Values.byteArray( byteArray );
+                }
+                else
+                {   // Fallback to the generic approach, which is a slower
+                    Bits bits = Bits.bitsFromBytes( buffer.array(), buffer.position() );
+                    int length = ((buffer.limit() - buffer.position()) * 8 - (8 - bitsUsedInLastByte)) / requiredBits;
+                    return type.createArray( length, bits, requiredBits );
+                }
+            }
+        }
+        finally
+        {
+            buffer.order( ByteOrder.LITTLE_ENDIAN );
+        }
     }
 }

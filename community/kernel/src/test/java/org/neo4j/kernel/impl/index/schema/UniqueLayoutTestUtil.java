@@ -25,8 +25,8 @@ import java.util.Set;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 
 class UniqueLayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue> extends LayoutTestUtil<KEY, VALUE>
@@ -36,7 +36,7 @@ class UniqueLayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends Nativ
 
     UniqueLayoutTestUtil( LayoutTestUtil<KEY, VALUE> delegate )
     {
-        super( delegate.schemaIndexDescriptor );
+        super( delegate.indexDescriptor );
         this.delegate = delegate;
     }
 
@@ -47,7 +47,7 @@ class UniqueLayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends Nativ
     }
 
     @Override
-    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdates()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
     {
         return delegate.someUpdatesNoDuplicateValues();
     }
@@ -65,19 +65,19 @@ class UniqueLayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends Nativ
     }
 
     @Override
-    Value newUniqueValue( RandomRule random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
+    Value newUniqueValue( RandomValues random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
     {
         return delegate.newUniqueValue( random, uniqueCompareValues, uniqueValues );
     }
 
     @Override
-    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesNoDuplicateValues()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdatesNoDuplicateValues()
     {
         return delegate.someUpdatesNoDuplicateValues();
     }
 
     @Override
-    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesWithDuplicateValues()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues()
     {
         return delegate.someUpdatesWithDuplicateValues();
     }

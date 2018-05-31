@@ -26,8 +26,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.storageengine.api.StorageStatement;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -55,7 +54,7 @@ public class TransactionHookIT extends KernelIntegrationTest
 
         // Then
         verify( hook ).beforeCommit( any( ReadableTransactionState.class ), any( KernelTransaction.class ),
-                any( StoreReadLayer.class ), any( StorageStatement.class ) );
+                any( StorageReader.class ) );
         verify( hook ).afterCommit( any( ReadableTransactionState.class ), any( KernelTransaction.class ), any() );
         verifyNoMoreInteractions( hook );
     }
@@ -67,7 +66,7 @@ public class TransactionHookIT extends KernelIntegrationTest
         TransactionHook hook = mock( TransactionHook.class );
         final String message = "Original";
         when( hook.beforeCommit( any( ReadableTransactionState.class ), any( KernelTransaction.class ),
-                any( StoreReadLayer.class ), any( StorageStatement.class ) ) ).thenReturn( new TransactionHook.Outcome()
+                any( StorageReader.class ) ) ).thenReturn( new TransactionHook.Outcome()
         {
             @Override
             public boolean isSuccessful()
@@ -99,7 +98,7 @@ public class TransactionHookIT extends KernelIntegrationTest
         }
         // Then
         verify( hook ).beforeCommit( any( ReadableTransactionState.class ), any( KernelTransaction.class ),
-                any( StoreReadLayer.class ), any( StorageStatement.class ) );
+                any( StorageReader.class ) );
         verify( hook ).afterRollback( any( ReadableTransactionState.class ), any( KernelTransaction.class ),
                 any( TransactionHook.Outcome.class ) );
         verifyNoMoreInteractions( hook );

@@ -23,9 +23,9 @@
 package cypher.features
 
 import cypher.features
-import org.neo4j.cypher.internal.frontend.v3_4.parser.{Base, Expressions, Literals}
-import org.neo4j.cypher.internal.util.v3_4.SyntaxException
-import org.neo4j.cypher.internal.util.v3_4.symbols._
+import org.opencypher.v9_0.parser.{Base, Expressions, Literals}
+import org.opencypher.v9_0.util.SyntaxException
+import org.opencypher.v9_0.util.symbols._
 import org.parboiled.scala._
 
 /**

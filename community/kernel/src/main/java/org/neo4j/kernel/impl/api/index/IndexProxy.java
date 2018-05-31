@@ -23,9 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
@@ -37,8 +35,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.values.storable.Value;
@@ -61,9 +58,9 @@ import org.neo4j.values.storable.Value;
  *
  * @see ContractCheckingIndexProxy
  */
-public interface IndexProxy extends SchemaDescriptorSupplier
+public interface IndexProxy
 {
-    void start() throws IOException;
+    void start();
 
     IndexUpdater newUpdater( IndexUpdateMode mode );
 
@@ -71,23 +68,16 @@ public interface IndexProxy extends SchemaDescriptorSupplier
      * Drop index.
      * Must close the context as well.
      */
-    void drop() throws IOException;
+    void drop();
 
     /**
      * Close this index context.
      */
     void close() throws IOException;
 
-    SchemaIndexDescriptor getDescriptor();
-
-    @Override
-    SchemaDescriptor schema();
-
-    IndexProvider.Descriptor getProviderDescriptor();
+    CapableIndexDescriptor getDescriptor();
 
     InternalIndexState getState();
-
-    IndexCapability getIndexCapability();
 
     /**
      * @return failure message. Expect a call to it if {@link #getState()} returns {@link InternalIndexState#FAILED}.
@@ -121,8 +111,6 @@ public interface IndexProxy extends SchemaDescriptorSupplier
      * @param tuple {@link Value value tuple} to validate.
      */
     void validateBeforeCommit( Value[] tuple );
-
-    long getIndexId();
 
     ResourceIterator<File> snapshotFiles() throws IOException;
 

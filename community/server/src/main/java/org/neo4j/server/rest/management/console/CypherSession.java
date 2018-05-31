@@ -32,7 +32,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.CypherExecutor;
 
-import static java.util.Collections.emptyMap;
+import static org.neo4j.values.virtual.VirtualValues.emptyMap;
 
 public class CypherSession implements ScriptSession
 {

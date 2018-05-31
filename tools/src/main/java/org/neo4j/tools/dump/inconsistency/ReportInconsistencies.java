@@ -22,19 +22,19 @@
  */
 package org.neo4j.tools.dump.inconsistency;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 /**
  * Entity ids that reported to be inconsistent in consistency report where they where extracted from.
  */
 public class ReportInconsistencies implements Inconsistencies
 {
-    private final PrimitiveLongSet schemaIndexesIds = Primitive.longSet();
-    private final PrimitiveLongSet relationshipIds = Primitive.longSet();
-    private final PrimitiveLongSet nodeIds = Primitive.longSet();
-    private final PrimitiveLongSet propertyIds = Primitive.longSet();
-    private final PrimitiveLongSet relationshipGroupIds = Primitive.longSet();
+    private final MutableLongSet schemaIndexesIds = new LongHashSet();
+    private final MutableLongSet relationshipIds = new LongHashSet();
+    private final MutableLongSet nodeIds = new LongHashSet();
+    private final MutableLongSet propertyIds = new LongHashSet();
+    private final MutableLongSet relationshipGroupIds = new LongHashSet();
 
     @Override
     public void relationshipGroup( long id )

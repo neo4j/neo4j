@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.PageCursor;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
+public class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
 {
     private final int keyPadding;
     private String customNameAsMetaData;
@@ -34,7 +34,7 @@ class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
     private final int majorVersion;
     private final int minorVersion;
 
-    static class Builder
+    public static class Builder
     {
         private int keyPadding;
         private int identifier = 999;
@@ -43,54 +43,54 @@ class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
         private String customNameAsMetaData = "test";
         private boolean fixedSize = true;
 
-        Builder withKeyPadding( int keyPadding )
+        public Builder withKeyPadding( int keyPadding )
         {
             this.keyPadding = keyPadding;
             return this;
         }
 
-        Builder withIdentifier( int identifier )
+        public Builder withIdentifier( int identifier )
         {
             this.identifier = identifier;
             return this;
         }
 
-        Builder withMajorVersion( int majorVersion )
+        public Builder withMajorVersion( int majorVersion )
         {
             this.majorVersion = majorVersion;
             return this;
         }
 
-        Builder withMinorVersion( int minorVersion )
+        public Builder withMinorVersion( int minorVersion )
         {
             this.minorVersion = minorVersion;
             return this;
         }
 
-        Builder withCustomerNameAsMetaData( String customNameAsMetaData )
+        public Builder withCustomerNameAsMetaData( String customNameAsMetaData )
         {
             this.customNameAsMetaData = customNameAsMetaData;
             return this;
         }
 
-        Builder withFixedSize( boolean fixedSize )
+        public Builder withFixedSize( boolean fixedSize )
         {
             this.fixedSize = fixedSize;
             return this;
         }
 
-        SimpleLongLayout build()
+        public SimpleLongLayout build()
         {
             return new SimpleLongLayout( keyPadding, customNameAsMetaData, fixedSize, identifier, majorVersion, minorVersion );
         }
     }
 
-    static Builder longLayout()
+    public static Builder longLayout()
     {
         return new Builder();
     }
 
-    SimpleLongLayout( int keyPadding, String customNameAsMetaData, boolean fixedSize, int identifier, int majorVersion, int minorVersion )
+    public SimpleLongLayout( int keyPadding, String customNameAsMetaData, boolean fixedSize, int identifier, int majorVersion, int minorVersion )
     {
         this.keyPadding = keyPadding;
         this.customNameAsMetaData = customNameAsMetaData;

@@ -34,7 +34,6 @@ import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -68,13 +67,11 @@ public class GraphDatabaseFacadeTest
         when( spi.queryService() ).thenReturn( queryService );
         when( spi.resolver() ).thenReturn( resolver );
         when( resolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( contextBridge );
-        Guard guard = mock( Guard.class );
-        when( resolver.resolveDependency( Guard.class ) ).thenReturn( guard );
         when( contextBridge.get() ).thenReturn( statement );
         Config config = Config.defaults();
         when( resolver.resolveDependency( Config.class ) ).thenReturn( config );
 
-        graphDatabaseFacade.init( editionModule, spi, guard, contextBridge, config, mock( RelationshipTypeTokenHolder.class ) );
+        graphDatabaseFacade.init( editionModule, spi, contextBridge, config, mock( RelationshipTypeTokenHolder.class ) );
     }
 
     @Test
@@ -110,7 +107,7 @@ public class GraphDatabaseFacadeTest
     public void executeQueryStartDefaultTransaction()
     {
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
-        InternalTransaction transaction = new TopLevelTransaction( kernelTransaction, null );
+        InternalTransaction transaction = new TopLevelTransaction( kernelTransaction );
 
         when( queryService.beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED ) )
             .thenReturn( transaction );

@@ -22,17 +22,17 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.storageengine.api.StoreFileMetadata;
@@ -42,20 +42,18 @@ import static org.neo4j.io.fs.FileUtils.relativePath;
 public class PrepareStoreCopyFiles implements AutoCloseable
 {
     private final NeoStoreDataSource neoStoreDataSource;
-    private final PageCache pageCache;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final CloseablesListener closeablesListener = new CloseablesListener();
 
-    PrepareStoreCopyFiles( NeoStoreDataSource neoStoreDataSource, PageCache pageCache, FileSystemAbstraction fileSystemAbstraction )
+    PrepareStoreCopyFiles( NeoStoreDataSource neoStoreDataSource, FileSystemAbstraction fileSystemAbstraction )
     {
         this.neoStoreDataSource = neoStoreDataSource;
-        this.pageCache = pageCache;
         this.fileSystemAbstraction = fileSystemAbstraction;
     }
 
-    PrimitiveLongSet getNonAtomicIndexIds()
+    LongSet getNonAtomicIndexIds()
     {
-        return Primitive.longSet();
+        return LongSets.immutable.empty();
     }
 
     StoreResource[] getAtomicFilesSnapshot() throws IOException
@@ -110,7 +108,7 @@ public class PrepareStoreCopyFiles implements AutoCloseable
         File storeDir = neoStoreDataSource.getStoreDir();
         File file = storeFileMetadata.file();
         String relativePath = relativePath( storeDir, file );
-        return new StoreResource( file, relativePath, storeFileMetadata.recordSize(), pageCache, fileSystemAbstraction );
+        return new StoreResource( file, relativePath, storeFileMetadata.recordSize(), fileSystemAbstraction );
     }
 
     @Override

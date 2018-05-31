@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -26,9 +29,6 @@ import org.junit.rules.RuleChain;
 
 import java.util.Iterator;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -43,10 +43,10 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -177,9 +177,14 @@ public abstract class KernelIntegrationTest
 
     protected GraphDatabaseService createGraphDatabase()
     {
-        GraphDatabaseBuilder graphDatabaseBuilder = new TestGraphDatabaseFactory().setFileSystem( fileSystemRule.get() )
+        GraphDatabaseBuilder graphDatabaseBuilder = createGraphDatabaseFactory().setFileSystem( fileSystemRule.get() )
                 .newEmbeddedDatabaseBuilder( testDir.graphDbDir() );
         return configure( graphDatabaseBuilder ).newGraphDatabase();
+    }
+
+    protected TestGraphDatabaseFactory createGraphDatabaseFactory()
+    {
+        return new TestGraphDatabaseFactory();
     }
 
     protected GraphDatabaseBuilder configure( GraphDatabaseBuilder graphDatabaseBuilder )
@@ -213,7 +218,7 @@ public abstract class KernelIntegrationTest
         try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor() )
         {
             transaction.dataRead().singleNode( node, cursor );
-            return cursor.next() && cursor.labels().contains( label );
+            return cursor.next() && cursor.hasLabel( label );
         }
     }
 
@@ -267,12 +272,12 @@ public abstract class KernelIntegrationTest
         }
     }
 
-    PrimitiveIntIterator nodeGetPropertyKeys( Transaction transaction, long node )
+    IntIterator nodeGetPropertyKeys( Transaction transaction, long node )
     {
         try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor();
               PropertyCursor properties = transaction.cursors().allocatePropertyCursor() )
         {
-            PrimitiveIntSet props = Primitive.intSet();
+            MutableIntSet props = new IntHashSet();
             transaction.dataRead().singleNode( node, cursor );
             if ( cursor.next() )
             {
@@ -282,7 +287,7 @@ public abstract class KernelIntegrationTest
                     props.add( properties.propertyKey() );
                 }
             }
-            return props.iterator();
+            return props.intIterator();
         }
     }
 

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, Literal, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{CoercedPredicate, Predicate}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.{FALSE, NO_VALUE, TRUE}
 
 class ListLiteralTest extends CypherFunSuite {

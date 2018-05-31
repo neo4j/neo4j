@@ -22,9 +22,9 @@ package org.neo4j.server.rest.transactional;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -54,7 +54,7 @@ class TransitionalTxManagementKernelTransaction
     void suspendSinceTransactionsAreStillThreadBound()
     {
         assert suspendedTransaction == null : "Can't suspend the transaction if it already is suspended.";
-        suspendedTransaction = bridge.getTopLevelTransactionBoundToThisThread( true );
+        suspendedTransaction = bridge.getKernelTransactionBoundToThisThread( true );
         bridge.unbindTransactionFromCurrentThread();
     }
 

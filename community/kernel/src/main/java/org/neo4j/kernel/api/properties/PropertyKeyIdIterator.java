@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.api.properties;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+
 import java.util.Iterator;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.storageengine.api.StorageProperty;
 
-public class PropertyKeyIdIterator implements PrimitiveIntIterator
+public class PropertyKeyIdIterator implements IntIterator
 {
     private final Iterator<? extends StorageProperty> properties;
 

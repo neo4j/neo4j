@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.planner.v3_4.spi.TokenContext
+import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException
 import org.neo4j.kernel.api.KernelTransaction
@@ -44,7 +44,7 @@ abstract class TransactionBoundTokenContext(transaction: => KernelTransaction) e
   def getLabelId(labelName: String): Int = {
     val labelId: Int = transaction.tokenRead().nodeLabel(labelName)
     if (labelId == TokenRead.NO_TOKEN)
-      throw new LabelNotFoundKernelException("No such label", null)
+      throw new LabelNotFoundKernelException(labelId, null)
     labelId
   }
 

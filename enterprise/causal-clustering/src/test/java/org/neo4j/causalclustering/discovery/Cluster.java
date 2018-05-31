@@ -69,12 +69,12 @@ import org.neo4j.test.DbRepresentation;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
-import static org.neo4j.concurrent.Futures.combine;
 import static org.neo4j.function.Predicates.await;
 import static org.neo4j.function.Predicates.awaitEx;
 import static org.neo4j.function.Predicates.notNull;
 import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionExpired;
+import static org.neo4j.util.concurrent.Futures.combine;
 
 public class Cluster
 {
@@ -398,11 +398,24 @@ public class Cluster
         ensureDBName( dbName );
         Set<Role> roleSet = Arrays.stream( roles ).collect( toSet() );
 
-        return coreMembers.values().stream()
-                .filter( m -> m.database() != null )
-                .filter( m -> m.dbName().equals( dbName ) )
-                .filter( m -> roleSet.contains( m.database().getRole() ) )
-                .collect( Collectors.toList() );
+        List<CoreClusterMember> list = new ArrayList<>();
+        for ( CoreClusterMember m : coreMembers.values() )
+        {
+            CoreGraphDatabase database = m.database();
+            if ( database == null )
+            {
+                continue;
+            }
+
+            if ( m.dbName().equals( dbName ) )
+            {
+                if ( roleSet.contains( database.getRole() ) )
+                {
+                    list.add( m );
+                }
+            }
+        }
+        return list;
     }
 
     public CoreClusterMember awaitLeader() throws TimeoutException

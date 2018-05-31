@@ -38,7 +38,7 @@ import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
@@ -149,7 +149,7 @@ public class StandardConstraintSemantics implements ConstraintSemantics
     }
 
     @Override
-    public TxStateVisitor decorateTxStateVisitor( StoreReadLayer storeLayer, ReadableTransactionState txState,
+    public TxStateVisitor decorateTxStateVisitor( StorageReader storageReader, ReadableTransactionState txState,
             TxStateVisitor visitor )
     {
         return visitor;

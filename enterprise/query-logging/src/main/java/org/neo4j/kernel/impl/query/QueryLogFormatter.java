@@ -75,24 +75,23 @@ class QueryLogFormatter
         result.append( '{' );
         if ( params != null )
         {
-            String sep = "";
-            for ( Map.Entry<String,AnyValue> entry : params.entrySet() )
-            {
+            final String[] sep = new String[]{""};
+            params.foreach( ( key, value ) -> {
                 result
-                        .append( sep )
-                        .append( entry.getKey() )
+                        .append( sep[0] )
+                        .append( key )
                         .append( ": " );
 
-                if ( obfuscate.contains( entry.getKey() ) )
+                if ( obfuscate.contains( key ) )
                 {
                     result.append( "******" );
                 }
                 else
                 {
-                    result.append( formatAnyValue( entry.getValue() ));
+                    result.append( formatAnyValue( value ) );
                 }
-                sep = ", ";
-            }
+                sep[0] = ", ";
+            } );
         }
         result.append( "}" );
     }

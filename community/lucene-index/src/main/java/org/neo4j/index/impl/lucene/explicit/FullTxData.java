@@ -40,6 +40,9 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -48,9 +51,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 
@@ -92,7 +92,7 @@ class FullTxData extends TxData
     private boolean modified;
     private IndexReader reader;
     private IndexSearcher searcher;
-    private final PrimitiveLongObjectMap<Document> cachedDocuments = Primitive.longObjectMap();
+    private final MutableLongObjectMap<Document> cachedDocuments = new LongObjectHashMap<>();
     private Set<String> orphans;
 
     FullTxData( LuceneExplicitIndex index )
@@ -231,7 +231,7 @@ class FullTxData extends TxData
             DocValuesCollector docValuesCollector = new DocValuesCollector( prioritizeCorrectness );
             theSearcher.search( query, docValuesCollector );
             Collection<EntityId> result = new ArrayList<>();
-            PrimitiveLongIterator valuesIterator = docValuesCollector.getSortedValuesIterator( KEY_DOC_ID, sorting );
+            final LongIterator valuesIterator = docValuesCollector.getSortedValuesIterator( KEY_DOC_ID, sorting );
             while ( valuesIterator.hasNext() )
             {
                 result.add( new EntityId.IdData( valuesIterator.next() ) );

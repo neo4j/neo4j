@@ -28,7 +28,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 
-import org.neo4j.concurrent.RecentK;
+import org.neo4j.util.concurrent.RecentK;
 
 /**
  * Collects user agent information and publishes it to a tracker of most recently seen user agents.

@@ -24,22 +24,17 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.NewRuntimeSuccessRateMonitor
 import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPointv3_1, GeographicPoint => GeographicPointv3_1}
-import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.runtime.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Planner => IPDPlanner, PlannerVersion => IPDPlannerVersion, Runtime => IPDRuntime, RuntimeVersion => IPDRuntimeVersion}
-import org.neo4j.cypher.internal.util.v3_4.Eagerly
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherTestSupport
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.helpers.Exceptions
-import org.neo4j.internal.cypher.acceptance.NewRuntimeMonitor.{NewPlanSeen, NewRuntimeMonitorCall, UnableToCompileQuery}
 import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}
 import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
+import org.opencypher.v9_0.util.Eagerly
+import org.opencypher.v9_0.util.test_helpers.CypherTestSupport
 import org.scalatest.Assertions
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -94,7 +89,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
   override protected def initTest() {
     super.initTest()
     self.kernelMonitors.addMonitorListener(newPlannerMonitor)
-    self.kernelMonitors.addMonitorListener(newRuntimeMonitor)
   }
 
   protected def failWithError(expectedSpecificFailureFrom: TestConfiguration,
@@ -108,7 +102,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
     val explicitlyRequestedExperimentalScenarios = expectedSpecificFailureFromEffective.scenarios intersect Configs.Experimental.scenarios
     val scenariosToExecute = Configs.AbsolutelyAll.scenarios ++ explicitlyRequestedExperimentalScenarios
     for (thisScenario <- scenariosToExecute) {
-      thisScenario.prepare()
       val expectedToFailWithSpecificMessage = expectedSpecificFailureFromEffective.containsScenario(thisScenario)
 
       val tryResult: Try[InternalExecutionResult] = Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params))
@@ -191,7 +184,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
       }
 
       val baseScenario = TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
-      baseScenario.prepare()
       executeBefore()
       val baseResult = innerExecute(s"CYPHER ${baseScenario.preparserOptions} $query", params)
       baseResult
@@ -218,7 +210,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
                               params: Map[String, Any],
                               resultAssertionInTx: Option[(InternalExecutionResult) => Unit],
                               rollback: Boolean = true) = {
-    scenario.prepare()
 
     def execute = {
       executeBefore()
@@ -283,7 +274,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
     innerExecute(queryText, params)
 
   private def innerExecute(queryText: String, params: Map[String, Any]): InternalExecutionResult = {
-    val innerResult: Result = eengine.execute(queryText, params, graph.transactionalContext(query = queryText -> params))
+    val innerResult: Result = eengine.execute(queryText, asMapValue(params), graph.transactionalContext(query = queryText -> params))
     RewindableExecutionResult(innerResult)
   }
 
@@ -294,24 +285,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
         rawFailureMessage = s"Results differ: ${actual.toComparableResult} did not equal to $expected",
         rawNegatedFailureMessage = s"Results are equal")
     }
-  }
-}
-
-class NewRuntimeMonitor extends NewRuntimeSuccessRateMonitor {
-  private var traceBuilder = List.newBuilder[NewRuntimeMonitorCall]
-
-  override def unableToHandlePlan(plan: LogicalPlan, e: CantCompileQueryException) {
-    traceBuilder += UnableToCompileQuery(Exceptions.stringify(e))
-  }
-
-  override def newPlanSeen(plan: LogicalPlan) {
-    traceBuilder += NewPlanSeen(plan.toString)
-  }
-
-  def trace = traceBuilder.result()
-
-  def clear() {
-    traceBuilder.clear()
   }
 }
 
@@ -353,8 +326,6 @@ object CypherComparisonSupport {
 
   val newPlannerMonitor = NewPlannerMonitor
 
-  val newRuntimeMonitor = new NewRuntimeMonitor
-
   case class Versions(versions: Version*) {
     def +(other: Version): Versions = {
       val newVersions = if (!versions.contains(other)) versions :+ other else versions
@@ -363,7 +334,7 @@ object CypherComparisonSupport {
   }
 
   object Versions {
-    val orderedVersions: Seq[Version] = Seq(V2_3, V3_1, V3_3, V3_4)
+    val orderedVersions: Seq[Version] = Seq(V2_3, V3_1, V3_3, v3_5)
 
     implicit def versionToVersions(version: Version): Versions = Versions(version)
 
@@ -376,15 +347,15 @@ object CypherComparisonSupport {
     object V3_1 extends Version("3.1")
 
     object V3_3 extends Version("3.3") {
-      // 3.3 has 3.4 runtime
-      override val acceptedRuntimeVersionNames = Set("3.4")
+      // 3.3 has 3.5 runtime
+      override val acceptedRuntimeVersionNames = Set("3.5")
     }
 
-    object V3_4 extends Version("3.4")
+    object v3_5 extends Version("3.5")
 
     object Default extends Version("") {
-      override val acceptedRuntimeVersionNames = Set("2.3", "3.1", "3.3", "3.4")
-      override val acceptedPlannerVersionNames = Set("2.3", "3.1", "3.3", "3.4")
+      override val acceptedRuntimeVersionNames = Set("2.3", "3.1", "3.3", "3.5")
+      override val acceptedPlannerVersionNames = Set("2.3", "3.1", "3.3", "3.5")
     }
 
   }
@@ -513,8 +484,6 @@ object CypherComparisonSupport {
 
     def preparserOptions: String = s"${version.name} ${planner.preparserOption} ${runtime.preparserOption}"
 
-    def prepare(): Unit = newRuntimeMonitor.clear()
-
     def checkResultForSuccess(query: String, internalExecutionResult: InternalExecutionResult): Unit = {
       val (reportedRuntime: String, reportedPlanner: String, reportedVersion: String, reportedPlannerVersion: String) = extractConfiguration(internalExecutionResult)
       if (!runtime.acceptedRuntimeNames.contains(reportedRuntime))
@@ -604,7 +573,7 @@ object CypherComparisonSupport {
 
   object Configs {
 
-    def Compiled: TestConfiguration = TestConfiguration(Versions.V3_4, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode))
+    def Compiled: TestConfiguration = TestConfiguration(Versions.v3_5, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode))
 
     def Morsel: TestConfiguration = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Morsel))
 
@@ -630,7 +599,7 @@ object CypherComparisonSupport {
 
     def Cost3_3: TestConfiguration = TestScenario(Versions.V3_3, Planners.Cost, Runtimes.Default)
 
-    def Cost3_4: TestConfiguration = TestScenario(Versions.V3_4, Planners.Cost, Runtimes.Default)
+    def Cost3_4: TestConfiguration = TestScenario(Versions.v3_5, Planners.Cost, Runtimes.Default)
 
     def Rule2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Rule, Runtimes.Default)
 
@@ -644,8 +613,8 @@ object CypherComparisonSupport {
 
     def Version3_3: TestConfiguration = TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes.Default)
 
-    def Version3_4: TestConfiguration =
-      TestConfiguration(Versions.V3_4, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
+    def Version3_5: TestConfiguration =
+      TestConfiguration(Versions.v3_5, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
         TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
         TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
 
@@ -680,7 +649,7 @@ object CypherComparisonSupport {
       * test coverage is kept up-to-date with new features.
       */
     def AbsolutelyAll: TestConfiguration =
-      TestConfiguration(Versions.V3_4, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
+      TestConfiguration(Versions.v3_5, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
         TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted,
                                                                        Runtimes.ProcedureOrSchema)) +
         TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +

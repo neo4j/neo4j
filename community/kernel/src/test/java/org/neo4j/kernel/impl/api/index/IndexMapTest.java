@@ -19,21 +19,23 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterableOf;
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.emptySet;
 
 public class IndexMapTest
 {
@@ -48,10 +50,10 @@ public class IndexMapTest
     @Before
     public void setup()
     {
-        PrimitiveLongObjectMap<IndexProxy> map = Primitive.longObjectMap();
-        map.put( 1L, new TestIndexProxy( schema3_4 ) );
-        map.put( 2L, new TestIndexProxy( schema5_6_7 ) );
-        map.put( 3L, new TestIndexProxy( schema5_8 ) );
+        MutableLongObjectMap<IndexProxy> map = new LongObjectHashMap<>();
+        map.put( 1L, new TestIndexProxy( IndexDescriptorFactory.forSchema( schema3_4 ).withId( 1 ).withoutCapabilities() ) );
+        map.put( 2L, new TestIndexProxy( IndexDescriptorFactory.forSchema( schema5_6_7 ).withId( 2 ).withoutCapabilities() ) );
+        map.put( 3L, new TestIndexProxy( IndexDescriptorFactory.forSchema( schema5_8 ).withId( 3 ).withoutCapabilities() ) );
         indexMap = new IndexMap( map );
     }
 
@@ -59,7 +61,7 @@ public class IndexMapTest
     public void shouldGetRelatedIndexForLabel()
     {
         assertThat(
-                indexMap.getRelatedIndexes( label( 3 ), noLabel, emptySet() ),
+                indexMap.getRelatedIndexes( label( 3 ), noLabel, IntSets.immutable.empty() ),
                 containsInAnyOrder( schema3_4 ) );
     }
 
@@ -75,7 +77,7 @@ public class IndexMapTest
     public void shouldGetRelatedIndexesForLabel()
     {
         assertThat(
-                indexMap.getRelatedIndexes( label( 5 ), label( 3, 4 ), emptySet() ),
+                indexMap.getRelatedIndexes( label( 5 ), label( 3, 4 ), IntSets.immutable.empty() ),
                 containsInAnyOrder( schema5_6_7, schema5_8 ) );
     }
 
@@ -103,11 +105,11 @@ public class IndexMapTest
     public void shouldHandleUnrelated()
     {
         assertThat(
-                indexMap.getRelatedIndexes( noLabel, noLabel, emptySet() ),
+                indexMap.getRelatedIndexes( noLabel, noLabel, IntSets.immutable.empty() ),
                 emptyIterableOf( SchemaDescriptor.class ) );
 
         assertThat(
-                indexMap.getRelatedIndexes( label( 2 ), noLabel, emptySet() ),
+                indexMap.getRelatedIndexes( label( 2 ), noLabel, IntSets.immutable.empty() ),
                 emptyIterableOf( SchemaDescriptor.class ) );
 
         assertThat(
@@ -126,22 +128,22 @@ public class IndexMapTest
         return labels;
     }
 
-    private PrimitiveIntSet properties( int... propertyIds )
+    private IntSet properties( int... propertyIds )
     {
-        return PrimitiveIntCollections.asSet( propertyIds );
+        return new IntHashSet( propertyIds );
     }
 
     private class TestIndexProxy extends IndexProxyAdapter
     {
-        private final LabelSchemaDescriptor schema;
+        private final CapableIndexDescriptor schema;
 
-        private TestIndexProxy( LabelSchemaDescriptor schema )
+        private TestIndexProxy( CapableIndexDescriptor schema )
         {
             this.schema = schema;
         }
 
         @Override
-        public LabelSchemaDescriptor schema()
+        public CapableIndexDescriptor getDescriptor()
         {
             return schema;
         }

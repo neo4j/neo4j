@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.ListSupport
-import org.neo4j.cypher.internal.util.v3_4.attribution.Id
+import org.opencypher.v9_0.util.attribution.Id
 
 import scala.collection.JavaConverters._
 

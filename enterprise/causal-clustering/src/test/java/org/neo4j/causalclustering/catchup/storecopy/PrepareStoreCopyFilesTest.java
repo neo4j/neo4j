@@ -22,6 +22,9 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,16 +32,10 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileIndexListing;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
@@ -61,7 +58,6 @@ public class PrepareStoreCopyFilesTest
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemAbstraction );
     private PrepareStoreCopyFiles prepareStoreCopyFiles;
-    private PageCache pageCache;
     private NeoStoreFileIndexListing indexListingMock;
     private File storeDir;
     private NeoStoreFileListing.StoreFileListingBuilder fileListingBuilder;
@@ -69,18 +65,17 @@ public class PrepareStoreCopyFilesTest
     @Before
     public void setUp()
     {
-        pageCache = StandalonePageCacheFactory.createPageCache( fileSystemAbstraction );
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
         fileListingBuilder = mock( NeoStoreFileListing.StoreFileListingBuilder.class, CALLS_REAL_METHODS );
         storeDir = testDirectory.graphDbDir();
         when( dataSource.getStoreDir() ).thenReturn( storeDir );
         indexListingMock = mock( NeoStoreFileIndexListing.class );
-        when( indexListingMock.getIndexIds() ).thenReturn( Primitive.longSet() );
+        when( indexListingMock.getIndexIds() ).thenReturn( new LongHashSet() );
         NeoStoreFileListing storeFileListing = mock( NeoStoreFileListing.class );
         when( storeFileListing.getNeoStoreFileIndexListing() ).thenReturn( indexListingMock );
         when( storeFileListing.builder() ).thenReturn( fileListingBuilder );
         when( dataSource.getNeoStoreFileListing() ).thenReturn( storeFileListing );
-        prepareStoreCopyFiles = new PrepareStoreCopyFiles( dataSource, pageCache, fileSystemAbstraction );
+        prepareStoreCopyFiles = new PrepareStoreCopyFiles( dataSource, fileSystemAbstraction );
     }
 
     @Test
@@ -113,7 +108,7 @@ public class PrepareStoreCopyFilesTest
         //then
         File[] expectedFilesConverted = Arrays.stream( expectedFiles ).map( StoreFileMetadata::file ).toArray( File[]::new );
         StoreResource[] exeptedAtomicFilesConverted = Arrays.stream( expectedFiles ).map(
-                f -> new StoreResource( f.file(), getRelativePath( f ), f.recordSize(), pageCache, fileSystemAbstraction ) ).toArray( StoreResource[]::new );
+                f -> new StoreResource( f.file(), getRelativePath( f ), f.recordSize(), fileSystemAbstraction ) ).toArray( StoreResource[]::new );
         assertArrayEquals( expectedFilesConverted, files );
         assertEquals( exeptedAtomicFilesConverted.length, atomicFilesSnapshot.length );
         for ( int i = 0; i < exeptedAtomicFilesConverted.length; i++ )
@@ -128,7 +123,7 @@ public class PrepareStoreCopyFilesTest
     @Test
     public void shouldHandleEmptyDescriptors()
     {
-        PrimitiveLongSet indexIds = prepareStoreCopyFiles.getNonAtomicIndexIds();
+        LongSet indexIds = prepareStoreCopyFiles.getNonAtomicIndexIds();
 
         assertEquals( 0, indexIds.size() );
     }
@@ -136,11 +131,10 @@ public class PrepareStoreCopyFilesTest
     @Test
     public void shouldReturnEmptySetOfIdsAndIgnoreIndexListing()
     {
-        PrimitiveLongSet existingIds = Primitive.longSet();
-        existingIds.add( 42 );
-        when( indexListingMock.getIndexIds() ).thenReturn( existingIds );
+        LongSet expectedIndexIds = LongSets.immutable.of( 42 );
+        when( indexListingMock.getIndexIds() ).thenReturn( expectedIndexIds );
 
-        PrimitiveLongSet actualIndexIndexIds = prepareStoreCopyFiles.getNonAtomicIndexIds();
+        LongSet actualIndexIndexIds = prepareStoreCopyFiles.getNonAtomicIndexIds();
 
         assertTrue( actualIndexIndexIds.isEmpty() );
     }

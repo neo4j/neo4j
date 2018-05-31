@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.util.v3_4.{DummyPosition, PropertyKeyId}
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.planner.v3_4.spi.TokenContext
-import org.neo4j.cypher.internal.v3_4.expressions.PropertyKeyName
+import org.opencypher.v9_0.util.{DummyPosition, PropertyKeyId}
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
+import org.opencypher.v9_0.expressions.PropertyKeyName
 
 import scala.collection.mutable
 

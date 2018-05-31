@@ -64,7 +64,6 @@ import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -112,12 +111,14 @@ public class CommunityEditionModule extends EditionModule
         dependencies.satisfyDependency( idGeneratorFactory );
         dependencies.satisfyDependency( idController );
 
-        propertyKeyTokenHolder = life.add( dependencies.satisfyDependency( new DelegatingPropertyKeyTokenHolder(
-                createPropertyKeyCreator( config, dataSourceManager, idGeneratorFactory ) ) ) );
-        labelTokenHolder = life.add( dependencies.satisfyDependency(new DelegatingLabelTokenHolder( createLabelIdCreator( config,
-                dataSourceManager, idGeneratorFactory ) ) ));
-        relationshipTypeTokenHolder = life.add( dependencies.satisfyDependency(new DelegatingRelationshipTypeTokenHolder(
-                createRelationshipTypeCreator( config, dataSourceManager, idGeneratorFactory ) ) ));
+        propertyKeyTokenHolder = new DelegatingPropertyKeyTokenHolder( createPropertyKeyCreator( config, dataSourceManager, idGeneratorFactory ) );
+        labelTokenHolder = new DelegatingLabelTokenHolder( createLabelIdCreator( config, dataSourceManager, idGeneratorFactory ) );
+        relationshipTypeTokenHolder =
+                new DelegatingRelationshipTypeTokenHolder( createRelationshipTypeCreator( config, dataSourceManager, idGeneratorFactory ) );
+
+        dependencies.satisfyDependency( propertyKeyTokenHolder );
+        dependencies.satisfyDependency( labelTokenHolder );
+        dependencies.satisfyDependency( relationshipTypeTokenHolder );
 
         dependencies.satisfyDependency(
                 createKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade, life ) );
@@ -218,7 +219,7 @@ public class CommunityEditionModule extends EditionModule
     private KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
             Config config, GraphDatabaseAPI graphAPI, LifeSupport life )
     {
-        return life.add( new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphAPI ) );
+        return life.add( new KernelData( fileSystem, pageCache, storeDir, config, graphAPI ) );
     }
 
     protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs,

@@ -38,7 +38,6 @@ import org.neo4j.causalclustering.messaging.StoreCopyRequest;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.logging.Log;
@@ -56,18 +55,17 @@ public abstract class StoreCopyRequestHandler<T extends StoreCopyRequest> extend
     private final Supplier<NeoStoreDataSource> dataSource;
     private final Supplier<CheckPointer> checkpointerSupplier;
     private final StoreFileStreamingProtocol storeFileStreamingProtocol;
-    private final PageCache pageCache;
+
     private final FileSystemAbstraction fs;
     private final Log log;
 
     StoreCopyRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource, Supplier<CheckPointer> checkpointerSupplier,
-            StoreFileStreamingProtocol storeFileStreamingProtocol, PageCache pageCache, FileSystemAbstraction fs, LogProvider logProvider )
+            StoreFileStreamingProtocol storeFileStreamingProtocol, FileSystemAbstraction fs, LogProvider logProvider )
     {
         this.protocol = protocol;
         this.dataSource = dataSource;
         this.checkpointerSupplier = checkpointerSupplier;
         this.storeFileStreamingProtocol = storeFileStreamingProtocol;
-        this.pageCache = pageCache;
         this.fs = fs;
         this.log = logProvider.getLog( StoreCopyRequestHandler.class );
     }
@@ -98,7 +96,7 @@ public abstract class StoreCopyRequestHandler<T extends StoreCopyRequest> extend
                         StoreFileMetadata storeFileMetadata = resourceIterator.next();
                         storeFileStreamingProtocol.stream( ctx,
                                 new StoreResource( storeFileMetadata.file(), relativePath( storeDir, storeFileMetadata.file() ), storeFileMetadata.recordSize(),
-                                        pageCache, fs ) );
+                                        fs ) );
                     }
                 }
                 responseStatus = StoreCopyFinishedResponse.Status.SUCCESS;
@@ -130,9 +128,9 @@ public abstract class StoreCopyRequestHandler<T extends StoreCopyRequest> extend
     public static class GetStoreFileRequestHandler extends StoreCopyRequestHandler<GetStoreFileRequest>
     {
         public GetStoreFileRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource, Supplier<CheckPointer> checkpointerSupplier,
-                StoreFileStreamingProtocol storeFileStreamingProtocol, PageCache pageCache, FileSystemAbstraction fs, LogProvider logProvider )
+                StoreFileStreamingProtocol storeFileStreamingProtocol, FileSystemAbstraction fs, LogProvider logProvider )
         {
-            super( protocol, dataSource, checkpointerSupplier, storeFileStreamingProtocol, pageCache, fs, logProvider );
+            super( protocol, dataSource, checkpointerSupplier, storeFileStreamingProtocol, fs, logProvider );
         }
 
         @Override
@@ -150,10 +148,10 @@ public abstract class StoreCopyRequestHandler<T extends StoreCopyRequest> extend
     public static class GetIndexSnapshotRequestHandler extends StoreCopyRequestHandler<GetIndexFilesRequest>
     {
         public GetIndexSnapshotRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource,
-                Supplier<CheckPointer> checkpointerSupplier, StoreFileStreamingProtocol storeFileStreamingProtocol, PageCache pageCache,
+                Supplier<CheckPointer> checkpointerSupplier, StoreFileStreamingProtocol storeFileStreamingProtocol,
                 FileSystemAbstraction fs, LogProvider logProvider )
         {
-            super( protocol, dataSource, checkpointerSupplier, storeFileStreamingProtocol, pageCache, fs, logProvider );
+            super( protocol, dataSource, checkpointerSupplier, storeFileStreamingProtocol, fs, logProvider );
         }
 
         @Override

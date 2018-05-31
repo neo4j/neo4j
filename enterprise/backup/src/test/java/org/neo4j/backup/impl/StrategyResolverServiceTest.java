@@ -22,7 +22,6 @@
  */
 package org.neo4j.backup.impl;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -30,6 +29,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
 public class StrategyResolverServiceTest
@@ -51,20 +51,20 @@ public class StrategyResolverServiceTest
     public void anyProvidesBothStrategiesCorrectOrder()
     {
         List<BackupStrategyWrapper> result = subject.getStrategies( SelectedBackupProtocol.ANY );
-        Assert.assertEquals( Arrays.asList( ccBackupStrategy, haBackupStrategy ), result );
+        assertEquals( Arrays.asList( ccBackupStrategy, haBackupStrategy ), result );
     }
 
     @Test
     public void legacyProvidesBackupProtocol()
     {
         List<BackupStrategyWrapper> result = subject.getStrategies( SelectedBackupProtocol.COMMON );
-        Assert.assertEquals( Collections.singletonList( haBackupStrategy ), result );
+        assertEquals( Collections.singletonList( haBackupStrategy ), result );
     }
 
     @Test
     public void catchupProvidesTransactionProtocol()
     {
         List<BackupStrategyWrapper> result = subject.getStrategies( SelectedBackupProtocol.CATCHUP );
-        Assert.assertEquals( Collections.singletonList( ccBackupStrategy ), result );
+        assertEquals( Collections.singletonList( ccBackupStrategy ), result );
     }
 }

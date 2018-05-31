@@ -19,15 +19,12 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.ExecutionEngine
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.planner.v3_4.spi.CostBasedPlannerName
+import org.neo4j.cypher.internal.planner.v3_5.spi.CostBasedPlannerName
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.graphdb.{ExecutionPlanDescription, GraphDatabaseService, Result}
+import org.neo4j.graphdb.{ExecutionPlanDescription, GraphDatabaseService}
 import org.neo4j.test.TestGraphDatabaseFactory
-
-import scala.collection.immutable.Map
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
@@ -76,11 +73,11 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     plan2.getArguments.get("planner-impl") should equal(CostBasedPlannerName.default.name)
   }
 
-  test("by default when using cypher 3.4 some queries should default to COST") {
+  test("by default when using cypher 3.5 some queries should default to COST") {
     //given
     db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.4").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.5").newGraphDatabase()
     val service = new GraphDatabaseCypherService(db)
 
     //when
@@ -158,12 +155,12 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     plan.getArguments.get("planner-impl") should equal("IDP")
   }
 
-  test("should be able to force COST as default when using cypher 3.4") {
+  test("should be able to force COST as default when using cypher 3.5") {
     //given
     db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.4").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.5").newGraphDatabase()
     val service = new GraphDatabaseCypherService(db)
 
     //when
@@ -201,13 +198,5 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
       res.resultAsString()
       res.getExecutionPlanDescription
     }
-  }
-
-  implicit class RichExecutionEngine(engine: ExecutionEngine) {
-    def profile(query: String, params: Map[String, Any]): Result =
-      engine.profile(query, params, engine.queryService.transactionalContext(query = query -> params))
-
-    def execute(query: String, params: Map[String, Any]): Result =
-      engine.execute(query, params, engine.queryService.transactionalContext(query = query -> params))
   }
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.labelscan;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
@@ -26,8 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -37,10 +38,10 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 /**
  * {@link LabelScanReader} for reading data from {@link NativeLabelScanStore}.
- * Each {@link PrimitiveLongIterator} returned from each of the methods is backed by {@link RawCursor}
+ * Each {@link LongIterator} returned from each of the methods is backed by {@link RawCursor}
  * directly from {@link GBPTree#seek(Object, Object)}.
  * <p>
- * The returned {@link PrimitiveLongIterator} aren't closable so the cursors retrieved are managed
+ * The returned {@link LongIterator} aren't closable so the cursors retrieved are managed
  * inside of this reader and closed between each new query and on {@link #close()}.
  */
 class NativeLabelScanReader implements LabelScanReader

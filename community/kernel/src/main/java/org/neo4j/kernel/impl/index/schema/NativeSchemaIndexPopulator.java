@@ -19,16 +19,18 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
-import org.neo4j.concurrent.Work;
-import org.neo4j.concurrent.WorkSync;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -43,17 +45,19 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.util.concurrent.Work;
+import org.neo4j.util.concurrent.WorkSync;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
-import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.GENERAL;
-import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 /**
  * {@link IndexPopulator} backed by a {@link GBPTree}.
@@ -81,10 +85,10 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey<KEY
     private boolean dropped;
     private boolean closed;
 
-    NativeSchemaIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
-                                IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig )
+    NativeSchemaIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
+                                StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId );
+        super( pageCache, fs, storeFile, layout, monitor, descriptor );
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
         this.samplingConfig = samplingConfig;
@@ -105,7 +109,7 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey<KEY
 
     public void clear() throws IOException
     {
-        gbpTreeFileUtil.deleteFileIfPresent( storeFile );
+        deleteFileIfPresent( fileSystem, storeFile );
     }
 
     @Override
@@ -119,7 +123,7 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey<KEY
         assertNotDropped();
         assertNotClosed();
 
-        gbpTreeFileUtil.deleteFileIfPresent( storeFile );
+        deleteFileIfPresent( fileSystem, storeFile );
         instantiateTree( RecoveryCleanupWorkCollector.IMMEDIATE, headerWriter );
 
         // true:  tree uniqueness is (value,entityId)
@@ -133,12 +137,16 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey<KEY
     }
 
     @Override
-    public synchronized void drop() throws IOException
+    public synchronized void drop()
     {
         try
         {
             closeTree();
-            gbpTreeFileUtil.deleteFileIfPresent( storeFile );
+            deleteFileIfPresent( fileSystem, storeFile );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
         finally
         {
@@ -294,7 +302,7 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey<KEY
     {
         if ( failureBytes == null )
         {
-            failureBytes = new byte[0];
+            failureBytes = ArrayUtils.EMPTY_BYTE_ARRAY;
         }
         tree.checkpoint( IOLimiter.unlimited(), new FailureHeaderWriter( failureBytes ) );
     }
@@ -383,6 +391,18 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey<KEY
             return uniqueSampler.result();
         default:
             throw new IllegalArgumentException( "Unexpected index type " + descriptor.type() );
+        }
+    }
+
+    private static void deleteFileIfPresent( FileSystemAbstraction fs, File storeFile ) throws IOException
+    {
+        try
+        {
+            fs.deleteFileOrThrow( storeFile );
+        }
+        catch ( NoSuchFileException e )
+        {
+            // File does not exist, we don't need to delete
         }
     }
 }

@@ -75,6 +75,7 @@ abstract class MuninnPageCursor extends PageCursor
     private int filePageSize;
     protected final VersionContextSupplier versionContextSupplier;
     private int offset;
+    private int mark;
     private boolean outOfBounds;
     private boolean isLinkedCursor;
     // This is a String with the exception message if usePreciseCursorErrorStackTraces is false, otherwise it is a
@@ -953,6 +954,18 @@ abstract class MuninnPageCursor extends PageCursor
     public final int getOffset()
     {
         return offset;
+    }
+
+    @Override
+    public void mark()
+    {
+        this.mark = offset;
+    }
+
+    @Override
+    public void setOffsetToMark()
+    {
+        this.offset = mark;
     }
 
     @Override

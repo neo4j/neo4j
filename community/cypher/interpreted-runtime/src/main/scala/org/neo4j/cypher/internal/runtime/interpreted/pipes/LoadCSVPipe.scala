@@ -20,20 +20,16 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import java.net.URL
-import java.util
 
-import org.neo4j.cypher.internal.util.v3_4.LoadExternalResourceException
+import org.opencypher.v9_0.util.LoadExternalResourceException
+import org.neo4j.cypher.internal.ir.v3_5.{CSVFormat, HasHeaders, NoHeaders}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.{CSVFormat, HasHeaders, NoHeaders}
 import org.neo4j.cypher.internal.runtime.{ArrayBackedMap, QueryContext}
-import org.neo4j.cypher.internal.util.v3_4.attribution.Id
-
+import org.opencypher.v9_0.util.attribution.Id
 import org.neo4j.values._
 import org.neo4j.values.storable.{TextValue, Value, Values}
-import org.neo4j.values.virtual.VirtualValues
-
-import scala.collection.JavaConverters._
+import org.neo4j.values.virtual.{MapValueBuilder, VirtualValues}
 
 case class LoadCSVPipe(source: Pipe,
                        format: CSVFormat,
@@ -90,12 +86,13 @@ case class LoadCSVPipe(source: Pipe,
         //we need to make a copy here since someone may hold on this
         //reference, e.g. EagerPipe
 
-        val resultCopy = new util.HashMap[String, AnyValue](internalMap.size)
+
+        var builder = new MapValueBuilder
         for ((key, maybeNull) <- internalMap) {
           val value = if (maybeNull == null) Values.NO_VALUE else maybeNull
-          resultCopy.put(key, value)
+          builder.add(key, value)
         }
-        executionContextFactory.copyWith(context, variable, VirtualValues.map(resultCopy))
+        executionContextFactory.copyWith(context, variable, builder.build())
       } else null
     }
   }

@@ -26,16 +26,13 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.time.ZoneId;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import javax.servlet.http.HttpServletRequest;
 
-import org.neo4j.concurrent.AsyncEvents;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.FormattedLogProvider;
@@ -43,6 +40,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
 import org.neo4j.logging.async.AsyncLogEvent;
 import org.neo4j.logging.async.AsyncLogProvider;
+import org.neo4j.util.concurrent.AsyncEvents;
 
 import static org.apache.commons.lang.StringUtils.defaultString;
 
@@ -53,13 +51,14 @@ public class AsyncRequestLog
     private final Log log;
     private final ExecutorService asyncLogProcessingExecutor;
     private final AsyncEvents<AsyncLogEvent> asyncEventProcessor;
+    private final RotatingFileOutputStreamSupplier outputSupplier;
 
     public AsyncRequestLog( FileSystemAbstraction fs, ZoneId logTimeZone, String logFile, long rotationSize, int rotationKeepNumber )
             throws IOException
     {
         NamedThreadFactory threadFactory = new NamedThreadFactory( "HTTP-Log-Rotator", true );
         ExecutorService rotationExecutor = Executors.newCachedThreadPool( threadFactory );
-        Supplier<OutputStream> outputSupplier = new RotatingFileOutputStreamSupplier(
+        outputSupplier = new RotatingFileOutputStreamSupplier(
                 fs, new File( logFile ), rotationSize, 0, rotationKeepNumber, rotationExecutor );
         FormattedLogProvider logProvider = FormattedLogProvider.withZoneId( logTimeZone )
                 .toOutputStream( outputSupplier );
@@ -118,9 +117,11 @@ public class AsyncRequestLog
     }
 
     @Override
-    protected synchronized void doStop()
+    protected synchronized void doStop() throws IOException
     {
         asyncEventProcessor.shutdown();
+        asyncEventProcessor.awaitTermination();
+        outputSupplier.close();
     }
 
     @Override

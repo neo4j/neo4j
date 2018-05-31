@@ -46,11 +46,6 @@ public interface PageSwapperFactory
     void open( FileSystemAbstraction fs, Configuration config );
 
     /**
-     * Get the {@link FileSystemAbstraction} that represents the underlying storage for the page swapper.
-     */
-    FileSystemAbstraction getFileSystemAbstraction();
-
-    /**
      * Get the name of this PageSwapperFactory implementation, for configuration purpose.
      */
     String implementationName();

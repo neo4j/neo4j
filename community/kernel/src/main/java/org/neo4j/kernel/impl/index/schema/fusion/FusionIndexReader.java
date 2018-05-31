@@ -21,13 +21,13 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.util.Arrays;
 
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -35,15 +35,15 @@ import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
-import static org.neo4j.collection.primitive.PrimitiveLongResourceCollections.concat;
+import static org.neo4j.collection.PrimitiveLongResourceCollections.concat;
 import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.INSTANCE_COUNT;
 import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.UNKNOWN;
 
 class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexReader
 {
-    private final SchemaIndexDescriptor descriptor;
+    private final IndexDescriptor descriptor;
 
-    FusionIndexReader( SlotSelector slotSelector, LazyInstanceSelector<IndexReader> instanceSelector, SchemaIndexDescriptor descriptor )
+    FusionIndexReader( SlotSelector slotSelector, LazyInstanceSelector<IndexReader> instanceSelector, IndexDescriptor descriptor )
     {
         super( slotSelector, instanceSelector );
         this.descriptor = descriptor;

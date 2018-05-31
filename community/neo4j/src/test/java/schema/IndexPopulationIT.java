@@ -19,7 +19,6 @@
  */
 package schema;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -45,9 +44,9 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.Randoms;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.values.storable.RandomValues;
 
 import static org.junit.Assert.assertEquals;
 
@@ -160,13 +159,13 @@ public class IndexPopulationIT
 
     private void prePopulateDatabase( GraphDatabaseService database, Label testLabel, String propertyName )
     {
-        final Randoms random = new Randoms();
+        final RandomValues randomValues = RandomValues.create();
         for ( int j = 0; j < 10_000; j++ )
         {
             try ( Transaction transaction = database.beginTx() )
             {
                 Node node = database.createNode( testLabel );
-                Object property = MultipleIndexPopulationStressIT.randomPropertyValue( random );
+                Object property = randomValues.nextValue().asObject();
                 node.setProperty( propertyName, property );
                 transaction.success();
             }

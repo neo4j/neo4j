@@ -53,6 +53,7 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -63,6 +64,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -78,6 +80,7 @@ import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.empty;
@@ -192,7 +195,7 @@ public class QueryExecutionLocksIT
         {
             TransactionalContextWrapper context =
                     new TransactionalContextWrapper( createTransactionContext( graph, tx, query ), listeners );
-            executionEngine.executeQuery( query, Collections.emptyMap(), context );
+            executionEngine.executeQuery( query, VirtualValues.emptyMap(), context );
             return new ArrayList<>( context.recordingLocks.getLockOperationRecords() );
         }
     }
@@ -670,6 +673,12 @@ public class QueryExecutionLocksIT
         public Statement acquireStatement()
         {
             return internal.acquireStatement();
+        }
+
+        @Override
+        public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, Optional<String> provider )
+        {
+            return internal.indexUniqueCreate( schema, Optional.empty() );
         }
 
         @Override

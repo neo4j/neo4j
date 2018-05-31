@@ -29,9 +29,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -78,8 +76,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.EntityOutputFormat;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
-import org.neo4j.time.Clocks;
-import org.neo4j.time.FakeClock;
 
 import static java.lang.System.lineSeparator;
 import static org.hamcrest.Matchers.containsString;
@@ -327,15 +323,12 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
 
         @Rule
         public TestData<RESTRequestGenerator> gen = TestData.producedThrough( RESTRequestGenerator.PRODUCER );
-        private static FakeClock clock;
 
         @BeforeClass
         public static void setupServer() throws Exception
         {
-            clock = Clocks.fakeClock();
             server = CommunityServerBuilder.server()
                     .usingDataDir( staticFolder.getRoot().getAbsolutePath() )
-                    .withClock( clock )
                     .build();
 
             suppressAll().call( (Callable<Void>) () ->

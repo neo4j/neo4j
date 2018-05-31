@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.factory;
 
 import java.io.File;
 import java.net.URL;
-import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Result;
@@ -29,10 +28,10 @@ import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
@@ -85,20 +84,6 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public Result executeQuery( String query, Map<String, Object> parameters, TransactionalContext transactionalContext )
-    {
-        try
-        {
-            availability.assertDatabaseAvailable();
-            return dataSource.queryExecutor.get().executeQuery( query, parameters, transactionalContext );
-        }
-        catch ( QueryExecutionKernelException e )
-        {
-            throw e.asUserException();
-        }
-    }
-
-    @Override
     public AutoIndexing autoIndexing()
     {
         return dataSource.autoIndexing;
@@ -113,13 +98,13 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     @Override
     public void registerKernelEventHandler( KernelEventHandler handler )
     {
-        dataSource.kernelEventHandlers.registerKernelEventHandler( handler );
+        platform.eventHandlers.registerKernelEventHandler( handler );
     }
 
     @Override
     public void unregisterKernelEventHandler( KernelEventHandler handler )
     {
-        dataSource.kernelEventHandlers.unregisterKernelEventHandler( handler );
+        platform.eventHandlers.unregisterKernelEventHandler( handler );
     }
 
     @Override

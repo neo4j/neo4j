@@ -31,8 +31,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.impl.index.GBPTreeFileUtil;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 
 import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -43,22 +43,20 @@ abstract class NativeSchemaIndex<KEY extends NativeSchemaKey<KEY>, VALUE extends
     final PageCache pageCache;
     final File storeFile;
     final Layout<KEY,VALUE> layout;
-    final GBPTreeFileUtil gbpTreeFileUtil;
-    final SchemaIndexDescriptor descriptor;
-    private final long indexId;
+    final FileSystemAbstraction fileSystem;
+    final IndexDescriptor descriptor;
     private final IndexProvider.Monitor monitor;
 
     protected GBPTree<KEY,VALUE> tree;
 
-    NativeSchemaIndex( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
-                       IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId )
+    NativeSchemaIndex( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
+            StoreIndexDescriptor descriptor )
     {
         this.pageCache = pageCache;
         this.storeFile = storeFile;
         this.layout = layout;
-        this.gbpTreeFileUtil = new GBPTreeFileSystemFileUtil( fs );
+        this.fileSystem = fs;
         this.descriptor = descriptor;
-        this.indexId = indexId;
         this.monitor = monitor;
     }
 
@@ -87,9 +85,7 @@ abstract class NativeSchemaIndex<KEY extends NativeSchemaKey<KEY>, VALUE extends
 
     private void ensureDirectoryExist() throws IOException
     {
-        // This will create the directory on the "normal" file system.
-        // When native index is put on blockdevice, page cache file system should be used instead.
-        gbpTreeFileUtil.mkdirs( storeFile.getParentFile() );
+        fileSystem.mkdirs( storeFile.getParentFile() );
     }
 
     void closeTree() throws IOException
@@ -97,7 +93,7 @@ abstract class NativeSchemaIndex<KEY extends NativeSchemaKey<KEY>, VALUE extends
         tree = closeIfPresent( tree );
     }
 
-    <T extends Closeable> T closeIfPresent( T closeable ) throws IOException
+    private <T extends Closeable> T closeIfPresent( T closeable ) throws IOException
     {
         if ( closeable != null )
         {

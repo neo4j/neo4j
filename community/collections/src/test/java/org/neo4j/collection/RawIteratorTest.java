@@ -19,19 +19,19 @@
  */
 package org.neo4j.collection;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class RawIteratorTest
+class RawIteratorTest
 {
     @Test
-    public void shouldCreateSimpleRawIterator()
+    void shouldCreateSimpleRawIterator()
     {
         assertEquals( Collections.emptyList(), list( RawIterator.of() ) );
         assertEquals( Collections.singletonList( 1 ), list( RawIterator.of(1) ) );
@@ -39,7 +39,7 @@ public class RawIteratorTest
         assertEquals( asList(1,2,3), list( RawIterator.of( 1,2,3 ) ) );
     }
 
-    public List<Integer> list( RawIterator<Integer, RuntimeException> iter )
+    private static List<Integer> list( RawIterator<Integer, RuntimeException> iter )
     {
         LinkedList<Integer> out = new LinkedList<>();
         while ( iter.hasNext() )

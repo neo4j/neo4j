@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import java.util.Map;
-
 import org.neo4j.graphdb.Result;
 import org.neo4j.values.virtual.MapValue;
 
@@ -29,15 +27,16 @@ public interface QueryExecutionEngine
     Result executeQuery( String query, MapValue parameters, TransactionalContext context )
             throws QueryExecutionKernelException;
 
-    Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext context )
+    QueryExecution executeQuery( String query,
+                                 MapValue parameters,
+                                 TransactionalContext context,
+                                 ResultBuffer resultBuffer )
             throws QueryExecutionKernelException;
 
-    Result profileQuery( String query, Map<String,Object> parameters, TransactionalContext context )
+    Result profileQuery( String query, MapValue parameters, TransactionalContext context )
             throws QueryExecutionKernelException;
 
     boolean isPeriodicCommit( String query );
-
-    String prettify( String query );
 
     long clearQueryCaches();
 }

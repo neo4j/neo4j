@@ -425,7 +425,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // Then
         try ( Transaction tx = session.beginTransaction();
               NodeCursor nodeCursor = tx.cursors().allocateNodeCursor();
-              PropertyCursor propertyCursor = tx.cursors().allocatePropertyCursor(); )
+              PropertyCursor propertyCursor = tx.cursors().allocatePropertyCursor() )
         {
             tx.dataRead().singleNode( node, nodeCursor );
             assertTrue( nodeCursor.next() );

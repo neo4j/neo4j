@@ -25,7 +25,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.longValue;
-import static org.neo4j.values.virtual.VirtualValues.dropNoValues;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
 public class DropNoValuesListValueTest
@@ -38,7 +37,7 @@ public class DropNoValuesListValueTest
                                 longValue( 8L ), longValue( 9L ), longValue( 11L ), NO_VALUE );
 
         // When
-        ListValue filter = dropNoValues( inner );
+        ListValue filter = inner.dropNoValues();
 
         // Then
         ListValue expected = list( longValue( 6L ), longValue( 8L ), longValue( 9L ), longValue( 11L ) );

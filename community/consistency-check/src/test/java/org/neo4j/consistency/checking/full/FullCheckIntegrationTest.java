@@ -41,8 +41,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.GraphStoreFixture;
@@ -62,11 +60,11 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -75,9 +73,8 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -97,7 +94,6 @@ import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsCompositeAllocator;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -105,6 +101,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -136,8 +133,9 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.StatementConstants.ANY_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
-import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory.forLabel;
-import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory.uniqueForLabel;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.uniqueForSchema;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
@@ -229,7 +227,7 @@ public class FullCheckIntegrationTest
                     key1 = tokenWrite.propertyKeyGetOrCreateForName( PROP1 );
                     key2 = tokenWrite.propertyKeyGetOrCreateForName( PROP2 );
                     label3 = ktx.tokenRead().nodeLabel( "label3" );
-                    ktx.schemaWrite().indexCreate( SchemaDescriptorFactory.forLabel( label3, key1, key2 ) );
+                    ktx.schemaWrite().indexCreate( forLabel( label3, key1, key2 ) );
                 }
 
                 db.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( PROP1 ).create();
@@ -450,13 +448,13 @@ public class FullCheckIntegrationTest
         DirectStoreAccess storeAccess = fixture.directStoreAccess();
 
         // fail all indexes
-        Iterator<IndexRule> rules = new SchemaStorage( storeAccess.nativeStores().getSchemaStore() ).indexesGetAll();
+        Iterator<StoreIndexDescriptor> rules = new SchemaStorage( storeAccess.nativeStores().getSchemaStore() ).indexesGetAll();
         while ( rules.hasNext() )
         {
-            IndexRule rule = rules.next();
+            StoreIndexDescriptor rule = rules.next();
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-            IndexPopulator populator = storeAccess.indexes().apply( rule.getProviderDescriptor() )
-                .getPopulator( rule.getId(), rule.getIndexDescriptor(), samplingConfig );
+            IndexPopulator populator = storeAccess.indexes().lookup( rule.providerDescriptor() )
+                .getPopulator( rule, samplingConfig );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
             populator.close( false );
 
@@ -525,11 +523,6 @@ public class FullCheckIntegrationTest
         return longs;
     }
 
-    private PrimitiveLongSet asPrimitiveLongSet( List<? extends Number> in )
-    {
-        return PrimitiveLongCollections.setOf( asArray( in ) );
-    }
-
     @Test
     public void shouldReportMismatchedInlinedLabels() throws Exception
     {
@@ -562,25 +555,23 @@ public class FullCheckIntegrationTest
     {
         // given
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        Iterator<IndexRule> indexRuleIterator =
+        Iterator<StoreIndexDescriptor> indexDescriptorIterator =
                 new SchemaStorage( fixture.directStoreAccess().nativeStores().getSchemaStore() ).indexesGetAll();
         NeoStoreIndexStoreView storeView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE,
                 fixture.directStoreAccess().nativeStores().getRawNeoStores() );
-        while ( indexRuleIterator.hasNext() )
+        while ( indexDescriptorIterator.hasNext() )
         {
-            IndexRule indexRule = indexRuleIterator.next();
-            SchemaIndexDescriptor descriptor = indexRule.getIndexDescriptor();
+            StoreIndexDescriptor indexDescriptor = indexDescriptorIterator.next();
             IndexAccessor accessor = fixture.directStoreAccess().indexes().
-                    apply( indexRule.getProviderDescriptor() ).getOnlineAccessor(
-                            indexRule.getId(), descriptor, samplingConfig );
+                    lookup( indexDescriptor.providerDescriptor() ).getOnlineAccessor( indexDescriptor, samplingConfig );
             try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
             {
                 for ( long nodeId : indexedNodes )
                 {
                     NodeUpdates updates = storeView.nodeAsUpdates( nodeId );
-                    for ( IndexEntryUpdate<?> update : updates.forIndexKeys( asList( descriptor ) ) )
+                    for ( IndexEntryUpdate<?> update : updates.forIndexKeys( asList( indexDescriptor ) ) )
                     {
-                        updater.process( IndexEntryUpdate.remove( nodeId, descriptor, update.values() ) );
+                        updater.process( IndexEntryUpdate.remove( nodeId, indexDescriptor, update.values() ) );
                     }
                 }
             }
@@ -601,15 +592,15 @@ public class FullCheckIntegrationTest
     {
         // given
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        Iterator<IndexRule> indexRuleIterator =
+        Iterator<StoreIndexDescriptor> indexRuleIterator =
                 new SchemaStorage( fixture.directStoreAccess().nativeStores().getSchemaStore() ).indexesGetAll();
         while ( indexRuleIterator.hasNext() )
         {
-            IndexRule indexRule = indexRuleIterator.next();
-            IndexAccessor accessor = fixture.directStoreAccess().indexes().apply( indexRule.getProviderDescriptor() )
-                    .getOnlineAccessor( indexRule.getId(), indexRule.getIndexDescriptor(), samplingConfig );
+            StoreIndexDescriptor indexRule = indexRuleIterator.next();
+            IndexAccessor accessor = fixture.directStoreAccess().indexes().lookup( indexRule.providerDescriptor() )
+                    .getOnlineAccessor( indexRule, samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
-            updater.process( IndexEntryUpdate.add( 42, indexRule.getIndexDescriptor().schema(), values( indexRule ) ) );
+            updater.process( IndexEntryUpdate.add( 42, indexRule.schema(), values( indexRule ) ) );
             updater.close();
             accessor.force( IOLimiter.unlimited() );
             accessor.close();
@@ -624,7 +615,7 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    private Value[] values( IndexRule indexRule )
+    private Value[] values( StoreIndexDescriptor indexRule )
     {
         switch ( indexRule.schema().getPropertyIds().length )
         {
@@ -1023,8 +1014,8 @@ public class FullCheckIntegrationTest
                 DynamicRecord schemaBefore = schema.clone();
 
                 schema.setNextBlock( next.schema() ); // Point to a record that isn't in use.
-                IndexRule rule = indexRule( schema.getId(), label1, key1, DESCRIPTOR );
-                schema.setData( rule.serialize() );
+                StoreIndexDescriptor rule = indexRule( schema.getId(), label1, key1, DESCRIPTOR );
+                schema.setData( SchemaRuleSerialization.serialize( rule ) );
 
                 tx.createSchema( asList( schemaBefore ), asList( schema ), rule );
             }
@@ -1058,8 +1049,8 @@ public class FullCheckIntegrationTest
                 DynamicRecord record1Before = record1.clone();
                 DynamicRecord record2Before = record2.clone();
 
-                IndexRule rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId1 );
-                IndexRule rule2 = constraintIndexRule( ruleId2, labelId, propertyKeyId, DESCRIPTOR, ruleId1 );
+                StoreIndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId1 );
+                StoreIndexDescriptor rule2 = constraintIndexRule( ruleId2, labelId, propertyKeyId, DESCRIPTOR, ruleId1 );
 
                 Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );
                 Collection<DynamicRecord> records2 = serializeRule( rule2, record2 );
@@ -1103,7 +1094,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord record1Before = record1.clone();
                 DynamicRecord record2Before = record2.clone();
 
-                IndexRule rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId2 );
+                StoreIndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId2 );
                 ConstraintRule rule2 = uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
 
                 Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );
@@ -2259,10 +2250,10 @@ public class FullCheckIntegrationTest
                 DynamicRecord recordBefore = new DynamicRecord( id );
                 DynamicRecord recordAfter = recordBefore.clone();
 
-                IndexRule rule = IndexRule.indexRule( id, forLabel( labelId, propertyKeyIds ), DESCRIPTOR );
-                Collection<DynamicRecord> records = serializeRule( rule, recordAfter );
+                StoreIndexDescriptor index = forSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).withId( id );
+                Collection<DynamicRecord> records = serializeRule( index, recordAfter );
 
-                tx.createSchema( singleton( recordBefore ), records, rule );
+                tx.createSchema( singleton( recordBefore ), records, index );
             }
         } );
     }
@@ -2274,8 +2265,8 @@ public class FullCheckIntegrationTest
         long ruleId1 = schemaStore.nextId();
         long ruleId2 = schemaStore.nextId();
 
-        IndexRule indexRule = IndexRule.constraintIndexRule( ruleId1,
-                uniqueForLabel( labelId, propertyKeyIds ), DESCRIPTOR, ruleId2 );
+        StoreIndexDescriptor indexRule =
+                uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).withIds( ruleId1, ruleId2 );
         ConstraintRule uniqueRule = ConstraintRule.constraintRule( ruleId2,
                 ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyIds ), ruleId1 );
 
@@ -2290,8 +2281,8 @@ public class FullCheckIntegrationTest
         long ruleId1 = schemaStore.nextId();
         long ruleId2 = schemaStore.nextId();
 
-        IndexRule indexRule = IndexRule.constraintIndexRule( ruleId1,
-                uniqueForLabel( labelId, propertyKeyIds ), DESCRIPTOR, ruleId2 );
+        StoreIndexDescriptor indexRule =
+                uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).withIds( ruleId1, ruleId2 );
         ConstraintRule nodeKeyRule = ConstraintRule.constraintRule( ruleId2,
                 ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propertyKeyIds ), ruleId1 );
 
@@ -2386,7 +2377,7 @@ public class FullCheckIntegrationTest
 
     private static Collection<DynamicRecord> serializeRule( SchemaRule rule, DynamicRecord... records )
     {
-        byte[] data = rule.serialize();
+        byte[] data = SchemaRuleSerialization.serialize( rule );
         DynamicRecordAllocator dynamicRecordAllocator =
                 new ReusableRecordsCompositeAllocator( asList( records ), schemaAllocator );
         Collection<DynamicRecord> result = new ArrayList<>();

@@ -128,7 +128,7 @@ public class RemoteStore
         try
         {
             long lastFlushedTxId;
-            StreamToDiskProvider streamToDiskProvider = new StreamToDiskProvider( destDir, fs, pageCache, monitors );
+            StreamToDiskProvider streamToDiskProvider = new StreamToDiskProvider( destDir, fs, monitors );
             lastFlushedTxId = storeCopyClient.copyStoreFiles( addressProvider, expectedStoreId, streamToDiskProvider,
                         () -> new MaximumTotalTime( config.get( CausalClusteringSettings.store_copy_max_retry_time_per_request ).getSeconds(),
                                 TimeUnit.SECONDS ), destDir );

@@ -25,11 +25,9 @@ package org.neo4j.harness;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -38,7 +36,6 @@ import java.util.stream.IntStream;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.internal.EnterpriseInProcessServerBuilder;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.Settings;
@@ -70,6 +67,7 @@ public class CausalClusterInProcessBuilder
         private Log log;
         private Path path;
         private PortPickingFactory portFactory = PortPickingFactory.DEFAULT;
+        private final Map<String, String> config = new HashMap<>();
         private List<String> databases = new ArrayList<>( Collections.singletonList( "default" ) );
 
         public WithReplicas withCores( int n )
@@ -87,6 +85,12 @@ public class CausalClusterInProcessBuilder
         public WithPath withLogger( LogProvider l )
         {
             log = l.getLog( "org.neo4j.harness.CausalCluster" );
+            return this;
+        }
+
+        public Builder withConfig( String settingName, String value )
+        {
+            config.put( settingName, value );
             return this;
         }
 
@@ -236,24 +240,24 @@ public class CausalClusterInProcessBuilder
     {
         private final int nCores;
         private final int nReplicas;
-        private final int nDatabases;
         private final List<String> databaseNames;
         private final Path clusterPath;
         private final Log log;
         private final PortPickingFactory portFactory;
+        private final Map<String,String> config;
 
         private List<ServerControls> coreControls = synchronizedList( new ArrayList<>() );
         private List<ServerControls> replicaControls = synchronizedList( new ArrayList<>() );
 
-        private CausalCluster( CausalClusterInProcessBuilder.Builder bldr )
+        private CausalCluster( CausalClusterInProcessBuilder.Builder builder )
         {
-            this.nCores = bldr.numCoreHosts;
-            this.nReplicas = bldr.numReadReplicas;
-            this.clusterPath = bldr.path;
-            this.log = bldr.log;
-            this.portFactory = bldr.portFactory;
-            this.nDatabases = bldr.databases.size();
-            this.databaseNames = bldr.databases;
+            this.nCores = builder.numCoreHosts;
+            this.nReplicas = builder.numReadReplicas;
+            this.clusterPath = builder.path;
+            this.log = builder.log;
+            this.portFactory = builder.portFactory;
+            this.databaseNames = builder.databases;
+            this.config = builder.config;
         }
 
         private Map<Integer,String> distributeHostsBetweenDatabases( int nHosts, List<String> databases )
@@ -324,6 +328,8 @@ public class CausalClusterInProcessBuilder
 
                 builder.withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
 
+                config.forEach( builder::withConfig );
+
                 int finalCoreId = coreId;
                 Thread coreThread = new Thread( () ->
                 {
@@ -367,6 +373,9 @@ public class CausalClusterInProcessBuilder
                 builder.withConfig( ServerSettings.jmx_module_enabled.name(), Settings.FALSE );
 
                 builder.withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
+
+                config.forEach( builder::withConfig );
+
                 int finalReplicaId = replicaId;
                 Thread replicaThread = new Thread( () ->
                 {

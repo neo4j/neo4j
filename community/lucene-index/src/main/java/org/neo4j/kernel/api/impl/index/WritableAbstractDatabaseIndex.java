@@ -102,7 +102,7 @@ public class WritableAbstractDatabaseIndex<T extends AbstractLuceneIndex> implem
      * {@inheritDoc}
      */
     @Override
-    public void drop() throws IOException
+    public void drop()
     {
         commitCloseLock.lock();
         try

@@ -7,12 +7,12 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>parent</artifactId>
-        <version>3.4.1-SNAPSHOT</version>
+        <version>3.5.0-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
 
     <artifactId>neo4j-tools</artifactId>
-    <version>3.4.1-SNAPSHOT</version>
+    <version>3.5.0-SNAPSHOT</version>
 
     <name>Neo4j - Low Level Tools</name>
     <packaging>jar</packaging>
@@ -91,14 +91,16 @@
 
     <!-- Test dependencies -->
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <exclusions>
-        <exclusion>
-          <artifactId>hamcrest-core</artifactId>
-          <groupId>org.hamcrest</groupId>
-        </exclusion>
-      </exclusions>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-migrationsupport</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.surefire</groupId>
+      <artifactId>surefire-logger-api</artifactId>
     </dependency>
     <dependency>
         <groupId>commons-codec</groupId>
@@ -118,6 +120,19 @@
       <version>${project.version}</version>
       <scope>test</scope>
       <type>test-jar</type>
+    </dependency>
+      <dependency>
+          <groupId>org.neo4j</groupId>
+          <artifactId>neo4j-index</artifactId>
+          <version>${project.version}</version>
+          <scope>test</scope>
+          <type>test-jar</type>
+      </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-random-values</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 

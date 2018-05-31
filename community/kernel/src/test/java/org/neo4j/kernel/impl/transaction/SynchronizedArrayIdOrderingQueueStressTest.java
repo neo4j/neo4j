@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.Test;
 
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 
@@ -48,7 +49,7 @@ public class SynchronizedArrayIdOrderingQueueStressTest
         CountDownLatch readySignal = new CountDownLatch( committers.length );
         AtomicBoolean end = new AtomicBoolean();
         CountDownLatch startSignal = new CountDownLatch( 1 );
-        PrimitiveLongIterator idSource = neverEndingIdStream();
+        LongIterator idSource = neverEndingIdStream();
         for ( int i = 0; i < committers.length; i++ )
         {
             committers[i] = new Committer( queue, idSource, end, readySignal, startSignal );
@@ -123,9 +124,9 @@ public class SynchronizedArrayIdOrderingQueueStressTest
         }
     }
 
-    private PrimitiveLongIterator neverEndingIdStream()
+    private LongIterator neverEndingIdStream()
     {
-        return new PrimitiveLongIterator()
+        return new LongIterator()
         {
             private final Stride stride = new Stride();
             private long next;
@@ -157,11 +158,11 @@ public class SynchronizedArrayIdOrderingQueueStressTest
         private final IdOrderingQueue queue;
         private final AtomicBoolean end;
         private final CountDownLatch startSignal;
-        private final PrimitiveLongIterator idSource;
+        private final LongIterator idSource;
         private final CountDownLatch readySignal;
         private volatile Exception exception;
 
-        Committer( IdOrderingQueue queue, PrimitiveLongIterator idSource, AtomicBoolean end,
+        Committer( IdOrderingQueue queue, LongIterator idSource, AtomicBoolean end,
                 CountDownLatch readySignal, CountDownLatch startSignal )
         {
             this.queue = queue;

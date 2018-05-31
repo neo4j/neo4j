@@ -24,13 +24,13 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.ValueTuple;
 
@@ -62,14 +62,14 @@ public class DeferredConflictCheckingIndexUpdater implements IndexUpdater
 {
     private final IndexUpdater actual;
     private final Supplier<IndexReader> readerSupplier;
-    private final SchemaIndexDescriptor schemaIndexDescriptor;
+    private final IndexDescriptor indexDescriptor;
     private final Set<ValueTuple> touchedTuples = new HashSet<>();
 
-    public DeferredConflictCheckingIndexUpdater( IndexUpdater actual, Supplier<IndexReader> readerSupplier, SchemaIndexDescriptor schemaIndexDescriptor )
+    public DeferredConflictCheckingIndexUpdater( IndexUpdater actual, Supplier<IndexReader> readerSupplier, IndexDescriptor indexDescriptor )
     {
         this.actual = actual;
         this.readerSupplier = readerSupplier;
-        this.schemaIndexDescriptor = schemaIndexDescriptor;
+        this.indexDescriptor = indexDescriptor;
     }
 
     @Override
@@ -113,7 +113,7 @@ public class DeferredConflictCheckingIndexUpdater implements IndexUpdater
     private IndexQuery[] queryOf( ValueTuple tuple )
     {
         IndexQuery[] predicates = new IndexQuery[tuple.size()];
-        int[] propertyIds = schemaIndexDescriptor.schema().getPropertyIds();
+        int[] propertyIds = indexDescriptor.schema().getPropertyIds();
         for ( int i = 0; i < predicates.length; i++ )
         {
             predicates[i] = exact( propertyIds[i], tuple.valueAt( i ) );

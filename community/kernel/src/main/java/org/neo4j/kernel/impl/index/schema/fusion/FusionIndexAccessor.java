@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -43,18 +43,15 @@ import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.INSTANCE_CO
 
 class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements IndexAccessor
 {
-    private final long indexId;
-    private final SchemaIndexDescriptor descriptor;
+    private final StoreIndexDescriptor descriptor;
     private final DropAction dropAction;
 
     FusionIndexAccessor( SlotSelector slotSelector,
             InstanceSelector<IndexAccessor> instanceSelector,
-            long indexId,
-            SchemaIndexDescriptor descriptor,
+            StoreIndexDescriptor descriptor,
             DropAction dropAction )
     {
         super( slotSelector, instanceSelector );
-        this.indexId = indexId;
         this.descriptor = descriptor;
         this.dropAction = dropAction;
     }
@@ -63,7 +60,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     public void drop() throws IOException
     {
         instanceSelector.forAll( IndexAccessor::drop );
-        dropAction.drop( indexId );
+        dropAction.drop( descriptor.getId() );
     }
 
     @Override

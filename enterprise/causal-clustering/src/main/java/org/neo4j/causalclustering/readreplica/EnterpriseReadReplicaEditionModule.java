@@ -133,7 +133,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.kernel.internal.DefaultKernelData;
+import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.logging.LogProvider;
@@ -185,11 +185,15 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         dependencies.satisfyDependency( idController );
         dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
-        propertyKeyTokenHolder = life.add( dependencies.satisfyDependency( new DelegatingPropertyKeyTokenHolder( new ReadOnlyTokenCreator() ) ) );
-        labelTokenHolder = life.add( dependencies.satisfyDependency( new DelegatingLabelTokenHolder( new ReadOnlyTokenCreator() ) ) );
-        relationshipTypeTokenHolder = life.add( dependencies.satisfyDependency( new DelegatingRelationshipTypeTokenHolder( new ReadOnlyTokenCreator() ) ) );
+        propertyKeyTokenHolder = new DelegatingPropertyKeyTokenHolder( new ReadOnlyTokenCreator() );
+        labelTokenHolder = new DelegatingLabelTokenHolder( new ReadOnlyTokenCreator() );
+        relationshipTypeTokenHolder = new DelegatingRelationshipTypeTokenHolder( new ReadOnlyTokenCreator() );
 
-        life.add( dependencies.satisfyDependency( new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade ) ) );
+        dependencies.satisfyDependency( propertyKeyTokenHolder );
+        dependencies.satisfyDependency( labelTokenHolder );
+        dependencies.satisfyDependency( relationshipTypeTokenHolder );
+
+        life.add( dependencies.satisfyDependency( new KernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade ) ) );
 
         headerInformationFactory = TransactionHeaderInformationFactory.DEFAULT;
 
@@ -249,11 +253,10 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                     ModifierProtocolInstaller.allClientInstallers );
             Duration handshakeTimeout = config.get( CausalClusteringSettings.handshake_timeout );
             return new HandshakeClientInitializer( applicationProtocolRepository, modifierProtocolRepository, protocolInstallerRepository,
-                    clientPipelineBuilderFactory, handshakeTimeout, logProvider );
+                    clientPipelineBuilderFactory, handshakeTimeout, logProvider, userLogProvider );
         };
 
-        long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
-        CatchUpClient catchUpClient = life.add( new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, channelInitializer ) );
+        CatchUpClient catchUpClient = life.add( new CatchUpClient( logProvider, Clocks.systemClock(), channelInitializer ) );
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
@@ -318,7 +321,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         RegularCatchupServerHandler catchupServerHandler = new RegularCatchupServerHandler( platformModule.monitors,
                 logProvider, localDatabase::storeId, platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
-                fileSystem, platformModule.pageCache, platformModule.storeCopyCheckPointMutex, null, new CheckpointerSupplier( platformModule.dependencies ) );
+                fileSystem, platformModule.storeCopyCheckPointMutex, null, new CheckpointerSupplier( platformModule.dependencies ) );
 
         InstalledProtocolHandler installedProtocolHandler = new InstalledProtocolHandler(); // TODO: hook into a procedure
         Server catchupServer = new CatchupServerBuilder( catchupServerHandler )

@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.util.v3_4.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
-import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.v3_4.expressions.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticCheckResult
+import org.opencypher.v9_0.util.InputPosition
+import org.opencypher.v9_0.ast.semantics.SemanticCheck
+import org.opencypher.v9_0.expressions.Expression
+import org.opencypher.v9_0.expressions.Expression.SemanticContext
+import org.opencypher.v9_0.ast.semantics.SemanticCheckResult
 
 case class NestedPipeExpression(pipe: Pipe, projection: Expression)(val position: InputPosition) extends Expression {
   def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success

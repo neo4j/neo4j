@@ -22,13 +22,15 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import java.util.concurrent.TimeUnit
+
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 
 import scala.collection.Map
 
-class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
+abstract class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should not use morsel by default") {
     //Given
@@ -224,6 +226,33 @@ class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
     result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
   }
 
+  test("should support top n < morsel size") {
+    //Given
+    1 to 100 foreach(i => createNode("prop" -> i))
+
+    //When
+    val result = graph.execute("CYPHER runtime=morsel MATCH (n) RETURN n.prop ORDER BY n.prop DESC LIMIT 2")
+
+    //Then
+    val scalaresult = asScalaResult(result).toList
+    scalaresult should equal(List(Map("n.prop" -> 100), Map("n.prop" -> 99)))
+    result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
+  }
+
+  test("should support top n > morsel size") {
+    //Given
+    1 to 100 foreach(i => createNode("prop" -> i))
+
+    //When
+    val result = graph.execute("CYPHER runtime=morsel MATCH (n) RETURN n.prop ORDER BY n.prop DESC LIMIT 6")
+
+    //Then
+    val scalaresult = asScalaResult(result).toList
+    scalaresult should equal(List(Map("n.prop" -> 100), Map("n.prop" -> 99), Map("n.prop" -> 98),
+      Map("n.prop" -> 97), Map("n.prop" -> 96), Map("n.prop" -> 95)))
+    result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
+  }
+
   test("should support collect with grouping") {
     //Given
     10 to 100 by 10 foreach(i => createNode("prop" -> i, "group" -> (if (i > 50) "FOO" else "BAR")))
@@ -242,6 +271,173 @@ class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
     result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
   }
 
+  test("should support index scans") {
+    // Given
+    graph.createIndex("Person", "name")
+    graph.inTx(graph.schema().awaitIndexesOnline(5, TimeUnit.SECONDS))
+    val names = (1 to 91).map(i => s"Satia$i")
+    names.foreach(name => createLabeledNode(Map("name" -> name), "Person"))
+
+    // When
+    val result = graph.execute("CYPHER runtime=morsel MATCH (n: Person) WHERE EXISTS(n.name) RETURN n.name ")
+
+    // Then
+    val resultSet = asScalaResult(result).toSet
+    resultSet.map(map => map("n.name")) should equal(names.toSet)
+    result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
+  }
+
+  test("should support index seek") {
+    // Given
+    graph.createIndex("Person", "name")
+    graph.inTx(graph.schema().awaitIndexesOnline(5, TimeUnit.SECONDS))
+    val names = (1 to 91).map(i => s"Satia$i")
+    names.foreach(name => createLabeledNode(Map("name" -> name), "Person"))
+
+    // When
+    val result = graph.execute("CYPHER runtime=morsel MATCH (n: Person) WHERE n.name='Satia42' RETURN n.name ")
+
+    // Then
+    val resultSet = asScalaResult(result).toSet
+    resultSet.map(map => map("n.name")) should equal(Set("Satia42"))
+    result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
+  }
+
+  test("should support contains index seek") {
+    // Given
+    graph.createIndex("Person", "name")
+    graph.inTx(graph.schema().awaitIndexesOnline(5, TimeUnit.SECONDS))
+    val names = (1 to 91).map(i => s"Satia$i")
+    names.foreach(name => createLabeledNode(Map("name" -> name), "Person"))
+
+    // When
+    val result = graph.execute("CYPHER runtime=morsel MATCH (n: Person) WHERE n.name CONTAINS'tia4' RETURN n.name ")
+
+    // Then
+    val resultSet = asScalaResult(result).toSet
+    resultSet.map(map => map("n.name")) should equal(("Satia4" +: (0 to 9).map(i => s"Satia4$i")).toSet)
+    result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
+  }
+
+  test("should support composite indexes") {
+    // Given
+    graph.createIndex("Person", "name", "age")
+    graph.inTx(graph.schema().awaitIndexesOnline(5, TimeUnit.SECONDS))
+    val names = (1 to 91).map(i => (i, s"Satia$i"))
+    names.foreach {
+      case (i,name) => createLabeledNode(Map("name" -> name, "age" -> i), "Person")
+    }
+
+    // When
+    val result = graph.execute("CYPHER runtime=morsel MATCH (n: Person) WHERE n.name = 'Satia42' AND n.age = 42 RETURN n.name, n.age ")
+
+    // Then
+    val resultSet = asScalaResult(result).toSet
+    resultSet should equal(Set(Map("n.name" -> "Satia42", "n.age" -> 42)))
+    result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
+  }
+
+  test("should support range queries") {
+    // Given
+    graph.createIndex("Person", "age")
+    graph.inTx(graph.schema().awaitIndexesOnline(5, TimeUnit.SECONDS))
+    val names = (1 to 91).map(i => (i, s"Satia$i"))
+    names.foreach {
+      case (i,name) => createLabeledNode(Map("name" -> name, "age" -> i), "Person")
+    }
+
+    // When
+    val result = graph.execute("CYPHER runtime=morsel MATCH (n: Person) WHERE n.age < 42 RETURN n.name, n.age ")
+
+    // Then
+    val resultSet = asScalaResult(result).toSet
+    resultSet.map(map => map("n.name")) should equal((1 to 41).map(i => s"Satia$i").toSet)
+    result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
+  }
+
+  test("should support label scans") {
+    // Given
+    val names = (1 to 91).map(i => s"Satia$i")
+    names.foreach(name => createLabeledNode(Map("name" -> name), "Person"))
+
+    // When
+    val result = graph.execute("CYPHER runtime=morsel MATCH (n: Person) RETURN n.name ")
+
+    // Then
+    val resultSet = asScalaResult(result).toSet
+    resultSet.map(map => map("n.name")) should equal(names.toSet)
+    result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
+  }
+
+  test("don't stall for nested plan expressions") {
+    // Given
+    graph.execute( """CREATE (a:A)
+                     |CREATE (a)-[:T]->(:B),
+                     |       (a)-[:T]->(:C)""".stripMargin)
+
+
+    // When
+    val result =
+      graph.execute( """ CYPHER runtime=morsel
+                       | MATCH (n)
+                       | RETURN CASE
+                       |          WHEN id(n) >= 0 THEN (n)-->()
+                       |          ELSE 42
+                       |        END AS p""".stripMargin)
+
+    // Then
+    //note that this query is currently not using morsel, however there was a bug leading to
+    //a blocked threads for nested queries
+   asScalaResult(result).toList should not be empty
+  }
+
+  test("aggregation should not overflow morsel") {
+    // Given
+    graph.execute( """
+                     |CREATE (zadie: AUTHOR {name: "Zadie Smith"})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "White teeth"})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "The Autograph Man"})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "On Beauty"})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "NW"})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "Swing Time"})""".stripMargin)
+
+    // When
+    val result = graph.execute("CYPHER runtime=morsel  MATCH (a)-[r]->(b) RETURN b.book as book, count(r), count(distinct a)")
+
+    // Then
+    asScalaResult(result).toList should not be empty
+  }
+
+  test("should not duplicate results in queries with multiple eager pipelines") {
+    // Given
+    graph.execute( """
+                     |CREATE (zadie: AUTHOR {name: "Zadie Smith"})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "White teeth", rating: 5})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "The Autograph Man", rating: 3})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "On Beauty", rating: 4})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "NW"})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "Swing Time", rating: 5})""".stripMargin)
+
+    // When
+    val result = graph.execute("CYPHER runtime=morsel  MATCH (b:BOOK) RETURN b.book as book, count(b.rating) ORDER BY book")
+
+    // Then
+    asScalaResult(result).toList should have size 5
+  }
+}
+
+class ParallelMorselRuntimeAcceptanceTest extends MorselRuntimeAcceptanceTest {
   //we use a ridiculously small morsel size in order to trigger as many morsel overflows as possible
-  override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_morsel_size -> "4")
+  override def databaseConfig(): Map[Setting[_], String] = Map(
+    GraphDatabaseSettings.cypher_morsel_size -> "4",
+    GraphDatabaseSettings.cypher_worker_count -> "0"
+  )
+}
+
+class SequentialMorselRuntimeAcceptanceTest extends MorselRuntimeAcceptanceTest {
+  //we use a ridiculously small morsel size in order to trigger as many morsel overflows as possible
+  override def databaseConfig(): Map[Setting[_], String] = Map(
+    GraphDatabaseSettings.cypher_morsel_size -> "4",
+    GraphDatabaseSettings.cypher_worker_count -> "1"
+  )
 }

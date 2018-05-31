@@ -19,39 +19,39 @@
  */
 package org.neo4j.resources;
 
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.Test;
-
 import static java.lang.Thread.currentThread;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.neo4j.resources.HeapAllocation.HEAP_ALLOCATION;
 import static org.neo4j.resources.HeapAllocation.NOT_AVAILABLE;
 
-public class SunManagementHeapAllocationTest
+class SunManagementHeapAllocationTest
 {
-    @Before
-    public void onlyOnSupportedJvms()
+    @BeforeEach
+    void onlyOnSupportedJvms()
     {
         assumeFalse( HEAP_ALLOCATION == NOT_AVAILABLE );
     }
 
     @Test
-    public void shouldLoadHeapAllocation()
+    void shouldLoadHeapAllocation()
     {
         assertNotSame( NOT_AVAILABLE, HEAP_ALLOCATION );
         assertThat( HEAP_ALLOCATION, instanceOf( SunManagementHeapAllocation.class ) );
     }
 
     @Test
-    public void shouldMeasureAllocation()
+    void shouldMeasureAllocation()
     {
         // given
         long allocatedBytes = HEAP_ALLOCATION.allocatedBytes( currentThread() );

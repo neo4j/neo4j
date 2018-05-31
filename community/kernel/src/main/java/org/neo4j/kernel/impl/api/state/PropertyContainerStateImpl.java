@@ -19,39 +19,31 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.eclipse.collections.api.IntIterable;
+import org.eclipse.collections.api.map.primitive.IntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+
 import java.util.Iterator;
-import java.util.Set;
-import java.util.function.Predicate;
 
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
-import org.neo4j.kernel.impl.util.VersionedHashMap;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
-import static java.util.Collections.newSetFromMap;
 
 class PropertyContainerStateImpl implements PropertyContainerState
 {
     private final long id;
 
-    private VersionedHashMap<Integer, Value> addedProperties;
-    private VersionedHashMap<Integer, Value> changedProperties;
-    private Set<Integer> removedProperties;
-
-    private final Predicate<StorageProperty> excludePropertiesWeKnowAbout = new Predicate<StorageProperty>()
-    {
-        @Override
-        public boolean test( StorageProperty item )
-        {
-            return (removedProperties == null || !removedProperties.contains( item.propertyKeyId() ))
-                    && (addedProperties == null || !addedProperties.containsKey( item.propertyKeyId() ))
-                    && (changedProperties == null || !changedProperties.containsKey( item.propertyKeyId() ));
-        }
-    };
+    private MutableIntObjectMap<Value> addedProperties;
+    private MutableIntObjectMap<Value> changedProperties;
+    private MutableIntSet removedProperties;
 
     PropertyContainerStateImpl( long id )
     {
@@ -89,7 +81,7 @@ class PropertyContainerStateImpl implements PropertyContainerState
 
         if ( changedProperties == null )
         {
-            changedProperties = new VersionedHashMap<>();
+            changedProperties = new IntObjectHashMap<>();
         }
         changedProperties.put( propertyKeyId, value );
 
@@ -110,7 +102,7 @@ class PropertyContainerStateImpl implements PropertyContainerState
         }
         if ( addedProperties == null )
         {
-            addedProperties = new VersionedHashMap<>();
+            addedProperties = new IntObjectHashMap<>();
         }
         addedProperties.put( propertyKeyId, value );
     }
@@ -123,7 +115,7 @@ class PropertyContainerStateImpl implements PropertyContainerState
         }
         if ( removedProperties == null )
         {
-            removedProperties = newSetFromMap( new VersionedHashMap<>() );
+            removedProperties = new IntHashSet();
         }
         removedProperties.add( propertyKeyId );
         if ( changedProperties != null )
@@ -145,9 +137,9 @@ class PropertyContainerStateImpl implements PropertyContainerState
     }
 
     @Override
-    public Iterator<Integer> removedProperties()
+    public IntIterable removedProperties()
     {
-        return removedProperties != null ? removedProperties.iterator() : emptyIterator();
+        return removedProperties == null ? IntSets.immutable.empty() : removedProperties;
     }
 
     @Override
@@ -162,35 +154,6 @@ class PropertyContainerStateImpl implements PropertyContainerState
             return toPropertyIterator( addedProperties );
         }
         return Iterators.concat( toPropertyIterator( addedProperties ), toPropertyIterator( changedProperties ) );
-    }
-
-    @Override
-    public Iterator<StorageProperty> augmentProperties( Iterator<StorageProperty> iterator )
-    {
-        if ( removedProperties != null || addedProperties != null || changedProperties != null )
-        {
-            iterator = Iterators.filter( excludePropertiesWeKnowAbout, iterator );
-
-            if ( addedProperties != null && !addedProperties.isEmpty() )
-            {
-                iterator = Iterators.concat( iterator, toPropertyIterator( addedProperties ) );
-            }
-            if ( changedProperties != null && !changedProperties.isEmpty() )
-            {
-                iterator = Iterators.concat( iterator, toPropertyIterator( changedProperties ) );
-            }
-        }
-
-        return iterator;
-    }
-
-    @Override
-    public void accept( Visitor visitor ) throws ConstraintValidationException
-    {
-        if ( addedProperties != null || removedProperties != null || changedProperties != null )
-        {
-            visitor.visitPropertyChanges( id, addedProperties(), changedProperties(), removedProperties() );
-        }
     }
 
     @Override
@@ -224,16 +187,13 @@ class PropertyContainerStateImpl implements PropertyContainerState
         return removedProperties != null && removedProperties.contains( propertyKeyId );
     }
 
-    private Iterator<StorageProperty> toPropertyIterator( VersionedHashMap<Integer,Value> propertyMap )
+    private Iterator<StorageProperty> toPropertyIterator( IntObjectMap<Value> propertyMap )
     {
-        return propertyMap == null ? emptyIterator() :
-               Iterators.map(
-                    entry -> new PropertyKeyValue( entry.getKey(), entry.getValue() ),
-                    propertyMap.entrySet().iterator()
-                );
+        return propertyMap == null ? emptyIterator()
+                                   : propertyMap.keyValuesView().collect( e -> (StorageProperty) new PropertyKeyValue( e.getOne(), e.getTwo() ) ).iterator();
     }
 
-    private PropertyKeyValue getPropertyOrNull( VersionedHashMap<Integer,Value> propertyMap, int propertyKeyId )
+    private PropertyKeyValue getPropertyOrNull( IntObjectMap<Value> propertyMap, int propertyKeyId )
     {
         Value value = propertyMap.get( propertyKeyId );
         return value == null ? null : new PropertyKeyValue( propertyKeyId, value );

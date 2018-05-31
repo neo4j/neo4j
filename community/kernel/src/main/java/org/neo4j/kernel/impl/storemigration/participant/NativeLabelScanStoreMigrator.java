@@ -100,8 +100,7 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
 
     private void deleteNativeIndexFile( File storeDir ) throws IOException
     {
-        Optional<FileHandle> indexFile = pageCache.getCachedFileSystem()
-                .streamFilesRecursive( NativeLabelScanStore.getLabelScanStoreFile( storeDir ) ).findFirst();
+        Optional<FileHandle> indexFile = fileSystem.streamFilesRecursive( NativeLabelScanStore.getLabelScanStoreFile( storeDir ) ).findFirst();
 
         if ( indexFile.isPresent() )
         {
@@ -118,8 +117,7 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
 
     private void moveNativeIndexFile( File storeDir, File nativeLabelIndex ) throws IOException
     {
-        Optional<FileHandle> nativeIndexFileHandle =
-                pageCache.getCachedFileSystem().streamFilesRecursive( nativeLabelIndex ).findFirst();
+        Optional<FileHandle> nativeIndexFileHandle = fileSystem.streamFilesRecursive( nativeLabelIndex ).findFirst();
         if ( nativeIndexFileHandle.isPresent() )
         {
             nativeIndexFileHandle.get().rename( new File( storeDir, NativeLabelScanStore.FILE_NAME ) );
@@ -130,7 +128,7 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
             ProgressReporter progressReporter, NeoStores neoStores )
     {
         NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, neoStores );
-        return new NativeLabelScanStore( pageCache, migrationDir,
+        return new NativeLabelScanStore( pageCache, migrationDir, fileSystem,
                 new MonitoredFullLabelStream( neoStoreIndexStoreView, progressReporter ), false, new Monitors(),
                 RecoveryCleanupWorkCollector.IMMEDIATE );
     }
@@ -146,8 +144,7 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
 
     private boolean isNativeLabelScanStoreMigrationRequired( File storeDir ) throws IOException
     {
-        return pageCache.getCachedFileSystem()
-                .streamFilesRecursive( new File( storeDir, NativeLabelScanStore.FILE_NAME ) )
+        return fileSystem.streamFilesRecursive( new File( storeDir, NativeLabelScanStore.FILE_NAME ) )
                 .noneMatch( Predicates.alwaysTrue() );
     }
 

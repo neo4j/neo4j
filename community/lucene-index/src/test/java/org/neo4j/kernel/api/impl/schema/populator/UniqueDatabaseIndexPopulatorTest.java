@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.schema.populator;
 
 import org.apache.lucene.store.Directory;
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -32,8 +33,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -48,8 +48,8 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -85,8 +85,7 @@ public class UniqueDatabaseIndexPopulatorTest
     private static final int PROPERTY_KEY_ID = 2;
 
     private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-    private static final SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory
-            .forLabel( LABEL_ID, PROPERTY_KEY_ID );
+    private static final IndexDescriptor descriptor = TestIndexDescriptorFactory.forLabel( LABEL_ID, PROPERTY_KEY_ID );
 
     private final PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
 
@@ -541,7 +540,7 @@ public class UniqueDatabaseIndexPopulatorTest
         index.maybeRefreshBlocking();
         try ( IndexReader reader = index.getIndexReader() )
         {
-            PrimitiveLongIterator allEntities = reader.query( IndexQuery.exists( 1 ) );
+            LongIterator allEntities = reader.query( IndexQuery.exists( 1 ) );
             assertArrayEquals( new long[]{1, 2, 3}, PrimitiveLongCollections.asArray( allEntities ) );
         }
     }

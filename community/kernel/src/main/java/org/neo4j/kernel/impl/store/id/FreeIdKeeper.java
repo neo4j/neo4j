@@ -23,8 +23,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.neo4j.collection.primitive.PrimitiveLongArrayQueue;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.PrimitiveLongArrayQueue;
+import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 

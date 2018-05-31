@@ -19,14 +19,14 @@
  */
 package org.neo4j.memory;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class LocalMemoryTrackerTest
+class LocalMemoryTrackerTest
 {
     @Test
-    public void trackMemoryAllocations()
+    void trackMemoryAllocations()
     {
         LocalMemoryTracker memoryTracker = new LocalMemoryTracker();
         memoryTracker.allocated( 10 );
@@ -36,7 +36,7 @@ public class LocalMemoryTrackerTest
     }
 
     @Test
-    public void trackMemoryDeallocations()
+    void trackMemoryDeallocations()
     {
         LocalMemoryTracker memoryTracker = new LocalMemoryTracker();
         memoryTracker.allocated( 100 );
@@ -50,7 +50,7 @@ public class LocalMemoryTrackerTest
     }
 
     @Test
-    public void localMemoryTrackerPropagatesAllocationsToGlobalTracker()
+    void localMemoryTrackerPropagatesAllocationsToGlobalTracker()
     {
         GlobalMemoryTracker globalMemoryTracker = GlobalMemoryTracker.INSTANCE;
         long initialGlobalUsage = globalMemoryTracker.usedDirectMemory();

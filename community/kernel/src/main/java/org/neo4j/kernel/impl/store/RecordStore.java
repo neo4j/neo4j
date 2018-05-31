@@ -131,6 +131,21 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
     void getRecordByCursor( long id, RECORD target, RecordLoad mode, PageCursor cursor ) throws InvalidRecordException;
 
     /**
+     * Reads a record from the store into {@code target}, see
+     * {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad)}.
+     * <p>
+     * This method requires that the cursor page and offset point to the first byte of the record in target on calling.
+     * The provided page cursor will be used to get the record, and in doing this it will be redirected to the
+     * next page if the input record was the last on it's page.
+     *
+     * @param target the record to fill.
+     * @param mode loading behaviour, read more in {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad)}.
+     * @param cursor the PageCursor to use for record loading.
+     * @throws InvalidRecordException if record not in use and the {@code mode} allows for throwing.
+     */
+    void nextRecordByCursor( RECORD target, RecordLoad mode, PageCursor cursor ) throws InvalidRecordException;
+
+    /**
      * For stores that have other stores coupled underneath, the "top level" record will have a flag
      * saying whether or not it's light. Light means that no records from the coupled store have been loaded yet.
      * This method can load those records and enrich the target record with those, marking it as heavy.
@@ -293,6 +308,12 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         public void getRecordByCursor( long id, R target, RecordLoad mode, PageCursor cursor ) throws InvalidRecordException
         {
             actual.getRecordByCursor( id, target, mode, cursor );
+        }
+
+        @Override
+        public void nextRecordByCursor( R target, RecordLoad mode, PageCursor cursor ) throws InvalidRecordException
+        {
+            actual.nextRecordByCursor( target, mode, cursor );
         }
 
         @Override

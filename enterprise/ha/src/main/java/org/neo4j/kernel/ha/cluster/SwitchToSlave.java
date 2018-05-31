@@ -494,7 +494,7 @@ public abstract class SwitchToSlave
     void cleanStoreDir() throws IOException
     {
         // Tests verify that this method is called
-        StoreUtil.cleanStoreDir( storeDir, pageCache );
+        StoreUtil.cleanStoreDir( storeDir );
     }
 
     void stopServices() throws Exception

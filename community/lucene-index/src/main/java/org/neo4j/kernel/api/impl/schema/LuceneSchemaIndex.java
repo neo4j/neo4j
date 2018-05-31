@@ -43,7 +43,7 @@ import org.neo4j.kernel.api.impl.schema.verification.UniquenessVerifier;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
@@ -59,12 +59,12 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
     private static final String ONLINE = "online";
     private static final Map<String,String> ONLINE_COMMIT_USER_DATA = singletonMap( KEY_STATUS, ONLINE );
 
-    private final SchemaIndexDescriptor descriptor;
+    private final IndexDescriptor descriptor;
     private final IndexSamplingConfig samplingConfig;
 
     private final TaskCoordinator taskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );
 
-    LuceneSchemaIndex( PartitionedIndexStorage indexStorage, SchemaIndexDescriptor descriptor,
+    LuceneSchemaIndex( PartitionedIndexStorage indexStorage, IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig, IndexPartitionFactory partitionFactory )
     {
         super( indexStorage, partitionFactory );
@@ -86,7 +86,7 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
                                                 : createPartitionedReader( partitions );
     }
 
-    public SchemaIndexDescriptor getDescriptor()
+    public IndexDescriptor getDescriptor()
     {
         return descriptor;
     }
@@ -130,7 +130,7 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
     }
 
     @Override
-    public void drop() throws IOException
+    public void drop()
     {
         taskCoordinator.cancel();
         try
@@ -139,7 +139,7 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
         }
         catch ( InterruptedException e )
         {
-            throw new IOException( "Interrupted while waiting for concurrent tasks to complete.", e );
+            throw new RuntimeException( "Interrupted while waiting for concurrent tasks to complete.", e );
         }
         super.drop();
     }

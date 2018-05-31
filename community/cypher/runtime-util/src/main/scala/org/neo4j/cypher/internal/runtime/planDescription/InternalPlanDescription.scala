@@ -23,16 +23,15 @@ import java.util
 
 import org.neo4j.cypher.exceptionHandler
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.util.v3_4.InternalException
-import org.neo4j.cypher.internal.util.v3_4.attribution.Id
-import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
-import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v3_4.logical.plans.{QualifiedName, SeekableArgs}
-import org.neo4j.cypher.internal.v3_4.{expressions => ast}
+import org.opencypher.v9_0.util.InternalException
+import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.util.symbols.CypherType
+import org.opencypher.v9_0.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_5.logical.plans.{QualifiedName, SeekableArgs}
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics
+import org.opencypher.v9_0.{expressions => ast}
 
-import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 

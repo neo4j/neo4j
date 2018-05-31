@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.util.v3_4.spi.MapToPublicExceptions
-import org.neo4j.cypher.internal.util.v3_4.{CypherException => InternalCypherException}
+import org.opencypher.v9_0.util.spi.MapToPublicExceptions
+import org.opencypher.v9_0.util.{CypherException => InternalCypherException}
 import org.neo4j.values.utils._
 
 object exceptionHandler extends MapToPublicExceptions[CypherException] {
@@ -84,7 +84,7 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
   override def failedIndexException(indexName: String, cause: Throwable): CypherException = throw new FailedIndexException(indexName, cause)
 
   object runSafely extends RunSafely {
-    override def apply[T](body: => T)(implicit f: ExceptionHandler = ExceptionHandler.default) = {
+    override def apply[T](body: => T)(implicit f: ExceptionHandler = ExceptionHandler.default): T = {
       try {
         body
       }

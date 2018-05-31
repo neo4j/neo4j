@@ -21,9 +21,6 @@ package org.neo4j.io.pagecache;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
-import java.nio.file.OpenOption;
 
 /**
  * The representation of a file that has been mapped into the associated page cache.
@@ -191,33 +188,4 @@ public interface PagedFile extends AutoCloseable
     @Override
     void close() throws IOException;
 
-    /**
-     * Open a {@link ReadableByteChannel} view of this PagedFile.
-     * <p>
-     * The channel will read the file sequentially from the beginning till the end.
-     * Seeking is not supported.
-     * <p>
-     * The channel is not thread-safe.
-     *
-     * @return A channel for reading the paged file.
-     */
-    ReadableByteChannel openReadableByteChannel() throws IOException;
-
-    /**
-     * Open a {@link WritableByteChannel} view of this PagedFile.
-     * <p>
-     * The channel will write to the file sequentially from the beginning of the file, overwriting whatever is there
-     * already. If the amount of new data is less than the amount of existing data, then the old data will still be
-     * present at the far end of the file. Thus, this function works neither like opening a file for writing, nor like
-     * appending to a file.
-     * <p>
-     * If this is undesired, then the file can be mapped with {@link java.nio.file.StandardOpenOption#TRUNCATE_EXISTING}
-     * to remove the existing data before writing to the file.
-     * <p>
-     * The channel is not thread-safe.
-     *
-     * @return A channel for writing to the paged file.
-     * @see PageCache#map(File, int, OpenOption...)
-     */
-    WritableByteChannel openWritableByteChannel() throws IOException;
 }

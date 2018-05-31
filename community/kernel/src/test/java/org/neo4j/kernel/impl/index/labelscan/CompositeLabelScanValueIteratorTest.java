@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -37,8 +37,8 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
-import static org.neo4j.collection.primitive.PrimitiveLongResourceCollections.emptyIterator;
-import static org.neo4j.collection.primitive.PrimitiveLongResourceCollections.iterator;
+import static org.neo4j.collection.PrimitiveLongResourceCollections.emptyIterator;
+import static org.neo4j.collection.PrimitiveLongResourceCollections.iterator;
 
 public class CompositeLabelScanValueIteratorTest
 {

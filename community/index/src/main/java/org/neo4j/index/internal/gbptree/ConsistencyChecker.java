@@ -19,13 +19,14 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Comparator;
 import java.util.List;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 
@@ -87,7 +88,7 @@ class ConsistencyChecker<KEY>
      * assert calls.
      * @throws IOException on {@link PageCursor} error.
      */
-    boolean checkSpace( PageCursor cursor, long lastId, PrimitiveLongIterator freelistIds ) throws IOException
+    boolean checkSpace( PageCursor cursor, long lastId, LongIterator freelistIds ) throws IOException
     {
         assertOnTreeNode( cursor );
 

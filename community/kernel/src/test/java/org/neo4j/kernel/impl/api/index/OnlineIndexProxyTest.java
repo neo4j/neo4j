@@ -25,18 +25,18 @@ import java.io.IOException;
 
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.internal.kernel.api.IndexCapability.NO_CAPABILITY;
 
 public class OnlineIndexProxyTest
 {
     private final long indexId = 1;
-    private final SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 1, 2 );
+    private final IndexDescriptor descriptor = TestIndexDescriptorFactory.forLabel( 1, 2 );
     private final IndexProvider.Descriptor providerDescriptor = mock( IndexProvider.Descriptor.class );
     private final IndexAccessor accessor = mock( IndexAccessor.class );
     private final IndexStoreView storeView = mock( IndexStoreView.class );
@@ -45,8 +45,8 @@ public class OnlineIndexProxyTest
     public void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped() throws IOException
     {
         // given
-        IndexMeta indexMeta = new IndexMeta( indexId, descriptor, providerDescriptor, NO_CAPABILITY );
-        OnlineIndexProxy index = new OnlineIndexProxy( indexId, indexMeta, accessor, storeView, false );
+        CapableIndexDescriptor capableIndexDescriptor = descriptor.withId( indexId ).withoutCapabilities();
+        OnlineIndexProxy index = new OnlineIndexProxy( capableIndexDescriptor, accessor, storeView, false );
 
         // when
         index.drop();

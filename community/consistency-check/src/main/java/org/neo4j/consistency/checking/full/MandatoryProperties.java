@@ -19,13 +19,15 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+
 import java.util.Arrays;
 import java.util.function.Function;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReporter;
@@ -43,8 +45,8 @@ import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 
 public class MandatoryProperties
 {
-    private final PrimitiveIntObjectMap<int[]> nodes = Primitive.intObjectMap();
-    private final PrimitiveIntObjectMap<int[]> relationships = Primitive.intObjectMap();
+    private final MutableIntObjectMap<int[]> nodes = new IntObjectHashMap<>();
+    private final MutableIntObjectMap<int[]> relationships = new IntObjectHashMap<>();
     private final StoreAccess storeAccess;
 
     public MandatoryProperties( StoreAccess storeAccess )
@@ -86,7 +88,7 @@ public class MandatoryProperties
     {
         return node ->
         {
-            PrimitiveIntSet keys = null;
+            MutableIntSet keys = null;
             for ( long labelId : NodeLabelReader.getListOfLabels( node, storeAccess.getNodeDynamicLabelStore() ) )
             {
                 // labelId _is_ actually an int. A technical detail in the store format has these come in a long[]
@@ -95,7 +97,7 @@ public class MandatoryProperties
                 {
                     if ( keys == null )
                     {
-                        keys = Primitive.intSet( 16 );
+                        keys = new IntHashSet( 16 );
                     }
                     for ( int key : propertyKeys )
                     {
@@ -118,7 +120,7 @@ public class MandatoryProperties
             int[] propertyKeys = relationships.get( relationship.getType() );
             if ( propertyKeys != null )
             {
-                PrimitiveIntSet keys = Primitive.intSet( propertyKeys.length );
+                final MutableIntSet keys = new IntHashSet( propertyKeys.length );
                 for ( int key : propertyKeys )
                 {
                     keys.add( key );
@@ -135,7 +137,7 @@ public class MandatoryProperties
         return schemaStorage::constraintsGetAllIgnoreMalformed;
     }
 
-    private static void recordConstraint( int labelOrRelType, int propertyKey, PrimitiveIntObjectMap<int[]> storage )
+    private static void recordConstraint( int labelOrRelType, int propertyKey, MutableIntObjectMap<int[]> storage )
     {
         int[] propertyKeys = storage.get( labelOrRelType );
         if ( propertyKeys == null )
@@ -190,13 +192,13 @@ public class MandatoryProperties
             implements Check<RECORD,REPORT>
     {
         private final RECORD record;
-        private final PrimitiveIntSet mandatoryKeys;
+        private final MutableIntSet mandatoryKeys;
         private final Class<REPORT> reportClass;
         private final ConsistencyReporter reporter;
         private final RecordType recordType;
 
         RealCheck( RECORD record, Class<REPORT> reportClass, ConsistencyReporter reporter, RecordType recordType,
-                PrimitiveIntSet mandatoryKeys )
+            MutableIntSet mandatoryKeys )
         {
             this.record = record;
             this.reportClass = reportClass;
@@ -219,7 +221,7 @@ public class MandatoryProperties
         {
             if ( !mandatoryKeys.isEmpty() )
             {
-                for ( PrimitiveIntIterator key = mandatoryKeys.iterator(); key.hasNext(); )
+                for ( IntIterator key = mandatoryKeys.intIterator(); key.hasNext(); )
                 {
                     reporter.report( record, reportClass, recordType ).missingMandatoryProperty( key.next() );
                 }

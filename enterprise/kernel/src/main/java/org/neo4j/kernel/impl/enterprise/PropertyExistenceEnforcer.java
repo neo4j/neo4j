@@ -22,17 +22,22 @@
  */
 package org.neo4j.kernel.impl.enterprise;
 
+import org.eclipse.collections.api.IntIterable;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.iterator.MutableLongIterator;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
@@ -47,27 +52,26 @@ import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.storageengine.api.StorageStatement;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
-import static org.neo4j.collection.primitive.PrimitiveArrays.union;
+import static org.neo4j.collection.PrimitiveArrays.union;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 
 class PropertyExistenceEnforcer
 {
-    static PropertyExistenceEnforcer getOrCreatePropertyExistenceEnforcerFrom( StoreReadLayer storeLayer )
+    static PropertyExistenceEnforcer getOrCreatePropertyExistenceEnforcerFrom( StorageReader storageReader )
     {
-        return storeLayer.getOrCreateSchemaDependantState( PropertyExistenceEnforcer.class, FACTORY );
+        return storageReader.getOrCreateSchemaDependantState( PropertyExistenceEnforcer.class, FACTORY );
     }
 
     private final List<LabelSchemaDescriptor> nodeConstraints;
     private final List<RelationTypeSchemaDescriptor> relationshipConstraints;
-    private final PrimitiveIntObjectMap<int[]> mandatoryNodePropertiesByLabel = Primitive.intObjectMap();
-    private final PrimitiveIntObjectMap<int[]> mandatoryRelationshipPropertiesByType = Primitive.intObjectMap();
+    private final MutableLongObjectMap<int[]> mandatoryNodePropertiesByLabel = new LongObjectHashMap<>();
+    private final MutableLongObjectMap<int[]> mandatoryRelationshipPropertiesByType = new LongObjectHashMap<>();
 
     private PropertyExistenceEnforcer( List<LabelSchemaDescriptor> nodes, List<RelationTypeSchemaDescriptor> rels )
     {
@@ -85,7 +89,7 @@ class PropertyExistenceEnforcer
         }
     }
 
-    private static void update( PrimitiveIntObjectMap<int[]> map, int key, int[] sortedValues )
+    private static void update( MutableLongObjectMap<int[]> map, int key, int[] sortedValues )
     {
         int[] current = map.get( key );
         if ( current != null )
@@ -103,25 +107,25 @@ class PropertyExistenceEnforcer
         return values;
     }
 
-    TxStateVisitor decorate( TxStateVisitor visitor, ReadableTransactionState txState, StoreReadLayer storeLayer )
+    TxStateVisitor decorate( TxStateVisitor visitor, ReadableTransactionState txState, StorageReader storageReader )
     {
-        return new Decorator( visitor, txState, storeLayer );
+        return new Decorator( visitor, txState, storageReader );
     }
 
     private static final PropertyExistenceEnforcer NO_CONSTRAINTS = new PropertyExistenceEnforcer(
             emptyList(), emptyList() )
     {
         @Override
-        TxStateVisitor decorate( TxStateVisitor visitor, ReadableTransactionState txState, StoreReadLayer storeLayer )
+        TxStateVisitor decorate( TxStateVisitor visitor, ReadableTransactionState txState, StorageReader storageReader )
         {
             return visitor;
         }
     };
-    private static final Function<StoreReadLayer,PropertyExistenceEnforcer> FACTORY = storeLayer ->
+    private static final Function<StorageReader,PropertyExistenceEnforcer> FACTORY = storageReader ->
     {
         List<LabelSchemaDescriptor> nodes = new ArrayList<>();
         List<RelationTypeSchemaDescriptor> relationships = new ArrayList<>();
-        for ( Iterator<ConstraintDescriptor> constraints = storeLayer.constraintsGetAll(); constraints.hasNext(); )
+        for ( Iterator<ConstraintDescriptor> constraints = storageReader.constraintsGetAll(); constraints.hasNext(); )
         {
             ConstraintDescriptor constraint = constraints.next();
             if ( constraint.enforcesPropertyExistence() )
@@ -152,28 +156,27 @@ class PropertyExistenceEnforcer
     private class Decorator extends TxStateVisitor.Delegator
     {
         private final ReadableTransactionState txState;
-        private final StoreReadLayer storeLayer;
-        private final PrimitiveIntSet propertyKeyIds = Primitive.intSet();
-        private StorageStatement storageStatement;
+        private final MutableIntSet propertyKeyIds = new IntHashSet();
+        private final StorageReader storageReader;
 
-        Decorator( TxStateVisitor next, ReadableTransactionState txState, StoreReadLayer storeLayer )
+        Decorator( TxStateVisitor next, ReadableTransactionState txState, StorageReader storageReader )
         {
             super( next );
             this.txState = txState;
-            this.storeLayer = storeLayer;
+            this.storageReader = storageReader;
         }
 
         @Override
         public void visitNodePropertyChanges(
                 long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-                Iterator<Integer> removed ) throws ConstraintValidationException
+                IntIterable removed ) throws ConstraintValidationException
         {
             validateNode( id );
             super.visitNodePropertyChanges( id, added, changed, removed );
         }
 
         @Override
-        public void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed )
+        public void visitNodeLabelChanges( long id, LongSet added, LongSet removed )
                 throws ConstraintValidationException
         {
             validateNode( id );
@@ -191,20 +194,10 @@ class PropertyExistenceEnforcer
         @Override
         public void visitRelPropertyChanges(
                 long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-                Iterator<Integer> removed ) throws ConstraintValidationException
+                IntIterable removed ) throws ConstraintValidationException
         {
             validateRelationship( id );
             super.visitRelPropertyChanges( id, added, changed, removed );
-        }
-
-        @Override
-        public void close()
-        {
-            super.close();
-            if ( storageStatement != null )
-            {
-                storageStatement.close();
-            }
         }
 
         private void validateNode( long nodeId ) throws NodePropertyExistenceException
@@ -214,7 +207,7 @@ class PropertyExistenceEnforcer
                 return;
             }
 
-            PrimitiveIntSet labelIds;
+            final LongSet labelIds;
             try ( Cursor<NodeItem> node = node( nodeId ) )
             {
                 if ( node.next() )
@@ -287,20 +280,20 @@ class PropertyExistenceEnforcer
 
         private Cursor<NodeItem> node( long id )
         {
-            Cursor<NodeItem> cursor = storeStatement().acquireSingleNodeCursor( id );
+            Cursor<NodeItem> cursor = storageReader.acquireSingleNodeCursor( id );
             return txState.augmentSingleNodeCursor( cursor, id );
         }
 
         private Cursor<RelationshipItem> relationship( long id )
         {
-            Cursor<RelationshipItem> cursor = storeStatement().acquireSingleRelationshipCursor( id );
+            Cursor<RelationshipItem> cursor = storageReader.acquireSingleRelationshipCursor( id );
             return txState.augmentSingleRelationshipCursor( cursor, id );
         }
 
         private Cursor<PropertyItem> properties( NodeItem node )
         {
             Lock lock = node.lock();
-            Cursor<PropertyItem> cursor = storeStatement().acquirePropertyCursor( node.nextPropertyId(), lock,
+            Cursor<PropertyItem> cursor = storageReader.acquirePropertyCursor( node.nextPropertyId(), lock,
                     AssertOpen.ALWAYS_OPEN );
             return txState.augmentPropertyCursor( cursor, txState.getNodeState( node.id() ) );
         }
@@ -308,25 +301,20 @@ class PropertyExistenceEnforcer
         private Cursor<PropertyItem> properties( RelationshipItem relationship )
         {
             Lock lock = relationship.lock();
-            Cursor<PropertyItem> cursor = storeStatement().acquirePropertyCursor( relationship.nextPropertyId(), lock,
+            Cursor<PropertyItem> cursor = storageReader.acquirePropertyCursor( relationship.nextPropertyId(), lock,
                     AssertOpen.ALWAYS_OPEN );
             return txState.augmentPropertyCursor( cursor, txState.getRelationshipState( relationship.id() ) );
         }
-
-        private StorageStatement storeStatement()
-        {
-            return storageStatement == null ? storageStatement = storeLayer.newStatement() : storageStatement;
-        }
     }
 
-    private void validateNodeProperties( long id, PrimitiveIntSet labelIds, PrimitiveIntSet propertyKeyIds )
+    private void validateNodeProperties( long id, LongSet labelIds, IntSet propertyKeyIds )
             throws NodePropertyExistenceException
     {
         if ( labelIds.size() > mandatoryNodePropertiesByLabel.size() )
         {
-            for ( PrimitiveIntIterator labels = mandatoryNodePropertiesByLabel.iterator(); labels.hasNext(); )
+            for ( MutableLongIterator labels = mandatoryNodePropertiesByLabel.keySet().longIterator(); labels.hasNext(); )
             {
-                int label = labels.next();
+                final long label = labels.next();
                 if ( labelIds.contains( label ) )
                 {
                     validateNodeProperties( id, label, mandatoryNodePropertiesByLabel.get( label ), propertyKeyIds );
@@ -335,9 +323,9 @@ class PropertyExistenceEnforcer
         }
         else
         {
-            for ( PrimitiveIntIterator labels = labelIds.iterator(); labels.hasNext(); )
+            for ( LongIterator labels = labelIds.longIterator(); labels.hasNext(); )
             {
-                int label = labels.next();
+                final long label = labels.next();
                 int[] keys = mandatoryNodePropertiesByLabel.get( label );
                 if ( keys != null )
                 {
@@ -347,7 +335,7 @@ class PropertyExistenceEnforcer
         }
     }
 
-    private void validateNodeProperties( long id, int label, int[] requiredKeys, PrimitiveIntSet propertyKeyIds )
+    private void validateNodeProperties( long id, long label, int[] requiredKeys, IntSet propertyKeyIds )
             throws NodePropertyExistenceException
     {
         for ( int key : requiredKeys )
@@ -359,7 +347,7 @@ class PropertyExistenceEnforcer
         }
     }
 
-    private void failNode( long id, int label, int propertyKey )
+    private void failNode( long id, long label, int propertyKey )
             throws NodePropertyExistenceException
     {
         for ( LabelSchemaDescriptor constraint : nodeConstraints )

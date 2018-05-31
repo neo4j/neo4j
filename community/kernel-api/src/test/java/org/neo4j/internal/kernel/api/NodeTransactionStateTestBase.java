@@ -85,6 +85,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 LabelSet labels = node.labels();
                 assertEquals( 1, labels.numberOfLabels() );
                 assertEquals( labelId, labels.label( 0 ) );
+                assertTrue( node.hasLabel( labelId ) );
+                assertFalse( node.hasLabel( labelId + 1 ) );
                 assertFalse( "should only find one node", node.next() );
             }
             tx.success();
@@ -141,6 +143,10 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 assertTrue( "should access node", node.next() );
 
                 assertLabels( node.labels(), toRetain, toAdd );
+                assertTrue( node.hasLabel( toAdd ) );
+                assertTrue( node.hasLabel( toRetain ) );
+                assertFalse( node.hasLabel( toDelete ) );
+                assertFalse( node.hasLabel( toRegret ) );
                 assertFalse( "should only find one node", node.next() );
             }
             tx.success();

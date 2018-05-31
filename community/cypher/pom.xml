@@ -6,12 +6,12 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.4.1-SNAPSHOT</version>
+    <version>3.5.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <artifactId>cypher-parent</artifactId>
-  <version>3.4.1-SNAPSHOT</version>
+  <version>3.5.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Neo4j - Community Cypher Build</name>
   <description>Project that builds the Neo4j Cypher modules as part of the Community distribution.</description>
@@ -20,6 +20,7 @@
   <properties>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
     <license-text.header>../../build/GPL-3-header.txt</license-text.header>
+    <openCypher.version>1.0.0</openCypher.version>
   </properties>
 
   <scm>
@@ -37,14 +38,11 @@
         </property>
       </activation>
       <modules>
-        <module>frontend-3.4</module>
-        <module>util-3.4</module>
-        <module>ir-3.4</module>
-        <module>cypher-planner-3.4</module>
-        <module>planner-spi-3.4</module>
-        <module>expressions-3.4</module>
+        <module>ir-3.5</module>
+        <module>cypher-planner-3.5</module>
+        <module>planner-spi-3.5</module>
         <module>cypher</module>
-        <module>cypher-logical-plans-3.4</module>
+        <module>cypher-logical-plans-3.5</module>
         <module>runtime-util</module>
         <module>interpreted-runtime</module>
       </modules>
@@ -117,16 +115,24 @@
 
     <!-- shared java test dependencies -->
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-migrationsupport</artifactId>
     </dependency>
     <dependency>
-        <groupId>org.hamcrest</groupId>
-        <artifactId>hamcrest-core</artifactId>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
     </dependency>
     <dependency>
-        <groupId>org.hamcrest</groupId>
-        <artifactId>hamcrest-library</artifactId>
+      <groupId>org.apache.maven.surefire</groupId>
+      <artifactId>surefire-logger-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-library</artifactId>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>

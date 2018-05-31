@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import java.util.function.BiConsumer
-
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
-import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InvalidArgumentException}
+import org.opencypher.v9_0.util.{CypherTypeException, InvalidArgumentException}
+import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual._
@@ -53,7 +52,7 @@ object SetOperation {
 
   private def propertyKeyMap(qtx: QueryContext, map: MapValue): Map[Int, AnyValue] = {
     var builder = Map.newBuilder[Int, AnyValue]
-    map.foreach(new BiConsumer[String, AnyValue] {
+    map.foreach(new ThrowingBiConsumer[String, AnyValue, RuntimeException] {
       override def accept(k: String, v: AnyValue): Unit = {
         if (v == Values.NO_VALUE) {
           val optPropertyKeyId = qtx.getOptPropertyKeyId(k)

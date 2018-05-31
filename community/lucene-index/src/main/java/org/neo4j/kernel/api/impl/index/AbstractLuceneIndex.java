@@ -181,13 +181,18 @@ public abstract class AbstractLuceneIndex
 
     /**
      * Close index and deletes all it's partitions.
-     *
-     * @throws IOException
      */
-    public void drop() throws IOException
+    public void drop()
     {
-        close();
-        indexStorage.cleanupFolder( indexStorage.getIndexFolder() );
+        try
+        {
+            close();
+            indexStorage.cleanupFolder( indexStorage.getIndexFolder() );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     /**

@@ -34,8 +34,6 @@ import org.neo4j.server.NeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.test.server.ExclusiveServerTestBase;
-import org.neo4j.time.Clocks;
-import org.neo4j.time.FakeClock;
 
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
@@ -49,10 +47,8 @@ public abstract class EnterpriseVersionIT extends ExclusiveServerTestBase
     @BeforeClass
     public static void setupServer() throws Exception
     {
-        FakeClock clock = Clocks.fakeClock();
         server = EnterpriseServerBuilder.serverOnRandomPorts()
                 .usingDataDir( staticFolder.getRoot().getAbsolutePath() )
-                .withClock(clock)
                 .build();
 
         suppressAll().call((Callable<Void>) () ->

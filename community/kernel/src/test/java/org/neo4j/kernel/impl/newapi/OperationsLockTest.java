@@ -47,14 +47,14 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaState;
+import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.LockTracer;
@@ -63,8 +63,7 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageStatement;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -79,7 +78,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.existsForRelType;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForLabel;
@@ -100,7 +99,7 @@ public class OperationsLockTest
     private TransactionState txState;
     private AllStoreHolder allStoreHolder;
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
-    private StoreReadLayer storeReadLayer;
+    private StorageReader storageReader;
     private ConstraintIndexCreator constraintIndexCreator;
 
     @Before
@@ -126,22 +125,21 @@ public class OperationsLockTest
         AutoIndexOperations autoIndexOperations = mock( AutoIndexOperations.class );
         when( autoindexing.nodes() ).thenReturn( autoIndexOperations );
         when( autoindexing.relationships() ).thenReturn( autoIndexOperations );
-        StorageStatement storageStatement = mock( StorageStatement.class );
         StorageEngine engine = mock( StorageEngine.class );
-        storeReadLayer = mock( StoreReadLayer.class );
-        when( storeReadLayer.nodeExists( anyLong() ) ).thenReturn( true );
-        when( storeReadLayer.constraintsGetForLabel( anyInt() )).thenReturn( Collections.emptyIterator() );
-        when( storeReadLayer.constraintsGetAll() ).thenReturn( Collections.emptyIterator() );
-        when( engine.storeReadLayer() ).thenReturn( storeReadLayer );
-        allStoreHolder = new AllStoreHolder( engine, storageStatement,  transaction, cursors, mock(
+        storageReader = mock( StorageReader.class );
+        when( storageReader.nodeExists( anyLong() ) ).thenReturn( true );
+        when( storageReader.constraintsGetForLabel( anyInt() )).thenReturn( Collections.emptyIterator() );
+        when( storageReader.constraintsGetAll() ).thenReturn( Collections.emptyIterator() );
+        when( engine.newReader() ).thenReturn( storageReader );
+        allStoreHolder = new AllStoreHolder( storageReader,  transaction, cursors, mock(
                 ExplicitIndexStore.class ), mock( Procedures.class ), mock( SchemaState.class ) );
         constraintIndexCreator = mock( ConstraintIndexCreator.class );
-        operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),
-                storageStatement, transaction, new KernelToken( storeReadLayer, transaction ), cursors, autoindexing,
-                constraintIndexCreator, mock( ConstraintSemantics.class ) );
+        operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),storageReader,
+                 transaction, new KernelToken( storageReader, transaction ), cursors, autoindexing,
+                constraintIndexCreator, mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ) );
         operations.initialize();
 
-        this.order = inOrder( locks, txState, storeReadLayer );
+        this.order = inOrder( locks, txState, storageReader );
     }
 
     @After
@@ -398,7 +396,7 @@ public class OperationsLockTest
 
         // THEN
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, descriptor.getLabelId() );
-        order.verify( storeReadLayer ).constraintsGetForSchema( descriptor );
+        order.verify( storageReader ).constraintsGetForSchema( descriptor );
     }
 
     @Test
@@ -409,7 +407,7 @@ public class OperationsLockTest
 
         // THEN
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, 42 );
-        order.verify( storeReadLayer ).constraintsGetForLabel( 42 );
+        order.verify( storageReader ).constraintsGetForLabel( 42 );
     }
 
     @Test
@@ -420,7 +418,7 @@ public class OperationsLockTest
 
         // THEN
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, 123 );
-        order.verify( storeReadLayer ).constraintExists( any() );
+        order.verify( storageReader ).constraintExists( any() );
     }
 
     @Test
@@ -431,7 +429,7 @@ public class OperationsLockTest
         int relTypeId = 2;
         UniquenessConstraintDescriptor uniquenessConstraint = uniqueForLabel( labelId, 2, 3, 3 );
         RelExistenceConstraintDescriptor existenceConstraint = existsForRelType( relTypeId, 3, 4, 5 );
-        when( storeReadLayer.constraintsGetAll() )
+        when( storageReader.constraintsGetAll() )
                 .thenReturn( Iterators.iterator( uniquenessConstraint, existenceConstraint ) );
 
         // when
@@ -440,7 +438,7 @@ public class OperationsLockTest
 
         // then
         assertThat( asList( result ), empty() );
-        order.verify( storeReadLayer ).constraintsGetAll();
+        order.verify( storageReader ).constraintsGetAll();
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId );
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.RELATIONSHIP_TYPE, relTypeId );
     }
@@ -449,11 +447,11 @@ public class OperationsLockTest
     public void shouldAcquireSchemaWriteLockBeforeRemovingIndexRule() throws Exception
     {
         // given
-        SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( 0, 0 );
-        when( storeReadLayer.indexGetForSchema( any() )).thenReturn( index );
+        CapableIndexDescriptor index =  TestIndexDescriptorFactory.forLabel( 0, 0 ).withId( 0 ).withoutCapabilities();
+        when( storageReader.indexGetForSchema( any() )).thenReturn( index );
 
         // when
-        operations.indexDrop( DefaultIndexReference.fromDescriptor( index ) );
+        operations.indexDrop( index );
 
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, 0 );
@@ -464,8 +462,8 @@ public class OperationsLockTest
     public void shouldAcquireSchemaWriteLockBeforeCreatingUniquenessConstraint() throws Exception
     {
         // given
-        when( constraintIndexCreator.createUniquenessConstraintIndex( transaction, descriptor ) ).thenReturn( 42L );
-        when( storeReadLayer.constraintsGetForSchema(  descriptor.schema() ) ).thenReturn( Collections.emptyIterator() );
+        when( constraintIndexCreator.createUniquenessConstraintIndex( transaction, descriptor, Optional.empty() ) ).thenReturn( 42L );
+        when( storageReader.constraintsGetForSchema(  descriptor.schema() ) ).thenReturn( Collections.emptyIterator() );
 
         // when
         operations.uniquePropertyConstraintCreate( descriptor );
@@ -480,7 +478,7 @@ public class OperationsLockTest
     {
         // given
         UniquenessConstraintDescriptor constraint = uniqueForSchema( descriptor );
-        when( storeReadLayer.constraintExists( constraint ) ).thenReturn( true );
+        when( storageReader.constraintExists( constraint ) ).thenReturn( true );
 
         // when
         operations.constraintDrop( constraint );
@@ -583,9 +581,7 @@ public class OperationsLockTest
         long nodeId = 1L;
         int labelId = 1;
         when( nodeCursor.next() ).thenReturn( true );
-        LabelSet labels = mock( LabelSet.class );
-        when( labels.contains( labelId ) ).thenReturn( true );
-        when( nodeCursor.labels() ).thenReturn( labels );
+        when( nodeCursor.hasLabel( labelId ) ).thenReturn( true );
 
         // when
         operations.nodeRemoveLabel( nodeId, labelId );

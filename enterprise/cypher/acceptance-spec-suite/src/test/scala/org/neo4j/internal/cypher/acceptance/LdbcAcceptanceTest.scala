@@ -37,8 +37,8 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
   LDBC_QUERIES.foreach { ldbcQuery =>
     test(ldbcQuery.name) {
       // given
-      eengine.execute(ldbcQuery.createQuery, ldbcQuery.createParams)
-      ldbcQuery.constraintQueries.foreach(query => eengine.execute(query, Map.empty[String, Any]))
+      execute(ldbcQuery.createQuery, ldbcQuery.createParams)
+      ldbcQuery.constraintQueries.foreach(query => execute(query))
 
       // when
       val result =
@@ -53,8 +53,8 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
   test("LDBC query 12 should not get a bad plan because of lost precision in selectivity calculation") {
     // given
     val ldbcQuery = LdbcQueries.Query12
-    eengine.execute(ldbcQuery.createQuery, ldbcQuery.createParams)
-    ldbcQuery.constraintQueries.foreach(query => eengine.execute(query, Map.empty[String, Any]))
+    execute(ldbcQuery.createQuery, ldbcQuery.createParams)
+    ldbcQuery.constraintQueries.foreach(query => execute(query))
 
     val updatedLdbc12 =
       """PROFILE MATCH (:Person {id:{1}})-[:KNOWS]-(friend:Person)
@@ -91,7 +91,7 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
                       |RETURN commonTag.name AS tagName, postCount
                       |ORDER BY postCount DESC, tagName ASC
                       |LIMIT {3}""".stripMargin
-    eengine.execute(LdbcQueries.Query4.createQuery, LdbcQueries.Query4.createParams)
+    execute(LdbcQueries.Query4.createQuery, LdbcQueries.Query4.createParams)
 
 
     val params: Map[String, Any] = Map("1" -> 1, "2" ->  "tag1-ᚠさ丵פش", "3" -> 10)

@@ -98,62 +98,63 @@ public abstract class AbstractRecordFormatTest
     @Before
     public void before()
     {
-        generators = new LimitedRecordGenerators( random.randoms(), entityBits, propertyBits, 40, 16, -1 );
+        generators = new LimitedRecordGenerators( random.randomValues(), entityBits, propertyBits, 40, 16, -1 );
     }
 
     @Test
     public void node() throws Exception
     {
-        verifyWriteAndRead( formats::node, generators::node, keys::node );
+        verifyWriteAndRead( formats::node, generators::node, keys::node, true );
     }
 
     @Test
     public void relationship() throws Exception
     {
-        verifyWriteAndRead( formats::relationship, generators::relationship, keys::relationship );
+        verifyWriteAndRead( formats::relationship, generators::relationship, keys::relationship, true );
     }
 
     @Test
     public void property() throws Exception
     {
-        verifyWriteAndRead( formats::property, generators::property, keys::property );
+        verifyWriteAndRead( formats::property, generators::property, keys::property, false );
     }
 
     @Test
     public void relationshipGroup() throws Exception
     {
-        verifyWriteAndRead( formats::relationshipGroup, generators::relationshipGroup, keys::relationshipGroup );
+        verifyWriteAndRead( formats::relationshipGroup, generators::relationshipGroup, keys::relationshipGroup, false );
     }
 
     @Test
     public void relationshipTypeToken() throws Exception
     {
         verifyWriteAndRead( formats::relationshipTypeToken, generators::relationshipTypeToken,
-                keys::relationshipTypeToken );
+                keys::relationshipTypeToken, false );
     }
 
     @Test
     public void propertyKeyToken() throws Exception
     {
-        verifyWriteAndRead( formats::propertyKeyToken, generators::propertyKeyToken, keys::propertyKeyToken );
+        verifyWriteAndRead( formats::propertyKeyToken, generators::propertyKeyToken, keys::propertyKeyToken, false );
     }
 
     @Test
     public void labelToken() throws Exception
     {
-        verifyWriteAndRead( formats::labelToken, generators::labelToken, keys::labelToken );
+        verifyWriteAndRead( formats::labelToken, generators::labelToken, keys::labelToken, false );
     }
 
     @Test
     public void dynamic() throws Exception
     {
-        verifyWriteAndRead( formats::dynamic, generators::dynamic, keys::dynamic );
+        verifyWriteAndRead( formats::dynamic, generators::dynamic, keys::dynamic, false );
     }
 
     private <R extends AbstractBaseRecord> void verifyWriteAndRead(
             Supplier<RecordFormat<R>> formatSupplier,
             Supplier<Generator<R>> generatorSupplier,
-            Supplier<RecordKey<R>> keySupplier ) throws IOException
+            Supplier<RecordKey<R>> keySupplier,
+            boolean assertPostReadOffset ) throws IOException
     {
         // GIVEN
         try ( PagedFile storeFile = pageCache.map( new File( "store-" + name.getMethodName() ), PAGE_SIZE, CREATE ) )
@@ -176,7 +177,7 @@ public abstract class AbstractRecordFormatTest
                 try
                 {
                     writeRecord( written, format, storeFile, recordSize, idSequence );
-                    readAndVerifyRecord( written, read, format, key, storeFile, recordSize );
+                    readAndVerifyRecord( written, read, format, key, storeFile, recordSize, assertPostReadOffset );
                     idSequence.reset();
                 }
                 catch ( Throwable t )
@@ -190,14 +191,14 @@ public abstract class AbstractRecordFormatTest
     }
 
     private <R extends AbstractBaseRecord> void readAndVerifyRecord( R written, R read, RecordFormat<R> format,
-            RecordKey<R> key, PagedFile storeFile, int recordSize ) throws IOException
+            RecordKey<R> key, PagedFile storeFile, int recordSize, boolean assertPostReadOffset ) throws IOException
     {
         try ( PageCursor cursor = storeFile.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
         {
             assertedNext( cursor );
             read.setId( written.getId() );
 
-            /**
+            /*
              Retry loop is needed here because format does not handle retries on the primary cursor.
              Same retry is done on the store level in {@link org.neo4j.kernel.impl.store.CommonAbstractStore}
              */
@@ -209,6 +210,11 @@ public abstract class AbstractRecordFormatTest
             }
             while ( cursor.shouldRetry() );
             assertWithinBounds( written, cursor, "reading" );
+            if ( assertPostReadOffset )
+            {
+                assertEquals( "Cursor is positioned on first byte of next record after a read",
+                              offset + recordSize, cursor.getOffset() );
+            }
             cursor.checkAndClearCursorException();
 
             // THEN

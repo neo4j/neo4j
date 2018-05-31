@@ -144,7 +144,7 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
         {
             private long size;
 
-            public void addFile( File file )
+            void addFile( File file )
             {
                 if ( StoreType.canBeManagedByPageCache( file.getName() ) )
                 {

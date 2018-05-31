@@ -35,11 +35,11 @@ import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.GENERAL;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
 
 public enum DbStructureArgumentFormatter implements ArgumentFormatter
 {
@@ -53,8 +53,8 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
             NodeKeyConstraintDescriptor.class.getCanonicalName(),
             SchemaDescriptor.class.getCanonicalName(),
             SchemaDescriptorFactory.class.getCanonicalName(),
-            SchemaIndexDescriptor.class.getCanonicalName(),
-            SchemaIndexDescriptorFactory.class.getCanonicalName()
+            IndexDescriptor.class.getCanonicalName(),
+            IndexDescriptorFactory.class.getCanonicalName()
     );
 
     @Override
@@ -102,14 +102,15 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
                 builder.append( 'd' );
             }
         }
-        else if ( arg instanceof SchemaIndexDescriptor )
+        else if ( arg instanceof IndexDescriptor )
         {
-            SchemaIndexDescriptor descriptor = (SchemaIndexDescriptor) arg;
-            String className = SchemaIndexDescriptorFactory.class.getSimpleName();
-            int labelId = descriptor.schema().keyId();
-            String methodName = descriptor.type() == GENERAL ? "forLabel" : "uniqueForLabel";
-            builder.append( format( "%s.%s( %d, %s )",
-                    className, methodName, labelId, asString( descriptor.schema().getPropertyIds() ) ) );
+            IndexDescriptor descriptor = (IndexDescriptor) arg;
+            String className = IndexDescriptorFactory.class.getSimpleName();
+            SchemaDescriptor schema = descriptor.schema();
+            String methodName = descriptor.type() == GENERAL ? "forSchema" : "uniqueForSchema";
+            builder.append( String.format( "%s.%s( ", className, methodName));
+            formatArgument( builder, schema );
+            builder.append( " )" );
         }
         else if ( arg instanceof LabelSchemaDescriptor )
         {

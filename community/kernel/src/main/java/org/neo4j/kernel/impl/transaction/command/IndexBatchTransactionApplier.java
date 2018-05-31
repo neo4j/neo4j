@@ -25,8 +25,6 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
-import org.neo4j.concurrent.AsyncApply;
-import org.neo4j.concurrent.WorkSync;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -40,12 +38,14 @@ import org.neo4j.kernel.impl.api.index.NodePropertyCommandsExtractor;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.OnlineIndexUpdates;
 import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.util.concurrent.AsyncApply;
+import org.neo4j.util.concurrent.WorkSync;
 
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
@@ -134,7 +134,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     {
         private final NodeStore nodeStore;
         private final NodePropertyCommandsExtractor indexUpdatesExtractor = new NodePropertyCommandsExtractor();
-        private List<IndexRule> createdIndexes;
+        private List<StoreIndexDescriptor> createdIndexes;
 
         SingleTransactionApplier( NodeStore nodeStore )
         {
@@ -156,7 +156,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
             // Created pending indexes
             if ( createdIndexes != null )
             {
-                indexingService.createIndexes( createdIndexes.toArray( new IndexRule[createdIndexes.size()] ) );
+                indexingService.createIndexes( createdIndexes.toArray( new StoreIndexDescriptor[createdIndexes.size()] ) );
                 createdIndexes = null;
             }
         }
@@ -207,7 +207,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         @Override
         public boolean visitSchemaRuleCommand( Command.SchemaRuleCommand command ) throws IOException
         {
-            if ( command.getSchemaRule() instanceof IndexRule )
+            if ( command.getSchemaRule() instanceof StoreIndexDescriptor )
             {
                 // Why apply index updates here? Here's the thing... this is a batch applier, which means that
                 // index updates are gathered throughout the batch and applied in the end of the batch.
@@ -223,7 +223,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                 case UPDATE:
                     // Shouldn't we be more clear about that we are waiting for an index to come online here?
                     // right now we just assume that an update to index records means wait for it to be online.
-                    if ( ((IndexRule) command.getSchemaRule()).canSupportUniqueConstraint() )
+                    if ( ((StoreIndexDescriptor) command.getSchemaRule()).canSupportUniqueConstraint() )
                     {
                         try
                         {
@@ -240,10 +240,10 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                 case CREATE:
                     // Add to list so that all these indexes will be created in one call later
                     createdIndexes = createdIndexes == null ? new ArrayList<>() : createdIndexes;
-                    createdIndexes.add( (IndexRule) command.getSchemaRule() );
+                    createdIndexes.add( (StoreIndexDescriptor) command.getSchemaRule() );
                     break;
                 case DELETE:
-                    indexingService.dropIndex( (IndexRule) command.getSchemaRule() );
+                    indexingService.dropIndex( (StoreIndexDescriptor) command.getSchemaRule() );
                     break;
                 default:
                     throw new IllegalStateException( command.getMode().name() );

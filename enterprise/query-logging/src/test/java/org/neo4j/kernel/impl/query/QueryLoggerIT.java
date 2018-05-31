@@ -415,25 +415,31 @@ public class QueryLoggerIT
     @Test
     public void canBeEnabledAndDisabledAtRuntime() throws Exception
     {
-        GraphDatabaseService database = databaseBuilder.setConfig( log_queries, Settings.FALSE )
-                .setConfig( GraphDatabaseSettings.log_queries_filename, logFilename.getPath() )
-                .newGraphDatabase();
+        GraphDatabaseService database = databaseBuilder.setConfig( log_queries, Settings.FALSE ).setConfig( GraphDatabaseSettings.log_queries_filename,
+                logFilename.getPath() ).newGraphDatabase();
         List<String> strings;
 
-        database.execute( QUERY ).close();
+        try
+        {
+            database.execute( QUERY ).close();
 
-        // File will not be created until query logging is enabled.
-        assertFalse( fileSystem.fileExists( logFilename ) );
+            // File will not be created until query logging is enabled.
+            assertFalse( fileSystem.fileExists( logFilename ) );
 
-        database.execute( "CALL dbms.setConfigValue('" + log_queries.name() + "', 'true')" ).close();
-        database.execute( QUERY ).close();
+            database.execute( "CALL dbms.setConfigValue('" + log_queries.name() + "', 'true')" ).close();
+            database.execute( QUERY ).close();
 
-        // Both config change and query should exist
-        strings = readAllLines( logFilename );
-        assertEquals( 2, strings.size() );
+            // Both config change and query should exist
+            strings = readAllLines( logFilename );
+            assertEquals( 2, strings.size() );
 
-        database.execute( "CALL dbms.setConfigValue('" + log_queries.name() + "', 'false')" ).close();
-        database.execute( QUERY ).close();
+            database.execute( "CALL dbms.setConfigValue('" + log_queries.name() + "', 'false')" ).close();
+            database.execute( QUERY ).close();
+        }
+        finally
+        {
+            database.shutdown();
+        }
 
         // Value should not change when disabled
         strings = readAllLines( logFilename );

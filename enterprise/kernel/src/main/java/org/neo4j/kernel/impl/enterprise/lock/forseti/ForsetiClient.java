@@ -22,6 +22,12 @@
  */
 package org.neo4j.kernel.impl.enterprise.lock.forseti;
 
+import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.map.primitive.LongIntMap;
+import org.eclipse.collections.api.map.primitive.MutableLongIntMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongIntHashMap;
+
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -34,10 +40,6 @@ import java.util.function.IntFunction;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.pool.Pool;
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.collection.primitive.PrimitiveLongIntMap;
-import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -97,10 +99,10 @@ public class ForsetiClient implements Locks.Client
      * The data structure looks like:
      * Array[ resourceType -> Map( resourceId -> num locks ) ]
      */
-    private final PrimitiveLongIntMap[] sharedLockCounts;
+    private final MutableLongIntMap[] sharedLockCounts;
 
     /** @see #sharedLockCounts */
-    private final PrimitiveLongIntMap[] exclusiveLockCounts;
+    private final MutableLongIntMap[] exclusiveLockCounts;
 
     /**
      * Time within which any particular lock should be acquired.
@@ -152,15 +154,15 @@ public class ForsetiClient implements Locks.Client
         this.deadlockResolutionStrategy = deadlockResolutionStrategy;
         this.clientPool = clientPool;
         this.clientById = clientById;
-        this.sharedLockCounts = new PrimitiveLongIntMap[lockMaps.length];
-        this.exclusiveLockCounts = new PrimitiveLongIntMap[lockMaps.length];
+        this.sharedLockCounts = new MutableLongIntMap[lockMaps.length];
+        this.exclusiveLockCounts = new MutableLongIntMap[lockMaps.length];
         this.lockAcquisitionTimeoutMillis = lockAcquisitionTimeoutMillis;
         this.clock = clock;
 
         for ( int i = 0; i < sharedLockCounts.length; i++ )
         {
-            sharedLockCounts[i] = Primitive.longIntMap();
-            exclusiveLockCounts[i] = Primitive.longIntMap();
+            sharedLockCounts[i] = new CountableLongIntHashMap();
+            exclusiveLockCounts[i] = new CountableLongIntHashMap();
         }
     }
 
@@ -187,13 +189,13 @@ public class ForsetiClient implements Locks.Client
             ConcurrentMap<Long,ForsetiLockManager.Lock> lockMap = lockMaps[resourceType.typeId()];
 
             // And grab our local lock maps
-            PrimitiveLongIntMap heldShareLocks = sharedLockCounts[resourceType.typeId()];
-            PrimitiveLongIntMap heldExclusiveLocks = exclusiveLockCounts[resourceType.typeId()];
+            MutableLongIntMap heldShareLocks = sharedLockCounts[resourceType.typeId()];
+            MutableLongIntMap heldExclusiveLocks = exclusiveLockCounts[resourceType.typeId()];
 
             for ( long resourceId : resourceIds )
             {
                 // First, check if we already hold this as a shared lock
-                int heldCount = heldShareLocks.get( resourceId );
+                int heldCount = heldShareLocks.getIfAbsent( resourceId, -1 );
                 if ( heldCount != -1 )
                 {
                     // We already have a lock on this, just increment our local reference counter.
@@ -299,11 +301,11 @@ public class ForsetiClient implements Locks.Client
         try
         {
             ConcurrentMap<Long,ForsetiLockManager.Lock> lockMap = lockMaps[resourceType.typeId()];
-            PrimitiveLongIntMap heldLocks = exclusiveLockCounts[resourceType.typeId()];
+            MutableLongIntMap heldLocks = exclusiveLockCounts[resourceType.typeId()];
 
             for ( long resourceId : resourceIds )
             {
-                int heldCount = heldLocks.get( resourceId );
+                int heldCount = heldLocks.getIfAbsent( resourceId, -1 );
                 if ( heldCount != -1 )
                 {
                     // We already have a lock on this, just increment our local reference counter.
@@ -365,9 +367,9 @@ public class ForsetiClient implements Locks.Client
         try
         {
             ConcurrentMap<Long,ForsetiLockManager.Lock> lockMap = lockMaps[resourceType.typeId()];
-            PrimitiveLongIntMap heldLocks = exclusiveLockCounts[resourceType.typeId()];
+            MutableLongIntMap heldLocks = exclusiveLockCounts[resourceType.typeId()];
 
-            int heldCount = heldLocks.get( resourceId );
+            int heldCount = heldLocks.getIfAbsent( resourceId, -1 );
             if ( heldCount != -1 )
             {
                 // We already have a lock on this, just increment our local reference counter.
@@ -417,10 +419,10 @@ public class ForsetiClient implements Locks.Client
         try
         {
             ConcurrentMap<Long,ForsetiLockManager.Lock> lockMap = lockMaps[resourceType.typeId()];
-            PrimitiveLongIntMap heldShareLocks = sharedLockCounts[resourceType.typeId()];
-            PrimitiveLongIntMap heldExclusiveLocks = exclusiveLockCounts[resourceType.typeId()];
+            MutableLongIntMap heldShareLocks = sharedLockCounts[resourceType.typeId()];
+            MutableLongIntMap heldExclusiveLocks = exclusiveLockCounts[resourceType.typeId()];
 
-            int heldCount = heldShareLocks.get( resourceId );
+            int heldCount = heldShareLocks.getIfAbsent( resourceId, -1 );
             if ( heldCount != -1 )
             {
                 // We already have a lock on this, just increment our local reference counter.
@@ -490,10 +492,10 @@ public class ForsetiClient implements Locks.Client
         stateHolder.incrementActiveClients( this );
         try
         {
-            PrimitiveLongIntMap heldShareLocks = sharedLockCounts[resourceType.typeId()];
-            PrimitiveLongIntMap heldExclusiveLocks = exclusiveLockCounts[resourceType.typeId()];
+            MutableLongIntMap heldShareLocks = sharedLockCounts[resourceType.typeId()];
+            MutableLongIntMap heldExclusiveLocks = exclusiveLockCounts[resourceType.typeId()];
 
-            int heldCount = heldShareLocks.get( resourceId );
+            int heldCount = heldShareLocks.getIfAbsent( resourceId, -1 );
             if ( heldCount != -1 )
             {
                 // We already have a lock on this, just increment our local reference counter.
@@ -524,9 +526,9 @@ public class ForsetiClient implements Locks.Client
         stateHolder.incrementActiveClients( this );
         try
         {
-            PrimitiveLongIntMap heldLocks = exclusiveLockCounts[resourceType.typeId()];
+            MutableLongIntMap heldLocks = exclusiveLockCounts[resourceType.typeId()];
 
-            int heldCount = heldLocks.get( resourceId );
+            int heldCount = heldLocks.getIfAbsent( resourceId, -1 );
             if ( heldCount != -1 )
             {
                 // We already have a lock on this, just increment our local reference counter.
@@ -550,8 +552,8 @@ public class ForsetiClient implements Locks.Client
 
         try
         {
-            PrimitiveLongIntMap sharedLocks = sharedLockCounts[resourceType.typeId()];
-            PrimitiveLongIntMap exclusiveLocks = exclusiveLockCounts[resourceType.typeId()];
+            MutableLongIntMap sharedLocks = sharedLockCounts[resourceType.typeId()];
+            MutableLongIntMap exclusiveLocks = exclusiveLockCounts[resourceType.typeId()];
             ConcurrentMap<Long,ForsetiLockManager.Lock> resourceTypeLocks = lockMaps[resourceType.typeId()];
             for ( long resourceId : resourceIds )
             {
@@ -579,9 +581,9 @@ public class ForsetiClient implements Locks.Client
 
         try
         {
-            PrimitiveLongIntMap exclusiveLocks = exclusiveLockCounts[resourceType.typeId()];
             ConcurrentMap<Long,ForsetiLockManager.Lock> resourceTypeLocks = lockMaps[resourceType.typeId()];
-            PrimitiveLongIntMap sharedLocks = sharedLockCounts[resourceType.typeId()];
+            MutableLongIntMap exclusiveLocks = exclusiveLockCounts[resourceType.typeId()];
+            MutableLongIntMap sharedLocks = sharedLockCounts[resourceType.typeId()];
             for ( long resourceId : resourceIds )
             {
                 if ( releaseLocalLock( resourceType, resourceId, exclusiveLocks ) )
@@ -631,8 +633,8 @@ public class ForsetiClient implements Locks.Client
         // Force the release of all locks held.
         for ( int i = 0; i < exclusiveLockCounts.length; i++ )
         {
-            PrimitiveLongIntMap exclusiveLocks = exclusiveLockCounts[i];
-            PrimitiveLongIntMap sharedLocks = sharedLockCounts[i];
+            MutableLongIntMap exclusiveLocks = exclusiveLockCounts[i];
+            MutableLongIntMap sharedLocks = sharedLockCounts[i];
 
             // Begin releasing exclusive locks, as we may hold both exclusive and shared locks on the same resource,
             // and so releasing exclusive locks means we can "throw away" our shared lock (which would normally have
@@ -640,7 +642,7 @@ public class ForsetiClient implements Locks.Client
             if ( exclusiveLocks != null )
             {
                 int size = exclusiveLocks.size();
-                exclusiveLocks.visitKeys(
+                exclusiveLocks.forEachKey(
                         releaseExclusiveAndClearSharedVisitor.initialize( sharedLocks, lockMaps[i] ) );
                 if ( size <= 32 )
                 {
@@ -654,7 +656,7 @@ public class ForsetiClient implements Locks.Client
                 }
                 else
                 {
-                    exclusiveLockCounts[i] = Primitive.longIntMap();
+                    exclusiveLockCounts[i] = new LongIntHashMap();
                 }
             }
 
@@ -662,7 +664,7 @@ public class ForsetiClient implements Locks.Client
             if ( sharedLocks != null )
             {
                 int size = sharedLocks.size();
-                sharedLocks.visitKeys( releaseSharedDontCheckExclusiveVisitor.initialize( lockMaps[i] ) );
+                sharedLocks.forEachKey( releaseSharedDontCheckExclusiveVisitor.initialize( lockMaps[i] ) );
                 if ( size <= 32 )
                 {
                     // If the map is small, its fast and nice to GC to clear it. However, if its large, it is
@@ -675,7 +677,7 @@ public class ForsetiClient implements Locks.Client
                 }
                 else
                 {
-                    sharedLockCounts[i] = Primitive.longIntMap();
+                    sharedLockCounts[i] = new LongIntHashMap();
                 }
             }
         }
@@ -755,29 +757,25 @@ public class ForsetiClient implements Locks.Client
     }
 
     private static void collectActiveLocks(
-            PrimitiveLongIntMap[] counts,
+            LongIntMap[] counts,
             List<ActiveLock> locks,
             ActiveLock.Factory activeLock )
     {
         for ( int typeId = 0; typeId < counts.length; typeId++ )
         {
-            PrimitiveLongIntMap lockCounts = counts[typeId];
+            LongIntMap lockCounts = counts[typeId];
             if ( lockCounts != null )
             {
                 ResourceType resourceType = ResourceTypes.fromId( typeId );
-                lockCounts.visitEntries( ( resourceId, count ) ->
-                {
-                    locks.add( activeLock.create( resourceType, resourceId ) );
-                    return false;
-                } );
+                lockCounts.forEachKeyValue( ( resourceId, count ) -> locks.add( activeLock.create( resourceType, resourceId ) ) );
             }
         }
     }
 
-    private long countLocks( PrimitiveLongIntMap[] lockCounts )
+    private long countLocks( LongIntMap[] lockCounts )
     {
         long count = 0;
-        for ( PrimitiveLongIntMap lockCount : lockCounts )
+        for ( LongIntMap lockCount : lockCounts )
         {
             if ( lockCount != null )
             {
@@ -849,9 +847,9 @@ public class ForsetiClient implements Locks.Client
     }
 
     /** Release a lock locally, and return true if we still hold more references to that lock. */
-    private boolean releaseLocalLock( ResourceType type, long resourceId, PrimitiveLongIntMap localLocks )
+    private boolean releaseLocalLock( ResourceType type, long resourceId, MutableLongIntMap localLocks )
     {
-        int lockCount = localLocks.remove( resourceId );
+        int lockCount = localLocks.removeKeyIfAbsent( resourceId, -1 );
         if ( lockCount == -1 )
         {
             throw new IllegalStateException( this + " cannot release lock that it does not hold: " +
@@ -1057,28 +1055,10 @@ public class ForsetiClient implements Locks.Client
         }
     }
 
-    /**
-     * @return an approximate (assuming data is concurrently being edited) count of the number of locks held by this
-     * client.
-     */
-    int lockCount()
-    {
-        int count = 0;
-        for ( PrimitiveLongIntMap sharedLockCount : sharedLockCounts )
-        {
-            count += sharedLockCount.size();
-        }
-        for ( PrimitiveLongIntMap exclusiveLockCount : exclusiveLockCounts )
-        {
-            count += exclusiveLockCount.size();
-        }
-        return count;
-    }
-
     String describeWaitList()
     {
         StringBuilder sb = new StringBuilder( format( "%nClient[%d] waits for [", id() ) );
-        PrimitiveIntIterator iter = waitList.iterator();
+        final IntIterator iter = waitList.iterator();
         for ( boolean first = true; iter.hasNext(); )
         {
             int next = iter.next();
@@ -1136,21 +1116,20 @@ public class ForsetiClient implements Locks.Client
      * Release all shared locks, assuming that there will be no exclusive locks held by this client, such that there
      * is no need to check for those. It is used when releasing all locks.
      */
-    private class ReleaseSharedDontCheckExclusiveVisitor implements PrimitiveLongVisitor<RuntimeException>
+    private class ReleaseSharedDontCheckExclusiveVisitor implements LongProcedure
     {
         private ConcurrentMap<Long,ForsetiLockManager.Lock> lockMap;
 
-        private PrimitiveLongVisitor<RuntimeException> initialize( ConcurrentMap<Long,ForsetiLockManager.Lock> lockMap )
+        private LongProcedure initialize( ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap )
         {
             this.lockMap = lockMap;
             return this;
         }
 
         @Override
-        public boolean visited( long resourceId )
+        public void value( long resourceId )
         {
             releaseGlobalLock( lockMap, resourceId );
-            return false;
         }
     }
 
@@ -1158,13 +1137,12 @@ public class ForsetiClient implements Locks.Client
      * Release exclusive locks and remove any local reference to the shared lock.
      * This is an optimization used when releasing all locks.
      */
-    private class ReleaseExclusiveLocksAndClearSharedVisitor implements PrimitiveLongVisitor<RuntimeException>
+    private class ReleaseExclusiveLocksAndClearSharedVisitor implements LongProcedure
     {
-        private PrimitiveLongIntMap sharedLockCounts;
+        private MutableLongIntMap sharedLockCounts;
         private ConcurrentMap<Long,ForsetiLockManager.Lock> lockMap;
 
-        private PrimitiveLongVisitor<RuntimeException> initialize( PrimitiveLongIntMap sharedLockCounts,
-                                                                   ConcurrentMap<Long,ForsetiLockManager.Lock> lockMap )
+        private LongProcedure initialize( MutableLongIntMap sharedLockCounts, ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap )
         {
             this.sharedLockCounts = sharedLockCounts;
             this.lockMap = lockMap;
@@ -1172,7 +1150,7 @@ public class ForsetiClient implements Locks.Client
         }
 
         @Override
-        public boolean visited( long resourceId )
+        public void value( long resourceId )
         {
             releaseGlobalLock( lockMap, resourceId );
 
@@ -1182,7 +1160,22 @@ public class ForsetiClient implements Locks.Client
             {
                 sharedLockCounts.remove( resourceId );
             }
-            return false;
+        }
+    }
+
+    @SuppressWarnings( "ExternalizableWithoutPublicNoArgConstructor" )
+    private static class CountableLongIntHashMap extends LongIntHashMap
+    {
+        CountableLongIntHashMap()
+        {
+            super();
+        }
+
+        @Override
+        public int size()
+        {
+            SentinelValues sentinelValues = getSentinelValues();
+            return getOccupiedWithData() + (sentinelValues == null ? 0 : sentinelValues.size());
         }
     }
 }

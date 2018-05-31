@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Test;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -99,9 +99,9 @@ public abstract class DeepRelationshipTraversalCursorTestBase<G extends KernelAP
         try ( NodeCursor node = cursors.allocateNodeCursor();
               RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor();
               RelationshipTraversalCursor relationship1 = cursors.allocateRelationshipTraversalCursor();
-              RelationshipTraversalCursor relationship2 = cursors.allocateRelationshipTraversalCursor();
-              PrimitiveLongSet leafs = Primitive.longSet() )
+              RelationshipTraversalCursor relationship2 = cursors.allocateRelationshipTraversalCursor() )
         {
+            MutableLongSet leafs = new LongHashSet();
             long total = 0;
 
             // when

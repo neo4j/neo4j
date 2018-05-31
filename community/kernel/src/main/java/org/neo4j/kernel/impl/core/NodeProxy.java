@@ -27,8 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -43,7 +41,7 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -631,7 +629,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
                 return false;
             }
             transaction.dataRead().singleNode( nodeId, nodes );
-            return nodes.next() && nodes.labels().contains( labelId );
+            return nodes.next() && nodes.hasLabel( labelId );
         }
     }
 
@@ -746,22 +744,21 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
     public Iterable<RelationshipType> getRelationshipTypes()
     {
         KernelTransaction transaction = safeAcquireTransaction();
-        try ( RelationshipTraversalCursor relationships = transaction.cursors().allocateRelationshipTraversalCursor();
+        try ( RelationshipGroupCursor relationships = transaction.cursors().allocateRelationshipGroupCursor();
               Statement ignore = transaction.acquireStatement() )
         {
             NodeCursor nodes = transaction.ambientNodeCursor();
             TokenRead tokenRead = transaction.tokenRead();
             singleNode( transaction, nodes );
-            nodes.allRelationships( relationships );
-            PrimitiveIntSet seen = Primitive.intSet();
+            nodes.relationships( relationships );
             List<RelationshipType> types = new ArrayList<>();
             while ( relationships.next() )
             {
+                // only include this type if there are any relationships with this type
                 int type = relationships.type();
-                if ( !seen.contains( type ) )
+                if ( relationships.totalCount() > 0 )
                 {
                     types.add( RelationshipType.withName( tokenRead.relationshipTypeName( relationships.type() ) ) );
-                    seen.add( type );
                 }
             }
 

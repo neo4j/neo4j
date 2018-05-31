@@ -31,10 +31,10 @@ import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
@@ -54,19 +54,19 @@ public class SchemaStorage implements SchemaRuleAccess
      * @throws  IllegalStateException if more than one matching rule.
      * @param descriptor the target IndexDescriptor
      */
-    public IndexRule indexGetForSchema( final SchemaIndexDescriptor descriptor )
+    public StoreIndexDescriptor indexGetForSchema( final IndexDescriptor descriptor )
     {
-        Iterator<IndexRule> rules = loadAllSchemaRules( descriptor::isSame, IndexRule.class, false );
+        Iterator<StoreIndexDescriptor> indexes = loadAllSchemaRules( descriptor::equals, StoreIndexDescriptor.class, false );
 
-        IndexRule foundRule = null;
+        StoreIndexDescriptor foundRule = null;
 
-        while ( rules.hasNext() )
+        while ( indexes.hasNext() )
         {
-            IndexRule candidate = rules.next();
+            StoreIndexDescriptor candidate = indexes.next();
             if ( foundRule != null )
             {
                 throw new IllegalStateException( String.format(
-                        "Found more than one matching index rule, %s and %s", foundRule, candidate ) );
+                        "Found more than one matching index, %s and %s", foundRule, candidate ) );
             }
             foundRule = candidate;
         }
@@ -74,9 +74,9 @@ public class SchemaStorage implements SchemaRuleAccess
         return foundRule;
     }
 
-    public Iterator<IndexRule> indexesGetAll()
+    public Iterator<StoreIndexDescriptor> indexesGetAll()
     {
-        return loadAllSchemaRules( Predicates.alwaysTrue(), IndexRule.class, false );
+        return loadAllSchemaRules( Predicates.alwaysTrue(), StoreIndexDescriptor.class, false );
     }
 
     public Iterator<ConstraintRule> constraintsGetAll()

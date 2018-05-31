@@ -21,6 +21,8 @@ package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.util.Random;
 
+import org.neo4j.values.storable.RandomValues;
+
 /**
  * Distributes the given items so that item[0] converges towards being returned 1/2 of the times,
  * the next item, item[1] 1/4 of the times, item[2] 1/8 and so on.
@@ -40,6 +42,21 @@ public class Distribution<T>
     }
 
     public T random( Random random )
+    {
+        float value = random.nextFloat();
+        float comparison = 0.5f;
+        for ( T item : items )
+        {
+            if ( value >= comparison )
+            {
+                return item;
+            }
+            comparison /= 2f;
+        }
+        return items[items.length - 1];
+    }
+
+    public T random( RandomValues random )
     {
         float value = random.nextFloat();
         float comparison = 0.5f;

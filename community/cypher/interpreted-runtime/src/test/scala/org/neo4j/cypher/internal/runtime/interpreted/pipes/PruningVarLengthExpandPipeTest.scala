@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, Property, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Equals, Predicate, True}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedProperty
-import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
+import org.opencypher.v9_0.expressions.SemanticDirection
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.internal.kernel.api.security.LoginContext

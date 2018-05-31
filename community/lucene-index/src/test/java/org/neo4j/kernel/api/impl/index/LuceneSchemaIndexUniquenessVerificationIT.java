@@ -47,12 +47,12 @@ import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -65,8 +65,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
 {
     private static final int DOCS_PER_PARTITION = ThreadLocalRandom.current().nextInt( 10, 100 );
     private static final int PROPERTY_KEY_ID = 42;
-    private static final SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory
-            .uniqueForLabel( 0, PROPERTY_KEY_ID );
+    private static final IndexDescriptor descriptor = TestIndexDescriptorFactory.uniqueForLabel( 0, PROPERTY_KEY_ID );
 
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
@@ -360,21 +359,19 @@ public class LuceneSchemaIndexUniquenessVerificationIT
 
     private Set<Value> randomArrays( int minLength, int maxLength )
     {
-        Randoms randoms = new Randoms( ThreadLocalRandom.current(), new ArraySizeConfig( minLength, maxLength ) );
+        RandomValues randoms = RandomValues.create( new ArraySizeConfig( minLength, maxLength ) );
 
         return IntStream.range( 0, nodesToCreate )
-                .mapToObj( i -> randoms.array() )
-                .map( Values::of )
+                .mapToObj( i -> randoms.nextArray() )
                 .collect( toSet() );
     }
 
     private Set<Value> randomValues()
     {
-        Randoms randoms = new Randoms( ThreadLocalRandom.current(), new ArraySizeConfig( 5, 100 ) );
+        RandomValues randoms = RandomValues.create( new ArraySizeConfig( 5, 100 ) );
 
         return IntStream.range( 0, nodesToCreate )
-                .mapToObj( i -> randoms.propertyValue() )
-                .map( Values::of )
+                .mapToObj( i -> randoms.nextValue() )
                 .collect( toSet() );
     }
 
@@ -424,7 +421,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
         return ThreadLocalRandom.current().nextDouble( min, max );
     }
 
-    private static class ArraySizeConfig extends Randoms.Default
+    private static class ArraySizeConfig extends RandomValues.Default
     {
         final int minLength;
         final int maxLength;

@@ -85,6 +85,6 @@ class ShortestPathRelationshipUniquenessAcceptanceTest extends ExecutionEngineFu
     result should be(List(List(p0, pLongPath0, pLongPath1, pLongPath2, pLongPath3, pLongPath4, pLongPath5, p3, p2, p4, p5)))
   }
 
-  def executeUsingCostPlannerOnly(query: String) =
-    RewindableExecutionResult(eengine.execute(s"CYPHER planner=COST $query", Map.empty[String, Any]))
+  private def executeUsingCostPlannerOnly(query: String) =
+    execute(s"CYPHER planner=COST $query")
 }

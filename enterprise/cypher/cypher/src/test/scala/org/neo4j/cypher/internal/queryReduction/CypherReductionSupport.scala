@@ -23,42 +23,43 @@
 package org.neo4j.cypher.internal.queryReduction
 
 import org.neo4j.cypher.GraphIcing
-import org.neo4j.cypher.internal.compatibility.v3_4.WrappedMonitors
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.EnterpriseRuntimeContextCreator
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs.ProcedureCallOrSchemaCommandExecutionPlanBuilder
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
-import org.neo4j.cypher.internal.compiler.v3_4._
-import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilationContains, LogicalPlanState}
-import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner, cartesianProductsOrValueJoins}
-import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{ASTRewriter, Never}
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.NO_TRACING
-import org.neo4j.cypher.internal.frontend.v3_4.phases._
-import org.neo4j.cypher.internal.frontend.v3_4.prettifier.{ExpressionStringifier, Prettifier}
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
+import org.neo4j.cypher.internal.compatibility.v3_5.WrappedMonitors
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.procs.ProcedureCallOrSchemaCommandExecutionPlanBuilder
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
+import org.neo4j.cypher.internal.compiler.v3_5._
+import org.neo4j.cypher.internal.compiler.v3_5.phases.{CompilationContains, LogicalPlanState}
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner, cartesianProductsOrValueJoins}
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.planner.v3_4.spi.{IDPPlannerName, PlanContext, PlannerNameFor}
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.planner.v3_5.spi.{IDPPlannerName, PlanContext, PlannerNameFor}
 import org.neo4j.cypher.internal.queryReduction.DDmin.Oracle
+import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContextCreator
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.SingleThreadedExecutor
 import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, NormalMode}
-import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure
-import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
-import org.neo4j.cypher.internal.{CompilerEngineDelegator, ExecutionPlan, RewindableExecutionResult}
+import org.neo4j.cypher.internal.spi.codegen.GeneratedQueryStructure
+import org.neo4j.cypher.internal.{ExecutionPlan, MasterCompiler, RewindableExecutionResult}
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo.EMBEDDED_CONNECTION
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, TransactionalContextFactory}
 import org.neo4j.kernel.monitoring.Monitors
+import org.neo4j.logging.NullLog
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
+import org.opencypher.v9_0.ast._
+import org.opencypher.v9_0.ast.semantics.SemanticState
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.NO_TRACING
+import org.opencypher.v9_0.frontend.phases._
+import org.opencypher.v9_0.frontend.prettifier.{ExpressionStringifier, Prettifier}
+import org.opencypher.v9_0.rewriting.RewriterStepSequencer
+import org.opencypher.v9_0.rewriting.rewriters.Never
+import org.opencypher.v9_0.util.attribution.SequentialIdGen
+import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 
 import scala.util.Try
 
@@ -67,7 +68,7 @@ object CypherReductionSupport {
   private val astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true)
   private val stepSequencer = RewriterStepSequencer.newPlain _
   private val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
-  private val config = CypherCompilerConfiguration(
+  private val config = CypherPlannerConfiguration(
     queryCacheSize = 0,
     statsDivergenceCalculator = StatsDivergenceCalculator.divergenceNoDecayCalculator(0, 0),
     useErrorsOverWarnings = false,
@@ -80,8 +81,8 @@ object CypherReductionSupport {
     nonIndexedLabelWarningThreshold = 0,
     planWithMinimumCardinalityEstimates = true)
   private val kernelMonitors = new Monitors
-  private val compiler = CypherCompiler(astRewriter, WrappedMonitors(kernelMonitors), stepSequencer, metricsFactory, config, defaultUpdateStrategy,
-    CompilerEngineDelegator.CLOCK, CommunityRuntimeContextCreator)
+  private val compiler = CypherPlanner(astRewriter, WrappedMonitors(kernelMonitors), stepSequencer, metricsFactory, config, defaultUpdateStrategy,
+    MasterCompiler.CLOCK, CommunityRuntimeContextCreator)
 
   private val monitor = kernelMonitors.newMonitor(classOf[IDPQueryGraphSolverMonitor])
   private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
@@ -201,17 +202,17 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
   }
 
   private def createContext(query: String, metricsFactory: CachedMetricsFactory,
-                            config: CypherCompilerConfiguration,
+                            config: CypherPlannerConfiguration,
                             planContext: PlanContext,
                             queryGraphSolver: IDPQueryGraphSolver, enterprise: Boolean) = {
     val logicalPlanIdGen = new SequentialIdGen()
     if (enterprise) {
       val dispatcher = new SingleThreadedExecutor(1)
-      EnterpriseRuntimeContextCreator(GeneratedQueryStructure, dispatcher).create(NO_TRACING, devNullLogger, planContext, query, Set(),
-        None, WrappedMonitors(new Monitors), metricsFactory, queryGraphSolver, config, defaultUpdateStrategy, CompilerEngineDelegator.CLOCK, logicalPlanIdGen, null)
+      EnterpriseRuntimeContextCreator(GeneratedQueryStructure, dispatcher, NullLog.getInstance()).create(NO_TRACING, devNullLogger, planContext, query, Set(),
+                                                                                              None, WrappedMonitors(new Monitors), metricsFactory, queryGraphSolver, config, defaultUpdateStrategy, MasterCompiler.CLOCK, logicalPlanIdGen, null)
     } else {
     CommunityRuntimeContextCreator.create(NO_TRACING, devNullLogger, planContext, query, Set(),
-      None, WrappedMonitors(new Monitors), metricsFactory, queryGraphSolver, config = config, updateStrategy = defaultUpdateStrategy, clock = CompilerEngineDelegator.CLOCK, logicalPlanIdGen, evaluator = null)
+      None, WrappedMonitors(new Monitors), metricsFactory, queryGraphSolver, config = config, updateStrategy = defaultUpdateStrategy, clock = MasterCompiler.CLOCK, logicalPlanIdGen, evaluator = null)
     }
   }
 }

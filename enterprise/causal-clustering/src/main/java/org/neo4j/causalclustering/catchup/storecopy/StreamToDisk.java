@@ -32,7 +32,6 @@ import java.util.List;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
-import org.neo4j.io.pagecache.PagedFile;
 
 import static org.neo4j.io.IOUtils.closeAll;
 
@@ -40,11 +39,6 @@ public class StreamToDisk implements StoreFileStream
 {
     private WritableByteChannel writableByteChannel;
     private List<AutoCloseable> closeables;
-
-    static StreamToDisk fromPagedFile( PagedFile pagedFile ) throws IOException
-    {
-        return new StreamToDisk( pagedFile.openWritableByteChannel(), pagedFile );
-    }
 
     static StreamToDisk fromFile( FileSystemAbstraction fsa, File file ) throws IOException
     {

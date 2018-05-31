@@ -19,7 +19,7 @@
  */
 package org.neo4j.codegen.source;
 
-import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.text.StringEscapeUtils;
 
 import java.util.Deque;
 import java.util.LinkedList;

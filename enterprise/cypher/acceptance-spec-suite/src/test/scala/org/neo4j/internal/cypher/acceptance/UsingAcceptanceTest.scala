@@ -22,7 +22,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.v3_4.logical.plans.{CartesianProduct, NodeIndexSeek}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{CartesianProduct, NodeIndexSeek}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, _}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -385,8 +385,8 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
          |USING JOIN ON a
          |RETURN a.prop AS res""".stripMargin
 
-    val result = executeWith(Configs.Version3_4 + Configs.Version3_3 + Configs.AllRulePlanners , query,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should includeOnlyOneHashJoinOn("a"),
+    val result = executeWith(Configs.Version3_5 + Configs.Version3_3 + Configs.AllRulePlanners, query,
+                             planComparisonStrategy = ComparePlansWithAssertion(_ should includeOnlyOneHashJoinOn("a"),
         expectPlansToFail = Configs.AllRulePlanners))
 
     result.toList should equal (List(Map("res" -> "foo")))
@@ -402,8 +402,8 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
           |USING JOIN ON b
           |RETURN b.prop AS res""".stripMargin
 
-    val result = executeWith(Configs.Version3_4 + Configs.Version3_3 + Configs.AllRulePlanners, query,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should includeOnlyOneHashJoinOn("b"),
+    val result = executeWith(Configs.Version3_5 + Configs.Version3_3 + Configs.AllRulePlanners, query,
+                             planComparisonStrategy = ComparePlansWithAssertion(_ should includeOnlyOneHashJoinOn("b"),
         expectPlansToFail = Configs.AllRulePlanners))
 
     result.toList should equal (List(Map("res" -> "bar")))
@@ -801,8 +801,8 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
         | WHERE f.bar=5 and f.baz=3
         | RETURN f
       """.stripMargin
-    val result = executeWith(Configs.Version3_4 + Configs.Version3_3 - Configs.Compiled - Configs.AllRulePlanners, query,
-      planComparisonStrategy = ComparePlansWithAssertion(planDescription => {
+    val result = executeWith(Configs.Version3_5 + Configs.Version3_3 - Configs.Compiled - Configs.AllRulePlanners, query,
+                             planComparisonStrategy = ComparePlansWithAssertion(planDescription => {
         planDescription should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
       }, expectPlansToFail = Configs.AllRulePlanners))
 

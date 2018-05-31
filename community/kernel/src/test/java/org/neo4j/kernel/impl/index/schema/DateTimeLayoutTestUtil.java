@@ -29,11 +29,9 @@ import java.util.Set;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.test.Randoms;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.values.storable.DateTimeValue;
-import org.neo4j.values.storable.TemporalValue;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -51,12 +49,7 @@ public class DateTimeLayoutTestUtil extends LayoutTestUtil<ZonedDateTimeSchemaKe
             ZonedDateTime.of( -1, 12, 31, 23,59,59,999_999_999, UTC )
     };
 
-    public static DateTimeValue randomDateTime( Randoms random )
-    {
-        return DateTimeValue.datetime( random.randomDateTime() );
-    }
-
-    DateTimeLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )
+    DateTimeLayoutTestUtil( IndexDescriptor schemaIndexDescriptor )
     {
         super( schemaIndexDescriptor );
     }
@@ -68,7 +61,7 @@ public class DateTimeLayoutTestUtil extends LayoutTestUtil<ZonedDateTimeSchemaKe
     }
 
     @Override
-    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdates()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
     {
         return someUpdatesWithDuplicateValues();
     }
@@ -86,12 +79,12 @@ public class DateTimeLayoutTestUtil extends LayoutTestUtil<ZonedDateTimeSchemaKe
     }
 
     @Override
-    Value newUniqueValue( RandomRule random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
+    Value newUniqueValue( RandomValues random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
     {
         DateTimeValue candidate;
         do
         {
-            candidate = randomDateTime( random.randoms() );
+            candidate = random.nextDateTimeValue();
         }
         while ( !uniqueCompareValues.add( candidate ) );
         uniqueValues.add( candidate );
@@ -99,13 +92,13 @@ public class DateTimeLayoutTestUtil extends LayoutTestUtil<ZonedDateTimeSchemaKe
     }
 
     @Override
-    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesNoDuplicateValues()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdatesNoDuplicateValues()
     {
         return generateAddUpdatesFor( ALL_EXTREME_VALUES );
     }
 
     @Override
-    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesWithDuplicateValues()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues()
     {
         return generateAddUpdatesFor( ArrayUtils.addAll( ALL_EXTREME_VALUES, ALL_EXTREME_VALUES ) );
     }

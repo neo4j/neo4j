@@ -41,7 +41,6 @@ import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.ManagementSupport;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.management.CausalClustering;
@@ -65,8 +64,7 @@ public class CausalClusteringBeanTest
     @Before
     public void setUp()
     {
-        KernelData kernelData =
-                new DefaultKernelData( fs, mock( PageCache.class ), new File( "storeDir" ), Config.defaults(), db );
+        KernelData kernelData = new KernelData( fs, mock( PageCache.class ), new File( "storeDir" ), Config.defaults(), db );
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( clusterStateDirectory );

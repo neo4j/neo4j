@@ -38,7 +38,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -74,7 +73,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.bolt.v1.runtime.integration.TransactionIT.createHttpServer;
-import static org.neo4j.concurrent.Runnables.EMPTY_RUNNABLE;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -82,6 +80,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 import static org.neo4j.test.matchers.CommonMatchers.matchesOneToOneInAnyOrder;
+import static org.neo4j.util.concurrent.Runnables.EMPTY_RUNNABLE;
 
 public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureInteractionTestBase<S>
 {

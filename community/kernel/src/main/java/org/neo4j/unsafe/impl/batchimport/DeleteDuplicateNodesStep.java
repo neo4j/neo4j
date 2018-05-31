@@ -19,8 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.io.IOException;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordCursor;
@@ -38,13 +38,13 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
 {
     private final NodeStore nodeStore;
     private final PropertyStore propertyStore;
-    private final PrimitiveLongIterator nodeIds;
+    private final LongIterator nodeIds;
     private final DataImporter.Monitor storeMonitor;
 
     private long nodesRemoved;
     private long propertiesRemoved;
 
-    public DeleteDuplicateNodesStep( StageControl control, Configuration config, PrimitiveLongIterator nodeIds, NodeStore nodeStore,
+    public DeleteDuplicateNodesStep( StageControl control, Configuration config, LongIterator nodeIds, NodeStore nodeStore,
             PropertyStore propertyStore, DataImporter.Monitor storeMonitor )
     {
         super( control, "DEDUP", config );

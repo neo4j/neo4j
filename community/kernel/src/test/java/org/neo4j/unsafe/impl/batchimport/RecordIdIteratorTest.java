@@ -19,9 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.Test;
-
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -111,7 +110,7 @@ public class RecordIdIteratorTest
     {
         for ( long[] expectedArray : expectedIds )
         {
-            PrimitiveLongIterator iterator = ids.nextBatch();
+            LongIterator iterator = ids.nextBatch();
             assertNotNull( iterator );
             for ( long expectedId : expectedArray )
             {

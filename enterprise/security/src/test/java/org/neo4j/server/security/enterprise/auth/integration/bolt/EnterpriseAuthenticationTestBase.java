@@ -197,7 +197,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
     protected void assertAuthAndChangePassword( String username, String password, String newPassword ) throws Exception
     {
         assertAuth( username, password );
-        String query = format( "CALL dbms.security.changeUserPassword('%s', '%s', false)", username, newPassword );
+        String query = format( "CALL dbms.security.changePassword('%s')", newPassword );
         client.send( util.chunk( run( query ), pullAll() ) );
         assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }

@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
-import org.neo4j.cypher.internal.util.v3_4.NonEmptyList
+import org.opencypher.v9_0.util.NonEmptyList
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, Literal, Property, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class GroupInequalityPredicatesForLegacyTest extends CypherFunSuite {
 

@@ -24,9 +24,6 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
-
 /**
  * {@link SuperReadableDiffSets} with added method for filtering added items.
  */
@@ -74,12 +71,6 @@ public interface ReadableDiffSets<T> extends SuperReadableDiffSets<T>
         }
 
         @Override
-        public Set<T> getAddedSnapshot()
-        {
-            return Collections.emptySet();
-        }
-
-        @Override
         public Set<T> getRemoved()
         {
             return Collections.emptySet();
@@ -92,33 +83,15 @@ public interface ReadableDiffSets<T> extends SuperReadableDiffSets<T>
         }
 
         @Override
-        public Iterator<T> apply( Iterator<T> source )
+        public Iterator<T> apply( Iterator<? extends T> source )
         {
-            return source;
+            return (Iterator)source;
         }
 
         @Override
         public int delta()
         {
             return 0;
-        }
-
-        @Override
-        public PrimitiveLongIterator augment( PrimitiveLongIterator source )
-        {
-            return source;
-        }
-
-        @Override
-        public PrimitiveLongResourceIterator augment( PrimitiveLongResourceIterator source )
-        {
-            return source;
-        }
-
-        @Override
-        public PrimitiveLongResourceIterator augmentWithRemovals( PrimitiveLongResourceIterator source )
-        {
-            return source;
         }
 
         @Override

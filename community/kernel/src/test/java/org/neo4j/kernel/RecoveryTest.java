@@ -33,7 +33,6 @@ import java.util.function.Consumer;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.OpenMode;
-import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -213,7 +212,7 @@ public class RecoveryTest
                         }
                     };
                 }
-            }, new StartupStatisticsProvider(), logPruner, monitor, SilentProgressReporter.INSTANCE, false ) );
+            }, logPruner, monitor, SilentProgressReporter.INSTANCE, false ) );
 
             life.start();
 
@@ -271,7 +270,7 @@ public class RecoveryTest
                 {
                     fail( "Recovery should not be required" );
                 }
-            }, new StartupStatisticsProvider(), logPruner, monitor, SilentProgressReporter.INSTANCE, false ) );
+            }, logPruner, monitor, SilentProgressReporter.INSTANCE, false ) );
 
             life.start();
 
@@ -425,7 +424,7 @@ public class RecoveryTest
                 {
                     recoveryRequired.set( true );
                 }
-            }, new StartupStatisticsProvider(), logPruner, monitor, SilentProgressReporter.INSTANCE, false ) );
+            }, logPruner, monitor, SilentProgressReporter.INSTANCE, false ) );
 
             life.start();
         }

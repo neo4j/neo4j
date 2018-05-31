@@ -22,12 +22,12 @@
  */
 package org.neo4j.harness;
 
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.ClassRule;
-import org.junit.Test;
 
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;

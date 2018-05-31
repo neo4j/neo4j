@@ -19,25 +19,20 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
-import java.util.Iterator;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
 
-import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.state.GraphState;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
-import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
@@ -56,28 +51,19 @@ public interface ReadableTransactionState
 
     /**
      * Returns all nodes that, in this tx, have had the labels changed.
+     * @param label
      */
-    ReadableDiffSets<Long> nodesWithLabelChanged( int label );
-
-    /**
-     * Returns all nodes that, in this tx, have had any of the labels changed.
-     */
-    ReadableDiffSets<Long> nodesWithAnyOfLabelsChanged( int... labels );
-
-    /**
-     * Returns all nodes that, in this tx, have had all the labels changed.
-     */
-    ReadableDiffSets<Long> nodesWithAllLabelsChanged( int... labels );
+    LongDiffSets nodesWithLabelChanged( long label );
 
     /**
      * Returns nodes that have been added and removed in this tx.
      */
-    ReadableDiffSets<Long> addedAndRemovedNodes();
+    LongDiffSets addedAndRemovedNodes();
 
     /**
      * Returns rels that have been added and removed in this tx.
      */
-    ReadableRelationshipDiffSets<Long> addedAndRemovedRelationships();
+    LongDiffSets addedAndRemovedRelationships();
 
     /**
      * Nodes that have had labels, relationships, or properties modified in this tx.
@@ -93,25 +79,11 @@ public interface ReadableTransactionState
 
     boolean relationshipIsDeletedInThisTx( long relationshipId );
 
-    ReadableDiffSets<Integer> nodeStateLabelDiffSets( long nodeId );
-
-    Iterator<StorageProperty> augmentGraphProperties( Iterator<StorageProperty> original );
+    LongDiffSets nodeStateLabelDiffSets( long nodeId );
 
     boolean nodeIsAddedInThisTx( long nodeId );
 
     boolean nodeIsDeletedInThisTx( long nodeId );
-
-    boolean nodeModifiedInThisTx( long nodeId );
-
-    PrimitiveIntSet nodeRelationshipTypes( long nodeId );
-
-    int augmentNodeDegree( long node, int committedDegree, Direction direction );
-
-    int augmentNodeDegree( long node, int committedDegree, Direction direction, int relType );
-
-    PrimitiveLongIterator augmentNodesGetAll( PrimitiveLongIterator committed );
-
-    RelationshipIterator augmentRelationshipsGetAll( RelationshipIterator committed );
 
     /**
      * @return {@code true} if the relationship was visited in this state, i.e. if it was created
@@ -122,11 +94,11 @@ public interface ReadableTransactionState
 
     // SCHEMA RELATED
 
-    ReadableDiffSets<SchemaIndexDescriptor> indexDiffSetsByLabel( int labelId );
+    ReadableDiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId );
 
-    ReadableDiffSets<SchemaIndexDescriptor> indexChanges();
+    ReadableDiffSets<IndexDescriptor> indexChanges();
 
-    Iterable<SchemaIndexDescriptor> constraintIndexesCreatedInTx();
+    Iterable<IndexDescriptor> constraintIndexesCreatedInTx();
 
     ReadableDiffSets<ConstraintDescriptor> constraintsChanges();
 
@@ -138,17 +110,17 @@ public interface ReadableTransactionState
 
     Long indexCreatedForConstraint( ConstraintDescriptor constraint );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForScan( SchemaIndexDescriptor index );
+    LongDiffSets indexUpdatesForScan( IndexDescriptor index );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForSuffixOrContains( SchemaIndexDescriptor index, IndexQuery query );
+    LongDiffSets indexUpdatesForSuffixOrContains( IndexDescriptor index, IndexQuery query );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForSeek( SchemaIndexDescriptor index, ValueTuple values );
+    LongDiffSets indexUpdatesForSeek( IndexDescriptor index, ValueTuple values );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeek( SchemaIndexDescriptor index, ValueGroup valueGroup,
+    LongDiffSets indexUpdatesForRangeSeek( IndexDescriptor index, ValueGroup valueGroup,
                                                             Value lower, boolean includeLower,
                                                             Value upper, boolean includeUpper );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByPrefix( SchemaIndexDescriptor index, String prefix );
+    LongDiffSets indexUpdatesForRangeSeekByPrefix( IndexDescriptor index, String prefix );
 
     NodeState getNodeState( long id );
 
@@ -161,21 +133,9 @@ public interface ReadableTransactionState
     Cursor<PropertyItem> augmentPropertyCursor( Cursor<PropertyItem> cursor,
             PropertyContainerState propertyContainerState );
 
-    Cursor<PropertyItem> augmentSinglePropertyCursor( Cursor<PropertyItem> cursor,
-            PropertyContainerState propertyContainerState,
-            int propertyKeyId );
-
-    PrimitiveIntSet augmentLabels( PrimitiveIntSet cursor, NodeState nodeState );
+    MutableLongSet augmentLabels( MutableLongSet labels, NodeState nodeState );
 
     Cursor<RelationshipItem> augmentSingleRelationshipCursor( Cursor<RelationshipItem> cursor, long relationshipId );
-
-    Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor, NodeState nodeState,
-            Direction direction );
-
-    Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor, NodeState nodeState,
-            Direction direction, int[] relTypes );
-
-    Cursor<RelationshipItem> augmentRelationshipsGetAllCursor( Cursor<RelationshipItem> cursor );
 
     /**
      * The way tokens are created is that the first time a token is needed it gets created in its own little

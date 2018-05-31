@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.After;
 import org.junit.Before;
 
@@ -27,10 +28,9 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -40,7 +40,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
 {
     protected IndexAccessor accessor;
 
-    public IndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, SchemaIndexDescriptor descriptor )
+    public IndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }
@@ -49,10 +49,10 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     public void before() throws Exception
     {
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
+        IndexPopulator populator = indexProvider.getPopulator( descriptor, indexSamplingConfig );
         populator.create();
         populator.close( true );
-        accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig );
+        accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig );
     }
 
     @After
@@ -72,7 +72,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         try ( IndexReader reader = accessor.newReader() )
         {
             List<Long> list = new LinkedList<>();
-            for ( PrimitiveLongIterator iterator = interaction.results( reader ); iterator.hasNext(); )
+            for ( LongIterator iterator = interaction.results( reader ); iterator.hasNext(); )
             {
                 list.add( iterator.next() );
             }
@@ -83,7 +83,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
 
     interface ReaderInteraction
     {
-        PrimitiveLongIterator results( IndexReader reader ) throws Exception;
+        LongIterator results( IndexReader reader ) throws Exception;
     }
 
     void updateAndCommit( List<IndexEntryUpdate<?>> updates )

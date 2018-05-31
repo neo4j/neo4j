@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, ParameterWrongTypeException}
+import org.opencypher.v9_0.util.symbols._
+import org.opencypher.v9_0.util.{CypherTypeException, ParameterWrongTypeException}
 import org.neo4j.values._
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable._

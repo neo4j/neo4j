@@ -26,7 +26,6 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
-import org.neo4j.internal.kernel.api.IndexLimitation;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -34,7 +33,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.ValueCategory;
 
@@ -55,29 +54,27 @@ public class StringIndexProvider extends NativeIndexProvider<StringSchemaKey,Nat
     }
 
     @Override
-    Layout<StringSchemaKey,NativeSchemaValue> layout( SchemaIndexDescriptor descriptor )
+    Layout<StringSchemaKey,NativeSchemaValue> layout( StoreIndexDescriptor descriptor )
     {
         return new StringLayout();
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( File storeFile, Layout<StringSchemaKey,NativeSchemaValue> layout,
-                                                SchemaIndexDescriptor descriptor, long indexId,
-                                                IndexSamplingConfig samplingConfig )
+    protected IndexPopulator newIndexPopulator( File storeFile, Layout<StringSchemaKey,NativeSchemaValue> layout, StoreIndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig )
     {
-        return new StringSchemaIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, indexId, samplingConfig );
+        return new StringSchemaIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( File storeFile, Layout<StringSchemaKey,NativeSchemaValue> layout, SchemaIndexDescriptor descriptor,
-            long indexId, IndexSamplingConfig samplingConfig ) throws IOException
+    protected IndexAccessor newIndexAccessor( File storeFile, Layout<StringSchemaKey,NativeSchemaValue> layout, StoreIndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new StringSchemaIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,
-                indexId, samplingConfig );
+        return new StringSchemaIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );
     }
 
     @Override
-    public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
+    public IndexCapability getCapability()
     {
         return CAPABILITY;
     }
@@ -91,8 +88,6 @@ public class StringIndexProvider extends NativeIndexProvider<StringSchemaKey,Nat
      */
     private static class StringIndexCapability implements IndexCapability
     {
-        private final IndexLimitation[] limitations = {IndexLimitation.SLOW_CONTAINS};
-
         @Override
         public IndexOrder[] orderCapability( ValueCategory... valueCategories )
         {
@@ -115,12 +110,6 @@ public class StringIndexProvider extends NativeIndexProvider<StringSchemaKey,Nat
                 return IndexValueCapability.PARTIAL;
             }
             return IndexValueCapability.NO;
-        }
-
-        @Override
-        public IndexLimitation[] limitations()
-        {
-            return limitations;
         }
 
         private boolean support( ValueCategory[] valueCategories )

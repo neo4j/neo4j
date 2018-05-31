@@ -60,6 +60,12 @@ Apache Software License, Version 2.0
   Netty/All-in-One
   Objenesis
   opencsv
+  openCypher AST for the Cypher Query Language
+  openCypher Expressions
+  openCypher Front End
+  openCypher Parser
+  openCypher Rewriting
+  openCypher Utils
   parboiled-core
   parboiled-scala
   rxjs.js
@@ -70,10 +76,10 @@ BSD - Scala License
 
 BSD License
   antlr4.js
-  ASM Analysis
-  ASM Core
-  ASM Tree
-  ASM Util
+  asm
+  asm-analysis
+  asm-tree
+  asm-util
   buffer-equal-constant-time.js
   D3.js
   dnd-core.js
@@ -106,6 +112,14 @@ Common Development and Distribution License Version 1.1
   jersey-server
   jersey-servlet
   jsr311-api
+
+Eclipse Distribution License - v 1.0
+  Eclipse Collections API
+  Eclipse Collections Main Library
+
+Eclipse Public License - v 1.0
+  Eclipse Collections API
+  Eclipse Collections Main Library
 
 GNU General Public License, version 2 with the Classpath Exception
   Java Servlet API
@@ -290,9 +304,6 @@ MIT License
   xmlhttprequest.js
   xtend.js
 
-Mozilla Public License, Version 2.0
-  Mozilla Rhino
-
 SIL OFL 1.1
   Font Awesome
   Inconsolata Font
@@ -300,6 +311,14 @@ SIL OFL 1.1
 
 Dependencies with multiple licenses
 -----------------------------------
+
+Eclipse Collections API
+  Eclipse Distribution License - v 1.0
+  Eclipse Public License - v 1.0
+
+Eclipse Collections Main Library
+  Eclipse Distribution License - v 1.0
+  Eclipse Public License - v 1.0
 
 Java Servlet API
   Common Development and Distribution License Version 1.1

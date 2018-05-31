@@ -39,7 +39,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
         |  CREATE (n)-[:SELF]->(b))""".stripMargin
 
     // should work
-    eengine.execute(query, Map.empty[String, Any])
+    executeOfficial(query)
   }
 
   test("nested foreach") {

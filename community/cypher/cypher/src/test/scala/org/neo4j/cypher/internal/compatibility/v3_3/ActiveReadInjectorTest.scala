@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3
 
-import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.util.v3_4.attribution.Attributes
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.v3_4.expressions.{LabelName, PropertyKeyName, RelTypeName, SignedDecimalIntegerLiteral}
-import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
+import org.opencypher.v9_0.util.attribution.Attributes
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.expressions.SemanticDirection.OUTGOING
+import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, RelTypeName, SignedDecimalIntegerLiteral}
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.scalatest.Matchers
 
 class ActiveReadInjectorTest extends CypherFunSuite with Matchers with LogicalPlanningTestSupport2 {

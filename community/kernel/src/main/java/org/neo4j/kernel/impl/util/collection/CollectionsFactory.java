@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
+import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
 import org.neo4j.memory.MemoryTracker;
 
 /**
@@ -32,13 +34,15 @@ import org.neo4j.memory.MemoryTracker;
  */
 public interface CollectionsFactory
 {
-    PrimitiveLongSet newLongSet();
+    MutableLongSet newLongSet();
 
-    <V> PrimitiveLongObjectMap<V> newLongObjectMap();
+    MutableIntSet newIntSet();
 
-    <V> PrimitiveIntObjectMap<V> newIntObjectMap();
+    <V> MutableLongObjectMap<V> newLongObjectMap();
 
-    PrimitiveLongDiffSets newLongDiffSets();
+    <V> MutableIntObjectMap<V> newIntObjectMap();
+
+    MutableLongDiffSetsImpl newLongDiffSets();
 
     MemoryTracker getMemoryTracker();
 

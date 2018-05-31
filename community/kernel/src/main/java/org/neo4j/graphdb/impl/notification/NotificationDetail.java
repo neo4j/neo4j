@@ -48,13 +48,6 @@ public interface NotificationDetail
                             Arrays.stream( propertyKeyNames ).collect( Collectors.joining( "," ) ) ), true );
         }
 
-        public static NotificationDetail suboptimalIndex( final String labelName, final String... propertyKeyNames )
-        {
-            return createNotificationDetail( "index",
-                    String.format( "index on :%s(%s)", labelName,
-                            Arrays.stream( propertyKeyNames ).collect( Collectors.joining( "," ) ) ), true );
-        }
-
         public static NotificationDetail label( final String labelName )
         {
             return createNotificationDetail( "the missing label name", labelName, true );

@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.procedure.Admin;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
@@ -139,11 +140,10 @@ public class EnterpriseBuiltInDbmsProcedures
         return terminateTransactionsForValidUser( graph.getDependencyResolver(), username, getCurrentTx() );
     }
 
+    //@Admin
     //@Procedure( name = "dbms.listConnections", mode = DBMS )
     public Stream<ConnectionResult> listConnections()
     {
-        assertAdmin();
-
         BoltConnectionTracker boltConnectionTracker = getBoltConnectionTracker( graph.getDependencyResolver() );
         return countConnectionsByUsername(
             boltConnectionTracker
@@ -207,10 +207,10 @@ public class EnterpriseBuiltInDbmsProcedures
     @SuppressWarnings( "WeakerAccess" )
     public static class ProcedureResult
     {
+        // These two procedures are admin procedures but may be executed for your own user,
+        // this is not documented anywhere but we cannot change the behaviour in a point release
         private static final List<String> ADMIN_PROCEDURES =
-                Arrays.asList( "createUser", "deleteUser", "listUsers", "clearAuthCache", "changeUserPassword",
-                        "addRoleToUser", "removeRoleFromUser", "suspendUser", "activateUser", "listRoles",
-                        "listRolesForUser", "listUsersForRole", "createRole", "deleteRole" );
+                Arrays.asList( "changeUserPassword", "listRolesForUser" );
 
         public final String name;
         public final String signature;
@@ -228,8 +228,7 @@ public class EnterpriseBuiltInDbmsProcedures
             switch ( signature.mode() )
             {
             case DBMS:
-                // TODO: not enough granularity for dbms and user management, needs fix
-                if ( isAdminProcedure( signature.name().name() ) )
+                if ( signature.admin() || isAdminProcedure( signature.name().name() ) )
                 {
                     roles.add( "admin" );
                 }
@@ -259,21 +258,16 @@ public class EnterpriseBuiltInDbmsProcedures
 
         private boolean isAdminProcedure( String procedureName )
         {
-            return name.startsWith( "dbms.security." ) && ADMIN_PROCEDURES.contains( procedureName ) ||
-                    name.equals( "dbms.listConfig" ) ||
-                    name.equals( "dbms.setConfigValue" ) ||
-                    name.equals( "dbms.clearQueryCaches" );
+            return name.startsWith( "dbms.security." ) && ADMIN_PROCEDURES.contains( procedureName );
         }
     }
 
+    @Admin
     @Description( "Updates a given setting value. Passing an empty value will result in removing the configured value " +
             "and falling back to the default value. Changes will not persist and will be lost if the server is restarted." )
     @Procedure( name = "dbms.setConfigValue", mode = DBMS )
     public void setConfigValue( @Name( "setting" ) String setting, @Name( "value" ) String value )
     {
-        securityContext.assertCredentialsNotExpired();
-        assertAdmin();
-
         Config config = resolver.resolveDependency( Config.class );
         config.updateDynamicSetting( setting, value, "dbms.setConfigValue" ); // throws if something goes wrong
     }
@@ -535,22 +529,9 @@ public class EnterpriseBuiltInDbmsProcedures
         return config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
     }
 
-    private boolean isAdmin()
-    {
-        return securityContext.isAdmin();
-    }
-
-    private void assertAdmin()
-    {
-        if ( !isAdmin() )
-        {
-            throw new AuthorizationViolationException( PERMISSION_DENIED );
-        }
-    }
-
     private boolean isAdminOrSelf( String username )
     {
-        return isAdmin() || securityContext.subject().hasUsername( username );
+        return securityContext.isAdmin() || securityContext.subject().hasUsername( username );
     }
 
     private void assertAdminOrSelf( String username )

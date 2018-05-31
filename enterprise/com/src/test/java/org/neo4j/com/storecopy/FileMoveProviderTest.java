@@ -32,46 +32,28 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class FileMoveProviderTest
 {
     private DefaultFileSystemAbstraction defaultFileSystemAbstraction = new DefaultFileSystemAbstraction();
-    private EphemeralFileSystemAbstraction ephemeralFileSystemAbstraction = new EphemeralFileSystemAbstraction();
 
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory( defaultFileSystemAbstraction );
 
     private FileMoveProvider subject;
 
-    public PageCacheRule pageCacheRule = new PageCacheRule();
-    private PageCache pageCache;
-    private FileMoveActionInformer fileMoveActionInformer;
-
     @Before
     public void setup()
     {
-        pageCache = pageCacheRule.getPageCache( ephemeralFileSystemAbstraction );
-        fileMoveActionInformer = mock( FileMoveActionInformer.class );
-        subject = new FileMoveProvider( pageCache, fileMoveActionInformer, defaultFileSystemAbstraction );
+        subject = new FileMoveProvider( defaultFileSystemAbstraction );
     }
 
     @Test
@@ -154,42 +136,6 @@ public class FileMoveProviderTest
     }
 
     @Test
-    public void filesAreMovedViaPageCacheWhenNecessary() throws IOException
-    {
-        // given there is a file on the default file system
-        File parentDirectory = testDirectory.cleanDirectory( "parent" );
-        File aNormalFile = new File( parentDirectory, "aNormalFile.A" );
-        assertTrue( aNormalFile.createNewFile() );
-
-        // and we have an expected target directory
-        File targetDirectory = testDirectory.cleanDirectory( "targetDirectory" );
-        pageCache.getCachedFileSystem().mkdirs( targetDirectory );
-
-        // and there is also a file on the block device
-        File aPageCacheFile = new File( parentDirectory, "aBlockCopyFile.B" );
-        pageCache.getCachedFileSystem().mkdirs( parentDirectory );
-        StoreChannel storeChannel = pageCache.getCachedFileSystem().create( aPageCacheFile );
-        storeChannel.write( ByteBuffer.allocate( 20 ).putChar( 'a' ).putChar( 'b' ) );
-
-        // and some of these files are handled by the page cache
-        when( fileMoveActionInformer.shouldBeManagedByPageCache( any() ) ).thenReturn( false );
-        when( fileMoveActionInformer.shouldBeManagedByPageCache( eq( aPageCacheFile.getName() ) ) ).thenReturn( true );
-
-        // when the files are copied to target location
-        List<FileMoveAction> moveActions =
-                subject.traverseForMoving( parentDirectory ).collect( Collectors.toList() );//.forEach( moveToDirectory( targetDirectory ) );
-        moveActions.forEach( moveToDirectory( targetDirectory ) );
-
-        // then some files are copied over the default file system
-        File expectedNormalCopy = new File( targetDirectory, aNormalFile.getName() );
-        assertTrue( expectedNormalCopy.exists() );
-
-        // and correct files are copied over the page cache
-        File expectedPageCacheCopy = new File( targetDirectory, aPageCacheFile.getName() );
-        assertTrue( expectedPageCacheCopy.toString(), pageCache.getCachedFileSystem().fileExists( expectedPageCacheCopy ) );
-    }
-
-    @Test
     public void filesAreMovedBeforeDirectories() throws IOException
     {
         // given there is a file contained in a directory
@@ -243,7 +189,6 @@ public class FileMoveProviderTest
         try ( BufferedWriter bw = new BufferedWriter( new FileWriter( output ) ) )
         {
             bw.write( input );
-            bw.close();
         }
     }
 }

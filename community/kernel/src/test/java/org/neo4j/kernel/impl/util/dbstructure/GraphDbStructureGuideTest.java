@@ -36,8 +36,8 @@ import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -48,7 +48,6 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.kernel.api.StatementConstants.ANY_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.ANY_RELATIONSHIP_TYPE;
-import static org.neo4j.kernel.impl.api.store.DefaultIndexReference.toDescriptor;
 
 public class GraphDbStructureGuideTest
 {
@@ -141,7 +140,7 @@ public class GraphDbStructureGuideTest
         accept( visitor );
 
         // THEN
-        verify( visitor ).visitIndex( toDescriptor( reference ), ":Person(name)", 1.0d, 0L );
+        verify( visitor ).visitIndex( (IndexDescriptor) reference, ":Person(name)", 1.0d, 0L );
     }
 
     @Test
@@ -154,7 +153,7 @@ public class GraphDbStructureGuideTest
         commitAndReOpen();
 
         ConstraintDescriptor constraint = createUniqueConstraint( labelId, pkId );
-        SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.uniqueForLabel( labelId, pkId );
+        IndexDescriptor descriptor = TestIndexDescriptorFactory.uniqueForLabel( labelId, pkId );
 
         // WHEN
         accept( visitor );

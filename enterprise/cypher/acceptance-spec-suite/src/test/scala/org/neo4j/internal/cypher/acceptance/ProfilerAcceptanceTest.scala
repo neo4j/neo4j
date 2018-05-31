@@ -22,13 +22,13 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper.RichString
-import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics
+import org.opencypher.v9_0.util.helpers.StringHelper.RichString
+import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows, Signature}
 import org.neo4j.cypher.internal.runtime.planDescription.{Argument, InternalPlanDescription}
 import org.neo4j.cypher.internal.runtime.{CreateTempFileTestSupport, InternalExecutionResult}
-import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
+import org.opencypher.v9_0.util.symbols._
+import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
 import org.neo4j.cypher.{ExecutionEngineFunSuite, ProfilerStatisticsNotReadyException, TxCounts}
 import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{Configs, TestConfiguration}
@@ -319,6 +319,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
       test("LIMIT should influence cardinality estimation by default value when expression contains timestamp()") {
         (0 until 100).map(i => createLabeledNode("Person"))
+
         val wrongResultsConfig = Configs.Version3_1 + Configs.Version2_3 + Configs.AllRulePlanners
         val result = executeWith(Configs.Interpreted, s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT timestamp()", wrongResultsConfig)
         assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(result)("Limit")

@@ -26,7 +26,6 @@ import java.util.List;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreStatement;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
@@ -35,13 +34,14 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.StorageReader;
 
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
 
 /**
  * Implementation of the node store.
  */
-public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader> implements StoreStatement.Nodes
+public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader> implements StorageReader.Nodes
 {
     public static Long readOwnerFromDynamicLabelsRecord( DynamicRecord record )
     {

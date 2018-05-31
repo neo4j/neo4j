@@ -26,12 +26,12 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.kernel.api.impl.index.IndexReaderStub;
 
@@ -373,7 +373,7 @@ public final class DocValuesCollectorTest
         collector.collect( 2 );
 
         // then
-        PrimitiveLongIterator valuesIterator = collector.getSortedValuesIterator( "id", null );
+        LongIterator valuesIterator = collector.getSortedValuesIterator( "id", null );
         assertEquals( 1, valuesIterator.next() );
         assertEquals( 2, valuesIterator.next() );
         assertFalse( valuesIterator.hasNext() );
@@ -394,7 +394,7 @@ public final class DocValuesCollectorTest
         collector.collect( 2 );
 
         // then
-        PrimitiveLongIterator valuesIterator = collector.getSortedValuesIterator( "id", Sort.RELEVANCE );
+        LongIterator valuesIterator = collector.getSortedValuesIterator( "id", Sort.RELEVANCE );
         assertEquals( 2, valuesIterator.next() );
         assertEquals( 1, valuesIterator.next() );
         assertFalse( valuesIterator.hasNext() );
@@ -414,7 +414,7 @@ public final class DocValuesCollectorTest
 
         // then
         Sort byIdDescending = new Sort( new SortField( "id", SortField.Type.LONG, true ) );
-        PrimitiveLongIterator valuesIterator = collector.getSortedValuesIterator( "id", byIdDescending );
+        LongIterator valuesIterator = collector.getSortedValuesIterator( "id", byIdDescending );
         assertEquals( 2, valuesIterator.next() );
         assertEquals( 1, valuesIterator.next() );
         assertFalse( valuesIterator.hasNext() );
@@ -436,7 +436,7 @@ public final class DocValuesCollectorTest
         collector.collect( 2 );
 
         // then
-        PrimitiveLongIterator valuesIterator = collector.getSortedValuesIterator( "id", Sort.RELEVANCE );
+        LongIterator valuesIterator = collector.getSortedValuesIterator( "id", Sort.RELEVANCE );
         assertEquals( 2, valuesIterator.next() );
         assertEquals( 1, valuesIterator.next() );
         assertFalse( valuesIterator.hasNext() );
@@ -453,7 +453,7 @@ public final class DocValuesCollectorTest
         collector.doSetNextReader( readerStub.getContext() );
 
         // then
-        PrimitiveLongIterator valuesIterator = collector.getSortedValuesIterator( "id", Sort.RELEVANCE );
+        LongIterator valuesIterator = collector.getSortedValuesIterator( "id", Sort.RELEVANCE );
         assertFalse( valuesIterator.hasNext() );
     }
 

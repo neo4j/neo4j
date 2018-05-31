@@ -32,7 +32,7 @@ import java.util.concurrent.Future;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.bolt.logging.BoltMessageLogger;
-import org.neo4j.bolt.logging.BoltMessageLogging;
+import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.testing.Jobs;
 import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.runtime.BoltConnectionAuthFatality;
@@ -70,7 +70,7 @@ public class DefaultBoltConnectionTest
     private final BoltConnectionLifetimeListener connectionListener = mock( BoltConnectionLifetimeListener.class );
     private final BoltConnectionQueueMonitor queueMonitor = mock( BoltConnectionQueueMonitor.class );
     private final EmbeddedChannel channel = new EmbeddedChannel();
-    private final BoltMessageLogger messageLogger = BoltMessageLogging.none().newLogger( channel );
+    private final BoltMessageLogger messageLogger = NullBoltMessageLogger.getInstance();
 
     private BoltChannel boltChannel;
     private BoltStateMachine stateMachine;
@@ -82,7 +82,7 @@ public class DefaultBoltConnectionTest
     public void setup()
     {
         boltChannel = BoltChannel.open( connector, channel, messageLogger );
-        stateMachine = mock( BoltStateMachine.class ); // MachineRoom.newMachineWithOwner( BoltStateMachine.State.READY, "neo4j" );
+        stateMachine = mock( BoltStateMachine.class );
         when( stateMachine.owner() ).thenReturn( "neo4j" );
         when( stateMachine.shouldStickOnThread() ).thenReturn( false );
         when( stateMachine.hasOpenStatement() ).thenReturn( false );

@@ -45,7 +45,7 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
 
 
   test("EXPLAIN for Cypher 3.1") {
-    val result = eengine.execute("explain match (n) return n", Map.empty[String, Object])
+    val result = executeOfficial("explain match (n) return n")
     result.resultAsString()
     result.getExecutionPlanDescription.toString should include("Estimated Rows")
   }

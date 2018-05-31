@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -157,7 +156,7 @@ public class TypeMappersTest
         Object converted = mapper.typeCheck( javaValue );
 
         // Then
-        Assert.assertEquals( expectedNeoValue, converted );
+        assertEquals( expectedNeoValue, converted );
     }
 
     static Type listOfListOfMap = typeOf( "listOfListOfMap" );

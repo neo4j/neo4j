@@ -200,6 +200,16 @@ public abstract class PageCursor implements AutoCloseable
     public abstract int getOffset();
 
     /**
+     * Mark the current offset. Only one offset can be marked at any time.
+     */
+    public abstract void mark();
+
+    /**
+     * Set the offset to the marked offset. This does not modify the value of the mark.
+     */
+    public abstract void setOffsetToMark();
+
+    /**
      * Get the file page id that the cursor is currently positioned at, or
      * UNBOUND_PAGE_ID if next() has not yet been called on this cursor, or returned false.
      * A call to rewind() will make the current page id unbound as well, until

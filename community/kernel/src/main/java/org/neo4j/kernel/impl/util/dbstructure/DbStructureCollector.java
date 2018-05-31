@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.util.dbstructure;
 
+import org.eclipse.collections.api.map.primitive.MutableIntLongMap;
+import org.eclipse.collections.impl.map.mutable.primitive.IntLongHashMap;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntLongMap;
-import org.neo4j.collection.primitive.hopscotch.IntKeyLongValueTable;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
@@ -37,10 +37,10 @@ import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 public class DbStructureCollector implements DbStructureVisitor
 {
@@ -53,7 +53,7 @@ public class DbStructureCollector implements DbStructureVisitor
     private final Set<NodeExistenceConstraintDescriptor> nodePropertyExistenceConstraints = new HashSet<>();
     private final Set<RelExistenceConstraintDescriptor> relPropertyExistenceConstraints = new HashSet<>();
     private final Set<NodeKeyConstraintDescriptor> nodeKeyConstraints = new HashSet<>();
-    private final PrimitiveIntLongMap nodeCounts = Primitive.intLongMap();
+    private final MutableIntLongMap nodeCounts = new IntLongHashMap();
     private final Map<RelSpecifier, Long> relCounts = new HashMap<>();
     private long allNodesCount = -1L;
 
@@ -130,8 +130,7 @@ public class DbStructureCollector implements DbStructureVisitor
             @Override
             public long nodesWithLabelCardinality( int labelId )
             {
-                Long result = nodeCounts.get( labelId );
-                return result == null ? 0L : result;
+                return nodeCounts.getIfAbsent( labelId, 0L );
             }
 
             @Override
@@ -192,7 +191,7 @@ public class DbStructureCollector implements DbStructureVisitor
     }
 
     @Override
-    public void visitIndex( SchemaIndexDescriptor descriptor, String userDescription,
+    public void visitIndex( IndexDescriptor descriptor, String userDescription,
                             double uniqueValuesPercentage, long size )
     {
         IndexDescriptorMap indices = descriptor.type() == UNIQUE ? uniqueIndices : regularIndices;
@@ -262,12 +261,13 @@ public class DbStructureCollector implements DbStructureVisitor
     @Override
     public void visitNodeCount( int labelId, String labelName, long nodeCount )
     {
-        if ( nodeCounts.put( labelId, nodeCount ) != IntKeyLongValueTable.NULL )
+        if ( nodeCounts.containsKey( labelId ) )
         {
             throw new IllegalArgumentException(
                     format( "Duplicate node count %s for label with id %s", nodeCount, labelName )
             );
         }
+        nodeCounts.put( labelId, nodeCount );
     }
 
     @Override

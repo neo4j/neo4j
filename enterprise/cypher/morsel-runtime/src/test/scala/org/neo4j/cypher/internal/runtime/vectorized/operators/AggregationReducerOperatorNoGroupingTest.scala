@@ -22,11 +22,11 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{RefSlot, SlotConfiguration}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{RefSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.vectorized.{Iteration, Morsel, QueryState, StartLoopWithEagerData}
-import org.neo4j.cypher.internal.util.v3_4.symbols.CTAny
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.symbols.CTAny
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues

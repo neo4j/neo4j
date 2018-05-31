@@ -22,10 +22,8 @@
  */
 package org.neo4j.metrics;
 
-
 import org.hamcrest.Matcher;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -47,6 +45,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.metrics.MetricsTestHelper.metricsCsv;
 import static org.neo4j.metrics.MetricsTestHelper.readDoubleValue;
 import static org.neo4j.metrics.MetricsTestHelper.readLongValue;
@@ -102,7 +101,7 @@ public class PageCacheMetricsIT
         try ( Transaction ignored = database.beginTx() )
         {
             ResourceIterator<Node> nodes = database.findNodes( testLabel );
-            Assert.assertEquals( 1, nodes.stream().count() );
+            assertEquals( 1, nodes.stream().count() );
         }
 
         assertMetrics( "Metrics report should include page cache pins", PC_PINS, greaterThan( 0L ) );

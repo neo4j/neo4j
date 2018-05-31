@@ -22,11 +22,10 @@ package org.neo4j.cypher.internal.javacompat;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.cypher.internal.CommunityCompatibilityFactory;
+import org.neo4j.cypher.internal.CommunityCompilerFactory;
 import org.neo4j.graphdb.Result;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -41,6 +40,8 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -48,7 +49,7 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 public class ExecutionEngineTest
 {
-    private static final Map<String,Object> NO_PARAMS = Collections.emptyMap();
+    private static final MapValue NO_PARAMS = VirtualValues.emptyMap();
 
     @Rule
     public DatabaseRule database = new ImpermanentDatabaseRule();
@@ -60,9 +61,9 @@ public class ExecutionEngineTest
         Monitors monitors = graph.getDependencyResolver().resolveDependency( Monitors.class );
 
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
-        CommunityCompatibilityFactory compatibilityFactory =
-                new CommunityCompatibilityFactory( graph, monitors, nullLogProvider );
-        ExecutionEngine executionEngine = new ExecutionEngine( graph, nullLogProvider, compatibilityFactory );
+        CommunityCompilerFactory compilerFactory =
+                new CommunityCompilerFactory( graph, monitors, nullLogProvider );
+        ExecutionEngine executionEngine = new ExecutionEngine( graph, nullLogProvider, compilerFactory );
 
         Result result;
         try ( InternalTransaction tx = graph

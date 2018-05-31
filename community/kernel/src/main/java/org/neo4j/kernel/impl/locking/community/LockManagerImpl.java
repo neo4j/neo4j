@@ -29,6 +29,7 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
+import org.neo4j.util.VisibleForTesting;
 
 public class LockManagerImpl
 {
@@ -143,7 +144,7 @@ public class LockManagerImpl
         }
     }
 
-    // visible for testing
+    @VisibleForTesting
     protected RWLock createLock( LockResource resource )
     {
         return new RWLock( resource, ragManager, clock, lockAcquisitionTimeoutMillis );

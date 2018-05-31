@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.util.Arrays;
 import java.util.function.LongPredicate;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
@@ -48,8 +49,8 @@ public class LookupFilter
     /**
      * used by the consistency checker
      */
-    public static PrimitiveLongIterator exactIndexMatches( PropertyAccessor accessor,
-            PrimitiveLongIterator indexedNodeIds, IndexQuery... predicates )
+    public static LongIterator exactIndexMatches( PropertyAccessor accessor,
+            LongIterator indexedNodeIds, IndexQuery... predicates )
     {
         if ( !indexedNodeIds.hasNext() )
         {

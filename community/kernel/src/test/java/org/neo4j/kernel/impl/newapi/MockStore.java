@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -29,9 +32,6 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -254,6 +254,18 @@ public class MockStore extends Read implements TestRule
 
     @Override
     public boolean relationshipExists( long reference )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public boolean nodeDeletedInTransaction( long node )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public boolean relationshipDeletedInTransaction( long relationship )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
@@ -514,8 +526,8 @@ public class MockStore extends Read implements TestRule
         }
     }
 
-    private PrimitiveLongObjectMap<Node> nodes;
-    private PrimitiveLongObjectMap<Property> properties;
+    private MutableLongObjectMap<Node> nodes;
+    private MutableLongObjectMap<Property> properties;
 
     @Override
     public Statement apply( Statement base, Description description )
@@ -526,18 +538,15 @@ public class MockStore extends Read implements TestRule
             public void evaluate() throws Throwable
             {
 
-                try ( PrimitiveLongObjectMap<Node> nodes = Primitive.longObjectMap();
-                      PrimitiveLongObjectMap<Property> properties = Primitive.longObjectMap() )
-                {
-                    MockStore.this.nodes = nodes;
-                    MockStore.this.properties = properties;
-                    base.evaluate();
-                }
-                finally
-                {
-                    MockStore.this.nodes = null;
-                    MockStore.this.properties = null;
-                }
+                MutableLongObjectMap<Node> nodes = new LongObjectHashMap<>();
+                MutableLongObjectMap<Property> properties = new LongObjectHashMap<>();
+
+                MockStore.this.nodes = nodes;
+                MockStore.this.properties = properties;
+                base.evaluate();
+
+                MockStore.this.nodes = null;
+                MockStore.this.properties = null;
             }
         };
     }
@@ -545,7 +554,7 @@ public class MockStore extends Read implements TestRule
     private static <R extends AbstractBaseRecord, S extends Record<R>> void initialize(
             R record,
             long reference,
-            PrimitiveLongObjectMap<S> store )
+            LongObjectMap<S> store )
     {
         record.setId( reference );
         S node = store.get( reference );
@@ -583,7 +592,19 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
+    void nodeAdvance( NodeRecord record, PageCursor pageCursor )
+    {
+        initialize( record, record.getId() + 1, nodes );
+    }
+
+    @Override
     void relationship( RelationshipRecord record, long reference, PageCursor pageCursor )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    void relationshipAdvance( RelationshipRecord record, PageCursor pageCursor )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
@@ -631,7 +652,13 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
-    public CapableIndexReference index( int label, int... properties )
+    public IndexReference index( int label, int... properties )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public IndexReference indexReferenceUnchecked( int label, int... properties )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

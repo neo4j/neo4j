@@ -30,8 +30,8 @@ import java.util.concurrent.Future;
 
 import org.neo4j.causalclustering.core.replication.ReplicationFailureException;
 import org.neo4j.causalclustering.core.replication.Replicator;
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 
@@ -94,6 +94,16 @@ abstract class ReplicatedTokenHolder<TOKEN extends Token> implements TokenHolder
         return requestToken( tokenName );
     }
 
+    @Override
+    public void getOrCreateIds( String[] names, int[] ids )
+    {
+        // todo This could be optimised, but doing so requires a protocol change.
+        for ( int i = 0; i < names.length; i++ )
+        {
+            ids[i] = getOrCreateId( names[i] );
+        }
+    }
+
     private int requestToken( String tokenName )
     {
         ReplicatedTokenRequest tokenRequest = new ReplicatedTokenRequest( type, tokenName, createCommands( tokenName ) );
@@ -119,7 +129,7 @@ abstract class ReplicatedTokenHolder<TOKEN extends Token> implements TokenHolder
         TransactionState txState = new TxState();
         int tokenId = Math.toIntExact( idGeneratorFactory.get( tokenIdType ).nextId() );
         createToken( txState, tokenName, tokenId );
-        try ( StorageStatement statement = storageEngine.storeReadLayer().newStatement() )
+        try ( StorageReader statement = storageEngine.newReader() )
         {
             storageEngine.createCommands( commands, txState, statement, ResourceLocker.NONE, Long.MAX_VALUE );
         }
@@ -159,6 +169,25 @@ abstract class ReplicatedTokenHolder<TOKEN extends Token> implements TokenHolder
             return NO_ID;
         }
         return id;
+    }
+
+    @Override
+    public boolean getIdsByNames( String[] names, int[] ids )
+    {
+        boolean hasUnresolvedTokens = false;
+        for ( int i = 0; i < names.length; i++ )
+        {
+            Integer id = tokenRegistry.getId( names[i] );
+            if ( id == null )
+            {
+                hasUnresolvedTokens = true;
+            }
+            else
+            {
+                ids[i] = id;
+            }
+        }
+        return hasUnresolvedTokens;
     }
 
     @Override

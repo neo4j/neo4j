@@ -307,7 +307,6 @@ public class StoreMigrationIT
         return StreamSupport.stream( iterable.spliterator(), false );
     }
 
-    //This method is overridden by a blockdevice test.
     protected ConsistencyCheckService.Result runConsistencyChecker( File db, FileSystemAbstraction fs,
             ConsistencyCheckService consistencyCheckService, String storeVersion )
             throws ConsistencyCheckIncompleteException
@@ -317,7 +316,6 @@ public class StoreMigrationIT
                 NullLogProvider.getInstance(), fs, false );
     }
 
-    //This method is overridden by a blockdevice test.
     protected GraphDatabaseService getGraphDatabaseService( File db, String storeVersion )
     {
         return new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder( db )

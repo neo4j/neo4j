@@ -22,7 +22,6 @@ package org.neo4j.cypher
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.graphdb.Result
@@ -31,6 +30,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.test.TestGraphDatabaseFactory
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Map
@@ -51,7 +51,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     val (query, result) = runQuery("RETURN 42")
 
     // then
-    verify(monitor, times(1)).startQueryExecution(query)
     verify(monitor, never()).endSuccess(query)
   }
 
@@ -65,7 +64,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     }
 
     // then
-    verify(monitor, times(1)).startQueryExecution(query)
     verify(monitor, times(1)).endSuccess(query)
   }
 
@@ -77,7 +75,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     val textResult = result.resultAsString()
 
     // then
-    verify(monitor, times(1)).startQueryExecution(query)
     verify(monitor, times(1)).endSuccess(query)
   }
 
@@ -89,7 +86,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     result.columnAs[Number]("x").asScala.toSeq
 
     // then
-    verify(monitor, times(1)).startQueryExecution(query)
     verify(monitor, times(1)).endSuccess(query)
   }
 
@@ -102,7 +98,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     res.close()
 
     // then
-    verify(monitor, times(1)).startQueryExecution(query)
     verify(monitor, times(1)).endSuccess(query)
   }
 
@@ -115,7 +110,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     while(res.hasNext) res.next()
 
     // then
-    verify(monitor, times(1)).startQueryExecution(query)
     verify(monitor, times(1)).endSuccess(query)
   }
 
@@ -123,7 +117,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     val (context, result) = runQuery("CREATE ()")
 
     // then
-    verify(monitor, times(1)).startQueryExecution(context)
     verify(monitor, times(1)).endSuccess(context)
   }
 
@@ -133,7 +126,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     result.close()
 
     // then
-    verify(monitor, times(1)).startQueryExecution(context)
     verify(monitor, times(1)).endSuccess(context)
   }
 
@@ -143,7 +135,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     val (context, result) = runQuery("CALL db.awaitIndex(':Person(name)')")
 
     // then
-    verify(monitor, times(1)).startQueryExecution(context)
     verify(monitor, times(1)).endSuccess(context)
   }
 
@@ -155,7 +146,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     result.close()
 
     // then
-    verify(monitor, times(1)).startQueryExecution(context)
     verify(monitor, times(1)).endSuccess(context)
   }
 
@@ -169,7 +159,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     intercept[Throwable](result.next())
 
     // then, since the result was successfully emptied
-    verify(monitor, times(1)).startQueryExecution(context)
     verify(monitor, times(1)).endSuccess(context)
     verify(monitor, never()).endFailure(any(classOf[ExecutingQuery]), any(classOf[Throwable]))
   }
@@ -179,7 +168,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     val (context, result) = runQuery("RETURN [1, 2, 3, 4, 5]")
 
     //then
-    verify(monitor, times(1)).startQueryExecution(context)
     while (result.hasNext) {
       verify(monitor, never).endSuccess(context)
       result.next()
@@ -196,7 +184,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
       override def visit(row: ResultRow): Boolean = true
     })
 
-    verify(monitor, times(1)).startQueryExecution(context)
     verify(monitor, times(1)).endSuccess(context)
   }
 
@@ -206,7 +193,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
 
 
     //then
-    verify(monitor, times(1)).startQueryExecution(query)
     while (result.hasNext) {
       verify(monitor, never).endSuccess(query)
       result.next()
@@ -222,7 +208,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     result.close()
 
     // then
-    verify(monitor, times(1)).startQueryExecution(query)
     verify(monitor, times(1)).endSuccess(query)
   }
 
@@ -236,7 +221,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     intercept[NoSuchElementException] { iterator.next() }
 
     // then
-    verify(monitor, times(1)).startQueryExecution(query)
     verify(monitor, times(1)).endSuccess(query)
   }
 
@@ -248,7 +232,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     val result = engine.execute(context.queryText(), context.queryParameters(), context)
 
     // then
-    verify(monitor, times(1)).startQueryExecution(context)
     verify(monitor, times(1)).endSuccess(context)
   }
 
@@ -260,7 +243,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     val result = engine.profile(context.queryText(), context.queryParameters(), context)
 
     //then
-    verify(monitor, times(1)).startQueryExecution(context)
     while (result.hasNext) {
       verify(monitor, never).endSuccess(context)
       result.next()
@@ -277,7 +259,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     iterator.close()
 
     // then
-    verify(monitor, times(1)).startQueryExecution(query)
     verify(monitor, times(1)).endSuccess(query)
   }
 
@@ -291,7 +272,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     intercept[NoSuchElementException] { iterator.next() }
 
     // then
-    verify(monitor, times(1)).startQueryExecution(query)
     verify(monitor, times(1)).endSuccess(query)
   }
 
@@ -300,13 +280,12 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     val (query, result) = runQuery("CYPHER 3.1 CREATE()")
 
     // then
-    verify(monitor, times(1)).startQueryExecution(query)
     verify(monitor, times(1)).endSuccess(query)
   }
 
-  var db: GraphDatabaseQueryService = null
-  var monitor: QueryExecutionMonitor = null
-  var engine: ExecutionEngine = null
+  var db: GraphDatabaseQueryService = _
+  var monitor: QueryExecutionMonitor = _
+  var engine: ExecutionEngine = _
 
   override protected def beforeEach(): Unit = {
     db = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())

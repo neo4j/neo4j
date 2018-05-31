@@ -27,7 +27,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,7 +36,7 @@ import java.util.Map;
 import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -63,7 +62,8 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -81,7 +81,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
-import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreScan;
@@ -115,7 +115,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     @Rule
     public EmbeddedDatabaseRule embeddedDatabase = new EmbeddedDatabaseRule();
-    private IndexRule[] rules;
+    private StoreIndexDescriptor[] rules;
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<IndexProvider.Descriptor> parameters()
@@ -383,14 +383,14 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         indexProxy.activate();
     }
 
-    private IndexRule[] createIndexRules( Map<String,Integer> labelNameIdMap, int propertyId )
+    private StoreIndexDescriptor[] createIndexRules( Map<String,Integer> labelNameIdMap, int propertyId )
     {
         return labelNameIdMap.values().stream()
-                .map( index -> IndexRule.indexRule( index, SchemaIndexDescriptorFactory.forLabel( index, propertyId ), indexDescriptor ) )
-                .toArray( IndexRule[]::new );
+                .map( index -> IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( index, propertyId ), indexDescriptor ).withId( index ) )
+                .toArray( StoreIndexDescriptor[]::new );
     }
 
-    private List<IndexRule> getIndexRules( NeoStores neoStores )
+    private List<StoreIndexDescriptor> getIndexRules( NeoStores neoStores )
     {
         return Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).indexesGetAll() );
     }
@@ -659,20 +659,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             org.neo4j.kernel.api.schema.LabelSchemaDescriptor descriptor =
                     SchemaDescriptorFactory.forLabel( labelIdToDropIndexFor, propertyId );
-            IndexRule rule = findRuleForLabel( descriptor );
-            try
-            {
-                indexService.dropIndex( rule );
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
+            StoreIndexDescriptor rule = findRuleForLabel( descriptor );
+            indexService.dropIndex( rule );
         }
 
-        private IndexRule findRuleForLabel( LabelSchemaDescriptor schemaDescriptor )
+        private StoreIndexDescriptor findRuleForLabel( LabelSchemaDescriptor schemaDescriptor )
         {
-            for ( IndexRule rule : rules )
+            for ( StoreIndexDescriptor rule : rules )
             {
                 if ( rule.schema().equals( schemaDescriptor ) )
                 {

@@ -24,9 +24,7 @@ import org.junit.Test;
 import java.util.function.IntPredicate;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.kernel.api.exceptions.index.ExceptionDuringFlipKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -36,13 +34,13 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class IndexPopulationTest
 {
@@ -59,8 +57,8 @@ public class IndexPopulationTest
         flipper.setFlipTarget( () -> onlineProxy );
         MultipleIndexPopulator multipleIndexPopulator = new MultipleIndexPopulator( storeView, logProvider );
         MultipleIndexPopulator.IndexPopulation indexPopulation =
-                multipleIndexPopulator.addPopulator( populator, 0, dummyMeta(), flipper, t -> failedProxy, "userDescription" );
-        multipleIndexPopulator.queue( someUpdate() );
+                multipleIndexPopulator.addPopulator( populator, dummyMeta(), flipper, t -> failedProxy, "userDescription" );
+        multipleIndexPopulator.queueUpdate( someUpdate() );
         multipleIndexPopulator.indexAllNodes().run();
 
         // when
@@ -72,7 +70,7 @@ public class IndexPopulationTest
 
     private OnlineIndexProxy onlineIndexProxy( IndexStoreView storeView )
     {
-        return new OnlineIndexProxy( 0, dummyMeta(), IndexAccessor.EMPTY, storeView, false );
+        return new OnlineIndexProxy( dummyMeta(), IndexAccessor.EMPTY, storeView, false );
     }
 
     private FailedIndexProxy failedIndexProxy( IndexStoreView storeView, IndexPopulator.Adapter populator )
@@ -143,10 +141,9 @@ public class IndexPopulationTest
         };
     }
 
-    private IndexMeta dummyMeta()
+    private CapableIndexDescriptor dummyMeta()
     {
-        return new IndexMeta( 0, SchemaIndexDescriptorFactory.forLabel( 0, 0 ),
-                TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR, IndexCapability.NO_CAPABILITY );
+        return TestIndexDescriptorFactory.forLabel( 0, 0 ).withId( 0 ).withoutCapabilities();
     }
 
     private IndexEntryUpdate<LabelSchemaDescriptor> someUpdate()

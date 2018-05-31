@@ -32,14 +32,14 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.TokenHolder;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 
 public class KernelToken implements Token
 {
-    private final StoreReadLayer store;
+    private final StorageReader store;
     private final KernelTransactionImplementation ktx;
 
-    public KernelToken( StoreReadLayer store, KernelTransactionImplementation ktx )
+    public KernelToken( StorageReader store, KernelTransactionImplementation ktx )
     {
         this.store = store;
         this.ktx = ktx;
@@ -56,6 +56,32 @@ public class KernelToken implements Token
         }
         ktx.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         return store.labelGetOrCreateForName( labelName );
+    }
+
+    @Override
+    public void labelGetOrCreateForNames( String[] labelNames, int[] labelIds )
+            throws IllegalTokenNameException, TooManyLabelsException
+    {
+        ktx.assertOpen();
+        assertSameLength( labelNames, labelIds );
+        for ( int i = 0; i < labelNames.length; i++ )
+        {
+            labelIds[i] = store.labelGetForName( checkValidTokenName( labelNames[i] ) );
+            if ( labelIds[i] == TokenHolder.NO_ID )
+            {
+                ktx.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
+                store.labelGetOrCreateForNames( labelNames, labelIds );
+                return;
+            }
+        }
+    }
+
+    private void assertSameLength( String[] names, int[] ids )
+    {
+        if ( names.length != ids.length )
+        {
+            throw new IllegalArgumentException( "Name and id arrays have different length." );
+        }
     }
 
     @Override
@@ -93,6 +119,23 @@ public class KernelToken implements Token
     }
 
     @Override
+    public void propertyKeyGetOrCreateForNames( String[] propertyKeys, int[] ids ) throws IllegalTokenNameException
+    {
+        ktx.assertOpen();
+        assertSameLength( propertyKeys, ids );
+        for ( int i = 0; i < propertyKeys.length; i++ )
+        {
+            ids[i] = store.propertyKeyGetForName( checkValidTokenName( propertyKeys[i] ) );
+            if ( ids[i] == TokenHolder.NO_ID )
+            {
+                ktx.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
+                store.propertyKeyGetOrCreateForNames( propertyKeys, ids );
+                return;
+            }
+        }
+    }
+
+    @Override
     public int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException
     {
         ktx.assertOpen();
@@ -103,6 +146,24 @@ public class KernelToken implements Token
         }
         ktx.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         return store.relationshipTypeGetOrCreateForName( relationshipTypeName );
+    }
+
+    @Override
+    public void relationshipTypeGetOrCreateForNames( String[] relationshipTypes, int[] ids )
+            throws IllegalTokenNameException
+    {
+        ktx.assertOpen();
+        assertSameLength( relationshipTypes, ids );
+        for ( int i = 0; i < relationshipTypes.length; i++ )
+        {
+            ids[i] = store.relationshipTypeGetForName( checkValidTokenName( relationshipTypes[i] ) );
+            if ( ids[i] == TokenHolder.NO_ID )
+            {
+                ktx.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
+                store.relationshipTypeGetOrCreateForNames( relationshipTypes, ids );
+                return;
+            }
+        }
     }
 
     @Override

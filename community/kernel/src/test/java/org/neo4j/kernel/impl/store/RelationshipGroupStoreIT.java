@@ -32,7 +32,6 @@ import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.helpers.collection.Iterables.count;
 
 public class RelationshipGroupStoreIT

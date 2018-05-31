@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+
 import java.util.function.IntPredicate;
 
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
@@ -101,7 +102,7 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
     class Adaptor implements IndexStoreView
     {
         @Override
-        public void loadProperties( long nodeId, PrimitiveIntSet propertyIds, PropertyLoadSink sink )
+        public void loadProperties( long nodeId, MutableIntSet propertyIds, PropertyLoadSink sink )
         {
         }
 
@@ -148,5 +149,5 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
         public void incrementIndexUpdates( long indexId, long updatesDelta )
         {
         }
-    };
+    }
 }

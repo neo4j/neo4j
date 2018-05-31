@@ -19,20 +19,18 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.Iterator;
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.map.primitive.IntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
 import org.neo4j.values.storable.Value;
-
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.concat;
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.deduplicate;
-import static org.neo4j.helpers.collection.Iterators.asIterator;
 
 public class PropertyPhysicalToLogicalConverter
 {
@@ -49,11 +47,11 @@ public class PropertyPhysicalToLogicalConverter
     public void convertPropertyRecord( long nodeId, Iterable<PropertyRecordChange> changes,
             NodeUpdates.Builder properties )
     {
-        PrimitiveIntObjectMap<PropertyBlock> beforeMap = Primitive.intObjectMap();
-        PrimitiveIntObjectMap<PropertyBlock> afterMap = Primitive.intObjectMap();
+        MutableIntObjectMap<PropertyBlock> beforeMap = new IntObjectHashMap<>();
+        MutableIntObjectMap<PropertyBlock> afterMap = new IntObjectHashMap<>();
         mapBlocks( nodeId, changes, beforeMap, afterMap );
 
-        PrimitiveIntIterator uniqueIntIterator = uniqueIntIterator( beforeMap, afterMap );
+        final IntIterator uniqueIntIterator = uniqueIntIterator( beforeMap, afterMap );
         while ( uniqueIntIterator.hasNext() )
         {
             int key = uniqueIntIterator.next();
@@ -89,16 +87,16 @@ public class PropertyPhysicalToLogicalConverter
         }
     }
 
-    private PrimitiveIntIterator uniqueIntIterator( PrimitiveIntObjectMap<PropertyBlock> beforeMap,
-            PrimitiveIntObjectMap<PropertyBlock> afterMap )
+    private IntIterator uniqueIntIterator( IntObjectMap<PropertyBlock> beforeMap, IntObjectMap<PropertyBlock> afterMap )
     {
-        Iterator<PrimitiveIntIterator> intIterator =
-                asIterator( 2, beforeMap.iterator(), afterMap.iterator() );
-        return deduplicate( concat( intIterator ) );
+        final MutableIntSet keys = new IntHashSet();
+        keys.addAll( beforeMap.keySet() );
+        keys.addAll( afterMap.keySet() );
+        return keys.intIterator();
     }
 
     private void mapBlocks( long nodeId, Iterable<PropertyRecordChange> changes,
-            PrimitiveIntObjectMap<PropertyBlock> beforeMap, PrimitiveIntObjectMap<PropertyBlock> afterMap )
+            MutableIntObjectMap<PropertyBlock> beforeMap, MutableIntObjectMap<PropertyBlock> afterMap )
     {
         for ( PropertyRecordChange change : changes )
         {
@@ -114,7 +112,7 @@ public class PropertyPhysicalToLogicalConverter
         assert nodeId == expectedNodeId : "Node id differs expected " + expectedNodeId + ", but was " + nodeId;
     }
 
-    private void mapBlocks( PropertyRecord record, PrimitiveIntObjectMap<PropertyBlock> blocks )
+    private void mapBlocks( PropertyRecord record, MutableIntObjectMap<PropertyBlock> blocks )
     {
         for ( PropertyBlock block : record )
         {

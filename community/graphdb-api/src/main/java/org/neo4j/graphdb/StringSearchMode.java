@@ -46,5 +46,5 @@ public enum StringSearchMode
     /**
      * The value must contain the template exactly. Regular expressions are not supported.
      */
-    CONTAINS;
+    CONTAINS
 }

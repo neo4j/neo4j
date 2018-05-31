@@ -19,21 +19,21 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.Set;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.txstate.TransactionState;
-
-import static java.util.Collections.emptySet;
 
 class DefaultRelationshipScanCursor extends RelationshipCursor implements RelationshipScanCursor
 {
     private int type;
     private long next;
     private long highMark;
+    private long nextStoreReference;
     private PageCursor pageCursor;
-    private Set<Long> addedRelationships;
+    private LongSet addedRelationships;
 
     DefaultRelationshipScanCursor( DefaultCursors pool )
     {
@@ -50,11 +50,12 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
         {
             pageCursor = read.relationshipPage( 0 );
         }
-        next = 0;
+        this.next = 0;
         this.type = type;
-        highMark = read.relationshipHighMark();
+        this.highMark = read.relationshipHighMark();
+        this.nextStoreReference = NO_ID;
         init( read );
-        this.addedRelationships = emptySet();
+        this.addedRelationships = LongSets.immutable.empty();
     }
 
     void single( long reference, Read read )
@@ -67,11 +68,12 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
         {
             pageCursor = read.relationshipPage( reference );
         }
-        next = reference;
-        type = -1;
-        highMark = NO_ID;
+        this.next = reference;
+        this.type = -1;
+        this.highMark = NO_ID;
+        this.nextStoreReference = NO_ID;
         init( read );
-        this.addedRelationships = emptySet();
+        this.addedRelationships = LongSets.immutable.empty();
     }
 
     @Override
@@ -99,9 +101,16 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
                 next++;
                 setInUse( false );
             }
+            else if ( nextStoreReference == next )
+            {
+                read.relationshipAdvance( this, pageCursor );
+                next++;
+                nextStoreReference++;
+            }
             else
             {
                 read.relationship( this, next++, pageCursor );
+                nextStoreReference = next;
             }
 
             if ( next > highMark )
@@ -180,11 +189,12 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
         return highMark == NO_ID;
     }
 
+    @Override
     protected void collectAddedTxStateSnapshot()
     {
         if ( !isSingle() )
         {
-            addedRelationships = read.txState().addedAndRemovedRelationships().getAddedSnapshot();
+            addedRelationships = read.txState().addedAndRemovedRelationships().getAdded().freeze();
         }
     }
 

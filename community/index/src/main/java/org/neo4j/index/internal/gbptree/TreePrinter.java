@@ -92,7 +92,7 @@ public class TreePrinter<KEY, VALUE>
      * @param out {@link PrintStream} to print at.
      * @throws IOException on I/O error.
      */
-    public static void printHeader( PageCache pageCache, File file, PrintStream out ) throws IOException
+    private static void printHeader( PageCache pageCache, File file, PrintStream out ) throws IOException
     {
         try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), StandardOpenOption.READ ) )
         {
@@ -104,7 +104,7 @@ public class TreePrinter<KEY, VALUE>
         }
     }
 
-    private static void printTreeState( PageCursor cursor, PrintStream out ) throws IOException
+    static void printTreeState( PageCursor cursor, PrintStream out ) throws IOException
     {
         Pair<TreeState,TreeState> statePair = TreeStatePair.readStatePages(
                 cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );

@@ -21,11 +21,8 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.junit.Test;
 
-import java.util.Collections;
-
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.internal.kernel.api.IndexCapability;
-import org.neo4j.internal.kernel.api.IndexLimitation;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.values.storable.ValueCategory;
@@ -35,8 +32,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.ArrayUtil.array;
-import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class UnionIndexCapabilityTest
 {
@@ -122,47 +117,6 @@ public class UnionIndexCapabilityTest
         assertValueCapability( union, IndexValueCapability.YES );
     }
 
-    @Test
-    public void shouldCreateUnionOfIndexLimitations()
-    {
-        UnionIndexCapability union;
-
-        // given
-        union = unionOfIndexLimitations( IndexCapability.LIMITIATION_NONE, IndexCapability.LIMITIATION_NONE );
-
-        // then
-        assertEquals( Collections.emptySet(), asSet( union.limitations() ) );
-
-        // given
-        union = unionOfIndexLimitations( IndexCapability.LIMITIATION_NONE, array( IndexLimitation.SLOW_CONTAINS ) );
-
-        // then
-        assertEquals( asSet( IndexLimitation.SLOW_CONTAINS ), asSet( union.limitations() ) );
-
-        // given
-        union = unionOfIndexLimitations( array( IndexLimitation.SLOW_CONTAINS ), array( IndexLimitation.SLOW_CONTAINS ) );
-
-        // then
-        assertEquals( asSet( IndexLimitation.SLOW_CONTAINS ), asSet( union.limitations() ) );
-    }
-
-    private UnionIndexCapability unionOfIndexLimitations( IndexLimitation[]... limitiations )
-    {
-        IndexCapability[] capabilities = new IndexCapability[limitiations.length];
-        for ( int i = 0; i < limitiations.length; i++ )
-        {
-            capabilities[i] = capabilityWithIndexLimitations( limitiations[i] );
-        }
-        return new UnionIndexCapability( capabilities );
-    }
-
-    private IndexCapability capabilityWithIndexLimitations( IndexLimitation[] limitations )
-    {
-        IndexCapability mock = mockedIndexCapability();
-        when( mock.limitations() ).thenReturn( limitations );
-        return mock;
-    }
-
     private UnionIndexCapability unionOfValueCapabilities( IndexValueCapability... valueCapabilities )
     {
         IndexCapability[] capabilities = new IndexCapability[valueCapabilities.length];
@@ -185,21 +139,14 @@ public class UnionIndexCapabilityTest
 
     private IndexCapability capabilityWithValue( IndexValueCapability valueCapability )
     {
-        IndexCapability mock = mockedIndexCapability();
-        when( mock.valueCapability( any() ) ).thenReturn( valueCapability );
-        return mock;
-    }
-
-    private IndexCapability mockedIndexCapability()
-    {
         IndexCapability mock = mock( IndexCapability.class );
-        when( mock.limitations() ).thenReturn( IndexCapability.LIMITIATION_NONE );
+        when( mock.valueCapability( any() ) ).thenReturn( valueCapability );
         return mock;
     }
 
     private IndexCapability capabilityWithOrder( IndexOrder[] indexOrder )
     {
-        IndexCapability mock = mockedIndexCapability();
+        IndexCapability mock = mock( IndexCapability.class );
         when( mock.orderCapability( any() ) ).thenReturn( indexOrder );
         return mock;
     }

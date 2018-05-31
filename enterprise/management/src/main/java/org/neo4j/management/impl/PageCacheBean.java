@@ -72,6 +72,18 @@ public final class PageCacheBean extends ManagementBeanProvider
         }
 
         @Override
+        public long getUnpins()
+        {
+            return pageCacheCounters.unpins();
+        }
+
+        @Override
+        public long getHits()
+        {
+            return pageCacheCounters.hits();
+        }
+
+        @Override
         public long getFlushes()
         {
             return pageCacheCounters.flushes();

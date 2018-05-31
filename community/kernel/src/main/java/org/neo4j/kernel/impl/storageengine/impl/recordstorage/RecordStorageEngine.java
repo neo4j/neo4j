@@ -24,9 +24,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
-import org.neo4j.concurrent.WorkSync;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -39,6 +39,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.exceptions.TransactionApplyKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.LoggingMonitor;
@@ -63,7 +64,6 @@ import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
-import org.neo4j.kernel.impl.api.store.StorageLayer;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -107,15 +107,16 @@ import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
-import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.util.FeatureToggles;
+import org.neo4j.util.VisibleForTesting;
+import org.neo4j.util.concurrent.WorkSync;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
@@ -126,7 +127,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private static final boolean takePropertyReadLocks = FeatureToggles.flag(
             RecordStorageEngine.class, "propertyReadLocks", false );
 
-    private final StoreReadLayer storeLayer;
     private final IndexingService indexingService;
     private final NeoStores neoStores;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
@@ -151,7 +151,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final IndexStoreView indexStoreView;
     private final ExplicitIndexProviderLookup explicitIndexProviderLookup;
     private final PropertyPhysicalToLogicalConverter indexUpdatesConverter;
-    private final Supplier<StorageStatement> storeStatementSupplier;
     private final IdController idController;
     private final int denseNodeThreshold;
     private final int recordIdBatchSize;
@@ -202,13 +201,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         try
         {
             indexUpdatesConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
-            schemaCache = new SchemaCache( constraintSemantics, Collections.emptyList() );
+            schemaCache = new SchemaCache( constraintSemantics, Collections.emptyList(), indexProviderMap );
             schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
 
             NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( lockService, neoStores );
             Boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && operationalMode == OperationalMode.single;
             monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( NativeLabelScanStore.class ) ) );
-            labelScanStore = new NativeLabelScanStore( pageCache, storeDir, new FullLabelStream( neoStoreIndexStoreView ),
+            labelScanStore = new NativeLabelScanStore( pageCache, storeDir, fs, new FullLabelStream( neoStoreIndexStoreView ),
                     readOnly, monitors, recoveryCleanupWorkCollector );
 
             indexStoreView = new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, lockService, neoStores, logProvider );
@@ -221,12 +220,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             integrityValidator = new IntegrityValidator( neoStores, indexingService );
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaState,
                     propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
-
-            storeStatementSupplier = storeStatementSupplier( neoStores );
-            storeLayer = new StorageLayer(
-                    propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
-                    schemaStorage, neoStores, indexingService,
-                    storeStatementSupplier, schemaCache );
 
             explicitIndexApplierLookup = new ExplicitIndexApplierLookup.Direct( explicitIndexProviderLookup );
 
@@ -245,19 +238,14 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         }
     }
 
-    private Supplier<StorageStatement> storeStatementSupplier( NeoStores neoStores )
+    @Override
+    public StorageReader newReader()
     {
         Supplier<IndexReaderFactory> indexReaderFactory = () -> new IndexReaderFactory.Caching( indexingService );
         LockService lockService = takePropertyReadLocks ? this.lockService : NO_LOCK_SERVICE;
 
-        return () -> new StoreStatement( neoStores, indexReaderFactory, labelScanStore::newReader, lockService,
-                allocateCommandCreationContext() );
-    }
-
-    @Override
-    public StoreReadLayer storeReadLayer()
-    {
-        return storeLayer;
+        return new RecordStorageReader( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder, schemaStorage, neoStores, indexingService,
+                schemaCache, indexReaderFactory, labelScanStore::newReader, lockService, allocateCommandCreationContext() );
     }
 
     @Override
@@ -277,18 +265,18 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public void createCommands(
             Collection<StorageCommand> commands,
             ReadableTransactionState txState,
-            StorageStatement storageStatement,
+            StorageReader storageReader,
             ResourceLocker locks,
             long lastTransactionIdWhenStarted )
             throws TransactionFailureException, CreateConstraintFailureException, ConstraintValidationException
     {
         if ( txState != null )
         {
-            // We can make this cast here because we expected that the storageStatement passed in here comes from
+            // We can make this cast here because we expected that the storageReader passed in here comes from
             // this storage engine itself, anything else is considered a bug. And we do know the inner workings
             // of the storage statements that we create.
             RecordStorageCommandCreationContext creationContext =
-                    ((StoreStatement) storageStatement).getCommandCreationContext();
+                    ((RecordStorageReader) storageReader).getCommandCreationContext();
             TransactionRecordState recordState =
                     creationContext.createTransactionRecordState( integrityValidator, lastTransactionIdWhenStarted, locks );
 
@@ -296,12 +284,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState, schemaState,
                     schemaStorage, constraintSemantics, indexProviderMap );
             CountsRecordState countsRecordState = new CountsRecordState();
-            txStateVisitor = constraintSemantics.decorateTxStateVisitor(
-                    storeLayer,
+            txStateVisitor = constraintSemantics.decorateTxStateVisitor( storageReader,
                     txState,
                     txStateVisitor );
             txStateVisitor = new TransactionCountingStateVisitor(
-                    txStateVisitor, storeLayer, storageStatement, txState, countsRecordState );
+                    txStateVisitor, storageReader, txState, countsRecordState );
             try ( TxStateVisitor visitor = txStateVisitor )
             {
                 txState.accept( visitor );
@@ -531,6 +518,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
      * are important tests which asserts details about the neo stores that are very important to test,
      * but to convert all those tests might be a bigger piece of work.
      */
+    @VisibleForTesting
     public NeoStores testAccessNeoStores()
     {
         return neoStores;

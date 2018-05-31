@@ -19,9 +19,7 @@
  */
 package org.neo4j.graphdb.impl.traversal;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -42,13 +40,10 @@ import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class StandardBranchCollisionDetectorTest
+class StandardBranchCollisionDetectorTest
 {
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     @Test
-    public void testFilteredPathEvaluation()
+    void testFilteredPathEvaluation()
     {
         final PropertyContainer endNode = mock( Node.class );
         final PropertyContainer alternativeEndNode = mock( Node.class );

@@ -31,6 +31,7 @@ import org.junit.runners.Parameterized;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -235,7 +236,7 @@ public class StoreUpgradeIT
             assertConsistentStore( dir );
 
             // start the cluster with the db migrated from the old instance
-            File haDir = new File( dir.getParentFile(), "ha-stuff" );
+            File haDir = Files.createTempDirectory("ha-stuff" ).toFile();
             FileUtils.deleteRecursively( haDir );
             ClusterManager clusterManager = new ClusterManager.Builder( haDir )
                     .withSeedDir( dir ).withCluster( clusterOfSize( 2 ) ).build();
@@ -253,6 +254,7 @@ public class StoreUpgradeIT
                 checkInstance( store, master );
                 slave = cluster.getAnySlave();
                 checkInstance( store, slave );
+                cluster.shutdown();
             }
             finally
             {

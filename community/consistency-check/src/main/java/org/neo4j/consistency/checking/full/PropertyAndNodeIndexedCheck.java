@@ -19,15 +19,18 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.map.primitive.IntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.consistency.checking.ChainCheck;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.RecordCheck;
@@ -39,7 +42,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.impl.api.LookupFilter;
-import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -91,8 +94,8 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
             Collection<PropertyRecord> propertyRecs )
     {
         Set<Long> labels = NodeLabelReader.getListOfLabels( record, records, engine );
-        PrimitiveIntObjectMap<PropertyBlock> nodePropertyMap = null;
-        for ( IndexRule indexRule : indexes.onlineRules() )
+        IntObjectMap<PropertyBlock> nodePropertyMap = null;
+        for ( StoreIndexDescriptor indexRule : indexes.onlineRules() )
         {
             long labelId = indexRule.schema().keyId();
             if ( labels.contains( labelId ) )
@@ -126,12 +129,12 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
     }
 
     private void verifyNodeCorrectlyIndexedUniquely( long nodeId, Value[] propertyValues,
-            CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine, IndexRule indexRule,
+            CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine, StoreIndexDescriptor indexRule,
             IndexReader reader )
     {
         IndexQuery[] query = seek( indexRule.schema(), propertyValues );
 
-        PrimitiveLongIterator indexedNodeIds = queryIndexOrEmpty( reader, query );
+        final LongIterator indexedNodeIds = queryIndexOrEmpty( reader, query );
 
         long count = 0;
         while ( indexedNodeIds.hasNext() )
@@ -152,7 +155,9 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
     }
 
     private void reportIncorrectIndexCount( Value[] propertyValues,
-            CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine, IndexRule indexRule, long count )
+                                            CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine,
+                                            StoreIndexDescriptor indexRule,
+                                            long count )
     {
         if ( count == 0 )
         {
@@ -176,7 +181,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
                 engine.report().propertyNotFirstInChain( firstProp );
             }
 
-            PrimitiveIntSet keys = Primitive.intSet();
+            final MutableIntSet keys = new IntHashSet();
             for ( PropertyRecord property : props )
             {
                 if ( !property.inUse() )
@@ -197,7 +202,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         }
     }
 
-    private Value[] getPropertyValues( PrimitiveIntObjectMap<PropertyBlock> propertyMap, int[] indexPropertyIds )
+    private Value[] getPropertyValues( IntObjectMap<PropertyBlock> propertyMap, int[] indexPropertyIds )
     {
         Value[] values = new Value[indexPropertyIds.length];
         for ( int i = 0; i < indexPropertyIds.length; i++ )
@@ -208,9 +213,9 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         return values;
     }
 
-    private PrimitiveIntObjectMap<PropertyBlock> properties( List<PropertyBlock> propertyBlocks )
+    private IntObjectMap<PropertyBlock> properties( List<PropertyBlock> propertyBlocks )
     {
-        PrimitiveIntObjectMap<PropertyBlock> propertyIds = Primitive.intObjectMap();
+        final MutableIntObjectMap<PropertyBlock> propertyIds = new IntObjectHashMap<>();
         for ( PropertyBlock propertyBlock : propertyBlocks )
         {
             propertyIds.put( propertyBlock.getKeyIndexId(), propertyBlock );
@@ -230,9 +235,9 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         return query;
     }
 
-    private PrimitiveLongIterator queryIndexOrEmpty( IndexReader reader, IndexQuery[] query )
+    private LongIterator queryIndexOrEmpty( IndexReader reader, IndexQuery[] query )
     {
-        PrimitiveLongIterator indexedNodeIds;
+        final LongIterator indexedNodeIds;
         try
         {
             indexedNodeIds = reader.query( query );
@@ -249,7 +254,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
     }
 
     private static boolean nodeHasSchemaProperties(
-            PrimitiveIntObjectMap<PropertyBlock> nodePropertyMap, int[] indexPropertyIds )
+            IntObjectMap<PropertyBlock> nodePropertyMap, int[] indexPropertyIds )
     {
         for ( int indexPropertyId : indexPropertyIds )
         {

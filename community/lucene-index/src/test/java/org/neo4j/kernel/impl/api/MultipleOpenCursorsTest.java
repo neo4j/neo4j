@@ -49,9 +49,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
-import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
@@ -434,9 +433,9 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        protected SchemaIndexDescriptor extractIndexDescriptor()
+        protected IndexDescriptor extractIndexDescriptor()
         {
-            return SchemaIndexDescriptorFactory.forLabel( indexedLabelId, stringPropId1, stringPropId2 );
+            return TestIndexDescriptorFactory.forLabel( indexedLabelId, stringPropId1, stringPropId2 );
         }
 
         @Override
@@ -499,9 +498,9 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        protected SchemaIndexDescriptor extractIndexDescriptor()
+        protected IndexDescriptor extractIndexDescriptor()
         {
-            return SchemaIndexDescriptorFactory.forLabel( indexedLabelId, numberPropId1, numberPropId2 );
+            return TestIndexDescriptorFactory.forLabel( indexedLabelId, numberPropId1, numberPropId2 );
         }
 
         @Override
@@ -563,9 +562,9 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        protected SchemaIndexDescriptor extractIndexDescriptor()
+        protected IndexDescriptor extractIndexDescriptor()
         {
-            return SchemaIndexDescriptorFactory.forLabel( indexedLabelId, stringPropId1 );
+            return TestIndexDescriptorFactory.forLabel( indexedLabelId, stringPropId1 );
         }
 
         @Override
@@ -634,9 +633,9 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        protected SchemaIndexDescriptor extractIndexDescriptor()
+        protected IndexDescriptor extractIndexDescriptor()
         {
-            return SchemaIndexDescriptorFactory.forLabel( indexedLabelId, numberPropId1 );
+            return TestIndexDescriptorFactory.forLabel( indexedLabelId, numberPropId1 );
         }
 
         @Override
@@ -716,7 +715,7 @@ public class MultipleOpenCursorsTest
         int numberPropId2;
         int stringPropId1;
         int stringPropId2;
-        SchemaIndexDescriptor indexDescriptor;
+        IndexDescriptor indexDescriptor;
 
         IndexCoordinator( Label indexLabel, String numberProp1, String numberProp2, String stringProp1,
                 String stringProp2 )
@@ -775,7 +774,7 @@ public class MultipleOpenCursorsTest
             indexDescriptor = extractIndexDescriptor();
         }
 
-        protected abstract SchemaIndexDescriptor extractIndexDescriptor();
+        protected abstract IndexDescriptor extractIndexDescriptor();
 
         void createIndex( DatabaseRule db )
         {
@@ -823,14 +822,10 @@ public class MultipleOpenCursorsTest
 
         abstract void doCreateIndex( DatabaseRule db );
 
-        NodeValueIndexCursor indexQuery( KernelTransaction ktx, SchemaIndexDescriptor indexDescriptor,
-                IndexQuery... indexQueries )
-
-                throws KernelException
+        NodeValueIndexCursor indexQuery( KernelTransaction ktx, IndexDescriptor indexDescriptor, IndexQuery... indexQueries ) throws KernelException
         {
             NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor();
-            ktx.dataRead().nodeIndexSeek( DefaultIndexReference.fromDescriptor( indexDescriptor ),
-                    cursor, IndexOrder.NONE, indexQueries );
+            ktx.dataRead().nodeIndexSeek( indexDescriptor, cursor, IndexOrder.NONE, indexQueries );
             return cursor;
         }
     }

@@ -25,9 +25,9 @@ import org.apache.commons.lang3.SystemUtils
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.runtime.CreateTempFileTestSupport
+import org.opencypher.v9_0.util.{LoadExternalResourceException, TaskCloser}
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources.DEFAULT_BUFFER_SIZE
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.v3_4.{LoadExternalResourceException, TaskCloser}
 import org.neo4j.io.fs.FileUtils
 
 class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {

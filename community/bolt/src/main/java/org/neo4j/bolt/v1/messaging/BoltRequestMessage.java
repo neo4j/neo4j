@@ -19,8 +19,6 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
-import static java.lang.String.format;
-
 /**
  * Enumeration representing all defined Bolt request messages.
  * Also contains the signature byte with which the message is
@@ -35,7 +33,7 @@ public enum BoltRequestMessage
     DISCARD_ALL( 0x2F ),
     PULL_ALL( 0x3F );
 
-    private static BoltRequestMessage[] valuesBySignature = new BoltRequestMessage[0x40];
+    private static final BoltRequestMessage[] valuesBySignature = new BoltRequestMessage[0x40];
     static
     {
         for ( BoltRequestMessage value : values() )
@@ -47,18 +45,16 @@ public enum BoltRequestMessage
     /**
      * Obtain a request message by signature.
      *
-     * @param signature the signature byte to look up
-     * @return the appropriate message instance
-     * @throws IllegalArgumentException if no such message exists
+     * @param signature the signature byte to look up.
+     * @return the appropriate message instance or {@code null} if no message with the given signature exists.
      */
     public static BoltRequestMessage withSignature( int signature )
     {
-        BoltRequestMessage message = valuesBySignature[signature];
-        if ( message == null )
+        if ( signature < 0 || signature > valuesBySignature.length - 1 )
         {
-            throw new IllegalArgumentException( format( "No message with signature %d", signature ) );
+            return null;
         }
-        return message;
+        return valuesBySignature[signature];
     }
 
     private final byte signature;

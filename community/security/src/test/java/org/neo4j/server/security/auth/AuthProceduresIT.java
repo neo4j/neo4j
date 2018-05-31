@@ -20,7 +20,6 @@
 package org.neo4j.server.security.auth;
 
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -342,7 +341,7 @@ public class AuthProceduresIT
     {
         List<Object> results = getObjectsAsList( r, key );
         assertEquals( Arrays.asList( items ).size(), results.size() );
-        Assert.assertThat( results, containsInAnyOrder( items ) );
+        assertThat( results, containsInAnyOrder( items ) );
     }
 
     protected String[] with( String[] strs, String... moreStr )

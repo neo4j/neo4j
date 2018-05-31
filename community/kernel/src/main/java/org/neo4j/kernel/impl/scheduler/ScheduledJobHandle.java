@@ -24,10 +24,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobScheduler.CancelListener;
 import org.neo4j.scheduler.JobScheduler.JobHandle;
+import org.neo4j.util.concurrent.BinaryLatch;
 
 /**
  * The JobHandle implementation for jobs scheduled with the {@link TimeBasedTaskScheduler}.

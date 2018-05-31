@@ -26,7 +26,7 @@ public class NumberNonUniqueSchemaIndexPopulatorTest extends NativeNonUniqueSche
     @Override
     NativeSchemaIndexPopulator<NumberSchemaKey,NativeSchemaValue> createPopulator( IndexSamplingConfig samplingConfig )
     {
-        return new NumberSchemaIndexPopulator( pageCache, fs, getIndexFile(), layout, monitor, schemaIndexDescriptor, indexId, samplingConfig );
+        return new NumberSchemaIndexPopulator( pageCache, fs, getIndexFile(), layout, monitor, indexDescriptor, samplingConfig );
     }
 
     @Override

@@ -160,6 +160,9 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
             record.setUseFixedReferences( isUseFixedReferences( headerByte ) );
             doReadInternal( record, primaryCursor, recordSize, headerByte, inUse );
         }
+
+        // Set cursor offset to next record to prepare next read in case of scanning.
+        primaryCursor.setOffset( primaryStartOffset + recordSize );
     }
 
     private boolean isUseFixedReferences( byte headerByte )

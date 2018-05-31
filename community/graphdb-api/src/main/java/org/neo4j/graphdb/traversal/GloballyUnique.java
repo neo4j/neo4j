@@ -19,13 +19,14 @@
  */
 package org.neo4j.graphdb.traversal;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+
 import org.neo4j.graphdb.Path;
 
 class GloballyUnique extends AbstractUniquenessFilter
 {
-    private final PrimitiveLongSet visited = Primitive.longSet( 1 << 12 );
+    private final MutableLongSet visited = new LongHashSet( 1 << 12 );
 
     GloballyUnique( PrimitiveTypeFetcher type )
     {

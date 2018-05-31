@@ -23,7 +23,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.memory.MemoryAllocationTracker;
 
 /**
- * A MemoryAllocator is simple: it only allocates memory, until it itself is finalizable and frees it all in one go.
+ * A MemoryAllocator is simple: it only allocates memory, until it is closed and frees it all in one go.
  */
 public interface MemoryAllocator
 {
@@ -50,4 +50,12 @@ public interface MemoryAllocator
      * @throws OutOfMemoryError if the requested memory could not be allocated.
      */
     long allocateAligned( long bytes, long alignment );
+
+    /**
+     * Close all allocated resources and free all allocated memory.
+     * Closing can happen by calling close explicitly or by GC as soon as allocator will become phantom reachable.
+     * It's up to implementations to guarantee correctness in scenario when multiple attempts will be made to release allocator resources.
+     * As soon as allocated resources will be cleaned any code that will try to access previously available memory will not gonna be able to do so.
+     */
+    void close();
 }

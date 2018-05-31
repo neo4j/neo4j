@@ -19,49 +19,55 @@
  */
 package org.neo4j.helpers.collection;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class LruCacheTest
+class LruCacheTest
 {
-    @Test( expected = IllegalArgumentException.class )
-    public void shouldThrowWhenMaxSizeIsNotGreaterThanZero()
+    @Test
+    void shouldThrowWhenMaxSizeIsNotGreaterThanZero()
     {
-        new LruCache<>( "TestCache", 0 );
-    }
-
-    @Test( expected = IllegalArgumentException.class )
-    public void shouldThrowWhenPuttingEntryWithNullKey()
-    {
-        new LruCache<>( "TestCache", 70 ).put( null, new Object() );
-    }
-
-    @Test( expected = IllegalArgumentException.class )
-    public void shouldThrowWhenPuttingEntryWithNullValue()
-    {
-        new LruCache<>( "TestCache", 70 ).put( new Object(), null );
-    }
-
-    @Test( expected = IllegalArgumentException.class )
-    public void shouldThrowWhenGettingWithANullKey()
-    {
-        new LruCache<>( "TestCache", 70 ).get( null );
-    }
-
-    @Test( expected = IllegalArgumentException.class )
-    public void shouldThrowWhenRemovingWithANullKey()
-    {
-        new LruCache<>( "TestCache", 70 ).remove( null );
+        assertThrows( IllegalArgumentException.class, () -> new LruCache<>( "TestCache", 0 ) );
     }
 
     @Test
-    public void shouldWork()
+    void shouldThrowWhenPuttingEntryWithNullKey()
+    {
+        assertThrows( IllegalArgumentException.class, () ->
+                new LruCache<>( "TestCache", 70 ).put( null, new Object() ) );
+    }
+
+    @Test
+    void shouldThrowWhenPuttingEntryWithNullValue()
+    {
+        assertThrows( IllegalArgumentException.class, () ->
+                new LruCache<>( "TestCache", 70 ).put( new Object(), null ) );
+    }
+
+    @Test
+    void shouldThrowWhenGettingWithANullKey()
+    {
+        assertThrows( IllegalArgumentException.class, () ->
+                new LruCache<>( "TestCache", 70 ).get( null ) );
+    }
+
+    @Test
+    void shouldThrowWhenRemovingWithANullKey()
+    {
+        assertThrows( IllegalArgumentException.class, () ->
+                new LruCache<>( "TestCache", 70 ).remove( null ) );
+    }
+
+    @Test
+    void shouldWork()
     {
         LruCache<Integer, String> cache = new LruCache<>( "TestCache", 3 );
 
@@ -94,9 +100,9 @@ public class LruCacheTest
         int size = cache.size();
 
         assertEquals( 3, size );
-        assertEquals( null, cache.get( key1 ) );
+        assertNull( cache.get( key1 ) );
         assertEquals( s2, cache.get( key2 ) );
-        assertEquals( null, cache.get( key3 ) );
+        assertNull( cache.get( key3 ) );
         assertEquals( s4, cache.get( key4 ) );
         assertEquals( s5, cache.get( key5 ) );
 
@@ -106,7 +112,7 @@ public class LruCacheTest
     }
 
     @Test
-    public void shouldResizeTheCache()
+    void shouldResizeTheCache()
     {
         final Set<String> cleaned = new HashSet<>();
         LruCache<Integer, String> cache = new LruCache<Integer, String>( "TestCache", 3 )
@@ -169,7 +175,7 @@ public class LruCacheTest
     }
 
     @Test
-    public void shouldClear()
+    void shouldClear()
     {
         final Set<String> cleaned = new HashSet<>();
         LruCache<Integer, String> cache = new LruCache<Integer, String>( "TestCache", 3 )
@@ -220,7 +226,7 @@ public class LruCacheTest
         assertEquals( set( s1, s2, s3, s4, s5 ), cleaned );
     }
 
-    public static <E> Set<E> set( E... elems )
+    private static <E> Set<E> set( E... elems )
     {
         return new HashSet<>( Arrays.asList( elems ) );
     }

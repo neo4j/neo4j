@@ -74,8 +74,7 @@ public class RejectTransportEncryptionIT
                 },
                 new Object[]{
                         (Factory<TransportConnection>) SecureSocketConnection::new, new IOException(
-                        SystemUtils.IS_JAVA_9 ? "Remote host terminated the handshake"
-                                              : "Remote host closed connection during handshake" )
+                        SystemUtils.IS_JAVA_1_8 ? "Remote host closed connection during handshake" : "Remote host terminated the handshake" )
 
                 } );
     }

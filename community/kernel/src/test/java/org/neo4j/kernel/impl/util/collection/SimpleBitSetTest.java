@@ -19,13 +19,12 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.list.primitive.MutableIntList;
+import org.eclipse.collections.impl.factory.primitive.IntLists;
+import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 import org.junit.Test;
 
-import java.util.List;
-
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
-
-import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -158,10 +157,15 @@ public class SimpleBitSetTest
         set.put( 78 );
 
         // When
-        List<Integer> found = PrimitiveIntCollections.toList( set.iterator() );
+        IntIterator iterator = set.iterator();
+        MutableIntList found = new IntArrayList();
+        while ( iterator.hasNext() )
+        {
+            found.add( iterator.next() );
+        }
 
         // Then
-        assertThat( found, equalTo( asList( 4, 7, 63, 78 ) ));
+        assertThat( found, equalTo( IntLists.immutable.of( 4, 7, 63, 78 ) ) );
     }
 
     @Test

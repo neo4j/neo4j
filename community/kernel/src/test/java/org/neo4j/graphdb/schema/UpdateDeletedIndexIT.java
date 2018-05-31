@@ -23,8 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
-import java.util.function.LongConsumer;
-import java.util.function.LongFunction;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;

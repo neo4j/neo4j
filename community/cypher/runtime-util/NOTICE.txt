@@ -30,6 +30,12 @@ Apache Software License, Version 2.0
   Lucene Core
   Lucene Memory
   Netty/All-in-One
+  openCypher AST for the Cypher Query Language
+  openCypher Expressions
+  openCypher Front End
+  openCypher Parser
+  openCypher Rewriting
+  openCypher Utils
   parboiled-core
   parboiled-scala
 
@@ -42,4 +48,23 @@ BSD License
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
   Bouncy Castle Provider
+
+Eclipse Distribution License - v 1.0
+  Eclipse Collections API
+  Eclipse Collections Main Library
+
+Eclipse Public License - v 1.0
+  Eclipse Collections API
+  Eclipse Collections Main Library
+
+Dependencies with multiple licenses
+-----------------------------------
+
+Eclipse Collections API
+  Eclipse Distribution License - v 1.0
+  Eclipse Public License - v 1.0
+
+Eclipse Collections Main Library
+  Eclipse Distribution License - v 1.0
+  Eclipse Public License - v 1.0
 

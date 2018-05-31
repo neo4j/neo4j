@@ -20,7 +20,6 @@
 package org.neo4j.test;
 
 import java.util.EnumSet;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
@@ -64,23 +63,5 @@ public class ThreadTestUtils
             }
         }
         while ( !set.contains( currentState ) );
-    }
-
-    public static void dumpAllStackTraces()
-    {
-        synchronized ( System.err )
-        {
-            Map<Thread, StackTraceElement[]> allStackTraces = Thread.getAllStackTraces();
-            for ( Map.Entry<Thread, StackTraceElement[]> entry : allStackTraces.entrySet() )
-            {
-                System.err.println( "Stack Trace for " + entry.getKey().getName() );
-                StackTraceElement[] elements = entry.getValue();
-                for ( StackTraceElement element : elements )
-                {
-                    System.err.println( "\tat " + element.toString() );
-                }
-                System.err.println();
-            }
-        }
     }
 }

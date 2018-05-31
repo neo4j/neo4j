@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 
-import static org.neo4j.concurrent.Futures.failedFuture;
+import static org.neo4j.util.concurrent.Futures.failedFuture;
 
 public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifetimeListener, BoltConnectionQueueMonitor
 {

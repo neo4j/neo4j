@@ -39,7 +39,7 @@ import org.neo4j.storageengine.api.lock.ResourceLocker;
 /**
  * Holds commit data structures for creating records in a {@link NeoStores}.
  */
-public class RecordStorageCommandCreationContext implements CommandCreationContext
+class RecordStorageCommandCreationContext implements CommandCreationContext
 {
     private final NeoStores neoStores;
     private final Loaders loaders;

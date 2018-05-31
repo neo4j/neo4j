@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.4.1-SNAPSHOT</version>
+    <version>3.5.0-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.build</groupId>
   <artifactId>community-build</artifactId>
-  <version>3.4.1-SNAPSHOT</version>
+  <version>3.5.0-SNAPSHOT</version>
 
   <name>Neo4j - Community Build</name>
   <packaging>pom</packaging>
@@ -26,7 +26,7 @@
     <module>configuration</module>
     <module>resource</module>
     <module>collections</module>
-    <module>primitive-collections</module>
+      <module>concurrent</module>
     <module>graphdb-api</module>
     <module>procedure-api</module>
     <module>unsafe</module>
@@ -58,6 +58,7 @@
     <module>dbms</module>
     <module>command-line</module>
     <module>procedure-compiler</module>
+    <module>random-values</module>
     <module>values</module>
     <module>ssl</module>
     <module>spatial-index</module>

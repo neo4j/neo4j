@@ -25,10 +25,10 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 
 import org.neo4j.helpers.collection.CastingIterator;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
@@ -71,23 +71,23 @@ import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaE
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.EntityType;
-import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -99,7 +99,7 @@ import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelExcept
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
-import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
@@ -118,7 +118,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     private final KernelTransactionImplementation ktx;
     private final AllStoreHolder allStoreHolder;
     private final KernelToken token;
-    private final StorageStatement statement;
+    private final StorageReader statement;
     private final AutoIndexing autoIndexing;
     private DefaultNodeCursor nodeCursor;
     private final IndexTxStateUpdater updater;
@@ -127,17 +127,19 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     private final DefaultCursors cursors;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final ConstraintSemantics constraintSemantics;
+    private final IndexingProvidersService indexProviders;
 
     public Operations(
             AllStoreHolder allStoreHolder,
             IndexTxStateUpdater updater,
-            StorageStatement statement,
+            StorageReader statement,
             KernelTransactionImplementation ktx,
             KernelToken token,
             DefaultCursors cursors,
             AutoIndexing autoIndexing,
             ConstraintIndexCreator constraintIndexCreator,
-            ConstraintSemantics constraintSemantics )
+            ConstraintSemantics constraintSemantics,
+            IndexingProvidersService indexProviders )
     {
         this.token = token;
         this.autoIndexing = autoIndexing;
@@ -148,6 +150,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         this.cursors = cursors;
         this.constraintIndexCreator = constraintIndexCreator;
         this.constraintSemantics = constraintSemantics;
+        this.indexProviders = indexProviders;
     }
 
     public void initialize()
@@ -229,7 +232,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         ktx.assertOpen();
         singleNode( node );
 
-        if ( nodeCursor.labels().contains( nodeLabel ) )
+        if ( nodeCursor.hasLabel( nodeLabel ) )
         {
             //label already there, nothing to do
             return false;
@@ -415,7 +418,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     {
         try ( DefaultNodeValueIndexCursor valueCursor = cursors.allocateNodeValueIndexCursor() )
         {
-            SchemaIndexDescriptor schemaIndexDescriptor = constraint.ownedIndexDescriptor();
+            IndexDescriptor schemaIndexDescriptor = constraint.ownedIndexDescriptor();
             assertIndexOnline( schemaIndexDescriptor );
             int labelId = schemaIndexDescriptor.schema().keyId();
 
@@ -440,7 +443,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
     }
 
-    private void assertIndexOnline( SchemaIndexDescriptor descriptor )
+    private void assertIndexOnline( IndexDescriptor descriptor )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         switch ( allStoreHolder.indexGetState( descriptor ) )
@@ -460,7 +463,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
 
         singleNode( node );
 
-        if ( !nodeCursor.labels().contains( labelId ) )
+        if ( !nodeCursor.hasLabel( labelId ) )
         {
             //the label wasn't there, nothing to do
             return false;
@@ -518,7 +521,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             {
                 //the value has changed to a new value
                 autoIndexing.nodes().propertyChanged( this, node, propertyKey, existingValue, value );
-                ktx.txState().nodeDoChangeProperty( node, propertyKey, existingValue, value );
+                ktx.txState().nodeDoChangeProperty( node, propertyKey, value );
                 updater.onPropertyChange( nodeCursor, propertyCursor, propertyKey, existingValue, value );
             }
             return existingValue;
@@ -875,50 +878,78 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     @Override
     public IndexReference indexCreate( SchemaDescriptor descriptor ) throws SchemaKernelException
     {
+        return indexCreate( descriptor, Optional.empty(), Optional.empty() );
+    }
+
+    @Override
+    public IndexReference indexCreate( SchemaDescriptor descriptor,
+                                       Optional<String> provider,
+                                       Optional<String> name ) throws SchemaKernelException
+    {
         acquireExclusiveLabelLock( descriptor.keyId() );
         ktx.assertOpen();
         assertValidDescriptor( descriptor, SchemaKernelException.OperationContext.INDEX_CREATION );
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, descriptor );
 
-        SchemaIndexDescriptor indexDescriptor = SchemaIndexDescriptorFactory.forSchema( descriptor );
-        ktx.txState().indexRuleDoAdd( indexDescriptor );
-        return DefaultIndexReference.fromDescriptor( indexDescriptor );
+        IndexProvider.Descriptor providerDescriptor = indexProviders.indexProviderForNameOrDefault( provider );
+        IndexDescriptor index = IndexDescriptorFactory.forSchema( descriptor, name, providerDescriptor );
+        ktx.txState().indexDoAdd( index );
+        return index;
+    }
+
+    // Note: this will be sneakily executed by an internal transaction, so no additional locking is required.
+    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, Optional<String> provider )
+    {
+        IndexProvider.Descriptor providerDescriptor = indexProviders.indexProviderForNameOrDefault( provider );
+        IndexDescriptor index =
+                IndexDescriptorFactory.uniqueForSchema( schema,
+                                                  Optional.empty(),
+                                                  providerDescriptor );
+        ktx.txState().indexDoAdd( index );
+        return index;
     }
 
     @Override
-    public void indexDrop( IndexReference index ) throws SchemaKernelException
+    public void indexDrop( IndexReference indexReference ) throws SchemaKernelException
     {
+        IndexDescriptor index = (IndexDescriptor) indexReference;
         assertValidIndex( index );
 
-        acquireExclusiveLabelLock( index.label() );
+        acquireExclusiveLabelLock( indexReference.label() );
         ktx.assertOpen();
-        org.neo4j.kernel.api.schema.LabelSchemaDescriptor descriptor = labelDescriptor( index );
         try
         {
-            SchemaIndexDescriptor existingIndex = allStoreHolder.indexGetForSchema( descriptor );
+            IndexDescriptor existingIndex = allStoreHolder.indexGetForSchema( index.schema() );
 
             if ( existingIndex == null )
             {
-                throw new NoSuchIndexException( descriptor );
+                throw new NoSuchIndexException( index.schema() );
             }
 
             if ( existingIndex.type() == UNIQUE )
             {
                 if ( allStoreHolder.indexGetOwningUniquenessConstraintId( existingIndex ) != null )
                 {
-                    throw new IndexBelongsToConstraintException( descriptor );
+                    throw new IndexBelongsToConstraintException( index.schema() );
                 }
             }
         }
         catch ( IndexBelongsToConstraintException | NoSuchIndexException e )
         {
-            throw new DropIndexFailureException( descriptor, e );
+            throw new DropIndexFailureException( index.schema(), e );
         }
-        ktx.txState().indexDoDrop( allStoreHolder.indexDescriptor( index ) );
+        ktx.txState().indexDoDrop( index );
     }
 
     @Override
     public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor )
+            throws SchemaKernelException
+    {
+        return uniquePropertyConstraintCreate( descriptor, Optional.empty() );
+    }
+
+    @Override
+    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor, Optional<String> provider )
             throws SchemaKernelException
     {
         //Lock
@@ -933,12 +964,18 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.CONSTRAINT_CREATION, descriptor );
 
         // Create constraints
-        indexBackedConstraintCreate( constraint );
+        indexBackedConstraintCreate( constraint, provider );
         return constraint;
     }
 
     @Override
     public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor ) throws SchemaKernelException
+    {
+        return nodeKeyConstraintCreate( descriptor, Optional.empty() );
+    }
+
+    @Override
+    public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor, Optional<String> provider ) throws SchemaKernelException
     {
         //Lock
         acquireExclusiveLabelLock( descriptor.getLabelId() );
@@ -959,7 +996,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
 
         //create constraint
-        indexBackedConstraintCreate( constraint );
+        indexBackedConstraintCreate( constraint, provider );
         return constraint;
     }
 
@@ -1054,7 +1091,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     private void assertIndexDoesNotExist( SchemaKernelException.OperationContext context,
             SchemaDescriptor descriptor ) throws AlreadyIndexedException, AlreadyConstrainedException
     {
-        SchemaIndexDescriptor existingIndex = allStoreHolder.indexGetForSchema( descriptor );
+        IndexDescriptor existingIndex = allStoreHolder.indexGetForSchema( descriptor );
         if ( existingIndex != null )
         {
             // OK so we found a matching constraint index. We check whether or not it has an owner
@@ -1143,7 +1180,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
     }
 
-    private boolean constraintIndexHasOwner( SchemaIndexDescriptor descriptor )
+    private boolean constraintIndexHasOwner( IndexDescriptor descriptor )
     {
         return allStoreHolder.indexGetOwningUniquenessConstraintId( descriptor ) != null;
     }
@@ -1183,12 +1220,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
     }
 
-    private org.neo4j.kernel.api.schema.LabelSchemaDescriptor labelDescriptor( IndexReference index )
-    {
-        return SchemaDescriptorFactory.forLabel( index.label(), index.properties() );
-    }
-
-    private void indexBackedConstraintCreate( IndexBackedConstraintDescriptor constraint )
+    private void indexBackedConstraintCreate( IndexBackedConstraintDescriptor constraint, Optional<String> provider )
             throws CreateConstraintFailureException
     {
         SchemaDescriptor descriptor = constraint.schema();
@@ -1213,7 +1245,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
                         return;
                     }
                 }
-                long indexId = constraintIndexCreator.createUniquenessConstraintIndex( ktx, descriptor );
+                long indexId = constraintIndexCreator.createUniquenessConstraintIndex( ktx, descriptor, provider );
                 if ( !allStoreHolder.constraintExists( constraint ) )
                 {
                     // This looks weird, but since we release the label lock while awaiting population of the index
@@ -1232,11 +1264,11 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
     }
 
-    private void assertValidIndex( IndexReference index ) throws NoSuchIndexException
+    private void assertValidIndex( IndexDescriptor index ) throws NoSuchIndexException
     {
-        if ( index == CapableIndexReference.NO_INDEX )
+        if ( index == IndexReference.NO_INDEX )
         {
-            throw new NoSuchIndexException( SchemaDescriptorFactory.forLabel( index.label(), index.properties() ) );
+            throw new NoSuchIndexException( index.schema() );
         }
     }
 }

@@ -28,8 +28,8 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 
-import org.neo4j.concurrent.RecentK;
 import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.util.concurrent.RecentK;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;

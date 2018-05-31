@@ -24,7 +24,6 @@ import org.neo4j.internal.kernel.api.Modes;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageStatement;
 
 /**
  * This is a temporary implementation of the Kernel API, used to enable early testing. The plan is to merge this
@@ -34,8 +33,6 @@ public class NewKernel implements Kernel, Modes
 {
     private final StorageEngine engine;
     private final InwardKernel kernel;
-
-    private StorageStatement statement;
 
     private volatile boolean isRunning;
 
@@ -61,7 +58,6 @@ public class NewKernel implements Kernel, Modes
 
     public void start()
     {
-        statement = engine.storeReadLayer().newStatement();
         isRunning = true;
     }
 
@@ -71,7 +67,6 @@ public class NewKernel implements Kernel, Modes
         {
             throw new IllegalStateException( "kernel is not running, so it is not possible to stop it" );
         }
-        statement.close();
         isRunning = false;
     }
 

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
-import org.neo4j.cypher.internal.util.v3_4.attribution.Id
+import org.opencypher.v9_0.util.attribution.Id
 
 case class FilterPipe(source: Pipe, predicate: Predicate)
                      (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {

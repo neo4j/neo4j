@@ -26,6 +26,11 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.MessageToByteEncoder;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,9 +41,6 @@ import java.util.Objects;
 import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
 import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.string.UTF8;
@@ -46,7 +48,7 @@ import org.neo4j.string.UTF8;
 public class PrepareStoreCopyResponse
 {
     private final File[] files;
-    private final PrimitiveLongSet indexIds;
+    private final LongSet indexIds;
     private final Long transactionId;
     private final Status status;
 
@@ -56,15 +58,15 @@ public class PrepareStoreCopyResponse
         {
             throw new IllegalStateException( "Cannot create error result from state: " + errorStatus );
         }
-        return new PrepareStoreCopyResponse( new File[0], Primitive.longSet(), 0L, errorStatus );
+        return new PrepareStoreCopyResponse( new File[0], LongSets.immutable.empty(), 0L, errorStatus );
     }
 
-    public static PrepareStoreCopyResponse success( File[] storeFiles, PrimitiveLongSet indexIds, long lastTransactionId )
+    public static PrepareStoreCopyResponse success( File[] storeFiles, LongSet indexIds, long lastTransactionId )
     {
         return new PrepareStoreCopyResponse( storeFiles, indexIds, lastTransactionId, Status.SUCCESS );
     }
 
-    PrimitiveLongSet getIndexIds()
+    LongSet getIndexIds()
     {
         return indexIds;
     }
@@ -76,7 +78,7 @@ public class PrepareStoreCopyResponse
         E_LISTING_STORE
     }
 
-    private PrepareStoreCopyResponse( File[] files, PrimitiveLongSet indexIds, Long transactionId, Status status )
+    private PrepareStoreCopyResponse( File[] files, LongSet indexIds, Long transactionId, Status status )
     {
         this.files = files;
         this.indexIds = indexIds;
@@ -139,7 +141,7 @@ public class PrepareStoreCopyResponse
             Status status = Status.values()[ordinal];
             Long transactionId = channel.getLong();
             File[] files = unmarshalFiles( channel );
-            PrimitiveLongSet indexIds = unmarshalIndexIds( channel );
+            LongSet indexIds = unmarshalIndexIds( channel );
             return new PrepareStoreCopyResponse( files, indexIds, transactionId, status );
         }
 
@@ -152,10 +154,10 @@ public class PrepareStoreCopyResponse
             }
         }
 
-        private void marshalIndexIds( WritableChannel buffer, PrimitiveLongSet indexIds ) throws IOException
+        private void marshalIndexIds( WritableChannel buffer, LongSet indexIds ) throws IOException
         {
             buffer.putInt( indexIds.size() );
-            PrimitiveLongIterator itr = indexIds.iterator();
+            LongIterator itr = indexIds.longIterator();
             while ( itr.hasNext() )
             {
                 long indexId = itr.next();
@@ -180,10 +182,10 @@ public class PrepareStoreCopyResponse
             return new File( UTF8.decode( name ) );
         }
 
-        private PrimitiveLongSet unmarshalIndexIds( ReadableChannel channel ) throws IOException
+        private LongSet unmarshalIndexIds( ReadableChannel channel ) throws IOException
         {
             int numberOfIndexIds = channel.getInt();
-            PrimitiveLongSet indexIds = Primitive.longSet( numberOfIndexIds );
+            MutableLongSet indexIds = new LongHashSet( numberOfIndexIds );
             for ( int i = 0; i < numberOfIndexIds; i++ )
             {
                 indexIds.add( channel.getLong() );

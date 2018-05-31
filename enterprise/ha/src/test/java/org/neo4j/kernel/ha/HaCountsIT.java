@@ -36,9 +36,8 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -135,7 +134,7 @@ public class HaCountsIT
     {
         // when creating a node on the master
         createANode( master, LABEL, PROPERTY_VALUE, PROPERTY_NAME );
-        SchemaIndexDescriptor schemaIndexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
+        IndexDescriptor schemaIndexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
         long indexId = awaitOnline( master, schemaIndexDescriptor );
 
         // and the slaves got the updates
@@ -155,7 +154,7 @@ public class HaCountsIT
     {
         // when creating a node on the master
         createANode( slave1, LABEL, PROPERTY_VALUE, PROPERTY_NAME );
-        SchemaIndexDescriptor schemaIndexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
+        IndexDescriptor schemaIndexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
         long indexId = awaitOnline( master, schemaIndexDescriptor );
 
         // and the updates are propagate in the cluster
@@ -180,7 +179,7 @@ public class HaCountsIT
         }
     }
 
-    private SchemaIndexDescriptor createAnIndex( HighlyAvailableGraphDatabase db, Label label, String propertyName )
+    private IndexDescriptor createAnIndex( HighlyAvailableGraphDatabase db, Label label, String propertyName )
             throws KernelException
     {
         try ( Transaction tx = db.beginTx() )
@@ -191,7 +190,7 @@ public class HaCountsIT
             IndexReference index = ktx.schemaWrite()
                                                    .indexCreate( SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
             tx.success();
-            return DefaultIndexReference.toDescriptor( index );
+            return (IndexDescriptor) index;
         }
     }
 
@@ -250,7 +249,7 @@ public class HaCountsIT
         return db.getDependencyResolver().resolveDependency( IndexingService.class );
     }
 
-    private long awaitOnline( HighlyAvailableGraphDatabase db, SchemaIndexDescriptor index )
+    private long awaitOnline( HighlyAvailableGraphDatabase db, IndexDescriptor index )
             throws KernelException
     {
         long start = System.currentTimeMillis();
@@ -260,7 +259,7 @@ public class HaCountsIT
             try ( Transaction tx = db.beginTx() )
             {
                 KernelTransaction transaction = kernelTransaction( db );
-                switch ( transaction.schemaRead().indexGetState( DefaultIndexReference.fromDescriptor( index  ) ) )
+                switch ( transaction.schemaRead().indexGetState( index ) )
                 {
                 case ONLINE:
                     return indexingService( db ).getIndexId( index.schema() );

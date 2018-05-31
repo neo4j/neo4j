@@ -39,7 +39,6 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.test.Randoms.CSA_LETTERS_AND_DIGITS;
 
 public class LargeDynamicKeysIT
 {
@@ -72,7 +71,7 @@ public class LargeDynamicKeysIT
                     String string;
                     do
                     {
-                        string = random.string( 3_000, 4_000, CSA_LETTERS_AND_DIGITS );
+                        string = random.nextAlphaNumericString( 3_000, 4_000 );
                     }
                     while ( !generatedStrings.add( string ) );
                     RawBytes key = new RawBytes();

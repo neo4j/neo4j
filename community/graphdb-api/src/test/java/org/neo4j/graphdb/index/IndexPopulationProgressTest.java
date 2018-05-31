@@ -19,102 +19,77 @@
  */
 package org.neo4j.graphdb.index;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-
-public class IndexPopulationProgressTest
+class IndexPopulationProgressTest
 {
     @Test
-    public void testNone()
+    void testNone()
     {
-        assertEquals( 0, IndexPopulationProgress.NONE.getCompletedPercentage(), 0 );
+        assertEquals( 0, IndexPopulationProgress.NONE.getCompletedPercentage(), 0.01 );
     }
 
     @Test
-    public void testDone()
+    void testDone()
     {
-        assertEquals( 100, IndexPopulationProgress.DONE.getCompletedPercentage(), 0 );
+        assertEquals( 100, IndexPopulationProgress.DONE.getCompletedPercentage(), 0.01 );
     }
 
     @Test
-    public void testNegativeCompleted()
+    void testNegativeCompleted()
     {
-        try
-        {
-            new IndexPopulationProgress( -1, 1 );
-            fail( "Should have thrown IllegalArgumentException" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // success
-        }
+        assertThrows( IllegalArgumentException.class, () -> new IndexPopulationProgress( -1, 1 ) );
     }
 
     @Test
-    public void testNegativeTotal()
+    void testNegativeTotal()
     {
-        try
-        {
-            new IndexPopulationProgress( 0, -1 );
-            fail( "Should have thrown IllegalArgumentException" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // success
-        }
+        assertThrows( IllegalArgumentException.class, () -> new IndexPopulationProgress( 0, -1 ) );
     }
 
     @Test
-    public void testAllZero()
+    void testAllZero()
     {
         IndexPopulationProgress progress = new IndexPopulationProgress( 0, 0 );
         assertEquals( 0, progress.getCompletedCount() );
         assertEquals( 0, progress.getTotalCount() );
-        assertEquals( 0, progress.getCompletedPercentage(), 0 );
+        assertEquals( 0, progress.getCompletedPercentage(), 0.01 );
     }
 
     @Test
-    public void testCompletedZero()
+    void testCompletedZero()
     {
         IndexPopulationProgress progress = new IndexPopulationProgress( 0, 1 );
         assertEquals( 1, progress.getTotalCount() );
         assertEquals( 0, progress.getCompletedCount() );
-        assertEquals( 0, progress.getCompletedPercentage(), 0 );
+        assertEquals( 0, progress.getCompletedPercentage(), 0.01 );
     }
 
     @Test
-    public void testCompletedGreaterThanTotal()
+    void testCompletedGreaterThanTotal()
     {
-        try
-        {
-            new IndexPopulationProgress( 2, 1 );
-            fail( "Should have thrown IllegalArgumentException" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // success
-        }
+        assertThrows( IllegalArgumentException.class, () -> new IndexPopulationProgress( 2, 1 ) );
     }
 
     @Test
-    public void testGetCompletedPercentage()
+    void testGetCompletedPercentage()
     {
         IndexPopulationProgress progress = new IndexPopulationProgress( 1, 2 );
-        assertEquals( 50.0f, progress.getCompletedPercentage(), 0.0f );
+        assertEquals( 50.0f, progress.getCompletedPercentage(), 0.01f );
     }
 
     @Test
-    public void testGetCompleted()
+    void testGetCompleted()
     {
         IndexPopulationProgress progress = new IndexPopulationProgress( 1, 2 );
         assertEquals( 1L, progress.getCompletedCount() );
     }
 
     @Test
-    public void testGetTotal()
+    void testGetTotal()
     {
         IndexPopulationProgress progress = new IndexPopulationProgress( 1, 2 );
         assertEquals( 2L, progress.getTotalCount() );

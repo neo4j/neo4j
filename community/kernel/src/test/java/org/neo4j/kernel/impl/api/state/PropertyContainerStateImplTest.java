@@ -32,6 +32,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class PropertyContainerStateImplTest
 {
@@ -86,6 +87,6 @@ public class PropertyContainerStateImplTest
         assertThat( Iterators.asList( state.changedProperties() ),
                 equalTo( asList( new PropertyKeyValue( 4, Values.of( "another value" ) ) ) ) );
         assertFalse( state.addedProperties().hasNext() );
-        assertFalse( state.removedProperties().hasNext() );
+        assertTrue( state.removedProperties().isEmpty() );
     }
 }

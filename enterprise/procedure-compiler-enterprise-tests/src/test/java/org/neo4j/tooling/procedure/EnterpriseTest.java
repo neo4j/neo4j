@@ -22,15 +22,16 @@
  */
 package org.neo4j.tooling.procedure;
 
+import java.net.URL;
+
+import javax.annotation.processing.Processor;
+import javax.tools.JavaFileObject;
+
 import com.google.testing.compile.CompilationRule;
 import com.google.testing.compile.CompileTester;
 import com.google.testing.compile.JavaFileObjects;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.net.URL;
-import javax.annotation.processing.Processor;
-import javax.tools.JavaFileObject;
 
 import static com.google.common.truth.Truth.assert_;
 import static com.google.testing.compile.JavaSourceSubjectFactory.javaSource;

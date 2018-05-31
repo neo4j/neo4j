@@ -29,29 +29,15 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.StoreType;
 
-import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Stream.empty;
 
 public class FileMoveProvider
 {
-    private final FileMoveActionInformer fileMoveActionInformer;
-    private final PageCache pageCache;
     private final FileSystemAbstraction fs;
 
-    public FileMoveProvider( PageCache pageCache, FileSystemAbstraction fs )
+    public FileMoveProvider( FileSystemAbstraction fs )
     {
-        this( pageCache, StoreType::canBeManagedByPageCache, fs );
-    }
-
-    public FileMoveProvider( PageCache pageCache, FileMoveActionInformer fileMoveActionInformer,
-                             FileSystemAbstraction fs )
-    {
-        this.pageCache = pageCache;
-        this.fileMoveActionInformer = fileMoveActionInformer;
         this.fs = fs;
     }
 
@@ -133,37 +119,24 @@ public class FileMoveProvider
 
     private boolean isFile( File file )
     {
-        if ( fileMoveActionInformer.shouldBeManagedByPageCache( file.getName() ) )
-        {
-            return !pageCache.getCachedFileSystem().isDirectory( file );
-        }
         return !fs.isDirectory( file );
     }
 
     private boolean isDirectory( File file )
     {
-        if ( fileMoveActionInformer.shouldBeManagedByPageCache( file.getName() ) )
-        {
-            return pageCache.getCachedFileSystem().isDirectory( file );
-        }
         return fs.isDirectory( file );
     }
 
     private List<File> listFiles( File dir )
     {
-        File[] cachedFiles = pageCache.getCachedFileSystem().listFiles( dir );
         File[] fsaFiles = fs.listFiles( dir );
-        if ( cachedFiles == null && fsaFiles == null )
+        if ( fsaFiles == null )
         {
             // This probably means 'dir' is actually a file, or it does not exist.
             return null;
         }
 
-        Stream<File> files = Stream.concat(
-                ofNullable( cachedFiles ).map( Arrays::stream ).orElse( empty() ),
-                ofNullable( fsaFiles ).map( Arrays::stream ).orElse( empty() ) );
-
-        return files.distinct().collect( toList() );
+        return Arrays.stream( fsaFiles ).distinct().collect( toList() );
     }
 
     /**
@@ -173,10 +146,6 @@ public class FileMoveProvider
      */
     private FileMoveAction copyFileCorrectly( File fileToMove, File basePath )
     {
-        if ( fileMoveActionInformer.shouldBeManagedByPageCache( fileToMove.getName() ) )
-        {
-            return FileMoveAction.copyViaPageCache( fileToMove, pageCache );
-        }
         return FileMoveAction.copyViaFileSystem( fileToMove, basePath );
     }
 }

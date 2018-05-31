@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.labelscan;
 
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Before;
@@ -43,8 +44,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -70,7 +70,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.single;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
@@ -434,7 +434,7 @@ public abstract class LabelScanStoreTest
         // WHEN
         Set<Long> nodeSet = new TreeSet<>();
         LabelScanReader reader = store.newReader();
-        PrimitiveLongIterator nodes = reader.nodesWithLabel( labelId );
+        LongIterator nodes = reader.nodesWithLabel( labelId );
         while ( nodes.hasNext() )
         {
             nodeSet.add( nodes.next() );
@@ -543,7 +543,7 @@ public abstract class LabelScanStoreTest
     private void assertNodesForLabel( int labelId, long... expectedNodeIds )
     {
         Set<Long> nodeSet = new HashSet<>();
-        PrimitiveLongIterator nodes = store.newReader().nodesWithLabel( labelId );
+        LongIterator nodes = store.newReader().nodesWithLabel( labelId );
         while ( nodes.hasNext() )
         {
             nodeSet.add( nodes.next() );

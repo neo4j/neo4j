@@ -23,12 +23,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer;
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer;
 
 public class TimingCompilationTracer implements CompilationTracer
 {
     public interface EventListener
     {
+        void startQueryCompilation( String query );
         void queryCompiled( QueryEvent event );
     }
 
@@ -72,6 +73,7 @@ public class TimingCompilationTracer implements CompilationTracer
     @Override
     public QueryCompilationEvent compileQuery( String query )
     {
+        listener.startQueryCompilation( query );
         return new Query( clock, query, listener );
     }
 

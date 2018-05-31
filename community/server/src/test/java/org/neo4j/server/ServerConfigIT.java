@@ -31,8 +31,6 @@ import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
-import org.neo4j.server.rest.web.ScriptExecutionMode;
-import org.neo4j.server.scripting.javascript.GlobalJavascriptInitializer;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.containsString;
@@ -41,7 +39,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.helpers.CommunityServerBuilder.server;
 import static org.neo4j.server.helpers.CommunityServerBuilder.serverOnRandomPorts;
-import static org.neo4j.test.server.HTTP.POST;
 
 public class ServerConfigIT extends ExclusiveServerTestBase
 {
@@ -159,64 +156,6 @@ public class ServerConfigIT extends ExclusiveServerTestBase
 
         // When & then
         assertEquals( 404, new RestRequest().get( server.baseUri().toString() + "db/manage/server/console" ).getStatus() );
-    }
-
-    @Test
-    public void shouldHaveSandboxingEnabledByDefault() throws Exception
-    {
-        // Given
-        server = serverOnRandomPorts()
-                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
-                .build();
-        server.start();
-        String node = POST( server.baseUri().toASCIIString() + "db/data/node" ).location();
-
-        // When
-        JaxRsResponse response = new RestRequest().post( node + "/traverse/node", "{\n" +
-                "  \"order\" : \"breadth_first\",\n" +
-                "  \"return_filter\" : {\n" +
-                "    \"body\" : \"position.getClass().getClassLoader()\",\n" +
-                "    \"language\" : \"javascript\"\n" +
-                "  },\n" +
-                "  \"prune_evaluator\" : {\n" +
-                "    \"body\" : \"position.getClass().getClassLoader()\",\n" +
-                "    \"language\" : \"javascript\"\n" +
-                "  },\n" +
-                "  \"uniqueness\" : \"node_global\",\n" +
-                "  \"relationships\" : [ {\n" +
-                "    \"direction\" : \"all\",\n" +
-                "    \"type\" : \"knows\"\n" +
-                "  }, {\n" +
-                "    \"direction\" : \"all\",\n" +
-                "    \"type\" : \"loves\"\n" +
-                "  } ],\n" +
-                "  \"max_depth\" : 3\n" +
-                "}", MediaType.APPLICATION_JSON_TYPE );
-
-        // Then
-        assertEquals( 400, response.getStatus() );
-    }
-
-    /*
-     * We can't actually test that disabling sandboxing works, because of the set-once global nature of Rhino
-     * security. Instead, we test here that changing it triggers the expected exception, letting us know that
-     * the code that *would* have set it to disabled realizes it has already been set to sandboxed.
-     *
-     * This at least lets us know that the configuration attribute gets picked up and used.
-     */
-    @Test( expected = RuntimeException.class )
-    public void shouldBeAbleToDisableSandboxing() throws Exception
-    {
-        // NOTE: This has to be initialized to sandboxed, because it can only be initialized once per JVM session,
-        // and all other tests depend on it being sandboxed.
-        GlobalJavascriptInitializer.initialize( ScriptExecutionMode.SANDBOXED );
-
-        server = serverOnRandomPorts().withProperty( ServerSettings.script_sandboxing_enabled.name(), "false" )
-                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
-                .build();
-
-        // When
-        server.start();
     }
 
     private HostnamePort getLocalHttpAddress()

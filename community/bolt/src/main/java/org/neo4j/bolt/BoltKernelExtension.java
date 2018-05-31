@@ -47,12 +47,12 @@ import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.runtime.BoltFactoryImpl;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.LoadableConfig;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
@@ -61,7 +61,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -96,7 +95,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         Config config();
 
-        GraphDatabaseService db();
+        GraphDatabaseAPI db();
 
         JobScheduler scheduler();
 
@@ -104,7 +103,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         Monitors monitors();
 
-        ThreadToStatementContextBridge txBridge();
+        AvailabilityGuard availabilityGuard();
 
         BoltConnectionTracker sessionTracker();
 
@@ -130,8 +129,6 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
     public Lifecycle newInstance( KernelContext context, Dependencies dependencies )
     {
         Config config = dependencies.config();
-        GraphDatabaseService gdb = dependencies.db();
-        GraphDatabaseAPI api = (GraphDatabaseAPI) gdb;
         LogService logService = dependencies.logService();
         Clock clock = dependencies.clock();
         SslPolicyLoader sslPolicyFactory = dependencies.sslPolicyFactory();
@@ -144,13 +141,14 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         InternalLoggerFactory.setDefaultFactory( new Netty4LoggerFactory( logService.getInternalLogProvider() ) );
         BoltMessageLogging boltLogging = BoltMessageLogging.create( dependencies.fileSystem(), scheduler, config, log );
+        life.add( boltLogging );
 
         Authentication authentication = authentication( dependencies.authManager(), dependencies.userManagerSupplier() );
 
         TransportThrottleGroup throttleGroup = new TransportThrottleGroup( config, clock );
 
-        BoltFactory boltFactory = life.add( new BoltFactoryImpl( api, dependencies.usageData(),
-                logService, dependencies.txBridge(), authentication, dependencies.sessionTracker(), config ) );
+        BoltFactory boltFactory = new BoltFactoryImpl( dependencies.db(), dependencies.usageData(), dependencies.availabilityGuard(),
+                authentication, dependencies.sessionTracker(), config, logService );
         BoltSchedulerProvider boltSchedulerProvider =
                 life.add( new ExecutorBoltSchedulerProvider( config, new CachedThreadPoolExecutorFactory( log ), scheduler, logService ) );
         BoltConnectionFactory boltConnectionFactory =

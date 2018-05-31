@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.junit.Before;
 import org.mockito.Mockito;
 
@@ -27,9 +31,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.Transaction.Type;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -49,7 +50,6 @@ import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.newapi.DefaultCursors;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreStatement;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -61,14 +61,13 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
-import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
+import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageStatement;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -89,7 +88,7 @@ public class KernelTransactionTestBase
     protected final StorageEngine storageEngine = mock( StorageEngine.class );
     protected final NeoStores neoStores = mock( NeoStores.class );
     protected final MetaDataStore metaDataStore = mock( MetaDataStore.class );
-    protected final StoreReadLayer readLayer = mock( StoreReadLayer.class );
+    protected final StorageReader readLayer = mock( StorageReader.class );
     protected final TransactionHooks hooks = new TransactionHooks();
     protected final ExplicitIndexTransactionState explicitIndexState = mock( ExplicitIndexTransactionState.class );
     protected final Supplier<ExplicitIndexTransactionState> explicitIndexStateSupplier = () -> explicitIndexState;
@@ -111,16 +110,14 @@ public class KernelTransactionTestBase
         collectionsFactory = Mockito.spy( new TestCollectionsFactory() );
         when( headerInformation.getAdditionalHeader() ).thenReturn( new byte[0] );
         when( headerInformationFactory.create() ).thenReturn( headerInformation );
-        StoreStatement statement = mock( StoreStatement.class );
-        when( readLayer.newStatement() ).thenReturn( statement );
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
-        when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
+        when( storageEngine.newReader() ).thenReturn( readLayer );
         doAnswer( invocation -> ((Collection<StorageCommand>) invocation.getArgument(0) ).add( new Command
                 .RelationshipCountsCommand( 1, 2,3, 4L ) ) )
             .when( storageEngine ).createCommands(
                     anyCollection(),
                     any( ReadableTransactionState.class ),
-                    any( StorageStatement.class ), any( ResourceLocker.class ),
+                    any( StorageReader.class ), any( ResourceLocker.class ),
                     anyLong() );
     }
 
@@ -192,25 +189,31 @@ public class KernelTransactionTestBase
     {
 
         @Override
-        public PrimitiveLongSet newLongSet()
+        public MutableLongSet newLongSet()
         {
             return OnHeapCollectionsFactory.INSTANCE.newLongSet();
         }
 
         @Override
-        public <V> PrimitiveLongObjectMap<V> newLongObjectMap()
+        public MutableIntSet newIntSet()
+        {
+            return OnHeapCollectionsFactory.INSTANCE.newIntSet();
+        }
+
+        @Override
+        public <V> MutableLongObjectMap<V> newLongObjectMap()
         {
             return OnHeapCollectionsFactory.INSTANCE.newLongObjectMap();
         }
 
         @Override
-        public <V> PrimitiveIntObjectMap<V> newIntObjectMap()
+        public <V> MutableIntObjectMap<V> newIntObjectMap()
         {
             return OnHeapCollectionsFactory.INSTANCE.newIntObjectMap();
         }
 
         @Override
-        public PrimitiveLongDiffSets newLongDiffSets()
+        public MutableLongDiffSetsImpl newLongDiffSets()
         {
             return OnHeapCollectionsFactory.INSTANCE.newLongDiffSets();
         }

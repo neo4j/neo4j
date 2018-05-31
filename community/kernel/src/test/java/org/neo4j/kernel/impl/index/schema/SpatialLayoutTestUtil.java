@@ -22,19 +22,17 @@ package org.neo4j.kernel.impl.index.schema;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
-import org.neo4j.test.Randoms;
-import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -52,20 +50,12 @@ public class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialSchemaKey,Nativ
             Values.pointValue( WGS84, 180, 90 ),
     };
 
-    public static PointValue randomPoint( Randoms random )
-    {
-        Random randomm = random.random();
-        double x = randomm.nextDouble() * 360 - 180;
-        double y = randomm.nextDouble() * 180 - 90;
-        return Values.pointValue( WGS84, x, y );
-    }
-
     private final CoordinateReferenceSystem crs;
     private final SpaceFillingCurve curve;
 
-    SpatialLayoutTestUtil( SchemaIndexDescriptor descriptor, SpaceFillingCurveSettings settings, CoordinateReferenceSystem crs )
+    SpatialLayoutTestUtil( IndexDescriptor descriptor, SpaceFillingCurveSettings settings, CoordinateReferenceSystem crs )
     {
-        super( descriptor );
+        super( descriptor.withId( 0 ) );
         this.curve = settings.curve();
         this.crs = crs;
         // The layout is the same, but we might consider supporting other CRS here, too.
@@ -79,7 +69,7 @@ public class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialSchemaKey,Nativ
     }
 
     @Override
-    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdates()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
     {
         return someUpdatesWithDuplicateValues();
     }
@@ -97,13 +87,13 @@ public class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialSchemaKey,Nativ
     }
 
     @Override
-    Value newUniqueValue( RandomRule random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
+    Value newUniqueValue( RandomValues random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
     {
         PointValue pointValue;
         Long compareValue;
         do
         {
-            pointValue = randomPoint( random.randoms() );
+            pointValue = random.nextGeographicPoint();
             compareValue = curve.derivedValueFor( pointValue.coordinate() );
         }
         while ( !uniqueCompareValues.add( compareValue ) );
@@ -112,13 +102,13 @@ public class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialSchemaKey,Nativ
     }
 
     @Override
-    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesNoDuplicateValues()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdatesNoDuplicateValues()
     {
         return generateAddUpdatesFor( ALL_EXTREME_VALUES );
     }
 
     @Override
-    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesWithDuplicateValues()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues()
     {
         return generateAddUpdatesFor( ArrayUtils.addAll( ALL_EXTREME_VALUES, ALL_EXTREME_VALUES ) );
     }

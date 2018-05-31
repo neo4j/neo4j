@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils.MaybeWindowsMemoryMappedFileReleaseProblem;
 
 import static java.lang.String.format;
 
@@ -203,20 +202,7 @@ public class TestDirectory implements TestRule
         {
             if ( success && testDirectory != null && !keepDirectoryAfterSuccessfulTest )
             {
-                try
-                {
-                    fileSystem.deleteRecursively( testDirectory );
-                }
-                catch ( MaybeWindowsMemoryMappedFileReleaseProblem fme )
-                {
-                    System.err.println(
-                            "Failed to delete test directory, " + "maybe due to Windows memory-mapped file problem: " +
-                                    fme.getMessage() );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
+                fileSystem.deleteRecursively( testDirectory );
             }
             testDirectory = null;
         }
@@ -254,26 +240,13 @@ public class TestDirectory implements TestRule
         {
             throw new IllegalStateException( " Test owning class is not defined" );
         }
-        try
-        {
-            testClassBaseFolder = testDataDirectoryOf( fileSystem, owningTest, false );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        testClassBaseFolder = testDataDirectoryOf( owningTest );
     }
 
-    private static File testDataDirectoryOf( FileSystemAbstraction fs, Class<?> owningTest, boolean clean )
-            throws IOException
+    private static File testDataDirectoryOf( Class<?> owningTest )
     {
         File testData = new File( locateTarget( owningTest ), "test-data" );
-        File result = new File( testData, shorten( owningTest.getName() ) ).getAbsoluteFile();
-        if ( clean )
-        {
-            clean( fs, result );
-        }
-        return result;
+        return new File( testData, shorten( owningTest.getName() ) ).getAbsoluteFile();
     }
 
     private static String shorten( String owningTestName )

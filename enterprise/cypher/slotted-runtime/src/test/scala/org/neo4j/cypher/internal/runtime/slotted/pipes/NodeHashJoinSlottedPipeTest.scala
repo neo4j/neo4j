@@ -2,34 +2,33 @@
  * Copyright (c) 2002-2018 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j Enterprise Edition. The included source
- * code can be redistributed and/or modified under the terms of the
- * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
- * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
- * Commons Clause, as found in the associated LICENSE.txt file.
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * GNU General Public License for more details.
  *
- * Neo4j object code can be licensed independently from the source
- * under separate terms from the AGPL. Inquiries can be directed to:
- * licensing@neo4j.com
- *
- * More information is also available at:
- * https://neo4j.com/licensing/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.slotted.pipes.HashJoinSlottedPipeTestHelper.{RowL, mockPipeFor, testableResult}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
-import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.symbols._
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+
+import scala.collection.immutable
 
 class NodeHashJoinSlottedPipeTest extends CypherFunSuite {
 
@@ -137,6 +136,48 @@ class NodeHashJoinSlottedPipeTest extends CypherFunSuite {
     result should be(empty)
     verify(right, times(1)).createResults(any())
     verifyNoMoreInteractions(right)
+  }
+
+  test("worst case scenario should not lead to stackoverflow errors") {
+    // This test case lead to stack overflow errors.
+    // It's the worst case - large inputs on both sides that have no overlap on the join column
+    val size = 10000
+    val a_b: immutable.Seq[RowL] = (0 to size) map { i =>
+      RowL(i.toLong, i.toLong)
+    }
+    val b_c: immutable.Seq[RowL] = (size+1 to size*2) map { i =>
+      RowL(i.toLong, i.toLong)
+    }
+
+    val lhs = SlotConfiguration.empty
+    lhs.newLong("a", nullable = false, CTNode)
+    lhs.newLong("b", nullable = false, CTNode)
+
+    val rhs = SlotConfiguration.empty
+    rhs.newLong("b", nullable = false, CTNode)
+    rhs.newLong("c", nullable = false, CTNode)
+
+    val output = SlotConfiguration.empty
+    output.newLong("a", nullable = false, CTNode)
+    output.newLong("b", nullable = false, CTNode)
+    output.newLong("c", nullable = false, CTNode)
+
+    val lhsPipe = mockPipeFor(lhs, a_b:_*)
+    val rhsPipe = mockPipeFor(lhs, b_c:_*)
+
+    // when
+    val result = NodeHashJoinSlottedPipe(
+      lhsOffsets = Array(0, 1),
+      rhsOffsets = Array(0, 1),
+      left = lhsPipe,
+      right = rhsPipe,
+      slots = output,
+      longsToCopy = Array((1, 2)),
+      refsToCopy = Array())().
+      createResults(QueryStateHelper.empty)
+
+    // If we got here it means we did not throw a stack overflow exception. ooo-eeh!
+    result should be(empty)
   }
 
   private val node0 = 0

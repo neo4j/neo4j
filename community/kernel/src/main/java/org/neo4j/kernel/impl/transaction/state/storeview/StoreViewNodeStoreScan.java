@@ -24,7 +24,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import java.util.Iterator;
 import java.util.function.IntPredicate;
 
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 

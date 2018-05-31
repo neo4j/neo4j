@@ -38,26 +38,29 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
 
 public abstract class IndexPopulationStressTest
 {
+    private static final IndexProvider.Descriptor PROVIDER = new IndexProvider.Descriptor( "provider", "1.0" );
     @Rule
     public PageCacheAndDependenciesRule rules =
             new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, this.getClass() );
 
-    protected final SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 0, 0 );
+    protected final StoreIndexDescriptor descriptor = forSchema( forLabel( 0, 0 ), PROVIDER ).withId( 0 );
 
     private IndexPopulator populator;
 
@@ -69,20 +72,19 @@ public abstract class IndexPopulationStressTest
     /**
      * Generate a random value to populate the index with.
      */
-    abstract Value randomValue( Random random );
+    abstract Value randomValue( RandomValues random );
 
     @Before
     public void setup() throws IOException
     {
         File storeDir = rules.directory().graphDbDir();
-        IndexDirectoryStructure.Factory directory =
-                directoriesBySubProvider( directoriesByProvider( storeDir ).forProvider( new IndexProvider.Descriptor( "provider", "1.0" ) ) );
+        IndexDirectoryStructure.Factory directory = directoriesBySubProvider( directoriesByProvider( storeDir ).forProvider( PROVIDER ) );
 
         IndexProvider indexProvider = newProvider( directory );
 
         rules.fileSystem().mkdirs( indexProvider.directoryStructure().rootDirectory() );
 
-        populator = indexProvider.getPopulator( 0, descriptor, new IndexSamplingConfig( 1000, 0.2, true ) );
+        populator = indexProvider.getPopulator( descriptor, new IndexSamplingConfig( 1000, 0.2, true ) );
     }
 
     @After
@@ -130,7 +132,7 @@ public abstract class IndexPopulationStressTest
         List<IndexEntryUpdate<?>> updates = new ArrayList<>( n );
         for ( int i = 0; i < n; i++ )
         {
-            Value value = randomValue( random );
+            Value value = randomValue( RandomValues.create( random ) );
             updates.add( IndexEntryUpdate.add( i, descriptor, value ) );
         }
         return updates;

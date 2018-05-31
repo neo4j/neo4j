@@ -21,16 +21,16 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 
 import java.util.Set;
 
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.kernel.api.index.ArrayEncoder;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.AbstractIndexReader;
 import org.neo4j.values.storable.Value;
 
 abstract class InMemoryIndexImplementation extends AbstractIndexReader implements BoundedIterable<Long>
 {
-    InMemoryIndexImplementation( SchemaIndexDescriptor descriptor )
+    InMemoryIndexImplementation( IndexDescriptor descriptor )
     {
         super( descriptor );
     }

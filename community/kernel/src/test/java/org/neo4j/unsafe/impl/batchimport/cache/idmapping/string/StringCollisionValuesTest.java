@@ -29,9 +29,9 @@ import org.junit.runners.Parameterized.Parameters;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
+import org.neo4j.values.storable.RandomValues;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
@@ -43,7 +43,7 @@ import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.OFF_HEA
 public class StringCollisionValuesTest
 {
     @Rule
-    public final RandomRule random = new RandomRule().withConfiguration( new Randoms.Default()
+    public final RandomRule random = new RandomRule().withConfiguration( new RandomValues.Default()
     {
         @Override
         public int stringMaxLength()
@@ -72,7 +72,7 @@ public class StringCollisionValuesTest
             String[] strings = new String[offsets.length];
             for ( int i = 0; i < offsets.length; i++ )
             {
-                String string = random.string();
+                String string = random.nextAlphaNumericString();
                 offsets[i] = values.add( string );
                 strings[i] = string;
             }

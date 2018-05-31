@@ -29,11 +29,11 @@ import java.util.List;
 import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 
-import org.neo4j.concurrent.AsyncEventSender;
 import org.neo4j.logging.AbstractLog;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
+import org.neo4j.util.concurrent.AsyncEventSender;
 
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.CoreMatchers.allOf;

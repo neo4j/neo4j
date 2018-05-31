@@ -21,19 +21,18 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import java.util
 
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
-import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.CypherTypeException
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
 import org.neo4j.values.virtual.VirtualValues.map
-import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
-
-import org.mockito.ArgumentMatchers.any
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 class PropertiesFunctionTest extends CypherFunSuite {
 
@@ -74,6 +73,8 @@ class PropertiesFunctionTest extends CypherFunSuite {
     when(query.getPropertyKeyName(1)).thenReturn("b")
     when(nodeOps.getProperty(0, 0)).thenReturn(stringValue("x"))
     when(nodeOps.getProperty(0, 1)).thenReturn(stringValue("y"))
+    when(query.getOptPropertyKeyId("a")).thenReturn(Some(0))
+    when(query.getOptPropertyKeyId("b")).thenReturn(Some(1))
 
     properties(node) should equal(map(Array("a", "b"), Array(stringValue("x"), stringValue("y"))))
   }
@@ -89,6 +90,8 @@ class PropertiesFunctionTest extends CypherFunSuite {
     when(query.getPropertyKeyName(1)).thenReturn("b")
     when(relOps.getProperty(0, 0)).thenReturn(stringValue("x"))
     when(relOps.getProperty(0, 1)).thenReturn(stringValue("y"))
+    when(query.getOptPropertyKeyId("a")).thenReturn(Some(0))
+    when(query.getOptPropertyKeyId("b")).thenReturn(Some(1))
 
     properties(rel) should equal(map(Array("a", "b"), Array(stringValue("x"), stringValue("y"))))
   }

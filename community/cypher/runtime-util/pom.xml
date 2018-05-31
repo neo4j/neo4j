@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>cypher-parent</artifactId>
-    <version>3.4.1-SNAPSHOT</version>
+    <version>3.5.0-SNAPSHOT</version>
     <relativePath>../</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-cypher-runtime-util</artifactId>
   <packaging>jar</packaging>
-  <version>3.4.1-SNAPSHOT</version>
+  <version>3.5.0-SNAPSHOT</version>
   <name>Neo4j - Cypher Runtime Utilities</name>
 
   <description>Cypher runtime utilities</description>
@@ -63,13 +63,13 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-logical-plans-3.4</artifactId>
+      <artifactId>neo4j-cypher-logical-plans-3.5</artifactId>
       <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-planner-spi-3.4</artifactId>
+      <artifactId>neo4j-cypher-planner-spi-3.5</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -129,17 +129,17 @@
     <!-- test dependencies -->
 
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-util-3.4</artifactId>
-      <version>${project.version}</version>
+      <groupId>org.opencypher</groupId>
+      <artifactId>util-9.0</artifactId>
+      <version>${openCypher.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-expression-3.4</artifactId>
-      <version>${project.version}</version>
+      <groupId>org.opencypher</groupId>
+      <artifactId>expressions-9.0</artifactId>
+      <version>${openCypher.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>

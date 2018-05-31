@@ -23,7 +23,6 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -36,8 +35,8 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
-import org.neo4j.cypher.internal.util.v3_4.CypherTypeException;
-import org.neo4j.cypher.internal.util.v3_4.IncomparableValuesException;
+import org.opencypher.v9_0.util.CypherTypeException;
+import org.opencypher.v9_0.util.IncomparableValuesException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -55,6 +54,7 @@ import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
@@ -298,12 +298,12 @@ public abstract class CompiledConversionUtils
         else if ( anyValue instanceof Map )
         {
             Map<String,?> incoming = (Map<String,?>) anyValue;
-            HashMap<String,AnyValue> outgoing = new HashMap<>( incoming.size() );
+            MapValueBuilder builder = new MapValueBuilder( incoming.size() );
             for ( Map.Entry<String,?> entry : incoming.entrySet() )
             {
-                outgoing.put( entry.getKey(), materializeAnyResult( proxySpi, entry.getValue() ) );
+                builder.add( entry.getKey(), materializeAnyResult( proxySpi, entry.getValue() ) );
             }
-            return VirtualValues.map( outgoing );
+            return builder.build();
         }
         else if ( anyValue instanceof PrimitiveNodeStream )
         {

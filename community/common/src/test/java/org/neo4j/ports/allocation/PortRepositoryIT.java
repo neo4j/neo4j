@@ -19,28 +19,29 @@
  */
 package org.neo4j.ports.allocation;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.neo4j.ports.allocation.PortConstants.EphemeralPortMinimum;
+import org.junit.Rule;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
+import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashSet;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import static java.util.Arrays.asList;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.ports.allocation.PortConstants.EphemeralPortMinimum;
 
+@EnableRuleMigrationSupport
 public class PortRepositoryIT
 {
     @Rule
-    public TemporaryFolder temporaryFolder = new TemporaryFolder();
+    public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     @Test
-    public void shouldReservePorts() throws Exception
+    void shouldReservePorts() throws Exception
     {
         PortRepository portRepository1 = new PortRepository( temporaryDirectory(), EphemeralPortMinimum );
 
@@ -52,7 +53,7 @@ public class PortRepositoryIT
     }
 
     @Test
-    public void shouldCoordinateUsingFileSystem() throws Exception
+    void shouldCoordinateUsingFileSystem() throws Exception
     {
         Path temporaryDirectory = temporaryDirectory();
         PortRepository portRepository1 = new PortRepository( temporaryDirectory, EphemeralPortMinimum );
@@ -69,24 +70,7 @@ public class PortRepositoryIT
     }
 
     @Test
-    @Ignore
-    public void shouldNotInterfereWithOtherRepositories() throws Exception
-    {
-        PortRepository portRepository1 = new PortRepository( temporaryDirectory(), EphemeralPortMinimum );
-        PortRepository portRepository2 = new PortRepository( temporaryDirectory(), EphemeralPortMinimum );
-
-        int port1 = portRepository1.reserveNextPort( "foo" );
-        int port2 = portRepository1.reserveNextPort( "foo" );
-        int port3 = portRepository1.reserveNextPort( "foo" );
-        int port4 = portRepository2.reserveNextPort( "foo" );
-        int port5 = portRepository2.reserveNextPort( "foo" );
-        int port6 = portRepository1.reserveNextPort( "foo" );
-
-        assertThat( new HashSet<>( asList( port1, port2, port3, port4, port5, port6 ) ).size(), is( 4 ) );
-    }
-
-    @Test
-    public void shouldNotOverrun() throws Exception
+    void shouldNotOverrun() throws Exception
     {
         PortRepository portRepository1 = new PortRepository( temporaryDirectory(), 65534 );
 
@@ -97,7 +81,7 @@ public class PortRepositoryIT
         {
             portRepository1.reserveNextPort( "foo" );
 
-            fail();
+            fail( "Failure was expected" );
         }
         catch ( IllegalStateException e )
         {

@@ -19,9 +19,7 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import java.util.Map;
-
-import org.neo4j.cypher.internal.CompatibilityFactory;
+import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
@@ -44,9 +42,9 @@ public class SnapshotExecutionEngine extends ExecutionEngine
     private final int maxQueryExecutionAttempts;
 
     SnapshotExecutionEngine( GraphDatabaseQueryService queryService, Config config, LogProvider logProvider,
-            CompatibilityFactory compatibilityFactory )
+                             CompilerFactory compilerFactory )
     {
-        super( queryService, logProvider, compatibilityFactory );
+        super( queryService, logProvider, compilerFactory );
         this.maxQueryExecutionAttempts = config.get( GraphDatabaseSettings.snapshot_query_retries );
     }
 
@@ -58,14 +56,7 @@ public class SnapshotExecutionEngine extends ExecutionEngine
     }
 
     @Override
-    public Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext context )
-            throws QueryExecutionKernelException
-    {
-        return executeWithRetries( query, parameters, context, super::executeQuery );
-    }
-
-    @Override
-    public Result profileQuery( String query, Map<String,Object> parameters, TransactionalContext context )
+    public Result profileQuery( String query, MapValue parameters, TransactionalContext context )
             throws QueryExecutionKernelException
     {
         return executeWithRetries( query, parameters, context, super::profileQuery );

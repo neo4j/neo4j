@@ -96,12 +96,19 @@ public class BoltMessageLoggingTest
     }
 
     @Test
-    public void shouldCreateNullLoggerWhenNone()
+    public void shutdownLoggingWhenBoltLogEnabled() throws Throwable
     {
-        BoltMessageLogging logging = BoltMessageLogging.none();
-        BoltMessageLogger logger = logging.newLogger( channel );
+        Config config = newConfig( true );
+        BoltMessageLogging logging = BoltMessageLogging.create( fs, jobScheduler, config, log );
+        logging.shutdown();
+    }
 
-        assertThat( logger, instanceOf( NullBoltMessageLogger.class ) );
+    @Test
+    public void shutdownLoggingWhenBoltLogDisabled() throws Throwable
+    {
+        Config config = newConfig( false );
+        BoltMessageLogging logging = BoltMessageLogging.create( fs, jobScheduler, config, log );
+        logging.shutdown();
     }
 
     private static Config newConfig( boolean boltLogEnabled )

@@ -24,7 +24,6 @@ package org.neo4j.server.security.enterprise.auth;
 
 import org.apache.commons.lang.StringUtils;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 
@@ -475,7 +474,7 @@ public abstract class ProcedureInteractionTestBase<S>
     {
         List<Object> results = getObjectsAsList( r, key );
         assertEquals( Arrays.asList( items ).size(), results.size() );
-        Assert.assertThat( results, containsInAnyOrder( Arrays.stream( items ).map( this::valueOf ).toArray()
+        assertThat( results, containsInAnyOrder( Arrays.stream( items ).map( this::valueOf ).toArray()
         ) );
     }
 

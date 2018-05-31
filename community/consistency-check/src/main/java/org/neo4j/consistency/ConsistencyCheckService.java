@@ -244,7 +244,7 @@ public class ConsistencyCheckService
             IndexProviderMap indexes = loadIndexProviders( extensions );
 
             LabelScanStore labelScanStore =
-                    new NativeLabelScanStore( pageCache, storeDir, FullStoreChangeStream.EMPTY, true, monitors,
+                    new NativeLabelScanStore( pageCache, storeDir, fileSystem, FullStoreChangeStream.EMPTY, true, monitors,
                             RecoveryCleanupWorkCollector.IGNORE );
             life.add( labelScanStore );
 

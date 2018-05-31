@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.neo4j.internal.kernel.api.Kernel;
@@ -49,7 +50,7 @@ abstract class IsolatedTransactionTokenCreator implements TokenCreator
     }
 
     @Override
-    public synchronized int getOrCreate( String name ) throws KernelException
+    public synchronized int createToken( String name ) throws KernelException
     {
         Kernel kernel = kernelSupplier.get();
         try ( Session session = kernel.beginSession( LoginContext.AUTH_DISABLED ) )
@@ -60,6 +61,24 @@ abstract class IsolatedTransactionTokenCreator implements TokenCreator
                 transaction.success();
                 return id;
             }
+        }
+    }
+
+    @Override
+    public synchronized void createTokens( String[] names, int[] ids, IntPredicate filter ) throws KernelException
+    {
+        Kernel kernel = kernelSupplier.get();
+        try ( Session session = kernel.beginSession( LoginContext.AUTH_DISABLED );
+              Transaction tx = session.beginTransaction( Type.implicit ) )
+        {
+            for ( int i = 0; i < ids.length; i++ )
+            {
+                if ( filter.test( i ) )
+                {
+                    ids[i] = createKey( tx, names[i] );
+                }
+            }
+            tx.success();
         }
     }
 

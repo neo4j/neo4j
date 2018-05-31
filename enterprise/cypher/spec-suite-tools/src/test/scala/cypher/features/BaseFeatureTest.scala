@@ -60,13 +60,10 @@ abstract class BaseFeatureTest {
     createTests(scenarios, CostSlottedTestConfig)
   }
 
-  //  Morsel engine is not complete and executes tests very slowly
-  // eg. MorselExecutionContext.createClone is not implemented
-  //  @TestFactory
-  //  def runCostMorsel(): Collection[DynamicTest] = {
-  // TODO: once Morsel is complete, generate blacklist with: generateBlacklistCostMorsel further down
-  //    createTests(scenarios, CostMorselTestConfig)
-  //  }
+  @TestFactory
+  def runCostMorsel(): Collection[DynamicTest] = {
+     createTests(scenarios, CostMorselTestConfig)
+  }
 
   @TestFactory
   def runCostCompiled(): Collection[DynamicTest] = {
@@ -120,8 +117,6 @@ abstract class BaseFeatureTest {
     fail("Do not forget to add @ignore to this method")
   }
 
-  //  Morsel engine is not complete and executes tests very slowly
-  //eg. MorselExecutionContext.createClone is not implemented
   @Ignore
   def generateBlacklistTCKTestCostMorsel(): Unit = {
     printComputedBlacklist(scenarios, CostMorselTestConfig)

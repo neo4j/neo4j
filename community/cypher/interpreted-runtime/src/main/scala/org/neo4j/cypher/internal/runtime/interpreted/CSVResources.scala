@@ -27,7 +27,7 @@ import java.util.zip.{GZIPInputStream, InflaterInputStream}
 
 import org.neo4j.csv.reader._
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
-import org.neo4j.cypher.internal.util.v3_4.{LoadExternalResourceException, TaskCloser}
+import org.opencypher.v9_0.util.{LoadExternalResourceException, TaskCloser}
 import org.neo4j.cypher.CypherExecutionException
 import sun.net.www.protocol.http.HttpURLConnection
 

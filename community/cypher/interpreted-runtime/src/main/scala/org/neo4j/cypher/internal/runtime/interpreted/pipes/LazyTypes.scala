@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.v3_4.expressions.RelTypeName
+import org.opencypher.v9_0.expressions.RelTypeName
 
 final class LazyTypes(val names: Array[String]) {
 

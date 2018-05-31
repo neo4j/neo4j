@@ -27,7 +27,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor
 
-class LabelScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, label: LazyLabel) extends Operator {
+class LabelScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, label: LazyLabel)
+  extends NodeIndexOperator[NodeLabelIndexCursor](longsPerRow, refsPerRow, offset) {
 
   override def operate(message: Message,
                        data: Morsel,
@@ -44,36 +45,14 @@ class LabelScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, label: L
         nodeCursor = context.transactionalContext.cursors.allocateNodeLabelIndexCursor()
         read.nodeLabelScan(labelId.get.id,  nodeCursor)
         iterationState = is
-      case ContinueLoopWith(ContinueWithSource(it, is, _)) =>
-        nodeCursor = it.asInstanceOf[NodeLabelIndexCursor]
+      case ContinueLoopWith(ContinueWithSource(cursor, is)) =>
+        nodeCursor = cursor.asInstanceOf[NodeLabelIndexCursor]
         iterationState = is
       case _ => throw new IllegalStateException()
 
     }
 
-    val longs: Array[Long] = data.longs
-
-    var processedRows = 0
-    var hasMore = true
-    while (processedRows < data.validRows && hasMore) {
-      hasMore = nodeCursor.next()
-      if (hasMore) {
-        longs(processedRows * longsPerRow + offset) = nodeCursor.nodeReference()
-        processedRows += 1
-      }
-    }
-
-    data.validRows = processedRows
-
-    if (hasMore)
-      ContinueWithSource(nodeCursor, iterationState, needsSameThread = false)
-    else {
-      if (nodeCursor != null) {
-        nodeCursor.close()
-        nodeCursor = null
-      }
-      EndOfLoop(iterationState)
-    }
+    iterate(data, nodeCursor, iterationState)
   }
 
   override def addDependency(pipeline: Pipeline): Dependency = NoDependencies

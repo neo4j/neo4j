@@ -52,7 +52,7 @@ public class FilteringNativeHitIteratorTest
         for ( int i = 0; i < 100; i++ )
         {
             // duplicates are fine
-            keys.add( random.string() );
+            keys.add( random.nextAlphaNumericString() );
         }
 
         RawCursor<Hit<StringSchemaKey,NativeSchemaValue>,IOException> cursor = new ResultCursor( keys.iterator() );

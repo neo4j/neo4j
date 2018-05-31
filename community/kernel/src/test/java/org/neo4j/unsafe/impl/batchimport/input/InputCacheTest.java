@@ -36,11 +36,11 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.values.storable.RandomValues;
 
 import static java.lang.Math.abs;
 import static org.junit.Assert.assertEquals;
@@ -52,7 +52,7 @@ public class InputCacheTest
     private static final int countPerThread = 10_000;
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final TestDirectory dir = TestDirectory.testDirectory();
-    private final RandomRule randomRule = new RandomRule().withSeedForAllTests( 1515752471383L );
+    private final RandomRule randomRule = new RandomRule();
     private final int threads = Runtime.getRuntime().availableProcessors();
     private final ExecutorService executor = Executors.newFixedThreadPool( threads );
     private final List<Future<?>> futures = new ArrayList<>();
@@ -133,11 +133,11 @@ public class InputCacheTest
         return allReadEntities;
     }
 
-    private void writeEntities( InputCacher cacher, BiConsumer<Randoms,InputEntityVisitor> generator ) throws Exception
+    private void writeEntities( InputCacher cacher, BiConsumer<RandomValues,InputEntityVisitor> generator ) throws Exception
     {
         for ( int i = 0; i < threads; i++ )
         {
-            Randoms localRandom = new Randoms( new Random( randomRule.seed() + i ), Randoms.DEFAULT );
+            RandomValues localRandom = RandomValues.create( new Random( randomRule.seed() + i ) );
             submit( () ->
             {
                 InputEntity actual = new InputEntity();
@@ -162,12 +162,12 @@ public class InputCacheTest
         assertEquals( 0, fileSystemRule.get().listFiles( dir.directory() ).length );
     }
 
-    private void randomRelationship( Randoms random, InputEntityVisitor relationship )
+    private void randomRelationship( RandomValues random, InputEntityVisitor relationship )
     {
-        if ( random.random().nextFloat() < 0.1f )
+        if ( random.nextFloat() < 0.1f )
         {
-            relationship.type( abs( random.random().nextInt( 20_000 ) ) );
-            relationship.propertyId( abs( random.random().nextLong() ) );
+            relationship.type( abs( random.nextInt( 20_000 ) ) );
+            relationship.propertyId( abs( random.nextLong() ) );
         }
         else
         {
@@ -186,9 +186,9 @@ public class InputCacheTest
         }
     }
 
-    private void randomNode( Randoms random, InputEntityVisitor node )
+    private void randomNode( RandomValues random, InputEntityVisitor node )
     {
-        if ( random.random().nextFloat() < 0.1f )
+        if ( random.nextFloat() < 0.1f )
         {
             node.id( randomId( random ) );
             node.propertyId( randomId( random ) );
@@ -210,13 +210,13 @@ public class InputCacheTest
         }
     }
 
-    private void randomProperties( InputEntityVisitor entity, Randoms random )
+    private void randomProperties( InputEntityVisitor entity, RandomValues random )
     {
-        int length = random.random().nextInt( 10 );
+        int length = random.nextInt( 10 );
         for ( int i = 0; i < length; i++ )
         {
-            Object value = random.propertyValue();
-            if ( random.random().nextFloat() < 0.2f )
+            Object value = nextProperty( random );
+            if ( random.nextFloat() < 0.2f )
             {
                 entity.property( random.intBetween( 0, 10 ), value );
             }
@@ -227,24 +227,29 @@ public class InputCacheTest
         }
     }
 
-    private String randomType( Randoms random )
+    private Object nextProperty( RandomValues randomValues )
+    {
+        return randomValues.nextValue().asObject();
+    }
+
+    private String randomType( RandomValues random )
     {
         return random.among( TOKENS );
     }
 
-    private Group randomGroup( Randoms random )
+    private Group randomGroup( RandomValues random )
     {
-        return new Group.Adapter( random.nextInt( 100 ), random.string() );
+        return new Group.Adapter( random.nextInt( 100 ), random.nextAlphaNumericTextValue().stringValue() );
     }
 
-    private String[] randomLabels( Randoms random )
+    private String[] randomLabels( RandomValues random )
     {
         return random.selection( TOKENS, 1, 5, false );
     }
 
-    private long randomId( Randoms random )
+    private long randomId( RandomValues random )
     {
-        return abs( random.random().nextLong() );
+        return abs( random.nextLong() );
     }
 
     private void submit( Callable<?> toRun )

@@ -20,7 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.StringCacheMonitor
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Label
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
@@ -72,9 +72,9 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
         val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
         val expected = List(
           s"cacheFlushDetected",
-          s"cacheMiss: CYPHER 3.4 $query",
-          s"cacheHit: CYPHER 3.4 $query",
-          s"cacheHit: CYPHER 3.4 $query")
+          s"cacheMiss: CYPHER 3.5 $query",
+          s"cacheHit: CYPHER 3.5 $query",
+          s"cacheHit: CYPHER 3.5 $query")
 
         actual should equal(expected)
     }
@@ -89,7 +89,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       log.clear()
     }
 
-    override def cacheFlushDetected(justBeforeKey: Statement): Unit = {
+    override def cacheFlushDetected(sizeBeforeFlush: Long): Unit = {
       log += s"cacheFlushDetected"
     }
 

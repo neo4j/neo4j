@@ -47,7 +47,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import org.neo4j.backup.OnlineBackupSettings;
-import org.neo4j.concurrent.RecentK;
 import org.neo4j.ext.udc.Edition;
 import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.ext.udc.UdcSettings;
@@ -62,6 +61,7 @@ import org.neo4j.test.mockito.matcher.RegexMatcher;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
+import org.neo4j.util.concurrent.RecentK;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -95,7 +95,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     private static final Condition<Integer> IS_GREATER_THAN_ZERO = value -> value > 0;
 
     @Rule
-    public TestDirectory path = TestDirectory.testDirectory();
+    public final TestDirectory path = TestDirectory.testDirectory();
 
     private PingerHandler handler;
     private Map<String,String> config;
@@ -117,7 +117,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
         String serverAddress = serviceHostName + ":" + servicePort;
 
         config = new HashMap<>();
-        config.put( UdcSettings.first_delay.name(), "1000" );
+        config.put( UdcSettings.first_delay.name(), "100" );
         config.put( UdcSettings.udc_host.name(), serverAddress );
         config.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
 
@@ -128,6 +128,14 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     public void cleanup() throws IOException
     {
         cleanup( graphdb );
+        if ( httpclient != null )
+        {
+            httpclient.close();
+        }
+        if ( server != null )
+        {
+            server.shutdown( 0, TimeUnit.MILLISECONDS );
+        }
     }
 
     /**
@@ -480,20 +488,15 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     {
         for ( int i = 0; i < 100; i++ )
         {
-            Thread.sleep( 200 );
             Collection<Integer> countValues = counts.values();
             Integer count = countValues.iterator().next();
             if ( condition.isTrue( count ) )
             {
                 return;
             }
+            Thread.sleep( 200 );
         }
         fail();
-    }
-
-    private GraphDatabaseService createDatabase()
-    {
-        return createDatabase( null, null );
     }
 
     private GraphDatabaseService createDatabase( Map<String,String> config )

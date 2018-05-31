@@ -128,6 +128,6 @@ object ScenarioTestHelper {
       if (isFailure) Some(scenario.toString) else None
     }
     println()
-    println(blacklist.mkString("\n"))
+    println(blacklist.distinct.mkString("\n"))
   }
 }

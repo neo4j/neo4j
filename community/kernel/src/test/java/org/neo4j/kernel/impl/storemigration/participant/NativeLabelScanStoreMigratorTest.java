@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -201,7 +201,7 @@ public class NativeLabelScanStoreMigratorTest
 
     private NativeLabelScanStore getNativeLabelScanStore( File dir, boolean readOnly )
     {
-        return new NativeLabelScanStore( pageCache, dir, FullStoreChangeStream.EMPTY, readOnly, new Monitors(),
+        return new NativeLabelScanStore( pageCache, dir, fileSystem, FullStoreChangeStream.EMPTY, readOnly, new Monitors(),
                 RecoveryCleanupWorkCollector.IGNORE );
     }
 

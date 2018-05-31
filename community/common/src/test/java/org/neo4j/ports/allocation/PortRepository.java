@@ -19,21 +19,21 @@
  */
 package org.neo4j.ports.allocation;
 
-import static org.neo4j.ports.allocation.PortConstants.EphemeralPortMaximum;
-
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class PortRepository
+import static org.neo4j.ports.allocation.PortConstants.EphemeralPortMaximum;
+
+class PortRepository
 {
     private final Path directory;
 
     private int currentPort;
 
-    public PortRepository( Path directory, int initialPort )
+    PortRepository( Path directory, int initialPort )
     {
         this.directory = directory;
 
@@ -41,7 +41,7 @@ public class PortRepository
     }
 
     // synchronize between threads in this JVM
-    public synchronized int reserveNextPort( String trace )
+    synchronized int reserveNextPort( String trace )
     {
         while ( currentPort <= EphemeralPortMaximum )
         {

@@ -49,9 +49,9 @@ public interface CountsAccessor extends CountsVisitor.Visitable
 
     interface Updater extends AutoCloseable
     {
-        void incrementNodeCount( int labelId, long delta );
+        void incrementNodeCount( long labelId, long delta );
 
-        void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta );
+        void incrementRelationshipCount( long startLabelId, int typeId, long endLabelId, long delta );
 
         @Override
         void close();

@@ -2,16 +2,15 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>cypher-parent</artifactId>
-    <version>3.4.1-SNAPSHOT</version>
+    <version>3.5.0-SNAPSHOT</version>
     <relativePath>../../community/cypher/</relativePath>
   </parent>
 
   <artifactId>cypher-enterprise-parent</artifactId>
-  <version>3.4.1-SNAPSHOT</version>
+  <version>3.5.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Neo4j - Enterprise Cypher Build</name>
   <description>Project that builds the Neo4j Cypher modules as part of the Enterprise distribution.</description>
@@ -21,8 +20,7 @@
     <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
     <license-text.header>../../build/AGPL-3-header.txt</license-text.header>
     <opencypher.version>1.0.0-M09</opencypher.version>
-    <junit-plattform-runner.version>1.1.0</junit-plattform-runner.version>
-    <junit-jupiter.version>5.1.0</junit-jupiter.version>
+    <openCypher.version>1.0.0</openCypher.version>
   </properties>
 
   <scm>
@@ -46,6 +44,7 @@
         <module>physical-planning</module>
         <module>slotted-runtime</module>
         <module>morsel-runtime</module>
+        <module>compiled-expressions</module>
         <module>cypher</module>
       </modules>
     </profile>

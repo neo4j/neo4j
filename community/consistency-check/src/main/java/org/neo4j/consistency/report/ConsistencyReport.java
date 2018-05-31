@@ -31,7 +31,7 @@ import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -194,13 +194,13 @@ public interface ConsistencyReport
         void dynamicRecordChainCycle( DynamicRecord nextRecord );
 
         @Documented( "This node was not found in the expected index." )
-        void notIndexed( IndexRule index, Object[] propertyValues );
+        void notIndexed( StoreIndexDescriptor index, Object[] propertyValues );
 
         @Documented( "This node was found in the expected index, although multiple times" )
-        void indexedMultipleTimes( IndexRule index, Object[] propertyValues, long count );
+        void indexedMultipleTimes( StoreIndexDescriptor index, Object[] propertyValues, long count );
 
         @Documented( "There is another node in the unique index with the same property value(s)." )
-        void uniqueIndexNotUnique( IndexRule index, Object[] propertyValues, long duplicateNodeId );
+        void uniqueIndexNotUnique( StoreIndexDescriptor index, Object[] propertyValues, long duplicateNodeId );
 
         @Documented( "The referenced relationship group record is not in use." )
         void relationshipGroupNotInUse( RelationshipGroupRecord group );

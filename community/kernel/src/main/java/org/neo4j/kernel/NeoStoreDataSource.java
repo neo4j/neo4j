@@ -69,7 +69,6 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
-import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
@@ -158,7 +157,6 @@ import org.neo4j.resources.HeapAllocation;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
-import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.FeatureToggles;
 
@@ -252,7 +250,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final DatabaseHealth databaseHealth;
     private final LogFileCreationMonitor physicalLogMonitor;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
-    private final StartupStatisticsProvider startupStatistics;
     private final CommitProcessFactory commitProcessFactory;
     private final PageCache pageCache;
     private final Map<String,IndexImplementation> indexProviders = new HashMap<>();
@@ -289,7 +286,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             FileSystemAbstraction fs, TransactionMonitor transactionMonitor, DatabaseHealth databaseHealth,
             LogFileCreationMonitor physicalLogMonitor,
             TransactionHeaderInformationFactory transactionHeaderInformationFactory,
-            StartupStatisticsProvider startupStatistics, CommitProcessFactory commitProcessFactory,
+            CommitProcessFactory commitProcessFactory,
             AutoIndexing autoIndexing, PageCache pageCache, ConstraintSemantics constraintSemantics, Monitors monitors,
             Tracers tracers, Procedures procedures, IOLimiter ioLimiter, AvailabilityGuard availabilityGuard,
             SystemNanoClock clock, AccessCapability accessCapability, StoreCopyCheckPointMutex storeCopyCheckPointMutex,
@@ -318,7 +315,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.databaseHealth = databaseHealth;
         this.physicalLogMonitor = physicalLogMonitor;
         this.transactionHeaderInformationFactory = transactionHeaderInformationFactory;
-        this.startupStatistics = startupStatistics;
         this.constraintSemantics = constraintSemantics;
         this.monitors = monitors;
         this.tracers = tracers;
@@ -415,7 +411,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         LogVersionUpgradeChecker.check( tailScanner, config );
 
         // Upgrade the store before we begin
-        RecordFormats formats = selectStoreFormats( config, storeDir, pageCache, logService );
+        RecordFormats formats = selectStoreFormats( config, storeDir, fs, pageCache, logService );
         upgradeStore( formats, tailScanner );
 
         // Build all modules and their services
@@ -451,7 +447,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     tailScanner,
                     monitors.newMonitor( RecoveryMonitor.class ),
                     monitors.newMonitor( RecoveryStartInformationProvider.Monitor.class ),
-                    logFiles, startupStatistics,
+                    logFiles,
                     storageEngine, transactionLogModule.logicalTransactionStore(), logVersionRepository
             );
 
@@ -462,7 +458,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     logFiles,
                     transactionLogModule.transactionAppender(),
                     dependencies.resolveDependency( IndexingService.class ),
-                    storageEngine.storeReadLayer(),
                     databaseSchemaState,
                     dependencies.resolveDependency( LabelScanStore.class ),
                     storageEngine,
@@ -481,7 +476,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
             dependencies.satisfyDependency( this );
             dependencies.satisfyDependency( databaseSchemaState );
-            dependencies.satisfyDependency( storageEngine.storeReadLayer() );
             dependencies.satisfyDependency( logEntryReader );
             dependencies.satisfyDependency( storageEngine );
             dependencies.satisfyDependency( explicitIndexProviderLookup );
@@ -506,9 +500,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             throw new RuntimeException( e );
         }
 
-        // NOTE: please make sure this is performed after having added everything to the life, in fact we would like
-        // to perform the checkpointing as first step when the life is shutdown.
-        life.add( lifecycleToTriggerCheckPointOnShutdown() );
+        life.addLast( lifecycleToTriggerCheckPointOnShutdown() );
 
         try
         {
@@ -540,11 +532,11 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         databaseHealth.healed();
     }
 
-    private static RecordFormats selectStoreFormats( Config config, File storeDir, PageCache pageCache,
+    private static RecordFormats selectStoreFormats( Config config, File storeDir, FileSystemAbstraction fs, PageCache pageCache,
             LogService logService )
     {
         LogProvider logging = logService.getInternalLogProvider();
-        RecordFormats formats = RecordFormatSelector.selectNewestFormat( config, storeDir, pageCache, logging );
+        RecordFormats formats = RecordFormatSelector.selectNewestFormat( config, storeDir, fs, pageCache, logging );
         new RecordFormatPropertyConfigurator( formats, config ).configure();
         return formats;
     }
@@ -636,7 +628,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             RecoveryMonitor recoveryMonitor,
             RecoveryStartInformationProvider.Monitor positionMonitor,
             final LogFiles logFiles,
-            final StartupStatisticsProvider startupStatistics,
             StorageEngine storageEngine,
             LogicalTransactionStore logicalTransactionStore,
             LogVersionRepository logVersionRepository )
@@ -645,14 +636,12 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 logicalTransactionStore, logVersionRepository, positionMonitor );
         CorruptedLogsTruncator logsTruncator = new CorruptedLogsTruncator( storeDir, logFiles, fileSystemAbstraction );
         ProgressReporter progressReporter = new LogProgressReporter( logService.getInternalLog( Recovery.class ) );
-        Recovery recovery = new Recovery( recoveryService, startupStatistics, logsTruncator, recoveryMonitor,
-                progressReporter, failOnCorruptedLogFiles );
+        Recovery recovery = new Recovery( recoveryService, logsTruncator, recoveryMonitor, progressReporter, failOnCorruptedLogFiles );
         life.add( recovery );
     }
 
     private NeoStoreKernelModule buildKernel( LogFiles logFiles, TransactionAppender appender,
-            IndexingService indexingService,
-            StoreReadLayer storeLayer, DatabaseSchemaState databaseSchemaState, LabelScanStore labelScanStore,
+            IndexingService indexingService, DatabaseSchemaState databaseSchemaState, LabelScanStore labelScanStore,
             StorageEngine storageEngine, IndexConfigStore indexConfigStore, TransactionIdStore transactionIdStore,
             AvailabilityGuard availabilityGuard, SystemNanoClock clock, PropertyAccessor propertyAccessor )
     {
@@ -687,7 +676,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 availabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock,
                 cpuClockRef, heapAllocationRef, accessCapability, DefaultCursors::new, autoIndexing,
                 explicitIndexStore, versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
-                databaseSchemaState, indexingService ) );
+                databaseSchemaState, indexingService, propertyKeyTokenHolder ) );
 
         buildTransactionMonitor( kernelTransactions, clock, config );
 
@@ -847,11 +836,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     {
         storageEngine.registerDiagnostics( manager );
         manager.registerAll( Diagnostics.class, this );
-    }
-
-    public StoreReadLayer getStoreLayer()
-    {
-        return storageEngine.storeReadLayer();
     }
 
     public DependencyResolver getDependencyResolver()

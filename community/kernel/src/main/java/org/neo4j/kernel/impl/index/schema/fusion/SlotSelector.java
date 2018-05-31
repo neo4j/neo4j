@@ -22,9 +22,10 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import java.util.Arrays;
 import java.util.function.Function;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.values.storable.ValueGroup;
+
+import static org.apache.commons.lang3.ArrayUtils.contains;
 
 /**
  * Given a set of values selects a slot to use.
@@ -63,7 +64,7 @@ interface SlotSelector
     {
         for ( int i = 0; i < instances.length; i++ )
         {
-            boolean expected = PrimitiveIntCollections.contains( aliveIndex, i );
+            boolean expected = contains( aliveIndex, i );
             boolean actual = instances[i] != IndexProvider.EMPTY;
             if ( expected != actual )
             {

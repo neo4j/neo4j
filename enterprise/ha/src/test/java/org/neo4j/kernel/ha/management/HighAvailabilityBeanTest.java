@@ -53,7 +53,6 @@ import org.neo4j.kernel.impl.core.LastTxIdGetter;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
-import org.neo4j.kernel.internal.Version;
 import org.neo4j.management.ClusterMemberInfo;
 import org.neo4j.management.HighAvailability;
 
@@ -327,18 +326,6 @@ public class HighAvailabilityBeanTest
             super( HighAvailabilityBeanTest.this.db, HighAvailabilityBeanTest.this.clusterMembers,
                     HighAvailabilityBeanTest.this.dbInfoProvider, HighAvailabilityBeanTest.this.fileSystem, null,
                     new File( "storeDir" ), Config.defaults() );
-        }
-
-        @Override
-        public Version version()
-        {
-            return Version.getKernel();
-        }
-
-        @Override
-        public GraphDatabaseAPI graphDatabase()
-        {
-            return db;
         }
     }
 }

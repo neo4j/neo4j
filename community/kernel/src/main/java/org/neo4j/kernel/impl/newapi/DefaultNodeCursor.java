@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.Iterator;
-import java.util.Set;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -35,10 +35,7 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.storageengine.api.txstate.NodeState;
-
-import static java.util.Collections.emptySet;
+import org.neo4j.storageengine.api.txstate.LongDiffSets;
 
 class DefaultNodeCursor extends NodeRecord implements NodeCursor
 {
@@ -47,8 +44,9 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
     private PageCursor pageCursor;
     private long next;
     private long highMark;
+    private long nextStoreReference;
     private HasChanges hasChanges = HasChanges.MAYBE;
-    private Set<Long> addedNodes;
+    private LongSet addedNodes;
     private PropertyCursor propertyCursor;
 
     private final DefaultCursors pool;
@@ -71,9 +69,10 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
         }
         this.next = 0;
         this.highMark = read.nodeHighMark();
+        this.nextStoreReference = NO_ID;
         this.read = read;
         this.hasChanges = HasChanges.MAYBE;
-        this.addedNodes = emptySet();
+        this.addedNodes = LongSets.immutable.empty();
     }
 
     void single( long reference, Read read )
@@ -89,9 +88,10 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
         this.next = reference;
         //This marks the cursor as a "single cursor"
         this.highMark = NO_ID;
+        this.nextStoreReference = NO_ID;
         this.read = read;
         this.hasChanges = HasChanges.MAYBE;
-        this.addedNodes = emptySet();
+        this.addedNodes = LongSets.immutable.empty();
     }
 
     @Override
@@ -115,10 +115,10 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
             {
                 //Get labels from store and put in intSet, unfortunately we get longs back
                 long[] longs = NodeLabelsField.get( this, labelCursor() );
-                PrimitiveIntSet labels = Primitive.intSet();
+                final MutableLongSet labels = new LongHashSet();
                 for ( long labelToken : longs )
                 {
-                    labels.add( (int) labelToken );
+                    labels.add( labelToken );
                 }
 
                 //Augment what was found in store with what we have in tx state
@@ -130,6 +130,36 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
             //Nothing in tx state, just read the data.
             return Labels.from( NodeLabelsField.get( this, labelCursor()) );
         }
+    }
+
+    @Override
+    public boolean hasLabel( int label )
+    {
+        if ( hasChanges() )
+        {
+            TransactionState txState = read.txState();
+            LongDiffSets diffSets = txState.nodeStateLabelDiffSets( getId() );
+            if ( diffSets.getAdded().contains( label ) )
+            {
+                return true;
+            }
+            if ( diffSets.getRemoved().contains( label ) )
+            {
+                return false;
+            }
+        }
+
+        //Get labels from store and put in intSet, unfortunately we get longs back
+        long[] longs = NodeLabelsField.get( this, labelCursor() );
+        for ( long labelToken : longs )
+        {
+            if ( labelToken == label )
+            {
+                assert (int) labelToken == labelToken : "value too big to be represented as and int";
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -208,9 +238,16 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
                 next++;
                 setInUse( false );
             }
+            else if ( nextStoreReference == next )
+            {
+                read.nodeAdvance( this, pageCursor );
+                next++;
+                nextStoreReference++;
+            }
             else
             {
                 read.node( this, next++, pageCursor );
+                nextStoreReference = next;
             }
 
             if ( next > highMark )
@@ -256,7 +293,7 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
         {
             read = null;
             hasChanges = HasChanges.MAYBE;
-            addedNodes = emptySet();
+            addedNodes = LongSets.immutable.empty();
             reset();
             if ( propertyCursor != null )
             {
@@ -288,7 +325,7 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
             {
                 if ( !isSingle() )
                 {
-                    addedNodes = read.txState().addedAndRemovedNodes().getAddedSnapshot();
+                    addedNodes = read.txState().addedAndRemovedNodes().getAdded().freeze();
                 }
                 hasChanges = HasChanges.YES;
             }

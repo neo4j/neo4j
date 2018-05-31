@@ -27,24 +27,17 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
 public class NumberSchemaIndexAccessor extends NativeSchemaIndexAccessor<NumberSchemaKey,NativeSchemaValue>
 {
-    NumberSchemaIndexAccessor(
-            PageCache pageCache,
-            FileSystemAbstraction fs,
-            File storeFile,
-            Layout<NumberSchemaKey,NativeSchemaValue> layout,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            IndexProvider.Monitor monitor,
-            SchemaIndexDescriptor descriptor,
-            long indexId,
+    NumberSchemaIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<NumberSchemaKey,NativeSchemaValue> layout,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
-        super( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig );
+        super( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );
     }
 
     @Override

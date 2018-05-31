@@ -698,6 +698,35 @@ public class CompositePageCursorTest
     }
 
     @Test
+    public void markCompositeCursor()
+    {
+        // GIVEN
+        first.setOffset( 1 );
+        second.setOffset( 2 );
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+
+        first.getByte();
+        second.getLong();
+
+        int firstMark = first.getOffset();
+        int secondMark = second.getOffset();
+        pageCursor.mark();
+
+        first.getByte();
+        second.getLong();
+
+        assertNotEquals( firstMark, first.getOffset() );
+        assertNotEquals( secondMark, second.getOffset() );
+
+        // WHEN
+        pageCursor.setOffsetToMark();
+
+        // THEN
+        assertEquals( firstMark, first.getOffset() );
+        assertEquals( secondMark, second.getOffset() );
+    }
+
+    @Test
     public void getOffsetMustReturnOffsetIntoView()
     {
         PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );

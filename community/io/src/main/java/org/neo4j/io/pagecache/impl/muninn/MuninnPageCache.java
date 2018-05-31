@@ -35,8 +35,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -701,22 +699,9 @@ public class MuninnPageCache implements PageCache
     }
 
     @Override
-    public FileSystemAbstraction getCachedFileSystem()
-    {
-        return swapperFactory.getFileSystemAbstraction();
-    }
-
-    @Override
     public void reportEvents()
     {
         pageCursorTracerSupplier.get().reportEvents();
-    }
-
-    @Override
-    public boolean fileSystemSupportsFileOperations()
-    {
-        // Default filesystem supports direct file access.
-        return getCachedFileSystem() instanceof DefaultFileSystemAbstraction;
     }
 
     int getPageCacheId()
@@ -1040,7 +1025,7 @@ public class MuninnPageCache implements PageCache
                 for ( int i = 0; i < pageCount; i++ )
                 {
                     long pageRef = pages.deref( i );
-                    while ( swapperIds.test( pages.getSwapperId( pageRef ) ) )
+                    while ( swapperIds.contains( pages.getSwapperId( pageRef ) ) )
                     {
                         if ( pages.tryEvict( pageRef, evictions ) )
                         {

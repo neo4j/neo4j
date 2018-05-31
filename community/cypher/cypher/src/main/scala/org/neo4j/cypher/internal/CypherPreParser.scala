@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.frontend.v3_4.parser.Base
-import org.neo4j.cypher.internal.util.v3_4.InputPosition
+import org.opencypher.v9_0.parser.Base
+import org.opencypher.v9_0.util.InputPosition
 import org.parboiled.scala._
 
 final case class PreParsedStatement(statement: String, options: Seq[PreParserOption], offset: InputPosition)
 
-case object CypherPreParser extends Parser with Base {
+case object CypherPreParser extends org.parboiled.scala.Parser with Base {
   def apply(input: String): PreParsedStatement = parseOrThrow(input, None, QueryWithOptions)
 
   def QueryWithOptions: Rule1[Seq[PreParsedStatement]] =

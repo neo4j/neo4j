@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
-import org.neo4j.test.ThreadTestUtils;
+import org.neo4j.diagnostics.utils.DumpUtils;
 
 /**
  * Timeout rule implementation that print out stack traces of all thread
@@ -199,7 +199,7 @@ public class VerboseTimeout extends Timeout
             }
             catch ( ExecutionException e )
             {
-                ThreadTestUtils.dumpAllStackTraces();
+                printThreadDump();
                 return e.getCause();
             }
             catch ( TimeoutException e )
@@ -213,7 +213,7 @@ public class VerboseTimeout extends Timeout
                     }
                 }
                 System.err.println( "=== Thread dump ===" );
-                ThreadTestUtils.dumpAllStackTraces();
+                printThreadDump();
                 return buildTimeoutException( thread );
             }
         }
@@ -250,5 +250,10 @@ public class VerboseTimeout extends Timeout
                 startLatch.await();
             }
         }
+    }
+
+    private static void printThreadDump()
+    {
+        System.err.println( DumpUtils.threadDump() );
     }
 }

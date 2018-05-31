@@ -21,23 +21,23 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.ArgumentMatchers.{anyInt, anyLong}
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.planner.v3_4.spi.TokenContext
+import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.v3_4.{DummyPosition, PropertyKeyId}
-import org.neo4j.cypher.internal.v3_4.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.v3_4.{expressions => ast}
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.{DummyPosition, PropertyKeyId}
+import org.opencypher.v9_0.expressions.PropertyKeyName
+import org.opencypher.v9_0.{expressions => ast}
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.v3_4.{InputPosition, PropertyKeyId}
-import org.neo4j.cypher.internal.v3_4.expressions.PropertyKeyName
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.{InputPosition, PropertyKeyId}
+import org.opencypher.v9_0.expressions.PropertyKeyName
 import org.neo4j.graphdb.Node
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue

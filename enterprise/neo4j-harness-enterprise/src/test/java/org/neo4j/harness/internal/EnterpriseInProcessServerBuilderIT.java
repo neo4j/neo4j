@@ -35,7 +35,6 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
@@ -46,10 +45,10 @@ import static org.junit.Assert.assertThat;
 public class EnterpriseInProcessServerBuilderIT
 {
     @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
+    public final TestDirectory testDir = TestDirectory.testDirectory();
 
     @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
     public void shouldLaunchAServerInSpecifiedDirectory()
@@ -80,7 +79,6 @@ public class EnterpriseInProcessServerBuilderIT
 
         return EnterpriseTestServerBuilders.newInProcessBuilder( workDir )
                 .withConfig( certificatesDirectoryKey, certificatesDirectoryValue )
-                .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
-                .withConfig( ServerSettings.script_enabled, Settings.TRUE );
+                .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
     }
 }

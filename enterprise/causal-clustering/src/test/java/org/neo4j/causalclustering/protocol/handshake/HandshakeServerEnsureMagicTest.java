@@ -23,7 +23,6 @@
 package org.neo4j.causalclustering.protocol.handshake;
 
 import org.hamcrest.Matchers;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -39,6 +38,7 @@ import org.neo4j.helpers.collection.Iterators;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolCategory.RAFT;
 
@@ -129,7 +129,7 @@ public class HandshakeServerEnsureMagicTest
         }
         catch ( CompletionException ex )
         {
-            Assert.assertThat( ex.getMessage().toLowerCase(), Matchers.not( Matchers.containsString( "magic" ) ) );
+            assertThat( ex.getMessage().toLowerCase(), Matchers.not( Matchers.containsString( "magic" ) ) );
         }
     }
 }

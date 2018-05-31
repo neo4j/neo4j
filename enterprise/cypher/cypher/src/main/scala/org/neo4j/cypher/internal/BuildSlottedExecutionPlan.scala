@@ -22,28 +22,24 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotAllocation.PhysicalPlan
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.EnterpriseRuntimeContext
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
-import org.neo4j.cypher.internal.compiler.v3_4.CacheCheckResult
-import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilationContains, LogicalPlanState}
-import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
-import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
-import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, Phase}
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.ReadOnlies
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotAllocation.PhysicalPlan
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{ExecutionPlan => RuntimeExecutionPlan, _}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
+import org.neo4j.cypher.internal.compiler.v3_5.phases.{CompilationContains, LogicalPlanState}
+import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeExecutionBuilderContext
+import org.neo4j.cypher.internal.runtime.slotted.expressions.{CompiledExpressionConverter, SlottedExpressionConverters}
 import org.neo4j.cypher.internal.runtime.slotted.{SlottedExecutionResultBuilderFactory, SlottedPipeBuilder}
-import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedExpressionConverters
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext}
-import org.neo4j.cypher.internal.util.v3_4.CypherException
-import org.neo4j.cypher.internal.v3_4.logical.plans.{IndexUsage, LogicalPlan}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexUsage, LogicalPlan}
 import org.neo4j.values.virtual.MapValue
+import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.opencypher.v9_0.frontend.PlannerName
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
+import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, Phase}
+import org.opencypher.v9_0.util.CypherException
 
 import scala.util.{Failure, Success}
 
@@ -72,7 +68,6 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
   }
 
   private def createSlottedRuntimeExecPlan(from: LogicalPlanState, context: EnterpriseRuntimeContext) = {
-    val runtimeSuccessRateMonitor = context.monitors.newMonitor[NewRuntimeSuccessRateMonitor]()
     try {
       if (ENABLE_DEBUG_PRINTS && PRINT_PLAN_INFO_EARLY) {
         printPlanInfo(from)
@@ -84,31 +79,31 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
         printRewrittenPlanInfo(logicalPlan)
       }
 
-      val converters = new ExpressionConverters(SlottedExpressionConverters, CommunityExpressionConverter)
+      val converters = new ExpressionConverters(new CompiledExpressionConverter(context.log),
+                                                SlottedExpressionConverters, CommunityExpressionConverter)
       val pipeBuilderFactory = SlottedPipeBuilder.Factory(physicalPlan)
-      val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
-                                                              expressionConverters = converters,
+      val executionPlanBuilder = new PipeExecutionPlanBuilder(expressionConverters = converters,
                                                               pipeBuilderFactory = pipeBuilderFactory)
-      val readOnlies = new ReadOnlies
-      from.solveds.mapTo(readOnlies, _.readOnly)
-      val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(),
-                                                         from.plannerName, readOnlies, from.cardinalities)
-      val pipeInfo = executionPlanBuilder
-        .build(from.periodicCommit, logicalPlan)(pipeBuildContext, context.planContext)
-      val PipeInfo(pipe: Pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
+      val readOnly = from.solveds(from.logicalPlan.id).readOnly
+      val pipeBuildContext = PipeExecutionBuilderContext(from.semanticTable(), readOnly, from.cardinalities)
+      val pipe = executionPlanBuilder.build(logicalPlan)(pipeBuildContext, context.planContext)
+      val periodicCommitInfo = from.periodicCommit.map(x => PeriodicCommitInfo(x.batchSize))
       val columns = from.statement().returnColumns
       val resultBuilderFactory =
-        new SlottedExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan, physicalPlan.slotConfigurations)
-      val func = BuildInterpretedExecutionPlan.getExecutionPlanFunction(periodicCommitInfo, updating,
+        new SlottedExecutionResultBuilderFactory(pipe, readOnly, columns, logicalPlan, physicalPlan.slotConfigurations)
+      val func = BuildInterpretedExecutionPlan.getExecutionPlanFunction(periodicCommitInfo,
                                                                         resultBuilderFactory,
                                                                         context.notificationLogger,
+                                                                        from.plannerName,
                                                                         SlottedRuntimeName,
-                                                                        readOnlies,
+                                                                        readOnly,
                                                                         from.cardinalities)
-      val fingerprint = context.createFingerprintReference(fp)
+
+      val fp = PlanFingerprint.take(context.clock, context.planContext.txIdProvider, context.planContext.statistics)
+      val fingerprint = new PlanFingerprintReference(fp)
       val periodicCommit = periodicCommitInfo.isDefined
       val indexes = logicalPlan.indexUsage
-      val execPlan = SlottedExecutionPlan(fingerprint, periodicCommit, planner, indexes, func)
+      val execPlan = SlottedExecutionPlan(fingerprint, periodicCommit, from.plannerName, indexes, func)
 
       if (ENABLE_DEBUG_PRINTS) {
         if (!PRINT_PLAN_INFO_EARLY) {
@@ -116,7 +111,7 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
           printPlanInfo(from)
           printRewrittenPlanInfo(logicalPlan)
         }
-        printPipeInfo(physicalPlan.slotConfigurations, pipeInfo)
+        printPipe(physicalPlan.slotConfigurations, pipe)
       }
 
       new CompilationState(from, Success(execPlan))
@@ -128,7 +123,6 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
             printPlanInfo(from)
           }
         }
-        runtimeSuccessRateMonitor.unableToHandlePlan(from.logicalPlan, new CantCompileQueryException(cause = e))
         new CompilationState(from, Failure(e))
     }
   }
@@ -145,14 +139,13 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
                                   plannerUsed: PlannerName,
                                   override val plannedIndexUsage: Seq[IndexUsage],
                                   runFunction: (QueryContext, ExecutionMode, MapValue) => InternalExecutionResult
-                                 ) extends executionplan.ExecutionPlan {
+                                 ) extends RuntimeExecutionPlan {
 
     override def run(queryContext: QueryContext, planType: ExecutionMode,
                      params: MapValue): InternalExecutionResult =
       runFunction(queryContext, planType, params)
 
-    override def checkPlanResusability(lastTxId: () => Long, statistics: GraphStatistics): CacheCheckResult =
-      fingerprint.checkPlanReusability(lastTxId, statistics)
+    override def reusability: ReusabilityState = MaybeReusable(fingerprint)
 
     override def runtimeUsed: RuntimeName = SlottedRuntimeName
   }

@@ -46,6 +46,7 @@ import org.neo4j.shell.impl.ShellBootstrap;
 import org.neo4j.shell.impl.SimpleAppServer;
 import org.neo4j.shell.impl.SystemOutput;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.io.fs.FileUtils.newBufferedFileReader;
 
@@ -123,7 +124,7 @@ public class StartClient
     private final PrintStream out;
     private final PrintStream err;
 
-    // Visible for testing
+    @VisibleForTesting
     StartClient( PrintStream out, PrintStream err )
     {
         this.factory = loadEditionDatabaseFactory();
@@ -168,7 +169,7 @@ public class StartClient
         return factory;
     }
 
-    // visible for testing
+    @VisibleForTesting
     void start( String[] arguments, CtrlCHandler signalHandler )
     {
         Args args = Args.withFlags( ARG_READONLY ).parse( arguments );

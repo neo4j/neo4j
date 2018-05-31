@@ -67,7 +67,6 @@ import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.plugins.ConfigAdapter;
 import org.neo4j.server.plugins.PluginInvocatorProvider;
 import org.neo4j.server.plugins.PluginManager;
-import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.repr.InputFormatProvider;
 import org.neo4j.server.rest.repr.OutputFormatProvider;
 import org.neo4j.server.rest.repr.RepresentationFormatRepository;
@@ -77,7 +76,6 @@ import org.neo4j.server.rest.transactional.TransactionHandleRegistry;
 import org.neo4j.server.rest.transactional.TransactionRegistry;
 import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.rest.web.DatabaseActions;
-import org.neo4j.server.rest.web.ScriptExecutionMode;
 import org.neo4j.server.web.AsyncRequestLog;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
@@ -144,6 +142,7 @@ public abstract class AbstractNeoServer implements NeoServer
     protected ConnectorPortRegister connectorPortRegister;
     private HttpConnector httpConnector;
     private Optional<HttpConnector> httpsConnector;
+    private AsyncRequestLog requestLog;
 
     protected abstract Iterable<ServerModule> createServerModules();
 
@@ -228,9 +227,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
     protected DatabaseActions createDatabaseActions()
     {
-        return new DatabaseActions(
-                new LeaseManager( Clocks.systemClock() ),
-                ScriptExecutionMode.getConfiguredMode( config ), database.getGraph() );
+        return new DatabaseActions( database.getGraph() );
     }
 
     private TransactionFacade createTransactionalActions()
@@ -362,7 +359,7 @@ public abstract class AbstractNeoServer implements NeoServer
             return;
         }
 
-        AsyncRequestLog requestLog = new AsyncRequestLog(
+        requestLog = new AsyncRequestLog(
                 dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
                 config.get( db_timezone ).getZoneId(),
                 config.get( http_log_path ).toString(),
@@ -392,11 +389,15 @@ public abstract class AbstractNeoServer implements NeoServer
         life.stop();
     }
 
-    private void stopWebServer()
+    private void stopWebServer() throws Exception
     {
         if ( webServer != null )
         {
             webServer.stop();
+        }
+        if ( requestLog != null )
+        {
+            requestLog.stop();
         }
     }
 
@@ -530,7 +531,7 @@ public abstract class AbstractNeoServer implements NeoServer
         }
 
         @Override
-        public void stop()
+        public void stop() throws Exception
         {
             stopWebServer();
             stopModules();

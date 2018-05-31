@@ -21,7 +21,6 @@ package org.neo4j.bolt.v1.transport.integration;
 
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,7 +28,6 @@ import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -54,6 +52,7 @@ import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -549,7 +548,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         @Override
         protected boolean matchesSafely( ResponseMessage t )
         {
-            Assert.assertThat( t, instanceOf( FailureMessage.class ) );
+            assertThat( t, instanceOf( FailureMessage.class ) );
             FailureMessage msg = (FailureMessage) t;
             if ( !msg.status().equals( Status.Security.Unauthorized ) ||
                  !msg.message().contains( "The client is unauthorized due to authentication failure." ) )
@@ -567,7 +566,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
 
     private MapValue singletonMap( String key, Object value )
     {
-        return VirtualValues.map( Collections.singletonMap( key, ValueUtils.of( value ) ) );
+        return VirtualValues.map( new String[]{key}, new AnyValue[]{ValueUtils.of( value )}  );
     }
 
     private FailureMessage collectAuthFailureOnFailedAuth()

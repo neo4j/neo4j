@@ -19,7 +19,6 @@
  */
 package org.neo4j.ext.udc.impl;
 
-import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.protocol.HttpContext;

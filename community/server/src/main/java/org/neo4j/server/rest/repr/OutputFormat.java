@@ -34,7 +34,6 @@ import org.neo4j.server.web.HttpHeaderUtils;
 import org.neo4j.string.UTF8;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
 
 public class OutputFormat
 {
@@ -89,17 +88,6 @@ public class OutputFormat
         return response( Response.status( status ), representation );
     }
 
-    /**
-     * Before the 'errors' response existed, we would just spit out stack traces.
-     * For new endpoints, we should return the new 'errors' response format, which will bundle stack traces only on
-     * unknown problems.
-     * @param exception the error
-     * @return the bad request response     */
-    public Response badRequestWithoutLegacyStacktrace( Throwable exception )
-    {
-        return response( Response.status( BAD_REQUEST ), new ExceptionRepresentation( exception, false ) );
-    }
-
     public Response badRequest( Throwable exception )
     {
         return response( Response.status( BAD_REQUEST ), new ExceptionRepresentation( exception ) );
@@ -132,10 +120,12 @@ public class OutputFormat
         return response( Response.status( Status.CONFLICT ), representation );
     }
 
-    /** Server error with stack trace included as needed, see {@link #badRequestWithoutLegacyStacktrace}.
+    /**
+     * Server error with stack trace included as needed.
      * @param exception the error
      * @return the internal server error response
-     */    public Response serverErrorWithoutLegacyStacktrace( Throwable exception )
+     */
+    public Response serverErrorWithoutLegacyStacktrace( Throwable exception )
     {
         return response( Response.status( Status.INTERNAL_SERVER_ERROR ), new ExceptionRepresentation( exception, false ) );
     }
@@ -259,12 +249,5 @@ public class OutputFormat
         representationWriteHandler.onRepresentationStartWriting();
         representationWriteHandler.onRepresentationFinal();
         return Response.status( BAD_REQUEST ).type( mediaType  ).entity( entity ).build();
-    }
-
-    public Response unauthorized( Representation representation, String authChallenge )
-    {
-        return formatRepresentation( Response.status( UNAUTHORIZED ), representation )
-                .header( HttpHeaders.WWW_AUTHENTICATE, authChallenge )
-                .build();
     }
 }

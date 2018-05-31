@@ -19,13 +19,9 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
-import java.util.Set;
+import org.eclipse.collections.api.iterator.LongIterator;
 
-import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.newapi.RelationshipDirection;
-import org.neo4j.storageengine.api.Direction;
 
 /**
  * Represents the transactional changes to a node:
@@ -38,17 +34,7 @@ import org.neo4j.storageengine.api.Direction;
  */
 public interface NodeState extends PropertyContainerState
 {
-    interface Visitor extends PropertyContainerState.Visitor
-    {
-        void visitLabelChanges( long nodeId, Set<Integer> added, Set<Integer> removed )
-                throws ConstraintValidationException;
-    }
-
-    ReadableDiffSets<Integer> labelDiffSets();
-
-    int augmentDegree( Direction direction, int degree );
-
-    int augmentDegree( Direction direction, int degree, int typeId );
+    LongDiffSets labelDiffSets();
 
     /**
      * This method counts all directions separately, i.e.
@@ -56,21 +42,9 @@ public interface NodeState extends PropertyContainerState
      */
     int augmentDegree( RelationshipDirection direction, int degree, int typeId );
 
-    void accept( NodeState.Visitor visitor ) throws ConstraintValidationException;
-
-    PrimitiveIntSet relationshipTypes();
-
     long getId();
 
-    @Deprecated
-    PrimitiveLongIterator getAddedRelationships( Direction direction );
+    LongIterator getAddedRelationships();
 
-    @Deprecated
-    PrimitiveLongIterator getAddedRelationships( Direction direction, int[] relTypes );
-
-    PrimitiveLongIterator getAddedRelationships();
-
-    PrimitiveLongIterator getAddedRelationships( RelationshipDirection direction, int relType );
-
-    boolean hasRelationshipChanges();
+    LongIterator getAddedRelationships( RelationshipDirection direction, int relType );
 }

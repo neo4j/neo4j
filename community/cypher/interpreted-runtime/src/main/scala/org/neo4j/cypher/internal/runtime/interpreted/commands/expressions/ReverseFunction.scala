@@ -21,17 +21,17 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
+import org.opencypher.v9_0.util.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{TextValue, Values}
-import org.neo4j.values.virtual.{ListValue, VirtualValues}
+import org.neo4j.values.virtual.ListValue
 
 case class ReverseFunction(argument: Expression) extends NullInNullOutExpression(argument) {
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
     argument(m, state) match {
       case x if x == Values.NO_VALUE => Values.NO_VALUE
       case string: TextValue => string.reverse
-      case seq: ListValue => VirtualValues.reverse(seq)
+      case seq: ListValue => seq.reverse()
       case a => throw new CypherTypeException(
         "Expected a string or a list; consider converting it to a string with toString() or creating a list."
           .format(toString(), a.toString))

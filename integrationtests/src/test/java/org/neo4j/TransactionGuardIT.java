@@ -79,7 +79,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.LifecycleManagingDatabase;
 import org.neo4j.server.enterprise.OpenEnterpriseNeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
@@ -278,8 +277,7 @@ public class TransactionGuardIT
         }
         catch ( ShellException e )
         {
-            assertThat( e.getMessage(), containsString( "The transaction has not completed within " +
-                    "the specified timeout." ) );
+            assertThat( e.getMessage(), containsString( "The transaction has not completed within the specified timeout (dbms.transaction.timeout)" ) );
         }
 
         assertDatabaseDoesNotHaveNodes( database );
@@ -528,7 +526,6 @@ public class TransactionGuardIT
             BoltConnector boltConnector = new BoltConnector( BOLT_CONNECTOR_KEY );
             serverBuilder.withProperty( boltConnector.type.name(), "BOLT" )
                     .withProperty( boltConnector.enabled.name(), Settings.TRUE )
-                    .withProperty( ServerSettings.script_enabled.name(), Settings.TRUE )
                     .withProperty( boltConnector.encryption_level.name(),
                             BoltConnector.EncryptionLevel.DISABLED.name() )
                     .withProperty( GraphDatabaseSettings.auth_enabled.name(), Settings.FALSE );
@@ -548,7 +545,6 @@ public class TransactionGuardIT
                 boltConnector.address, "localhost:0",
                 boltConnector.type, "BOLT",
                 boltConnector.enabled, "true",
-                ServerSettings.script_enabled, Settings.TRUE,
                 boltConnector.encryption_level, BoltConnector.EncryptionLevel.DISABLED.name(),
                 GraphDatabaseSettings.auth_enabled, "false" );
     }

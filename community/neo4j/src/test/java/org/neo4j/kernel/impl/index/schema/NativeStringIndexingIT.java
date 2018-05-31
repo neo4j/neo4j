@@ -25,8 +25,6 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -36,11 +34,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
-import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.rule.DatabaseRule;
@@ -54,7 +48,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.test.Randoms.CSA_LETTERS_AND_DIGITS;
 
 public class NativeStringIndexingIT
 {
@@ -82,7 +75,7 @@ public class NativeStringIndexingIT
                 String string;
                 do
                 {
-                    string = random.string( 3_000, 4_000, CSA_LETTERS_AND_DIGITS );
+                    string = random.nextAlphaNumericString( 3_000, 4_000 );
                 }
                 while ( strings.containsKey( string ) );
 
@@ -117,7 +110,7 @@ public class NativeStringIndexingIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.createNode( LABEL ).setProperty( KEY, random.string( length, length, CSA_LETTERS_AND_DIGITS ) );
+                db.createNode( LABEL ).setProperty( KEY, random.nextAlphaNumericString( length, length ) );
                 tx.success();
             }
             fail( "Should have failed" );
@@ -137,8 +130,8 @@ public class NativeStringIndexingIT
 
         // when a string longer than native string limit, but within lucene limit
         int length = 20_000;
-        String string1 = random.string( length, length, CSA_LETTERS_AND_DIGITS );
-        String string2 = random.string( length, length, CSA_LETTERS_AND_DIGITS );
+        String string1 = random.nextAlphaNumericString( length, length );
+        String string2 = random.nextAlphaNumericString( length, length );
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
@@ -158,10 +151,11 @@ public class NativeStringIndexingIT
             int propertyKeyId2 = ktx.tokenRead().propertyKey( KEY2 );
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
-                ktx.dataRead().nodeIndexSeek( DefaultIndexReference.general( labelId, propertyKeyId1, propertyKeyId2 ),
-                        cursor, IndexOrder.NONE,
-                        IndexQuery.exact( propertyKeyId1, string1 ),
-                        IndexQuery.exact( propertyKeyId2, string2 ) );
+                ktx.dataRead().nodeIndexSeek( TestIndexDescriptorFactory
+                                                      .forLabel( labelId, propertyKeyId1, propertyKeyId2 ),
+                                              cursor, IndexOrder.NONE,
+                                              IndexQuery.exact( propertyKeyId1, string1 ),
+                                              IndexQuery.exact( propertyKeyId2, string2 ) );
                 assertTrue( cursor.next() );
                 assertEquals( node.getId(), cursor.nodeReference() );
                 assertFalse( cursor.next() );
@@ -183,8 +177,8 @@ public class NativeStringIndexingIT
             try ( Transaction tx = db.beginTx() )
             {
                 Node node = db.createNode( LABEL );
-                node.setProperty( KEY, random.string( length, length, CSA_LETTERS_AND_DIGITS ) );
-                node.setProperty( KEY2, random.string( length, length, CSA_LETTERS_AND_DIGITS ) );
+                node.setProperty( KEY, random.nextAlphaNumericString( length, length ) );
+                node.setProperty( KEY2, random.nextAlphaNumericString( length, length ) );
                 tx.success();
             }
             fail( "Should have failed" );

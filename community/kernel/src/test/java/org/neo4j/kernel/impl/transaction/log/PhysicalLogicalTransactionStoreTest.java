@@ -31,7 +31,6 @@ import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -226,8 +225,7 @@ public class PhysicalLogicalTransactionStoreTest
                     LogPosition positionAfterLastRecoveredTransaction )
             {
             }
-        }, new StartupStatisticsProvider(), logPruner, mock( RecoveryMonitor.class ), SilentProgressReporter.INSTANCE,
-                false ) );
+        }, logPruner, mock( RecoveryMonitor.class ), SilentProgressReporter.INSTANCE, false ) );
 
         // WHEN
         try

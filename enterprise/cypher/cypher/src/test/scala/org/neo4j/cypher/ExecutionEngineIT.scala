@@ -27,7 +27,7 @@ import java.util
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{ExecutionPlanDescription, Result}
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
@@ -67,14 +67,6 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     }
   }
 
-  implicit class RichExecutionEngine(engine: ExecutionEngine) {
-    def profile(query: String, params: Map[String, Any]): Result =
-      engine.profile(query, params, engine.queryService.transactionalContext(query = query -> params))
-
-    def execute(query: String, params: Map[String, Any]): Result =
-      engine.execute(query, params, engine.queryService.transactionalContext(query = query -> params))
-  }
-
   class AllNodesProcedure extends CallableProcedure {
     import scala.collection.JavaConverters._
 
@@ -82,7 +74,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     val procedureName = new QualifiedName(Array[String]("org", "neo4j", "bench"), "getAllNodes")
     val emptySignature: util.List[FieldSignature] = List.empty[FieldSignature].asJava
     val signature: ProcedureSignature = new ProcedureSignature(
-      procedureName, paramSignature, resultSignature, Mode.READ, null, Array.empty,
+      procedureName, paramSignature, resultSignature, Mode.READ, false, null, Array.empty,
       null, null, false)
 
     def paramSignature: util.List[FieldSignature] = List.empty[FieldSignature].asJava

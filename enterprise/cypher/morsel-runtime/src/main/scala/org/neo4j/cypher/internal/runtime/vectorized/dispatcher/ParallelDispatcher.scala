@@ -26,12 +26,12 @@ import java.util.concurrent.Executor
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 import java.util.{concurrent, function}
 
-import org.neo4j.concurrent.BinaryLatch
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.neo4j.cypher.internal.util.v3_4.{InternalException, TaskCloser}
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
+import org.neo4j.util.concurrent.BinaryLatch
 import org.neo4j.values.virtual.MapValue
+import org.opencypher.v9_0.util.TaskCloser
 
 import scala.collection.JavaConverters._
 
@@ -78,23 +78,21 @@ class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) exte
         val loopsLeft = query.endLoop(message.iterationState)
         val weJustClosedTheLastLoop = loopsLeft == 0
         if (weJustClosedTheLastLoop) {
-          query.eagerReceiver match {
-            case None =>
+
+          pipeline.parent match {
+            case Some(eagerConsumingPipeline@PipeLineWithEagerDependency(eagerData)) =>
+              val startEager = StartLoopWithEagerData(eagerData.asScala.toArray, incoming.iterationState)
+              executor.execute(createAction(query, startEager, eagerConsumingPipeline, queryContext, state))
+            case _ =>
               // We where the last pipeline! Cool! Let's signal the query that we are done here.
               query.releaseBlockedThreads()
-
-            case Some(eagerConsumingPipeline) =>
-              query.eagerReceiver = None
-              val startEager = StartLoopWithEagerData(query.eagerData.asScala.toArray, incoming.iterationState)
-              executor.execute(createAction(query, startEager, eagerConsumingPipeline, queryContext, state))
           }
 
         }
       } catch {
-        case e: Exception =>
+        case e: Throwable =>
           query.markFailure(e)
           query.releaseBlockedThreads()
-          throw e
       }
     }
   }
@@ -104,17 +102,10 @@ class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) exte
     val continuation = pipeline.operate(message, data, queryContext, state)
 
     pipeline.parent match {
-      case Some(mother) if mother.dependency.isInstanceOf[Eager] && query.eagerReceiver.contains(mother) =>
-        query.eagerData.add(data)
+      case Some(PipeLineWithEagerDependency(eagerData)) =>
+        eagerData.add(data)
 
-      case Some(mother) if mother.dependency.isInstanceOf[Eager] && query.eagerReceiver.isEmpty =>
-        query.eagerReceiver = Some(mother)
-        query.eagerData.add(data)
-
-      case Some(mother) if mother.dependency.isInstanceOf[Eager] =>
-        throw new InternalException("This is not the same eager receiver as I want to use")
-
-      case Some(mother) if mother.dependency.isInstanceOf[Lazy] =>
+      case Some(mother@Pipeline(_,_,_, Lazy(_))) =>
         val nextStep = StartLoopWithSingleMorsel(data, message.iterationState)
         executor.execute(createAction(query, nextStep, mother, queryContext, state))
 
@@ -136,8 +127,7 @@ class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) exte
     private val loopCount = new concurrent.ConcurrentHashMap[Iteration, AtomicInteger]()
     private val error = new AtomicReference[Throwable]()
     private val latch = new BinaryLatch
-    var eagerReceiver: Option[Pipeline] = None
-    lazy val eagerData = new java.util.concurrent.ConcurrentLinkedQueue[Morsel]()
+    private val name = Thread.currentThread().getName
 
     def startLoop(iteration: Iteration): Unit = {
       loopCount.computeIfAbsent(iteration, createAtomicInteger).incrementAndGet()

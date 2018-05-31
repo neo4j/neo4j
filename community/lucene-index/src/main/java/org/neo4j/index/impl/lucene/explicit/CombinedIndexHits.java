@@ -21,7 +21,7 @@ package org.neo4j.index.impl.lucene.explicit;
 
 import java.util.Collection;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.kernel.api.ExplicitIndexHits;
 
 public class CombinedIndexHits extends PrimitiveLongCollections.PrimitiveLongConcatingIterator implements

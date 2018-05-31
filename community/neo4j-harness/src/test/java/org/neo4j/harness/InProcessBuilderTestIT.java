@@ -53,9 +53,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.ports.allocation.PortAuthority;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.ssl.ClientAuth;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -100,7 +98,7 @@ public class InProcessBuilderTestIT
 
     private TestServerBuilder getTestServerBuilder( File workDir )
     {
-        return newInProcessBuilder( workDir ).withConfig( ServerSettings.script_enabled, Settings.TRUE );
+        return newInProcessBuilder( workDir );
     }
 
     @Test

@@ -19,13 +19,17 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertTrue;
 
 public class RotationTimerFactoryTest
 {
@@ -41,9 +45,9 @@ public class RotationTimerFactoryTest
         RotationTimerFactory.RotationTimer anotherTimer = timerFactory.createTimer();
 
         // THEN
-        Assert.assertFalse( timer.isTimedOut() );
-        Assert.assertEquals( 0, timer.getElapsedTimeMillis() );
-        Assert.assertNotSame( "Factory should construct different timers", timer, anotherTimer );
+        assertFalse( timer.isTimedOut() );
+        assertEquals( 0, timer.getElapsedTimeMillis() );
+        assertNotSame( "Factory should construct different timers", timer, anotherTimer );
 
         // WHEN
         fakeClock = Clocks.fakeClock();
@@ -51,7 +55,7 @@ public class RotationTimerFactoryTest
         RotationTimerFactory.RotationTimer fakeTimer = fakeTimerFactory.createTimer();
         fakeClock.forward( 1001, TimeUnit.MILLISECONDS );
 
-        Assert.assertTrue( fakeTimer.isTimedOut() );
-        Assert.assertEquals( 1001, fakeTimer.getElapsedTimeMillis());
+        assertTrue( fakeTimer.isTimedOut() );
+        assertEquals( 1001, fakeTimer.getElapsedTimeMillis() );
     }
 }

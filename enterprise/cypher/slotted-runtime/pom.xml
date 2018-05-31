@@ -5,21 +5,21 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>cypher-enterprise-parent</artifactId>
-    <version>3.4.1-SNAPSHOT</version>
+    <version>3.5.0-SNAPSHOT</version>
     <relativePath>../</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-cypher-slotted-runtime</artifactId>
   <packaging>jar</packaging>
-  <version>3.4.1-SNAPSHOT</version>
+  <version>3.5.0-SNAPSHOT</version>
   <name>Neo4j Cypher Slotted Runtime</name>
   <description>Planner for the physical query plans</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <license-text.header>../../../build/AGPL-3-header.txt</license-text.header>
-    <moduleName>org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted</moduleName>
+    <license-text.header>../../../build/GPL-3-header.txt</license-text.header>
+    <moduleName>org.neo4j.cypher.internal.compatibility.v3_5.runtime.slotted</moduleName>
   </properties>
 
   <scm>
@@ -114,6 +114,11 @@
       <artifactId>neo4j-cypher-physical-planning</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-compiled-expressions</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
 
     <!-- neo4j testing -->
@@ -146,7 +151,7 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-planner-3.4</artifactId>
+      <artifactId>neo4j-cypher-planner-3.5</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -154,24 +159,24 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-planner-3.4</artifactId>
+      <artifactId>neo4j-cypher-planner-3.5</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>openCypher-frontend-1</artifactId>
-      <version>${project.version}</version>
+      <groupId>org.opencypher</groupId>
+      <artifactId>ast-9.0</artifactId>
+      <version>${openCypher.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-util-3.4</artifactId>
-      <version>${project.version}</version>
+      <groupId>org.opencypher</groupId>
+      <artifactId>util-9.0</artifactId>
+      <version>${openCypher.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>

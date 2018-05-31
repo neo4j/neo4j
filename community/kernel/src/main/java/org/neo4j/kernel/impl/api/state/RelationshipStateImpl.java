@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.eclipse.collections.api.IntIterable;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
+
 import java.util.Iterator;
 
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -56,26 +59,15 @@ class RelationshipStateImpl extends PropertyContainerStateImpl implements Relati
         }
 
         @Override
-        public Iterator<Integer> removedProperties()
+        public IntIterable removedProperties()
         {
-            return emptyIterator();
+            return IntSets.immutable.empty();
         }
 
         @Override
         public Iterator<StorageProperty> addedAndChangedProperties()
         {
             return emptyIterator();
-        }
-
-        @Override
-        public Iterator<StorageProperty> augmentProperties( Iterator<StorageProperty> iterator )
-        {
-            return iterator;
-        }
-
-        @Override
-        public void accept( Visitor visitor )
-        {
         }
 
         @Override

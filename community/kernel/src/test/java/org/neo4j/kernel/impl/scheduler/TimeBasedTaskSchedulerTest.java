@@ -31,10 +31,10 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.scheduler.JobScheduler.Group;
 import org.neo4j.scheduler.JobScheduler.JobHandle;
 import org.neo4j.time.FakeClock;
+import org.neo4j.util.concurrent.BinaryLatch;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;

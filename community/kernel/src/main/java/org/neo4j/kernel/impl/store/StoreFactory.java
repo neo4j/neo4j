@@ -76,7 +76,7 @@ public class StoreFactory
             FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider, VersionContextSupplier versionContextSupplier )
     {
         this( storeDir, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
-                selectForStoreOrConfig( config, storeDir, pageCache, logProvider ),
+                selectForStoreOrConfig( config, storeDir, fileSystemAbstraction, pageCache, logProvider ),
                 logProvider, versionContextSupplier );
     }
 

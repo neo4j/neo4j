@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.util.v3_4.attribution.Id
+import org.opencypher.v9_0.util.attribution.Id
 import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.JavaConverters._
@@ -32,7 +32,7 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs, 
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val ctx = state.newExecutionContext(executionContextFactory)
-    val relIds = VirtualValues.dropNoValues(relIdExpr.expressions(ctx, state))
+    val relIds = relIdExpr.expressions(ctx, state).dropNoValues()
     new DirectedRelationshipIdSeekIterator(
       ident,
       fromNode,

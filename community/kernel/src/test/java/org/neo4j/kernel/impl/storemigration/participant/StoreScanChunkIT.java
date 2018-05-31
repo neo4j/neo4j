@@ -23,8 +23,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import org.neo4j.kernel.impl.api.store.StorePropertyCursor;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StorePropertyCursor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordCursors;

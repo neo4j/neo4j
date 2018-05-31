@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RecordStoreUtil.ReadNodeAnswer;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -50,11 +51,11 @@ public class OwningNodeRelationshipChainTest
         long sharedRel = 1000;
         int relType = 0;
 
-        RecordSet<RelationshipRecord> node1RelChain = RecordSet.asSet(
+        RecordSet<RelationshipRecord> node1RelChain = asSet(
                 new RelationshipRecord( node1Rel, node1, node1 - 1, relType ),
                 new RelationshipRecord( sharedRel, node1, node2, relType ),
                 new RelationshipRecord( node1Rel + 1, node1 + 1, node1, relType ) );
-        RecordSet<RelationshipRecord> node2RelChain = RecordSet.asSet(
+        RecordSet<RelationshipRecord> node2RelChain = asSet(
                 new RelationshipRecord( node2Rel, node2 - 1, node2, relType ),
                 new RelationshipRecord( sharedRel, node1, node2, relType ),
                 new RelationshipRecord( node2Rel + 1, node2, node2 + 1, relType ) );
@@ -100,5 +101,15 @@ public class OwningNodeRelationshipChainTest
                 description.appendText( "RecordSet containing " ).appendValueList( "[", ",", "]", expectedSet );
             }
         };
+    }
+
+    private static <R extends AbstractBaseRecord> RecordSet<R> asSet( R... records )
+    {
+        RecordSet<R> set = new RecordSet<>();
+        for ( R record : records )
+        {
+            set.add( record );
+        }
+        return set;
     }
 }

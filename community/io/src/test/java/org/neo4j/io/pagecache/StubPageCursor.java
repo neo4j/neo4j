@@ -41,6 +41,7 @@ public class StubPageCursor extends PageCursor
     private boolean needsRetry;
     protected StubPageCursor linkedCursor;
     private boolean writeLocked;
+    private int mark;
 
     public StubPageCursor( long initialPageId, int pageSize )
     {
@@ -418,6 +419,18 @@ public class StubPageCursor extends PageCursor
             throw new IndexOutOfBoundsException();
         }
         currentOffset = offset;
+    }
+
+    @Override
+    public void mark()
+    {
+        this.mark = currentOffset;
+    }
+
+    @Override
+    public void setOffsetToMark()
+    {
+        this.currentOffset = this.mark;
     }
 
     @Override

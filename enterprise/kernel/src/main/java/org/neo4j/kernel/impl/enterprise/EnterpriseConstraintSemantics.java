@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
@@ -202,7 +202,7 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
     }
 
     @Override
-    public TxStateVisitor decorateTxStateVisitor( StoreReadLayer storeLayer, ReadableTransactionState txState,
+    public TxStateVisitor decorateTxStateVisitor( StorageReader storageReader, ReadableTransactionState txState,
             TxStateVisitor visitor )
     {
         if ( !txState.hasDataChanges() )
@@ -214,7 +214,7 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
             // we just built when the schema changing transaction commits.
             return visitor;
         }
-        return getOrCreatePropertyExistenceEnforcerFrom( storeLayer )
-                .decorate( visitor, txState, storeLayer );
+        return getOrCreatePropertyExistenceEnforcerFrom( storageReader )
+                .decorate( visitor, txState, storageReader );
     }
 }

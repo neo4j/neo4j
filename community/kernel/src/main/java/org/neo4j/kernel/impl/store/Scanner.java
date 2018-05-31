@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.util.function.Predicate;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
@@ -55,7 +56,7 @@ public class Scanner
 
     private static class Scan<R extends AbstractBaseRecord> extends PrefetchingResourceIterator<R>
     {
-        private final PrimitiveLongIterator ids;
+        private final LongIterator ids;
         private final RecordCursor<R> cursor;
         private final Predicate<? super R>[] filters;
 

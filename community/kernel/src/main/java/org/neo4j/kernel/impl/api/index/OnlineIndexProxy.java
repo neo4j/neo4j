@@ -23,16 +23,14 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.updater.UpdateCountingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -41,7 +39,7 @@ import org.neo4j.values.storable.Value;
 public class OnlineIndexProxy implements IndexProxy
 {
     private final long indexId;
-    private final IndexMeta indexMeta;
+    private final CapableIndexDescriptor capableIndexDescriptor;
     final IndexAccessor accessor;
     private final IndexStoreView storeView;
     private final IndexCountsRemover indexCountsRemover;
@@ -73,15 +71,11 @@ public class OnlineIndexProxy implements IndexProxy
     //   slightly more costly, but shouldn't make that big of a difference hopefully.
     private final boolean forcedIdempotentMode;
 
-    OnlineIndexProxy( long indexId,
-            IndexMeta indexMeta,
-            IndexAccessor accessor,
-            IndexStoreView storeView,
-            boolean forcedIdempotentMode )
+    OnlineIndexProxy( CapableIndexDescriptor capableIndexDescriptor, IndexAccessor accessor, IndexStoreView storeView, boolean forcedIdempotentMode )
     {
         assert accessor != null;
-        this.indexId = indexId;
-        this.indexMeta = indexMeta;
+        this.indexId = capableIndexDescriptor.getId();
+        this.capableIndexDescriptor = capableIndexDescriptor;
         this.accessor = accessor;
         this.storeView = storeView;
         this.forcedIdempotentMode = forcedIdempotentMode;
@@ -122,40 +116,29 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public void drop() throws IOException
+    public void drop()
     {
         indexCountsRemover.remove();
-        accessor.drop();
+        try
+        {
+            accessor.drop();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( "Failed to drop index ", e );
+        }
     }
 
     @Override
-    public SchemaIndexDescriptor getDescriptor()
+    public CapableIndexDescriptor getDescriptor()
     {
-        return indexMeta.indexDescriptor();
-    }
-
-    @Override
-    public SchemaDescriptor schema()
-    {
-        return indexMeta.indexDescriptor().schema();
-    }
-
-    @Override
-    public IndexProvider.Descriptor getProviderDescriptor()
-    {
-        return indexMeta.providerDescriptor();
+        return capableIndexDescriptor;
     }
 
     @Override
     public InternalIndexState getState()
     {
         return InternalIndexState.ONLINE;
-    }
-
-    @Override
-    public IndexCapability getIndexCapability()
-    {
-        return indexMeta.indexCapability();
     }
 
     @Override
@@ -207,12 +190,6 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public long getIndexId()
-    {
-        return indexId;
-    }
-
-    @Override
     public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
     {
         throw new IllegalStateException( this + " is ONLINE" );
@@ -233,7 +210,7 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + indexMeta.indexDescriptor() + "]";
+        return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + capableIndexDescriptor + "]";
     }
 
     @Override

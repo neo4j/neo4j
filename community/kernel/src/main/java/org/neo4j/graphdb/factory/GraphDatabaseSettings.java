@@ -159,7 +159,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "Set this to specify the default parser (language version)." )
     public static final Setting<String> cypher_parser_version = setting(
             "cypher.default_language_version",
-            options( "2.3", "3.1", "3.3","3.4", DEFAULT ), DEFAULT );
+            options( "2.3", "3.1", "3.3","3.5", DEFAULT ), DEFAULT );
 
     @Description( "Set this to specify the default planner for the default language version." )
     public static final Setting<String> cypher_planner = setting(
@@ -355,11 +355,13 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> execution_guard_enabled =
             setting( "unsupported.dbms.executiontime_limit.enabled", BOOLEAN, FALSE );
 
+     // @see Status.Transaction#TransactionTimedOut
     @Description( "The maximum time interval of a transaction within which it should be completed." )
     @Dynamic
     public static final Setting<Duration> transaction_timeout = setting( "dbms.transaction.timeout", DURATION, String
             .valueOf( UNSPECIFIED_TIMEOUT ) );
 
+     // @see Status.Transaction#LockAcquisitionTimeout
     @Description( "The maximum time interval within which lock should be acquired." )
     public static final Setting<Duration> lock_acquisition_timeout = setting( "dbms.lock.acquisition.timeout", DURATION,
             String.valueOf( UNSPECIFIED_TIMEOUT ) );

@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.matching
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.expressions.SemanticDirection
 
 class PatternRelationshipTest extends CypherFunSuite {
 

@@ -56,7 +56,6 @@ import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.server.configuration.ServerSettings;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -68,8 +67,7 @@ public class BoltProceduresIT
     @ClassRule
     public static final Neo4jRule db = new Neo4jRule()
             .withProcedure( BoltTestProcedures.class )
-            .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
-            .withConfig( ServerSettings.script_enabled, Settings.TRUE );
+            .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
 
     private static Driver driver;
 

@@ -55,7 +55,6 @@ import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
@@ -68,6 +67,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -83,7 +83,6 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.GraphPropertiesProxy;
@@ -175,9 +174,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, long timeout );
 
         /** Execute a cypher statement */
-        Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext context );
-
-        /** Execute a cypher statement */
         Result executeQuery( String query, MapValue parameters, TransactionalContext context );
 
         AutoIndexing autoIndexing();
@@ -204,7 +200,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     /**
      * Create a new Core API facade, backed by the given SPI and using pre-resolved dependencies
      */
-    public void init( EditionModule editionModule, SPI spi, Guard guard, ThreadToStatementContextBridge txBridge, Config config,
+    public void init( EditionModule editionModule, SPI spi, ThreadToStatementContextBridge txBridge, Config config,
             RelationshipTypeTokenHolder relationshipTypeTokenHolder )
     {
         this.editionModule = editionModule;
@@ -228,7 +224,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                     nodeAutoIndexer, relAutoIndexer );
         } );
 
-        this.contextFactory = Neo4jTransactionalContextFactory.create( spi, guard, txBridge, locker );
+        this.contextFactory = Neo4jTransactionalContextFactory.create( spi, txBridge, locker );
     }
 
     @Override
@@ -267,9 +263,16 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         {
             Write write = transaction.dataWrite();
             long nodeId = write.nodeCreate();
-            for ( Label label : labels )
+            TokenWrite tokenWrite = transaction.tokenWrite();
+            int[] labelIds = new int[labels.length];
+            String[] labelNames = new String[labels.length];
+            for ( int i = 0; i < labelNames.length; i++ )
             {
-                int labelId = transaction.tokenWrite().labelGetOrCreateForName( label.name() );
+                labelNames[i] = labels[i].name();
+            }
+            tokenWrite.labelGetOrCreateForNames( labelNames, labelIds );
+            for ( int labelId : labelIds )
+            {
                 try
                 {
                     write.nodeAddLabel( nodeId, labelId );
@@ -519,7 +522,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     private <T> ResourceIterable<T> allInUse( final TokenAccess<T> tokens )
     {
         assertTransactionOpen();
-        return () -> tokens.inUse( statementContext.getTopLevelTransactionBoundToThisThread( true ) );
+        return () -> tokens.inUse( statementContext.getKernelTransactionBoundToThisThread( true ) );
     }
 
     @Override
@@ -695,7 +698,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             // FIXME: perhaps we should check that the new type and access mode are compatible with the current tx
             return new PlaceboTransaction( statementContext.getKernelTransactionBoundToThisThread( true ) );
         }
-        return new TopLevelTransaction( spi.beginTransaction( type, loginContext, timeoutMillis ), statementContext );
+        return new TopLevelTransaction( spi.beginTransaction( type, loginContext, timeoutMillis ) );
     }
 
     private ResourceIterator<Node> nodesByLabelAndProperty( KernelTransaction transaction, int labelId, IndexQuery query )
@@ -708,8 +711,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             statement.close();
             return emptyResourceIterator();
         }
-        CapableIndexReference index = transaction.schemaRead().index( labelId, query.propertyKeyId() );
-        if ( index != CapableIndexReference.NO_INDEX )
+        IndexReference index = transaction.schemaRead().index( labelId, query.propertyKeyId() );
+        if ( index != IndexReference.NO_INDEX )
         {
             // Ha! We found an index - let's use it to find matching nodes
             try
@@ -743,7 +746,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         int[] propertyIds = getPropertyIds( queries );
         IndexReference index = findMatchingIndex( transaction, labelId, propertyIds );
 
-        if ( index != CapableIndexReference.NO_INDEX )
+        if ( index != IndexReference.NO_INDEX )
         {
             try
             {
@@ -762,7 +765,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     private IndexReference findMatchingIndex( KernelTransaction transaction, int labelId, int[] propertyIds )
     {
         IndexReference index = transaction.schemaRead().index( labelId, propertyIds );
-        if ( index != CapableIndexReference.NO_INDEX )
+        if ( index != IndexReference.NO_INDEX )
         {
             // index found with property order matching the query
             return index;
@@ -786,7 +789,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                     return index;
                 }
             }
-            return CapableIndexReference.NO_INDEX;
+            return IndexReference.NO_INDEX;
         }
     }
 

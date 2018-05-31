@@ -158,6 +158,7 @@ public class SenderServiceIT
                 protocolInstaller,
                 pipelineFactory,
                 Duration.ofSeconds(5),
+                logProvider,
                 logProvider );
 
         return new SenderService( channelInitializer, logProvider );

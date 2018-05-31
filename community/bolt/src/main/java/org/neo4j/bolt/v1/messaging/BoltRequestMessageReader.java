@@ -20,13 +20,12 @@
 package org.neo4j.bolt.v1.messaging;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.packstream.PackStream;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.virtual.MapValue;
-
-import static java.util.stream.Collectors.toMap;
 
 /**
  * Reader for Bolt request messages made available via a {@link Neo4jPack.Unpacker}.
@@ -51,43 +50,41 @@ public class BoltRequestMessageReader
         try
         {
             unpacker.unpackStructHeader();
-            final int signature = (int) unpacker.unpackStructSignature();
+            int signature = unpacker.unpackStructSignature();
             BoltRequestMessage message = BoltRequestMessage.withSignature( signature );
-            try
-            {
-                switch ( message )
-                {
-                case INIT:
-                    String clientName = unpacker.unpackString();
-                    Map<String,Object> authToken = readAuthToken( unpacker );
-                    handler.onInit( clientName, authToken );
-                    break;
-                case ACK_FAILURE:
-                    handler.onAckFailure();
-                    break;
-                case RESET:
-                    handler.onReset();
-                    break;
-                case RUN:
-                    String statement = unpacker.unpackString();
-                    MapValue params = unpacker.unpackMap();
-                    handler.onRun( statement, params );
-                    break;
-                case DISCARD_ALL:
-                    handler.onDiscardAll();
-                    break;
-                case PULL_ALL:
-                    handler.onPullAll();
-                    break;
-                default:
-                    throw new BoltIOException( Status.Request.InvalidFormat,
-                            String.format( "Message 0x%s is not supported.", Integer.toHexString( signature ) ) );
-                }
-            }
-            catch ( IllegalArgumentException e )
+            if ( message == null )
             {
                 throw new BoltIOException( Status.Request.InvalidFormat,
                         String.format( "Message 0x%s is not a valid message signature.", Integer.toHexString( signature ) ) );
+            }
+
+            switch ( message )
+            {
+            case INIT:
+                String clientName = unpacker.unpackString();
+                Map<String,Object> authToken = readAuthToken( unpacker );
+                handler.onInit( clientName, authToken );
+                break;
+            case ACK_FAILURE:
+                handler.onAckFailure();
+                break;
+            case RESET:
+                handler.onReset();
+                break;
+            case RUN:
+                String statement = unpacker.unpackString();
+                MapValue params = unpacker.unpackMap();
+                handler.onRun( statement, params );
+                break;
+            case DISCARD_ALL:
+                handler.onDiscardAll();
+                break;
+            case PULL_ALL:
+                handler.onPullAll();
+                break;
+            default:
+                throw new BoltIOException( Status.Request.InvalidFormat,
+                        String.format( "Message 0x%s is not supported.", Integer.toHexString( signature ) ) );
             }
         }
         catch ( PackStream.PackStreamException e )
@@ -101,8 +98,10 @@ public class BoltRequestMessageReader
     {
         MapValue authTokenValue = unpacker.unpackMap();
         AuthTokenValuesWriter writer = new AuthTokenValuesWriter();
-        return authTokenValue.entrySet()
-                .stream()
-                .collect( toMap( Map.Entry::getKey, entry -> writer.valueAsObject( entry.getValue() ) ) );
+        HashMap<String,Object> tokenMap = new HashMap<>( authTokenValue.size() );
+
+        authTokenValue.foreach(
+                ( key, value ) -> tokenMap.put( key, writer.valueAsObject( value ) ) );
+        return tokenMap;
     }
 }
