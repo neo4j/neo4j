@@ -22,13 +22,13 @@
  */
 package org.neo4j.cypher.internal.runtime.compiled.expressions
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.{NodeProperty, ReferenceFromSlot, RelationshipProperty}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.{IdFromSlot, NodeProperty, ReferenceFromSlot, RelationshipProperty}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.operations.{CypherBoolean, CypherDbAccess, CypherFunctions, CypherMath}
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.{doubleValue, longValue}
-import org.neo4j.values.storable.{DoubleValue, Value, Values}
+import org.neo4j.values.storable.{DoubleValue, LongValue, Value, Values}
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions._
@@ -168,6 +168,11 @@ object IntermediateCodeGeneration {
     case ReferenceFromSlot(offset, _) =>
       Some(invoke(load("context"), method[ExecutionContext, AnyValue, Int]("getRefAt"),
                                                      constantJavaValue(offset)))
+    case IdFromSlot(offset) =>
+      Some(
+        invokeStatic(method[Values, LongValue, Long]("longValue"),
+                     invoke(load("context"), method[ExecutionContext, Long, Int]("getLongAt"),
+                            constantJavaValue(offset))))
     case _ => None
   }
 

@@ -28,7 +28,7 @@ import java.util.concurrent.ThreadLocalRandom
 
 import org.mockito.Mockito
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.ReferenceFromSlot
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.{IdFromSlot, ReferenceFromSlot}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.values.storable.LocalTimeValue.localTime
@@ -421,6 +421,19 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
     // Then
     compiled.evaluate(ctx, tx, EMPTY_MAP) should equal(stringValue("hello"))
+  }
+
+  test("IdFromSlot") {
+    // Given
+    val offset = 1337
+    val expression = IdFromSlot(offset)
+    when(ctx.getLongAt(offset)).thenReturn(42L)
+
+    // When
+    val compiled = compile(expression)
+
+    // Then
+    compiled.evaluate(ctx, tx, EMPTY_MAP) should equal(longValue(42))
   }
 
   private def compile(e: Expression) =
