@@ -66,6 +66,31 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
             field.setAccessible( true );
             field.set( this, name );
         }
+
+        @Override
+        public void uncaughtException( Thread t, Throwable e )
+        {
+            // Some JVMs cope poorly when the uncaught exception handler itself throws an exception,
+            // which is a likely scenario when we don't have enough heap memory to even print a stack trace.
+            if ( e instanceof OutOfMemoryError )
+            {
+                synchronized ( System.err )
+                {
+                    try
+                    {
+                        System.err.print( "OutOfMemoryError: " );
+                        System.err.println( e.getMessage() );
+                    }
+                    catch ( Throwable ignore )
+                    {
+                    }
+                }
+            }
+            else
+            {
+                super.uncaughtException( t, e );
+            }
+        }
     }
 
     public CentralJobScheduler()
