@@ -26,6 +26,9 @@ import java.lang.Math.PI
 import java.time.Duration
 import java.util.concurrent.ThreadLocalRandom
 
+import org.mockito.Mockito
+import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.ReferenceFromSlot
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.values.storable.LocalTimeValue.localTime
@@ -74,7 +77,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("haversin function") {
     val arg = random.nextDouble()
-    compile(function("haversin", literalFloat(arg))).evaluate(ctx, tx, EMPTY_MAP) should equal((doubleValue((1.0 - Math.cos(arg))/2)))
+    compile(function("haversin", literalFloat(arg))).evaluate(ctx, tx, EMPTY_MAP) should equal(doubleValue((1.0 - Math.cos(arg)) / 2))
     compile(function("haversin", noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
   }
 
@@ -405,6 +408,19 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(notEquals(noValue, literalInt(43))).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
     compile(notEquals(literalInt(42), noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
     compile(notEquals(noValue, noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
+  }
+
+  test("ReferenceFromSlot") {
+    // Given
+    val offset = 1337
+    val expression = ReferenceFromSlot(offset, "foo")
+    when(ctx.getRefAt(offset)).thenReturn(stringValue("hello"))
+
+    // When
+    val compiled = compile(expression)
+
+    // Then
+    compiled.evaluate(ctx, tx, EMPTY_MAP) should equal(stringValue("hello"))
   }
 
   private def compile(e: Expression) =
