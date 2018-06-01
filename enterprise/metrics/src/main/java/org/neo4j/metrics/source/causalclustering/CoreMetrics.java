@@ -25,7 +25,6 @@ package org.neo4j.metrics.source.causalclustering;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 
-import java.io.IOException;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.core.consensus.CoreMetaData;
@@ -69,6 +68,14 @@ public class CoreMetrics extends LifecycleAdapter
     public static final String DELAY = name( CAUSAL_CLUSTERING_PREFIX, "message_processing_delay" );
     @Documented( "Timer for RAFT message processing" )
     public static final String TIMER = name( CAUSAL_CLUSTERING_PREFIX, "message_processing_timer" );
+    @Documented( "Raft replication new request count" )
+    public static final String REPLICATION_NEW = name( CAUSAL_CLUSTERING_PREFIX, "replication_new" );
+    @Documented( "Raft replication attempt count" )
+    public static final String REPLICATION_ATTEMPT = name( CAUSAL_CLUSTERING_PREFIX, "replication_attempt" );
+    @Documented( "Raft Replication success count" )
+    public static final String REPLICATION_SUCCESS = name( CAUSAL_CLUSTERING_PREFIX, "replication_success" );
+    @Documented( "Raft Replication fail count" )
+    public static final String REPLICATION_FAIL = name( CAUSAL_CLUSTERING_PREFIX, "replication_fail" );
 
     private Monitors monitors;
     private MetricRegistry registry;
@@ -82,6 +89,7 @@ public class CoreMetrics extends LifecycleAdapter
     private final TxRetryMetric txRetryMetric = new TxRetryMetric();
     private final InFlightCacheMetric inFlightCacheMetric = new InFlightCacheMetric();
     private final RaftMessageProcessingMetric raftMessageProcessingMetric = RaftMessageProcessingMetric.create();
+    private final ReplicationMetric replicationMetric = new ReplicationMetric();
 
     public CoreMetrics( Monitors monitors, MetricRegistry registry, Supplier<CoreMetaData> coreMetaData )
     {
@@ -101,6 +109,7 @@ public class CoreMetrics extends LifecycleAdapter
         monitors.addMonitorListener( txRetryMetric );
         monitors.addMonitorListener( inFlightCacheMetric );
         monitors.addMonitorListener( raftMessageProcessingMetric );
+        monitors.addMonitorListener( replicationMetric );
 
         registry.register( COMMIT_INDEX, (Gauge<Long>) raftLogCommitIndexMetric::commitIndex );
         registry.register( APPEND_INDEX, (Gauge<Long>) raftLogAppendIndexMetric::appendIndex );
@@ -116,6 +125,10 @@ public class CoreMetrics extends LifecycleAdapter
         registry.register( ELEMENT_COUNT, (Gauge<Long>) inFlightCacheMetric::getElementCount );
         registry.register( DELAY, (Gauge<Long>) raftMessageProcessingMetric::delay );
         registry.register( TIMER, raftMessageProcessingMetric.timer() );
+        registry.register( REPLICATION_NEW, (Gauge<Long>) replicationMetric::newReplicationCount );
+        registry.register( REPLICATION_ATTEMPT, (Gauge<Long>) replicationMetric::attemptCount );
+        registry.register( REPLICATION_SUCCESS, (Gauge<Long>) replicationMetric::successCount );
+        registry.register( REPLICATION_FAIL, (Gauge<Long>) replicationMetric::failCount );
 
         for ( RaftMessages.Type type : RaftMessages.Type.values() )
         {
@@ -140,6 +153,10 @@ public class CoreMetrics extends LifecycleAdapter
         registry.remove( ELEMENT_COUNT );
         registry.remove( DELAY );
         registry.remove( TIMER );
+        registry.remove( REPLICATION_NEW );
+        registry.remove( REPLICATION_ATTEMPT );
+        registry.remove( REPLICATION_SUCCESS );
+        registry.remove( REPLICATION_FAIL );
 
         for ( RaftMessages.Type type : RaftMessages.Type.values() )
         {
@@ -154,6 +171,7 @@ public class CoreMetrics extends LifecycleAdapter
         monitors.removeMonitorListener( txRetryMetric );
         monitors.removeMonitorListener( inFlightCacheMetric );
         monitors.removeMonitorListener( raftMessageProcessingMetric );
+        monitors.removeMonitorListener( replicationMetric );
     }
 
     private String messageTimerName( RaftMessages.Type type )
