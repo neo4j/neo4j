@@ -218,10 +218,10 @@ object IntermediateCodeGeneration {
       compile(inner).map(ternary(equal(getLongAt(offset), constant(-1L)), noValue, _))
 
     case NullCheckVariable(offset, inner) =>
-      compile(inner).map(ternary(equal(getRefAt(offset), noValue), noValue, _))
+      compile(inner).map(ternary(equal(getLongAt(offset), constant(-1L)), noValue, _))
 
     case NullCheckProperty(offset, inner) =>
-      compile(inner).map(ternary(equal(getRefAt(offset), noValue), noValue, _))
+      compile(inner).map(ternary(equal(getLongAt(offset), constant(-1L)), noValue, _))
 
     case IsPrimitiveNull(offset) =>
       Some(ternary(equal(getLongAt(offset), constant(-1L)), truthy, falsy))
