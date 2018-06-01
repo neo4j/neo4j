@@ -51,4 +51,14 @@ public class TestFunction
         Object node = result.next().get( "n" );
         return Collections.singletonList( node );
     }
+
+    @UserFunction( "test.sum" )
+    public double sum(@Name("numbers") List<Number> list) {
+        double sum = 0;
+        for (Number number : list) {
+            sum += number.doubleValue();
+        }
+        return sum;
+    }
+
 }

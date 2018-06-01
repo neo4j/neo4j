@@ -99,8 +99,6 @@ case class Divide(lhs: Expression, rhs: Expression)(val position: InputPosition)
     TypeSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
     TypeSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat),
     TypeSignature(argumentTypes = Vector(CTFloat, CTInteger), outputType = CTFloat),
-    TypeSignature(argumentTypes = Vector(CTFloat, CTDuration), outputType = CTDuration),
-    TypeSignature(argumentTypes = Vector(CTInteger, CTDuration), outputType = CTDuration),
     TypeSignature(argumentTypes = Vector(CTDuration, CTFloat), outputType = CTDuration),
     TypeSignature(argumentTypes = Vector(CTDuration, CTInteger), outputType = CTDuration)
   )
