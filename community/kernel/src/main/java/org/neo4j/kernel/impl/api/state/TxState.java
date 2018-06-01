@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
@@ -181,10 +180,16 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
         for ( NodeState node : modifiedNodes() )
         {
-            visitor.visitNodePropertyChanges( node.getId(), node.addedProperties(), node.changedProperties(), node.removedProperties() );
+            if ( node.hasPropertyChanges() )
+            {
+                visitor.visitNodePropertyChanges( node.getId(), node.addedProperties(), node.changedProperties(), node.removedProperties() );
+            }
 
             final LongDiffSets labelDiffSets = node.labelDiffSets();
-            visitor.visitNodeLabelChanges( node.getId(), labelDiffSets.getAdded(), labelDiffSets.getRemoved() );
+            if ( !labelDiffSets.isEmpty() )
+            {
+                visitor.visitNodeLabelChanges( node.getId(), labelDiffSets.getAdded(), labelDiffSets.getRemoved() );
+            }
         }
 
         for ( RelationshipState rel : modifiedRelationships() )
@@ -1009,11 +1014,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private IndexDescriptor getIndexForIndexBackedConstraint( IndexBackedConstraintDescriptor constraint )
     {
         return constraint.ownedIndexDescriptor();
-    }
-
-    private boolean hasNodeState( long nodeId )
-    {
-        return nodeStatesMap != null && nodeStatesMap.containsKey( nodeId );
     }
 
     @Override
