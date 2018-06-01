@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.helpers.Nodes;
+import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -92,7 +93,8 @@ public final class CypherDbAccess
             if ( tx.dataRead().relationshipDeletedInTransaction( relationship ) )
             {
                 throw new EntityNotFoundException(
-                        String.format( "Relationship with id %d has been deleted in this transaction", relationship ), null );
+                        String.format( "Relationship with id %d has been deleted in this transaction", relationship ),
+                        null );
             }
             return NO_VALUE;
         }
@@ -109,7 +111,7 @@ public final class CypherDbAccess
         return relationshipProperty( tx, node, property );
     }
 
-    public static IntegralValue getOutgoingDegree(Transaction tx, long node )
+    public static IntegralValue getOutgoingDegree( Transaction tx, long node )
     {
         CursorFactory cursors = tx.cursors();
         try ( NodeCursor cursor = cursors.allocateNodeCursor() )
@@ -123,7 +125,7 @@ public final class CypherDbAccess
         }
     }
 
-    public static IntegralValue getOutgoingDegree(Transaction tx, long node, String relationshipType )
+    public static IntegralValue getOutgoingDegree( Transaction tx, long node, String relationshipType )
     {
         int relationship = tx.tokenRead().relationshipType( relationshipType );
         if ( relationship == NO_TOKEN )
@@ -142,7 +144,7 @@ public final class CypherDbAccess
         }
     }
 
-    public static IntegralValue getIncomingDegree(Transaction tx, long node )
+    public static IntegralValue getIncomingDegree( Transaction tx, long node )
     {
         CursorFactory cursors = tx.cursors();
         try ( NodeCursor cursor = cursors.allocateNodeCursor() )
@@ -156,7 +158,7 @@ public final class CypherDbAccess
         }
     }
 
-    public static IntegralValue getIncomingDegree(Transaction tx, long node, String relationshipType )
+    public static IntegralValue getIncomingDegree( Transaction tx, long node, String relationshipType )
     {
         int relationship = tx.tokenRead().relationshipType( relationshipType );
         if ( relationship == NO_TOKEN )
@@ -171,11 +173,11 @@ public final class CypherDbAccess
             {
                 return Values.ZERO_INT;
             }
-            return Values.intValue( Nodes.countIncoming( cursor, cursors, relationship ));
+            return Values.intValue( Nodes.countIncoming( cursor, cursors, relationship ) );
         }
     }
 
-    public static IntegralValue getTotalDegree(Transaction tx, long node )
+    public static IntegralValue getTotalDegree( Transaction tx, long node )
     {
         CursorFactory cursors = tx.cursors();
         try ( NodeCursor cursor = cursors.allocateNodeCursor() )
@@ -189,7 +191,7 @@ public final class CypherDbAccess
         }
     }
 
-    public static IntegralValue getTotalDegree(Transaction tx, long node, String relationshipType )
+    public static IntegralValue getTotalDegree( Transaction tx, long node, String relationshipType )
     {
         int relationship = tx.tokenRead().relationshipType( relationshipType );
         if ( relationship == NO_TOKEN )
@@ -205,6 +207,29 @@ public final class CypherDbAccess
                 return Values.ZERO_INT;
             }
             return Values.intValue( Nodes.countAll( cursor, cursors, relationship ) );
+        }
+    }
+
+    public static BooleanValue nodeHasProperty( Transaction tx, long node, int property )
+    {
+        CursorFactory cursors = tx.cursors();
+        try ( NodeCursor nodes = cursors.allocateNodeCursor();
+              PropertyCursor properties = cursors.allocatePropertyCursor() )
+        {
+            tx.dataRead().singleNode( node, nodes );
+            if ( !nodes.next() )
+            {
+                return Values.FALSE;
+            }
+            nodes.properties( properties );
+            while ( properties.next() )
+            {
+                if ( properties.propertyKey() == property )
+                {
+                    return Values.TRUE;
+                }
+            }
+            return Values.FALSE;
         }
     }
 
