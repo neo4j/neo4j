@@ -101,6 +101,14 @@ object CodeGeneration {
     case ArrayLiteral(values) => newArray(typeReference(classOf[AnyValue]),
                                           values.map(v => compileExpression(v, block)):_*)
 
+    //condition ? onTrue : onFalse
+    case Ternary(condition, onTrue, onFalse) =>
+      Expression.ternary(compileExpression(condition, block),
+                         compileExpression(onTrue, block),
+                         compileExpression(onFalse, block))
+    //lhs == rhs
+    case Eq(lhs, rhs) =>
+      Expression.equal(compileExpression(lhs, block), compileExpression(rhs, block))
   }
 
 
