@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
-import java.util.function.Supplier
-
+import org.eclipse.collections.impl.factory.Maps
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
-import org.neo4j.cypher.internal.runtime.LongArrayHashMap
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AggregationExpression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
@@ -51,8 +49,7 @@ case class EagerAggregationSlottedPrimitivePipe(source: Pipe,
   protected def internalCreateResults(input: Iterator[ExecutionContext],
                                       state: QueryState): Iterator[ExecutionContext] = {
 
-    val result = new LongArrayHashMap[Seq[AggregationFunction]](32, readGrouping.length)
-    val keys = new Array[Long](readGrouping.length)
+    val result = Maps.mutable.empty[Key, Seq[AggregationFunction]]()
 
     def createResultRow(groupingKey: Array[Long], aggregator: Seq[AggregationFunction]): ExecutionContext = {
       val context = SlottedExecutionContext(slots)
@@ -63,12 +60,14 @@ case class EagerAggregationSlottedPrimitivePipe(source: Pipe,
       context
     }
 
-    def setKeyFromCtx(ctx: ExecutionContext): Unit = {
+    def setKeyFromCtx(ctx: ExecutionContext): Array[Long] = {
+      val keys = new Array[Long](readGrouping.length)
       var i = 0
       while (i < readGrouping.length) {
         keys(i) = ctx.getLongAt(readGrouping(i))
         i += 1
       }
+      keys
     }
 
     def setKeyToCtx(ctx: ExecutionContext, key: Array[Long]): Unit = {
@@ -79,20 +78,20 @@ case class EagerAggregationSlottedPrimitivePipe(source: Pipe,
       }
     }
 
-    val supplier: Supplier[Seq[AggregationFunction]] = new Supplier[Seq[AggregationFunction]] {
-      override def get(): Seq[AggregationFunction] = aggregationFunctions.map(_.createAggregationFunction)
+    val createAggregationFunctions = new java.util.function.Function[Key, Seq[AggregationFunction]] {
+      override def apply(t: Key): Seq[AggregationFunction] = aggregationFunctions.map(_.createAggregationFunction)
     }
 
     // Consume all input and aggregate
     input.foreach(ctx => {
-      setKeyFromCtx(ctx)
-      val aggregationFunctions = result.computeIfAbsent(keys, supplier)
+      val keys = setKeyFromCtx(ctx)
+      val aggregationFunctions = result.computeIfAbsent(new Key(keys), createAggregationFunctions)
       aggregationFunctions.foreach(func => func(ctx, state))
     })
 
     // Write the produced aggregation map to the output pipeline
-    result.iterator().asScala.map {
-      e: java.util.Map.Entry[Array[Long], Seq[AggregationFunction]] => createResultRow(e.getKey, e.getValue)
+    result.entrySet().iterator().asScala.map {
+      e: java.util.Map.Entry[Key, Seq[AggregationFunction]] => createResultRow(e.getKey.inner, e.getValue)
     }
   }
 }
