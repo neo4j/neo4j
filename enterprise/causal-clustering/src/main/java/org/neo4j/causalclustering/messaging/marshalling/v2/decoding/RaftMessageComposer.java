@@ -37,7 +37,7 @@ import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 public class RaftMessageComposer extends MessageToMessageDecoder<Object>
 {
     private final Queue<ReplicatedContent> replicatedContents = new LinkedBlockingQueue<>();
-    private final Queue<Long> raftLogEntries = new LinkedBlockingQueue<>();
+    private final Queue<Long> raftLogEntryTerms = new LinkedBlockingQueue<>();
     private RaftMessageDecoder.RaftMessageCreator messageCreator;
     private final Clock clock;
 
@@ -57,7 +57,7 @@ public class RaftMessageComposer extends MessageToMessageDecoder<Object>
         {
             for ( long term : ((RaftLogEntryTermsDecoder.RaftLogEntryTerms) msg).terms() )
             {
-                raftLogEntries.add( term );
+                raftLogEntryTerms.add( term );
             }
         }
         else if ( msg instanceof RaftMessageDecoder.RaftMessageCreator )
@@ -74,7 +74,7 @@ public class RaftMessageComposer extends MessageToMessageDecoder<Object>
         }
         if ( messageCreator != null )
         {
-            RaftMessages.ClusterIdAwareMessage clusterIdAwareMessage = messageCreator.maybeCompose( clock, raftLogEntries, replicatedContents );
+            RaftMessages.ClusterIdAwareMessage clusterIdAwareMessage = messageCreator.maybeCompose( clock, raftLogEntryTerms, replicatedContents );
             if ( clusterIdAwareMessage != null )
             {
                 clear( clusterIdAwareMessage );
@@ -86,12 +86,12 @@ public class RaftMessageComposer extends MessageToMessageDecoder<Object>
     private void clear( RaftMessages.ClusterIdAwareMessage message )
     {
         messageCreator = null;
-        if ( !replicatedContents.isEmpty() || !raftLogEntries.isEmpty() )
+        if ( !replicatedContents.isEmpty() || !raftLogEntryTerms.isEmpty() )
         {
             throw new IllegalStateException( String.format(
                     "Message [%s] was composed without using all resources in the pipeline. " +
-                            "Pipeline still contains Replicated contents[%s] and RaftLogEntries [%s]",
-                    message, stringify( replicatedContents ), stringify( raftLogEntries ) ) );
+                            "Pipeline still contains Replicated contents[%s] and RaftLogEntryTerms [%s]",
+                    message, stringify( replicatedContents ), stringify( raftLogEntryTerms ) ) );
         }
     }
 
