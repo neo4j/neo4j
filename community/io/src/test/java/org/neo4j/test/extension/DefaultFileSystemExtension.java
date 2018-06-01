@@ -25,8 +25,7 @@ import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 
-public class DefaultFileSystemExtension extends StatefullFieldExtension<DefaultFileSystemAbstraction>
-        implements AfterEachCallback
+public class DefaultFileSystemExtension extends StatefullFieldExtension<DefaultFileSystemAbstraction> implements AfterEachCallback
 {
     static final String FILE_SYSTEM = "fileSystem";
     static final Namespace FILE_SYSTEM_NAMESPACE = Namespace.create( FILE_SYSTEM );
