@@ -459,6 +459,8 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   test("NullCheckVariable") {
     val nullOffset = 1337
     val offset = 42
+    when(ctx.getLongAt(nullOffset)).thenReturn(-1L)
+    when(ctx.getLongAt(offset)).thenReturn(42L)
     when(ctx.getRefAt(nullOffset)).thenReturn(NO_VALUE)
     when(ctx.getRefAt(offset)).thenReturn(stringValue("hello"))
 
