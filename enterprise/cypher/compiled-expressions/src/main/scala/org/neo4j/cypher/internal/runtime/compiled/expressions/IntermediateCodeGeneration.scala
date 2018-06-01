@@ -184,6 +184,15 @@ object IntermediateCodeGeneration {
         invokeStatic(method[Values, LongValue, Long]("longValue"),
                      invoke(load("context"), method[ExecutionContext, Long, Int]("getLongAt"),
                             constant(offset))))
+
+    case PrimitiveEquals(lhs, rhs) =>
+      for {l <- compile(lhs)
+           r <- compile(rhs)
+      } yield
+        invokeStatic(method[Values, BooleanValue, Boolean]("booleanValue"),
+          invoke(l, method[AnyValue, Boolean, AnyRef]("equals"), r)
+        )
+
     case _ => None
   }
 

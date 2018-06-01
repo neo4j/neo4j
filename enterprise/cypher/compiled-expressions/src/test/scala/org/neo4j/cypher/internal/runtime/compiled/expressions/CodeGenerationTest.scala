@@ -26,9 +26,8 @@ import java.lang.Math.PI
 import java.time.Duration
 import java.util.concurrent.ThreadLocalRandom
 
-import org.mockito.Mockito
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.{IdFromSlot, ReferenceFromSlot}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.{IdFromSlot, PrimitiveEquals, ReferenceFromSlot}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.values.storable.LocalTimeValue.localTime
@@ -434,6 +433,15 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
     // Then
     compiled.evaluate(ctx, tx, EMPTY_MAP) should equal(longValue(42))
+  }
+
+  test("PrimitiveEquals") {
+    val compiled = compile(PrimitiveEquals(parameter("a"), parameter("b")))
+
+    compiled.evaluate(ctx, tx, map(Array("a", "b"), Array(longValue(42), longValue(42)))) should
+      equal(Values.TRUE)
+    compiled.evaluate(ctx, tx, map(Array("a", "b"), Array(longValue(42), longValue(1337)))) should
+      equal(Values.FALSE)
   }
 
   private def compile(e: Expression) =

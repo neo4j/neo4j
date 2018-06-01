@@ -97,9 +97,10 @@ object CodeGeneration {
     case TRUE => getStatic(staticField(VALUES, classOf[BooleanValue], "TRUE"))
     //Values.FALSE
     case FALSE => getStatic(staticField(VALUES, classOf[BooleanValue], "FALSE"))
-      //new ArrayValue[]{p1, p2,...}
+    //new ArrayValue[]{p1, p2,...}
     case ArrayLiteral(values) => newArray(typeReference(classOf[AnyValue]),
                                           values.map(v => compileExpression(v, block)):_*)
+
   }
 
 
