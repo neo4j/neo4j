@@ -33,14 +33,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class ByteArraySerializerTest
+public class ByteArrayByteBufAwareMarshalTest
 {
     @Test
     public void shouldWriteToBufferInChunks() throws IOException
     {
         byte[] data = new byte[]{1, 2, 3, 4, 5, 6};
         byte[] readData = new byte[6];
-        ByteArraySerializer byteArraySerializer = new ByteArraySerializer( data );
+        ByteArrayByteBufAwareMarshal byteArraySerializer = new ByteArrayByteBufAwareMarshal( data );
 
         ByteBuf buffer = Unpooled.buffer( 5 );
         assertTrue( byteArraySerializer.encode( buffer ) );
@@ -61,7 +61,7 @@ public class ByteArraySerializerTest
     public void shouldHaveSameLengthAsBytesEncoded() throws IOException
     {
         byte[] data = new byte[10];
-        ByteArraySerializer byteArraySerializer = new ByteArraySerializer( data );
+        ByteArrayByteBufAwareMarshal byteArraySerializer = new ByteArrayByteBufAwareMarshal( data );
 
         ByteBuf buffer = Unpooled.buffer( 100 );
         byteArraySerializer.encode( buffer );

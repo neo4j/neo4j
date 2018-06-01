@@ -36,14 +36,14 @@ public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ByteBuf>
 
     private static final int DEFAULT_CHUNK_SIZE = 8192;
     private final byte contentType;
-    private final Serializer serializer;
+    private final ByteBufAwareMarshal byteBufAwareMarshal;
     private final int chunkSize;
     private boolean lastByteWasWritten;
     private int progress;
 
-    public ChunkedReplicatedContent( byte contentType, Serializer serializer, int chunkSize )
+    public ChunkedReplicatedContent( byte contentType, ByteBufAwareMarshal byteBufAwareMarshal, int chunkSize )
     {
-        this.serializer = serializer;
+        this.byteBufAwareMarshal = byteBufAwareMarshal;
         this.chunkSize = chunkSize;
         if ( chunkSize < 7 )
         {
@@ -52,16 +52,16 @@ public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ByteBuf>
         this.contentType = contentType;
     }
 
-    public ChunkedReplicatedContent( byte contentType, Serializer serializer )
+    public ChunkedReplicatedContent( byte contentType, ByteBufAwareMarshal byteBufAwareMarshal )
     {
-        this( contentType, serializer, DEFAULT_CHUNK_SIZE );
+        this( contentType, byteBufAwareMarshal, DEFAULT_CHUNK_SIZE );
     }
 
     @Override
     public void marshal( WritableChannel channel ) throws IOException
     {
         channel.put( contentType );
-        serializer.marshal( channel );
+        byteBufAwareMarshal.marshal( channel );
     }
 
     @Override
@@ -98,9 +98,9 @@ public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ByteBuf>
             {
                 // extra metadata on first chunk
                 buffer.writeByte( contentType );
-                buffer.writeInt( serializer.length() );
+                buffer.writeInt( byteBufAwareMarshal.length() );
             }
-            if ( !serializer.encode( buffer ) )
+            if ( !byteBufAwareMarshal.encode( buffer ) )
             {
                 lastByteWasWritten = true;
             }

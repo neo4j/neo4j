@@ -52,7 +52,7 @@ import org.neo4j.causalclustering.discovery.RaftCoreTopologyConnector;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
-import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentSerializer;
+import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentMarshal;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
@@ -92,7 +92,7 @@ public class ConsensusModule
 
         LogProvider logProvider = logging.getInternalLogProvider();
 
-        final CoreReplicatedContentSerializer marshal = new CoreReplicatedContentSerializer();
+        final CoreReplicatedContentMarshal marshal = new CoreReplicatedContentMarshal();
 
         RaftLog underlyingLog = createRaftLog( config, life, fileSystem, clusterStateDirectory, marshal, logProvider,
                 platformModule.jobScheduler );

@@ -29,7 +29,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentSerializer;
+import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentMarshal;
 import org.neo4j.causalclustering.messaging.marshalling.v2.encoding.ContentTypeEncoder;
 import org.neo4j.causalclustering.messaging.marshalling.v2.encoding.RaftLogEntryTermEncoder;
 import org.neo4j.causalclustering.messaging.marshalling.v2.encoding.RaftMessageContentEncoder;
@@ -77,7 +77,7 @@ public class RaftProtocolClientInstallerV2 implements ProtocolInstaller<Orientat
                 .add( "raft_content_type_encoder", new ContentTypeEncoder() )
                 .add( "raft_chunked_writer", new ChunkedWriteHandler(  ) )
                 .add( "raft_log_entry_encoder", new RaftLogEntryTermEncoder() )
-                .add( "raft_message_content_encoder", new RaftMessageContentEncoder( new CoreReplicatedContentSerializer() ) )
+                .add( "raft_message_content_encoder", new RaftMessageContentEncoder( new CoreReplicatedContentMarshal() ) )
                 .install();
     }
 

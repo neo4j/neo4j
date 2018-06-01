@@ -26,8 +26,8 @@ import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
 
-import org.neo4j.causalclustering.messaging.marshalling.ByteArraySerializer;
-import org.neo4j.causalclustering.messaging.marshalling.Serializer;
+import org.neo4j.causalclustering.messaging.marshalling.ByteArrayByteBufAwareMarshal;
+import org.neo4j.causalclustering.messaging.marshalling.ByteBufAwareMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -69,8 +69,8 @@ public class ReplicatedTransactionSerializer
         return new ReplicatedTransaction( txBytes );
     }
 
-    public static Serializer serializer( ReplicatedTransaction replicatedTransaction )
+    public static ByteBufAwareMarshal serializer( ReplicatedTransaction replicatedTransaction )
     {
-        return new ByteArraySerializer( replicatedTransaction.getTxBytes() );
+        return new ByteArrayByteBufAwareMarshal( replicatedTransaction.getTxBytes() );
     }
 }

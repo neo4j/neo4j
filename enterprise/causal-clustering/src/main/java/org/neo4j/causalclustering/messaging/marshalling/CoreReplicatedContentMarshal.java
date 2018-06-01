@@ -46,9 +46,9 @@ import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
 import static java.util.Collections.singleton;
-import static org.neo4j.causalclustering.messaging.marshalling.Serializer.simple;
+import static org.neo4j.causalclustering.messaging.marshalling.ByteBufAwareMarshal.simple;
 
-public class CoreReplicatedContentSerializer extends SafeChannelMarshal<ReplicatedContent>
+public class CoreReplicatedContentMarshal extends SafeChannelMarshal<ReplicatedContent>
 {
     private static final byte TX_CONTENT_TYPE = 0;
     private static final byte RAFT_MEMBER_SET_TYPE = 1;

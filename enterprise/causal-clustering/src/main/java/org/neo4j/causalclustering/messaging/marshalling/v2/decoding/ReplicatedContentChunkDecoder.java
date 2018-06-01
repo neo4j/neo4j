@@ -30,12 +30,12 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import java.util.List;
 
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
-import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentSerializer;
+import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentMarshal;
 
 public class ReplicatedContentChunkDecoder extends ByteToMessageDecoder implements AutoCloseable
 {
     private UnfinishedChunk unfinishedChunk;
-    private final CoreReplicatedContentSerializer coreReplicatedContentSerializer = new CoreReplicatedContentSerializer();
+    private final CoreReplicatedContentMarshal coreReplicatedContentMarshal = new CoreReplicatedContentMarshal();
     private boolean closed;
 
     @Override
@@ -55,7 +55,7 @@ public class ReplicatedContentChunkDecoder extends ByteToMessageDecoder implemen
                 int allocationSize = in.readInt();
                 if ( isLast )
                 {
-                    out.add( coreReplicatedContentSerializer.read( contentType,
+                    out.add( coreReplicatedContentMarshal.read( contentType,
                             new NetworkReadableClosableChannelNetty4( in.readSlice( in.readableBytes() ) ) ) );
                 }
                 else
@@ -79,7 +79,7 @@ public class ReplicatedContentChunkDecoder extends ByteToMessageDecoder implemen
 
                 if ( isLast )
                 {
-                    out.add( coreReplicatedContentSerializer.read( unfinishedChunk.contentType,
+                    out.add( coreReplicatedContentMarshal.read( unfinishedChunk.contentType,
                             new NetworkReadableClosableChannelNetty4( unfinishedChunk.content() ) ) );
                     unfinishedChunk.release();
                     unfinishedChunk = null;

@@ -29,12 +29,12 @@ import java.io.IOException;
 
 import org.neo4j.storageengine.api.WritableChannel;
 
-public class ByteArraySerializer implements Serializer
+public class ByteArrayByteBufAwareMarshal implements ByteBufAwareMarshal
 {
     private final byte[] content;
     private final ByteArrayInputStream inputStream;
 
-    public ByteArraySerializer( byte[] content )
+    public ByteArrayByteBufAwareMarshal( byte[] content )
     {
         inputStream = new ByteArrayInputStream( content );
         this.content = content;

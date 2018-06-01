@@ -26,14 +26,12 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
-import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.core.state.CommandDispatcher;
 import org.neo4j.causalclustering.core.state.Result;
 import org.neo4j.causalclustering.core.state.machines.tx.CoreReplicatedContent;
 import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
-import org.neo4j.causalclustering.messaging.marshalling.ByteArraySerializer;
-import org.neo4j.causalclustering.messaging.marshalling.ContentBuilder;
-import org.neo4j.causalclustering.messaging.marshalling.Serializer;
+import org.neo4j.causalclustering.messaging.marshalling.ByteArrayByteBufAwareMarshal;
+import org.neo4j.causalclustering.messaging.marshalling.ByteBufAwareMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -69,15 +67,15 @@ public class DummyRequest implements CoreReplicatedContent
         commandDispatcher.dispatch( this, commandIndex, callback );
     }
 
-    public Serializer serializer()
+    public ByteBufAwareMarshal serializer()
     {
         if ( data != null )
         {
-            return new ByteArraySerializer( data );
+            return new ByteArrayByteBufAwareMarshal( data );
         }
         else
         {
-            return Serializer.simple( channel -> channel.putInt( 0 ) );
+            return ByteBufAwareMarshal.simple( channel -> channel.putInt( 0 ) );
         }
     }
 
