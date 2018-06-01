@@ -21,7 +21,7 @@ package org.neo4j.test.rule;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.Rule;
-import org.junit.rules.TestRule;
+import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
@@ -29,11 +29,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.stream.Collectors;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
 
@@ -55,7 +54,7 @@ import static java.lang.String.format;
  *   }
  * </pre>
  */
-public class TestDirectory implements TestRule
+public class TestDirectory extends ExternalResource
 {
     public static final String DATABASE_DIRECTORY = "graph-db";
 
@@ -104,7 +103,7 @@ public class TestDirectory implements TestRule
             @Override
             public void evaluate() throws Throwable
             {
-                testDirectory = directoryForDescription( description );
+                directoryForDescription( description );
                 boolean success = false;
                 try
                 {
@@ -186,17 +185,7 @@ public class TestDirectory implements TestRule
         return clean( fileSystem, new File( ensureBase(), name ) );
     }
 
-    private static File clean( FileSystemAbstraction fs, File dir ) throws IOException
-    {
-        if ( fs.fileExists( dir ) )
-        {
-            fs.deleteRecursively( dir );
-        }
-        fs.mkdirs( dir );
-        return dir;
-    }
-
-    private void complete( boolean success ) throws IOException
+    public void complete( boolean success ) throws IOException
     {
         try
         {
@@ -212,18 +201,17 @@ public class TestDirectory implements TestRule
         }
     }
 
-    private File directoryForDescription( Description description ) throws IOException
+    public void prepareDirectory( Class<?> testClass, String test ) throws IOException
     {
         if ( owningTest == null )
         {
-            owningTest = description.getTestClass();
+            owningTest = testClass;
         }
-        String test = description.getMethodName();
         if ( test == null )
         {
             test = "static";
         }
-        return prepareDirectoryForTest( test );
+        testDirectory = prepareDirectoryForTest( test );
     }
 
     public File prepareDirectoryForTest( String test ) throws IOException
@@ -232,6 +220,27 @@ public class TestDirectory implements TestRule
         evaluateClassBaseTestFolder();
         register( test, dir );
         return cleanDirectory( dir );
+    }
+
+    @VisibleForTesting
+    public FileSystemAbstraction getFileSystem()
+    {
+        return fileSystem;
+    }
+
+    private void directoryForDescription( Description description ) throws IOException
+    {
+        prepareDirectory( description.getTestClass(), description.getMethodName() );
+    }
+
+    private static File clean( FileSystemAbstraction fs, File dir ) throws IOException
+    {
+        if ( fs.fileExists( dir ) )
+        {
+            fs.deleteRecursively( dir );
+        }
+        fs.mkdirs( dir );
+        return dir;
     }
 
     private void evaluateClassBaseTestFolder( )
@@ -261,7 +270,7 @@ public class TestDirectory implements TestRule
                 parts[i] = part.substring( 0, targetPartLength - 1 ) + "~";
             }
         }
-        return Arrays.stream( parts ).collect( Collectors.joining( "." ) );
+        return String.join( ".", parts );
     }
 
     private void register( String test, String dir )

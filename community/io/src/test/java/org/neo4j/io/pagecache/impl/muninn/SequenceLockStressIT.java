@@ -19,11 +19,11 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,40 +37,35 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.memory.GlobalMemoryTracker;
-import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
-public class SequenceLockStressIT
+class SequenceLockStressIT
 {
     private static ExecutorService executor;
     private static long lockAddr;
 
-    @BeforeClass
-    public static void initialise()
+    @BeforeAll
+    static void initialise()
     {
         lockAddr = UnsafeUtil.allocateMemory( Long.BYTES );
         executor = Executors.newCachedThreadPool( new DaemonThreadFactory() );
     }
 
-    @AfterClass
-    public static void cleanup()
+    @AfterAll
+    static void cleanup()
     {
         executor.shutdown();
         UnsafeUtil.free( lockAddr, Long.BYTES, GlobalMemoryTracker.INSTANCE );
     }
 
-    @Rule
-    public RepeatRule repeatRule = new RepeatRule();
-
-    @Before
-    public void allocateLock()
+    @BeforeEach
+    void allocateLock()
     {
         UnsafeUtil.putLong( lockAddr, 0 );
     }
 
-    @RepeatRule.Repeat( times = 2 )
-    @Test
-    public void stressTest() throws Exception
+    @RepeatedTest( 2 )
+    void stressTest() throws Exception
     {
         int[][] data = new int[10][10];
         AtomicBoolean stop = new AtomicBoolean();
@@ -232,7 +227,7 @@ public class SequenceLockStressIT
     }
 
     @Test
-    public void thoroughlyEnsureAtomicityOfUnlockExclusiveAndTakeWriteLock() throws Exception
+    void thoroughlyEnsureAtomicityOfUnlockExclusiveAndTakeWriteLock() throws Exception
     {
         for ( int i = 0; i < 30000; i++ )
         {
@@ -241,7 +236,7 @@ public class SequenceLockStressIT
         }
     }
 
-    public void unlockExclusiveAndTakeWriteLockMustBeAtomic() throws Exception
+    private void unlockExclusiveAndTakeWriteLockMustBeAtomic() throws Exception
     {
         int threads = Runtime.getRuntime().availableProcessors() - 1;
         CountDownLatch start = new CountDownLatch( threads );

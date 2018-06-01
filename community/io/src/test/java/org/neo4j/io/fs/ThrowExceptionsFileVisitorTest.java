@@ -19,53 +19,35 @@
  */
 package org.neo4j.io.fs;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 import java.nio.file.FileVisitor;
 import java.nio.file.Path;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.io.fs.FileVisitors.throwExceptions;
 
-@RunWith( MockitoJUnitRunner.class )
-public class ThrowExceptionsFileVisitorTest
+@ExtendWith( MockitoExtension.class )
+class ThrowExceptionsFileVisitorTest
 {
     @Mock
-    public FileVisitor<Path> wrapped;
+    FileVisitor<Path> wrapped;
 
     @Test
-    public void shouldThrowExceptionFromVisitFileFailed()
+    void shouldThrowExceptionFromVisitFileFailed()
     {
         IOException exception = new IOException();
-        try
-        {
-            throwExceptions( wrapped ).visitFileFailed( null, exception );
-            fail( "Expected exception" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, is( exception ) );
-        }
+        assertThrows( IOException.class, () -> throwExceptions( wrapped ).visitFileFailed( null, exception ) );
     }
 
     @Test
-    public void shouldThrowExceptionFromPostVisitDirectory()
+    void shouldThrowExceptionFromPostVisitDirectory()
     {
         IOException exception = new IOException();
-        try
-        {
-            throwExceptions( wrapped ).postVisitDirectory( null, exception );
-            fail( "Expected exception" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, is( exception ) );
-        }
+        assertThrows(IOException.class, () -> throwExceptions( wrapped ).postVisitDirectory( null, exception ) );
     }
 }

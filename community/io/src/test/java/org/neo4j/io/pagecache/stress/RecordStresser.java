@@ -27,13 +27,13 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.TinyLockManager;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 
 public class RecordStresser implements Callable<Void>
 {
@@ -77,13 +77,12 @@ public class RecordStresser implements Callable<Void>
                 locks.lock( recordId );
                 try
                 {
-                    assertTrue( "I must be able to access pages", cursor.next( pageId ) );
+                    assertTrue( cursor.next( pageId ), "I must be able to access pages" );
                     cursor.setOffset( recordOffset );
                     long newValue = format.incrementCounter( cursor, threadId );
                     countSum++;
-                    assertFalse( "Write lock, so never a need to retry", cursor.shouldRetry() );
-                    assertThat( "Record-local count must be less than or equal to thread-local count sum",
-                            newValue, lessThanOrEqualTo( countSum ) );
+                    assertFalse( cursor.shouldRetry(), "Write lock, so never a need to retry" );
+                    assertThat( "Record-local count must be less than or equal to thread-local count sum", newValue, lessThanOrEqualTo( countSum ) );
                 }
                 finally
                 {

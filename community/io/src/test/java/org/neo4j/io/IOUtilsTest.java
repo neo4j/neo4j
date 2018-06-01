@@ -19,26 +19,24 @@
  */
 package org.neo4j.io;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 
 import org.neo4j.test.matchers.NestedThrowableMatcher;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
-@RunWith( MockitoJUnitRunner.class )
-public class IOUtilsTest
+@ExtendWith( MockitoExtension.class )
+class IOUtilsTest
 {
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     @Mock
     private AutoCloseable faultyClosable;
     @Mock
@@ -47,7 +45,7 @@ public class IOUtilsTest
     private AutoCloseable goodClosable2;
 
     @Test
-    public void closeAllSilently() throws Exception
+    void closeAllSilently() throws Exception
     {
         IOUtils.closeAllSilently( goodClosable1, faultyClosable, goodClosable2 );
 
@@ -57,15 +55,13 @@ public class IOUtilsTest
     }
 
     @Test
-    public void closeAllAndRethrowException() throws Exception
+    void closeAllAndRethrowException() throws Exception
     {
         doThrow( new IOException( "Faulty closable" ) ).when( faultyClosable ).close();
 
-        expectedException.expect( IOException.class );
-        expectedException.expectMessage( "Exception closing multiple resources" );
-        expectedException.expect( new NestedThrowableMatcher( IOException.class ) );
-
-        IOUtils.closeAll( goodClosable1, faultyClosable, goodClosable2 );
+        IOException exception = assertThrows( IOException.class, () -> IOUtils.closeAll( goodClosable1, faultyClosable, goodClosable2 ) );
+        assertEquals( "Exception closing multiple resources", exception.getMessage() );
+        assertThat( exception, new NestedThrowableMatcher( IOException.class ) );
     }
 
 }

@@ -19,9 +19,9 @@
  */
 package org.neo4j.graphdb.mockfs;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,30 +40,29 @@ import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 
 import static java.nio.ByteBuffer.allocate;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class EphemeralFileSystemAbstractionTest
+class EphemeralFileSystemAbstractionTest
 {
-
     private EphemeralFileSystemAbstraction fs;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         fs = new EphemeralFileSystemAbstraction();
     }
 
-    @After
-    public void tearDown() throws IOException
+    @AfterEach
+    void tearDown() throws IOException
     {
         fs.close();
     }
 
     @Test
-    public void allowStoreThatExceedDefaultSize() throws IOException
+    void allowStoreThatExceedDefaultSize() throws IOException
     {
         File aFile = new File( "test" );
         StoreChannel channel = fs.open( aFile, OpenMode.READ_WRITE );
@@ -81,7 +80,7 @@ public class EphemeralFileSystemAbstractionTest
     }
 
     @Test
-    public void growEphemeralFileBuffer()
+    void growEphemeralFileBuffer()
     {
         EphemeralFileSystemAbstraction.DynamicByteBuffer byteBuffer =
                 new EphemeralFileSystemAbstraction.DynamicByteBuffer();
@@ -102,7 +101,7 @@ public class EphemeralFileSystemAbstractionTest
     }
 
     @Test
-    public void shouldNotLoseDataForcedBeforeFileSystemCrashes() throws Exception
+    void shouldNotLoseDataForcedBeforeFileSystemCrashes() throws Exception
     {
         try ( EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction() )
         {
@@ -128,7 +127,7 @@ public class EphemeralFileSystemAbstractionTest
     }
 
     @Test
-    public void shouldBeConsistentAfterConcurrentWritesAndCrashes() throws Exception
+    void shouldBeConsistentAfterConcurrentWritesAndCrashes() throws Exception
     {
         ExecutorService executorService = Executors.newCachedThreadPool();
         try ( EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction() )
@@ -176,7 +175,7 @@ public class EphemeralFileSystemAbstractionTest
     }
 
     @Test
-    public void shouldBeConsistentAfterConcurrentWritesAndForces() throws Exception
+    void shouldBeConsistentAfterConcurrentWritesAndForces() throws Exception
     {
         ExecutorService executorService = Executors.newCachedThreadPool();
 
@@ -232,7 +231,7 @@ public class EphemeralFileSystemAbstractionTest
     }
 
     @Test
-    public void releaseResourcesOnClose() throws IOException
+    void releaseResourcesOnClose() throws IOException
     {
         try ( EphemeralFileSystemAbstraction fileSystemAbstraction = new EphemeralFileSystemAbstraction() )
         {
@@ -293,15 +292,7 @@ public class EphemeralFileSystemAbstractionTest
             }
             else
             {
-                try
-                {
-                    buffer.getLong();
-                    fail( "Should have thrown an exception" );
-                }
-                catch ( BufferUnderflowException e )
-                {
-                    // expected
-                }
+                assertThrows( BufferUnderflowException.class, buffer::getLong, "Should have thrown an exception" );
             }
         }
         catch ( IOException e )
