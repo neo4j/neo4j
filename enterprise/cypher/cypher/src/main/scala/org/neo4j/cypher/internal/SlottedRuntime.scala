@@ -24,26 +24,24 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotAllocation.PhysicalPlan
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{ExecutionPlan => RuntimeExecutionPlan, _}
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
-import org.neo4j.cypher.internal.compiler.v3_5.phases.{CompilationContains, LogicalPlanState}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{PeriodicCommitInfo, ExecutionPlan => ExecutionPlan_V35}
+import org.neo4j.cypher.internal.compatibility.{InterpretedRuntime, CypherRuntime}
+import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeExecutionBuilderContext
-import org.neo4j.cypher.internal.runtime.slotted.expressions.{CompiledExpressionConverter, SlottedExpressionConverters}
+import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedExpressionConverters
 import org.neo4j.cypher.internal.runtime.slotted.{SlottedExecutionResultBuilderFactory, SlottedPipeBuilder}
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexUsage, LogicalPlan}
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.frontend.PlannerName
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
-import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, Phase}
 import org.opencypher.v9_0.util.CypherException
 
-import scala.util.{Failure, Success}
+object SlottedRuntime extends CypherRuntime[EnterpriseRuntimeContext] with DebugPrettyPrinter {
 
-object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] with DebugPrettyPrinter {
   val ENABLE_DEBUG_PRINTS = false // NOTE: false toggles all debug prints off, overriding the individual settings below
 
   // Should we print query text and logical plan before we see any exceptions from execution plan building?
@@ -57,73 +55,62 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
   override val PRINT_PIPELINE_INFO = true
   override val PRINT_FAILURE_STACK_TRACE = true
 
-  override def phase: CompilationPhaseTracer.CompilationPhase = PIPE_BUILDING
-
-  override def description = "create slotted execution plan"
-
-  override def postConditions = Set(CompilationContains[ExecutionPlan])
-
-  override def process(from: LogicalPlanState, context: EnterpriseRuntimeContext): CompilationState = {
-    createSlottedRuntimeExecPlan(from, context)
-  }
-
-  private def createSlottedRuntimeExecPlan(from: LogicalPlanState, context: EnterpriseRuntimeContext) = {
+  @throws[CantCompileQueryException]
+  override def compileToExecutable(state: LogicalPlanState, context: EnterpriseRuntimeContext): ExecutionPlan_V35 = {
     try {
       if (ENABLE_DEBUG_PRINTS && PRINT_PLAN_INFO_EARLY) {
-        printPlanInfo(from)
+        printPlanInfo(state)
       }
 
-      val (logicalPlan, physicalPlan) = rewritePlan(context, from.logicalPlan, from.semanticTable())
+      val (logicalPlan, physicalPlan) = rewritePlan(context, state.logicalPlan, state.semanticTable())
 
       if (ENABLE_DEBUG_PRINTS && PRINT_PLAN_INFO_EARLY) {
         printRewrittenPlanInfo(logicalPlan)
       }
 
-      val converters = new ExpressionConverters(new CompiledExpressionConverter(context.log),
-                                                SlottedExpressionConverters, CommunityExpressionConverter)
+      val converters = new ExpressionConverters(SlottedExpressionConverters, CommunityExpressionConverter)
       val pipeBuilderFactory = SlottedPipeBuilder.Factory(physicalPlan)
-      val executionPlanBuilder = new PipeExecutionPlanBuilder(expressionConverters = converters,
-                                                              pipeBuilderFactory = pipeBuilderFactory)
-      val readOnly = from.solveds(from.logicalPlan.id).readOnly
-      val pipeBuildContext = PipeExecutionBuilderContext(from.semanticTable(), readOnly, from.cardinalities)
+      val executionPlanBuilder = new PipeExecutionPlanBuilder(expressionConverters = converters, pipeBuilderFactory = pipeBuilderFactory)
+      val readOnly = state.solveds(state.logicalPlan.id).readOnly
+      val pipeBuildContext = PipeExecutionBuilderContext(state.semanticTable(), readOnly, state.cardinalities)
       val pipe = executionPlanBuilder.build(logicalPlan)(pipeBuildContext, context.planContext)
-      val periodicCommitInfo = from.periodicCommit.map(x => PeriodicCommitInfo(x.batchSize))
-      val columns = from.statement().returnColumns
+      val periodicCommitInfo = state.periodicCommit.map(x => PeriodicCommitInfo(x.batchSize))
+      val columns = state.statement().returnColumns
       val resultBuilderFactory =
         new SlottedExecutionResultBuilderFactory(pipe, readOnly, columns, logicalPlan, physicalPlan.slotConfigurations)
-      val func = BuildInterpretedExecutionPlan.getExecutionPlanFunction(periodicCommitInfo,
-                                                                        resultBuilderFactory,
-                                                                        context.notificationLogger,
-                                                                        from.plannerName,
-                                                                        SlottedRuntimeName,
-                                                                        readOnly,
-                                                                        from.cardinalities)
+      val func = InterpretedRuntime.getExecutionPlanFunction(periodicCommitInfo,
+        resultBuilderFactory,
+        context.notificationLogger,
+        state.plannerName,
+        SlottedRuntimeName,
+        readOnly,
+        state.cardinalities)
 
       val fp = PlanFingerprint.take(context.clock, context.planContext.txIdProvider, context.planContext.statistics)
       val fingerprint = new PlanFingerprintReference(fp)
       val periodicCommit = periodicCommitInfo.isDefined
       val indexes = logicalPlan.indexUsage
-      val execPlan = SlottedExecutionPlan(fingerprint, periodicCommit, from.plannerName, indexes, func)
 
       if (ENABLE_DEBUG_PRINTS) {
         if (!PRINT_PLAN_INFO_EARLY) {
           // Print after execution plan building to see any occurring exceptions first
-          printPlanInfo(from)
+          printPlanInfo(state)
           printRewrittenPlanInfo(logicalPlan)
         }
         printPipe(physicalPlan.slotConfigurations, pipe)
       }
 
-      new CompilationState(from, Success(execPlan))
-    } catch {
+      SlottedExecutionPlan(fingerprint, periodicCommit, state.plannerName, indexes, func)
+    }
+    catch {
       case e: CypherException =>
         if (ENABLE_DEBUG_PRINTS) {
           printFailureStackTrace(e)
           if (!PRINT_PLAN_INFO_EARLY) {
-            printPlanInfo(from)
+            printPlanInfo(state)
           }
         }
-        new CompilationState(from, Failure(e))
+        throw e
     }
   }
 
@@ -139,7 +126,7 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
                                   plannerUsed: PlannerName,
                                   override val plannedIndexUsage: Seq[IndexUsage],
                                   runFunction: (QueryContext, ExecutionMode, MapValue) => InternalExecutionResult
-                                 ) extends RuntimeExecutionPlan {
+                                 ) extends ExecutionPlan_V35 {
 
     override def run(queryContext: QueryContext, planType: ExecutionMode,
                      params: MapValue): InternalExecutionResult =
@@ -149,4 +136,5 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
 
     override def runtimeUsed: RuntimeName = SlottedRuntimeName
   }
+
 }

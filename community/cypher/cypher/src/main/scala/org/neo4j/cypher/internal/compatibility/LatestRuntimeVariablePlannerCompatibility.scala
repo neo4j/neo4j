@@ -24,13 +24,12 @@ import java.time.Clock
 import org.neo4j.cypher._
 import org.neo4j.cypher.exceptionHandler.RunSafely
 import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.procs.ProcedureCallOrSchemaCommandExecutionPlanBuilder
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{ExecutionPlan => ExecutionPlan_v3_5}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{CommunityRuntimeContext => CommunityRuntimeContextv3_5, _}
 import org.neo4j.cypher.internal.compatibility.v3_5.{ExceptionTranslatingQueryContext, WrappedMonitors => WrappedMonitorsv3_5}
 import org.neo4j.cypher.internal.compiler.v3_5._
-import org.neo4j.cypher.internal.compiler.v3_5.phases.{CompilationContains, LogicalPlanState}
+import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp._
 import org.opencypher.v9_0.frontend.phases._
@@ -56,9 +55,8 @@ STATEMENT <: AnyRef](configv3_5: CypherPlannerConfiguration,
                      kernelMonitors: KernelMonitors,
                      log: Log,
                      planner: CypherPlannerOption,
-                     runtime: CypherRuntimeOption,
                      updateStrategy: CypherUpdateStrategy,
-                     runtimeBuilder: RuntimeBuilder[T],
+                     runtime: CypherRuntime[CONTEXT3_5],
                      contextCreatorV3_5: ContextCreator[CONTEXT3_5],
                      txIdProvider: () => Long) {
 
@@ -84,20 +82,6 @@ STATEMENT <: AnyRef](configv3_5: CypherPlannerConfiguration,
     maybePlannerNamev3_5.getOrElse(CostBasedPlannerName.default),
     monitorsv3_5,
     configv3_5)
-
-  protected def createExecPlan: Transformer[CONTEXT3_5, LogicalPlanState, CompilationState] = {
-    ProcedureCallOrSchemaCommandExecutionPlanBuilder andThen
-      If((s: CompilationState) => s.maybeExecutionPlan.isFailure) {
-        val maybeRuntimeName: Option[RuntimeName] = runtime match {
-          case CypherRuntimeOption.default => None
-          case CypherRuntimeOption.interpreted => Some(InterpretedRuntimeName)
-          case CypherRuntimeOption.slotted => Some(SlottedRuntimeName)
-          case CypherRuntimeOption.morsel => Some(MorselRuntimeName)
-          case CypherRuntimeOption.compiled => Some(CompiledRuntimeName)
-        }
-        runtimeBuilder.create(maybeRuntimeName, configv3_5.useErrorsOverWarnings).adds(CompilationContains[ExecutionPlan_v3_5])
-      }
-  }
 
   protected def logStalePlanRemovalMonitor(log: InfoLogger) = new CacheTracer[STATEMENT] {
     override def queryCacheStale(key: STATEMENT, secondsSinceReplan: Int, metaData: String) {

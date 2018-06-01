@@ -21,15 +21,14 @@ package org.neo4j.cypher.internal.compatibility.v3_5
 
 import java.time.{Clock, Instant, ZoneOffset}
 
+import org.neo4j.cypher
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{CommunityRuntimeBuilder, CommunityRuntimeContext, CommunityRuntimeContextCreator}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{CommunityRuntimeContext, CommunityRuntimeContextCreator}
 import org.neo4j.cypher.internal.compiler.v3_5._
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
-import org.neo4j.cypher.internal.{CacheTracer, PreParsedQuery}
-
-import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.runtime.interpreted.{CSVResources, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.{CacheTracer, CommunityRuntimeFactory, PreParsedQuery}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.logging.AssertableLogProvider.inLog
@@ -64,10 +63,9 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
                      clock,
                      kernelMonitors,
                      log,
-                     CypherPlannerOption.default,
-                     CypherRuntimeOption.default,
+                     cypher.CypherPlannerOption.default,
                      CypherUpdateStrategy.default,
-                     CommunityRuntimeBuilder,
+                     CommunityRuntimeFactory.getRuntime(CypherRuntimeOption.default, disallowFallback = true),
                      CommunityRuntimeContextCreator,
                      () => 1)
   }

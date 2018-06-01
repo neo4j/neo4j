@@ -17,38 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.procs
+package org.neo4j.cypher.internal.compatibility
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.CommunityRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.ExecutionPlan
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrapping._
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
-import org.neo4j.cypher.internal.compiler.v3_5.phases._
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
-import org.opencypher.v9_0.frontend.phases.{Condition, Phase}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.procs.{ProcedureCallExecutionPlan, PureSideEffectExecutionPlan}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrapping.asKernelNotification
+import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.{QueryContext, SCHEMA_WRITE}
-import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
-import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, RelTypeName}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
+import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, RelTypeName}
+import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
 
 import scala.util.{Failure, Success, Try}
 
 /**
-  * This builder takes on queries that requires no planning such as procedures and schema commands
+  * This runtime takes on queries that require no planning, such as procedures and schema commands
   */
-case object ProcedureCallOrSchemaCommandExecutionPlanBuilder extends Phase[CommunityRuntimeContext, LogicalPlanState, CompilationState] {
-
-  override def phase: CompilationPhase = PIPE_BUILDING
-
-  override def description = "take on queries that require no planning such as procedures and schema commands"
-
-  override def postConditions: Set[Condition] = Set.empty
-
-  override def process(from: LogicalPlanState, context: CommunityRuntimeContext): CompilationState = {
-    val maybeExecutionPlan: Try[ExecutionPlan] = from.maybeLogicalPlan match {
+object ProcedureCallOrSchemaCommandRuntime extends CypherRuntime[CommunityRuntimeContext] {
+  override def compileToExecutable(state: LogicalPlanState, context: CommunityRuntimeContext): ExecutionPlan = {
+    val maybeExecutionPlan: Try[ExecutionPlan] = state.maybeLogicalPlan match {
       case None => throw new IllegalStateException("A proper logical plan must have been built by now")
       case Some(plan) => plan match {
         // Global call: CALL foo.bar.baz("arg1", 2)
@@ -56,7 +46,7 @@ case object ProcedureCallOrSchemaCommandExecutionPlanBuilder extends Phase[Commu
           val converters = new ExpressionConverters(CommunityExpressionConverter)
           val logger = context.notificationLogger
           Success(ProcedureCallExecutionPlan(signature, args, types, indices,
-                                          logger.notifications.map(asKernelNotification(logger.offset)), converters))
+            logger.notifications.map(asKernelNotification(logger.offset)), converters))
 
         // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
         case CreateNodeKeyConstraint(_, label, props) =>
@@ -128,8 +118,7 @@ case object ProcedureCallOrSchemaCommandExecutionPlanBuilder extends Phase[Commu
           s"Plan is not a procedure Call or schema command: ${unknownPlan.getClass.getSimpleName}"))
       }
     }
-
-    new CompilationState(from, maybeExecutionPlan)
+    maybeExecutionPlan.get
   }
 
   implicit private def labelToId(ctx: QueryContext)(label: LabelName): LabelId =
