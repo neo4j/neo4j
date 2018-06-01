@@ -100,22 +100,19 @@ case class DistinctSlottedPrimitivePipe(source: Pipe,
   */
 class Key(val inner: Array[Long]) {
 
-  private val _hashCode = util.Arrays.hashCode(inner)
+  override val hashCode: Int = util.Arrays.hashCode(inner)
 
-  override def equals(other: Any): Boolean = {
-    if ( other == null || getClass() != other.getClass() )
-      return false
+  override def equals(other: Any): Boolean =
+    if (other == null || getClass() != other.getClass())
+      false
+    else {
+      val otherKey = other.asInstanceOf[Key]
 
-    val otherKey = other.asInstanceOf[Key]
+      if (otherKey eq this)
+        return true
 
-    if(otherKey eq this)
-      return true
-
-    _hashCode == otherKey._hashCode && util.Arrays.equals(inner, otherKey.inner)
-
-  }
-
-  override def hashCode(): Int = _hashCode
+      util.Arrays.hashCode(inner) == util.Arrays.hashCode(inner) && util.Arrays.equals(inner, otherKey.inner)
+    }
 
   override def toString: String = util.Arrays.toString(inner)
 }

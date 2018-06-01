@@ -78,14 +78,14 @@ case class EagerAggregationSlottedPrimitivePipe(source: Pipe,
       }
     }
 
-    val supplier = new java.util.function.Function[Key, Seq[AggregationFunction]] {
+    val createAggregationFunctions = new java.util.function.Function[Key, Seq[AggregationFunction]] {
       override def apply(t: Key): Seq[AggregationFunction] = aggregationFunctions.map(_.createAggregationFunction)
     }
 
     // Consume all input and aggregate
     input.foreach(ctx => {
       val keys = setKeyFromCtx(ctx)
-      val aggregationFunctions = result.computeIfAbsent(new Key(keys), supplier)
+      val aggregationFunctions = result.computeIfAbsent(new Key(keys), createAggregationFunctions)
       aggregationFunctions.foreach(func => func(ctx, state))
     })
 
