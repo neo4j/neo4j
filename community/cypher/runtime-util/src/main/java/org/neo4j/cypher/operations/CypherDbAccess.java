@@ -27,7 +27,9 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
+
+import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
  * This class contains static helper methods for expressions interacting with the database
@@ -40,7 +42,6 @@ public final class CypherDbAccess
         throw new UnsupportedOperationException( "Do not instantiate" );
     }
 
-    //data access
     public static Value nodeProperty( Transaction tx, long node, int property )
     {
         CursorFactory cursors = tx.cursors();
@@ -58,8 +59,19 @@ public final class CypherDbAccess
                 throw new EntityNotFoundException(
                         String.format( "Node with id %d has been deleted in this transaction", node ), null );
             }
-            return Values.NO_VALUE;
+            return NO_VALUE;
         }
+    }
+
+    public static Value nodeProperty( Transaction tx, long node, String key )
+    {
+        int property = tx.tokenRead().propertyKey( key );
+        if ( property == NO_TOKEN )
+        {
+            return NO_VALUE;
+        }
+
+        return nodeProperty( tx, node, property );
     }
 
     public static Value relationshipProperty( Transaction tx, long relationship, int property )
@@ -79,7 +91,7 @@ public final class CypherDbAccess
                 throw new EntityNotFoundException(
                         String.format( "Relationship with id %d has been deleted in this transaction", relationship ), null );
             }
-            return Values.NO_VALUE;
+            return NO_VALUE;
         }
     }
 
@@ -92,6 +104,6 @@ public final class CypherDbAccess
                 return properties.propertyValue();
             }
         }
-        return Values.NO_VALUE;
+        return NO_VALUE;
     }
 }
