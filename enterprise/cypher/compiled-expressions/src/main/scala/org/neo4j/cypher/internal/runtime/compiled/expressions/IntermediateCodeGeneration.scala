@@ -77,26 +77,21 @@ object IntermediateCodeGeneration {
 
     //math
     case Multiply(lhs, rhs) =>
-      (compile(lhs), compile(rhs)) match {
-        case (Some(l), Some(r)) =>
-          Some(invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("multiply"), l, r))
+      for {l <- compile(lhs)
+           r <- compile(rhs)
+      } yield invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("multiply"), l, r)
 
-        case _ => None
-      }
+
 
     case Add(lhs, rhs) =>
-      (compile(lhs), compile(rhs)) match {
-        case (Some(l), Some(r)) =>
-          Some(invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("add"), l, r))
-        case _ => None
-      }
+      for {l <- compile(lhs)
+           r <- compile(rhs)
+      } yield invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("add"), l, r)
 
     case Subtract(lhs, rhs) =>
-      (compile(lhs), compile(rhs)) match {
-        case (Some(l), Some(r)) =>
-          Some(invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("subtract"), l, r))
-        case _ => None
-      }
+      for {l <- compile(lhs)
+           r <- compile(rhs)
+      } yield invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("subtract"), l, r)
 
     //literals
     case d: DoubleLiteral => Some(invokeStatic(method[Values, DoubleValue, Double]("doubleValue"), constant(d.value)))
@@ -211,9 +206,12 @@ object IntermediateCodeGeneration {
       for {l <- compile(lhs)
            r <- compile(rhs)
       } yield
-        invokeStatic(method[Values, BooleanValue, Boolean]("booleanValue"),
-          invoke(l, method[AnyValue, Boolean, AnyRef]("equals"), r)
-        )
+        ternary(invoke(l, method[AnyValue, Boolean, AnyRef]("equals"), r), truthy, falsy)
+
+    case NullCheck(offset, inner) =>
+      compile(inner).map( i =>
+        ternary(equal(getLongAt(offset), constant(-1L)), noValue, i)
+      )
 
     case _ => None
   }

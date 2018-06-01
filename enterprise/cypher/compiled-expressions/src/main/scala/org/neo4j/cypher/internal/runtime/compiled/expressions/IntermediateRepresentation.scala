@@ -110,6 +110,23 @@ case object FALSE extends IntermediateRepresentation
 case class ArrayLiteral(values: Array[IntermediateRepresentation]) extends IntermediateRepresentation
 
 /**
+  * Defines ternary expression, i.e. `condition ? onTrue : onFalse`
+  * @param condition the condition to test
+  * @param onTrue will be evaluted if condition is true
+  * @param onFalse will be evaluated if condition is false
+  */
+case class Ternary(condition: IntermediateRepresentation,
+                   onTrue: IntermediateRepresentation,
+                   onFalse: IntermediateRepresentation) extends IntermediateRepresentation
+
+/**
+  * Defines equality of identity, i.e. `lhs == rhs`
+  * @param lhs the left-hand side to check
+  * @param rhs the right-hand side to check
+  */
+case class Eq(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
+
+/**
   * Defines a method
   *
   * @param owner  the owner of the method
@@ -161,4 +178,11 @@ object IntermediateRepresentation {
   def constant(value: Any): IntermediateRepresentation = Constant(value)
 
   def arrayOf(values: IntermediateRepresentation*): IntermediateRepresentation = ArrayLiteral(values.toArray)
+
+  def ternary(condition: IntermediateRepresentation,
+              onTrue: IntermediateRepresentation,
+              onFalse: IntermediateRepresentation): IntermediateRepresentation = Ternary(condition, onTrue, onFalse)
+
+  def equal(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
+    Eq(lhs, rhs)
 }
