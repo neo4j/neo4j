@@ -40,6 +40,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -67,6 +68,7 @@ import static org.neo4j.bolt.v1.runtime.BoltStateMachine.State.READY;
 import static org.neo4j.bolt.v1.runtime.BoltStateMachine.State.STREAMING;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.EMPTY_PARAMS;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.USER_AGENT;
+import static org.neo4j.bolt.v1.runtime.MachineRoom.init;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.newMachine;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.newMachineWithTransaction;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.newMachineWithTransactionSPI;
@@ -680,6 +682,23 @@ public class BoltStateMachineTest
         assertFalse( machine.ctx.pendingIgnore );
         assertEquals( BoltStateMachine.State.FAILED, machine.state );
         verify( machine.ctx.responseHandler ).markFailed( error );
+    }
+
+    @Test
+    public void shouldNotFailWhenTerminatedAndPullAll() throws Exception
+    {
+        BoltStateMachineSPI spi = mock( BoltStateMachineSPI.class, RETURNS_MOCKS );
+        BoltStateMachine machine = init( newMachine( spi ) );
+        machine.state = STREAMING;
+        ((TransactionStateMachine) machine.statementProcessor()).ctx.currentResult = BoltResult.EMPTY;
+
+        BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
+
+        machine.terminate();
+        machine.pullAll( responseHandler );
+
+        verify( spi, never() ).reportError( any() );
+        assertNotEquals( FAILED, machine.state );
     }
 
     private static void testMarkFailedOnNextMessage( ThrowingBiConsumer<BoltStateMachine,BoltResponseHandler,BoltConnectionFatality> action ) throws Exception
