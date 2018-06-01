@@ -154,36 +154,26 @@ object IntermediateCodeGeneration {
     case NodeProperty(offset, token, _) =>
       Some(invokeStatic(method[CypherDbAccess, Value, Transaction, Long, Int]("nodeProperty"),
                         load("tx"),
-                        invoke(load("context"), method[ExecutionContext, Long, Int]("getLongAt"),
-                               constant(offset)), constant(token)))
+                        getLongAt(offset), constant(token)))
 
     case NodePropertyLate(offset, key, _) =>
       Some(invokeStatic(method[CypherDbAccess, Value, Transaction, Long, String]("nodeProperty"),
-                        load("tx"),
-                        invoke(load("context"), method[ExecutionContext, Long, Int]("getLongAt"),
-                               constant(offset)), constant(key)))
+                        load("tx"), getLongAt(offset), constant(key)))
 
     case RelationshipProperty(offset, token, _) =>
       Some(invokeStatic(method[CypherDbAccess, Value, Transaction, Long, Int]("relationshipProperty"),
-                        load("tx"),
-                        invoke(load("context"), method[ExecutionContext, Long, Int]("getLongAt"),
-                               constant(offset)), constant(token)))
+                        load("tx"), getLongAt(offset), constant(token)))
 
     case RelationshipPropertyLate(offset, key, _) =>
       Some(invokeStatic(method[CypherDbAccess, Value, Transaction, Long, String]("relationshipProperty"),
-                        load("tx"),
-                        invoke(load("context"), method[ExecutionContext, Long, Int]("getLongAt"),
-                               constant(offset)), constant(key)))
+                        load("tx"), getLongAt(offset), constant(key)))
 
       //slotted operations
     case ReferenceFromSlot(offset, _) =>
       Some(invoke(load("context"), method[ExecutionContext, AnyValue, Int]("getRefAt"),
                   constant(offset)))
     case IdFromSlot(offset) =>
-      Some(
-        invokeStatic(method[Values, LongValue, Long]("longValue"),
-                     invoke(load("context"), method[ExecutionContext, Long, Int]("getLongAt"),
-                            constant(offset))))
+      Some(invokeStatic(method[Values, LongValue, Long]("longValue"), getLongAt(offset)))
 
     case PrimitiveEquals(lhs, rhs) =>
       for {l <- compile(lhs)
@@ -193,7 +183,27 @@ object IntermediateCodeGeneration {
           invoke(l, method[AnyValue, Boolean, AnyRef]("equals"), r)
         )
 
+    case GetDegreePrimitive(offset, typ, dir) =>
+      val methodName = dir match {
+        case SemanticDirection.OUTGOING => "getOutgoingDegree"
+        case SemanticDirection.INCOMING => "getIncomingDegree"
+        case SemanticDirection.BOTH => "getTotalDegree"
+      }
+      typ match {
+        case None =>
+            Some(invokeStatic(method[CypherDbAccess, IntegralValue, Transaction, Long](methodName),
+                              load("tx"), getLongAt(offset)))
+
+          case Some(t) =>
+            Some(invokeStatic(method[CypherDbAccess, IntegralValue, Transaction, Long, String](methodName),
+                              load("tx"),  getLongAt(offset), constant(t)))
+        }
+
     case _ => None
   }
+
+  private def getLongAt(offset: Int): IntermediateRepresentation =
+    invoke(load("context"), method[ExecutionContext, Long, Int]("getLongAt"),
+                                              constant(offset))
 
 }
