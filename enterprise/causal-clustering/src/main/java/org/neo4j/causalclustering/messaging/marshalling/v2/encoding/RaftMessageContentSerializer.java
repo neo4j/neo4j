@@ -37,12 +37,16 @@ import org.neo4j.causalclustering.messaging.marshalling.v2.ContentType;
 
 import static org.neo4j.causalclustering.messaging.marshalling.v2.encoding.RaftLogEntryTermEncoder.serializable;
 
-public class RaftMessageContentEncoder extends MessageToMessageEncoder<RaftMessages.ClusterIdAwareMessage>
+/**
+ * Serializes a raft messages content in the order Message, RaftLogTerms, ReplicatedContent.
+ */
+public class RaftMessageContentSerializer extends MessageToMessageEncoder<RaftMessages.ClusterIdAwareMessage>
 {
 
     private final CoreReplicatedContentMarshal serializer;
+    private Handler replicatedContentHandler = new Handler();
 
-    public RaftMessageContentEncoder( CoreReplicatedContentMarshal serializer )
+    public RaftMessageContentSerializer( CoreReplicatedContentMarshal serializer )
     {
         this.serializer = serializer;
     }
@@ -52,21 +56,17 @@ public class RaftMessageContentEncoder extends MessageToMessageEncoder<RaftMessa
     {
         out.add( ContentType.Message );
         out.add( msg );
-        Object[] dispatch = msg.message().dispatch( new Handler() );
+        Object[] dispatch = msg.message().dispatch( replicatedContentHandler );
         if ( dispatch == null )
         {
             // there was an error serializing
             throw new IllegalArgumentException( "Error reading raft message content" );
         }
-        else if ( dispatch.length != 0 )
-        {
-            out.addAll( Arrays.asList( dispatch ) );
-        }
+        out.addAll( Arrays.asList( dispatch ) );
     }
 
     private class Handler implements RaftMessages.Handler<Object[],Exception>
     {
-
         @Override
         public Object[] handle( RaftMessages.Vote.Request request ) throws Exception
         {
@@ -96,7 +96,7 @@ public class RaftMessageContentEncoder extends MessageToMessageEncoder<RaftMessa
         {
             return Stream.concat(
                     Arrays.stream( request.entries() ).flatMap( entry -> serializableContents( entry.content() ) ),
-                    Stream.of( ContentType.RaftLogEntries, serializable( Arrays.stream( request.entries() ).mapToLong( RaftLogEntry::term ).toArray() ) ) )
+                    Stream.of( ContentType.RaftLogEntryTerms, serializable( Arrays.stream( request.entries() ).mapToLong( RaftLogEntry::term ).toArray() ) ) )
                     .toArray( Object[]::new );
         }
 

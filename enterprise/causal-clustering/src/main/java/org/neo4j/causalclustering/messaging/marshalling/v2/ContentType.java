@@ -26,7 +26,7 @@ public enum ContentType
 {
     ContentType( (byte) 0 ),
     ReplicatedContent( (byte) 1 ),
-    RaftLogEntries( (byte) 2 ),
+    RaftLogEntryTerms( (byte) 2 ),
     Message( (byte) 3 );
 
     private final byte b;
