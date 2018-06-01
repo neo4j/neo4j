@@ -204,8 +204,7 @@ object IntermediateCodeGeneration {
 
       //slotted operations
     case ReferenceFromSlot(offset, _) =>
-      Some(invoke(load("context"), method[ExecutionContext, AnyValue, Int]("getRefAt"),
-                  constant(offset)))
+      Some(getRefAt(offset))
     case IdFromSlot(offset) =>
       Some(invokeStatic(method[Values, LongValue, Long]("longValue"), getLongAt(offset)))
 
@@ -216,9 +215,13 @@ object IntermediateCodeGeneration {
         ternary(invoke(l, method[AnyValue, Boolean, AnyRef]("equals"), r), truthy, falsy)
 
     case NullCheck(offset, inner) =>
-      compile(inner).map( i =>
-        ternary(equal(getLongAt(offset), constant(-1L)), noValue, i)
-      )
+      compile(inner).map(ternary(equal(getLongAt(offset), constant(-1L)), noValue, _))
+
+    case NullCheckVariable(offset, inner) =>
+      compile(inner).map(ternary(equal(getRefAt(offset), noValue), noValue, _))
+
+    case NullCheckProperty(offset, inner) =>
+      compile(inner).map(ternary(equal(getRefAt(offset), noValue), noValue, _))
 
     case _ => None
   }
@@ -226,5 +229,9 @@ object IntermediateCodeGeneration {
   private def getLongAt(offset: Int): IntermediateRepresentation =
     invoke(load("context"), method[ExecutionContext, Long, Int]("getLongAt"),
                                               constant(offset))
+
+  private def getRefAt(offset: Int): IntermediateRepresentation =
+    invoke(load("context"), method[ExecutionContext, AnyValue, Int]("getRefAt"),
+         constant(offset))
 
 }
