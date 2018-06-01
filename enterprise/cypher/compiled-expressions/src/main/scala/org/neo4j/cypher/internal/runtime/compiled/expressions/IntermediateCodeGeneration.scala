@@ -176,6 +176,14 @@ object IntermediateCodeGeneration {
       Some(invokeStatic(method[CypherDbAccess, Value, Transaction, Long, String]("relationshipProperty"),
                         load("tx"), getLongAt(offset), constant(key)))
 
+    case RelationshipPropertyExists(offset, token, _) =>
+      Some(invokeStatic(method[CypherDbAccess, BooleanValue, Transaction, Long, Int]("relationshipHasProperty"),
+                        load("tx"), getLongAt(offset), constant(token)))
+
+    case RelationshipPropertyExistsLate(offset, key, _) =>
+      Some(invokeStatic(method[CypherDbAccess, BooleanValue, Transaction, Long, String]("relationshipHasProperty"),
+                        load("tx"), getLongAt(offset), constant(key)))
+
     case GetDegreePrimitive(offset, typ, dir) =>
       val methodName = dir match {
         case SemanticDirection.OUTGOING => "getOutgoingDegree"

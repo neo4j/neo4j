@@ -243,6 +243,39 @@ public final class CypherDbAccess
         return nodeHasProperty( tx, node, property );
     }
 
+    public static BooleanValue relationshipHasProperty( Transaction tx, long node, int property )
+    {
+        CursorFactory cursors = tx.cursors();
+        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor();
+              PropertyCursor properties = cursors.allocatePropertyCursor() )
+        {
+            tx.dataRead().singleRelationship( node, relationships );
+            if ( !relationships.next() )
+            {
+                return Values.FALSE;
+            }
+            relationships.properties( properties );
+            while ( properties.next() )
+            {
+                if ( properties.propertyKey() == property )
+                {
+                    return Values.TRUE;
+                }
+            }
+            return Values.FALSE;
+        }
+    }
+
+    public static BooleanValue relationshipHasProperty( Transaction tx, long node, String key )
+    {
+        int property = tx.tokenRead().propertyKey( key );
+        if ( property == NO_TOKEN )
+        {
+            return Values.FALSE;
+        }
+        return relationshipHasProperty( tx, node, property );
+    }
+
     private static Value property( PropertyCursor properties, int property )
     {
         while ( properties.next() )
