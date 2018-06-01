@@ -203,9 +203,9 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
           relationships.map(r =>
             CreateRelationshipSlottedCommand(
               slots.getLongOffsetFor(r.idName),
-              slots.getLongOffsetFor(r.startNode),
+              SlottedPipeBuilderUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(r.startNode)),
               LazyType(r.relType.name),
-              slots.getLongOffsetFor(r.endNode),
+              SlottedPipeBuilderUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(r.endNode)),
               r.properties.map(convertExpressions))
           ).toIndexedSeq
         )(id)
@@ -225,9 +225,9 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
           source,
           CreateRelationshipSlottedCommand(
             slots.getLongOffsetFor(idName),
-            slots.getLongOffsetFor(startNode),
+            SlottedPipeBuilderUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(startNode)),
             LazyType(relType.name),
-            slots.getLongOffsetFor(endNode),
+            SlottedPipeBuilderUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(endNode)),
             properties.map(convertExpressions)
           )
         )(id)

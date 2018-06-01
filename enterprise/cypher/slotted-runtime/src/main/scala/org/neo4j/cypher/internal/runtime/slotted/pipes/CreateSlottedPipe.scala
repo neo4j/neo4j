@@ -48,8 +48,8 @@ abstract class EntityCreateSlottedPipe(source: Pipe) extends BaseCreatePipe(sour
   protected def createRelationship(context: ExecutionContext,
                                    state: QueryState,
                                    command: CreateRelationshipSlottedCommand): Long = {
-    val startNodeId = context.getLongAt(command.startNodeOffset)
-    val endNodeId = context.getLongAt(command.endNodeOffset)
+    val startNodeId = command.startNodeIdGetter(context)
+    val endNodeId = command.endNodeIdGetter(context)
     val typeId = command.relType.typ(state.query)
     val relationship = state.query.createRelationship(startNodeId, endNodeId, typeId)
     command.properties.foreach(setProperties(context, state, relationship.id(), _, state.query.relationshipOps))
@@ -58,14 +58,14 @@ abstract class EntityCreateSlottedPipe(source: Pipe) extends BaseCreatePipe(sour
 }
 
 case class CreateNodeSlottedCommand(idOffset: Int,
-                             labels: Seq[LazyLabel],
-                             properties: Option[Expression])
+                                    labels: Seq[LazyLabel],
+                                    properties: Option[Expression])
 
 case class CreateRelationshipSlottedCommand(idOffset: Int,
-                                     startNodeOffset: Int,
-                                     relType: LazyType,
-                                     endNodeOffset: Int,
-                                     properties: Option[Expression])
+                                            startNodeIdGetter: ExecutionContext => Long,
+                                            relType: LazyType,
+                                            endNodeIdGetter: ExecutionContext => Long,
+                                            properties: Option[Expression])
 
 /**
   * Create nodes and relationships from slotted commands.
