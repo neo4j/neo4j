@@ -28,6 +28,7 @@ import java.util.concurrent.ThreadLocalRandom
 
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.{IdFromSlot, NullCheck, PrimitiveEquals, ReferenceFromSlot}
+import org.neo4j.cypher.internal.runtime.EntityProducer
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.values.storable.LocalTimeValue.localTime
@@ -43,11 +44,12 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   private val tx = mock[Transaction]
   private val ctx = mock[ExecutionContext]
+  private val producer = mock[EntityProducer]
   private val random = ThreadLocalRandom.current()
 
   test("round function") {
-    compile(function("round", literalFloat(PI))).evaluate(ctx, tx, EMPTY_MAP) should equal(doubleValue(3.0))
-    compile(function("round", noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
+    compile(function("round", literalFloat(PI))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(doubleValue(3.0))
+    compile(function("round", noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(NO_VALUE)
   }
 
   test("rand function") {
@@ -58,76 +60,76 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val compiled = compile(expression)
 
     // Then
-    val value = compiled.evaluate(ctx, tx, EMPTY_MAP).asInstanceOf[DoubleValue].doubleValue()
+    val value = compiled.evaluate(ctx, tx, producer, EMPTY_MAP).asInstanceOf[DoubleValue].doubleValue()
     value should (be >= 0.0 and be <1.0)
   }
 
   test("sin function") {
     val arg = random.nextDouble()
-    compile(function("sin", literalFloat(arg))).evaluate(ctx, tx, EMPTY_MAP) should equal(doubleValue(Math.sin(arg)))
-    compile(function("sin", noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
+    compile(function("sin", literalFloat(arg))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(doubleValue(Math.sin(arg)))
+    compile(function("sin", noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(NO_VALUE)
   }
 
   test("asin function") {
     val arg = random.nextDouble()
-    compile(function("asin", literalFloat(arg))).evaluate(ctx, tx, EMPTY_MAP) should equal(doubleValue(Math.asin(arg)))
-    compile(function("asin", noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
+    compile(function("asin", literalFloat(arg))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(doubleValue(Math.asin(arg)))
+    compile(function("asin", noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(NO_VALUE)
   }
 
   test("haversin function") {
     val arg = random.nextDouble()
-    compile(function("haversin", literalFloat(arg))).evaluate(ctx, tx, EMPTY_MAP) should equal(doubleValue((1.0 - Math.cos(arg)) / 2))
-    compile(function("haversin", noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
+    compile(function("haversin", literalFloat(arg))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(doubleValue((1.0 - Math.cos(arg)) / 2))
+    compile(function("haversin", noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(NO_VALUE)
   }
 
   test("acos function") {
     val arg = random.nextDouble()
-    compile(function("acos", literalFloat(arg))).evaluate(ctx, tx, EMPTY_MAP) should equal(doubleValue(Math.acos(arg)))
-    compile(function("acos", noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
+    compile(function("acos", literalFloat(arg))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(doubleValue(Math.acos(arg)))
+    compile(function("acos", noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(NO_VALUE)
   }
 
   test("cos function") {
     val arg = random.nextDouble()
-    compile(function("cos", literalFloat(arg))).evaluate(ctx, tx, EMPTY_MAP) should equal(doubleValue(Math.cos(arg)))
-    compile(function("cos", noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
+    compile(function("cos", literalFloat(arg))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(doubleValue(Math.cos(arg)))
+    compile(function("cos", noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(NO_VALUE)
   }
 
   test("cot function") {
     val arg = random.nextDouble()
-    compile(function("cot", literalFloat(arg))).evaluate(ctx, tx, EMPTY_MAP) should equal(doubleValue(1 / Math.tan(arg)))
-    compile(function("cot", noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
+    compile(function("cot", literalFloat(arg))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(doubleValue(1 / Math.tan(arg)))
+    compile(function("cot", noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(NO_VALUE)
   }
 
   test("atan function") {
     val arg = random.nextDouble()
-    compile(function("atan", literalFloat(arg))).evaluate(ctx, tx, EMPTY_MAP) should equal(doubleValue(Math.atan(arg)))
-    compile(function("atan", noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
+    compile(function("atan", literalFloat(arg))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(doubleValue(Math.atan(arg)))
+    compile(function("atan", noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(NO_VALUE)
   }
 
   test("tan function") {
     val arg = random.nextDouble()
-    compile(function("tan", literalFloat(arg))).evaluate(ctx, tx, EMPTY_MAP) should equal(doubleValue(Math.tan(arg)))
-    compile(function("tan", noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
+    compile(function("tan", literalFloat(arg))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(doubleValue(Math.tan(arg)))
+    compile(function("tan", noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(NO_VALUE)
   }
 
   test("ceil function") {
     val arg = random.nextDouble()
-    compile(function("ceil", literalFloat(arg))).evaluate(ctx, tx, EMPTY_MAP) should equal(doubleValue(Math.ceil(arg)))
-    compile(function("ceil", noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
+    compile(function("ceil", literalFloat(arg))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(doubleValue(Math.ceil(arg)))
+    compile(function("ceil", noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(NO_VALUE)
   }
 
   test("floor function") {
     val arg = random.nextDouble()
-    compile(function("floor", literalFloat(arg))).evaluate(ctx, tx, EMPTY_MAP) should equal(doubleValue(Math.floor(arg)))
-    compile(function("floor", noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
+    compile(function("floor", literalFloat(arg))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(doubleValue(Math.floor(arg)))
+    compile(function("floor", noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(NO_VALUE)
   }
 
   test("abs function") {
-    compile(function("abs", literalFloat(3.2))).evaluate(ctx, tx, EMPTY_MAP) should equal(doubleValue(3.2))
-    compile(function("abs", literalFloat(-3.2))).evaluate(ctx, tx, EMPTY_MAP) should equal(doubleValue(3.2))
-    compile(function("abs", literalInt(3))).evaluate(ctx, tx, EMPTY_MAP) should equal(longValue(3))
-    compile(function("abs", literalInt(-3))).evaluate(ctx, tx, EMPTY_MAP) should equal(longValue(3))
-    compile(function("abs", noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(function("abs", literalFloat(3.2))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(doubleValue(3.2))
+    compile(function("abs", literalFloat(-3.2))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(doubleValue(3.2))
+    compile(function("abs", literalInt(3))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(longValue(3))
+    compile(function("abs", literalInt(-3))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(longValue(3))
+    compile(function("abs", noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.NO_VALUE)
   }
 
   test("add numbers") {
@@ -138,24 +140,24 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val compiled = compile(expression)
 
     // Then
-    compiled.evaluate(ctx, tx, EMPTY_MAP) should equal(longValue(52))
+    compiled.evaluate(ctx, tx, producer, EMPTY_MAP) should equal(longValue(52))
   }
 
   test("add temporals") {
     val compiled = compile(add(parameter("a"), parameter("b")))
 
     // temporal + duration
-    compiled.evaluate(ctx, tx, map(Array("a", "b"), Array(temporalValue(localTime(0)),
+    compiled.evaluate(ctx, tx, producer, map(Array("a", "b"), Array(temporalValue(localTime(0)),
                                    durationValue(Duration.ofHours(10))))) should
       equal(localTime(10, 0, 0, 0))
 
     // duration + temporal
-    compiled.evaluate(ctx, tx, map(Array("a", "b"), Array(durationValue(Duration.ofHours(10)),
+    compiled.evaluate(ctx, tx, producer, map(Array("a", "b"), Array(durationValue(Duration.ofHours(10)),
                                          temporalValue(localTime(0))))) should
       equal(localTime(10, 0, 0, 0))
 
     //duration + duration
-    compiled.evaluate(ctx, tx, map(Array("a", "b"), Array(durationValue(Duration.ofHours(10)),
+    compiled.evaluate(ctx, tx, producer, map(Array("a", "b"), Array(durationValue(Duration.ofHours(10)),
                                                           durationValue(Duration.ofHours(10))))) should
       equal(durationValue(Duration.ofHours(20)))
   }
@@ -168,8 +170,8 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val compiled = compile(expression)
 
     // Then
-    compiled.evaluate(ctx, tx, map(Array("a", "b"), Array(longValue(42), NO_VALUE))) should equal(NO_VALUE)
-    compiled.evaluate(ctx, tx, map(Array("a", "b"), Array(NO_VALUE, longValue(42)))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, tx, producer, map(Array("a", "b"), Array(longValue(42), NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, tx, producer, map(Array("a", "b"), Array(NO_VALUE, longValue(42)))) should equal(NO_VALUE)
   }
 
   test("add strings") {
@@ -177,16 +179,16 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val compiled = compile(add(parameter("a"), parameter("b")))
 
     // string1 + string2
-    compiled.evaluate(ctx, tx,
+    compiled.evaluate(ctx, tx, producer,
                       map(Array("a", "b"), Array(stringValue("hello "), stringValue("world")))) should
       equal(stringValue("hello world"))
     //string + other
-    compiled.evaluate(ctx, tx,
+    compiled.evaluate(ctx, tx, producer,
                       map(Array("a", "b"),
                           Array(stringValue("hello "), longValue(1337)))) should
       equal(stringValue("hello 1337"))
     //other + string
-    compiled.evaluate(ctx, tx,
+    compiled.evaluate(ctx, tx, producer,
                       map(Array("a", "b"),
                           Array(longValue(1337), stringValue(" hello")))) should
       equal(stringValue("1337 hello"))
@@ -201,7 +203,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val compiled = compile(expression)
 
     // Then
-    compiled.evaluate(ctx, tx, map(Array("a", "b"),
+    compiled.evaluate(ctx, tx, producer, map(Array("a", "b"),
                                    Array(longArray(Array(42, 43)),
                                         longArray(Array(44, 45))))) should
       equal(list(longValue(42), longValue(43), longValue(44), longValue(45)))
@@ -212,18 +214,18 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val compiled = compile(add(parameter("a"), parameter("b")))
 
     // [a1,a2 ..] + [b1,b2 ..]
-    compiled.evaluate(ctx, tx, map(Array("a", "b"),
+    compiled.evaluate(ctx, tx, producer, map(Array("a", "b"),
                                    Array(list(longValue(42), longValue(43)),
                                          list(longValue(44), longValue(45))))) should
       equal(list(longValue(42), longValue(43), longValue(44), longValue(45)))
 
     // [a1,a2 ..] + b
-    compiled.evaluate(ctx, tx, map(Array("a", "b"),
+    compiled.evaluate(ctx, tx, producer, map(Array("a", "b"),
                                    Array(list(longValue(42), longValue(43)), longValue(44)))) should
       equal(list(longValue(42), longValue(43), longValue(44)))
 
     // a + [b1,b2 ..]
-    compiled.evaluate(ctx, tx, map(Array("a", "b"),
+    compiled.evaluate(ctx, tx, producer, map(Array("a", "b"),
                                    Array(longValue(43),
                                          list(longValue(44), longValue(45))))) should
       equal(list(longValue(43), longValue(44), longValue(45)))
@@ -237,7 +239,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val compiled = compile(expression)
 
     // Then
-    compiled.evaluate(ctx, tx, EMPTY_MAP) should equal(longValue(32))
+    compiled.evaluate(ctx, tx, producer, EMPTY_MAP) should equal(longValue(32))
   }
 
   test("subtract with NO_VALUE") {
@@ -248,20 +250,20 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val compiled = compile(expression)
 
     // Then
-    compiled.evaluate(ctx, tx, map(Array("a", "b"), Array(longValue(42), NO_VALUE))) should equal(NO_VALUE)
-    compiled.evaluate(ctx, tx, map(Array("a", "b"), Array(NO_VALUE, longValue(42)))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, tx, producer, map(Array("a", "b"), Array(longValue(42), NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, tx, producer, map(Array("a", "b"), Array(NO_VALUE, longValue(42)))) should equal(NO_VALUE)
   }
 
   test("subtract temporals") {
     val compiled = compile(subtract(parameter("a"), parameter("b")))
 
     // temporal - duration
-    compiled.evaluate(ctx, tx, map(Array("a", "b"), Array(temporalValue(localTime(20, 0, 0, 0)),
+    compiled.evaluate(ctx, tx, producer, map(Array("a", "b"), Array(temporalValue(localTime(20, 0, 0, 0)),
                                                           durationValue(Duration.ofHours(10))))) should
       equal(localTime(10, 0, 0, 0))
 
     //duration - duration
-    compiled.evaluate(ctx, tx, map(Array("a", "b"), Array(durationValue(Duration.ofHours(10)),
+    compiled.evaluate(ctx, tx, producer, map(Array("a", "b"), Array(durationValue(Duration.ofHours(10)),
                                                           durationValue(Duration.ofHours(10))))) should
       equal(durationValue(Duration.ofHours(0)))
   }
@@ -274,7 +276,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val compiled = compile(expression)
 
     // Then
-    compiled.evaluate(ctx, tx, EMPTY_MAP) should equal(longValue(420))
+    compiled.evaluate(ctx, tx, producer, EMPTY_MAP) should equal(longValue(420))
   }
 
   test("multiply with NO_VALUE") {
@@ -285,8 +287,8 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val compiled = compile(expression)
 
     // Then
-    compiled.evaluate(ctx, tx, map(Array("a", "b"), Array(longValue(42), NO_VALUE))) should equal(NO_VALUE)
-    compiled.evaluate(ctx, tx, map(Array("a", "b"), Array(NO_VALUE, longValue(42)))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, tx, producer, map(Array("a", "b"), Array(longValue(42), NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, tx, producer, map(Array("a", "b"), Array(NO_VALUE, longValue(42)))) should equal(NO_VALUE)
   }
 
   test("extract parameter") {
@@ -297,8 +299,8 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val compiled = compile(expression)
 
     // Then
-    compiled.evaluate(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
-    compiled.evaluate(ctx, tx, map(Array("prop"), Array(stringValue("foo")))) should equal(stringValue("foo"))
+    compiled.evaluate(ctx, tx, producer, EMPTY_MAP) should equal(NO_VALUE)
+    compiled.evaluate(ctx, tx, producer, map(Array("prop"), Array(stringValue("foo")))) should equal(stringValue("foo"))
   }
 
   test("NULL") {
@@ -309,7 +311,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val compiled = compile(expression)
 
     // Then
-    compiled.evaluate(ctx, tx, EMPTY_MAP) should equal(NO_VALUE)
+    compiled.evaluate(ctx, tx, producer, EMPTY_MAP) should equal(NO_VALUE)
   }
 
   test("TRUE") {
@@ -320,7 +322,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val compiled = compile(expression)
 
     // Then
-    compiled.evaluate(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
+    compiled.evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.TRUE)
   }
 
   test("FALSE") {
@@ -331,82 +333,82 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val compiled = compile(expression)
 
     // Then
-    compiled.evaluate(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
+    compiled.evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.FALSE)
   }
 
   test("OR") {
-    compile(or(t, t)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
-    compile(or(f, t)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
-    compile(or(t, f)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
-    compile(or(f, f)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
+    compile(or(t, t)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.TRUE)
+    compile(or(f, t)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.TRUE)
+    compile(or(t, f)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.TRUE)
+    compile(or(f, f)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.FALSE)
 
-    compile(or(noValue, noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
-    compile(or(noValue, t)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
-    compile(or(t, noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
-    compile(or(noValue, f)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
-    compile(or(f, noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(or(noValue, noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(or(noValue, t)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.TRUE)
+    compile(or(t, noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.TRUE)
+    compile(or(noValue, f)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(or(f, noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.NO_VALUE)
   }
 
   test("XOR") {
-    compile(xor(t, t)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
-    compile(xor(f, t)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
-    compile(xor(t, f)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
-    compile(xor(f, f)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
+    compile(xor(t, t)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.FALSE)
+    compile(xor(f, t)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.TRUE)
+    compile(xor(t, f)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.TRUE)
+    compile(xor(f, f)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.FALSE)
 
-    compile(xor(noValue, noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
-    compile(xor(noValue, t)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
-    compile(xor(t, noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
-    compile(xor(noValue, f)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
-    compile(xor(f, noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(xor(noValue, noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(xor(noValue, t)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(xor(t, noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(xor(noValue, f)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(xor(f, noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.NO_VALUE)
   }
 
   test("ORS") {
-    compile(ors(f, f, f, f, f, f, t, f)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
-    compile(ors(f, f, f, f, f, f, f, f)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
-    compile(ors(f, f, f, f, noValue, f, f, f)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
-    compile(ors(f, f, f, t, noValue, t, f, f)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
+    compile(ors(f, f, f, f, f, f, t, f)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.TRUE)
+    compile(ors(f, f, f, f, f, f, f, f)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.FALSE)
+    compile(ors(f, f, f, f, noValue, f, f, f)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(ors(f, f, f, t, noValue, t, f, f)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.TRUE)
   }
 
   test("AND") {
-    compile(and(t, t)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
-    compile(and(f, t)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
-    compile(and(t, f)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
-    compile(and(f, f)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
+    compile(and(t, t)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.TRUE)
+    compile(and(f, t)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.FALSE)
+    compile(and(t, f)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.FALSE)
+    compile(and(f, f)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.FALSE)
 
-    compile(and(noValue, noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
-    compile(and(noValue, t)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
-    compile(and(t, noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
-    compile(and(noValue, f)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
-    compile(and(f, noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
+    compile(and(noValue, noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(and(noValue, t)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(and(t, noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(and(noValue, f)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.FALSE)
+    compile(and(f, noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.FALSE)
   }
 
   test("ANDS") {
-    compile(ands(t, t, t, t, t)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
-    compile(ands(t, t, t, t, t, f)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
-    compile(ands(t, t, t, t, noValue, t)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
-    compile(ands(t, t, t, f, noValue, f)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
+    compile(ands(t, t, t, t, t)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.TRUE)
+    compile(ands(t, t, t, t, t, f)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.FALSE)
+    compile(ands(t, t, t, t, noValue, t)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(ands(t, t, t, f, noValue, f)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.FALSE)
   }
 
   test("NOT") {
-    compile(not(f)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
-    compile(not(t)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
-    compile(not(noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(not(f)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.TRUE)
+    compile(not(t)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.FALSE)
+    compile(not(noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.NO_VALUE)
   }
 
   test("EQUALS") {
-    compile(equals(literalInt(42), literalInt(42))).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
-    compile(equals(literalInt(42), literalInt(43))).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
-    compile(equals(noValue, literalInt(43))).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
-    compile(equals(literalInt(42), noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
-    compile(equals(noValue, noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(equals(literalInt(42), literalInt(42))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.TRUE)
+    compile(equals(literalInt(42), literalInt(43))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.FALSE)
+    compile(equals(noValue, literalInt(43))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(equals(literalInt(42), noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(equals(noValue, noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.NO_VALUE)
   }
 
   test("NOT EQUALS") {
-    compile(notEquals(literalInt(42), literalInt(42))).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.FALSE)
-    compile(notEquals(literalInt(42), literalInt(43))).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.TRUE)
-    compile(notEquals(noValue, literalInt(43))).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
-    compile(notEquals(literalInt(42), noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
-    compile(notEquals(noValue, noValue)).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(notEquals(literalInt(42), literalInt(42))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.FALSE)
+    compile(notEquals(literalInt(42), literalInt(43))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.TRUE)
+    compile(notEquals(noValue, literalInt(43))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(notEquals(literalInt(42), noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(notEquals(noValue, noValue)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.NO_VALUE)
   }
 
   test("ReferenceFromSlot") {
@@ -419,7 +421,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val compiled = compile(expression)
 
     // Then
-    compiled.evaluate(ctx, tx, EMPTY_MAP) should equal(stringValue("hello"))
+    compiled.evaluate(ctx, tx, producer, EMPTY_MAP) should equal(stringValue("hello"))
   }
 
   test("IdFromSlot") {
@@ -432,15 +434,15 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val compiled = compile(expression)
 
     // Then
-    compiled.evaluate(ctx, tx, EMPTY_MAP) should equal(longValue(42))
+    compiled.evaluate(ctx, tx, producer, EMPTY_MAP) should equal(longValue(42))
   }
 
   test("PrimitiveEquals") {
     val compiled = compile(PrimitiveEquals(parameter("a"), parameter("b")))
 
-    compiled.evaluate(ctx, tx, map(Array("a", "b"), Array(longValue(42), longValue(42)))) should
+    compiled.evaluate(ctx, tx, producer, map(Array("a", "b"), Array(longValue(42), longValue(42)))) should
       equal(Values.TRUE)
-    compiled.evaluate(ctx, tx, map(Array("a", "b"), Array(longValue(42), longValue(1337)))) should
+    compiled.evaluate(ctx, tx, producer, map(Array("a", "b"), Array(longValue(42), longValue(1337)))) should
       equal(Values.FALSE)
   }
 
@@ -450,8 +452,8 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     when(ctx.getLongAt(nullOffset)).thenReturn(-1L)
     when(ctx.getLongAt(offset)).thenReturn(42L)
 
-    compile(NullCheck(nullOffset, literalFloat(PI))).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.NO_VALUE)
-    compile(NullCheck(offset, literalFloat(PI))).evaluate(ctx, tx, EMPTY_MAP) should equal(Values.PI)
+    compile(NullCheck(nullOffset, literalFloat(PI))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(NullCheck(offset, literalFloat(PI))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.PI)
   }
 
   private def compile(e: Expression) =

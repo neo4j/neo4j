@@ -23,12 +23,13 @@
 package org.neo4j.cypher.internal.runtime.compiled.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast._
+import org.neo4j.cypher.internal.runtime.EntityProducer
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.operations.{CypherBoolean, CypherDbAccess, CypherFunctions, CypherMath}
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
-import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.{MapValue, NodeValue, RelationshipValue}
 import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions._
 
@@ -178,6 +179,12 @@ object IntermediateCodeGeneration {
     case RelationshipPropertyExistsLate(offset, key, _) =>
       Some(invokeStatic(method[CypherDbAccess, BooleanValue, Transaction, Long, String]("relationshipHasProperty"),
                         load("tx"), getLongAt(offset), constant(key)))
+    case NodeFromSlot(offset, _) =>
+      Some(invoke(load("producer"), method[EntityProducer, NodeValue, Long]("nodeById"),
+                  getLongAt(offset)))
+    case RelationshipFromSlot(offset, _) =>
+      Some(invoke(load("producer"), method[EntityProducer, RelationshipValue, Long]("relationshipById"),
+                  getLongAt(offset)))
 
     case GetDegreePrimitive(offset, typ, dir) =>
       val methodName = dir match {

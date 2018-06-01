@@ -50,7 +50,7 @@ import scala.collection.Iterator
  * The driver for this was clarifying who is responsible for ensuring query isolation. By exposing a query concept in
  * the core layer, we can move that responsibility outside of the scope of cypher.
  */
-trait QueryContext extends TokenContext {
+trait QueryContext extends TokenContext with EntityProducer {
 
   // See QueryContextAdaptation if you need a dummy that overrides all methods as ??? for writing a test
 
@@ -207,6 +207,9 @@ trait QueryContext extends TokenContext {
 
   def assertSchemaWritesAllowed(): Unit
 
+  override def nodeById(id: Long): NodeValue = nodeOps.getById(id)
+
+  override def relationshipById(id: Long): RelationshipValue = relationshipOps.getById(id)
 }
 
 trait Operations[T] {
