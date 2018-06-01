@@ -33,12 +33,11 @@ import java.util.Arrays;
 
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -101,14 +100,12 @@ public class CompositeUniquenessConstraintValidationIT
     private Transaction transaction;
     private GraphDatabaseAPI graphDatabaseAPI;
     protected Kernel kernel;
-    protected Session session;
 
     @Before
     public void setup() throws Exception
     {
         graphDatabaseAPI = dbRule.getGraphDatabaseAPI();
         kernel = graphDatabaseAPI.getDependencyResolver().resolveDependency( Kernel.class );
-        session = kernel.beginSession( LoginContext.AUTH_DISABLED );
 
         newTransaction();
         transaction.schemaWrite().uniquePropertyConstraintCreate( forLabel( label, propertyIds() ) );
@@ -128,7 +125,7 @@ public class CompositeUniquenessConstraintValidationIT
                 .constraintDrop( ConstraintDescriptorFactory.uniqueForLabel( label, propertyIds() ) );
         commit();
 
-        try ( Transaction tx = session.beginTransaction( Transaction.Type.implicit );
+        try ( Transaction tx = kernel.beginTransaction( Transaction.Type.implicit, LoginContext.AUTH_DISABLED );
               NodeCursor node = tx.cursors().allocateNodeCursor() )
         {
             tx.dataRead().allNodesScan( node );
@@ -320,7 +317,7 @@ public class CompositeUniquenessConstraintValidationIT
         {
             fail( "tx already opened" );
         }
-        transaction = session.beginTransaction( KernelTransaction.Type.implicit );
+        transaction = kernel.beginTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED );
     }
 
     protected void commit() throws TransactionFailureException

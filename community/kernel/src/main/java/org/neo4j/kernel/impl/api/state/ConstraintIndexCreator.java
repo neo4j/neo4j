@@ -26,7 +26,6 @@ import java.util.function.Supplier;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.SchemaRead;
-import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -52,6 +51,7 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 
+import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
@@ -195,8 +195,7 @@ public class ConstraintIndexCreator
     public void dropUniquenessConstraintIndex( IndexDescriptor descriptor )
             throws TransactionFailureException
     {
-        try ( Session session = kernelSupplier.get().beginSession( AUTH_DISABLED );
-              Transaction transaction = session.beginTransaction( Transaction.Type.implicit );
+        try ( Transaction transaction = kernelSupplier.get().beginTransaction( implicit, AUTH_DISABLED );
               Statement ignore = ((KernelTransaction)transaction).acquireStatement() )
         {
             ((KernelTransactionImplementation) transaction).txState().indexDoDrop( descriptor );
@@ -257,8 +256,7 @@ public class ConstraintIndexCreator
 
     public IndexDescriptor createConstraintIndex( final SchemaDescriptor schema, Optional<String> provider )
     {
-        try ( Session session = kernelSupplier.get().beginSession( AUTH_DISABLED );
-              Transaction transaction = session.beginTransaction( Transaction.Type.implicit ) )
+        try ( Transaction transaction = kernelSupplier.get().beginTransaction( implicit, AUTH_DISABLED ) )
         {
             IndexDescriptor index = ((KernelTransaction) transaction).indexUniqueCreate( schema, provider );
             transaction.success();

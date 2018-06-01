@@ -45,7 +45,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
     {
         // given
         MutableLongSet expected = new LongHashSet();
-        try ( Transaction tx = session.beginTransaction() )
+        try ( Transaction tx = beginTransaction() )
         {
             expected.add( nodeWithProp( tx, "1suff" ) );
             nodeWithProp( tx, "pluff" );
@@ -55,7 +55,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         createIndex();
 
         // when
-        try ( Transaction tx = session.beginTransaction() )
+        try ( Transaction tx = beginTransaction() )
         {
             int label = tx.tokenRead().nodeLabel( "Node" );
             int prop = tx.tokenRead().propertyKey( "prop" );
@@ -81,7 +81,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
     {
         // given
         MutableLongSet expected = new LongHashSet();
-        try ( Transaction tx = session.beginTransaction() )
+        try ( Transaction tx = beginTransaction() )
         {
             expected.add( nodeWithProp( tx, "gnomebat" ) );
             nodeWithProp( tx, "fishwombat" );
@@ -91,7 +91,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         createIndex();
 
         // when
-        try ( Transaction tx = session.beginTransaction() )
+        try ( Transaction tx = beginTransaction() )
         {
             int label = tx.tokenRead().nodeLabel( "Node" );
             int prop = tx.tokenRead().propertyKey( "prop" );
@@ -115,7 +115,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
     @Test
     public void shouldThrowIfTransactionTerminated() throws Exception
     {
-        try ( Transaction tx = session.beginTransaction() )
+        try ( Transaction tx = beginTransaction() )
         {
             // given
             terminate( tx );

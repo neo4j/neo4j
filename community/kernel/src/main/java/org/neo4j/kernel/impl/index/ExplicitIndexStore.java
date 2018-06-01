@@ -33,7 +33,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -176,8 +175,7 @@ public class ExplicitIndexStore
                 }
 
                 // We were the first one here, let's create this config
-                try ( Session session = kernel.get().beginSession( AUTH_DISABLED );
-                      Transaction transaction = session.beginTransaction( Transaction.Type.implicit );
+                try ( Transaction transaction = kernel.get().beginTransaction( Transaction.Type.implicit, AUTH_DISABLED );
                       Statement statement = ((KernelTransaction)transaction).acquireStatement() )
                 {
                     switch ( entityType )

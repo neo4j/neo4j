@@ -776,7 +776,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
         IndexValueCapability wildcardCapability = index.valueCapability( ValueCategory.UNKNOWN );
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
               NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             MutableLongSet uniqueIds = new LongHashSet();
@@ -800,7 +800,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
               NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             // when
@@ -819,7 +819,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
               NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             // when
@@ -838,7 +838,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
               NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             // when
@@ -857,7 +857,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
               NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             // when
@@ -877,7 +877,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
               NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             // when
@@ -898,7 +898,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
               NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             // when
@@ -921,7 +921,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
               NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             // when
@@ -944,7 +944,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
               NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             // when
@@ -967,7 +967,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
               NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             // when
@@ -988,7 +988,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
               NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             // when
@@ -1011,7 +1011,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
               NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             // when
@@ -1030,7 +1030,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
               NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             // when
@@ -1049,7 +1049,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
               NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             // when
@@ -1068,7 +1068,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
               NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             // when
@@ -1088,7 +1088,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReference index = schemaRead.index( label, prop );
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
               NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             // when
@@ -1110,7 +1110,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int firstName = token.propertyKey( "firstname" );
         int surname = token.propertyKey( "surname" );
         IndexReference index = schemaRead.index( label, firstName, surname );
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
               NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             // when
@@ -1131,7 +1131,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int firstName = token.propertyKey( "firstname" );
         int surname = token.propertyKey( "surname" );
         IndexReference index = schemaRead.index( label, firstName, surname );
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
               NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             // when
@@ -1151,7 +1151,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int firstName = token.propertyKey( "firstname" );
         int surname = token.propertyKey( "surname" );
         IndexReference index = schemaRead.index( label, firstName, surname );
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
               NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             // when
@@ -1173,7 +1173,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int firstName = token.propertyKey( "firstname" );
         int surname = token.propertyKey( "surname" );
         IndexReference index = schemaRead.index( label, firstName, surname );
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
               NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             // when
@@ -1196,7 +1196,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int firstName = token.propertyKey( "firstname" );
         int surname = token.propertyKey( "surname" );
         IndexReference index = schemaRead.index( label, firstName, surname );
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
               NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             // when
