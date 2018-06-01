@@ -32,6 +32,7 @@ import org.neo4j.codegen.Parameter.param
 import org.neo4j.codegen.TypeReference.typeReference
 import org.neo4j.codegen._
 import org.neo4j.codegen.bytecode.ByteCode.BYTECODE
+import org.neo4j.cypher.internal.runtime.EntityProducer
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.values.AnyValue
@@ -53,6 +54,7 @@ object CodeGeneration {
   private val COMPUTE_METHOD = method(classOf[AnyValue], "evaluate",
                                       param(classOf[ExecutionContext], "context"),
                                       param(classOf[Transaction], "tx"),
+                                      param(classOf[EntityProducer], "producer"),
                                       param(classOf[MapValue], "params"))
 
   private def className(): String = "Expression" + System.nanoTime()

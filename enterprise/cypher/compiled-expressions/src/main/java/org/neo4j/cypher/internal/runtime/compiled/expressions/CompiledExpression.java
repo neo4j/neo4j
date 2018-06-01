@@ -22,6 +22,7 @@
  */
 package org.neo4j.cypher.internal.runtime.compiled.expressions;
 
+import org.neo4j.cypher.internal.runtime.EntityProducer;
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.values.AnyValue;
@@ -37,8 +38,10 @@ public interface CompiledExpression
      *
      * @param context the current context.
      * @param tx the current transaction
+     * @param producer used for creating nodes and relationships
      * @param params the parameters of the query
      * @return an evaluated result from the compiled expression and given input.
      */
-    AnyValue evaluate( ExecutionContext context, Transaction tx, MapValue params );
+    AnyValue evaluate( ExecutionContext context, Transaction tx,
+            EntityProducer producer, MapValue params );
 }
