@@ -220,6 +220,42 @@ class CompiledExpressionTest extends ExecutionEngineFunSuite with AstConstructio
     }
   }
 
+  test("RelationshipPropertyExists") {
+    // Given
+    val relationship = relate(createNode("otherProp" -> 42), createNode(), "prop" -> 43)
+
+    val offset = 42
+    val ctx = mock[ExecutionContext]
+    when(ctx.getLongAt(offset)).thenReturn(relationship.getId)
+    graph.inTx {
+      compile(RelationshipPropertyExists(offset, propertyToken("prop"), "prop")(null)).evaluate(ctx, transaction, EMPTY_MAP) should
+        equal(Values.TRUE)
+      compile(RelationshipPropertyExists(offset, propertyToken("otherProp"), "otherProp")(null)).evaluate(ctx, transaction, EMPTY_MAP) should
+        equal(Values.FALSE)
+      //this property probably doesn't exists in the db
+      compile(RelationshipPropertyExists(offset, 1234567, "otherProp")(null)).evaluate(ctx, transaction, EMPTY_MAP) should
+        equal(Values.FALSE)
+    }
+  }
+
+  test("RelationshipPropertyExistsLate") {
+    // Given
+    val relationship = relate(createNode("otherProp" -> 42), createNode(), "prop" -> 43)
+
+    val offset = 42
+    val ctx = mock[ExecutionContext]
+    when(ctx.getLongAt(offset)).thenReturn(relationship.getId)
+    graph.inTx {
+      compile(RelationshipPropertyExistsLate(offset, "prop", "prop")(null)).evaluate(ctx, transaction, EMPTY_MAP) should
+        equal(Values.TRUE)
+      compile(RelationshipPropertyExistsLate(offset, "otherProp", "otherProp")(null))
+        .evaluate(ctx, transaction, EMPTY_MAP) should
+        equal(Values.FALSE)
+      compile(RelationshipPropertyExistsLate(offset, "NOT_THERE_AT_ALL", "otherProp")(null)).evaluate(ctx, transaction, EMPTY_MAP) should
+        equal(Values.FALSE)
+    }
+  }
+
   private def compile(e: Expression) =
     CodeGeneration.compile(IntermediateCodeGeneration.compile(e).getOrElse(fail()))
 
