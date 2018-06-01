@@ -218,16 +218,22 @@ case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
 
       case FindShortestPaths(_, shortestPathPattern, predicates, withFallBack, disallowSameNode) =>
         val legacyShortestPath = shortestPathPattern.expr.asLegacyPatterns(shortestPathPattern.name, expressionConverters).head
-
         val pathVariables = Set(legacyShortestPath.pathName, legacyShortestPath.relIterator.getOrElse(""))
+
+        def noDependency(expression: ASTExpression) =
+          (expression.dependencies.map(_.name) intersect pathVariables).isEmpty
+
         val (perStepPredicates, fullPathPredicates) = predicates.partition {
-          case p =>
-            (p.dependencies.map(_.name) intersect pathVariables).isEmpty
+          case p: IterablePredicateExpression =>
+            noDependency(
+              p.innerPredicate.getOrElse(throw new InternalException("This should have been handled in planning")))
+          case e => noDependency(e)
         }
         val commandPerStepPredicates = perStepPredicates.map(p => buildPredicate(p))
         val commandFullPathPredicates = fullPathPredicates.map(p => buildPredicate(p))
 
-        val commandExpression = ShortestPathExpression(legacyShortestPath, commandPerStepPredicates, commandFullPathPredicates, withFallBack, disallowSameNode)
+        val commandExpression = ShortestPathExpression(legacyShortestPath, commandPerStepPredicates,
+                                                       commandFullPathPredicates, withFallBack, disallowSameNode)
         ShortestPathPipe(source, commandExpression, withFallBack, disallowSameNode)(id = id)
 
       case UnwindCollection(_, variable, collection) =>
