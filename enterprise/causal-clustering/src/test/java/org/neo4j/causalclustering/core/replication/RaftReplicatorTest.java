@@ -35,6 +35,7 @@ import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.ReplicatedInteger;
+import org.neo4j.causalclustering.core.replication.monitoring.ReplicationMonitor;
 import org.neo4j.causalclustering.core.replication.session.GlobalSession;
 import org.neo4j.causalclustering.core.replication.session.LocalSessionPool;
 import org.neo4j.causalclustering.core.state.Result;
@@ -45,6 +46,7 @@ import org.neo4j.causalclustering.messaging.Message;
 import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.time.Clocks;
@@ -56,7 +58,12 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
@@ -81,14 +88,14 @@ public class RaftReplicatorTest
     public void shouldSendReplicatedContentToLeader() throws Exception
     {
         // given
+        Monitors monitors = new Monitors();
+        ReplicationMonitor replicationMonitor = mock( ReplicationMonitor.class );
+        monitors.addMonitorListener( replicationMonitor );
         when( leaderLocator.getLeader() ).thenReturn( leader );
         CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
         CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
 
-        RaftReplicator replicator =
-                new RaftReplicator( leaderLocator, myself, outbound, sessionPool,
-                        capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy,
-                        availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
+        RaftReplicator replicator = getReplicator( outbound, capturedProgress, monitors );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, false );
@@ -104,19 +111,25 @@ public class RaftReplicatorTest
         // then
         replicatingThread.join( DEFAULT_TIMEOUT_MS );
         assertEquals( leader, outbound.lastTo );
+
+        verify( replicationMonitor, times( 1 ) ).startReplication( content );
+        verify( replicationMonitor, atLeast( 1 ) ).replicationAttempt();
+        verify( replicationMonitor, times( 1 ) ).successfulReplication();
+        verify( replicationMonitor, never() ).failedReplication( any() );
     }
 
     @Test
     public void shouldResendAfterTimeout() throws Exception
     {
         // given
+        Monitors monitors = new Monitors();
+        ReplicationMonitor replicationMonitor = mock( ReplicationMonitor.class );
+        monitors.addMonitorListener( replicationMonitor );
         when( leaderLocator.getLeader() ).thenReturn( leader );
         CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
         CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
 
-        RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound,
-                sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy,
-                availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
+        RaftReplicator replicator = getReplicator( outbound, capturedProgress, monitors );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, false );
@@ -129,6 +142,11 @@ public class RaftReplicatorTest
         // cleanup
         capturedProgress.last.setReplicated();
         replicatingThread.join( DEFAULT_TIMEOUT_MS );
+
+        verify( replicationMonitor, times( 1 ) ).startReplication( content );
+        verify( replicationMonitor, atLeast( 2 ) ).replicationAttempt();
+        verify( replicationMonitor, times( 1 ) ).successfulReplication();
+        verify( replicationMonitor, never() ).failedReplication( any() );
     }
 
     @Test
@@ -139,10 +157,7 @@ public class RaftReplicatorTest
         CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
         CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
 
-        RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound,
-                sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy,
-                availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
-
+        RaftReplicator replicator = getReplicator( outbound, capturedProgress, new Monitors() );
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, true );
 
@@ -166,14 +181,15 @@ public class RaftReplicatorTest
     @Test
     public void stopReplicationOnShutdown() throws NoLeaderFoundException, InterruptedException
     {
+        // given
+        Monitors monitors = new Monitors();
+        ReplicationMonitor replicationMonitor = mock( ReplicationMonitor.class );
+        monitors.addMonitorListener( replicationMonitor );
         when( leaderLocator.getLeader() ).thenReturn( leader );
         CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
         CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
 
-        RaftReplicator replicator =
-                new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy,
-                        availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
-
+        RaftReplicator replicator = getReplicator( outbound, capturedProgress, monitors );
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         ReplicatingThread replicatingThread = replicatingThread( replicator, content, true );
 
@@ -183,6 +199,11 @@ public class RaftReplicatorTest
         availabilityGuard.shutdown();
         replicatingThread.join();
         assertThat( replicatingThread.getReplicationException(), Matchers.instanceOf( DatabaseShutdownException.class ) );
+
+        verify( replicationMonitor, times( 1 ) ).startReplication( content );
+        verify( replicationMonitor, times( 1 ) ).replicationAttempt();
+        verify( replicationMonitor, never() ).successfulReplication();
+        verify( replicationMonitor, times( 1 ) ).failedReplication( any() );
     }
 
     @Test
@@ -194,9 +215,7 @@ public class RaftReplicatorTest
         CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
         CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
 
-        RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress,
-                noWaitTimeoutStrategy, noWaitTimeoutStrategy, availabilityGuard, NullLogProvider.getInstance(),
-                replicationLimit );
+        RaftReplicator replicator = getReplicator( outbound, capturedProgress, new Monitors() );
 
         // when
         try
@@ -220,9 +239,7 @@ public class RaftReplicatorTest
         CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
         CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
 
-        RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress,
-                noWaitTimeoutStrategy, noWaitTimeoutStrategy, availabilityGuard, NullLogProvider.getInstance(),
-                replicationLimit );
+        RaftReplicator replicator = getReplicator( outbound, capturedProgress, new Monitors() );
 
         // when
         try
@@ -235,6 +252,12 @@ public class RaftReplicatorTest
         {
             assertEquals( "Replication aborted since a leader switch was detected", e.getMessage() );
         }
+    }
+
+    private RaftReplicator getReplicator( CapturingOutbound<RaftMessages.RaftMessage> outbound, CapturingProgressTracker capturedProgress, Monitors monitors )
+    {
+        return new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy,
+                availabilityGuard, NullLogProvider.getInstance(), replicationLimit, monitors );
     }
 
     private ReplicatingThread replicatingThread( RaftReplicator replicator, ReplicatedInteger content, boolean trackResult )
