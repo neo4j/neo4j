@@ -49,7 +49,7 @@ public class LoggingReplicationMonitor implements ReplicationMonitor
     {
         if ( attempts > 0 )
         {
-            log.warn( format( "Failed to replicated content. Attempt %d, Content: %s", attempts, current ) );
+            log.warn( "Failed to replicate content. Attempt %d, Content: %s", attempts, current );
         }
         attempts++;
     }
@@ -64,7 +64,7 @@ public class LoggingReplicationMonitor implements ReplicationMonitor
     public void failedReplication( Throwable t )
     {
         clear( null );
-        log.error( "Failed to replicated content", t );
+        log.error( "Failed to replicate content", t );
     }
 
     private void clear( ReplicatedContent o )
