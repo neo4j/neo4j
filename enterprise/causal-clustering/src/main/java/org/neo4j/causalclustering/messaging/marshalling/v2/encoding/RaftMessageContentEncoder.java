@@ -32,7 +32,7 @@ import java.util.stream.Stream;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
-import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentSerializer;
+import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentMarshal;
 import org.neo4j.causalclustering.messaging.marshalling.v2.ContentType;
 
 import static org.neo4j.causalclustering.messaging.marshalling.v2.encoding.RaftLogEntryTermEncoder.serializable;
@@ -40,9 +40,9 @@ import static org.neo4j.causalclustering.messaging.marshalling.v2.encoding.RaftL
 public class RaftMessageContentEncoder extends MessageToMessageEncoder<RaftMessages.ClusterIdAwareMessage>
 {
 
-    private final CoreReplicatedContentSerializer serializer;
+    private final CoreReplicatedContentMarshal serializer;
 
-    public RaftMessageContentEncoder( CoreReplicatedContentSerializer serializer )
+    public RaftMessageContentEncoder( CoreReplicatedContentMarshal serializer )
     {
         this.serializer = serializer;
     }

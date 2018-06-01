@@ -49,7 +49,7 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
-import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentSerializer;
+import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentMarshal;
 
 import static org.junit.Assert.assertEquals;
 
@@ -93,7 +93,7 @@ public class CoreReplicatedContentMarshallingTest
     @Test
     public void shouldSerializeAndDeserialize() throws Exception
     {
-        ChannelMarshal<ReplicatedContent> coreReplicatedContentSerializer = new CoreReplicatedContentSerializer();
+        ChannelMarshal<ReplicatedContent> coreReplicatedContentSerializer = new CoreReplicatedContentMarshal();
         NetworkFlushableChannelNetty4 channel = new NetworkFlushableChannelNetty4( buffer );
         coreReplicatedContentSerializer.marshal( replicatedContent, channel );
 

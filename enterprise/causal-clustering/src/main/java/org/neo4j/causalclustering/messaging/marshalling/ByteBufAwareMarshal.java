@@ -30,15 +30,15 @@ import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.storageengine.api.WritableChannel;
 
-public interface Serializer extends Marshal
+public interface ByteBufAwareMarshal extends Marshal
 {
     /** May override buffer allocation size.
      * @param channelConsumer used by both encode and marshal to serialize the object.
      * @return a simple serializer that encodes all the content at once.
      */
-    static Serializer simple( ThrowingConsumer<WritableChannel,IOException> channelConsumer )
+    static ByteBufAwareMarshal simple( ThrowingConsumer<WritableChannel,IOException> channelConsumer )
     {
-        return new Serializer()
+        return new ByteBufAwareMarshal()
         {
             private boolean consumed;
 

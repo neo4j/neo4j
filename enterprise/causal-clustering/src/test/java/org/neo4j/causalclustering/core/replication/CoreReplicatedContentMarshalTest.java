@@ -42,7 +42,7 @@ import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionFa
 import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentSerializer;
+import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentMarshal;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -55,7 +55,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class CoreReplicatedContentMarshalTest
 {
-    private final ChannelMarshal<ReplicatedContent> marshal = new CoreReplicatedContentSerializer();
+    private final ChannelMarshal<ReplicatedContent> marshal = new CoreReplicatedContentMarshal();
 
     @Test
     public void shouldMarshalTransactionReference() throws Exception
