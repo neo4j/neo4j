@@ -23,7 +23,7 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
 public class ChunkDecoder extends LengthFieldBasedFrameDecoder
 {
-    private static final int MAX_FRAME_LENGTH = 0xFFFF;
+    private static final int MAX_CHUNK_LENGTH = 0xFFFF;
     private static final int LENGTH_FIELD_OFFSET = 0;
     private static final int LENGTH_FIELD_SIZE = 2;
     private static final int LENGTH_ADJUSTMENT = 0;
@@ -31,6 +31,6 @@ public class ChunkDecoder extends LengthFieldBasedFrameDecoder
 
     public ChunkDecoder()
     {
-        super( MAX_FRAME_LENGTH, LENGTH_FIELD_OFFSET, LENGTH_FIELD_SIZE, LENGTH_ADJUSTMENT, INITIAL_BYTES_TO_STRIP );
+        super( MAX_CHUNK_LENGTH + LENGTH_FIELD_SIZE, LENGTH_FIELD_OFFSET, LENGTH_FIELD_SIZE, LENGTH_ADJUSTMENT, INITIAL_BYTES_TO_STRIP );
     }
 }
