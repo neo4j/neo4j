@@ -199,7 +199,25 @@ class CompiledExpressionTest extends ExecutionEngineFunSuite with AstConstructio
       compile(NodePropertyExists(offset, 1234567, "otherProp")(null)).evaluate(ctx, transaction, EMPTY_MAP) should
         equal(Values.FALSE)
     }
+  }
 
+  test("NodePropertyExistsLate") {
+    // Given
+    val node = createNode("prop" -> 42)
+    createNode("otherProp" -> 42)
+
+    val offset = 42
+    val ctx = mock[ExecutionContext]
+    when(ctx.getLongAt(offset)).thenReturn(node.getId)
+    graph.inTx {
+      compile(NodePropertyExistsLate(offset, "prop", "prop")(null)).evaluate(ctx, transaction, EMPTY_MAP) should
+        equal(Values.TRUE)
+      compile(NodePropertyExistsLate(offset, "otherProp", "otherProp")(null))
+        .evaluate(ctx, transaction, EMPTY_MAP) should
+        equal(Values.FALSE)
+      compile(NodePropertyExistsLate(offset, "NOT_THERE_AT_ALL", "otherProp")(null)).evaluate(ctx, transaction, EMPTY_MAP) should
+        equal(Values.FALSE)
+    }
   }
 
   private def compile(e: Expression) =

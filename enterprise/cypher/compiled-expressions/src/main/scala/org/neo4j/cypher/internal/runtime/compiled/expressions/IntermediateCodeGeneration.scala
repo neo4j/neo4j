@@ -164,6 +164,10 @@ object IntermediateCodeGeneration {
       Some(invokeStatic(method[CypherDbAccess, BooleanValue, Transaction, Long, Int]("nodeHasProperty"),
                         load("tx"), getLongAt(offset), constant(token)))
 
+    case NodePropertyExistsLate(offset, key, _) =>
+      Some(invokeStatic(method[CypherDbAccess, BooleanValue, Transaction, Long, String]("nodeHasProperty"),
+                        load("tx"), getLongAt(offset), constant(key)))
+
     case RelationshipProperty(offset, token, _) =>
       Some(invokeStatic(method[CypherDbAccess, Value, Transaction, Long, Int]("relationshipProperty"),
                         load("tx"), getLongAt(offset), constant(token)))

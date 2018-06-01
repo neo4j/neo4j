@@ -233,6 +233,16 @@ public final class CypherDbAccess
         }
     }
 
+    public static BooleanValue nodeHasProperty( Transaction tx, long node, String key )
+    {
+        int property = tx.tokenRead().propertyKey( key );
+        if ( property == NO_TOKEN )
+        {
+            return Values.FALSE;
+        }
+        return nodeHasProperty( tx, node, property );
+    }
+
     private static Value property( PropertyCursor properties, int property )
     {
         while ( properties.next() )
