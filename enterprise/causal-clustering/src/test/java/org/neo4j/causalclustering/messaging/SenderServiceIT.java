@@ -39,8 +39,10 @@ import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.membership.MemberIdSet;
-import org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolClientInstaller;
-import org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolServerInstaller;
+import org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolClientInstallerV1;
+import org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolServerInstallerV1;
+import org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolClientInstallerV2;
+import org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolServerInstallerV2;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.net.Server;
@@ -143,9 +145,9 @@ public class SenderServiceIT
     {
         NettyPipelineBuilderFactory pipelineFactory = new NettyPipelineBuilderFactory( VOID_WRAPPER );
 
-        RaftProtocolServerInstaller.Factory factoryV1 = new RaftProtocolServerInstaller.Factory( nettyHandler, pipelineFactory, logProvider );
-        org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolServerInstaller.Factory factoryV2 =
-                new org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolServerInstaller.Factory( nettyHandler, pipelineFactory, logProvider );
+        RaftProtocolServerInstallerV1.Factory factoryV1 = new RaftProtocolServerInstallerV1.Factory( nettyHandler, pipelineFactory, logProvider );
+        RaftProtocolServerInstallerV2.Factory factoryV2 =
+                new RaftProtocolServerInstallerV2.Factory( nettyHandler, pipelineFactory, logProvider );
         ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> installer =
                 new ProtocolInstallerRepository<>( Arrays.asList( factoryV1, factoryV2 ), ModifierProtocolInstaller.allServerInstallers );
 
@@ -160,9 +162,9 @@ public class SenderServiceIT
     {
         NettyPipelineBuilderFactory pipelineFactory = new NettyPipelineBuilderFactory( VOID_WRAPPER );
 
-        RaftProtocolClientInstaller.Factory factoryV1 = new RaftProtocolClientInstaller.Factory( pipelineFactory, logProvider );
-        org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolClientInstaller.Factory factoryV2 =
-                new org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolClientInstaller.Factory( pipelineFactory, logProvider );
+        RaftProtocolClientInstallerV1.Factory factoryV1 = new RaftProtocolClientInstallerV1.Factory( pipelineFactory, logProvider );
+        RaftProtocolClientInstallerV2.Factory factoryV2 =
+                new RaftProtocolClientInstallerV2.Factory( pipelineFactory, logProvider );
         ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstaller =
                 new ProtocolInstallerRepository<>( Arrays.asList( factoryV1, factoryV2 ), ModifierProtocolInstaller.allClientInstallers );
 
