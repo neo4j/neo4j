@@ -158,7 +158,7 @@ object IntermediateRepresentation {
 
   def falsy: IntermediateRepresentation = FALSE
 
-  def constantJavaValue(value: Any): IntermediateRepresentation = Constant(value)
+  def constant(value: Any): IntermediateRepresentation = Constant(value)
 
   def arrayOf(values: IntermediateRepresentation*): IntermediateRepresentation = ArrayLiteral(values.toArray)
 }

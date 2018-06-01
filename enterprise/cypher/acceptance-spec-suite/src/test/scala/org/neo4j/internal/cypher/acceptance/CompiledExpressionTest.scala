@@ -24,10 +24,10 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.mockito.Mockito.when
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.{NodeProperty, RelationshipProperty}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.{NodeProperty, NodePropertyLate, RelationshipProperty}
 import org.neo4j.cypher.internal.runtime.compiled.expressions.{CodeGeneration, IntermediateCodeGeneration}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.values.storable.Values.stringValue
+import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.opencypher.v9_0.ast.AstConstructionTestSupport
 import org.opencypher.v9_0.expressions.Expression
@@ -50,6 +50,21 @@ class CompiledExpressionTest extends ExecutionEngineFunSuite with AstConstructio
     graph.inTx(
       compiled.evaluate(ctx, transaction, EMPTY_MAP) should equal(stringValue("hello"))
     )
+  }
+
+  test("late node property access") {
+    // Given
+    val node = createNode("prop" -> "hello").getId
+    val offset = 42
+    val ctx = mock[ExecutionContext]
+    when(ctx.getLongAt(offset)).thenReturn(node)
+    // Then
+    graph.inTx {
+      compile(NodePropertyLate(offset, "prop", "prop")(null)).evaluate(ctx, transaction, EMPTY_MAP) should
+        equal(stringValue("hello"))
+      compile(NodePropertyLate(offset, "notThere", "prop")(null)).evaluate(ctx, transaction, EMPTY_MAP) should
+        equal(NO_VALUE)
+    }
   }
 
   test("should fail if node has been deleted in transaction") {

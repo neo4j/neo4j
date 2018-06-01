@@ -22,7 +22,7 @@
  */
 package org.neo4j.cypher.internal.runtime.compiled.expressions
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.{IdFromSlot, NodeProperty, ReferenceFromSlot, RelationshipProperty}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast._
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.operations.{CypherBoolean, CypherDbAccess, CypherFunctions, CypherMath}
 import org.neo4j.internal.kernel.api.Transaction
@@ -99,9 +99,9 @@ object IntermediateCodeGeneration {
       }
 
     //literals
-    case d: DoubleLiteral => Some(invokeStatic(method[Values, DoubleValue, Double]("doubleValue"), constantJavaValue(d.value)))
-    case i: IntegerLiteral => Some(invokeStatic(method[Values, LongValue, Long]("longValue"), constantJavaValue(i.value)))
-    case s: expressions.StringLiteral => Some(invokeStatic(method[Values, TextValue, String]("stringValue"), constantJavaValue(s.value)))
+    case d: DoubleLiteral => Some(invokeStatic(method[Values, DoubleValue, Double]("doubleValue"), constant(d.value)))
+    case i: IntegerLiteral => Some(invokeStatic(method[Values, LongValue, Long]("longValue"), constant(i.value)))
+    case s: expressions.StringLiteral => Some(invokeStatic(method[Values, TextValue, String]("stringValue"), constant(s.value)))
     case _: Null => Some(noValue)
     case _: True => Some(truthy)
     case _: False => Some(falsy)
@@ -149,29 +149,35 @@ object IntermediateCodeGeneration {
 
     //data access
     case Parameter(name, _) =>
-      Some(invoke(load("params"), method[MapValue, AnyValue, String]("get"), constantJavaValue(name)))
+      Some(invoke(load("params"), method[MapValue, AnyValue, String]("get"), constant(name)))
 
     case NodeProperty(offset, token, _) =>
       Some(invokeStatic(method[CypherDbAccess, Value, Transaction, Long, Int]("nodeProperty"),
                         load("tx"),
                         invoke(load("context"), method[ExecutionContext, Long, Int]("getLongAt"),
-                               constantJavaValue(offset)), constantJavaValue(token)))
+                               constant(offset)), constant(token)))
+
+    case NodePropertyLate(offset, key, _) =>
+      Some(invokeStatic(method[CypherDbAccess, Value, Transaction, Long, String]("nodeProperty"),
+                        load("tx"),
+                        invoke(load("context"), method[ExecutionContext, Long, Int]("getLongAt"),
+                               constant(offset)), constant(key)))
 
     case RelationshipProperty(offset, token, _) =>
       Some(invokeStatic(method[CypherDbAccess, Value, Transaction, Long, Int]("relationshipProperty"),
                         load("tx"),
                         invoke(load("context"), method[ExecutionContext, Long, Int]("getLongAt"),
-                               constantJavaValue(offset)), constantJavaValue(token)))
+                               constant(offset)), constant(token)))
 
       //slotted operations
     case ReferenceFromSlot(offset, _) =>
       Some(invoke(load("context"), method[ExecutionContext, AnyValue, Int]("getRefAt"),
-                                                     constantJavaValue(offset)))
+                  constant(offset)))
     case IdFromSlot(offset) =>
       Some(
         invokeStatic(method[Values, LongValue, Long]("longValue"),
                      invoke(load("context"), method[ExecutionContext, Long, Int]("getLongAt"),
-                            constantJavaValue(offset))))
+                            constant(offset))))
     case _ => None
   }
 
