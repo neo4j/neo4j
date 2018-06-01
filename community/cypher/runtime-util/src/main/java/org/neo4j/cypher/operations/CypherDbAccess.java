@@ -26,7 +26,10 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.helpers.Nodes;
+import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -104,6 +107,105 @@ public final class CypherDbAccess
         }
 
         return relationshipProperty( tx, node, property );
+    }
+
+    public static IntegralValue getOutgoingDegree(Transaction tx, long node )
+    {
+        CursorFactory cursors = tx.cursors();
+        try ( NodeCursor cursor = cursors.allocateNodeCursor() )
+        {
+            tx.dataRead().singleNode( node, cursor );
+            if ( !cursor.next() )
+            {
+                return Values.ZERO_INT;
+            }
+            return Values.intValue( Nodes.countOutgoing( cursor, cursors ) );
+        }
+    }
+
+    public static IntegralValue getOutgoingDegree(Transaction tx, long node, String relationshipType )
+    {
+        int relationship = tx.tokenRead().relationshipType( relationshipType );
+        if ( relationship == NO_TOKEN )
+        {
+            return Values.ZERO_INT;
+        }
+        CursorFactory cursors = tx.cursors();
+        try ( NodeCursor cursor = cursors.allocateNodeCursor() )
+        {
+            tx.dataRead().singleNode( node, cursor );
+            if ( !cursor.next() )
+            {
+                return Values.ZERO_INT;
+            }
+            return Values.intValue( Nodes.countOutgoing( cursor, cursors, relationship ) );
+        }
+    }
+
+    public static IntegralValue getIncomingDegree(Transaction tx, long node )
+    {
+        CursorFactory cursors = tx.cursors();
+        try ( NodeCursor cursor = cursors.allocateNodeCursor() )
+        {
+            tx.dataRead().singleNode( node, cursor );
+            if ( !cursor.next() )
+            {
+                return Values.ZERO_INT;
+            }
+            return Values.intValue( Nodes.countIncoming( cursor, cursors ) );
+        }
+    }
+
+    public static IntegralValue getIncomingDegree(Transaction tx, long node, String relationshipType )
+    {
+        int relationship = tx.tokenRead().relationshipType( relationshipType );
+        if ( relationship == NO_TOKEN )
+        {
+            return Values.ZERO_INT;
+        }
+        CursorFactory cursors = tx.cursors();
+        try ( NodeCursor cursor = cursors.allocateNodeCursor() )
+        {
+            tx.dataRead().singleNode( node, cursor );
+            if ( !cursor.next() )
+            {
+                return Values.ZERO_INT;
+            }
+            return Values.intValue( Nodes.countIncoming( cursor, cursors, relationship ));
+        }
+    }
+
+    public static IntegralValue getTotalDegree(Transaction tx, long node )
+    {
+        CursorFactory cursors = tx.cursors();
+        try ( NodeCursor cursor = cursors.allocateNodeCursor() )
+        {
+            tx.dataRead().singleNode( node, cursor );
+            if ( !cursor.next() )
+            {
+                return Values.ZERO_INT;
+            }
+            return Values.intValue( Nodes.countAll( cursor, cursors ) );
+        }
+    }
+
+    public static IntegralValue getTotalDegree(Transaction tx, long node, String relationshipType )
+    {
+        int relationship = tx.tokenRead().relationshipType( relationshipType );
+        if ( relationship == NO_TOKEN )
+        {
+            return Values.ZERO_INT;
+        }
+        CursorFactory cursors = tx.cursors();
+        try ( NodeCursor cursor = cursors.allocateNodeCursor() )
+        {
+            tx.dataRead().singleNode( node, cursor );
+            if ( !cursor.next() )
+            {
+                return Values.ZERO_INT;
+            }
+            return Values.intValue( Nodes.countAll( cursor, cursors, relationship ) );
+        }
     }
 
     private static Value property( PropertyCursor properties, int property )

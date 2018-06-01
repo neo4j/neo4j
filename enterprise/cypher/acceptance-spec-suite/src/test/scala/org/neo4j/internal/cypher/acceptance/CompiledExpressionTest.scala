@@ -24,13 +24,14 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.mockito.Mockito.when
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.{NodeProperty, NodePropertyLate, RelationshipProperty, RelationshipPropertyLate}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast._
 import org.neo4j.cypher.internal.runtime.compiled.expressions.{CodeGeneration, IntermediateCodeGeneration}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.opencypher.v9_0.ast.AstConstructionTestSupport
-import org.opencypher.v9_0.expressions.Expression
+import org.opencypher.v9_0.expressions.{Expression, SemanticDirection}
 import org.opencypher.v9_0.util.EntityNotFoundException
 
 class CompiledExpressionTest extends ExecutionEngineFunSuite with AstConstructionTestSupport {
@@ -132,6 +133,52 @@ class CompiledExpressionTest extends ExecutionEngineFunSuite with AstConstructio
     graph.inTx {
       relationship.delete()
       an[EntityNotFoundException] should be thrownBy compiled.evaluate(ctx, transaction, EMPTY_MAP)
+    }
+  }
+
+  test("getDegree without type") {
+    // Given
+    val node = createNode()
+    relate(node, createNode())
+    relate(node, createNode())
+    relate(node, createNode())
+    relate(createNode(), node)
+    relate(createNode(), node)
+
+    val offset = 42
+    val ctx = mock[ExecutionContext]
+    when(ctx.getLongAt(offset)).thenReturn(node.getId)
+    // Then
+    graph.inTx {
+      compile(GetDegreePrimitive(offset, None, SemanticDirection.OUTGOING)).evaluate(ctx, transaction, EMPTY_MAP) should
+        equal(Values.longValue(3))
+      compile(GetDegreePrimitive(offset, None, SemanticDirection.INCOMING)).evaluate(ctx, transaction, EMPTY_MAP) should
+        equal(Values.longValue(2))
+      compile(GetDegreePrimitive(offset, None, SemanticDirection.BOTH)).evaluate(ctx, transaction, EMPTY_MAP) should
+        equal(Values.longValue(5))
+    }
+  }
+
+  test("getDegree with type") {
+    // Given
+    val node = createNode()
+    relate(node, createNode(), "R")
+    relate(node, createNode(), "OTHER")
+    relate(node, createNode(), "R")
+    relate(createNode(), node, "OTHER")
+    relate(createNode(), node, "R")
+
+    val offset = 42
+    val ctx = mock[ExecutionContext]
+    when(ctx.getLongAt(offset)).thenReturn(node.getId)
+    // Then
+    graph.inTx {
+      compile(GetDegreePrimitive(offset, Some("R"), SemanticDirection.OUTGOING)).evaluate(ctx, transaction, EMPTY_MAP) should
+        equal(Values.longValue(2))
+      compile(GetDegreePrimitive(offset, Some("R"), SemanticDirection.INCOMING)).evaluate(ctx, transaction, EMPTY_MAP) should
+        equal(Values.longValue(1))
+      compile(GetDegreePrimitive(offset, Some("R"), SemanticDirection.BOTH)).evaluate(ctx, transaction, EMPTY_MAP) should
+        equal(Values.longValue(3))
     }
   }
 
