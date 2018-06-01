@@ -27,8 +27,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.operations.{CypherBoolean, CypherDbAccess, CypherFunctions, CypherMath}
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values.{doubleValue, longValue}
-import org.neo4j.values.storable.{DoubleValue, LongValue, Value, Values}
+import org.neo4j.values.storable._
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions._
@@ -100,9 +99,9 @@ object IntermediateCodeGeneration {
       }
 
     //literals
-    case d: DoubleLiteral => Some(float(doubleValue(d.value)))
-    case i: IntegerLiteral => Some(integer(longValue(i.value)))
-    case s: expressions.StringLiteral => Some(string(Values.stringValue(s.value)))
+    case d: DoubleLiteral => Some(invokeStatic(method[Values, DoubleValue, Double]("doubleValue"), constantJavaValue(d.value)))
+    case i: IntegerLiteral => Some(invokeStatic(method[Values, LongValue, Long]("longValue"), constantJavaValue(i.value)))
+    case s: expressions.StringLiteral => Some(invokeStatic(method[Values, TextValue, String]("stringValue"), constantJavaValue(s.value)))
     case _: Null => Some(noValue)
     case _: True => Some(truthy)
     case _: False => Some(falsy)
