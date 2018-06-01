@@ -401,3 +401,22 @@ Feature: ShortestPathAcceptance
       | 1      |
     And no side effects
 
+
+  Scenario: Find shortest path when there are shorter paths with same start and end node
+    And having executed:
+      """
+      CREATE (s:START), (e:END)
+      CREATE(s)-[:R]->()-[:R]->(e),
+             (s)-[:R {p:42}]->()-[:R {p:42}]->()-[:R {p:42}]->(e)
+      """
+    When executing query:
+      """
+      MATCH p = allShortestPaths((start:START)-[*]->(end:END))
+      WHERE ALL(x in relationships(p) WHERE exists(x.p))
+      RETURN length(p) AS len
+      """
+    Then the result should be, in order:
+      | len |
+      |  3  |
+    And no side effects
+
