@@ -160,6 +160,10 @@ object IntermediateCodeGeneration {
       Some(invokeStatic(method[CypherDbAccess, Value, Transaction, Long, String]("nodeProperty"),
                         load("tx"), getLongAt(offset), constant(key)))
 
+    case NodePropertyExists(offset, token, _) =>
+      Some(invokeStatic(method[CypherDbAccess, BooleanValue, Transaction, Long, Int]("nodeHasProperty"),
+                        load("tx"), getLongAt(offset), constant(token)))
+
     case RelationshipProperty(offset, token, _) =>
       Some(invokeStatic(method[CypherDbAccess, Value, Transaction, Long, Int]("relationshipProperty"),
                         load("tx"), getLongAt(offset), constant(token)))
@@ -167,6 +171,22 @@ object IntermediateCodeGeneration {
     case RelationshipPropertyLate(offset, key, _) =>
       Some(invokeStatic(method[CypherDbAccess, Value, Transaction, Long, String]("relationshipProperty"),
                         load("tx"), getLongAt(offset), constant(key)))
+
+    case GetDegreePrimitive(offset, typ, dir) =>
+      val methodName = dir match {
+        case SemanticDirection.OUTGOING => "getOutgoingDegree"
+        case SemanticDirection.INCOMING => "getIncomingDegree"
+        case SemanticDirection.BOTH => "getTotalDegree"
+      }
+      typ match {
+        case None =>
+          Some(invokeStatic(method[CypherDbAccess, IntegralValue, Transaction, Long](methodName),
+                            load("tx"), getLongAt(offset)))
+
+        case Some(t) =>
+          Some(invokeStatic(method[CypherDbAccess, IntegralValue, Transaction, Long, String](methodName),
+                            load("tx"),  getLongAt(offset), constant(t)))
+      }
 
       //slotted operations
     case ReferenceFromSlot(offset, _) =>
@@ -182,22 +202,6 @@ object IntermediateCodeGeneration {
         invokeStatic(method[Values, BooleanValue, Boolean]("booleanValue"),
           invoke(l, method[AnyValue, Boolean, AnyRef]("equals"), r)
         )
-
-    case GetDegreePrimitive(offset, typ, dir) =>
-      val methodName = dir match {
-        case SemanticDirection.OUTGOING => "getOutgoingDegree"
-        case SemanticDirection.INCOMING => "getIncomingDegree"
-        case SemanticDirection.BOTH => "getTotalDegree"
-      }
-      typ match {
-        case None =>
-            Some(invokeStatic(method[CypherDbAccess, IntegralValue, Transaction, Long](methodName),
-                              load("tx"), getLongAt(offset)))
-
-          case Some(t) =>
-            Some(invokeStatic(method[CypherDbAccess, IntegralValue, Transaction, Long, String](methodName),
-                              load("tx"),  getLongAt(offset), constant(t)))
-        }
 
     case _ => None
   }
