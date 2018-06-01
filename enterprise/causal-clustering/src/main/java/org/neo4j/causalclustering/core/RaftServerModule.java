@@ -35,7 +35,8 @@ import org.neo4j.causalclustering.core.consensus.LeaderAvailabilityHandler;
 import org.neo4j.causalclustering.core.consensus.RaftMessageMonitoringHandler;
 import org.neo4j.causalclustering.core.consensus.RaftMessageNettyHandler;
 import org.neo4j.causalclustering.core.consensus.RaftMessages.ReceivedInstantClusterIdAwareMessage;
-import org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolServerInstaller;
+import org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolServerInstallerV1;
+import org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolServerInstallerV2;
 import org.neo4j.causalclustering.core.server.CoreServerModule;
 import org.neo4j.causalclustering.core.state.RaftMessageApplier;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -115,10 +116,10 @@ class RaftServerModule
                 new ModifierProtocolRepository( Protocol.ModifierProtocols.values(), supportedModifierProtocols );
 
         RaftMessageNettyHandler nettyHandler = new RaftMessageNettyHandler( logProvider );
-        RaftProtocolServerInstaller.Factory raftProtocolServerInstallerV2 =
-                new RaftProtocolServerInstaller.Factory( nettyHandler, pipelineBuilderFactory, logProvider );
-        org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolServerInstaller.Factory raftProtocolServerInstallerV1 =
-                new org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolServerInstaller.Factory( nettyHandler, pipelineBuilderFactory,
+        RaftProtocolServerInstallerV2.Factory raftProtocolServerInstallerV2 =
+                new RaftProtocolServerInstallerV2.Factory( nettyHandler, pipelineBuilderFactory, logProvider );
+        RaftProtocolServerInstallerV1.Factory raftProtocolServerInstallerV1 =
+                new RaftProtocolServerInstallerV1.Factory( nettyHandler, pipelineBuilderFactory,
                         logProvider );
         ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> protocolInstallerRepository =
                 new ProtocolInstallerRepository<>( asList( raftProtocolServerInstallerV1, raftProtocolServerInstallerV2 ),

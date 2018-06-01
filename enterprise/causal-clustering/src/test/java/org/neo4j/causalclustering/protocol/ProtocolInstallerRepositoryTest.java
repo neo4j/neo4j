@@ -27,8 +27,8 @@ import org.junit.Test;
 import java.util.Collection;
 import java.util.List;
 
-import org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolClientInstaller;
-import org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolServerInstaller;
+import org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolClientInstallerV1;
+import org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolServerInstallerV1;
 import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocols;
 import org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols;
@@ -64,10 +64,10 @@ public class ProtocolInstallerRepositoryTest
 
     private final NettyPipelineBuilderFactory pipelineBuilderFactory =
             new NettyPipelineBuilderFactory( VoidPipelineWrapperFactory.VOID_WRAPPER );
-    private final RaftProtocolClientInstaller.Factory raftProtocolClientInstaller =
-            new RaftProtocolClientInstaller.Factory( pipelineBuilderFactory, NullLogProvider.getInstance() );
-    private final RaftProtocolServerInstaller.Factory raftProtocolServerInstaller =
-            new RaftProtocolServerInstaller.Factory( null, pipelineBuilderFactory, NullLogProvider.getInstance() );
+    private final RaftProtocolClientInstallerV1.Factory raftProtocolClientInstaller =
+            new RaftProtocolClientInstallerV1.Factory( pipelineBuilderFactory, NullLogProvider.getInstance() );
+    private final RaftProtocolServerInstallerV1.Factory raftProtocolServerInstaller =
+            new RaftProtocolServerInstallerV1.Factory( null, pipelineBuilderFactory, NullLogProvider.getInstance() );
 
     private final ProtocolInstallerRepository<Orientation.Client> clientRepository =
             new ProtocolInstallerRepository<>( asList( raftProtocolClientInstaller ), clientModifiers );

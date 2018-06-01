@@ -37,8 +37,8 @@ import java.util.UUID;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
-import org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolClientInstaller;
-import org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolServerInstaller;
+import org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolClientInstallerV2;
+import org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolServerInstallerV2;
 import org.neo4j.causalclustering.core.replication.DistributedOperation;
 import org.neo4j.causalclustering.core.replication.session.GlobalSession;
 import org.neo4j.causalclustering.core.replication.session.LocalOperationId;
@@ -94,9 +94,9 @@ public class RaftMessageEncoderDecoderTest
         outbound = new EmbeddedChannel();
         inbound = new EmbeddedChannel();
 
-        new RaftProtocolClientInstaller( new NettyPipelineBuilderFactory( VoidPipelineWrapperFactory.VOID_WRAPPER ), Collections.emptyList(),
+        new RaftProtocolClientInstallerV2( new NettyPipelineBuilderFactory( VoidPipelineWrapperFactory.VOID_WRAPPER ), Collections.emptyList(),
                 FormattedLogProvider.toOutputStream( System.out ) ).install( outbound );
-        new RaftProtocolServerInstaller( handler, new NettyPipelineBuilderFactory( VoidPipelineWrapperFactory.VOID_WRAPPER ), Collections.emptyList(),
+        new RaftProtocolServerInstallerV2( handler, new NettyPipelineBuilderFactory( VoidPipelineWrapperFactory.VOID_WRAPPER ), Collections.emptyList(),
                 FormattedLogProvider.toOutputStream( System.out ) ).install( inbound );
     }
 

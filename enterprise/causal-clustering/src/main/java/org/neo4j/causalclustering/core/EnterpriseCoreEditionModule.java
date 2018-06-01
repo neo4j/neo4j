@@ -39,7 +39,8 @@ import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFiles;
 import org.neo4j.causalclustering.core.consensus.ConsensusModule;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
-import org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolClientInstaller;
+import org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolClientInstallerV1;
+import org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolClientInstallerV2;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.core.replication.ReplicationBenchmarkProcedure;
 import org.neo4j.causalclustering.core.replication.Replicator;
@@ -271,8 +272,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 new ModifierProtocolRepository( Protocol.ModifierProtocols.values(), supportedModifierProtocols );
 
         ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstallerRepository = new ProtocolInstallerRepository<>(
-                asList( new RaftProtocolClientInstaller.Factory( clientPipelineBuilderFactory, logProvider ),
-                        new org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolClientInstaller.Factory( clientPipelineBuilderFactory,
+                asList( new RaftProtocolClientInstallerV2.Factory( clientPipelineBuilderFactory, logProvider ),
+                        new RaftProtocolClientInstallerV1.Factory( clientPipelineBuilderFactory,
                                 logProvider ) ),
                         ModifierProtocolInstaller.allClientInstallers );
 

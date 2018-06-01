@@ -43,16 +43,16 @@ import org.neo4j.causalclustering.protocol.ProtocolInstaller.Orientation;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class RaftProtocolServerInstaller implements ProtocolInstaller<Orientation.Server>
+public class RaftProtocolServerInstallerV2 implements ProtocolInstaller<Orientation.Server>
 {
     private static final Protocol.ApplicationProtocols APPLICATION_PROTOCOL = Protocol.ApplicationProtocols.RAFT_2;
     private final LogProvider logProvider;
 
-    public static class Factory extends ProtocolInstaller.Factory<Orientation.Server,RaftProtocolServerInstaller>
+    public static class Factory extends ProtocolInstaller.Factory<Orientation.Server,RaftProtocolServerInstallerV2>
     {
         public Factory( ChannelInboundHandler raftMessageHandler, NettyPipelineBuilderFactory pipelineBuilderFactory, LogProvider logProvider )
         {
-            super( APPLICATION_PROTOCOL, modifiers -> new RaftProtocolServerInstaller( raftMessageHandler, pipelineBuilderFactory, modifiers, logProvider ) );
+            super( APPLICATION_PROTOCOL, modifiers -> new RaftProtocolServerInstallerV2( raftMessageHandler, pipelineBuilderFactory, modifiers, logProvider ) );
         }
     }
 
@@ -61,7 +61,7 @@ public class RaftProtocolServerInstaller implements ProtocolInstaller<Orientatio
     private final List<ModifierProtocolInstaller<Orientation.Server>> modifiers;
     private final Log log;
 
-    public RaftProtocolServerInstaller( ChannelInboundHandler raftMessageHandler, NettyPipelineBuilderFactory pipelineBuilderFactory,
+    public RaftProtocolServerInstallerV2( ChannelInboundHandler raftMessageHandler, NettyPipelineBuilderFactory pipelineBuilderFactory,
             List<ModifierProtocolInstaller<Orientation.Server>> modifiers, LogProvider logProvider )
     {
         this.raftMessageHandler = raftMessageHandler;
