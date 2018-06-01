@@ -24,7 +24,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.mockito.Mockito.when
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.{NodeProperty, NodePropertyLate, RelationshipProperty}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.{NodeProperty, NodePropertyLate, RelationshipProperty, RelationshipPropertyLate}
 import org.neo4j.cypher.internal.runtime.compiled.expressions.{CodeGeneration, IntermediateCodeGeneration}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
@@ -100,6 +100,21 @@ class CompiledExpressionTest extends ExecutionEngineFunSuite with AstConstructio
     graph.inTx(
       compiled.evaluate(ctx, transaction, EMPTY_MAP) should equal(stringValue("hello"))
     )
+  }
+
+  test("late relationship property access") {
+    // Given
+    val relationship = relate(createNode(), createNode(), "prop" -> "hello").getId
+    val offset = 42
+    val ctx = mock[ExecutionContext]
+    when(ctx.getLongAt(offset)).thenReturn(relationship)
+    // Then
+    graph.inTx {
+      compile(RelationshipPropertyLate(offset, "prop", "prop")(null)).evaluate(ctx, transaction, EMPTY_MAP) should
+        equal(stringValue("hello"))
+      compile(RelationshipPropertyLate(offset, "notThere", "prop")(null)).evaluate(ctx, transaction, EMPTY_MAP) should
+        equal(NO_VALUE)
+    }
   }
 
   test("should fail if relationship has been deleted in transaction") {

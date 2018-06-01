@@ -169,6 +169,12 @@ object IntermediateCodeGeneration {
                         invoke(load("context"), method[ExecutionContext, Long, Int]("getLongAt"),
                                constant(offset)), constant(token)))
 
+    case RelationshipPropertyLate(offset, key, _) =>
+      Some(invokeStatic(method[CypherDbAccess, Value, Transaction, Long, String]("relationshipProperty"),
+                        load("tx"),
+                        invoke(load("context"), method[ExecutionContext, Long, Int]("getLongAt"),
+                               constant(offset)), constant(key)))
+
       //slotted operations
     case ReferenceFromSlot(offset, _) =>
       Some(invoke(load("context"), method[ExecutionContext, AnyValue, Int]("getRefAt"),

@@ -95,6 +95,17 @@ public final class CypherDbAccess
         }
     }
 
+    public static Value relationshipProperty( Transaction tx, long node, String key )
+    {
+        int property = tx.tokenRead().propertyKey( key );
+        if ( property == NO_TOKEN )
+        {
+            return NO_VALUE;
+        }
+
+        return relationshipProperty( tx, node, property );
+    }
+
     private static Value property( PropertyCursor properties, int property )
     {
         while ( properties.next() )
