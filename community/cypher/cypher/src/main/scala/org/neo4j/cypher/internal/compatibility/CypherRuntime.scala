@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compatibility
 import org.neo4j.cypher.{CypherRuntimeOption, InvalidArgumentException, exceptionHandler}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.ExecutionPlan
+import org.neo4j.cypher.internal.compiler.v3_5.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
-import org.opencypher.v9_0.util.RuntimeUnsupportedNotification
 
 import scala.util.{Failure, Try}
 
