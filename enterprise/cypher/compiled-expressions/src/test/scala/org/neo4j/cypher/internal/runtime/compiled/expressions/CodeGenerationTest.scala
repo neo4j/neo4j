@@ -468,6 +468,16 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
       equal(stringValue("hello"))
   }
 
+  test("IsPrimitiveNull") {
+    val nullOffset = 1337
+    val offset = 42
+    when(ctx.getLongAt(nullOffset)).thenReturn(-1L)
+    when(ctx.getLongAt(offset)).thenReturn(77L)
+
+    compile(IsPrimitiveNull(nullOffset)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.TRUE)
+    compile(IsPrimitiveNull(offset)).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.FALSE)
+  }
+
   private def compile(e: Expression) =
     CodeGeneration.compile(IntermediateCodeGeneration.compile(e).getOrElse(fail()))
 
