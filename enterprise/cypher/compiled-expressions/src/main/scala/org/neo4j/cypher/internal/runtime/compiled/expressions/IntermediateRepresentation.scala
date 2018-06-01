@@ -105,7 +105,7 @@ case object FALSE extends IntermediateRepresentation
 
 /**
   * Loads an array literal of the given inputs
-  * @param values
+  * @param values the values of the array
   */
 case class ArrayLiteral(values: Array[IntermediateRepresentation]) extends IntermediateRepresentation
 
@@ -151,12 +151,6 @@ object IntermediateRepresentation {
     Invoke(owner, method, params)
 
   def load(variable: String): IntermediateRepresentation = Load(variable)
-
-  def integer(value: IntegralValue): IntermediateRepresentation = Integer(value)
-
-  def float(value: FloatingPointValue): IntermediateRepresentation = Float(value)
-
-  def string(value: TextValue): IntermediateRepresentation = StringLiteral(value)
 
   def noValue: IntermediateRepresentation = NULL
 
