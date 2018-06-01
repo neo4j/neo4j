@@ -27,7 +27,7 @@ import java.time.Duration
 import java.util.concurrent.ThreadLocalRandom
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.{IdFromSlot, NullCheck, PrimitiveEquals, ReferenceFromSlot}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast._
 import org.neo4j.cypher.internal.runtime.EntityProducer
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.internal.kernel.api.Transaction
@@ -454,6 +454,18 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
     compile(NullCheck(nullOffset, literalFloat(PI))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.NO_VALUE)
     compile(NullCheck(offset, literalFloat(PI))).evaluate(ctx, tx, producer, EMPTY_MAP) should equal(Values.PI)
+  }
+
+  test("NullCheckVariable") {
+    val nullOffset = 1337
+    val offset = 42
+    when(ctx.getRefAt(nullOffset)).thenReturn(NO_VALUE)
+    when(ctx.getRefAt(offset)).thenReturn(stringValue("hello"))
+
+    compile(NullCheckVariable(nullOffset, ReferenceFromSlot(offset, "a"))).evaluate(ctx, tx, producer, EMPTY_MAP) should
+      equal(Values.NO_VALUE)
+    compile(NullCheckVariable(offset, ReferenceFromSlot(offset, "a"))).evaluate(ctx, tx, producer, EMPTY_MAP) should
+      equal(stringValue("hello"))
   }
 
   private def compile(e: Expression) =
