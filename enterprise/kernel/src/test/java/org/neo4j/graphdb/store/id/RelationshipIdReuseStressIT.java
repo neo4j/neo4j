@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EnterpriseDatabaseRule;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 import static java.lang.System.currentTimeMillis;
@@ -92,6 +93,8 @@ public class RelationshipIdReuseStressIT
         RelationshipRemover relationshipRemover = new RelationshipRemover( bandLabel, cityLabel, stopFlag );
         IdController idController = embeddedDatabase.getDependencyResolver().resolveDependency( IdController.class );
 
+        assertNotNull( "idController was null for some reason", idController );
+
         List<Future<?>> futures = new ArrayList<>();
         futures.add( executorService.submit( relationshipRemover ) );
         futures.add( executorService.submit( relationshipsCreator ) );
@@ -99,13 +102,18 @@ public class RelationshipIdReuseStressIT
         futures.add( startRelationshipCalculator( bandLabel, stopFlag ) );
 
         long startTime = currentTimeMillis();
-        while ( (currentTimeMillis() - startTime) < 5_000 ||
-                relationshipsCreator.getCreatedRelationships() < 1_000 ||
-                relationshipRemover.getRemovedRelationships() < 100 )
+        long currentTime;
+        long createdRelationships;
+        long removedRelationships;
+        do
         {
             TimeUnit.MILLISECONDS.sleep( 500 );
             idController.maintenance(); // just to make sure maintenance happens
+            currentTime = currentTimeMillis();
+            createdRelationships = relationshipsCreator.getCreatedRelationships();
+            removedRelationships = relationshipRemover.getRemovedRelationships();
         }
+        while ( (currentTime - startTime) < 5_000 || createdRelationships < 1_000 || removedRelationships < 100 );
         stopFlag.set( true );
         executorService.shutdown();
         completeFutures( futures );
