@@ -19,27 +19,9 @@
  */
 package org.neo4j.cypher.operations;
 
-import org.opencypher.v9_0.util.CypherTypeException;
-
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.SequenceValue;
-import org.neo4j.values.ValueMapper;
-import org.neo4j.values.storable.BooleanValue;
-import org.neo4j.values.storable.DateTimeValue;
-import org.neo4j.values.storable.DateValue;
-import org.neo4j.values.storable.DurationValue;
-import org.neo4j.values.storable.LocalDateTimeValue;
-import org.neo4j.values.storable.LocalTimeValue;
-import org.neo4j.values.storable.NumberValue;
-import org.neo4j.values.storable.PointValue;
-import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.PathValue;
-import org.neo4j.values.virtual.VirtualNodeValue;
-import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
@@ -49,8 +31,6 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 @SuppressWarnings( "unused" )
 public final class CypherBoolean
 {
-    private static final BooleanMapper BOOLEAN_MAPPER = new BooleanMapper();
-
     private CypherBoolean()
     {
         throw new UnsupportedOperationException( "Do not instantiate" );
@@ -67,7 +47,7 @@ public final class CypherBoolean
                 continue;
             }
 
-            if ( arg.map( BOOLEAN_MAPPER ) )
+            if ( arg == Values.TRUE )
             {
                 return Values.TRUE;
             }
@@ -83,7 +63,7 @@ public final class CypherBoolean
             return NO_VALUE;
         }
 
-        return lhs.map( BOOLEAN_MAPPER ) ^ rhs.map( BOOLEAN_MAPPER ) ? Values.TRUE : Values.FALSE;
+        return (lhs == Values.TRUE) ^ (rhs == Values.TRUE) ? Values.TRUE : Values.FALSE;
     }
 
     public static Value and( AnyValue... args )
@@ -97,7 +77,7 @@ public final class CypherBoolean
                 continue;
             }
 
-            if ( !arg.map( BOOLEAN_MAPPER ) )
+            if ( arg == Values.FALSE )
             {
                 return Values.FALSE;
             }
@@ -112,7 +92,7 @@ public final class CypherBoolean
             return NO_VALUE;
         }
 
-        return !in.map( BOOLEAN_MAPPER ) ? Values.TRUE : Values.FALSE;
+        return in != Values.TRUE ? Values.TRUE : Values.FALSE;
     }
 
     public static Value equals( AnyValue lhs, AnyValue rhs )
@@ -138,105 +118,6 @@ public final class CypherBoolean
         else
         {
             return equals ? Values.FALSE : Values.TRUE;
-        }
-    }
-
-    private static final class BooleanMapper implements ValueMapper<Boolean>
-    {
-        @Override
-        public Boolean mapPath( PathValue value )
-        {
-            return value.size() > 0;
-        }
-
-        @Override
-        public Boolean mapNode( VirtualNodeValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
-        }
-
-        @Override
-        public Boolean mapRelationship( VirtualRelationshipValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
-        }
-
-        @Override
-        public Boolean mapMap( MapValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
-        }
-
-        @Override
-        public Boolean mapNoValue()
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + NO_VALUE, null );
-        }
-
-        @Override
-        public Boolean mapSequence( SequenceValue value )
-        {
-            return value.length() > 0;
-        }
-
-        @Override
-        public Boolean mapText( TextValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
-        }
-
-        @Override
-        public Boolean mapBoolean( BooleanValue value )
-        {
-            return value.booleanValue();
-        }
-
-        @Override
-        public Boolean mapNumber( NumberValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
-        }
-
-        @Override
-        public Boolean mapDateTime( DateTimeValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
-        }
-
-        @Override
-        public Boolean mapLocalDateTime( LocalDateTimeValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
-        }
-
-        @Override
-        public Boolean mapDate( DateValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
-        }
-
-        @Override
-        public Boolean mapTime( TimeValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
-        }
-
-        @Override
-        public Boolean mapLocalTime( LocalTimeValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
-        }
-
-        @Override
-        public Boolean mapDuration( DurationValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
-        }
-
-        @Override
-        public Boolean mapPoint( PointValue value )
-        {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
         }
     }
 }
