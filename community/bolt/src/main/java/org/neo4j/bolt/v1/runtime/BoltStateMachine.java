@@ -34,9 +34,9 @@ import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 import org.neo4j.values.AnyValue;
@@ -110,22 +110,18 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         {
             try
             {
-                if ( ctx.hasFailedOrIgnored() )
+                Neo4jError pendingError = ctx.pendingError;
+                if ( pendingError != null )
                 {
-                    Neo4jError pendingError = ctx.pendingError;
-
-                    if ( pendingError != null )
-                    {
-                        ctx.markFailed( pendingError );
-                    }
-                    else
-                    {
-                        ctx.markIgnored();
-                    }
-
-                    ctx.resetPendingFailedAndIgnored();
+                    ctx.markFailed( pendingError );
                 }
 
+                if ( ctx.pendingIgnore )
+                {
+                    ctx.markIgnored();
+                }
+
+                ctx.resetPendingFailedAndIgnored();
                 ctx.responseHandler.onFinish();
             }
             finally
@@ -144,7 +140,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         before( handler );
         try
         {
-            if ( !ctx.hasFailedOrIgnored() )
+            if ( ctx.canProcessMessage() )
             {
                 state = state.init( this, userAgent, authToken );
             }
@@ -171,6 +167,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         before( handler );
         try
         {
+            // it should always be fine to ACK_FAILURE thus no canProcessMessage check
             state = state.ackFailure( this );
         }
         finally
@@ -198,7 +195,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         before( handler );
         try
         {
-            if ( !ctx.hasFailedOrIgnored() )
+            if ( ctx.canProcessMessage() )
             {
                 state = state.reset( this );
             }
@@ -223,7 +220,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         before( handler );
         try
         {
-            if ( !ctx.hasFailedOrIgnored() )
+            if ( ctx.canProcessMessage() )
             {
                 state = state.run( this, statement, params );
                 handler.onMetadata( "result_available_after", Values.longValue( clock.millis() - start ) );
@@ -245,7 +242,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         before( handler );
         try
         {
-            if ( !ctx.hasFailedOrIgnored() )
+            if ( ctx.canProcessMessage() )
             {
                 state = state.discardAll( this );
             }
@@ -265,7 +262,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         before( handler );
         try
         {
-            if ( !ctx.hasFailedOrIgnored() )
+            if ( ctx.canProcessMessage() )
             {
                 state = state.pullAll( this );
             }
@@ -322,7 +319,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         before( handler );
         try
         {
-            if ( !ctx.hasFailedOrIgnored() )
+            if ( ctx.canProcessMessage() )
             {
                 fail( this, error );
                 this.state = State.FAILED;
@@ -885,9 +882,9 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
             }
         }
 
-        private boolean hasFailedOrIgnored()
+        private boolean canProcessMessage()
         {
-            return pendingError != null || pendingIgnore;
+            return !closed && pendingError == null && !pendingIgnore;
         }
 
         private void resetPendingFailedAndIgnored()
