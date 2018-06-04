@@ -22,6 +22,7 @@
  */
 package org.neo4j.causalclustering.upstream.strategies;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -35,6 +36,7 @@ import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseSelectionException;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
@@ -70,6 +72,27 @@ public class ConnectToRandomCoreServerStrategyTest
         // then
         assertTrue( memberId.isPresent() );
         assertThat( memberId.get(), anyOf( equalTo( memberId1 ), equalTo( memberId2 ), equalTo( memberId3 ) ) );
+    }
+
+    @Test
+    public void filtersSelf() throws UpstreamDatabaseSelectionException
+    {
+        // given
+        MemberId myself = new MemberId( new UUID( 1234, 5678 ) );
+        Config config = Config.defaults();
+        String groupName = "groupName";
+
+        // and
+        ConnectToRandomCoreServerStrategy connectToRandomCoreServerStrategy = new ConnectToRandomCoreServerStrategy();
+        connectToRandomCoreServerStrategy.inject( new TopologyServiceThatPrioritisesItself( myself, groupName ), config, NullLogProvider.getInstance(),
+                myself );
+
+        // when
+        Optional<MemberId> found = connectToRandomCoreServerStrategy.upstreamDatabase();
+
+        // then
+        Assert.assertTrue( found.isPresent() );
+        Assert.assertNotEquals( myself, found );
     }
 
     static CoreTopology fakeCoreTopology( MemberId... memberIds )

@@ -22,11 +22,17 @@
  */
 package org.neo4j.causalclustering.upstream.strategies;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.upstream.UpstreamDatabaseSelectionStrategy;
 import org.neo4j.helpers.Service;
+
+import static org.neo4j.function.Predicates.not;
 
 @Service.Implementation( UpstreamDatabaseSelectionStrategy.class )
 public class TypicallyConnectToRandomReadReplicaStrategy extends UpstreamDatabaseSelectionStrategy
@@ -43,6 +49,7 @@ public class TypicallyConnectToRandomReadReplicaStrategy extends UpstreamDatabas
     {
         super( IDENTITY );
         this.counter = new ModuloCounter( connectToCoreInterval );
+        this.myself = myself;
     }
 
     @Override
@@ -50,27 +57,24 @@ public class TypicallyConnectToRandomReadReplicaStrategy extends UpstreamDatabas
     {
         if ( counter.shouldReturnCoreMemberId() )
         {
-            return getCoreMemberId();
+            return randomCoreMember();
         }
         else
         {
-            Optional<MemberId> memberId = getReadReplicaMemberId();
-            if ( !memberId.isPresent() )
-            {
-                memberId = getCoreMemberId();
-            }
-            return memberId;
+            // shuffled members
+            List<MemberId> readReplicaMembers = new ArrayList<>( topologyService.localReadReplicas().members().keySet() );
+            Collections.shuffle( readReplicaMembers );
+
+            List<MemberId> coreMembers = new ArrayList<>( topologyService.localCoreServers().members().keySet() );
+            Collections.shuffle( coreMembers );
+
+            return Stream.concat( readReplicaMembers.stream(), coreMembers.stream() ).filter( not( myself::equals ) ).findFirst();
         }
     }
 
-    private Optional<MemberId> getReadReplicaMemberId()
+    private Optional<MemberId> randomCoreMember()
     {
-        return topologyService.localReadReplicas().randomReadReplicaMemberId();
-    }
-
-    private Optional<MemberId> getCoreMemberId()
-    {
-        return topologyService.localCoreServers().randomCoreMemberId();
+        return topologyService.localCoreServers().members().keySet().stream().filter( not( myself::equals ) ).findFirst();
     }
 
     private static class ModuloCounter
