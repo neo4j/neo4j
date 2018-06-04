@@ -55,7 +55,6 @@ import org.neo4j.kernel.impl.locking.Locks.Client;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.LABEL;
 
 public class ConstraintIndexCreator
 {
@@ -123,7 +122,7 @@ public class ConstraintIndexCreator
             // At this point the integrity of the constraint to be created was checked
             // while holding the lock and the index rule backing the soon-to-be-created constraint
             // has been created. Now it's just the population left, which can take a long time
-            releaseLabelLock( locks, descriptor.keyId() );
+            locks.releaseExclusive( descriptor.keyType(), descriptor.keyId() );
 
             awaitConstrainIndexPopulation( constraint, proxy );
 
@@ -131,7 +130,7 @@ public class ConstraintIndexCreator
             // Acquire LABEL WRITE lock and verify the constraints here in this user transaction
             // and if everything checks out then it will be held until after the constraint has been
             // created and activated.
-            acquireLabelLock( transaction, locks, descriptor.keyId() );
+            locks.acquireExclusive( transaction.lockTracer(), descriptor.keyType(), descriptor.keyId() );
             reacquiredLabelLock = true;
 
             indexingService.getIndexProxy( indexId ).verifyDeferredConstraints( propertyAccessor );
@@ -162,7 +161,7 @@ public class ConstraintIndexCreator
             {
                 if ( !reacquiredLabelLock )
                 {
-                    acquireLabelLock( transaction, locks, descriptor.keyId() );
+                    locks.acquireExclusive( transaction.lockTracer(), descriptor.keyType(), descriptor.keyId() );
                 }
 
                 if ( indexStillExists( schemaRead, descriptor, index ) )
@@ -175,18 +174,8 @@ public class ConstraintIndexCreator
 
     private boolean indexStillExists( SchemaRead schemaRead, SchemaDescriptor descriptor, IndexReference index )
     {
-        IndexReference existingIndex = schemaRead.index( descriptor.keyId(), descriptor.getPropertyIds() );
+        IndexReference existingIndex = schemaRead.index( descriptor );
         return existingIndex != IndexReference.NO_INDEX && existingIndex.equals( index );
-    }
-
-    private void acquireLabelLock( KernelTransactionImplementation state, Client locks, int labelId )
-    {
-        locks.acquireExclusive( state.lockTracer(), LABEL, labelId );
-    }
-
-    private void releaseLabelLock( Client locks, int labelId )
-    {
-        locks.releaseExclusive( LABEL, labelId );
     }
 
     /**
@@ -230,7 +219,7 @@ public class ConstraintIndexCreator
             Optional<String> provider )
             throws SchemaKernelException, IndexNotFoundKernelException
     {
-        IndexReference descriptor = schemaRead.index( schema.keyId(), schema.getPropertyIds() );
+        IndexReference descriptor = schemaRead.index( schema );
         if ( descriptor != IndexReference.NO_INDEX )
         {
             if ( descriptor.isUnique() )

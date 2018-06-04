@@ -111,23 +111,13 @@ public class MultiTokenSchemaDescriptor implements org.neo4j.internal.kernel.api
     @Override
     public int keyId()
     {
-        //TODO MultiTokenSchema support for the new kernel api. This method is only used in the AllStoreHolder
-        return 1;
+        return hashCode();
     }
 
     @Override
     public ResourceType keyType()
     {
-        if ( entityType == EntityType.NODE )
-        {
-            return ResourceTypes.LABEL;
-        }
-        else if ( entityType == EntityType.RELATIONSHIP )
-        {
-            return ResourceTypes.RELATIONSHIP_TYPE;
-        }
-        throw new UnsupportedOperationException(
-                "Keys for non-schema indexes of type " + entityType + " is not supported." );
+        return ResourceTypes.SCHEMA;
     }
 
     @Override

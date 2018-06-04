@@ -19,6 +19,8 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import java.util.Arrays;
+
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
@@ -38,8 +40,8 @@ public class IndexCheck implements RecordCheck<IndexEntry, ConsistencyReport.Ind
     @Override
     public void check( IndexEntry record, CheckerEngine<IndexEntry, ConsistencyReport.IndexConsistencyReport> engine, RecordAccess records )
     {
-        int labelId = indexRule.schema().keyId();
+        int[] entityTokenIds = indexRule.schema().getEntityTokenIds();
         engine.comparativeCheck( records.node( record.getId() ),
-                new NodeInUseWithCorrectLabelsCheck<>( new long[]{labelId}, false ) );
+                new NodeInUseWithCorrectLabelsCheck<>( Arrays.stream( entityTokenIds ).asLongStream().toArray(), false ) );
     }
 }
