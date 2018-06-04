@@ -40,7 +40,10 @@ import java.io.PrintStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.causalclustering.ClusterHelper;
@@ -49,6 +52,8 @@ import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
+import org.neo4j.causalclustering.discovery.IpFamily;
+import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
 import org.neo4j.causalclustering.helpers.CausalClusteringTestHelpers;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
@@ -64,8 +69,10 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.util.TestHelpers;
 
 import static java.lang.String.format;
+import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
@@ -269,6 +276,45 @@ public class OnlineBackupCommandCcIT
         assertTrue( output.contains( "Finished receiving index snapshots" ) );
     }
 
+    @Test
+    public void backupRenamesWork() throws Exception
+    {
+        // given a prexisting backup from a different store
+        String backupName = "preexistingBackup_" + recordFormat;
+        Cluster cluster = startCluster( recordFormat );
+        String firstBackupAddress = CausalClusteringTestHelpers.transactionAddress( clusterLeader( cluster ).database() );
+
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
+                "--from", firstBackupAddress,
+                "--cc-report-dir=" + backupDir,
+                "--backup-dir=" + backupDir,
+                "--name=" + backupName ) );
+        DbRepresentation firstDatabaseRepresentation = DbRepresentation.of( clusterLeader( cluster ).database() );
+
+        // and a different database
+        Cluster cluster2 = startCluster2( recordFormat );
+        DbRepresentation secondDatabaseRepresentation = DbRepresentation.of( clusterLeader( cluster2 ).database() );
+        assertNotEquals( firstDatabaseRepresentation, secondDatabaseRepresentation );
+        String secondBackupAddress = CausalClusteringTestHelpers.transactionAddress( clusterLeader( cluster2 ).database() );
+
+        // when backup is performed
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
+                "--from", secondBackupAddress,
+                "--cc-report-dir=" + backupDir,
+                "--backup-dir=" + backupDir,
+                "--name=" + backupName ) );
+        cluster2.shutdown();
+
+        // then the new backup has the correct name
+        assertEquals( secondDatabaseRepresentation, getBackupDbRepresentation( backupName, backupDir ) );
+
+        // and the old backup is in a renamed location
+        assertEquals( firstDatabaseRepresentation, getBackupDbRepresentation( backupName + ".err.0", backupDir ) );
+
+        // and the data isn't equal (sanity check)
+        assertNotEquals( firstDatabaseRepresentation, secondDatabaseRepresentation );
+    }
+
     static PrintStream wrapWithNormalOutput( PrintStream normalOutput, PrintStream nullAbleOutput )
     {
         if ( nullAbleOutput == null )
@@ -338,6 +384,19 @@ public class OnlineBackupCommandCcIT
         ClusterRule clusterRule = this.clusterRule.withSharedCoreParam( GraphDatabaseSettings.record_format, recordFormat )
                 .withSharedReadReplicaParam( GraphDatabaseSettings.record_format, recordFormat );
         Cluster cluster = clusterRule.startCluster();
+        createSomeData( cluster );
+        return cluster;
+    }
+
+    private Cluster startCluster2( String recordFormat ) throws ExecutionException, InterruptedException
+    {
+        Map<String,String> sharedParams = new HashMap<>(  );
+        sharedParams.put( GraphDatabaseSettings.record_format.name(), recordFormat );
+        Cluster cluster =
+                new Cluster( testDirectory.directory( "cluster-b_" + recordFormat ), 3, 0, new SharedDiscoveryServiceFactory(), sharedParams, emptyMap(),
+                sharedParams, emptyMap(),
+                recordFormat, IpFamily.IPV4, false );
+        cluster.start();
         createSomeData( cluster );
         return cluster;
     }
