@@ -267,7 +267,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
     executeWith(Configs.UpdateConf, """match (n) optional match (n)-[r]-() delete n,r""")
 
     graph.inTx {
-      graph.getAllNodes.asScala shouldBe empty
+      graph.getAllNodes().asScala shouldBe empty
     }
   }
 

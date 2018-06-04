@@ -26,8 +26,14 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.helpers.Nodes;
+import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
+
+import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
  * This class contains static helper methods for expressions interacting with the database
@@ -40,7 +46,6 @@ public final class CypherDbAccess
         throw new UnsupportedOperationException( "Do not instantiate" );
     }
 
-    //data access
     public static Value nodeProperty( Transaction tx, long node, int property )
     {
         CursorFactory cursors = tx.cursors();
@@ -58,8 +63,19 @@ public final class CypherDbAccess
                 throw new EntityNotFoundException(
                         String.format( "Node with id %d has been deleted in this transaction", node ), null );
             }
-            return Values.NO_VALUE;
+            return NO_VALUE;
         }
+    }
+
+    public static Value nodeProperty( Transaction tx, long node, String key )
+    {
+        int property = tx.tokenRead().propertyKey( key );
+        if ( property == NO_TOKEN )
+        {
+            return NO_VALUE;
+        }
+
+        return nodeProperty( tx, node, property );
     }
 
     public static Value relationshipProperty( Transaction tx, long relationship, int property )
@@ -77,10 +93,187 @@ public final class CypherDbAccess
             if ( tx.dataRead().relationshipDeletedInTransaction( relationship ) )
             {
                 throw new EntityNotFoundException(
-                        String.format( "Relationship with id %d has been deleted in this transaction", relationship ), null );
+                        String.format( "Relationship with id %d has been deleted in this transaction", relationship ),
+                        null );
             }
-            return Values.NO_VALUE;
+            return NO_VALUE;
         }
+    }
+
+    public static Value relationshipProperty( Transaction tx, long node, String key )
+    {
+        int property = tx.tokenRead().propertyKey( key );
+        if ( property == NO_TOKEN )
+        {
+            return NO_VALUE;
+        }
+
+        return relationshipProperty( tx, node, property );
+    }
+
+    public static IntegralValue getOutgoingDegree( Transaction tx, long node )
+    {
+        CursorFactory cursors = tx.cursors();
+        try ( NodeCursor cursor = cursors.allocateNodeCursor() )
+        {
+            tx.dataRead().singleNode( node, cursor );
+            if ( !cursor.next() )
+            {
+                return Values.ZERO_INT;
+            }
+            return Values.intValue( Nodes.countOutgoing( cursor, cursors ) );
+        }
+    }
+
+    public static IntegralValue getOutgoingDegree( Transaction tx, long node, String relationshipType )
+    {
+        int relationship = tx.tokenRead().relationshipType( relationshipType );
+        if ( relationship == NO_TOKEN )
+        {
+            return Values.ZERO_INT;
+        }
+        CursorFactory cursors = tx.cursors();
+        try ( NodeCursor cursor = cursors.allocateNodeCursor() )
+        {
+            tx.dataRead().singleNode( node, cursor );
+            if ( !cursor.next() )
+            {
+                return Values.ZERO_INT;
+            }
+            return Values.intValue( Nodes.countOutgoing( cursor, cursors, relationship ) );
+        }
+    }
+
+    public static IntegralValue getIncomingDegree( Transaction tx, long node )
+    {
+        CursorFactory cursors = tx.cursors();
+        try ( NodeCursor cursor = cursors.allocateNodeCursor() )
+        {
+            tx.dataRead().singleNode( node, cursor );
+            if ( !cursor.next() )
+            {
+                return Values.ZERO_INT;
+            }
+            return Values.intValue( Nodes.countIncoming( cursor, cursors ) );
+        }
+    }
+
+    public static IntegralValue getIncomingDegree( Transaction tx, long node, String relationshipType )
+    {
+        int relationship = tx.tokenRead().relationshipType( relationshipType );
+        if ( relationship == NO_TOKEN )
+        {
+            return Values.ZERO_INT;
+        }
+        CursorFactory cursors = tx.cursors();
+        try ( NodeCursor cursor = cursors.allocateNodeCursor() )
+        {
+            tx.dataRead().singleNode( node, cursor );
+            if ( !cursor.next() )
+            {
+                return Values.ZERO_INT;
+            }
+            return Values.intValue( Nodes.countIncoming( cursor, cursors, relationship ) );
+        }
+    }
+
+    public static IntegralValue getTotalDegree( Transaction tx, long node )
+    {
+        CursorFactory cursors = tx.cursors();
+        try ( NodeCursor cursor = cursors.allocateNodeCursor() )
+        {
+            tx.dataRead().singleNode( node, cursor );
+            if ( !cursor.next() )
+            {
+                return Values.ZERO_INT;
+            }
+            return Values.intValue( Nodes.countAll( cursor, cursors ) );
+        }
+    }
+
+    public static IntegralValue getTotalDegree( Transaction tx, long node, String relationshipType )
+    {
+        int relationship = tx.tokenRead().relationshipType( relationshipType );
+        if ( relationship == NO_TOKEN )
+        {
+            return Values.ZERO_INT;
+        }
+        CursorFactory cursors = tx.cursors();
+        try ( NodeCursor cursor = cursors.allocateNodeCursor() )
+        {
+            tx.dataRead().singleNode( node, cursor );
+            if ( !cursor.next() )
+            {
+                return Values.ZERO_INT;
+            }
+            return Values.intValue( Nodes.countAll( cursor, cursors, relationship ) );
+        }
+    }
+
+    public static BooleanValue nodeHasProperty( Transaction tx, long node, int property )
+    {
+        CursorFactory cursors = tx.cursors();
+        try ( NodeCursor nodes = cursors.allocateNodeCursor();
+              PropertyCursor properties = cursors.allocatePropertyCursor() )
+        {
+            tx.dataRead().singleNode( node, nodes );
+            if ( !nodes.next() )
+            {
+                return Values.FALSE;
+            }
+            nodes.properties( properties );
+            while ( properties.next() )
+            {
+                if ( properties.propertyKey() == property )
+                {
+                    return Values.TRUE;
+                }
+            }
+            return Values.FALSE;
+        }
+    }
+
+    public static BooleanValue nodeHasProperty( Transaction tx, long node, String key )
+    {
+        int property = tx.tokenRead().propertyKey( key );
+        if ( property == NO_TOKEN )
+        {
+            return Values.FALSE;
+        }
+        return nodeHasProperty( tx, node, property );
+    }
+
+    public static BooleanValue relationshipHasProperty( Transaction tx, long node, int property )
+    {
+        CursorFactory cursors = tx.cursors();
+        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor();
+              PropertyCursor properties = cursors.allocatePropertyCursor() )
+        {
+            tx.dataRead().singleRelationship( node, relationships );
+            if ( !relationships.next() )
+            {
+                return Values.FALSE;
+            }
+            relationships.properties( properties );
+            while ( properties.next() )
+            {
+                if ( properties.propertyKey() == property )
+                {
+                    return Values.TRUE;
+                }
+            }
+            return Values.FALSE;
+        }
+    }
+
+    public static BooleanValue relationshipHasProperty( Transaction tx, long node, String key )
+    {
+        int property = tx.tokenRead().propertyKey( key );
+        if ( property == NO_TOKEN )
+        {
+            return Values.FALSE;
+        }
+        return relationshipHasProperty( tx, node, property );
     }
 
     private static Value property( PropertyCursor properties, int property )
@@ -92,6 +285,6 @@ public final class CypherDbAccess
                 return properties.propertyValue();
             }
         }
-        return Values.NO_VALUE;
+        return NO_VALUE;
     }
 }

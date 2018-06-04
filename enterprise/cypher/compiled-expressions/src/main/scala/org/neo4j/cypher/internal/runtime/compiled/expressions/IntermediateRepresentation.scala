@@ -105,9 +105,26 @@ case object FALSE extends IntermediateRepresentation
 
 /**
   * Loads an array literal of the given inputs
-  * @param values
+  * @param values the values of the array
   */
 case class ArrayLiteral(values: Array[IntermediateRepresentation]) extends IntermediateRepresentation
+
+/**
+  * Defines ternary expression, i.e. `condition ? onTrue : onFalse`
+  * @param condition the condition to test
+  * @param onTrue will be evaluted if condition is true
+  * @param onFalse will be evaluated if condition is false
+  */
+case class Ternary(condition: IntermediateRepresentation,
+                   onTrue: IntermediateRepresentation,
+                   onFalse: IntermediateRepresentation) extends IntermediateRepresentation
+
+/**
+  * Defines equality of identity, i.e. `lhs == rhs`
+  * @param lhs the left-hand side to check
+  * @param rhs the right-hand side to check
+  */
+case class Eq(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
   * Defines a method
@@ -152,19 +169,20 @@ object IntermediateRepresentation {
 
   def load(variable: String): IntermediateRepresentation = Load(variable)
 
-  def integer(value: IntegralValue): IntermediateRepresentation = Integer(value)
-
-  def float(value: FloatingPointValue): IntermediateRepresentation = Float(value)
-
-  def string(value: TextValue): IntermediateRepresentation = StringLiteral(value)
-
   def noValue: IntermediateRepresentation = NULL
 
   def truthy: IntermediateRepresentation = TRUE
 
   def falsy: IntermediateRepresentation = FALSE
 
-  def constantJavaValue(value: Any): IntermediateRepresentation = Constant(value)
+  def constant(value: Any): IntermediateRepresentation = Constant(value)
 
   def arrayOf(values: IntermediateRepresentation*): IntermediateRepresentation = ArrayLiteral(values.toArray)
+
+  def ternary(condition: IntermediateRepresentation,
+              onTrue: IntermediateRepresentation,
+              onFalse: IntermediateRepresentation): IntermediateRepresentation = Ternary(condition, onTrue, onFalse)
+
+  def equal(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
+    Eq(lhs, rhs)
 }
