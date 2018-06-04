@@ -1,5 +1,5 @@
 <project default="extract-shell-zip">
-  <property name="shell.dir" location="../../../cypher-shell"/>
+  <property name="shell.dir" location="../../../../cypher-shell"/>
   <property name="shell.zip" location="${shell.dir}/cypher-shell.zip"/>
   <!-- Extract zip file -->
 
