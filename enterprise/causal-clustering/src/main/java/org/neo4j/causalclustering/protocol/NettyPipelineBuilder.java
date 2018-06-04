@@ -234,6 +234,8 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
             public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
             {
                 log.error( format( "Exception in inbound for channel: %s", ctx.channel() ), cause );
+                new RuntimeException( String.format( "[%s] netty exception caught:", Thread.currentThread().getName() ), cause ).printStackTrace(
+                        System.out ); // TODO delete this
                 ctx.channel().close();
             }
 

@@ -49,7 +49,7 @@ class BackupStrategyCoordinator
     private static final int STATUS_CC_ERROR = 2;
     private static final int STATUS_CC_INCONSISTENT = 3;
 
-    private ConsistencyCheckService consistencyCheckService;
+    private final ConsistencyCheckService consistencyCheckService;
     private final OutsideWorld outsideWorld;
     private final LogProvider logProvider;
     private final ProgressMonitorFactory progressMonitorFactory;

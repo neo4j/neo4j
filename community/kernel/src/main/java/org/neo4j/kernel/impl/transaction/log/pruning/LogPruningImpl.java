@@ -21,9 +21,12 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 
 import java.io.File;
 import java.time.Clock;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongConsumer;
+import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -58,10 +61,40 @@ public class LogPruningImpl implements LogPruning
         this.strategyFactory = strategyFactory;
         this.clock = clock;
         this.pruneStrategy = strategyFactory.strategyFromConfigValue( fs, logFiles, clock, config.get( GraphDatabaseSettings.keep_logical_logs ) );
+        deleteThis( config );
 
         // Register listener for updates
         config.registerDynamicUpdateListener( GraphDatabaseSettings.keep_logical_logs,
                 ( prev, update ) -> updateConfiguration( update ) );
+    }
+
+    private void deleteThis( Config config )
+    {
+        RuntimeException e = new RuntimeException(
+                String.format( "[%s] Pruning strategy from config %s which is strategy %s\n",
+                        Thread.currentThread().getName(),
+                        config.get( GraphDatabaseSettings.keep_logical_logs ),
+                        pruneStrategy.getClass().getName() ) );
+        if ( !stackTraceContainsKeyword( e, "ReadReplicaGraphDatabase", "CoreClusterMember" ) )
+        {
+            e.printStackTrace( System.out );
+        }
+    }
+
+    public static boolean stackTraceContainsKeyword( Throwable throwable, String... keywords )
+    {
+        for ( StackTraceElement stackTraceElement : throwable.getStackTrace() )
+        {
+            List<String> filters = Arrays.asList( keywords );
+            for ( String filter : filters )
+            {
+                if ( stackTraceElement.getClassName().contains( filter ) )
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static class CountingDeleter implements LongConsumer
@@ -116,11 +149,13 @@ public class LogPruningImpl implements LogPruning
     {
         // Only one is allowed to do pruning at any given time,
         // and it's OK to skip pruning if another one is doing so right now.
+        System.out.printf( "Trying to prune logs to version %d with prune impl %s\n", upToVersion, pruneStrategy.getClass().getName() );
         if ( pruneLock.tryLock() )
         {
             try
             {
                 CountingDeleter deleter = new CountingDeleter( logFiles, fs, upToVersion );
+                System.out.printf( "Deleting log versions: %s\n", pruneStrategy.findLogVersionsToDelete( upToVersion ).boxed().collect( Collectors.toList() ) );
                 pruneStrategy.findLogVersionsToDelete( upToVersion ).forEachOrdered( deleter );
                 msgLog.info( deleter.describeResult() );
             }

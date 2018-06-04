@@ -42,9 +42,11 @@ import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
 import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.util.OptionalHostnamePort;
 
 import static org.neo4j.consistency.ConsistencyCheckSettings.consistency_check_graph;
@@ -55,7 +57,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_locat
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.kernel.impl.util.Converters.toOptionalHostnamePortFromRawAddress;
 
-class OnlineBackupContextBuilder
+class OnlineBackupContextFactory
 {
     static final String ARG_NAME_BACKUP_DIRECTORY = "backup-dir";
     static final String ARG_DESC_BACKUP_DIRECTORY = "Directory to place backup in.";
@@ -114,7 +116,7 @@ class OnlineBackupContextBuilder
     private final Path homeDir;
     private final Path configDir;
 
-    OnlineBackupContextBuilder( Path homeDir, Path configDir )
+    OnlineBackupContextFactory( Path homeDir, Path configDir )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
@@ -188,9 +190,12 @@ class OnlineBackupContextBuilder
                                    .withConnectorsDisabled()
                                    .build();
             additionalConfig.map( this::loadAdditionalConfigFile ).ifPresent( config::augment );
+
             // We only replace the page cache memory setting.
             // Any other custom page swapper, etc. settings are preserved and used.
             config.augment( pagecache_memory, pagecacheMemory );
+            overrideConfigWithBackupSpecificSettings( config );
+            System.err.printf( "Builder config is %s\n", config.get( GraphDatabaseSettings.keep_logical_logs ) );
 
             // Build consistency-checker configuration.
             // Note: We can remove the loading from config file in 4.0.
@@ -211,6 +216,14 @@ class OnlineBackupContextBuilder
         {
             throw new CommandFailed( e.getMessage(), e );
         }
+    }
+
+    private void overrideConfigWithBackupSpecificSettings( Config config )
+    {
+        // We don't want to pile up tx logs
+        config.augment( GraphDatabaseSettings.logical_log_rotation_threshold, "1m" );
+        config.augment( GraphDatabaseSettings.keep_logical_logs, Settings.FALSE );
+        config.augment( GraphDatabaseSettings.check_point_interval_time, "1ms" );
     }
 
     private Path getBackupDirectory( Arguments arguments ) throws CommandFailed

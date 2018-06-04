@@ -130,7 +130,7 @@ public class CoreStateDownloaderTest
         assertFalse( downloader.downloadSnapshot( catchupAddressProvider ) );
 
         // then
-        verify( remoteStore, never() ).copy( any(), any(), any() );
+        verify( remoteStore, never() ).copy( any(), any(), any(), anyBoolean() );
         verify( remoteStore, never() ).tryCatchingUp( any(), any(), any(), anyBoolean() );
     }
 
@@ -147,7 +147,7 @@ public class CoreStateDownloaderTest
 
         // then
         verify( remoteStore ).tryCatchingUp( remoteAddress, storeId, storeDir, false );
-        verify( remoteStore, never() ).copy( any(), any(), any() );
+        verify( remoteStore, never() ).copy( any(), any(), any(), anyBoolean() );
     }
 
     @Test

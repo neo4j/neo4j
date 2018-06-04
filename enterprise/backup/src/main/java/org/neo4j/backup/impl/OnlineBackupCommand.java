@@ -32,7 +32,7 @@ import org.neo4j.commandline.admin.OutsideWorld;
 class OnlineBackupCommand implements AdminCommand
 {
     private final OutsideWorld outsideWorld;
-    private final OnlineBackupContextBuilder contextBuilder;
+    private final OnlineBackupContextFactory contextBuilder;
     private final BackupStrategyCoordinatorFactory backupStrategyCoordinatorFactory;
     private final BackupSupportingClassesFactory backupSupportingClassesFactory;
 
@@ -44,7 +44,7 @@ class OnlineBackupCommand implements AdminCommand
      * @param backupSupportingClassesFactory necessary for constructing the strategy for backing up over the causal clustering transaction protocol
      * @param backupStrategyCoordinatorFactory class that actually handles the logic of performing a backup
      */
-    OnlineBackupCommand( OutsideWorld outsideWorld, OnlineBackupContextBuilder contextBuilder,
+    OnlineBackupCommand( OutsideWorld outsideWorld, OnlineBackupContextFactory contextBuilder,
                          BackupSupportingClassesFactory backupSupportingClassesFactory,
                          BackupStrategyCoordinatorFactory backupStrategyCoordinatorFactory )
     {

@@ -173,6 +173,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         StoreId storeId = new StoreId( storeVersionAsLong );
 
         storeFile = file;
+        System.out.println( "storeFile = " + storeFile );
         setCreationTime( storeId.getCreationTime() );
         setRandomNumber( storeId.getRandomId() );
         // If metaDataStore.creationTime == metaDataStore.upgradeTime && metaDataStore.upgradeTransactionId == BASE_TX_ID

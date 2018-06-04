@@ -42,6 +42,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 
 import org.neo4j.causalclustering.ClusterHelper;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -51,11 +53,15 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.helpers.CausalClusteringTestHelpers;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
+import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.causalclustering.ClusterRule;
@@ -64,10 +70,13 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.util.TestHelpers;
 
 import static java.lang.String.format;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.neo4j.backup.impl.OnlineBackupCommandHaIT.transactions1M;
 
 @RunWith( Parameterized.class )
 public class OnlineBackupCommandCcIT
@@ -82,7 +91,9 @@ public class OnlineBackupCommandCcIT
             .withSharedCoreParam( CausalClusteringSettings.cluster_topology_refresh, "5s" );
 
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( clusterRule );
+    public final RuleChain ruleChain = RuleChain
+            .outerRule( clusterRule );
+//            .outerRule( SuppressOutput.suppressAll() ).around( clusterRule );
 
     private File backupDir;
 
@@ -94,7 +105,7 @@ public class OnlineBackupCommandCcIT
     @Parameters( name = "{0}" )
     public static List<String> recordFormats()
     {
-        return Arrays.asList( Standard.LATEST_NAME, HighLimit.NAME );
+        return Arrays.asList( /*Standard.LATEST_NAME,*/ HighLimit.NAME );
     }
 
     @Before
@@ -269,6 +280,43 @@ public class OnlineBackupCommandCcIT
         assertTrue( output.contains( "Finished receiving index snapshots" ) );
     }
 
+    @Test
+    public void onlyTheLatestTransactionIsKeptAfterIncrementalBackup() throws Exception
+    {
+        // given database exists with data
+        Cluster cluster = startCluster( recordFormat );
+        createSomeData( cluster );
+
+        // and we have a full backup
+        String backupName = "backupName" + recordFormat;
+        String address = CausalClusteringTestHelpers.backupAddress( clusterLeader( cluster ).database() );
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
+                "--from", address,
+                "--cc-report-dir=" + backupDir,
+                "--backup-dir=" + backupDir,
+                "--name=" + backupName ) );
+
+        // and the database contains a few more transactions
+//        IntStream.range( 0, 2 ).forEach( i -> transactions1M( clusterLeader( cluster ).database() ) );
+        transactions1M( clusterLeader( cluster ).database() ); // first rotation
+        transactions1M( clusterLeader( cluster ).database() ); // second rotation and prune
+
+        // when we perform an incremental backup
+        assertEquals( 0, runBackupToolFromSameJvm(
+                "--from", address,
+                "--cc-report-dir=" + backupDir,
+                "--backup-dir=" + backupDir,
+                "--name=" + backupName ) );
+
+        // then there has been a rotation
+        BackupTransactionLogFilesHelper backupTransactionLogFilesHelper = new BackupTransactionLogFilesHelper();
+        LogFiles logFiles = backupTransactionLogFilesHelper.readLogFiles( backupDir.toPath().resolve( backupName ).toFile() );
+        long highestTxIdInLogFiles = logFiles.getHighestLogVersion();
+        long lowestTxIdInLogFiles = logFiles.getLowestLogVersion();
+        assertEquals( 2, highestTxIdInLogFiles );
+        assertEquals( 1, lowestTxIdInLogFiles );
+    }
+
     static PrintStream wrapWithNormalOutput( PrintStream normalOutput, PrintStream nullAbleOutput )
     {
         if ( nullAbleOutput == null )
@@ -377,12 +425,17 @@ public class OnlineBackupCommandCcIT
         return TestHelpers.runBackupToolFromOtherJvmToGetExitCode( testDirectory.absolutePath(), args );
     }
 
+    private int runBackupToolFromSameJvm( String... args ) throws Exception
+    {
+        return runBackupToolFromSameJvmToGetExitCode( testDirectory.absolutePath(), testDirectory.absolutePath().getName(), args );
+    }
+
     /**
      * This unused method is used for debugging, so don't remove
      */
-    private int runBackupToolFromSameJvmToGetExitCode( String... args ) throws Exception
+    public static int runBackupToolFromSameJvmToGetExitCode( File backupDir, String backupName, String... args ) throws Exception
     {
-        return new OnlineBackupCommandBuilder().withRawArgs( args ).backup( testDirectory.absolutePath(), testDirectory.absolutePath().getName() )
+        return new OnlineBackupCommandBuilder().withRawArgs( args ).backup( backupDir, backupName )
                ? 0 : 1;
     }
 }

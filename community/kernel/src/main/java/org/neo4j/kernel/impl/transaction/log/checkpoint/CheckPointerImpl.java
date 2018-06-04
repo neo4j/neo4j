@@ -20,12 +20,16 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Optional;
+
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
+import org.neo4j.kernel.impl.transaction.log.pruning.LogPruningImpl;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -146,7 +150,15 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         try
         {
             long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
+            long lastCommittedTxId = transactionIdStore.getLastCommittedTransactionId();
             long lastClosedTransactionId = lastClosedTransaction[0];
+            Optional.of( new RuntimeException(
+                    String.format( "[%s] Check point was needed and lastClosedTransaction is = %s, last committed = %d\n",
+                            Thread.currentThread().getName(),
+                            Arrays.toString( lastClosedTransaction ),
+                            lastCommittedTxId ) ) )
+                    .filter( ex -> !LogPruningImpl.stackTraceContainsKeyword( ex, "ReadReplicaStartupProcess", "CoreClusterMember" ) )
+                    .ifPresent( e -> e.printStackTrace( System.out ) );
             LogPosition logPosition = new LogPosition( lastClosedTransaction[1], lastClosedTransaction[2] );
             String prefix = triggerInfo.describe( lastClosedTransactionId );
             /*
@@ -175,7 +187,9 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
              * Prune up to the version pointed from the latest check point,
              * since it might be an earlier version than the current log version.
              */
+            System.out.printf( "Log version before prune %d\n", logPosition.getLogVersion() );
             logPruning.pruneLogs( logPosition.getLogVersion() );
+            System.out.printf( "Log version after prune %d\n", logPosition.getLogVersion() );
             lastCheckPointedTx = lastClosedTransactionId;
             return lastClosedTransactionId;
         }

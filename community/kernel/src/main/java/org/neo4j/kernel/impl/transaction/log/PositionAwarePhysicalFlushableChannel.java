@@ -107,6 +107,8 @@ public class PositionAwarePhysicalFlushableChannel implements FlushablePositionA
 
     public void setChannel( LogVersionedStoreChannel channel )
     {
+//        System.out.printf( "CHANNEL WAS SET IN PAPFChannel\n" );
+        new RuntimeException( "Channel set: " + Thread.currentThread().getName() ).printStackTrace( System.out );
         this.logVersionedStoreChannel = channel;
         this.channel.setChannel( channel );
     }

@@ -140,7 +140,7 @@ public class StoreCopyClientTest
         StoreCopyClient copier =
                 new StoreCopyClient( copyDir, Config.defaults(), loadKernelExtensions(), NullLogProvider.getInstance(),
                         fileSystem,
-                        pageCache, storeCopyMonitor, false );
+                        pageCache, storeCopyMonitor, false, false );
 
         final GraphDatabaseAPI original =
                 (GraphDatabaseAPI) startDatabase( originalDir );
@@ -187,7 +187,7 @@ public class StoreCopyClientTest
         Config config = Config.defaults( logical_logs_location, copyCustomLogFilesLocation.getName() );
         StoreCopyClient copier = new StoreCopyClient(
                 copyDir, config, loadKernelExtensions(), NullLogProvider.getInstance(), fileSystem, pageCache,
-                new StoreCopyClientMonitor.Adapter(), false );
+                new StoreCopyClientMonitor.Adapter(), false, false );
 
         GraphDatabaseAPI original = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( originalDir )
@@ -252,7 +252,7 @@ public class StoreCopyClientTest
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         StoreCopyClient copier = new StoreCopyClient(
                 copyDir, Config.defaults(), loadKernelExtensions(), NullLogProvider.getInstance(), fileSystem, pageCache,
-                storeCopyMonitor, false );
+                storeCopyMonitor, false, false );
 
         final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalDir );
 
@@ -300,7 +300,7 @@ public class StoreCopyClientTest
 
         StoreCopyClient copier =
                 new StoreCopyClient( backupStore, Config.defaults(), loadKernelExtensions(), NullLogProvider
-                        .getInstance(), fileSystem, pageCache, new StoreCopyClientMonitor.Adapter(), false );
+                        .getInstance(), fileSystem, pageCache, new StoreCopyClientMonitor.Adapter(), false, false );
         CancellationRequest falseCancellationRequest = () -> false;
         StoreCopyClient.StoreCopyRequester storeCopyRequest =
                 requestFactory.create( (GraphDatabaseAPI) initialDatabase, initialStore, fileSystem, false );
@@ -328,7 +328,7 @@ public class StoreCopyClientTest
         GraphDatabaseService initialDatabase = createInitialDatabase( initialStore );
         StoreCopyClient copier =
                 new StoreCopyClient( backupStore, Config.defaults(), loadKernelExtensions(), NullLogProvider
-                        .getInstance(), fileSystem, pageCache, new StoreCopyClientMonitor.Adapter(), false );
+                        .getInstance(), fileSystem, pageCache, new StoreCopyClientMonitor.Adapter(), false, false );
         CancellationRequest falseCancellationRequest = () -> false;
 
         RuntimeException exception = new RuntimeException( "Boom!" );
@@ -365,7 +365,7 @@ public class StoreCopyClientTest
         Config config = Config.defaults( record_format, recordFormatsName );
         StoreCopyClient copier = new StoreCopyClient(
                 copyDir, config, loadKernelExtensions(), NullLogProvider.getInstance(), fileSystem, pageCache,
-                new StoreCopyClientMonitor.Adapter(), false );
+                new StoreCopyClientMonitor.Adapter(), false, false );
 
         final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalDir, recordFormatsName );
         StoreCopyClient.StoreCopyRequester storeCopyRequest = requestFactory.create( original, originalDir,

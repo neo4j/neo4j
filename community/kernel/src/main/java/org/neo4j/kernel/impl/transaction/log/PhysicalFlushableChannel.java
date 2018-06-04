@@ -23,6 +23,7 @@ import java.io.Flushable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.StoreChannel;
@@ -41,6 +42,7 @@ public class PhysicalFlushableChannel implements FlushableChannel
 
     protected final ByteBuffer buffer;
     protected StoreChannel channel;
+    private final AtomicBoolean channelSet = new AtomicBoolean( false ); // TODO delete
 
     public PhysicalFlushableChannel( StoreChannel channel )
     {
@@ -56,6 +58,7 @@ public class PhysicalFlushableChannel implements FlushableChannel
     void setChannel( LogVersionedStoreChannel channel )
     {
         this.channel = channel;
+        channelSet.set( true );
     }
 
     /**
@@ -67,6 +70,11 @@ public class PhysicalFlushableChannel implements FlushableChannel
     {
         buffer.flip();
         StoreChannel channel = this.channel;
+        if ( channelSet.get() )
+        {
+            new RuntimeException( "Channel was set and now first write begun: " + Thread.currentThread().getName() ).printStackTrace( System.out );
+            channelSet.set( false );
+        }
         try
         {
             channel.writeAll( buffer );

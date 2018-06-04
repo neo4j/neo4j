@@ -43,6 +43,7 @@ public interface LogPruning
         @Override
         public void pruneLogs( long currentVersion )
         {
+            System.err.println( "NOT pruning to " + currentVersion );
         }
 
         @Override

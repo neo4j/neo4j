@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Optional;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
@@ -30,6 +30,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.MyAtomicLong;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
@@ -175,8 +176,11 @@ public class LogFilesBuilder
     public LogFiles build() throws IOException
     {
         TransactionLogFilesContext filesContext = buildContext();
+        System.out.println( "filesContext.getRotationThreshold() immediately after reading config = " + filesContext.getRotationThreshold() );
         File logsDirectory = getLogsDirectory();
         filesContext.getFileSystem().mkdirs( logsDirectory );
+        System.out.println( "logsDirectory = " + logsDirectory );
+        System.out.println( "logFileName = " + logFileName );
         return new TransactionLogFiles( logsDirectory, logFileName, filesContext );
     }
 
@@ -225,27 +229,33 @@ public class LogFilesBuilder
         LongSupplier committingTransactionIdSupplier = committingIdSupplier();
 
         // Register listener for rotation threshold
-        AtomicLong rotationThreshold = getRotationThresholdAndRegisterForUpdates();
+        MyAtomicLong rotationThreshold = getRotationThresholdAndRegisterForUpdates();
 
         return new TransactionLogFilesContext( rotationThreshold, logEntryReader,
                 lastCommittedIdSupplier, committingTransactionIdSupplier, logFileCreationMonitor, logVersionRepositorySupplier, fileSystem );
     }
 
-    private AtomicLong getRotationThresholdAndRegisterForUpdates()
+    private MyAtomicLong getRotationThresholdAndRegisterForUpdates()
     {
         if ( rotationThreshold != null )
         {
-            return new AtomicLong( rotationThreshold );
+            return new MyAtomicLong( rotationThreshold );
         }
-        if ( readOnly )
+
+        boolean configIsPresent =
+                Optional.ofNullable( config ).flatMap( cfg -> cfg.getRaw( GraphDatabaseSettings.logical_log_rotation_threshold.name() ) ).isPresent();
+        if ( readOnly && !configIsPresent )
         {
-            return new AtomicLong( Long.MAX_VALUE );
+            // During incremental backup, transactions are batched with a ReadOnlyTransactionStore - this means that it would have a large rotation size
+            return new MyAtomicLong( Long.MAX_VALUE );
+            // and may not be easily pruned. Having this condition allows for a config override for pruning tx log files
         }
         if ( config == null )
         {
             config = Config.defaults();
         }
-        AtomicLong configThreshold = new AtomicLong( config.get( logical_log_rotation_threshold ) );
+        MyAtomicLong configThreshold = new MyAtomicLong( config.get( logical_log_rotation_threshold ) );
+        System.out.println( "configThreshold = " + configThreshold );
         config.registerDynamicUpdateListener( logical_log_rotation_threshold, ( prev, update ) -> configThreshold.set( update ) );
         return configThreshold;
     }
@@ -267,6 +277,8 @@ public class LogFilesBuilder
         }
         if ( readOnly )
         {
+            new RuntimeException( String.format( "[%s] Using read only log version repo", Thread.currentThread().getName() ) ).printStackTrace( System.out );
+            // TODO delete
             requireNonNull( pageCache, "Read only log files require page cache to be able to read current log version." );
             requireNonNull( storeDirectory,"Store directory is required.");
             ReadOnlyLogVersionRepository logVersionRepository =
