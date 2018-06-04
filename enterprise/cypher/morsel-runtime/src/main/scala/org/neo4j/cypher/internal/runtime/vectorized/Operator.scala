@@ -100,28 +100,41 @@ case class Pipeline(start: Operator,
     val currentRow = new MorselExecutionContext(data, slots.numberOfLongs, slots.numberOfReferences, 0)
     val next = start.operate(message, currentRow, context, state)
 
-    operators.foreach { op =>
-      currentRow.resetToFirstRow()
-      op.operate(next.iteration, currentRow, context, state)
-    }
+    val longCount = slots.numberOfLongs
+    val refCount = slots.numberOfReferences
 
     if (DEBUG) {
       println(s"Message: $message")
       println(s"Pipeline: $this")
 
-      val longCount = slots.numberOfLongs
-      val refCount = slots.numberOfReferences
-
-      println("Resulting rows")
+      println(s"Rows after ${start.getClass.getSimpleName}")
       for (i <- 0 until data.validRows) {
         val ls =  util.Arrays.toString(data.longs.slice(i * longCount, (i + 1) * longCount))
         val rs =  util.Arrays.toString(data.refs.slice(i * refCount, (i + 1) * refCount).asInstanceOf[Array[AnyRef]])
         println(s"$ls $rs")
       }
+    }
+
+    operators.foreach { op =>
+      currentRow.resetToFirstRow()
+      op.operate(next.iteration, currentRow, context, state)
+
+      if (DEBUG) {
+        println(s"Rows after ${op.getClass.getSimpleName}")
+        for (i <- 0 until data.validRows) {
+          val ls =  util.Arrays.toString(data.longs.slice(i * longCount, (i + 1) * longCount))
+          val rs =  util.Arrays.toString(data.refs.slice(i * refCount, (i + 1) * refCount).asInstanceOf[Array[AnyRef]])
+          println(s"$ls $rs")
+        }
+      }
+    }
+
+    if (DEBUG) {
       println(s"Resulting continuation: $next")
       println()
       println("-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/")
     }
+
     next
   }
 
