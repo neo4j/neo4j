@@ -23,27 +23,30 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
 
+/**
+ * Used to grant expression db access
+ */
 public interface DbAccess
 {
     NodeValue nodeById( long id );
 
     RelationshipValue relationshipById( long id );
 
-    Value nodeProperty( long node, int property);
+    Value nodeProperty( long node, int property );
 
-    Value nodeProperty( long node, String propertyKey);
+    Value nodeProperty( long node, String propertyKey );
 
-    boolean nodeHasProperty( long node, int property);
+    boolean nodeHasProperty( long node, int property );
 
-    boolean nodeHasProperty( long node, String propertyKey);
+    boolean nodeHasProperty( long node, String propertyKey );
 
-    Value relationshipProperty( long node, int property);
+    Value relationshipProperty( long node, int property );
 
-    Value relationshipProperty( long node, String propertyKey);
+    Value relationshipProperty( long node, String propertyKey );
 
-    boolean relationshipHasProperty( long node, int property);
+    boolean relationshipHasProperty( long node, int property );
 
-    boolean relationshipHasProperty( long node, String propertyKey);
+    boolean relationshipHasProperty( long node, String propertyKey );
 
     int nodeGetOutgoingDegree( long node );
 
