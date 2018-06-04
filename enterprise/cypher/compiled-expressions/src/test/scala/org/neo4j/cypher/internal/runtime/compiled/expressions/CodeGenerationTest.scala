@@ -27,6 +27,7 @@ import java.time.Duration
 import java.util.concurrent.ThreadLocalRandom
 
 import org.mockito.Mockito.when
+import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast._
 import org.neo4j.cypher.internal.runtime.DbAccess
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
@@ -380,6 +381,12 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(and(f, noValue)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.FALSE)
   }
 
+  test("AND should throw on non-boolean input") {
+    a [CypherTypeException] should be thrownBy compile(and(literalInt(42), t)).evaluate(ctx, dbAccess, EMPTY_MAP)
+    a [CypherTypeException] should be thrownBy compile(and(t, literalInt(42))).evaluate(ctx, dbAccess, EMPTY_MAP)
+    compile(and(f, literalInt(42))).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.FALSE)
+  }
+
   test("ANDS") {
     compile(ands(t, t, t, t, t)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.TRUE)
     compile(ands(t, t, t, t, t, f)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.FALSE)
@@ -479,7 +486,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   }
 
   private def compile(e: Expression) =
-    CodeGeneration.compile(IntermediateCodeGeneration.compile(e).getOrElse(fail()))
+    CodeGeneration.compile(new IntermediateCodeGeneration().compile(e).getOrElse(fail()))
 
   private def function(name: String, e: Expression) =
     FunctionInvocation(FunctionName(name)(pos), e)(pos)

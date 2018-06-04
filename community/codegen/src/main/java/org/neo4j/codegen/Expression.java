@@ -29,6 +29,7 @@ import static org.neo4j.codegen.TypeReference.INT;
 import static org.neo4j.codegen.TypeReference.LONG;
 import static org.neo4j.codegen.TypeReference.OBJECT;
 import static org.neo4j.codegen.TypeReference.VALUE;
+import static org.neo4j.codegen.TypeReference.VOID;
 import static org.neo4j.codegen.TypeReference.arrayOf;
 import static org.neo4j.codegen.TypeReference.typeReference;
 
@@ -65,6 +66,15 @@ public abstract class Expression extends ExpressionTemplate
         public void accept( ExpressionVisitor visitor )
         {
             visitor.loadThis( "super" );
+        }
+    };
+
+    public static final Expression EMPTY = new Expression( VOID )
+    {
+        @Override
+        public void accept( ExpressionVisitor visitor )
+        {
+            //do nothing
         }
     };
 

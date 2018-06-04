@@ -42,7 +42,7 @@ class CompiledExpressionConverter(log: Log) extends ExpressionConverter {
     case f: FunctionInvocation if f.function.isInstanceOf[AggregatingFunction] => None
 
     case e => try {
-      IntermediateCodeGeneration.compile(e).map(ir => CompileWrappingExpression(CodeGeneration.compile(ir),
+      new IntermediateCodeGeneration().compile(e).map(ir => CompileWrappingExpression(CodeGeneration.compile(ir),
                                                                                 inner.toCommandExpression(expression)))
     } catch {
       case t: Throwable =>

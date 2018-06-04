@@ -24,6 +24,7 @@ package org.neo4j.cypher.internal.runtime.compiled.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast._
 import org.neo4j.cypher.internal.runtime.DbAccess
+import org.neo4j.cypher.internal.runtime.compiled.expressions.IntermediateRepresentation.method
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.operations.{CypherBoolean, CypherFunctions, CypherMath}
 import org.neo4j.values.AnyValue
@@ -35,8 +36,11 @@ import org.opencypher.v9_0.expressions._
 /**
   * Produces IntermediateRepresentation from a Cypher Expression
   */
-object IntermediateCodeGeneration {
+class IntermediateCodeGeneration {
 
+  private var counter: Int = 0
+
+  import IntermediateCodeGeneration._
   import IntermediateRepresentation._
 
   def compile(expression: Expression): Option[IntermediateRepresentation] = expression match {
@@ -97,8 +101,8 @@ object IntermediateCodeGeneration {
     case s: expressions.StringLiteral => Some(
       invokeStatic(method[Values, TextValue, String]("stringValue"), constant(s.value)))
     case _: Null => Some(noValue)
-    case _: True => Some(truthy)
-    case _: False => Some(falsy)
+    case _: True => Some(truthValue)
+    case _: False => Some(falseValue)
 
     //boolean operators
     case Or(lhs, rhs) =>
@@ -120,11 +124,33 @@ object IntermediateCodeGeneration {
     case And(lhs, rhs) =>
       for {l <- compile(lhs)
            r <- compile(rhs)
-      } yield invokeStatic(method[CypherBoolean, Value, Array[AnyValue]]("and"), arrayOf(l, r))
+      } yield {
+        val returnValue = nextVariableName()
+        val seenNull = nextVariableName()
+        block(
+          declare[Value](returnValue),
+          assign(returnValue, invokeStatic(ASSERT_PREDICATE, l)),
+          declare[Boolean](seenNull),
+          assign(seenNull, equal(load(returnValue), noValue)),
+          condition(notEqual(load(returnValue), falseValue))(
+            block(
+              assign(returnValue, invokeStatic(ASSERT_PREDICATE, r)),
 
+              assign(seenNull,
+                ternary(equal(load(returnValue), falseValue), constant(false),
+                     ternary(load(seenNull),
+                             constant(true),
+                             equal(load(returnValue), noValue))))
+            )
+          ),
+          ternary(load(seenNull), noValue, load(returnValue))
+        )
+      }
     case Ands(expressions) =>
       val compiled = expressions.flatMap(compile).toIndexedSeq
       //we bail if some of the expressions weren't compiled
+
+
       if (compiled.size < expressions.size) None
       else Some(invokeStatic(method[CypherBoolean, Value, Array[AnyValue]]("and"), arrayOf(compiled: _*)))
 
@@ -157,12 +183,12 @@ object IntermediateCodeGeneration {
       Some(
         ternary(
           invoke(load("dbAccess"), method[DbAccess, Boolean, Long, Int]("nodeHasProperty"),
-                 getLongAt(offset), constant(token)), truthy, falsy))
+                 getLongAt(offset), constant(token)), truthValue, falseValue))
 
     case NodePropertyExistsLate(offset, key, _) =>
       Some(ternary(
         invoke(load("dbAccess"), method[DbAccess, Boolean, Long, String]("nodeHasProperty"),
-               getLongAt(offset), constant(key)), truthy, falsy))
+               getLongAt(offset), constant(key)), truthValue, falseValue))
 
     case RelationshipProperty(offset, token, _) =>
       Some(invoke(load("dbAccess"), method[DbAccess, Value, Long, Int]("relationshipProperty"),
@@ -176,16 +202,16 @@ object IntermediateCodeGeneration {
       Some(ternary(
         invoke(load("dbAccess"), method[DbAccess, Boolean, Long, Int]("relationshipHasProperty"),
                getLongAt(offset), constant(token)),
-        truthy,
-        falsy)
+        truthValue,
+        falseValue)
       )
 
     case RelationshipPropertyExistsLate(offset, key, _) =>
       Some(ternary(
         invoke(load("dbAccess"), method[DbAccess, Boolean, Long, String]("relationshipHasProperty"),
                getLongAt(offset), constant(key)),
-        truthy,
-        falsy)
+        truthValue,
+        falseValue)
       )
     case NodeFromSlot(offset, _) =>
       Some(invoke(load("dbAccess"), method[DbAccess, NodeValue, Long]("nodeById"),
@@ -223,7 +249,7 @@ object IntermediateCodeGeneration {
       for {l <- compile(lhs)
            r <- compile(rhs)
       } yield
-        ternary(invoke(l, method[AnyValue, Boolean, AnyRef]("equals"), r), truthy, falsy)
+        ternary(invoke(l, method[AnyValue, Boolean, AnyRef]("equals"), r), truthValue, falseValue)
 
     case NullCheck(offset, inner) =>
       compile(inner).map(ternary(equal(getLongAt(offset), constant(-1L)), noValue, _))
@@ -235,7 +261,7 @@ object IntermediateCodeGeneration {
       compile(inner).map(ternary(equal(getLongAt(offset), constant(-1L)), noValue, _))
 
     case IsPrimitiveNull(offset) =>
-      Some(ternary(equal(getLongAt(offset), constant(-1L)), truthy, falsy))
+      Some(ternary(equal(getLongAt(offset), constant(-1L)), truthValue, falseValue))
 
     case _ => None
   }
@@ -247,5 +273,16 @@ object IntermediateCodeGeneration {
   private def getRefAt(offset: Int): IntermediateRepresentation =
     invoke(load("context"), method[ExecutionContext, AnyValue, Int]("getRefAt"),
            constant(offset))
+
+  private def nextVariableName(): String = {
+    val nextName = s"v$counter"
+    counter += 1
+    nextName
+  }
+
+}
+
+object IntermediateCodeGeneration {
+  private val ASSERT_PREDICATE = method[CompiledHelpers, Value, AnyValue]("assertBooleanOrNoValue")
 
 }

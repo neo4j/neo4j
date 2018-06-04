@@ -32,6 +32,7 @@ import org.neo4j.codegen.Parameter.param
 import org.neo4j.codegen.TypeReference.typeReference
 import org.neo4j.codegen._
 import org.neo4j.codegen.bytecode.ByteCode.BYTECODE
+import org.neo4j.codegen.source.SourceCode.{PRINT_SOURCE, SOURCECODE}
 import org.neo4j.cypher.internal.runtime.DbAccess
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.values.AnyValue
@@ -43,6 +44,7 @@ import org.opencypher.v9_0.frontend.helpers.using
   * Produces runnable code from an IntermediateRepresentation
   */
 object CodeGeneration {
+  private val DEBUG = false
   private val VALUES = classOf[Values]
   private val VALUE = classOf[Value]
   private val LONG = classOf[LongValue]
@@ -58,7 +60,7 @@ object CodeGeneration {
   private def className(): String = "Expression" + System.nanoTime()
 
   def compile(ir: IntermediateRepresentation): CompiledExpression = {
-    val handle = using(generateCode(BYTECODE).generateClass(PACKAGE_NAME, className(), INTERFACE)) { clazz =>
+    val handle = using(generator) { clazz =>
       using(clazz.generate(COMPUTE_METHOD)) { block =>
         block.returns(compileExpression(ir, block))
       }
@@ -67,6 +69,10 @@ object CodeGeneration {
 
     handle.loadClass().newInstance().asInstanceOf[CompiledExpression]
   }
+
+  private def generator =
+    if (DEBUG) generateCode(SOURCECODE, PRINT_SOURCE).generateClass(PACKAGE_NAME, className(), INTERFACE)
+    else generateCode(BYTECODE).generateClass(PACKAGE_NAME, className(), INTERFACE)
 
   private def compileExpression(ir: IntermediateRepresentation, block: CodeBlock): codegen.Expression = ir match {
     //Foo.method(p1, p2,...)
@@ -99,7 +105,7 @@ object CodeGeneration {
     case FALSE => getStatic(staticField(VALUES, classOf[BooleanValue], "FALSE"))
     //new ArrayValue[]{p1, p2,...}
     case ArrayLiteral(values) => newArray(typeReference(classOf[AnyValue]),
-                                          values.map(v => compileExpression(v, block)):_*)
+                                          values.map(v => compileExpression(v, block)): _*)
 
     //condition ? onTrue : onFalse
     case Ternary(condition, onTrue, onFalse) =>
@@ -109,7 +115,25 @@ object CodeGeneration {
     //lhs == rhs
     case Eq(lhs, rhs) =>
       Expression.equal(compileExpression(lhs, block), compileExpression(rhs, block))
+
+    //lhs != rhs
+    case NotEq(lhs, rhs) =>
+      Expression.notEqual(compileExpression(lhs, block), compileExpression(rhs, block))
+
+    //run multiple ops in a block, the value of the block is the last expression
+    case Block(ops) => ops.map(compileExpression(_, block)).last
+
+    //if (test) {onTrue}
+    case Condition(test, onTrue) =>
+      using(block.ifStatement(compileExpression(test, block)))(compileExpression(onTrue, _))
+
+    //typ name;
+    case DeclareLocalVariable(typ, name) =>
+      block.declare(typeReference(typ), name)
+
+    //name = value;
+    case AssignToLocalVariable(name, value) =>
+      block.assign(block.local(name), compileExpression(value, block))
+      Expression.EMPTY
   }
-
-
 }
