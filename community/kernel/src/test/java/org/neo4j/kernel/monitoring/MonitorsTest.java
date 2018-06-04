@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.monitoring;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -145,6 +144,26 @@ public class MonitorsTest
         monitors.removeMonitorListener( listener );
 
         // Then
+        assertFalse( monitors.hasListeners( MyMonitor.class ) );
+    }
+
+    @Test
+    public void multipleListenersRegistration()
+    {
+        Monitors monitors = new Monitors();
+        MyMonitor listener1 = mock( MyMonitor.class );
+        MyMonitor listener2 = mock( MyMonitor.class );
+
+        assertFalse( monitors.hasListeners( MyMonitor.class ) );
+
+        monitors.addMonitorListener( listener1 );
+        monitors.addMonitorListener( listener2 );
+        assertTrue( monitors.hasListeners( MyMonitor.class ) );
+
+        monitors.removeMonitorListener( listener1 );
+        assertTrue( monitors.hasListeners( MyMonitor.class ) );
+
+        monitors.removeMonitorListener( listener2 );
         assertFalse( monitors.hasListeners( MyMonitor.class ) );
     }
 
