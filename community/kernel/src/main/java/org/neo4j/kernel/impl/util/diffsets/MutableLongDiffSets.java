@@ -21,11 +21,9 @@ package org.neo4j.kernel.impl.util.diffsets;
 
 import org.eclipse.collections.api.LongIterable;
 
-import java.io.Closeable;
-
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 
-public interface MutableLongDiffSets extends LongDiffSets, Closeable
+public interface MutableLongDiffSets extends LongDiffSets
 {
     void removeAll( LongIterable elements );
 
@@ -34,7 +32,4 @@ public interface MutableLongDiffSets extends LongDiffSets, Closeable
     void add( long element );
 
     boolean remove( long element );
-
-    @Override
-    void close();
 }

@@ -209,7 +209,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         {
             labelStatesMap = collectionsFactory.newLongObjectMap();
         }
-        return labelStatesMap.getIfAbsentPut( labelId, MutableLongDiffSetsImpl::new );
+        return labelStatesMap.getIfAbsentPut( labelId, () -> new MutableLongDiffSetsImpl( collectionsFactory ) );
     }
 
     private LongDiffSets getLabelStateNodeDiffSets( long labelId )
@@ -975,14 +975,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return hasDataChanges;
     }
 
-    /**
-     * Release all underlying resources. The instance must not be used after calling this method .
-     */
-    public void release()
-    {
-        // nop
-    }
-
     private static class ConstraintDiffSetsVisitor implements DiffSetsVisitor<ConstraintDescriptor>
     {
         private final TxStateVisitor visitor;
@@ -1012,6 +1004,11 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private class RemovalsCountingDiffSets extends MutableLongDiffSetsImpl
     {
         private MutableLongSet removedFromAdded;
+
+        RemovalsCountingDiffSets()
+        {
+            super( collectionsFactory );
+        }
 
         @Override
         public boolean remove( long elem )

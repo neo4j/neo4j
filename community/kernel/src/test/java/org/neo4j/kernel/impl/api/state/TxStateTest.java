@@ -24,7 +24,9 @@ import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -50,8 +52,11 @@ import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.kernel.impl.util.collection.CachingOffHeapBlockAllocator;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
+import org.neo4j.kernel.impl.util.collection.OffHeapCollectionsFactory;
+import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
@@ -88,6 +93,10 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 @RunWith( Parameterized.class )
 public class TxStateTest
 {
+    private static final CachingOffHeapBlockAllocator BLOCK_ALLOCATOR = new CachingOffHeapBlockAllocator();
+
+    private static long usedNativeMemBefore;
+
     public final RandomRule random = new RandomRule();
 
     @Rule
@@ -129,7 +138,7 @@ public class TxStateTest
                     @Override
                     public CollectionsFactory create()
                     {
-                        return CollectionsFactorySupplier.OFF_HEAP.create();
+                        return new OffHeapCollectionsFactory( BLOCK_ALLOCATOR );
                     }
 
                     @Override
@@ -141,6 +150,18 @@ public class TxStateTest
         );
     }
 
+    @BeforeClass
+    public static void beforeAll()
+    {
+        usedNativeMemBefore = GlobalMemoryTracker.INSTANCE.usedDirectMemory();
+    }
+
+    @AfterClass
+    public static void afterAll()
+    {
+        BLOCK_ALLOCATOR.release();
+        assertEquals( "Seems like native memory is leaking", 0, GlobalMemoryTracker.INSTANCE.usedDirectMemory() - usedNativeMemBefore );
+    }
     @Before
     public void before()
     {
@@ -151,7 +172,7 @@ public class TxStateTest
     @After
     public void after()
     {
-        state.release();
+        collectionsFactory.release();
         assertEquals( "Seems like native memory is leaking", 0L, collectionsFactory.getMemoryTracker().usedDirectMemory() );
     }
 

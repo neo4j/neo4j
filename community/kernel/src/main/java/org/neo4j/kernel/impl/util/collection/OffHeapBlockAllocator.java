@@ -17,12 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.util.collection;
 
-@FunctionalInterface
-public interface CollectionsFactorySupplier
-{
-    CollectionsFactorySupplier ON_HEAP = () -> OnHeapCollectionsFactory.INSTANCE;
+import org.neo4j.memory.MemoryAllocationTracker;
 
-    CollectionsFactory create();
+public interface OffHeapBlockAllocator
+{
+    MemoryBlock allocate( long size, MemoryAllocationTracker tracker );
+
+    void free( MemoryBlock block, MemoryAllocationTracker tracker );
+
+    void release();
+
+    class MemoryBlock
+    {
+        final long addr;
+        final long size;
+        final long unalignedAddr;
+        final long unalignedSize;
+
+        MemoryBlock( long addr, long size, long unalignedAddr, long unalignedSize )
+        {
+            this.size = size;
+            this.addr = addr;
+            this.unalignedSize = unalignedSize;
+            this.unalignedAddr = unalignedAddr;
+        }
+    }
 }

@@ -17,12 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util.collection;
+package org.neo4j.collection.offheap;
 
 @FunctionalInterface
-public interface CollectionsFactorySupplier
+public interface MemoryAllocator
 {
-    CollectionsFactorySupplier ON_HEAP = () -> OnHeapCollectionsFactory.INSTANCE;
-
-    CollectionsFactory create();
+    Memory allocate( long size );
 }

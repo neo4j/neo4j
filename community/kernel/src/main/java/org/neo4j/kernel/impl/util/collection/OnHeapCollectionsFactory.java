@@ -69,8 +69,8 @@ public class OnHeapCollectionsFactory implements CollectionsFactory
     }
 
     @Override
-    public boolean collectionsMustBeReleased()
+    public void release()
     {
-        return false;
+        // nop
     }
 }

@@ -29,7 +29,7 @@ import org.neo4j.memory.MemoryTracker;
 
 /**
  * The purpose of this factory is the ability to switch between multiple collection implementations used in {@link TxState} (e.g. on- or off-heap),
- * keeping track of underlying memory allocations. Releasing allocated memory is {@link TxState}'s responsibility.
+ * keeping track of underlying memory allocations.
  */
 public interface CollectionsFactory
 {
@@ -43,5 +43,8 @@ public interface CollectionsFactory
 
     MemoryTracker getMemoryTracker();
 
-    boolean collectionsMustBeReleased();
+    /**
+     * Release previously created collections. This method does not invalidate the factory.
+     */
+    void release();
 }

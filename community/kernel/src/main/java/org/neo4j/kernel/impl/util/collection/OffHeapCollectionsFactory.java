@@ -24,27 +24,36 @@ import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
+import org.neo4j.collection.offheap.MemoryAllocator;
+import org.neo4j.collection.offheap.MutableLinearProbeLongHashSet;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
+import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.memory.MemoryTracker;
 
-import static java.util.Objects.requireNonNull;
-
-class OffHeapCollectionsFactory implements CollectionsFactory
+public class OffHeapCollectionsFactory implements CollectionsFactory
 {
-    private final MemoryAllocationTracker memoryTracker;
+    private final MemoryAllocationTracker memoryTracker = new LocalMemoryTracker();
+    private final MemoryAllocator allocator;
 
-    OffHeapCollectionsFactory( MemoryAllocationTracker memoryTracker )
+    private final Collection<Resource> resources = new ArrayList<>();
+
+    public OffHeapCollectionsFactory( OffHeapBlockAllocator blockAllocator )
     {
-        this.memoryTracker = requireNonNull( memoryTracker );
+        this.allocator = new OffHeapMemoryAllocator( memoryTracker, blockAllocator );
     }
 
     @Override
     public MutableLongSet newLongSet()
     {
-        return new LongHashSet();
+        final MutableLinearProbeLongHashSet set = new MutableLinearProbeLongHashSet( allocator );
+        resources.add( set );
+        return set;
     }
 
     @Override
@@ -72,8 +81,9 @@ class OffHeapCollectionsFactory implements CollectionsFactory
     }
 
     @Override
-    public boolean collectionsMustBeReleased()
+    public void release()
     {
-        return true;
+        resources.forEach( Resource::close );
+        resources.clear();
     }
 }

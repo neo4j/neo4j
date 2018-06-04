@@ -46,6 +46,22 @@ public final class Preconditions
     }
 
     /**
+     * Ensures that {@code value} is greater than or equal to {@code 1} or throws {@link IllegalArgumentException} otherwise.
+     *
+     * @param value a value for check
+     * @return {@code value} if it's greater than or equal to {@code 1}
+     * @throws IllegalArgumentException if {@code value} is less than 1
+     */
+    public static int requirePositive( int value )
+    {
+        if ( value < 1 )
+        {
+            throw new IllegalArgumentException( "Expected positive int value, got " + value );
+        }
+        return value;
+    }
+
+    /**
      * Ensures that {@code value} is greater than or equal to {@code 0} or throws {@link IllegalArgumentException} otherwise.
      *
      * @param value a value for check

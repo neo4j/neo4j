@@ -192,10 +192,4 @@ public class MutableLongDiffSetsImpl implements MutableLongDiffSets
             removed = collectionsFactory.newLongSet();
         }
     }
-
-    @Override
-    public void close()
-    {
-        // nop
-    }
 }

@@ -53,7 +53,10 @@ import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.util.collection.CachingOffHeapBlockAllocator;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
+import org.neo4j.kernel.impl.util.collection.OffHeapBlockAllocator;
+import org.neo4j.kernel.impl.util.collection.OffHeapCollectionsFactory;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
@@ -75,6 +78,7 @@ import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
+import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
 
 /**
  * Platform module for {@link GraphDatabaseFacadeFactory}. This creates
@@ -189,7 +193,9 @@ public class PlatformModule
                 CheckPointerMonitor.class, tracers.checkPointTracer, CheckPointerMonitor.NULL ) );
 
         versionContextSupplier = createCursorContextSupplier( config );
-        collectionsFactorySupplier = createCollectionsFactorySupplier( config );
+
+        collectionsFactorySupplier = createCollectionsFactorySupplier( config, life );
+
         dependencies.satisfyDependency( versionContextSupplier );
         pageCache = dependencies.satisfyDependency( createPageCache( fileSystem, config, logging, tracers, versionContextSupplier ) );
 
@@ -333,7 +339,7 @@ public class PlatformModule
         return pageCache;
     }
 
-    private static CollectionsFactorySupplier createCollectionsFactorySupplier( Config config )
+    private static CollectionsFactorySupplier createCollectionsFactorySupplier( Config config, LifeSupport life )
     {
         final GraphDatabaseSettings.TransactionStateMemoryAllocation allocation = config.get( GraphDatabaseSettings.tx_state_memory_allocation );
         switch ( allocation )
@@ -341,7 +347,9 @@ public class PlatformModule
         case ON_HEAP:
             return CollectionsFactorySupplier.ON_HEAP;
         case OFF_HEAP:
-            return CollectionsFactorySupplier.OFF_HEAP;
+            final OffHeapBlockAllocator sharedBlockAllocator = new CachingOffHeapBlockAllocator();
+            life.add( onShutdown( sharedBlockAllocator::release ) );
+            return () -> new OffHeapCollectionsFactory( sharedBlockAllocator );
         default:
             throw new IllegalArgumentException( "Unknown transaction state memory allocation value: " + allocation );
         }

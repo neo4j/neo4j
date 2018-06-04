@@ -221,9 +221,9 @@ public class KernelTransactionTestBase
         }
 
         @Override
-        public boolean collectionsMustBeReleased()
+        public void release()
         {
-            return false;
+            // nop
         }
     }
 }

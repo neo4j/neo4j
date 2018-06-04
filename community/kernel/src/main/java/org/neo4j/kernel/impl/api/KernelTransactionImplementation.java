@@ -936,11 +936,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             securityContext = null;
             transactionEvent = null;
             explicitIndexTransactionState = null;
-            if ( txState != null )
-            {
-                txState.release();
-                txState = null;
-            }
+            txState = null;
+            collectionsFactory.release();
             hooksState = null;
             closeListeners.clear();
             reuseCount++;
