@@ -659,12 +659,6 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
-        public void reset()
-        {
-            current = null;
-        }
-
-        @Override
         public void release()
         {
         }
@@ -730,11 +724,6 @@ public class StubStorageCursors implements StorageReader
         public void visit( long relationshipId, int typeId, long startNodeId, long endNodeId )
         {
             throw new UnsupportedOperationException( "Not implemented yet" );
-        }
-
-        @Override
-        public void reset()
-        {
         }
 
         @Override
@@ -808,11 +797,6 @@ public class StubStorageCursors implements StorageReader
 
         @Override
         public void release()
-        {
-        }
-
-        @Override
-        public void reset()
         {
         }
 

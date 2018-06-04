@@ -197,8 +197,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
         }
     }
 
-    @Override
-    public void reset()
+    private void reset()
     {
         next = NO_ID;
         setId( NO_ID );

@@ -366,12 +366,6 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
         }
     }
 
-    @Override
-    public void reset()
-    {
-        clear();
-    }
-
     private PageCursor propertyPage( long reference )
     {
         return read.openPageCursorForReading( reference );

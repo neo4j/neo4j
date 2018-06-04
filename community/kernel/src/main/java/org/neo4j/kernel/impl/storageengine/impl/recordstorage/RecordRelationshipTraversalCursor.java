@@ -288,8 +288,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
         }
     }
 
-    @Override
-    public void reset()
+    private void reset()
     {
         setId( next = NO_ID );
         groupState = GroupState.NONE;

@@ -42,9 +42,4 @@ public interface StorageCursor extends AutoCloseable
      * Releases resources allocated by this cursor so that it cannot be initialized or used again after this call.
      */
     void release();
-
-    /**
-     * Resets the current data for this cursor so that it returns an unused uninitialized item.
-     */
-    void reset();
 }
