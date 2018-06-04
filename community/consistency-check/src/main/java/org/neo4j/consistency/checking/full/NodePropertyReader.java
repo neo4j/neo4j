@@ -24,7 +24,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -37,12 +37,12 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
-public class PropertyReader implements PropertyAccessor
+public class NodePropertyReader implements NodePropertyAccessor
 {
     private final PropertyStore propertyStore;
     private final NodeStore nodeStore;
 
-    public PropertyReader( StoreAccess storeAccess )
+    public NodePropertyReader( StoreAccess storeAccess )
     {
         this.propertyStore = storeAccess.getRawNeoStores().getPropertyStore();
         this.nodeStore = storeAccess.getRawNeoStores().getNodeStore();

@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -85,7 +85,7 @@ public class IndexPopulationTest
         return new IndexPopulator.Adapter()
         {
             @Override
-            public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
+            public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor )
             {
                 return new IndexUpdater()
                 {

@@ -43,7 +43,7 @@ import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -60,14 +60,14 @@ public class ConstraintIndexCreator
 {
     private final IndexingService indexingService;
     private final Supplier<Kernel> kernelSupplier;
-    private final PropertyAccessor propertyAccessor;
+    private final NodePropertyAccessor nodePropertyAccessor;
 
     public ConstraintIndexCreator( Supplier<Kernel> kernelSupplier, IndexingService indexingService,
-            PropertyAccessor propertyAccessor )
+            NodePropertyAccessor nodePropertyAccessor )
     {
         this.kernelSupplier = kernelSupplier;
         this.indexingService = indexingService;
-        this.propertyAccessor = propertyAccessor;
+        this.nodePropertyAccessor = nodePropertyAccessor;
     }
 
     /**
@@ -133,7 +133,7 @@ public class ConstraintIndexCreator
             locks.acquireExclusive( transaction.lockTracer(), descriptor.keyType(), descriptor.keyId() );
             reacquiredLabelLock = true;
 
-            indexingService.getIndexProxy( indexId ).verifyDeferredConstraints( propertyAccessor );
+            indexingService.getIndexProxy( indexId ).verifyDeferredConstraints( nodePropertyAccessor );
             success = true;
             return indexId;
         }

@@ -25,7 +25,7 @@ import org.neo4j.values.storable.Value;
 /**
  * Used by the {@link IndexPopulator} for verifying constraints, if need be.
  */
-public interface PropertyAccessor
+public interface NodePropertyAccessor
 {
     Value getNodePropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 }

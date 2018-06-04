@@ -61,7 +61,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -450,16 +450,16 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
+        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
                 throws IndexEntryConflictException, IOException
         {
-            delegate.verifyDeferredConstraints( propertyAccessor );
+            delegate.verifyDeferredConstraints( nodePropertyAccessor );
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor )
+        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor )
         {
-            return delegate.newPopulatingUpdater( propertyAccessor );
+            return delegate.newPopulatingUpdater( nodePropertyAccessor );
         }
 
         @Override
