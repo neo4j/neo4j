@@ -385,15 +385,16 @@ public final class UnsafeUtil
      * The memory is aligned such that it can be used for any data type.
      * The memory is uninitialised, so it may contain random garbage, or it may not.
      */
-    public static long allocateMemory( long sizeInBytes, MemoryAllocationTracker allocationTracker )
+    public static long allocateMemory( long bytes, MemoryAllocationTracker allocationTracker )
     {
-        final long pointer = unsafe.allocateMemory( sizeInBytes );
+        final long pointer = unsafe.allocateMemory( bytes );
         if ( DIRTY_MEMORY )
         {
-            setMemory( pointer, sizeInBytes, (byte) 0xA5 );
+            setMemory( pointer, bytes, (byte) 0xA5 );
         }
-        addAllocatedPointer( pointer, sizeInBytes );
-        allocationTracker.allocated( sizeInBytes );
+        addAllocatedPointer( pointer, bytes );
+        allocationTracker.allocated( bytes );
+        GlobalMemoryTracker.INSTANCE.allocated( bytes );
         return pointer;
     }
 
@@ -432,6 +433,7 @@ public final class UnsafeUtil
         checkFree( pointer );
         unsafe.freeMemory( pointer );
         allocationTracker.deallocated( bytes );
+        GlobalMemoryTracker.INSTANCE.deallocated( bytes );
     }
 
     private static final class FreeTrace extends Throwable implements Comparable<FreeTrace>
