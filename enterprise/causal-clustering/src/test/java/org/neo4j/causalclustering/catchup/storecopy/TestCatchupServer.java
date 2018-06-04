@@ -23,12 +23,10 @@
 package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.util.function.BooleanSupplier;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchupProtocolServerInstaller;
-import org.neo4j.causalclustering.catchup.CatchupServerHandler;
-import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
+import org.neo4j.causalclustering.catchup.CheckPointerService;
 import org.neo4j.causalclustering.catchup.RegularCatchupServerHandler;
 import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.causalclustering.identity.StoreId;
@@ -51,6 +49,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -60,6 +59,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
+import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -98,7 +98,8 @@ class TestCatchupServer extends Server
 
         RegularCatchupServerHandler catchupServerHandler = new RegularCatchupServerHandler( new Monitors(), logProvider,
                 () -> storeId, dependencies.provideDependency( TransactionIdStore.class ), dependencies.provideDependency( LogicalTransactionStore.class ),
-                dataSource, availability, fileSystem, pageCache, storeCopyCheckPointMutex, null, checkPointer );
+                dataSource, availability, fileSystem, pageCache, storeCopyCheckPointMutex, null,
+                new CheckPointerService( checkPointer, new CentralJobScheduler(), JobScheduler.Groups.checkPoint ) );
 
         NettyPipelineBuilderFactory pipelineBuilder = new NettyPipelineBuilderFactory( VoidPipelineWrapperFactory.VOID_WRAPPER );
         CatchupProtocolServerInstaller.Factory catchupProtocolServerInstaller = new CatchupProtocolServerInstaller.Factory( pipelineBuilder, logProvider,
