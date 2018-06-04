@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.internal.kernel.api.NamedToken;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -166,19 +167,39 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
     @Override
     public void visitIndexStatistics( long indexId, long updates, long size )
     {
-        //todo relationship indexes
-        IndexDescriptor index = indexes.get( indexId );
-        out.printf( "\tIndexStatistics[(%s {%s})]:\tupdates=%d, size=%d%n",
-                labels( index.schema().getEntityTokenIds() ), propertyKeys( index.schema().getPropertyIds() ), updates, size );
+        SchemaDescriptor schema = indexes.get( indexId ).schema();
+        String tokenIds;
+        switch ( schema.entityType() )
+        {
+        case NODE:
+            tokenIds = labels( schema.getEntityTokenIds() );
+            break;
+        case RELATIONSHIP:
+            tokenIds = relationshipTypes( schema.getEntityTokenIds() );
+            break;
+        default:
+            throw new IllegalStateException( "Indexing is not supported for EntityType: " + schema.entityType() );
+        }
+        out.printf( "\tIndexStatistics[(%s {%s})]:\tupdates=%d, size=%d%n", tokenIds, propertyKeys( schema.getPropertyIds() ), updates, size );
     }
 
     @Override
     public void visitIndexSample( long indexId, long unique, long size )
     {
-        //todo relationship indexes
-        IndexDescriptor index = indexes.get( indexId );
-        out.printf( "\tIndexSample[(%s {%s})]:\tunique=%d, size=%d%n",
-                labels( index.schema().getEntityTokenIds() ), propertyKeys( index.schema().getPropertyIds() ), unique, size );
+        SchemaDescriptor schema = indexes.get( indexId ).schema();
+        String tokenIds;
+        switch ( schema.entityType() )
+        {
+        case NODE:
+            tokenIds = labels( schema.getEntityTokenIds() );
+            break;
+        case RELATIONSHIP:
+            tokenIds = relationshipTypes( schema.getEntityTokenIds() );
+            break;
+        default:
+            throw new IllegalStateException( "Indexing is not supported for EntityType: " + schema.entityType() );
+        }
+        out.printf( "\tIndexSample[(%s {%s})]:\tunique=%d, size=%d%n", tokenIds, propertyKeys( schema.getPropertyIds() ), unique, size );
     }
 
     @Override
@@ -222,6 +243,28 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         }
         return builder.toString();
     }
+
+    private String relationshipTypes( int[] ids )
+    {
+        if ( ids.length == 1 )
+        {
+            if ( ids[0] == StatementConstants.ANY_LABEL )
+            {
+                return "";
+            }
+        }
+        StringBuilder builder = new StringBuilder();
+        for ( int i = 0; i < ids.length; i++ )
+        {
+            if ( i > 0 )
+            {
+                builder.append( "," );
+            }
+            return token( new StringBuilder().append( '[' ), relationshipTypes, ":", "type", i ).append( ']' ).toString();
+        }
+        return builder.toString();
+    }
+
 
     private String relationshipType( int id )
     {
