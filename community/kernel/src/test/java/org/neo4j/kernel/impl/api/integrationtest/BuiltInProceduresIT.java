@@ -19,21 +19,20 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -261,7 +260,19 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                 equalTo( new Object[]{"dbms.clearQueryCaches",
                         "dbms.clearQueryCaches() :: (value :: STRING?)",
                         "Clears all query caches.", "DBMS"
-                } )
+                } ),
+                equalTo( new Object[]{"db.createIndex",
+                        "db.createIndex(index :: STRING?, providerName :: STRING?) :: (index :: STRING?, providerName :: STRING?, status :: STRING?)",
+                        "Create a schema index with specified index provider (for example: CALL db.createIndex(\":Person(name)\", \"lucene+native-2.0\")) - " +
+                                "YIELD index, providerName, status",
+                        "SCHEMA"
+                } ),
+                equalTo( new Object[]{"db.createUniquePropertyConstraint",
+                        "db.createUniquePropertyConstraint(index :: STRING?, providerName :: STRING?) :: " +
+                                "(index :: STRING?, providerName :: STRING?, status :: STRING?)",
+                        "Create a unique property constraint with index backed by specified index provider " +
+                                "(for example: CALL db.createUniquePropertyConstraint(\":Person(name)\", \"lucene+native-2.0\")) - " +
+                                "YIELD index, providerName, status", "SCHEMA"} )
         ) );
         commit();
     }
@@ -310,9 +321,9 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
         int propertyKeyId2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "bar" );
         //TODO: Add test support for composite indexes
-        transaction.schemaWrite().indexCreate( forLabel( labelId1, propertyKeyId1 ) );
+        transaction.schemaWrite().indexCreate( forLabel( labelId1, propertyKeyId1 ), null );
         transaction.schemaWrite().uniquePropertyConstraintCreate( forLabel( labelId2, propertyKeyId1 ) );
-        transaction.schemaWrite().indexCreate( forLabel( labelId1, propertyKeyId1, propertyKeyId2 ) );
+        transaction.schemaWrite().indexCreate( forLabel( labelId1, propertyKeyId1, propertyKeyId2 ), null );
         commit();
 
         //let indexes come online

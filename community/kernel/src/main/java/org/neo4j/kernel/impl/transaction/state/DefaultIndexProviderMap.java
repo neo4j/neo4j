@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,11 +30,13 @@ import java.util.function.Consumer;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
 
 public class DefaultIndexProviderMap implements IndexProviderMap
 {
     private final IndexProvider defaultIndexProvider;
     private final Map<IndexProvider.Descriptor,IndexProvider> indexProviders = new HashMap<>();
+    private final Map<String,IndexProvider> indexProvidersByName = new HashMap<>();
 
     public DefaultIndexProviderMap( IndexProvider defaultIndexProvider )
     {
@@ -43,18 +47,25 @@ public class DefaultIndexProviderMap implements IndexProviderMap
                                     Iterable<IndexProvider> additionalIndexProviders )
     {
         this.defaultIndexProvider = defaultIndexProvider;
-        indexProviders.put( defaultIndexProvider.getProviderDescriptor(), defaultIndexProvider );
+        put( defaultIndexProvider.getProviderDescriptor(), defaultIndexProvider );
         for ( IndexProvider provider : additionalIndexProviders )
         {
             Descriptor providerDescriptor = provider.getProviderDescriptor();
             Objects.requireNonNull( providerDescriptor );
-            IndexProvider existing = indexProviders.putIfAbsent( providerDescriptor, provider );
+            IndexProvider existing = put( providerDescriptor, provider );
             if ( existing != null )
             {
                 throw new IllegalArgumentException( "Tried to load multiple schema index providers with the same provider descriptor " +
                         providerDescriptor + ". First loaded " + existing + " then " + provider );
             }
         }
+    }
+
+    private IndexProvider put( Descriptor providerDescriptor, IndexProvider provider )
+    {
+        IndexProvider existing = indexProviders.putIfAbsent( providerDescriptor, provider );
+        indexProvidersByName.put( providerDescriptor.name(), provider );
+        return existing;
     }
 
     @Override
@@ -64,22 +75,51 @@ public class DefaultIndexProviderMap implements IndexProviderMap
     }
 
     @Override
-    public IndexProvider apply( IndexProvider.Descriptor descriptor )
+    public IndexProvider lookup( IndexProvider.Descriptor providerDescriptor )
     {
-        IndexProvider provider = indexProviders.get( descriptor );
+        IndexProvider provider = indexProviders.get( providerDescriptor );
         if ( provider != null )
         {
             return provider;
         }
 
-        throw new IllegalArgumentException( "Tried to get index provider for an existing index with provider " +
-                descriptor + " whereas available providers in this session being " + indexProviders +
-                ", and default being " + defaultIndexProvider );
+        throw notFound( providerDescriptor );
+    }
+
+    @Override
+    public IndexProvider lookup( String providerDescriptorName ) throws IndexProviderNotFoundException
+    {
+        IndexProvider provider = indexProvidersByName.get( providerDescriptorName );
+        if ( provider != null )
+        {
+            return provider;
+        }
+
+        throw notFound( providerDescriptorName );
+    }
+
+    private IllegalArgumentException notFound( Object key )
+    {
+        return new IllegalArgumentException( "Tried to get index provider with name " + key +
+                " whereas available providers in this session being " + Arrays.toString( indexProviderNames() ) + ", and default being " +
+                defaultIndexProvider.getProviderDescriptor().name() );
     }
 
     @Override
     public void accept( Consumer<IndexProvider> visitor )
     {
         indexProviders.values().forEach( visitor );
+    }
+
+    private String[] indexProviderNames()
+    {
+        Collection<IndexProvider> providerList = indexProviders.values();
+        String[] providerNames = new String[providerList.size()];
+        int index = 0;
+        for ( IndexProvider indexProvider : providerList )
+        {
+            providerNames[index++] = indexProvider.getProviderDescriptor().name();
+        }
+        return providerNames;
     }
 }

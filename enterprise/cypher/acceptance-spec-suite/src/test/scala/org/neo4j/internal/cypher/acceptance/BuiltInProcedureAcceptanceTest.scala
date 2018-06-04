@@ -290,4 +290,89 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
       "CALL db.createLabel('Label') yield node",
       List("Cannot yield value from void procedure."))
   }
+
+  test("should create index from built-in-procedure") {
+    // when
+    val createResult = executeWith(Configs.Procs, "CALL db.createIndex(\":Person(name)\",\"lucene+native-1.0\")")
+
+    // then
+    createResult.toList should equal(
+      List(Map(
+        "index" -> ":Person(name)",
+        "providerName" -> "lucene+native-1.0",
+        "status" -> "index created"))
+    )
+
+    executeWith(Configs.Procs, "CALL db.awaitIndexes(10)")
+
+    // when
+    val listResult = executeWith(Configs.Procs, "CALL db.indexes()")
+
+    // Then
+    listResult.toList should equal(
+      List(Map("description" -> "INDEX ON :Person(name)",
+        "label" -> "Person",
+        "properties" -> List("name"),
+        "state" -> "ONLINE",
+        "type" -> "node_label_property",
+        "provider" -> Map(
+          "version" -> "1.0",
+          "key" -> "lucene+native"))))
+  }
+
+  test("should create unique property constraint from built-in-procedure") {
+    // when
+    val createResult = executeWith(Configs.Procs, "CALL db.createUniquePropertyConstraint(\":Person(name)\",\"lucene+native-1.0\")")
+
+    // then
+    createResult.toList should equal(
+      List(Map(
+        "index" -> ":Person(name)",
+        "providerName" -> "lucene+native-1.0",
+        "status" -> "uniqueness constraint online"))
+    )
+
+    executeWith(Configs.Procs, "CALL db.awaitIndexes(10)")
+
+    // when
+    val listResult = executeWith(Configs.Procs, "CALL db.indexes()")
+
+    listResult.toList should equal(
+      List(Map("description" -> "INDEX ON :Person(name)",
+        "label" -> "Person",
+        "properties" -> List( "name" ),
+        "state" -> "ONLINE",
+        "type" -> "node_unique_property",
+        "provider" -> Map(
+          "version" -> "1.0",
+          "key" -> "lucene+native"))))
+  }
+
+  test("should create node key constraint from built-in-procedure") {
+    // when
+    val createResult = executeWith(Configs.Procs, "CALL db.createNodeKey(\":Person(name)\",\"lucene+native-1.0\")")
+
+    // then
+    createResult.toList should equal(
+      List(Map(
+        "index" -> ":Person(name)",
+        "providerName" -> "lucene+native-1.0",
+        "status" -> "node key constraint online"))
+    )
+
+    executeWith(Configs.Procs, "CALL db.awaitIndexes(10)")
+
+    // when
+    val listResult = executeWith(Configs.Procs, "CALL db.indexes()")
+
+    listResult.toList should equal(
+      List(Map("description" -> "INDEX ON :Person(name)",
+        "label" -> "Person",
+        "properties" -> List( "name" ),
+        "state" -> "ONLINE",
+        "type" -> "node_unique_property",
+        "provider" -> Map(
+          "version" -> "1.0",
+          "key" -> "lucene+native"))))
+  }
 }

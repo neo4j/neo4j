@@ -43,6 +43,6 @@ abstract class AbstractNodeValueIndexCursorTest extends NodeValueIndexCursorTest
         schemaWrite.indexCreate(
                 SchemaDescriptorFactory.forLabel( token.labelGetOrCreateForName( "Person" ),
                         token.propertyKeyGetOrCreateForName( "firstname" ),
-                        token.propertyKeyGetOrCreateForName( "surname" ) ) );
+                        token.propertyKeyGetOrCreateForName( "surname" ) ), null );
     }
 }

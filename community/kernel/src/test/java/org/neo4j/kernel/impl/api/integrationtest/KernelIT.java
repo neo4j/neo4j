@@ -213,7 +213,7 @@ public class KernelIT extends KernelIntegrationTest
         SchemaWrite schemaWrite = transaction.schemaWrite();
         LabelSchemaDescriptor schemaDescriptor = forLabel( tokenWrite.labelGetOrCreateForName( "hello" ),
                 tokenWrite.propertyKeyGetOrCreateForName( "hepp" ) );
-        return schemaWrite.indexCreate( schemaDescriptor );
+        return schemaWrite.indexCreate( schemaDescriptor, null );
     }
 
     private String getOrCreateSchemaState( String key, final String maybeSetThisState )
