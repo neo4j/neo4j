@@ -139,8 +139,7 @@ class RecordRelationshipScanCursor extends RecordRelationshipCursor implements S
         }
     }
 
-    @Override
-    public void reset()
+    private void reset()
     {
         setId( next = NO_ID );
     }

@@ -204,7 +204,7 @@ class DefaultNodeCursor implements NodeCursor
             read = null;
             hasChanges = HasChanges.MAYBE;
             addedNodes = LongSets.immutable.empty().longIterator();
-            storeCursor.reset();
+            storeCursor.close();
 
             pool.accept( this );
         }

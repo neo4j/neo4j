@@ -89,7 +89,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
         if ( !isClosed() )
         {
             read = null;
-            storeCursor.reset();
+            storeCursor.close();
 
             pool.accept( this );
         }
