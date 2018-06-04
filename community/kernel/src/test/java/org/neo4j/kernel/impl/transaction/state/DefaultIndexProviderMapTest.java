@@ -24,9 +24,10 @@ import org.junit.Test;
 import org.neo4j.kernel.api.index.IndexProvider;
 
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 
 public class DefaultIndexProviderMapTest
 {
@@ -34,22 +35,14 @@ public class DefaultIndexProviderMapTest
     public void shouldNotSupportMultipleProvidersWithSameDescriptor()
     {
         // given
-        IndexProvider.Descriptor descriptor = new IndexProvider.Descriptor( "provider", "1.2" );
+        Descriptor descriptor = new Descriptor( "provider", "1.2" );
         IndexProvider provider1 = mock( IndexProvider.class );
         when( provider1.getProviderDescriptor() ).thenReturn( descriptor );
         IndexProvider provider2 = mock( IndexProvider.class );
         when( provider2.getProviderDescriptor() ).thenReturn( descriptor );
 
         // when
-        try
-        {
-            new DefaultIndexProviderMap( provider1, singletonList( provider2 ) );
-            fail( "Should have failed" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // then good
-        }
+        assertThrows( IllegalArgumentException.class, () -> new DefaultIndexProviderMap( provider1, singletonList( provider2 ) ) );
     }
 
     @Test
@@ -57,17 +50,9 @@ public class DefaultIndexProviderMapTest
     {
         // given
         IndexProvider provider = mock( IndexProvider.class );
-        when( provider.getProviderDescriptor() ).thenReturn( new IndexProvider.Descriptor( "provider", "1.2" ) );
+        when( provider.getProviderDescriptor() ).thenReturn( new Descriptor( "provider", "1.2" ) );
 
         // when
-        try
-        {
-            new DefaultIndexProviderMap( provider ).lookup( new IndexProvider.Descriptor( "provider2", "1.2" ) );
-            fail( "Should have failed" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // then good
-        }
+        assertThrows( IllegalArgumentException.class, () -> new DefaultIndexProviderMap( provider ).lookup( new Descriptor( "provider2", "1.2" ) ) );
     }
 }

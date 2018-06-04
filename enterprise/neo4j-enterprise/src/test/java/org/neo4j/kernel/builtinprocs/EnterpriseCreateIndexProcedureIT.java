@@ -65,6 +65,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE10;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -139,16 +140,10 @@ public class EnterpriseCreateIndexProcedureIT extends KernelIntegrationTest
         // when
         newTransaction( AnonymousContext.full() );
         String pattern = indexPattern( "Person", "name" );
-        try
-        {
-            callIndexProcedure( pattern, null );
-            fail( "Expected to fail" );
-        }
-        catch ( ProcedureException e )
-        {
-            // then
-            assertThat( e.getMessage(), containsString( "Could not create index with specified index provider being null" ) );
-        }
+        ProcedureException e = assertThrows( ProcedureException.class, () -> callIndexProcedure( pattern, null ) );
+
+        // then
+        assertThat( e.getMessage(), containsString( "Could not create index with specified index provider being null" ) );
         commit();
     }
 

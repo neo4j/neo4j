@@ -87,8 +87,7 @@ public class IndexProcedures implements AutoCloseable
 
     public Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String indexSpecification, String providerName ) throws ProcedureException
     {
-        String statusMessage = "index created";
-        return createIndex( indexSpecification, providerName, statusMessage,
+        return createIndex( indexSpecification, providerName, "index created",
                 ( schemaWrite, descriptor, provider ) -> schemaWrite.indexCreate( descriptor, Optional.of( provider ), Optional.empty() ) );
     }
 
@@ -176,7 +175,7 @@ public class IndexProcedures implements AutoCloseable
         }
         catch ( TooManyLabelsException | IllegalTokenNameException e )
         {
-            throw new ProcedureException( e.status(), e, "" );
+            throw new ProcedureException( e.status(), e, e.getMessage() );
         }
     }
 
@@ -191,7 +190,7 @@ public class IndexProcedures implements AutoCloseable
             }
             catch ( IllegalTokenNameException e )
             {
-                throw new ProcedureException( e.status(), e, "" );
+                throw new ProcedureException( e.status(), e, e.getMessage() );
             }
         }
         return propertyKeyIds;
