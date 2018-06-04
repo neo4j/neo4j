@@ -51,7 +51,7 @@ class AggregationReduceOperatorNoGrouping(aggregations: Array[AggregationOffsets
       val currentInputRow = inputRows(i)
       var j = 0
       while (j < aggregations.length) {
-        reducers(j).reduce(currentInputRow.getRefAt(aggregations(j).incoming))
+        reducers(j).reduce(currentInputRow.getRefAt(aggregations(j).mapperOutputSlot))
         j += 1
       }
       i += 1
@@ -60,7 +60,7 @@ class AggregationReduceOperatorNoGrouping(aggregations: Array[AggregationOffsets
     //Write the reduced value to output
     i = 0
     while (i < aggregations.length) {
-      currentRow.setRefAt(aggregations(i).outgoing, reducers(i).result)
+      currentRow.setRefAt(aggregations(i).reducerOutputSlot, reducers(i).result)
       i += 1
     }
     currentRow.moveToNextRow()

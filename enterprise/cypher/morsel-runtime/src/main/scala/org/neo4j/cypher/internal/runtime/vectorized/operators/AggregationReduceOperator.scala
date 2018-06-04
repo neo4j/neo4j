@@ -36,12 +36,16 @@ Responsible for reducing the output of AggregationMapperOperatorNoGrouping
 class AggregationReduceOperator(aggregations: Array[AggregationOffsets], groupings: Array[GroupingOffsets]) extends Operator {
 
   //These are assigned at compile time to save some time at runtime
-  private val addGroupingValuesToResult = AggregationHelper.computeGroupingSetter(groupings)
+  private val addGroupingValuesToResult = AggregationHelper.computeGroupingSetter(groupings)(_.reducerOutputSlot)
   private val getGroupingKey = AggregationHelper.computeGroupingGetter(groupings)
+
+  type GroupingKey = AnyValue
+  type MapperOutputSlot = Int
+  type ReducerOutputSlot = Int
 
   override def operate(message: Message, outputRow: MorselExecutionContext, context: QueryContext, state: QueryState): Continuation = {
     var iterationState: Iteration = null
-    var iterator: Iterator[(AnyValue, Array[(Int, Int, AggregationReducer)])] = null
+    var iterator: Iterator[(GroupingKey, Array[(MapperOutputSlot, ReducerOutputSlot, AggregationReducer)])] = null
 
     message match {
       case StartLoopWithEagerData(inputs, is) =>
@@ -49,7 +53,7 @@ class AggregationReduceOperator(aggregations: Array[AggregationOffsets], groupin
         iterator = getIterator(inputs)
 
       case ContinueLoopWith(ContinueWithSource(it: Iterator[_], is)) =>
-        iterator = it.asInstanceOf[Iterator[(AnyValue, Array[(Int, Int, AggregationReducer)])]]
+        iterator = it.asInstanceOf[Iterator[(GroupingKey, Array[(MapperOutputSlot, ReducerOutputSlot, AggregationReducer)])]]
         iterationState = is
       case _ => throw new IllegalStateException()
     }
@@ -73,13 +77,13 @@ class AggregationReduceOperator(aggregations: Array[AggregationOffsets], groupin
 
   private def getIterator(inputRows: Array[MorselExecutionContext]) = {
     var morselPos = 0
-    val result = MutableMap[AnyValue, Array[(Int, Int, AggregationReducer)]]()
+    val result = MutableMap[GroupingKey, Array[(MapperOutputSlot, ReducerOutputSlot, AggregationReducer)]]()
     while (morselPos < inputRows.length) {
       val currentIncomingRow = inputRows(morselPos)
       while (currentIncomingRow.hasMoreRows) {
         val key = getGroupingKey(currentIncomingRow)
         val functions = result.getOrElseUpdate(key, aggregations
-          .map(a => (a.incoming, a.outgoing, a.aggregation.createAggregationReducer)))
+          .map(a => (a.mapperOutputSlot, a.reducerOutputSlot, a.aggregation.createAggregationReducer)))
         var i = 0
         while (i < functions.length) {
           val (incoming, _, reducer) = functions(i)

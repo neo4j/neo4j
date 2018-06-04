@@ -40,7 +40,7 @@ class AggregationMapperOperator(aggregations: Array[AggregationOffsets], groupin
 
   //These are assigned at compile time to save some time at runtime
   private val groupingFunction = AggregationHelper.groupingFunction(groupings)
-  private val addGroupingValuesToResult = AggregationHelper.computeGroupingSetter(groupings)
+  private val addGroupingValuesToResult = AggregationHelper.computeGroupingSetter(groupings)(_.mapperOutputSlot)
 
   override def operate(iterationState: Iteration, currentRow: MorselExecutionContext, context: QueryContext, state: QueryState): Unit = {
 
@@ -51,7 +51,7 @@ class AggregationMapperOperator(aggregations: Array[AggregationOffsets], groupin
     while (currentRow.hasMoreRows) {
       val groupingValue: AnyValue = groupingFunction(currentRow, queryState)
       val functions = result
-        .getOrElseUpdate(groupingValue, aggregations.map(a => a.incoming -> a.aggregation.createAggregationMapper))
+        .getOrElseUpdate(groupingValue, aggregations.map(a => a.mapperOutputSlot -> a.aggregation.createAggregationMapper))
       functions.foreach(f => f._2.map(currentRow, queryState))
       currentRow.moveToNextRow()
     }

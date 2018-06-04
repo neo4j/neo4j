@@ -55,7 +55,7 @@ class AggregationMapperOperatorNoGrouping(aggregations: Array[AggregationOffsets
     currentRow.resetToFirstRow()
     while (i < aggregations.length) {
       val aggregation = aggregations(i)
-      currentRow.setRefAt(aggregation.incoming, aggregationMappers(i).result)
+      currentRow.setRefAt(aggregation.mapperOutputSlot, aggregationMappers(i).result)
       i += 1
     }
     currentRow.moveToNextRow()
