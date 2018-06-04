@@ -377,6 +377,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return securityContext;
     }
 
+    @Override
     public AuthSubject subjectOrAnonymous()
     {
         SecurityContext context = this.securityContext;
