@@ -353,6 +353,44 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    public IndexReference index( SchemaDescriptor schema )
+    {
+        ktx.assertOpen();
+
+        CapableIndexDescriptor indexDescriptor = storageReader.indexGetForSchema( schema );
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            ReadableDiffSets<IndexDescriptor> diffSets = ktx.txState().indexDiffSetsBySchema( schema );
+            if ( indexDescriptor != null )
+            {
+                if ( diffSets.isRemoved( indexDescriptor ) )
+                {
+                    return IndexReference.NO_INDEX;
+                }
+                else
+                {
+                    return indexDescriptor;
+                }
+            }
+            else
+            {
+                Iterator<IndexDescriptor> fromTxState =
+                        filter( SchemaDescriptor.equalTo( schema ), diffSets.getAdded().iterator() );
+                if ( fromTxState.hasNext() )
+                {
+                    return fromTxState.next();
+                }
+                else
+                {
+                    return IndexReference.NO_INDEX;
+                }
+            }
+        }
+
+        return indexDescriptor != null ? indexDescriptor : IndexReference.NO_INDEX;
+    }
+
+    @Override
     public IndexReference indexReferenceUnchecked( int label, int... properties )
     {
         return IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( label, properties ),
@@ -387,7 +425,7 @@ public class AllStoreHolder extends Read
 
         return Iterators.map( indexDescriptor ->
         {
-            sharedOptimisticLock( ResourceTypes.LABEL, indexDescriptor.schema().keyId() );
+            sharedOptimisticLock( indexDescriptor.schema().keyType(), indexDescriptor.schema().keyId() );
             return indexDescriptor;
         }, iterator );
     }
@@ -396,23 +434,24 @@ public class AllStoreHolder extends Read
     public InternalIndexState indexGetState( IndexReference index ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
-        sharedOptimisticLock( ResourceTypes.LABEL, index.label() );
+        IndexDescriptor descriptor = (IndexDescriptor) index;
+        sharedOptimisticLock( descriptor.schema().keyType(), descriptor.schema().keyId() );
         ktx.assertOpen();
-        return indexGetState( (IndexDescriptor) index );
+        return indexGetState( descriptor );
     }
 
     @Override
     public PopulationProgress indexGetPopulationProgress( IndexReference index )
             throws IndexNotFoundKernelException
     {
-        sharedOptimisticLock( ResourceTypes.LABEL, index.label() );
-        ktx.assertOpen();
         IndexDescriptor descriptor = (IndexDescriptor) index;
+        sharedOptimisticLock( descriptor.schema().keyType(), descriptor.schema().keyId() );
+        ktx.assertOpen();
 
         if ( ktx.hasTxStateWithChanges() )
         {
             if ( checkIndexState( descriptor,
-                    ktx.txState().indexDiffSetsByLabel( index.label() ) ) )
+                    ktx.txState().indexDiffSetsBySchema( descriptor.schema() ) ) )
             {
                 return PopulationProgress.NONE;
             }
@@ -424,11 +463,12 @@ public class AllStoreHolder extends Read
     @Override
     public Long indexGetOwningUniquenessConstraintId( IndexReference index )
     {
-        sharedOptimisticLock( ResourceTypes.LABEL, index.label() );
+        IndexDescriptor descriptor = (IndexDescriptor) index;
+        sharedOptimisticLock( descriptor.schema().keyType(), descriptor.schema().keyId() );
         ktx.assertOpen();
-        if ( index instanceof StoreIndexDescriptor )
+        if ( descriptor instanceof StoreIndexDescriptor )
         {
-            return ((StoreIndexDescriptor) index).getOwningConstraint();
+            return ((StoreIndexDescriptor) descriptor).getOwningConstraint();
         }
         else
         {
@@ -439,11 +479,12 @@ public class AllStoreHolder extends Read
     @Override
     public long indexGetCommittedId( IndexReference index ) throws SchemaRuleNotFoundException
     {
-        sharedOptimisticLock( ResourceTypes.LABEL, index.label() );
+        IndexDescriptor descriptor = (IndexDescriptor) index;
+        sharedOptimisticLock( descriptor.schema().keyType(), descriptor.schema().keyId() );
         ktx.assertOpen();
-        if ( index instanceof StoreIndexDescriptor )
+        if ( descriptor instanceof StoreIndexDescriptor )
         {
-            return ((StoreIndexDescriptor) index).getId();
+            return ((StoreIndexDescriptor) descriptor).getId();
         }
         else
         {
@@ -454,24 +495,30 @@ public class AllStoreHolder extends Read
     @Override
     public String indexGetFailure( IndexReference index ) throws IndexNotFoundKernelException
     {
-        return storageReader.indexGetFailure( SchemaDescriptorFactory.forLabel( index.label(), index.properties() ) );
+        assertValidIndex( index );
+        IndexDescriptor descriptor = (IndexDescriptor) index;
+        return storageReader.indexGetFailure( descriptor.schema() );
     }
 
     @Override
     public double indexUniqueValuesSelectivity( IndexReference index ) throws IndexNotFoundKernelException
     {
-        acquireSharedLabelLock( index.label() );
+        assertValidIndex( index );
+        SchemaDescriptor schema = ((IndexDescriptor) index).schema();
+        sharedOptimisticLock( schema.keyType(), schema.keyId() );
         ktx.assertOpen();
         return storageReader
-                .indexUniqueValuesPercentage( SchemaDescriptorFactory.forLabel( index.label(), index.properties() ) );
+                .indexUniqueValuesPercentage( schema );
     }
 
     @Override
     public long indexSize( IndexReference index ) throws IndexNotFoundKernelException
     {
-        acquireSharedLabelLock( index.label() );
+        assertValidIndex( index );
+        SchemaDescriptor schema = ((IndexDescriptor) index).schema();
+        sharedOptimisticLock( schema.keyType(), schema.keyId() );
         ktx.assertOpen();
-        return storageReader.indexSize( SchemaDescriptorFactory.forLabel( index.label(), index.properties() ) );
+        return storageReader.indexSize( schema );
     }
 
     @Override

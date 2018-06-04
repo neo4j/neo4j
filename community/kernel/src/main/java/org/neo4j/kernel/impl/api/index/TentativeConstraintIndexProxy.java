@@ -163,7 +163,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
         {
             SchemaDescriptor descriptor = getDescriptor().schema();
             throw new UniquePropertyValueValidationException(
-                    ConstraintDescriptorFactory.uniqueForLabel( descriptor.keyId(), descriptor.getPropertyIds() ),
+                    ConstraintDescriptorFactory.uniqueForSchema( descriptor ),
                     ConstraintValidationException.Phase.VERIFICATION,
                     new HashSet<>( failures )
                 );

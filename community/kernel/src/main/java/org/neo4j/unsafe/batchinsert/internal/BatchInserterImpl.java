@@ -528,7 +528,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
         List<SchemaDescriptor> descriptorList = Arrays.asList( descriptors );
         int[] labelIds = descriptorList.stream()
-                .mapToInt( SchemaDescriptor::keyId )
+                .flatMapToInt( d -> Arrays.stream( d.getEntityTokenIds() ) )
                 .toArray();
 
         int[] propertyKeyIds = descriptorList.stream()

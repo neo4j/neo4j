@@ -66,7 +66,6 @@ import org.neo4j.values.storable.Values;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -111,7 +110,7 @@ public class ConstraintIndexCreatorTest
         // then
         assertEquals( INDEX_ID, indexId );
         verify( schemaRead ).indexGetCommittedId( indexReference );
-        verify( schemaRead ).index( LABEL_ID, PROPERTY_KEY_ID );
+        verify( schemaRead ).index( descriptor );
         verifyNoMoreInteractions( schemaRead );
         verify( indexProxy ).awaitStoreScanCompleted();
     }
@@ -133,7 +132,7 @@ public class ConstraintIndexCreatorTest
         doThrow( new IndexPopulationFailedKernelException( descriptor, "some index", cause ) )
                 .when( indexProxy ).awaitStoreScanCompleted();
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
-        when( schemaRead.index( anyInt(), anyInt() ) )
+        when( schemaRead.index( any( SchemaDescriptor.class ) ) )
                 .thenReturn(
                         IndexReference.NO_INDEX )   // first claim it doesn't exist, because it doesn't... so
                 // that it gets created
@@ -160,7 +159,7 @@ public class ConstraintIndexCreatorTest
         SchemaDescriptor newIndex = index.schema();
         verify( tx1 ).indexUniqueCreate( eq( newIndex ), eq( Optional.empty() ) );
         verify( schemaRead ).indexGetCommittedId( indexReference );
-        verify( schemaRead, times( 2 ) ).index( LABEL_ID, PROPERTY_KEY_ID );
+        verify( schemaRead, times( 2 ) ).index( descriptor );
         verifyNoMoreInteractions( schemaRead );
         TransactionState tx2 = kernel.transactions.get( 1 ).txState();
         verify( tx2 ).indexDoDrop( index );
@@ -230,7 +229,7 @@ public class ConstraintIndexCreatorTest
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( orphanedConstraintIndexId ) ).thenReturn( indexProxy );
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
-        when( schemaRead.index( LABEL_ID, PROPERTY_KEY_ID ) ).thenReturn( indexReference );
+        when( schemaRead.index( descriptor ) ).thenReturn( indexReference );
         when( schemaRead.indexGetOwningUniquenessConstraintId( indexReference ) )
                 .thenReturn( null ); // which means it has no owner
         ConstraintIndexCreator creator =
@@ -245,7 +244,7 @@ public class ConstraintIndexCreatorTest
         assertEquals( "There should have been no need to acquire a statement to create the constraint index", 0,
                 kernel.transactions.size() );
         verify( schemaRead ).indexGetCommittedId( indexReference );
-        verify( schemaRead ).index( LABEL_ID, PROPERTY_KEY_ID );
+        verify( schemaRead ).index( descriptor );
         verify( schemaRead ).indexGetOwningUniquenessConstraintId( indexReference );
         verifyNoMoreInteractions( schemaRead );
         verify( indexProxy ).awaitStoreScanCompleted();
@@ -264,7 +263,7 @@ public class ConstraintIndexCreatorTest
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( constraintIndexId ) ).thenReturn( indexProxy );
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
-        when( schemaRead.index( LABEL_ID, PROPERTY_KEY_ID ) ).thenReturn( indexReference );
+        when( schemaRead.index( descriptor ) ).thenReturn( indexReference );
         when( schemaRead.indexGetOwningUniquenessConstraintId( indexReference ) )
                 .thenReturn( constraintIndexOwnerId ); // which means there's an owner
         when( tokenRead.nodeLabelName( LABEL_ID ) ).thenReturn( "MyLabel" );
@@ -287,7 +286,7 @@ public class ConstraintIndexCreatorTest
         // then
         assertEquals( "There should have been no need to acquire a statement to create the constraint index", 0,
                 kernel.transactions.size() );
-        verify( schemaRead ).index( LABEL_ID, PROPERTY_KEY_ID );
+        verify( schemaRead ).index( descriptor );
         verify( schemaRead ).indexGetOwningUniquenessConstraintId( indexReference );
         verifyNoMoreInteractions( schemaRead );
     }
@@ -315,7 +314,7 @@ public class ConstraintIndexCreatorTest
         assertEquals( 1, kernel.transactions.size() );
         KernelTransactionImplementation transactionInstance = kernel.transactions.get( 0 );
         verify( transactionInstance ).indexUniqueCreate( eq( descriptor ), eq( Optional.of( providerDescriptor.name() ) ) );
-        verify( schemaRead ).index( LABEL_ID, PROPERTY_KEY_ID );
+        verify( schemaRead ).index( descriptor );
         verify( schemaRead ).indexGetCommittedId( any() );
         verifyNoMoreInteractions( schemaRead );
     }
@@ -361,7 +360,7 @@ public class ConstraintIndexCreatorTest
     private SchemaRead schemaRead()
     {
         SchemaRead schemaRead = mock( SchemaRead.class );
-        when( schemaRead.index( LABEL_ID, PROPERTY_KEY_ID ) ).thenReturn( IndexReference.NO_INDEX );
+        when( schemaRead.index( descriptor ) ).thenReturn( IndexReference.NO_INDEX );
         try
         {
             when( schemaRead.indexGetCommittedId( indexReference ) ).thenReturn( INDEX_ID );

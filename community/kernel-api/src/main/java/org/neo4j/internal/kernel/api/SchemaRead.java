@@ -46,6 +46,14 @@ public interface SchemaRead
     IndexReference index( int label, int... properties );
 
     /**
+     * Acquire a reference to the index mapping the given {@code SchemaDescriptor}.
+     *
+     * @param schema {@link SchemaDescriptor} for the index
+     * @return the IndexReference, or {@link IndexReference#NO_INDEX} if such an index does not exist.
+     */
+    IndexReference index( SchemaDescriptor schema );
+
+    /**
      * Acquire an index reference of the given {@code label} and {@code properties}. This method does not assert
      * that the created reference points to a valid online index.
      *
