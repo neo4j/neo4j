@@ -22,7 +22,6 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
@@ -30,31 +29,24 @@ import org.neo4j.cypher.internal.runtime.vectorized._
 /*
 Takes an input morsel and compacts all rows to the beginning of it, only keeping the rows that match a predicate
  */
-class FilterOperator(slots: SlotConfiguration, predicate: Predicate) extends MiddleOperator {
+class FilterOperator(predicate: Predicate) extends MiddleOperator {
   override def operate(iterationState: Iteration,
-                       data: Morsel,
+                       readingRow: MorselExecutionContext,
                        context: QueryContext,
                        state: QueryState): Unit = {
 
-    var readingPos = 0
-    var writingPos = 0
-    val longCount = slots.numberOfLongs
-    val refCount = slots.numberOfReferences
-    val currentRow = new MorselExecutionContext(data, longCount, refCount, currentRow = readingPos)
+    val writingRow = readingRow.createClone()
     val queryState = new OldQueryState(context, resources = null, params = state.params)
 
-    while (readingPos < data.validRows) {
-      currentRow.currentRow = readingPos
-      val matches = predicate.isTrue(currentRow, queryState)
+    while (readingRow.hasMoreRows) {
+      val matches = predicate.isTrue(readingRow, queryState)
       if (matches) {
-        System.arraycopy(data.longs, readingPos * longCount, data.longs, writingPos * longCount, longCount)
-        System.arraycopy(data.refs, readingPos * refCount, data.refs, writingPos * refCount, refCount)
-        writingPos += 1
+        writingRow.copyFrom(readingRow)
+        writingRow.moveToNextRow()
       }
-      readingPos += 1
-      currentRow.currentRow = readingPos
+      readingRow.moveToNextRow()
     }
 
-    data.validRows = writingPos
+    writingRow.finishedWriting()
   }
 }

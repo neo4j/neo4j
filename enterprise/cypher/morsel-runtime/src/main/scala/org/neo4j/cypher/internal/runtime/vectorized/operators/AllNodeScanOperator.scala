@@ -22,14 +22,15 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.internal.kernel.api.NodeCursor
 
-class AllNodeScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int) extends Operator {
+class AllNodeScanOperator(offset: Int, argumentSize: SlotConfiguration.Size) extends Operator {
 
   override def operate(message: Message,
-                       data: Morsel,
+                       currentRow: MorselExecutionContext,
                        context: QueryContext,
                        state: QueryState): Continuation = {
     var nodeCursor: NodeCursor = null
@@ -47,21 +48,20 @@ class AllNodeScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int) extend
       case _ => throw new IllegalStateException()
     }
 
-    val longs: Array[Long] = data.longs
+    var cursorHasMore = true
 
-    var processedRows = 0
-    var hasMore = true
-    while (processedRows < data.validRows && hasMore) {
-      hasMore = nodeCursor.next()
-      if (hasMore) {
-        longs(processedRows * longsPerRow + offset) = nodeCursor.nodeReference()
-        processedRows += 1
+    while (currentRow.hasMoreRows && cursorHasMore) {
+      cursorHasMore = nodeCursor.next()
+      if (cursorHasMore) {
+        iterationState.copyArgumentStateTo(currentRow, argumentSize.nLongs, argumentSize.nReferences)
+        currentRow.setLongAt(offset, nodeCursor.nodeReference())
+        currentRow.moveToNextRow()
       }
     }
 
-    data.validRows = processedRows
+    currentRow.finishedWriting()
 
-    if (hasMore)
+    if (cursorHasMore)
       ContinueWithSource(nodeCursor, iterationState)
     else {
       if (nodeCursor != null) {

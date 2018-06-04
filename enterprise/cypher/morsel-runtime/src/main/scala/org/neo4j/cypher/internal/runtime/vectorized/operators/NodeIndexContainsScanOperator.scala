@@ -22,6 +22,7 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
@@ -30,11 +31,12 @@ import org.neo4j.internal.kernel.api.{IndexOrder, IndexQuery, NodeValueIndexCurs
 import org.neo4j.values.storable.{TextValue, Values}
 import org.opencypher.v9_0.util.CypherTypeException
 
-class NodeIndexContainsScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, label: Int, propertyKey: Int, valueExpr: Expression)
-  extends NodeIndexOperator[NodeValueIndexCursor](longsPerRow, refsPerRow, offset) {
+class NodeIndexContainsScanOperator(offset: Int, label: Int, propertyKey: Int, valueExpr: Expression,
+                                    argumentSize: SlotConfiguration.Size)
+  extends NodeIndexOperator[NodeValueIndexCursor](offset) {
 
   override def operate(message: Message,
-                       data: Morsel,
+                       currentRow: MorselExecutionContext,
                        context: QueryContext,
                        state: QueryState): Continuation = {
     var valueIndexCursor: NodeValueIndexCursor  = null
@@ -46,7 +48,6 @@ class NodeIndexContainsScanOperator(longsPerRow: Int, refsPerRow: Int, offset: I
 
     message match {
       case StartLeafLoop(is) =>
-        val currentRow = new MorselExecutionContext(data, longsPerRow, refsPerRow, currentRow = 0)
         val queryState = new OldQueryState(context, resources = null, params = state.params)
         val value = valueExpr(currentRow, queryState)
 
@@ -68,7 +69,7 @@ class NodeIndexContainsScanOperator(longsPerRow: Int, refsPerRow: Int, offset: I
     }
 
     if(!nullExpression)
-      iterate(data, valueIndexCursor, iterationState)
+      iterate(currentRow, valueIndexCursor, iterationState, argumentSize)
     else
       EndOfLoop(iterationState)
   }

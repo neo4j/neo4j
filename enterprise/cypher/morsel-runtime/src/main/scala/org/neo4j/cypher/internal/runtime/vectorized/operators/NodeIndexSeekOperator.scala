@@ -22,6 +22,7 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{IndexSeek, IndexSeekMode, NodeIndexSeeker, QueryState => OldQueryState}
@@ -31,9 +32,10 @@ import org.neo4j.internal.kernel.api._
 import org.neo4j.values.virtual.NodeValue
 import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
 
-class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
+class NodeIndexSeekOperator(offset: Int,
                             label: LabelToken,
                             propertyKeys: Seq[PropertyKeyToken],
+                            argumentSize: SlotConfiguration.Size,
                             override val valueExpr: QueryExpression[Expression],
                             override val indexMode: IndexSeekMode = IndexSeek)
   extends Operator with NodeIndexSeeker {
@@ -50,7 +52,7 @@ class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
   }
 
   override def operate(message: Message,
-                       data: Morsel,
+                       currentRow: MorselExecutionContext,
                        context: QueryContext,
                        state: QueryState): Continuation = {
     var nodeIterator: Iterator[NodeValue] = null
@@ -58,7 +60,6 @@ class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
 
     message match {
       case StartLeafLoop(is) =>
-        val currentRow = new MorselExecutionContext(data, longsPerRow, refsPerRow, currentRow = 0)
         val queryState = new OldQueryState(context, resources = null, params = state.params)
         val indexReference = reference(context)
         nodeIterator = indexSeek(queryState, indexReference, currentRow)
@@ -69,18 +70,17 @@ class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
       case _ => throw new IllegalStateException()
 
     }
-   iterate(data, nodeIterator, iterationState)
+   iterate(currentRow, nodeIterator, iterationState)
   }
 
-  protected def iterate(data: Morsel, nodeIterator: Iterator[NodeValue], iterationState: Iteration): Continuation = {
-    val longs: Array[Long] = data.longs
-    var processedRows = 0
-    while (processedRows < data.validRows && nodeIterator.hasNext) {
-      longs(processedRows * longsPerRow + offset) = nodeIterator.next().id()
-      processedRows += 1
+  protected def iterate(currentRow: MorselExecutionContext, nodeIterator: Iterator[NodeValue], iterationState: Iteration): Continuation = {
+    while (currentRow.hasMoreRows && nodeIterator.hasNext) {
+      iterationState.copyArgumentStateTo(currentRow, argumentSize.nLongs, argumentSize.nReferences)
+      currentRow.setLongAt(offset, nodeIterator.next().id())
+      currentRow.moveToNextRow()
     }
 
-    data.validRows = processedRows
+    currentRow.finishedWriting()
 
     if (nodeIterator.hasNext)
       ContinueWithSource(nodeIterator, iterationState)

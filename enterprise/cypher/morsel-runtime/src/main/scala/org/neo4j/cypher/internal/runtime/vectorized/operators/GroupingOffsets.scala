@@ -25,4 +25,13 @@ package org.neo4j.cypher.internal.runtime.vectorized.operators
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.Slot
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 
-case class GroupingOffsets(incoming: Slot, outgoing: Slot, expression: Expression)
+/**
+  *
+  * @param mapperOutputSlot
+  * Slot from AggregationMapper's pipeline where grouping is written to by the Mapper and read from by the Reducer.
+  * @param reducerOutputSlot
+  * Slot from AggregationReducers's pipeline where grouping is written to by the Reducer.
+  * @param expression
+  * Grouping expression to be operated on by the Mapper.
+  */
+case class GroupingOffsets(mapperOutputSlot: Slot, reducerOutputSlot: Slot, expression: Expression)

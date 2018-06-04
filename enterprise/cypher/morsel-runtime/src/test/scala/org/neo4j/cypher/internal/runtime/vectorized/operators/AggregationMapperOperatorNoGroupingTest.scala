@@ -22,41 +22,35 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{LongSlot, RefSlot, SlotConfiguration}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
-import org.neo4j.cypher.internal.runtime.vectorized.{Iteration, Morsel, QueryState}
-import org.opencypher.v9_0.util.symbols.{CTAny, CTNode}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.vectorized.{Iteration, Morsel, MorselExecutionContext, QueryState}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
-
-import scala.collection.mutable
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class AggregationMapperOperatorNoGroupingTest extends CypherFunSuite {
 
   test("single aggregation on a single morsel") {
     // Given
-    val slots = new SlotConfiguration(mutable.Map("node" -> LongSlot(0, nullable = false, CTNode),
-                                                  "aggregate" -> RefSlot(0, nullable = false, CTAny)), 1, 1)
-    val aggregation = new AggregationMapperOperatorNoGrouping(slots, Array(AggregationOffsets(0, 0, DummyEvenNodeIdAggregation(0))))
+    val numberOfLongs = 1
+    val numberOfReferences = 1
+    val aggregation = new AggregationMapperOperatorNoGrouping(Array(AggregationOffsets(0, 0, DummyEvenNodeIdAggregation(0))))
     val longs = Array[Long](0,1,2,3,4,5,6,7,8,9)
     val refs = new Array[AnyValue](10)
     val data = new Morsel(longs, refs, longs.length)
 
     // When
-    aggregation.operate(new Iteration(None), data, null, QueryState(VirtualValues.EMPTY_MAP, null))
+    aggregation.operate(Iteration(None), MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
 
     // Then
     data.refs(0) should equal(Values.longArray(Array(0,2,4,6,8)))
   }
 
   test("multiple aggregations on a single morsel") {
-    val slots = new SlotConfiguration(mutable.Map("n1" -> LongSlot(0, nullable = false, CTNode),
-                                                  "n2" -> LongSlot(1, nullable = false, CTNode),
-                                                  "aggregate" -> RefSlot(0, nullable = false, CTAny)), 2, 1)
+    val numberOfLongs = 2
+    val numberOfReferences = 1
 
-    val aggregation = new AggregationMapperOperatorNoGrouping(slots, Array(
+    val aggregation = new AggregationMapperOperatorNoGrouping(Array(
       AggregationOffsets(0, 0, DummyEvenNodeIdAggregation(0)),
       AggregationOffsets(1, 1, DummyEvenNodeIdAggregation(1))
     ))
@@ -66,7 +60,7 @@ class AggregationMapperOperatorNoGroupingTest extends CypherFunSuite {
     val refs = new Array[AnyValue](5)
     val data = new Morsel(longs, refs, 5)
 
-    aggregation.operate(new Iteration(None), data, null, QueryState(VirtualValues.EMPTY_MAP, null))
+    aggregation.operate(Iteration(None), MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
 
     data.refs(0) should equal(Values.longArray(Array(0,2,4,6,8)))
     data.refs(1) should equal(Values.longArray(Array.empty))

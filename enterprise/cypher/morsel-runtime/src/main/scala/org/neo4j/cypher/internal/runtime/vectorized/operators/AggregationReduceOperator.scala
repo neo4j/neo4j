@@ -22,7 +22,6 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.runtime.vectorized.expressions.{AggregationHelper, AggregationReducer}
@@ -34,66 +33,64 @@ import scala.collection.mutable.{Map => MutableMap}
 /*
 Responsible for reducing the output of AggregationMapperOperatorNoGrouping
  */
-class AggregationReduceOperator(slots: SlotConfiguration, aggregations: Array[AggregationOffsets], groupings: Array[GroupingOffsets]) extends Operator {
+class AggregationReduceOperator(aggregations: Array[AggregationOffsets], groupings: Array[GroupingOffsets]) extends Operator {
 
   //These are assigned at compile time to save some time at runtime
-  private val addGroupingValuesToResult = AggregationHelper.computeGroupingSetter(groupings)
+  private val addGroupingValuesToResult = AggregationHelper.computeGroupingSetter(groupings)(_.reducerOutputSlot)
   private val getGroupingKey = AggregationHelper.computeGroupingGetter(groupings)
 
-  override def operate(message: Message, output: Morsel, context: QueryContext, state: QueryState): Continuation = {
+  type GroupingKey = AnyValue
+  type MapperOutputSlot = Int
+  type ReducerOutputSlot = Int
+
+  override def operate(message: Message, outputRow: MorselExecutionContext, context: QueryContext, state: QueryState): Continuation = {
     var iterationState: Iteration = null
-    val longCount = slots.numberOfLongs
-    val refCount = slots.numberOfReferences
-    var writePos = 0
-    var iterator: Iterator[(AnyValue, Array[(Int, Int, AggregationReducer)])] = null
+    var iterator: Iterator[(GroupingKey, Array[(MapperOutputSlot, ReducerOutputSlot, AggregationReducer)])] = null
 
     message match {
       case StartLoopWithEagerData(inputs, is) =>
         iterationState = is
-        iterator = getIterator(inputs, longCount, refCount)
+        iterator = getIterator(inputs)
 
       case ContinueLoopWith(ContinueWithSource(it: Iterator[_], is)) =>
-        iterator = it.asInstanceOf[Iterator[(AnyValue, Array[(Int, Int, AggregationReducer)])]]
+        iterator = it.asInstanceOf[Iterator[(GroupingKey, Array[(MapperOutputSlot, ReducerOutputSlot, AggregationReducer)])]]
         iterationState = is
       case _ => throw new IllegalStateException()
     }
 
-    val currentRow = new MorselExecutionContext(output, longCount, refCount, currentRow = 0)
-    while (iterator.hasNext && writePos < output.validRows) {
+    while (iterator.hasNext && outputRow.hasMoreRows) {
       val (key, aggregator) = iterator.next()
-      addGroupingValuesToResult(currentRow, key)
+      addGroupingValuesToResult(outputRow, key)
       var i = 0
       while (i < aggregations.length) {
         val (_, offset, reducer) = aggregator(i)
-        output.refs(currentRow.currentRow * refCount + offset) = reducer.result
+        outputRow.setRefAt(offset, reducer.result)
         i += 1
       }
-      writePos +=1
-      currentRow.currentRow += 1
+      outputRow.moveToNextRow()
     }
-    output.validRows = writePos
+    outputRow.finishedWriting()
 
     if (iterator.hasNext) ContinueWithSource(iterator, iterationState)
     else EndOfLoop(iterationState)
   }
 
-  private def getIterator(morsels: Array[Morsel], longCount: Int, refCount: Int) = {
+  private def getIterator(inputRows: Array[MorselExecutionContext]) = {
     var morselPos = 0
-    val result = MutableMap[AnyValue, Array[(Int, Int, AggregationReducer)]]()
-    while (morselPos < morsels.length) {
-      val data = morsels(morselPos)
-      val currentRow = new MorselExecutionContext(data, longCount, refCount, currentRow = 0)
-      while (currentRow.currentRow < data.validRows) {
-        val key = getGroupingKey(currentRow)
+    val result = MutableMap[GroupingKey, Array[(MapperOutputSlot, ReducerOutputSlot, AggregationReducer)]]()
+    while (morselPos < inputRows.length) {
+      val currentIncomingRow = inputRows(morselPos)
+      while (currentIncomingRow.hasMoreRows) {
+        val key = getGroupingKey(currentIncomingRow)
         val functions = result.getOrElseUpdate(key, aggregations
-          .map(a => (a.incoming, a.outgoing, a.aggregation.createAggregationReducer)))
+          .map(a => (a.mapperOutputSlot, a.reducerOutputSlot, a.aggregation.createAggregationReducer)))
         var i = 0
         while (i < functions.length) {
           val (incoming, _, reducer) = functions(i)
-          reducer.reduce(data.refs(currentRow.currentRow * refCount + incoming))
+          reducer.reduce(currentIncomingRow.getRefAt(incoming))
           i += 1
         }
-        currentRow.currentRow += 1
+        currentIncomingRow.moveToNextRow()
       }
       morselPos += 1
     }

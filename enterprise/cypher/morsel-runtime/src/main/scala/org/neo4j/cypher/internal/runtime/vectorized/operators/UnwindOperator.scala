@@ -22,7 +22,6 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ListSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -31,73 +30,57 @@ import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.values.AnyValue
 
 class UnwindOperator(collection: Expression,
-                     offset: Int,
-                     fromSlots: SlotConfiguration,
-                     toSlots: SlotConfiguration)
+                     offset: Int)
   extends Operator with ListSupport {
 
   override def operate(source: Message,
-                       output: Morsel,
+                       outputRow: MorselExecutionContext,
                        context: QueryContext,
                        state: QueryState): Continuation = {
-    var readPos = 0
     var unwoundValues: java.util.Iterator[AnyValue] = null
-    var input: Morsel = null
     var iterationState: Iteration = null
-    var currentRow: MorselExecutionContext = null
-
-    val inputLongCount = fromSlots.numberOfLongs
-    val inputRefCount = fromSlots.numberOfReferences
-    val outputLongCount = toSlots.numberOfLongs
-    val outputRefCount = toSlots.numberOfReferences
+    var inputRow: MorselExecutionContext = null
     val queryState = new OldQueryState(context, resources = null, params = state.params)
 
     source match {
-      case StartLoopWithSingleMorsel(data, is) =>
-        input = data
+      case StartLoopWithSingleMorsel(ir, is) =>
+        inputRow = ir
         iterationState = is
-        currentRow = new MorselExecutionContext(data, inputLongCount, inputRefCount, currentRow = readPos)
-        val value = collection(currentRow, queryState)
+        val value = collection(inputRow, queryState)
         unwoundValues = makeTraversable(value).iterator
 
-      case ContinueLoopWith(ContinueWithDataAndSource(data, index, CurrentState(inValues), is)) =>
-        input = data
-        readPos = index
+      case ContinueLoopWith(ContinueWithDataAndSource(ir, CurrentState(inValues), is)) =>
+        inputRow = ir
         iterationState = is
         unwoundValues = inValues
-        currentRow = new MorselExecutionContext(data, inputLongCount, inputRefCount, currentRow = readPos)
       case _ => throw new IllegalStateException()
     }
 
-    var writePos = 0
-
     do {
       if (unwoundValues == null) {
-        currentRow.currentRow = readPos
-        val value = collection(currentRow, queryState)
+        val value = collection(inputRow, queryState)
         unwoundValues = makeTraversable(value).iterator
       }
 
-      while (unwoundValues.hasNext && writePos < output.validRows) {
+      while (unwoundValues.hasNext && outputRow.hasMoreRows) {
         val thisValue = unwoundValues.next()
-        System.arraycopy(input.longs, readPos * inputLongCount, output.longs, writePos * outputLongCount, inputLongCount)
-        System.arraycopy(input.refs, readPos * inputRefCount, output.refs, writePos * outputRefCount, inputRefCount)
-        output.refs(writePos * outputRefCount + offset) = thisValue
-        writePos += 1
+        outputRow.copyFrom(inputRow)
+        outputRow.setRefAt(offset, thisValue)
+        outputRow.moveToNextRow()
       }
 
       if (!unwoundValues.hasNext) {
-        readPos += 1
+        inputRow.moveToNextRow()
         unwoundValues = null
       }
-    } while (readPos < input.validRows && writePos < output.validRows)
+    } while (inputRow.hasMoreRows && outputRow.hasMoreRows)
 
-    output.validRows = writePos
+    outputRow.finishedWriting()
 
     if (unwoundValues != null)
-      ContinueWithDataAndSource(input, readPos, CurrentState(unwoundValues), iterationState)
-    else if (readPos < input.validRows)
-      ContinueWithData(input, readPos, iterationState)
+      ContinueWithDataAndSource(inputRow, CurrentState(unwoundValues), iterationState)
+    else if (inputRow.hasMoreRows)
+      ContinueWithData(inputRow, iterationState)
     else
       EndOfLoop(iterationState)
   }

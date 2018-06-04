@@ -22,51 +22,49 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
 
 /*
 Responsible for reducing the output of AggregationMapperOperatorNoGrouping
  */
-class AggregationReduceOperatorNoGrouping(slots: SlotConfiguration, aggregations: Array[AggregationOffsets]) extends Operator {
+class AggregationReduceOperatorNoGrouping(aggregations: Array[AggregationOffsets]) extends Operator {
 
-  override def operate(message: Message, output: Morsel, context: QueryContext, state: QueryState): Continuation = {
+  override def operate(message: Message, currentRow: MorselExecutionContext, context: QueryContext, state: QueryState): Continuation = {
     val reducers = aggregations.map(_.aggregation.createAggregationReducer)
     var iterationState: Iteration = null
-    var morselPos = 0
-    var morsels: Array[Morsel] = null
+    var inputRows: Array[MorselExecutionContext] = null
 
     //This operator will never be "interrupted" since it will always write
     //a single value
     message match {
       case StartLoopWithEagerData(inputs, is) =>
         iterationState = is
-        morsels = inputs
+        inputRows = inputs
       case _ => throw new IllegalStateException()
     }
 
     //Go through the morsels and collect the output from the map step
     //and reduce the values
-    while (morselPos < morsels.length) {
-      val data = morsels(morselPos)
-      var i = 0
-      while (i < aggregations.length) {
-        reducers(i).reduce(data.refs(aggregations(i).incoming))
-        i += 1
-      }
-      morselPos += 1
-    }
-
-    //Write the reduced value to output
     var i = 0
-    while (i < aggregations.length) {
-      output.refs(aggregations(i).outgoing) = reducers(i).result
+    while (i < inputRows.length) {
+      val currentInputRow = inputRows(i)
+      var j = 0
+      while (j < aggregations.length) {
+        reducers(j).reduce(currentInputRow.getRefAt(aggregations(j).mapperOutputSlot))
+        j += 1
+      }
       i += 1
     }
 
-    //we are done, we have written a single row to the output
-    output.validRows = 1
+    //Write the reduced value to output
+    i = 0
+    while (i < aggregations.length) {
+      currentRow.setRefAt(aggregations(i).reducerOutputSlot, reducers(i).result)
+      i += 1
+    }
+    currentRow.moveToNextRow()
+    currentRow.finishedWriting()
     EndOfLoop(iterationState)
   }
   override def addDependency(pipeline: Pipeline): Dependency = Eager(pipeline)

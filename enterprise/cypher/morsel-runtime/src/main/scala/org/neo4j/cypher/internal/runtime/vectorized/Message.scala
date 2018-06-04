@@ -22,20 +22,15 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized
 
-import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
 import org.opencypher.v9_0.util.InternalException
 
 sealed trait Message {
   def iterationState: Iteration
 }
 
-/* This is called per start of iteration. Pipelines run once per incoming row will have this calles once per row.
-* Once per query, the InitIteration message will come with the initQuery flag set. Until this first run has finished,
-* not other runs will be scheduled, giving the pipeline a chance to initialise global state.
-* */
 case class StartLeafLoop(iterationState: Iteration) extends Message
-case class StartLoopWithSingleMorsel(data: Morsel, iterationState: Iteration) extends Message
-case class StartLoopWithEagerData(data: Array[Morsel], iterationState: Iteration) extends Message
+case class StartLoopWithSingleMorsel(data: MorselExecutionContext, iterationState: Iteration) extends Message
+case class StartLoopWithEagerData(data: Array[MorselExecutionContext], iterationState: Iteration) extends Message
 
 case class ContinueLoopWith(continuation: Continuation) extends Message {
   override def iterationState: Iteration = continuation.iteration
@@ -53,15 +48,20 @@ sealed trait Continuation {
 
 trait Continue extends Continuation
 
-case class ContinueWithData(data: Morsel, index: Int, iteration: Iteration) extends Continue
+case class ContinueWithData(data: MorselExecutionContext, iteration: Iteration) extends Continue
 
 case class ContinueWithSource[T](source: T, iteration: Iteration) extends Continue
 
-case class ContinueWithDataAndSource[T](data: Morsel, index: Int, source: T, iteration: Iteration) extends Continue
+case class ContinueWithDataAndSource[T](data: MorselExecutionContext, source: T, iteration: Iteration) extends Continue
 
 case class NoOp(iteration: Iteration) extends Continuation
 
 /* Response used to signal that all input has been consumed - no more output from this iteration */
 case class EndOfLoop(iteration: Iteration) extends Continuation
 
-class Iteration(argument: Option[SlottedExecutionContext])
+case class Iteration(argument: Option[MorselExecutionContext]) {
+  // the number of longs/refs in the argument can be fewer than the whole row, thus they need to be provided here
+  def copyArgumentStateTo(row: MorselExecutionContext, nLongs: Int, nRefs: Int): Unit = {
+    argument.foreach(row.copyFrom(_, nLongs, nRefs))
+  }
+}
