@@ -1051,7 +1051,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val query = "MATCH (n:Label) WHERE n.prop >= {param} RETURN n.prop AS prop"
 
-    val result = executeWith(Configs.Interpreted - Configs.OldAndRule, query,
+    val result = executeWith(Configs.Interpreted - Configs.Before3_3AndRule, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperators(IndexSeekByRange.name)

@@ -51,7 +51,7 @@ class HintAcceptanceTest
       planComparisonStrategy = ComparePlansWithAssertion((p) => {
       p should useOperators("NodeLeftOuterHashJoin")
       p should not(useOperators("NodeHashJoin"))
-    }, expectPlansToFail = Configs.OldAndRule))
+    }, expectPlansToFail = Configs.Before3_3AndRule))
   }
 
   test("should not plan multiple joins for one hint - right outer join") {

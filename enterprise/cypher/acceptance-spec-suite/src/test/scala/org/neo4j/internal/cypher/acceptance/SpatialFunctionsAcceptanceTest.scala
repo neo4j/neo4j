@@ -30,7 +30,7 @@ import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
 class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
   val pointConfig = Configs.Interpreted - Configs.Version2_3
-  val equalityConfig = Configs.Interpreted - Configs.OldAndRule
+  val equalityConfig = Configs.Interpreted - Configs.Before3_3AndRule
   val latestPointConfig = Configs.Interpreted - Configs.BackwardsCompatibility - Configs.AllRulePlanners
 
   test("toString on points") {
@@ -596,12 +596,12 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     graph.execute("CREATE (:P {p : point({x: 1, y: 2})})")
 
     // when
-    val result = executeWith(Configs.All - Configs.OldAndRule, "MATCH (n:P) WITH n.p AS p RETURN p.x, p.y, p.crs, p.srid")
+    val result = executeWith(Configs.All - Configs.Before3_3AndRule, "MATCH (n:P) WITH n.p AS p RETURN p.x, p.y, p.crs, p.srid")
 
     // then
     result.toList should be(List(Map("p.x" -> 1.0, "p.y" -> 2.0, "p.crs" -> "cartesian", "p.srid" -> 7203)))
-    failWithError(Configs.All - Configs.OldAndRule + Configs.Procs, "MATCH (n:P) WITH n.p AS p RETURN p.latitude", Seq("Field: latitude is not available"))
-    failWithError(Configs.All - Configs.OldAndRule + Configs.Procs, "MATCH (n:P) WITH n.p AS p RETURN p.z", Seq("Field: z is not available"))
+    failWithError(Configs.All - Configs.Before3_3AndRule + Configs.Procs, "MATCH (n:P) WITH n.p AS p RETURN p.latitude", Seq("Field: latitude is not available"))
+    failWithError(Configs.All - Configs.Before3_3AndRule + Configs.Procs, "MATCH (n:P) WITH n.p AS p RETURN p.z", Seq("Field: z is not available"))
   }
 
   test("accessors on 3D cartesian points") {
@@ -609,11 +609,11 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     graph.execute("CREATE (:P {p : point({x: 1, y: 2, z:3})})")
 
     // when
-    val result = executeWith(Configs.All - Configs.OldAndRule, "MATCH (n:P) WITH n.p AS p RETURN p.x, p.y, p.z, p.crs, p.srid")
+    val result = executeWith(Configs.All - Configs.Before3_3AndRule, "MATCH (n:P) WITH n.p AS p RETURN p.x, p.y, p.z, p.crs, p.srid")
 
     // then
     result.toList should be(List(Map("p.x" -> 1.0, "p.y" -> 2.0, "p.z" -> 3.0, "p.crs" -> "cartesian-3d", "p.srid" -> 9157)))
-    failWithError(Configs.All - Configs.OldAndRule + Configs.Procs, "MATCH (n:P) WITH n.p AS p RETURN p.latitude", Seq("Field: latitude is not available"))
+    failWithError(Configs.All - Configs.Before3_3AndRule + Configs.Procs, "MATCH (n:P) WITH n.p AS p RETURN p.latitude", Seq("Field: latitude is not available"))
   }
 
   test("accessors on 2D geographic points") {
@@ -621,12 +621,12 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     graph.execute("CREATE (:P {p : point({longitude: 1, latitude: 2})})")
 
     // when
-    val result = executeWith(Configs.All - Configs.OldAndRule,  "MATCH (n:P) WITH n.p AS p RETURN p.longitude, p.latitude, p.crs, p.x, p.y, p.srid")
+    val result = executeWith(Configs.All - Configs.Before3_3AndRule,  "MATCH (n:P) WITH n.p AS p RETURN p.longitude, p.latitude, p.crs, p.x, p.y, p.srid")
 
     // then
     result.toList should be(List(Map("p.longitude" -> 1.0, "p.latitude" -> 2.0, "p.crs" -> "wgs-84", "p.x" -> 1.0, "p.y" -> 2.0, "p.srid" -> 4326)))
-    failWithError(Configs.All - Configs.OldAndRule + Configs.Procs, "MATCH (n:P) WITH n.p AS p RETURN p.height", Seq("Field: height is not available"))
-    failWithError(Configs.All - Configs.OldAndRule + Configs.Procs, "MATCH (n:P) WITH n.p AS p RETURN p.z", Seq("Field: z is not available"))
+    failWithError(Configs.All - Configs.Before3_3AndRule + Configs.Procs, "MATCH (n:P) WITH n.p AS p RETURN p.height", Seq("Field: height is not available"))
+    failWithError(Configs.All - Configs.Before3_3AndRule + Configs.Procs, "MATCH (n:P) WITH n.p AS p RETURN p.z", Seq("Field: z is not available"))
   }
 
   test("accessors on 3D geographic points") {
@@ -634,7 +634,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     graph.execute("CREATE (:P {p : point({longitude: 1, latitude: 2, height:3})})")
 
     // when
-    val result = executeWith(Configs.All - Configs.OldAndRule,
+    val result = executeWith(Configs.All - Configs.Before3_3AndRule,
                              "MATCH (n:P) WITH n.p AS p RETURN p.longitude, p.latitude, p.height, p.crs, p.x, p.y, p.z, p.srid")
 
     // then
