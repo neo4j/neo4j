@@ -258,15 +258,12 @@ public class OnlineBackupCommandCcIT
         String output = byteArrayOutputStream.toString();
         String location = Paths.get( backupDir.toString(), backupName ).toString();
 
-        assertTrue( output.contains( "Start receiving store files" ) );
-        assertTrue( output.contains( "Finish receiving store files" ) );
-        String tested = Paths.get( location, "neostore.nodestore.db.labels" ).toString();
-        assertTrue( tested, output.contains( format( "Start receiving store file %s", tested ) ) );
-        assertTrue( tested, output.contains( format( "Finish receiving store file %s", tested ) ) );
-        assertTrue( output.contains( "Start receiving transactions from " ) );
-        assertTrue( output.contains( "Finish receiving transactions at " ) );
-        assertTrue( output.contains( "Start receiving index snapshots" ) );
-        assertTrue( output.contains( "Finished receiving index snapshots" ) );
+        assertTrue( output.matches( "(?s).*\\bBegin\\b.*\\bCopy store\\b.*" ) );
+        assertTrue( output.matches( "(?s).*\\bInfo\\b.*\\bReceiving file\\b.*\\bneostore.nodestore.db.labels\\b.*" ) );
+        assertTrue( output.matches( "(?s).*\\bInfo\\b.*\\bRequest was successful\\b.*" ) );
+        assertTrue( output.matches( "(?s).*\\bEnd\\b.*\\bCopy store\\b.*" ) );
+        assertTrue( output.matches( "(?s).*\\bBegin\\b.*\\bPulling transactions\\b.*\\bFrom tx\\b.*" ) );
+        assertTrue( output.matches( "(?s).*\\bEnd\\b.*\\bPulling transactions\\b.*\\bResponse status\\b.*\\bSUCCESS_END_OF_STREAM\\b.*\\bLast tx\\b.*" ) );
     }
 
     static PrintStream wrapWithNormalOutput( PrintStream normalOutput, PrintStream nullAbleOutput )

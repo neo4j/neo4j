@@ -40,6 +40,8 @@ import org.neo4j.causalclustering.core.SupportedProtocolCreator;
 import org.neo4j.causalclustering.handlers.PipelineWrapper;
 import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
+import org.neo4j.causalclustering.messaging.CompositeEventHandlerProvider;
+import org.neo4j.causalclustering.messaging.LoggingEventHandlerProvider;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.causalclustering.protocol.handshake.ApplicationSupportedProtocols;
 import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
@@ -50,6 +52,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 
 /**
@@ -87,7 +90,6 @@ public class BackupSupportingClassesFactory
      */
     BackupSupportingClasses createSupportingClasses( Config config )
     {
-        monitors.addMonitorListener( new BackupOutputMonitor( outsideWorld ) );
         PageCache pageCache = createPageCache( fileSystemAbstraction, config );
         return new BackupSupportingClasses(
                 backupDelegatorFromConfig( pageCache, config ),
@@ -104,11 +106,13 @@ public class BackupSupportingClassesFactory
     private BackupDelegator backupDelegatorFromConfig( PageCache pageCache, Config config )
     {
         CatchUpClient catchUpClient = catchUpClient( config );
-        TxPullClient txPullClient = new TxPullClient( catchUpClient, monitors );
         ExponentialBackoffStrategy backOffStrategy =
                 new ExponentialBackoffStrategy( 1, config.get( CausalClusteringSettings.store_copy_backoff_max_wait ).toMillis(), TimeUnit.MILLISECONDS );
-        StoreCopyClient storeCopyClient = new StoreCopyClient( catchUpClient, monitors, logProvider, backOffStrategy );
-
+        CompositeEventHandlerProvider eventHandlerProvider =
+                CompositeEventHandlerProvider.merge( new LoggingEventHandlerProvider( logProvider.getLog( "Backup" ) ),
+                        new LoggingEventHandlerProvider( FormattedLogProvider.toOutputStream( outsideWorld.outStream() ).getLog( "Backup" ) ) );
+        TxPullClient txPullClient = new TxPullClient( catchUpClient, monitors, eventHandlerProvider );
+        StoreCopyClient storeCopyClient = new StoreCopyClient( catchUpClient, eventHandlerProvider, backOffStrategy );
         RemoteStore remoteStore = new RemoteStore(
                 logProvider, fileSystemAbstraction, pageCache, storeCopyClient,
                 txPullClient,

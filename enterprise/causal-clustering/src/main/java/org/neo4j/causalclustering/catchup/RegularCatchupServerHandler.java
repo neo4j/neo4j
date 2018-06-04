@@ -37,6 +37,7 @@ import org.neo4j.causalclustering.catchup.tx.TxPullRequestHandler;
 import org.neo4j.causalclustering.core.state.CoreSnapshotService;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotRequestHandler;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.causalclustering.messaging.LoggingEventHandlerProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -83,20 +84,22 @@ public class RegularCatchupServerHandler implements CatchupServerHandler
     public ChannelHandler txPullRequestHandler( CatchupServerProtocol catchupServerProtocol )
     {
         return new TxPullRequestHandler( catchupServerProtocol, storeIdSupplier, dataSourceAvailabilitySupplier, transactionIdStoreSupplier,
-                logicalTransactionStoreSupplier, monitors, logProvider );
+                logicalTransactionStoreSupplier, monitors, new LoggingEventHandlerProvider( logProvider.getLog( TxPullRequestHandler.class ) ) );
     }
 
     @Override
     public ChannelHandler getStoreIdRequestHandler( CatchupServerProtocol catchupServerProtocol )
     {
-        return new GetStoreIdRequestHandler( catchupServerProtocol, storeIdSupplier );
+        return new GetStoreIdRequestHandler( catchupServerProtocol, storeIdSupplier,
+                                             new LoggingEventHandlerProvider( logProvider.getLog( GetStoreIdRequestHandler.class ) ) );
     }
 
     @Override
     public ChannelHandler storeListingRequestHandler( CatchupServerProtocol catchupServerProtocol )
     {
         return new PrepareStoreCopyRequestHandler( catchupServerProtocol, checkPointerSupplier, storeCopyCheckPointMutex, dataSourceSupplier,
-                new PrepareStoreCopyFilesProvider( fs ) );
+                new PrepareStoreCopyFilesProvider( fs ),
+                new LoggingEventHandlerProvider( logProvider.getLog( PrepareStoreCopyRequestHandler.class ) ) );
     }
 
     @Override
@@ -116,6 +119,7 @@ public class RegularCatchupServerHandler implements CatchupServerHandler
     @Override
     public Optional<ChannelHandler> snapshotHandler( CatchupServerProtocol catchupServerProtocol )
     {
-        return Optional.ofNullable( (snapshotService != null) ? new CoreSnapshotRequestHandler( catchupServerProtocol, snapshotService ) : null );
+        return Optional.ofNullable( (snapshotService != null) ? new CoreSnapshotRequestHandler( catchupServerProtocol, snapshotService,
+                new LoggingEventHandlerProvider( logProvider.getLog( CoreSnapshotRequestHandler.class ) ) ) : null );
     }
 }

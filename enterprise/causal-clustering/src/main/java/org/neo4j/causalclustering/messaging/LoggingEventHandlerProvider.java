@@ -20,31 +20,22 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.causalclustering.backup_stores;
+package org.neo4j.causalclustering.messaging;
 
-import java.io.File;
+import org.neo4j.logging.Log;
 
-import org.neo4j.causalclustering.discovery.Cluster;
-import org.neo4j.causalclustering.discovery.CoreClusterMember;
-
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.causalclustering.helpers.DataCreator.createEmptyNodes;
-
-public class BackupStoreWithSomeDataButNoTransactionLogs extends AbstractStoreGenerator
+public class LoggingEventHandlerProvider implements EventHandlerProvider
 {
-    @Override
-    CoreClusterMember createData( Cluster cluster ) throws Exception
+    private Log log;
+
+    public LoggingEventHandlerProvider( Log log )
     {
-        return createEmptyNodes( cluster, 10 );
+        this.log = log;
     }
 
     @Override
-    void modify( File backup )
+    public EventHandler eventHandler( EventId id )
     {
-        for ( File transaction : backup.listFiles( ( dir, name ) -> name.contains( "transaction" ) ) )
-        {
-            System.out.println( "Deleted " + transaction );
-            assertTrue( transaction.delete() );
-        }
+        return LoggingEventHandler.newEvent( id, log );
     }
 }

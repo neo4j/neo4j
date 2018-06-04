@@ -35,6 +35,8 @@ public class TxPullRequestEncoder extends MessageToByteEncoder<TxPullRequest>
     protected void encode( ChannelHandlerContext ctx, TxPullRequest request, ByteBuf out ) throws Exception
     {
         out.writeLong( request.previousTxId() );
-        StoreIdMarshal.INSTANCE.marshal( request.expectedStoreId(), new NetworkFlushableChannelNetty4( out ) );
+        NetworkFlushableChannelNetty4 channel = new NetworkFlushableChannelNetty4( out );
+        StoreIdMarshal.INSTANCE.marshal( request.expectedStoreId(), channel );
+        request.encodeMessage( channel );
     }
 }

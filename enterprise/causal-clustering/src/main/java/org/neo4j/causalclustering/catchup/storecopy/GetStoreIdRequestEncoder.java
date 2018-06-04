@@ -26,11 +26,15 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
+import java.io.IOException;
+
+import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
+
 public class GetStoreIdRequestEncoder extends MessageToByteEncoder<GetStoreIdRequest>
 {
     @Override
-    protected void encode( ChannelHandlerContext ctx, GetStoreIdRequest msg, ByteBuf out )
+    protected void encode( ChannelHandlerContext ctx, GetStoreIdRequest msg, ByteBuf out ) throws IOException
     {
-        out.writeByte( 0 );
+        msg.encodeMessage( new NetworkFlushableChannelNetty4( out ) );
     }
 }

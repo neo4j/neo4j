@@ -134,7 +134,7 @@ public class CatchUpClientIT
     {
         try
         {
-            closingClient.makeBlockingRequest( new AdvertisedSocketAddress( hostname, port ), new GetStoreIdRequest(), neverCompletingAdaptor() );
+            closingClient.makeBlockingRequest( new AdvertisedSocketAddress( hostname, port ), new GetStoreIdRequest( "id" ), neverCompletingAdaptor() );
             fail();
         }
         catch ( CatchUpClientException e )

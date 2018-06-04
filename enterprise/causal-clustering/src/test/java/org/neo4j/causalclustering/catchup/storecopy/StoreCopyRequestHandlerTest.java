@@ -54,6 +54,7 @@ public class StoreCopyRequestHandlerTest
 {
     private static final StoreId STORE_ID_MISMATCHING = new StoreId( 1, 1, 1, 1 );
     private static final StoreId STORE_ID_MATCHING = new StoreId( 1, 2, 3, 4 );
+    private static final String REQUEST_ID = "";
     private final DefaultFileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
 
     private final NeoStoreDataSource neoStoreDataSource = mock( NeoStoreDataSource.class );
@@ -76,7 +77,7 @@ public class StoreCopyRequestHandlerTest
     @Test
     public void shouldGiveProperErrorOnStoreIdMismatch()
     {
-        embeddedChannel.writeInbound( new GetStoreFileRequest( STORE_ID_MISMATCHING, new File( "some-file" ), 1 ) );
+        embeddedChannel.writeInbound( new GetStoreFileRequest( STORE_ID_MISMATCHING, new File( "some-file" ), 1, REQUEST_ID ) );
 
         assertEquals( ResponseMessageType.STORE_COPY_FINISHED, embeddedChannel.readOutbound() );
         StoreCopyFinishedResponse expectedResponse = new StoreCopyFinishedResponse( StoreCopyFinishedResponse.Status.E_STORE_ID_MISMATCH );
@@ -88,7 +89,7 @@ public class StoreCopyRequestHandlerTest
     @Test
     public void shouldGiveProperErrorOnTxBehind()
     {
-        embeddedChannel.writeInbound( new GetStoreFileRequest( STORE_ID_MATCHING, new File( "some-file" ), 2 ) );
+        embeddedChannel.writeInbound( new GetStoreFileRequest( STORE_ID_MATCHING, new File( "some-file" ), 2, REQUEST_ID ) );
 
         assertEquals( ResponseMessageType.STORE_COPY_FINISHED, embeddedChannel.readOutbound() );
         StoreCopyFinishedResponse expectedResponse = new StoreCopyFinishedResponse( StoreCopyFinishedResponse.Status.E_TOO_FAR_BEHIND );
@@ -104,7 +105,7 @@ public class StoreCopyRequestHandlerTest
 
         try
         {
-            embeddedChannel.writeInbound( new GetStoreFileRequest( STORE_ID_MATCHING, new File( "some-file" ), 1 ) );
+            embeddedChannel.writeInbound( new GetStoreFileRequest( STORE_ID_MATCHING, new File( "some-file" ), 1, REQUEST_ID ) );
             fail();
         }
         catch ( IllegalStateException ignore )
@@ -126,7 +127,7 @@ public class StoreCopyRequestHandlerTest
                         fileSystemAbstraction, NullLogProvider.getInstance() ) );
         try
         {
-            alternativeChannel.writeInbound( new GetStoreFileRequest( STORE_ID_MATCHING, new File( "some-file" ), 1 ) );
+            alternativeChannel.writeInbound( new GetStoreFileRequest( STORE_ID_MATCHING, new File( "some-file" ), 1, REQUEST_ID ) );
             fail();
         }
         catch ( IllegalStateException ignore )

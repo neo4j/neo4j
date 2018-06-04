@@ -27,6 +27,8 @@ import java.io.File;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.causalclustering.messaging.EventId;
+import org.neo4j.causalclustering.messaging.LoggingEventHandlerProvider;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -35,7 +37,6 @@ import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 class SimpleCatchupClient implements AutoCloseable
@@ -49,8 +50,7 @@ class SimpleCatchupClient implements AutoCloseable
     private final StoreId correctStoreId;
     private final StreamToDiskProvider streamToDiskProvider;
     private final PageCache clientPageCache;
-    private final Log log;
-    private final LogProvider logProvider;
+    private LoggingEventHandlerProvider eventHandler;
 
     SimpleCatchupClient( GraphDatabaseAPI graphDb, FileSystemAbstraction fileSystemAbstraction, CatchUpClient catchUpClient,
             TestCatchupServer catchupServer, File temporaryDirectory, LogProvider logProvider )
@@ -64,8 +64,7 @@ class SimpleCatchupClient implements AutoCloseable
         correctStoreId = getStoreIdFromKernelStoreId( graphDb );
         clientPageCache = createPageCache();
         streamToDiskProvider = new StreamToDiskProvider( temporaryDirectory, fsa, new Monitors() );
-        log = logProvider.getLog( SimpleCatchupClient.class );
-        this.logProvider = logProvider;
+        eventHandler = new LoggingEventHandlerProvider( logProvider.getLog( SimpleCatchupClient.class ) );
     }
 
     private PageCache createPageCache()
@@ -80,8 +79,9 @@ class SimpleCatchupClient implements AutoCloseable
 
     PrepareStoreCopyResponse requestListOfFilesFromServer( StoreId expectedStoreId ) throws CatchUpClientException
     {
-        return catchUpClient.makeBlockingRequest( from, new PrepareStoreCopyRequest( expectedStoreId ),
-                StoreCopyResponseAdaptors.prepareStoreCopyAdaptor( streamToDiskProvider, logProvider.getLog( SimpleCatchupClient.class ) ) );
+        EventId id = EventId.create();
+        return catchUpClient.makeBlockingRequest( from, new PrepareStoreCopyRequest( expectedStoreId, id.toString() ),
+                StoreCopyResponseAdaptors.prepareStoreCopyAdaptor( streamToDiskProvider, eventHandler.eventHandler( id ) ) );
     }
 
     StoreCopyFinishedResponse requestIndividualFile( File file ) throws CatchUpClientException
@@ -92,8 +92,10 @@ class SimpleCatchupClient implements AutoCloseable
     StoreCopyFinishedResponse requestIndividualFile( File file, StoreId expectedStoreId ) throws CatchUpClientException
     {
         long lastTransactionId = getCheckPointer( graphDb ).lastCheckPointedTransactionId();
-        GetStoreFileRequest storeFileRequest = new GetStoreFileRequest( expectedStoreId, file, lastTransactionId );
-        return catchUpClient.makeBlockingRequest( from, storeFileRequest, StoreCopyResponseAdaptors.filesCopyAdaptor( streamToDiskProvider, log ) );
+        EventId id = EventId.create();
+        GetStoreFileRequest storeFileRequest = new GetStoreFileRequest( expectedStoreId, file, lastTransactionId, id.toString() );
+        return catchUpClient.makeBlockingRequest( from, storeFileRequest,
+                StoreCopyResponseAdaptors.filesCopyAdaptor( streamToDiskProvider, eventHandler.eventHandler( id ) ) );
     }
 
     private StoreId getStoreIdFromKernelStoreId( GraphDatabaseAPI graphDb )
@@ -111,8 +113,10 @@ class SimpleCatchupClient implements AutoCloseable
     {
         long lastCheckPointedTransactionId = getCheckPointer( graphDb ).lastCheckPointedTransactionId();
         StoreId storeId = getStoreIdFromKernelStoreId( graphDb );
-        GetIndexFilesRequest request = new GetIndexFilesRequest( storeId, indexId, lastCheckPointedTransactionId );
-        return catchUpClient.makeBlockingRequest( from, request, StoreCopyResponseAdaptors.filesCopyAdaptor( streamToDiskProvider, log ) );
+        EventId id = EventId.create();
+        GetIndexFilesRequest request = new GetIndexFilesRequest( storeId, indexId, lastCheckPointedTransactionId, id.toString() );
+        return catchUpClient.makeBlockingRequest( from, request,
+                StoreCopyResponseAdaptors.filesCopyAdaptor( streamToDiskProvider, eventHandler.eventHandler( id ) ) );
     }
 
     @Override

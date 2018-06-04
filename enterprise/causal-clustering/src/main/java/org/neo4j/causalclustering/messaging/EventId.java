@@ -20,31 +20,56 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.causalclustering.backup_stores;
+package org.neo4j.causalclustering.messaging;
 
-import java.io.File;
+import java.util.Objects;
 
-import org.neo4j.causalclustering.discovery.Cluster;
-import org.neo4j.causalclustering.discovery.CoreClusterMember;
+import org.neo4j.causalclustering.helper.RandomStringUtil;
 
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.causalclustering.helpers.DataCreator.createEmptyNodes;
-
-public class BackupStoreWithSomeDataButNoTransactionLogs extends AbstractStoreGenerator
+public class EventId
 {
-    @Override
-    CoreClusterMember createData( Cluster cluster ) throws Exception
+    public static EventId from( String id )
     {
-        return createEmptyNodes( cluster, 10 );
+        return new EventId( id );
+    }
+
+    public static EventId create()
+    {
+        return new EventId( RandomStringUtil.generateId( 5 ) );
+    }
+
+    private final String id;
+
+    private EventId( String id )
+    {
+        this.id = id;
     }
 
     @Override
-    void modify( File backup )
+    public String toString()
     {
-        for ( File transaction : backup.listFiles( ( dir, name ) -> name.contains( "transaction" ) ) )
+        return id;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
         {
-            System.out.println( "Deleted " + transaction );
-            assertTrue( transaction.delete() );
+            return true;
         }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        EventId eventId = (EventId) o;
+        return Objects.equals( id, eventId.id );
+    }
+
+    @Override
+    public int hashCode()
+    {
+
+        return Objects.hash( id );
     }
 }

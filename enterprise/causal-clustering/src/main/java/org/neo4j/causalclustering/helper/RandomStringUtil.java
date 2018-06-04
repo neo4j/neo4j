@@ -20,31 +20,22 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.causalclustering.backup_stores;
+package org.neo4j.causalclustering.helper;
 
-import java.io.File;
+import java.util.UUID;
 
-import org.neo4j.causalclustering.discovery.Cluster;
-import org.neo4j.causalclustering.discovery.CoreClusterMember;
+import static java.lang.Integer.min;
 
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.causalclustering.helpers.DataCreator.createEmptyNodes;
-
-public class BackupStoreWithSomeDataButNoTransactionLogs extends AbstractStoreGenerator
+public class RandomStringUtil
 {
-    @Override
-    CoreClusterMember createData( Cluster cluster ) throws Exception
+    public static String generateId()
     {
-        return createEmptyNodes( cluster, 10 );
+        return generateId( 5 );
     }
 
-    @Override
-    void modify( File backup )
+    public static String generateId( int maxLength )
     {
-        for ( File transaction : backup.listFiles( ( dir, name ) -> name.contains( "transaction" ) ) )
-        {
-            System.out.println( "Deleted " + transaction );
-            assertTrue( transaction.delete() );
-        }
+        String string = UUID.randomUUID().toString();
+        return string.substring( 0, min( maxLength, string.length() ) );
     }
 }

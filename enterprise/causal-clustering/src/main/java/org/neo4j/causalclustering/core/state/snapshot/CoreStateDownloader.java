@@ -42,6 +42,7 @@ import org.neo4j.causalclustering.core.state.CoreSnapshotService;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachines;
 import org.neo4j.causalclustering.helper.Suspendable;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.causalclustering.messaging.EventId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.Log;
@@ -147,8 +148,8 @@ public class CoreStateDownloader
         CoreSnapshot coreSnapshot;
         try
         {
-            coreSnapshot = catchUpClient.makeBlockingRequest( primary, new CoreSnapshotRequest(),
-                    new CatchUpResponseAdaptor<CoreSnapshot>()
+            coreSnapshot = catchUpClient.makeBlockingRequest( primary, new CoreSnapshotRequest( EventId.create().toString() ),
+                                                              new CatchUpResponseAdaptor<CoreSnapshot>()
                     {
                         @Override
                         public void onCoreSnapshot( CompletableFuture<CoreSnapshot> signal, CoreSnapshot response )

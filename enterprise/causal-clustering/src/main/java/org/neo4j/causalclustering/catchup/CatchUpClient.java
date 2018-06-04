@@ -45,6 +45,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
 public class CatchUpClient extends LifecycleAdapter
@@ -84,7 +85,7 @@ public class CatchUpClient extends LifecycleAdapter
             {
                 pool.dispose( channel );
             }
-            throw new CatchUpClientException( "Failed to send request", e );
+            throw new CatchUpClientException( format( "Failed to send request %s with id[%s]", request, request.messageId() ), e );
         }
     }
 

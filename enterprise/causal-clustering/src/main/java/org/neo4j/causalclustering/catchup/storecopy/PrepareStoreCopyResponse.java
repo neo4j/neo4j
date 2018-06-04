@@ -123,6 +123,13 @@ public class PrepareStoreCopyResponse
         return Objects.hash( files, indexIds, transactionId, status );
     }
 
+    @Override
+    public String toString()
+    {
+        return "PrepareStoreCopyResponse{" + "files=" + Arrays.toString( files ) + ", indexIds=" + indexIds + ", transactionId=" + transactionId + ", status=" +
+                status + '}';
+    }
+
     public static class StoreListingMarshal extends SafeChannelMarshal<PrepareStoreCopyResponse>
     {
         @Override
