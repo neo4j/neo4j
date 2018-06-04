@@ -44,7 +44,6 @@ import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Message;
 import org.neo4j.causalclustering.messaging.Outbound;
-import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLog;
@@ -73,6 +72,7 @@ public class RaftReplicatorTest
     public ExpectedException expectedException = ExpectedException.none();
 
     private static final int DEFAULT_TIMEOUT_MS = 15_000;
+    private static final long REPLICATION_LIMIT = 1000;
 
     private LeaderLocator leaderLocator = mock( LeaderLocator.class );
     private MemberId myself = new MemberId( UUID.randomUUID() );
@@ -82,7 +82,6 @@ public class RaftReplicatorTest
     private LocalSessionPool sessionPool = new LocalSessionPool( session );
     private TimeoutStrategy noWaitTimeoutStrategy = new ConstantTimeTimeoutStrategy( 0, MILLISECONDS );
     private AvailabilityGuard availabilityGuard = new AvailabilityGuard( Clocks.systemClock(), NullLog.getInstance() );
-    private long replicationLimit = 1000;
 
     @Test
     public void shouldSendReplicatedContentToLeader() throws Exception
@@ -198,12 +197,32 @@ public class RaftReplicatorTest
 
         availabilityGuard.shutdown();
         replicatingThread.join();
-        assertThat( replicatingThread.getReplicationException(), Matchers.instanceOf( DatabaseShutdownException.class ) );
+        assertThat( replicatingThread.getReplicationException().getCause(), Matchers.instanceOf( AvailabilityGuard.UnavailableException.class ) );
 
         verify( replicationMonitor, times( 1 ) ).startReplication( content );
         verify( replicationMonitor, times( 1 ) ).replicationAttempt();
         verify( replicationMonitor, never() ).successfulReplication();
         verify( replicationMonitor, times( 1 ) ).failedReplication( any() );
+    }
+
+    @Test
+    public void stopReplicationWhenUnavailable() throws NoLeaderFoundException, InterruptedException
+    {
+        when( leaderLocator.getLeader() ).thenReturn( leader );
+        CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
+        CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
+
+        RaftReplicator replicator = getReplicator( outbound, capturedProgress, new Monitors() );
+
+        ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
+        ReplicatingThread replicatingThread = replicatingThread( replicator, content, true );
+
+        // when
+        replicatingThread.start();
+
+        availabilityGuard.require( () -> "Database not unavailable" );
+        replicatingThread.join();
+        assertThat( replicatingThread.getReplicationException().getCause(), Matchers.instanceOf( AvailabilityGuard.UnavailableException.class ) );
     }
 
     @Test
@@ -257,7 +276,7 @@ public class RaftReplicatorTest
     private RaftReplicator getReplicator( CapturingOutbound<RaftMessages.RaftMessage> outbound, CapturingProgressTracker capturedProgress, Monitors monitors )
     {
         return new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy,
-                availabilityGuard, NullLogProvider.getInstance(), replicationLimit, monitors );
+                DEFAULT_TIMEOUT_MS, availabilityGuard, NullLogProvider.getInstance(), REPLICATION_LIMIT, monitors );
     }
 
     private ReplicatingThread replicatingThread( RaftReplicator replicator, ReplicatedInteger content, boolean trackResult )
