@@ -28,6 +28,15 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
+
+import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.collection.Pair;
+
+import static org.neo4j.function.Predicates.not;
 
 public class Converters
 {
@@ -109,36 +118,26 @@ public class Converters
         return Integer::new;
     }
 
+    /**
+     * Takes a raw address that can have a single port or 2 ports (lower and upper bounds of port range) and
+     * processes it to a clean separation of host and ports. When only one port is specified, it is in the lower bound.
+     * The presence of an upper bound implies a range.
+     *
+     * @param rawAddress the raw address that a user can provide via config or command line
+     * @return the host, lower bound port, and upper bound port
+     */
     public static OptionalHostnamePort toOptionalHostnamePortFromRawAddress( String rawAddress )
     {
-        return new OptionalHostnamePort(
-                toHostnameFromRawAddress( rawAddress ),
-                toPortFromRawAddress( rawAddress ),
-                toPortUpperRangeFromRawAddress( rawAddress ) );
+        HostnamePort hostnamePort = new HostnamePort( rawAddress );
+        Optional<String> processedHost = Optional.ofNullable( hostnamePort.getHost() )
+                .map( str -> str.replaceAll( "\\[", "" ) )
+                .map( str -> str.replaceAll( "]", "" ) );
+        return new OptionalHostnamePort( processedHost, optionalFromZeroable( hostnamePort.getPorts()[0] ),
+                optionalFromZeroable( hostnamePort.getPorts()[1] ) );
     }
 
-    private static Optional<String> toHostnameFromRawAddress( String rawAddress )
+    private static Optional<Integer> optionalFromZeroable( int port )
     {
-        return Optional.ofNullable( rawAddress )
-                .map( addr -> addr.split( ":" )[0] )
-                .filter( addr -> !"".equals( addr ) );
-    }
-
-    private static Optional<Integer> toPortFromRawAddress( String rawAddress )
-    {
-        return Optional.ofNullable( rawAddress )
-                .map( addr -> addr.split( ":" ) )
-                .filter( parts -> parts.length >= 2 )
-                .map( parts -> parts[1] )
-                .map( Integer::parseInt );
-    }
-
-    private static Optional<Integer> toPortUpperRangeFromRawAddress( String rawAddress )
-    {
-        return Optional.ofNullable( rawAddress )
-                .map( addr -> addr.split( ":" ) )
-                .filter( parts -> parts.length == 3 )
-                .map( parts -> parts[2] )
-                .map( Integer::parseInt );
+        return port == 0 ? Optional.empty() : Optional.of( port );
     }
 }

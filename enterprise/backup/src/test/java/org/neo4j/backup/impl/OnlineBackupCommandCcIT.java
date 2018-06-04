@@ -40,8 +40,12 @@ import java.io.PrintStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.IntFunction;
 
 import org.neo4j.causalclustering.ClusterHelper;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -49,6 +53,9 @@ import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
+import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.IpFamily;
+import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
 import org.neo4j.causalclustering.helpers.CausalClusteringTestHelpers;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
@@ -66,6 +73,7 @@ import org.neo4j.util.TestHelpers;
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
@@ -269,6 +277,46 @@ public class OnlineBackupCommandCcIT
         assertTrue( output.contains( "Finished receiving index snapshots" ) );
     }
 
+    @Test
+    public void ipv6Enabled() throws Exception
+    {
+        // given
+        Cluster cluster = startIpv6Cluster();
+        try
+        {
+            assertNotNull( DbRepresentation.of( clusterDatabase( cluster ) ) );
+            int port = clusterLeader( cluster ).config().get( CausalClusteringSettings.transaction_listen_address ).getPort();
+            String customAddress = String.format( "[%s]:%d", IpFamily.IPV6.localhostAddress(), port );
+            String backupName = "backup_" + recordFormat;
+
+            // when full backup
+            assertEquals( 0, runBackupToolFromSameJvmToGetExitCode(
+                    "--from", customAddress,
+                    "--protocol=catchup",
+                    "--cc-report-dir=" + backupDir,
+                    "--backup-dir=" + backupDir,
+                    "--name=" + backupName ) );
+
+            // and
+            createSomeData( cluster );
+
+            // and incremental backup
+            assertEquals( 0, runBackupToolFromSameJvmToGetExitCode(
+                    "--from", customAddress,
+                    "--protocol=catchup",
+                    "--cc-report-dir=" + backupDir,
+                    "--backup-dir=" + backupDir,
+                    "--name=" + backupName ) );
+
+            // then
+            assertEquals( DbRepresentation.of( clusterDatabase( cluster ) ), getBackupDbRepresentation( backupName, backupDir ) );
+        }
+        finally
+        {
+            cluster.shutdown();
+        }
+    }
+
     static PrintStream wrapWithNormalOutput( PrintStream normalOutput, PrintStream nullAbleOutput )
     {
         if ( nullAbleOutput == null )
@@ -338,6 +386,25 @@ public class OnlineBackupCommandCcIT
         ClusterRule clusterRule = this.clusterRule.withSharedCoreParam( GraphDatabaseSettings.record_format, recordFormat )
                 .withSharedReadReplicaParam( GraphDatabaseSettings.record_format, recordFormat );
         Cluster cluster = clusterRule.startCluster();
+        createSomeData( cluster );
+        return cluster;
+    }
+
+    private Cluster startIpv6Cluster() throws ExecutionException, InterruptedException
+    {
+        DiscoveryServiceFactory discoveryServiceFactory = new SharedDiscoveryServiceFactory();
+        File parentDir = testDirectory.directory( "ipv6_cluster" );
+        Map<String,String> coreParams = new HashMap<>();
+        coreParams.put( GraphDatabaseSettings.record_format.name(), recordFormat );
+        Map<String,IntFunction<String>> instanceCoreParams = new HashMap<>();
+
+        Map<String,String> readReplicaParams = new HashMap<>();
+        readReplicaParams.put( GraphDatabaseSettings.record_format.name(), recordFormat );
+        Map<String,IntFunction<String>> instanceReadReplicaParams = new HashMap<>();
+
+        Cluster cluster = new Cluster( parentDir, 3, 3, discoveryServiceFactory, coreParams, instanceCoreParams, readReplicaParams, instanceReadReplicaParams,
+                recordFormat, IpFamily.IPV6, false );
+        cluster.start();
         createSomeData( cluster );
         return cluster;
     }
