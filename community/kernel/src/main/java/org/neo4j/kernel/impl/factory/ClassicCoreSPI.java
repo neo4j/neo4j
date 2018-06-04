@@ -177,7 +177,7 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
         try
         {
             availability.assertDatabaseAvailable();
-            KernelTransaction kernelTx = dataSource.kernelAPI.get().newTransaction( type, loginContext, timeout );
+            KernelTransaction kernelTx = dataSource.kernelAPI.get().beginTransaction( type, loginContext, timeout );
             kernelTx.registerCloseListener(
                     txId -> dataSource.threadToTransactionBridge.unbindTransactionFromCurrentThread() );
             dataSource.threadToTransactionBridge.bindTransactionToCurrentThread( kernelTx );

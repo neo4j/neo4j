@@ -28,12 +28,10 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
@@ -42,6 +40,7 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 public class KernelSchemaStateFlushingTest
@@ -51,7 +50,19 @@ public class KernelSchemaStateFlushingTest
 
     private GraphDatabaseAPI db;
     private Kernel kernel;
-    private Session session;
+
+    @Before
+    public void setup()
+    {
+        db = dbRule.getGraphDatabaseAPI();
+        kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
+    }
+
+    @After
+    public void after()
+    {
+        db.shutdown();
+    }
 
     @Test
     public void shouldKeepSchemaStateIfSchemaIsNotModified() throws TransactionFailureException
@@ -137,7 +148,7 @@ public class KernelSchemaStateFlushingTest
     private ConstraintDescriptor createConstraint() throws KernelException
     {
 
-        try ( Transaction transaction = session.beginTransaction( KernelTransaction.Type.implicit ) )
+        try ( Transaction transaction = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
         {
             ConstraintDescriptor descriptor = transaction.schemaWrite().uniquePropertyConstraintCreate(
                     SchemaDescriptorFactory.forLabel( 1, 1 ) );
@@ -148,7 +159,7 @@ public class KernelSchemaStateFlushingTest
 
     private void dropConstraint( ConstraintDescriptor descriptor ) throws KernelException
     {
-        try ( Transaction transaction = session.beginTransaction( KernelTransaction.Type.implicit ) )
+        try ( Transaction transaction = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
         {
             transaction.schemaWrite().constraintDrop( descriptor );
             transaction.success();
@@ -157,7 +168,7 @@ public class KernelSchemaStateFlushingTest
 
     private IndexReference createIndex() throws KernelException
     {
-        try ( Transaction transaction = session.beginTransaction( KernelTransaction.Type.implicit ) )
+        try ( Transaction transaction = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
         {
             IndexReference reference = transaction.schemaWrite().indexCreate(
                     SchemaDescriptorFactory.forLabel( 1, 1 ) );
@@ -168,7 +179,7 @@ public class KernelSchemaStateFlushingTest
 
     private void dropIndex( IndexReference reference ) throws KernelException
     {
-        try ( Transaction transaction = session.beginTransaction( KernelTransaction.Type.implicit ) )
+        try ( Transaction transaction = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
         {
             transaction.schemaWrite().indexDrop( reference );
             transaction.success();
@@ -178,7 +189,7 @@ public class KernelSchemaStateFlushingTest
     private void awaitIndexOnline( IndexReference descriptor, String keyForProbing )
             throws IndexNotFoundKernelException, TransactionFailureException
     {
-        try ( Transaction transaction = session.beginTransaction( KernelTransaction.Type.implicit ) )
+        try ( Transaction transaction = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
         {
             SchemaIndexTestHelper.awaitIndexOnline( transaction.schemaRead(), descriptor );
             transaction.success();
@@ -188,7 +199,7 @@ public class KernelSchemaStateFlushingTest
 
     private void awaitSchemaStateCleared( String keyForProbing ) throws TransactionFailureException
     {
-        try ( Transaction transaction = session.beginTransaction( KernelTransaction.Type.implicit ) )
+        try ( Transaction transaction = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
         {
             while ( transaction.schemaRead().schemaStateGetOrCreate( keyForProbing, ignored -> null ) != null )
             {
@@ -200,7 +211,7 @@ public class KernelSchemaStateFlushingTest
 
     private String commitToSchemaState( String key, String value ) throws TransactionFailureException
     {
-        try ( Transaction transaction = session.beginTransaction( KernelTransaction.Type.implicit ) )
+        try ( Transaction transaction = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
         {
             String result = getOrCreateFromState( transaction, key, value );
             transaction.success();
@@ -213,18 +224,4 @@ public class KernelSchemaStateFlushingTest
         return tx.schemaRead().schemaStateGetOrCreate( key, from -> value );
     }
 
-    @Before
-    public void setup()
-    {
-        db = dbRule.getGraphDatabaseAPI();
-        kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
-        session = kernel.beginSession( AUTH_DISABLED );
-    }
-
-    @After
-    public void after()
-    {
-        session.close();
-        db.shutdown();
-    }
 }

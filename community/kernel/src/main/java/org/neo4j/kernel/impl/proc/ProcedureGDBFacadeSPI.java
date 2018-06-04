@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.proc;
 
 import java.io.File;
 import java.net.URL;
-import java.util.Map;
 
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.DependencyResolver;
@@ -30,11 +29,11 @@ import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.DataSourceModule;
@@ -170,7 +169,7 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
         try
         {
             availability.assertDatabaseAvailable();
-            KernelTransaction kernelTx = sourceModule.kernelAPI.get().newTransaction( type, this.securityContext, timeout );
+            KernelTransaction kernelTx = sourceModule.kernelAPI.get().beginTransaction( type, this.securityContext, timeout );
             kernelTx.registerCloseListener(
                     txId -> sourceModule.threadToTransactionBridge.unbindTransactionFromCurrentThread() );
             sourceModule.threadToTransactionBridge.bindTransactionToCurrentThread( kernelTx );

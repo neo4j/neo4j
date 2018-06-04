@@ -33,6 +33,7 @@ import java.util.concurrent.TimeoutException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
@@ -43,6 +44,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 
 public class RelationshipIT extends KernelIntegrationTest
 {
@@ -200,7 +202,7 @@ public class RelationshipIT extends KernelIntegrationTest
     {
         assertTrue( otherThread.execute( state ->
         {
-            try ( Transaction ktx = session.beginTransaction() )
+            try ( Transaction ktx = kernel.beginTransaction( implicit, LoginContext.AUTH_DISABLED ) )
             {
                 assertRels( nodeGetRelationships( ktx, refNode, both ), longs );
             }

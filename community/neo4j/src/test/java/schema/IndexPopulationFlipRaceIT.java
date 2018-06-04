@@ -28,8 +28,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.internal.kernel.api.Session;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.test.rule.DatabaseRule;
@@ -40,6 +38,7 @@ import org.neo4j.values.storable.Values;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 
 public class IndexPopulationFlipRaceIT
 {
@@ -138,8 +137,7 @@ public class IndexPopulationFlipRaceIT
             throws Exception
     {
         Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
-        try ( Session session = kernel.beginSession( AnonymousContext.read() );
-              org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction( KernelTransaction.Type.implicit ) )
+        try ( org.neo4j.internal.kernel.api.Transaction tx = kernel.beginTransaction( implicit, AnonymousContext.read() ) )
         {
             int labelAId = tx.tokenRead().nodeLabel( labelA( i ).name() );
             int keyAId = tx.tokenRead().propertyKey( keyA( i ) );

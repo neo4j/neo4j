@@ -34,7 +34,6 @@ import java.util.Map;
 
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Transaction.Type;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -127,8 +126,7 @@ public class ClusterDiscoveryIT
             ProcedureException
     {
         Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
-        try ( Session session = kernel.beginSession( AnonymousContext.read() );
-              Transaction tx = session.beginTransaction( Type.implicit ) )
+        try ( Transaction tx = kernel.beginTransaction( Type.implicit, AnonymousContext.read() ) )
         {
             // when
             List<Object[]> currentMembers =

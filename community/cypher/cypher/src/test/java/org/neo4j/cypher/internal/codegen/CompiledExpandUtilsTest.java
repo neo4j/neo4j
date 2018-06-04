@@ -28,10 +28,10 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
-import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -42,6 +42,7 @@ import static org.neo4j.cypher.internal.codegen.CompiledExpandUtils.nodeGetDegre
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 
 public class CompiledExpandUtilsTest
 {
@@ -49,19 +50,18 @@ public class CompiledExpandUtilsTest
     public DatabaseRule db = new EmbeddedDatabaseRule()
             .withSetting( GraphDatabaseSettings.dense_node_threshold, "1" );
 
-    private Session session()
+    private Transaction transaction() throws TransactionFailureException
     {
         DependencyResolver resolver = this.db.getDependencyResolver();
-        return resolver.resolveDependency( Kernel.class ).beginSession( LoginContext.AUTH_DISABLED );
+        return resolver.resolveDependency( Kernel.class ).beginTransaction( implicit, LoginContext.AUTH_DISABLED );
     }
 
     @Test
     public void shouldComputeDegreeWithoutType() throws Exception
     {
         // GIVEN
-        Session session = session();
         long node;
-        try ( Transaction tx = session.beginTransaction() )
+        try ( Transaction tx = transaction() )
         {
             Write write = tx.dataWrite();
             node = write.nodeCreate();
@@ -80,7 +80,7 @@ public class CompiledExpandUtilsTest
             tx.success();
         }
 
-        try ( Transaction tx = session.beginTransaction() )
+        try ( Transaction tx = transaction() )
         {
             Read read = tx.dataRead();
             CursorFactory cursors = tx.cursors();
@@ -97,10 +97,9 @@ public class CompiledExpandUtilsTest
     public void shouldComputeDegreeWithType() throws Exception
     {
         // GIVEN
-        Session session = session();
         long node;
         int in, out, loop;
-        try ( Transaction tx = session.beginTransaction() )
+        try ( Transaction tx = transaction() )
         {
             Write write = tx.dataWrite();
             node = write.nodeCreate();
@@ -118,7 +117,7 @@ public class CompiledExpandUtilsTest
             tx.success();
         }
 
-        try ( Transaction tx = session.beginTransaction() )
+        try ( Transaction tx = transaction() )
         {
             Read read = tx.dataRead();
             CursorFactory cursors = tx.cursors();
