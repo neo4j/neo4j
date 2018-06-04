@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.storageengine.api.EntityType;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
@@ -387,9 +388,20 @@ public class DbStructureCollector implements DbStructureVisitor
                 public Pair<String[],String[]> next()
                 {
                     //TODO: Add support for composite indexes
-                    //TODO: Add support for relationship indexes
                     SchemaDescriptor next = iterator.next();
-                    String[] enetityTokens = labels.byIdOrFail( next.getEntityTokenIds() );
+                    EntityType type = next.entityType();
+                    String[] enetityTokens;
+                    switch ( type )
+                    {
+                    case NODE:
+                        enetityTokens = labels.byIdOrFail( next.getEntityTokenIds() );
+                        break;
+                    case RELATIONSHIP:
+                        enetityTokens = relationshipTypes.byIdOrFail( next.getEntityTokenIds() );
+                        break;
+                    default:
+                        throw new IllegalStateException( "Indexing is not supported for EntityType: " + type );
+                    }
                     String[] propertyKeyNames = propertyKeys.byIdOrFail( next.getPropertyIds() );
                     return Pair.of( enetityTokens, propertyKeyNames );
                 }
