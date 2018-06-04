@@ -19,24 +19,26 @@
  */
 package org.neo4j.io;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 
 import org.neo4j.test.matchers.NestedThrowableMatcher;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith( MockitoExtension.class )
-class IOUtilsTest
+@RunWith( MockitoJUnitRunner.class )
+public class IOUtilsTest
 {
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
     @Mock
     private AutoCloseable faultyClosable;
     @Mock
@@ -45,7 +47,7 @@ class IOUtilsTest
     private AutoCloseable goodClosable2;
 
     @Test
-    void closeAllSilently() throws Exception
+    public void closeAllSilently() throws Exception
     {
         IOUtils.closeAllSilently( goodClosable1, faultyClosable, goodClosable2 );
 
@@ -55,13 +57,15 @@ class IOUtilsTest
     }
 
     @Test
-    void closeAllAndRethrowException() throws Exception
+    public void closeAllAndRethrowException() throws Exception
     {
         doThrow( new IOException( "Faulty closable" ) ).when( faultyClosable ).close();
 
-        IOException exception = assertThrows( IOException.class, () -> IOUtils.closeAll( goodClosable1, faultyClosable, goodClosable2 ) );
-        assertEquals( "Exception closing multiple resources", exception.getMessage() );
-        assertThat( exception, new NestedThrowableMatcher( IOException.class ) );
+        expectedException.expect( IOException.class );
+        expectedException.expectMessage( "Exception closing multiple resources" );
+        expectedException.expect( new NestedThrowableMatcher( IOException.class ) );
+
+        IOUtils.closeAll( goodClosable1, faultyClosable, goodClosable2 );
     }
 
 }
