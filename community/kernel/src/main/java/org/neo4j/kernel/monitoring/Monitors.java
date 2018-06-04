@@ -74,13 +74,13 @@ public class Monitors
         this.log = logProvider.getLog( Monitors.class );
     }
 
-    public synchronized <T> T newMonitor( Class<T> monitorClass, Class<?> owningClass, String... tags )
+    public <T> T newMonitor( Class<T> monitorClass, Class<?> owningClass, String... tags )
     {
         String[] monitorTags = ArrayUtil.concat( tags, owningClass.getName() );
         return newMonitor( monitorClass, monitorTags );
     }
 
-    public synchronized <T> T newMonitor( Class<T> monitorClass, String... tags )
+    public <T> T newMonitor( Class<T> monitorClass, String... tags )
     {
         requireInterface( monitorClass );
         ClassLoader classLoader = monitorClass.getClassLoader();
@@ -88,7 +88,7 @@ public class Monitors
         return monitorClass.cast( Proxy.newProxyInstance( classLoader, new Class<?>[]{monitorClass}, monitorInvocationHandler ) );
     }
 
-    public synchronized void addMonitorListener( Object monitorListener, String... tags )
+    public void addMonitorListener( Object monitorListener, String... tags )
     {
         MonitorListenerInvocationHandler monitorListenerInvocationHandler = createInvocationHandler( monitorListener, tags );
 
@@ -102,17 +102,14 @@ public class Monitors
         monitoredInterfaces.addAll( listenerInterfaces );
     }
 
-    public synchronized void removeMonitorListener( Object monitorListener )
+    public void removeMonitorListener( Object monitorListener )
     {
         List<Class<?>> listenerInterfaces = getAllInterfaces( monitorListener );
-        methodsStream( listenerInterfaces ).forEach( method -> {
-            Set<MonitorListenerInvocationHandler> handlers = methodMonitorListeners.get( method );
+        methodsStream( listenerInterfaces ).forEach( key -> methodMonitorListeners.computeIfPresent( key, ( method1, handlers ) ->
+        {
             handlers.removeIf( handler -> monitorListener.equals( handler.getMonitorListener() ) );
-            if ( handlers.isEmpty() )
-            {
-                methodMonitorListeners.remove( method );
-            }
-        } );
+            return handlers.isEmpty() ? null : handlers;
+        } ) );
         listenerInterfaces.forEach( monitoredInterfaces::remove );
     }
 
