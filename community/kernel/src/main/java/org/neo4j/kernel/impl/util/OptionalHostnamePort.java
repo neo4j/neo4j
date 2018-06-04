@@ -54,21 +54,10 @@ public class OptionalHostnamePort
         return port;
     }
 
-    public HostnamePort resolve()
+    public Optional<Integer> getUpperRangePort()
     {
-        if ( !hostname.isPresent() )
-        {
-            throw new IllegalStateException( "Hostname must be established before resolving" );
-        }
-        if ( !port.isPresent() )
-        {
-            throw new IllegalStateException( "Port must be established before resolving" );
-        }
-        return upperRangePort
-                .map( upperRange -> new HostnamePort( hostname.get(), port.get(), upperRange ) )
-                .orElseGet( () -> new HostnamePort( hostname.get(), port.get() ) );
+        return upperRangePort;
     }
-
     @Override
     public String toString()
     {

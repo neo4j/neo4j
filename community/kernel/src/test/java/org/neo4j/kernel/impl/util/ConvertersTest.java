@@ -24,8 +24,11 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -123,6 +126,47 @@ public class ConvertersTest
 
         // then
         assertFalse( hostname.isPresent() );
+    }
+
+    @Test
+    public void ipv6Works()
+    {
+        // with
+        String full = "1234:5678:9abc:def0:1234:5678:9abc:def0";
+        List<Pair<String,OptionalHostnamePort>> cases = Arrays.asList(
+                Pair.of( "[::1]", new OptionalHostnamePort( "::1", null, null ) ),
+                Pair.of( "[3FFe::1]", new OptionalHostnamePort( "3FFe::1", null, null ) ),
+                Pair.of( "[::1]:2", new OptionalHostnamePort( "::1", 2, 2 ) ),
+                Pair.of( "[" + full + "]", new OptionalHostnamePort( full, null, null ) ),
+                Pair.of( "[" + full + "]" + ":5432", new OptionalHostnamePort( full, 5432, 5432 ) ),
+                Pair.of( "[1::2]:3-4", new OptionalHostnamePort( "1::2", 3, 4 ) ) );
+        for ( Pair<String,OptionalHostnamePort> useCase : cases )
+        {
+            // given
+            String caseInput = useCase.first();
+            OptionalHostnamePort caseOutput = useCase.other();
+
+            // when
+            OptionalHostnamePort optionalHostnamePort = toOptionalHostnamePortFromRawAddress( caseInput );
+
+            // then
+            String msg = String.format( "\"%s\" -> %s", caseInput, caseOutput );
+            assertEquals( msg, caseOutput.getHostname(), optionalHostnamePort.getHostname() );
+            assertEquals( msg, caseOutput.getPort(), optionalHostnamePort.getPort() );
+            assertEquals( msg, caseOutput.getUpperRangePort(), optionalHostnamePort.getUpperRangePort() );
+        }
+    }
+
+    @Test
+    public void trailingColonIgnored()
+    {
+        // when
+        OptionalHostnamePort optionalHostnamePort = toOptionalHostnamePortFromRawAddress( "localhost::" );
+
+        // then
+        assertEquals( "localhost", optionalHostnamePort.getHostname().get() );
+        assertFalse( optionalHostnamePort.getPort().isPresent() );
+        assertFalse( optionalHostnamePort.getUpperRangePort().isPresent() );
     }
 
     private File existenceOfFile( String name ) throws IOException
