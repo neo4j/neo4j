@@ -43,11 +43,11 @@ import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.tools.console.input.ArgsCommand;
 import org.neo4j.tools.console.input.ConsoleInput;
 
+import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
 import static org.neo4j.tools.console.input.ConsoleUtil.NO_PROMPT;
 import static org.neo4j.tools.console.input.ConsoleUtil.oneCommand;
 import static org.neo4j.tools.console.input.ConsoleUtil.staticPrompt;
@@ -224,14 +224,7 @@ public class DatabaseRebuildTool
                 return "Runs consistency check on the database for data that has been applied up to this point";
             }
         } );
-        life.add( new LifecycleAdapter()
-        {
-            @Override
-            public void shutdown()
-            {
-                store.get().shutdown();
-            }
-        } );
+        life.add( onShutdown( () -> store.get().shutdown() ) );
         return consoleInput;
     }
 }

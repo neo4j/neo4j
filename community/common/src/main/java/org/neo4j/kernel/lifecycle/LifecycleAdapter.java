@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.lifecycle;
 
+import org.neo4j.function.ThrowingAction;
+
 /**
  * Adapter for Lifecycle interface. Subclass and override methods as needed
  */
@@ -42,5 +44,17 @@ public class LifecycleAdapter implements Lifecycle
     @Override
     public void shutdown() throws Throwable
     {
+    }
+
+    public static Lifecycle onShutdown( ThrowingAction action )
+    {
+        return new LifecycleAdapter()
+        {
+            @Override
+            public void shutdown() throws Exception
+            {
+                action.apply();
+            }
+        };
     }
 }

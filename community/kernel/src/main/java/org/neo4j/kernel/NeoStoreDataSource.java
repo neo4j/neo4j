@@ -748,19 +748,14 @@ public class NeoStoreDataSource extends LifecycleAdapter
         // Write new checkpoint in the log only if the kernel is healthy.
         // We cannot throw here since we need to shutdown without exceptions,
         // so let's make the checkpointing part of the life, so LifeSupport can handle exceptions properly
-        return new LifecycleAdapter()
+        return LifecycleAdapter.onShutdown( () ->
         {
-            @Override
-            public void shutdown() throws IOException
+            if ( databaseHealth.isHealthy() )
             {
-                if ( databaseHealth.isHealthy() )
-                {
-                    // Flushing of neo stores happens as part of the checkpoint
-                    transactionLogModule.checkPointing()
-                            .forceCheckPoint( new SimpleTriggerInfo( "database shutdown" ) );
-                }
+                // Flushing of neo stores happens as part of the checkpoint
+                transactionLogModule.checkPointing().forceCheckPoint( new SimpleTriggerInfo( "database shutdown" ) );
             }
-        };
+        } );
     }
 
     public StoreId getStoreId()
