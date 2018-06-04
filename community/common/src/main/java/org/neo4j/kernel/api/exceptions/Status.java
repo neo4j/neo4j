@@ -499,6 +499,12 @@ public interface Status
 
     enum Cluster implements Status
     {
+        IntraClusterConnectionTimeout( DatabaseError,
+                "This instance is failing to establish connections to other cluster members. You should " +
+                "ensure other cluster members are operational, listening to the ports this instance is " +
+                "configured to connect to, and that there are no firewalls or other network equipment " +
+                "preventing connections." ),
+
         // transient errors
         NoLeaderAvailable( TransientError,
                 "No leader available at the moment. Retrying your request at a later time may succeed." ),

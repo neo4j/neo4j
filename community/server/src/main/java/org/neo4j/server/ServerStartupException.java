@@ -37,8 +37,6 @@ public class ServerStartupException extends RuntimeException
 
     public void describeTo( Log log )
     {
-        // By default, log the full error. The intention is that sub classes can override this and
-        // specify less extreme logging options.
         log.error( format( "Failed to start Neo4j: %s", getMessage() ), this );
     }
 }

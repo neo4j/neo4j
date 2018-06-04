@@ -167,9 +167,12 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
 
         if ( clusterId == null )
         {
-            throw new TimeoutException( format(
-                    "Failed to join a cluster with members %s. Another member should have published " +
-                    "a clusterId but none was detected. Please restart the cluster.", topology ) );
+            throw new BootstrapConnectionTimeout( format(
+                    "Neo4j cannot be started because this instance is unable to reach other cluster members. " +
+                    "Waited %dms for another member in %s, giving up. This may be temporary and retrying may help. " +
+                    "It may also be a configuration or a firewall problem. Ensure that other members are listening " +
+                    "on the host/port you've configured this instance to connect to, and that there is no firewall " +
+                    "preventing connections.", timeoutMillis, topology ) );
         }
 
         clusterIdStorage.writeState( clusterId );

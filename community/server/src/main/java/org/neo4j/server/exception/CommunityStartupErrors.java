@@ -19,10 +19,8 @@
  */
 package org.neo4j.server.exception;
 
-import java.util.function.Function;
-
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedException;
+import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.server.ServerStartupException;
 
 import static java.lang.String.format;
@@ -31,38 +29,20 @@ import static java.lang.String.format;
  * Helps translate known common user errors to avoid long java stack traces and other bulk logging that obscures
  * what went wrong.
  */
-public class ServerStartupErrors
+public class CommunityStartupErrors
 {
-    private ServerStartupErrors()
+    private CommunityStartupErrors()
     {
     }
 
-    /**
-     * Each function in this array handles translating one case. If it doesn't know how to translate a given
-     * throwable, it simply returns null.
-     */
-    private static final Function<Throwable, ServerStartupException>[] translators = new Function[] {
-        // Handle upgrade errors
-            (Function<Throwable,ServerStartupException>) o ->
-            {
-                Throwable rootCause = Exceptions.rootCause( o );
-                if ( rootCause instanceof UpgradeNotAllowedException )
-                {
-                    return new UpgradeDisallowedStartupException( (UpgradeNotAllowedException)rootCause );
-                }
-                return null;
-            }
-    };
-
-    public static ServerStartupException translateToServerStartupError( Throwable cause )
+    public static ServerStartupException translateCommunityStartupError( Throwable cause )
     {
-        for ( Function<Throwable,ServerStartupException> translator : translators )
+        Throwable rootCause = Exceptions.rootCause( cause );
+
+        // Upgrade needs to be configured to be allowed
+        if ( rootCause instanceof UpgradeNotAllowedByConfigurationException )
         {
-            ServerStartupException r = translator.apply( cause );
-            if ( r != null )
-            {
-                return r;
-            }
+            return new WellKnownStartupException( (UpgradeNotAllowedByConfigurationException) rootCause );
         }
 
         return new ServerStartupException( format( "Starting Neo4j failed: %s", cause.getMessage() ), cause );
