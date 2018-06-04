@@ -22,8 +22,8 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RefSlot
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotAllocation.PhysicalPlan
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{IndexSeekModeFactory, LazyLabel, LazyTypes}
@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.util.InternalException
 
-class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: ExpressionConverters, readOnly: Boolean)
+class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverters, readOnly: Boolean)
   extends TreeBuilder[Pipeline] {
 
   override def create(plan: LogicalPlan): Pipeline = {
@@ -44,63 +44,58 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
   }
 
   override protected def build(plan: LogicalPlan): Pipeline = {
-    val slots = slotConfigurations(plan.id)
+    val slots = physicalPlan.slotConfigurations(plan.id)
+    val argumentSize = physicalPlan.argumentSizes(plan.id)
 
     val thisOp = plan match {
       case plans.AllNodesScan(column, _) =>
         new AllNodeScanOperator(
-          slots.numberOfLongs,
-          slots.numberOfReferences,
-          slots.getLongOffsetFor(column))
+          slots.getLongOffsetFor(column),
+          argumentSize)
 
       case plans.NodeByLabelScan(column, label, _) =>
         new LabelScanOperator(
-          slots.numberOfLongs,
-          slots.numberOfReferences,
           slots.getLongOffsetFor(column),
-          LazyLabel(label)(SemanticTable()))
+          LazyLabel(label)(SemanticTable()),
+          argumentSize)
 
       case plans.NodeIndexScan(column, labelToken, propertyKey, _) =>
         new NodeIndexScanOperator(
-          slots.numberOfLongs,
-          slots.numberOfReferences,
-          slots.getLongOffsetFor(column),
-          labelToken.nameId.id,
-          propertyKey.nameId.id)
-
-      case NodeIndexContainsScan(column, labelToken, propertyKey, valueExpr, _) =>
-        new NodeIndexContainsScanOperator(
-          slots.numberOfLongs,
-          slots.numberOfReferences,
           slots.getLongOffsetFor(column),
           labelToken.nameId.id,
           propertyKey.nameId.id,
-          converters.toCommandExpression(valueExpr))
+          argumentSize)
+
+      case NodeIndexContainsScan(column, labelToken, propertyKey, valueExpr, _) =>
+        new NodeIndexContainsScanOperator(
+          slots.getLongOffsetFor(column),
+          labelToken.nameId.id,
+          propertyKey.nameId.id,
+          converters.toCommandExpression(valueExpr),
+          argumentSize)
 
       case plans.NodeIndexSeek(column, label, propertyKeys, valueExpr,  _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         new NodeIndexSeekOperator(
-          slots.numberOfLongs,
-          slots.numberOfReferences,
           slots.getLongOffsetFor(column),
           label,
           propertyKeys,
+          argumentSize,
           valueExpr.map(converters.toCommandExpression),
           indexSeekMode)
 
       case plans.NodeUniqueIndexSeek(column, label, propertyKeys, valueExpr,  _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
         new NodeIndexSeekOperator(
-          slots.numberOfLongs,
-          slots.numberOfReferences,
           slots.getLongOffsetFor(column),
           label,
           propertyKeys,
+          argumentSize,
           valueExpr.map(converters.toCommandExpression),
           indexSeekMode)
 
       case plans.Argument(_) =>
-        new ArgumentOperator
+        new ArgumentOperator(argumentSize)
 
       case p => throw new CantCompileQueryException(s"$p not supported in morsel runtime")
     }
@@ -110,7 +105,7 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
 
   override protected def build(plan: LogicalPlan, from: Pipeline): Pipeline = {
     var source = from
-    val slots = slotConfigurations(plan.id)
+    val slots = physicalPlan.slotConfigurations(plan.id)
 
       val thisOp = plan match {
         case plans.ProduceResult(_, columns) =>
@@ -118,34 +113,33 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
 
         case plans.Selection(predicates, _) =>
           val predicate = predicates.map(converters.toCommandPredicate).reduce(_ andWith _)
-          new FilterOperator(slots, predicate)
+          new FilterOperator(predicate)
 
         case plans.Expand(lhs, fromName, dir, types, to, relName, ExpandAll) =>
           val fromOffset = slots.getLongOffsetFor(fromName)
           val relOffset = slots.getLongOffsetFor(relName)
           val toOffset = slots.getLongOffsetFor(to)
-          val fromPipe = slotConfigurations(lhs.id)
           val lazyTypes = LazyTypes(types.toArray)(SemanticTable())
-          new ExpandAllOperator(slots, fromPipe, fromOffset, relOffset, toOffset, dir, lazyTypes)
+          new ExpandAllOperator(fromOffset, relOffset, toOffset, dir, lazyTypes)
 
         case plans.Projection(_, expressions) =>
           val projectionOps = expressions.map {
             case (key, e) => slots(key) -> converters.toCommandExpression(e)
           }
-          new ProjectOperator(projectionOps, slots)
+          new ProjectOperator(projectionOps)
 
         case plans.Sort(_, sortItems) =>
           val ordering = sortItems.map(translateColumnOrder(slots, _))
-          val preSorting = new PreSortOperator(ordering, slots)
+          val preSorting = new PreSortOperator(ordering)
           source = source.addOperator(preSorting)
-          new MergeSortOperator(ordering, slots)
+          new MergeSortOperator(ordering)
 
         case Top(_, sortItems, limit) =>
           val ordering = sortItems.map(translateColumnOrder(slots, _))
           val countExpression = converters.toCommandExpression(limit)
-          val preTop = new PreSortOperator(ordering, slots, Some(countExpression))
+          val preTop = new PreSortOperator(ordering, Some(countExpression))
           source = source.addOperator(preTop)
-          new MergeSortOperator(ordering, slots, Some(countExpression))
+          new MergeSortOperator(ordering, Some(countExpression))
 
         case plans.Aggregation(_, groupingExpressions, aggregationExpression) if groupingExpressions.isEmpty =>
           val aggregations = aggregationExpression.map {
@@ -159,16 +153,18 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
           }.toArray
 
           //add mapper to source
-          source = source.addOperator(new AggregationMapperOperatorNoGrouping(source.slots, aggregations))
-          new AggregationReduceOperatorNoGrouping(slots, aggregations)
+          source = source.addOperator(new AggregationMapperOperatorNoGrouping(aggregations))
+          new AggregationReduceOperatorNoGrouping(aggregations)
 
         case plans.Aggregation(_, groupingExpressions, aggregationExpression) =>
-          val grouping = groupingExpressions.map {
+          val groupings = groupingExpressions.map {
             case (key, expression) =>
               val currentSlot = slots(key)
               //we need to make room for storing grouping value in source slot
-              if (currentSlot.isLongSlot) source.slots.newLong(key, currentSlot.nullable, currentSlot.typ)
-              else source.slots.newReference(key, currentSlot.nullable, currentSlot.typ)
+              if (currentSlot.isLongSlot)
+                source.slots.newLong(key, currentSlot.nullable, currentSlot.typ)
+              else
+                source.slots.newReference(key, currentSlot.nullable, currentSlot.typ)
               GroupingOffsets(source.slots(key), currentSlot, converters.toCommandExpression(expression))
           }.toArray
 
@@ -183,8 +179,8 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
           }.toArray
 
           //add mapper to source
-          source = source.addOperator(new AggregationMapperOperator(source.slots, aggregations, grouping))
-          new AggregationReduceOperator(slots, aggregations, grouping)
+          source = source.addOperator(new AggregationMapperOperator(aggregations, groupings))
+          new AggregationReduceOperator(aggregations, groupings)
 
         case plans.UnwindCollection(src, variable, collection) =>
           val offset = slots.get(variable) match {
@@ -193,7 +189,7 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
               throw new InternalException("Weird slot found for UNWIND")
           }
           val runtimeExpression = converters.toCommandExpression(collection)
-          new UnwindOperator(runtimeExpression, offset, slotConfigurations(src.id), slots)
+          new UnwindOperator(runtimeExpression, offset)
 
         case p => throw new CantCompileQueryException(s"$p not supported in morsel runtime")
       }
@@ -206,8 +202,27 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
     }
   }
 
-  override protected def build(plan: LogicalPlan, lhs: Pipeline, rhs: Pipeline): Pipeline =
-    throw new CantCompileQueryException(s"$plan is not supported in morsel runtime")
+  override protected def build(plan: LogicalPlan, lhs: Pipeline, rhs: Pipeline): Pipeline = {
+    val slots = physicalPlan.slotConfigurations(plan.id)
+
+    val thisOp = plan match {
+      case Apply(_, _) =>
+        new ApplyOperator(
+          lhs,
+          rhs)
+
+      case p => throw new CantCompileQueryException(s"$p not supported in morsel runtime")
+    }
+
+    thisOp match {
+      case o: Operator =>
+        // TODO add transitive dependency on rhs??
+        Pipeline(o, IndexedSeq.empty, slots, o.addDependency(lhs))()
+      case mo: MiddleOperator =>
+        // TODO Is this correct?
+        lhs.addOperator(mo)
+    }
+  }
 }
 
 object IsPipelineBreaker {

@@ -22,6 +22,7 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.expressions
 
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.Slot
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.slotted.helpers.SlottedPipeBuilderUtils
@@ -54,8 +55,8 @@ object  AggregationHelper {
   /**
     * Helper method to facilitate computing the correct setter method given a grouping at compile time
     */
-  def computeGroupingSetter(groupings: Array[GroupingOffsets]): (MorselExecutionContext, AnyValue) => Unit = {
-    val setInSlotFunctions = groupings.map(_.incoming).map(slot => SlottedPipeBuilderUtils.makeSetValueInSlotFunctionFor(slot))
+  def computeGroupingSetter(groupings: Array[GroupingOffsets])(slotToWriteTo: GroupingOffsets => Slot): (MorselExecutionContext, AnyValue) => Unit = {
+    val setInSlotFunctions = groupings.map(slotToWriteTo).map(slot => SlottedPipeBuilderUtils.makeSetValueInSlotFunctionFor(slot))
 
     groupings.length match {
       case 1 => setInSlotFunctions(0)
@@ -87,7 +88,7 @@ object  AggregationHelper {
     * Helper method to facilitate computing the correct getter method given a grouping at compile time
     */
   def computeGroupingGetter(groupings: Array[GroupingOffsets]): (MorselExecutionContext) => AnyValue = {
-    val getters = groupings.map(_.incoming).map(slot => SlottedPipeBuilderUtils.makeGetValueFromSlotFunctionFor(slot))
+    val getters = groupings.map(_.mapperOutputSlot).map(slot => SlottedPipeBuilderUtils.makeGetValueFromSlotFunctionFor(slot))
     groupings.length match {
       case 1 => getters(0)
       case 2 => (ctx: MorselExecutionContext) => list(getters(0)(ctx), getters(1)(ctx))

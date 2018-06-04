@@ -22,25 +22,22 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyTypes
 import org.neo4j.cypher.internal.runtime.slotted.helpers.NullChecker.entityIsNull
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.opencypher.v9_0.util.InternalException
-import org.opencypher.v9_0.expressions.SemanticDirection
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
+import org.opencypher.v9_0.expressions.SemanticDirection
+import org.opencypher.v9_0.util.InternalException
 
-class ExpandAllOperator(toSlots: SlotConfiguration,
-                        fromSlots: SlotConfiguration,
-                        fromOffset: Int,
+class ExpandAllOperator(fromOffset: Int,
                         relOffset: Int,
                         toOffset: Int,
                         dir: SemanticDirection,
                         types: LazyTypes) extends Operator {
 
   override def operate(source: Message,
-                       output: Morsel,
+                       outputRow: MorselExecutionContext,
                        context: QueryContext,
                        state: QueryState): Continuation = {
 
@@ -49,69 +46,60 @@ class ExpandAllOperator(toSlots: SlotConfiguration,
     picked up at any point again - all without impacting the tight loop.
     The mutable state is an unfortunate cost for this feature.
      */
-    var readPos = 0
-    var writePos = 0
     var relationships: RelationshipSelectionCursor = null
-    var input: Morsel = null
+    var inputRow: MorselExecutionContext = null
     var iterationState: Iteration = null
 
     source match {
-      case StartLoopWithSingleMorsel(data, is) =>
-        input = data
+      case StartLoopWithSingleMorsel(ir, is) =>
+        inputRow = ir
         iterationState = is
-      case ContinueLoopWith(ContinueWithData(data, index, is)) =>
-        input = data
-        readPos = index
+      case ContinueLoopWith(ContinueWithData(ir, is)) =>
+        inputRow = ir
         iterationState = is
-      case ContinueLoopWith(ContinueWithDataAndSource(data, index, rels, is)) =>
-        input = data
-        readPos = index
+      case ContinueLoopWith(ContinueWithDataAndSource(ir, rels, is)) =>
+        inputRow = ir
         iterationState = is
         relationships = rels.asInstanceOf[RelationshipSelectionCursor]
       case _ =>
         throw new InternalException("Unknown continuation received")
     }
 
-    val inputLongCount = fromSlots.numberOfLongs
-    val inputRefCount = fromSlots.numberOfReferences
-    val outputLongCount = toSlots.numberOfLongs
-    val outputRefCount = toSlots.numberOfReferences
+    while (inputRow.hasMoreRows && outputRow.hasMoreRows) {
 
-    while (readPos < input.validRows && writePos < output.validRows) {
-
-      val fromNode = input.longs(readPos * inputLongCount + fromOffset)
-      if (entityIsNull(fromNode))
-      readPos += 1
+      val fromNode = inputRow.getLongAt(fromOffset)
+      if (entityIsNull(fromNode)) inputRow.moveToNextRow()
       else {
         if (relationships == null) {
           relationships = context.getRelationshipsCursor(fromNode, dir, types.types(context))
         }
 
-        while (writePos < output.validRows && relationships.next()) {
+        while (outputRow.hasMoreRows && relationships.next()) {
           val relId = relationships.relationshipReference()
           val otherSide = relationships.otherNodeReference()
 
           // Now we have everything needed to create a row.
-          System.arraycopy(input.longs, readPos * inputLongCount, output.longs, writePos * outputLongCount, inputLongCount)
-          System.arraycopy(input.refs, readPos * inputRefCount, output.refs, writePos * outputRefCount, inputRefCount)
-          output.longs(writePos * outputLongCount + relOffset) = relId
-          output.longs(writePos * outputLongCount + toOffset) = otherSide
-          writePos += 1
+          outputRow.copyFrom(inputRow)
+          outputRow.setLongAt(relOffset, relId)
+          outputRow.setLongAt(toOffset, otherSide)
+          outputRow.moveToNextRow()
         }
 
         //we haven't filled up the rows
-        if (writePos < output.validRows) {
+        if (outputRow.hasMoreRows) {
+          relationships.close()
           relationships = null
-          readPos += 1
+          inputRow.moveToNextRow()
         }
       }
     }
+    outputRow.finishedWriting()
 
-    val next = if (readPos < input.validRows || relationships != null) {
-      if(relationships == null)
-        ContinueWithData(input, readPos, iterationState)
+    if (inputRow.hasMoreRows || relationships != null) {
+      if (relationships == null)
+        ContinueWithData(inputRow, iterationState)
       else
-        ContinueWithDataAndSource(input, readPos, relationships, iterationState)
+        ContinueWithDataAndSource(inputRow, relationships, iterationState)
     } else {
       if (relationships != null) {
         relationships.close()
@@ -119,9 +107,6 @@ class ExpandAllOperator(toSlots: SlotConfiguration,
       }
       EndOfLoop(iterationState)
     }
-
-    output.validRows = writePos
-    next
   }
 
   override def addDependency(pipeline: Pipeline): Dependency = Lazy(pipeline)

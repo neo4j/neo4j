@@ -51,43 +51,39 @@ import org.opencypher.v9_0.frontend.PlannerName
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 import org.opencypher.v9_0.util.TaskCloser
 
+
+
 object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
   override def compileToExecutable(state: LogicalPlanState, context: EnterpriseRuntimeContext): ExecutionPlan_V35 = {
-    val (physicalPlan, pipelines) = rewritePlan(context, state.logicalPlan, state.semanticTable())
-    val converters: ExpressionConverters = new ExpressionConverters(
-      new CompiledExpressionConverter(context.log),
-      MorselExpressionConverters,
-      SlottedExpressionConverters,
-      CommunityExpressionConverter)
-    val readOnly = state.solveds(state.logicalPlan.id).readOnly
-    val operatorBuilder = new PipelineBuilder(pipelines, converters, readOnly)
-    val operators = operatorBuilder.create(physicalPlan)
-    val dispatcher =
-      if (context.debugOptions.contains("singlethreaded")) new SingleThreadedExecutor()
-      else context.dispatcher
-    val fieldNames = state.statement().returnColumns.toArray
+      val (logicalPlan,physicalPlan) = rewritePlan(context, state.logicalPlan, state.semanticTable())
+      val converters: ExpressionConverters = new ExpressionConverters(
+        new CompiledExpressionConverter(context.log),
+        MorselExpressionConverters,
+        SlottedExpressionConverters,
+        CommunityExpressionConverter)
+      val readOnly = state.solveds(state.logicalPlan.id).readOnly
+      val operatorBuilder = new PipelineBuilder(physicalPlan, converters, readOnly)
 
-    context.notificationLogger.log(
-      ExperimentalFeatureNotification("use the morsel runtime at your own peril, " +
+      val operators = operatorBuilder.create(logicalPlan)
+      val dispatcher =
+        if (context.debugOptions.contains("singlethreaded")) new SingleThreadedExecutor()
+        else context.dispatcher
+      val fieldNames = state.statement().returnColumns.toArray
+
+      context.notificationLogger.log(
+        ExperimentalFeatureNotification("use the morsel runtime at your own peril, " +
                                       "not recommended to be run on production systems"))
-
-    VectorizedExecutionPlan(
-      state.plannerName,
-      operators,
-      pipelines,
-      physicalPlan,
-      fieldNames,
-      dispatcher,
-      context.notificationLogger,
+       VectorizedExecutionPlan(state.plannerName, operators,  physicalPlan.slotConfigurations, logicalPlan, fieldNames,
+                                             dispatcher, context.notificationLogger,
       readOnly,
-      state.cardinalities)
+    state.cardinalities)
   }
 
   private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan, semanticTable: SemanticTable) = {
     val physicalPlan: PhysicalPlan = SlotAllocation.allocateSlots(beforeRewrite, semanticTable)
     val slottedRewriter = new SlottedRewriter(context.planContext)
     val logicalPlan = slottedRewriter(beforeRewrite, physicalPlan.slotConfigurations)
-    (logicalPlan, physicalPlan.slotConfigurations)
+    (logicalPlan, physicalPlan)
   }
 
   case class VectorizedExecutionPlan(plannerUsed: PlannerName,

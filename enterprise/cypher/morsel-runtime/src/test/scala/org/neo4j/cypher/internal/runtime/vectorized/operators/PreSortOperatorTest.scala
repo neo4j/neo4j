@@ -22,40 +22,40 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{LongSlot, RefSlot, SlotConfiguration}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{LongSlot, RefSlot}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.slotted.pipes.Ascending
-import org.neo4j.cypher.internal.runtime.vectorized.{Iteration, Morsel, QueryState}
-import org.opencypher.v9_0.util.symbols._
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.vectorized.{Iteration, Morsel, MorselExecutionContext, QueryState}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.intValue
 import org.neo4j.values.virtual.VirtualValues
-
-import scala.collection.mutable
+import org.opencypher.v9_0.util.symbols._
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class PreSortOperatorTest extends CypherFunSuite {
 
   test("sort a morsel with a single long column") {
+    val numberOfLongs = 1
+    val numberOfReferences = 0
     val slot = LongSlot(0, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot))
-    val info = new SlotConfiguration(mutable.Map("apa" -> slot), 1, 0)
-    val sortOperator = new PreSortOperator(columnOrdering, info)
+    val sortOperator = new PreSortOperator(columnOrdering)
 
     val longs = Array[Long](9, 8, 7, 6, 5, 4, 3, 2, 1)
     val data = new Morsel(longs, Array[AnyValue](), longs.length)
 
-    sortOperator.operate(new Iteration(None), data, null, null)
+    sortOperator.operate(Iteration(None), MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, null)
 
     data.longs should equal(Array[Long](1, 2, 3, 4, 5, 6, 7, 8, 9))
   }
 
   test("sort a morsel with a one long slot and one ref slot, order by ref") {
+    val numberOfLongs = 1
+    val numberOfReferences = 1
     val slot1 = LongSlot(0, nullable = false, CTNode)
     val slot2 = RefSlot(0, nullable = false, CTNumber)
     val columnOrdering = Seq(Ascending(slot2))
-    val info = new SlotConfiguration(mutable.Map("apa1" -> slot1, "apa2" -> slot2), 1, 1)
-    val sortOperator = new PreSortOperator(columnOrdering, info)
+    val sortOperator = new PreSortOperator(columnOrdering)
 
     val longs = Array[Long](
       6, 5, 4,
@@ -67,7 +67,7 @@ class PreSortOperatorTest extends CypherFunSuite {
       intValue(3), intValue(2), intValue(1))
     val data = new Morsel(longs, refs, longs.length)
 
-    sortOperator.operate(new Iteration(None), data, null, null)
+    sortOperator.operate(Iteration(None), MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, null)
 
     data.longs should equal(Array[Long](
       1, 2, 3,
@@ -82,11 +82,12 @@ class PreSortOperatorTest extends CypherFunSuite {
   }
 
   test("sort a morsel with a two long columns by one") {
+    val numberOfLongs = 2
+    val numberOfReferences = 0
     val slot1 = LongSlot(0, nullable = false, CTNode)
     val slot2 = LongSlot(1, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot1))
-    val info = new SlotConfiguration(mutable.Map("apa1" -> slot1, "apa2" -> slot2), 2, 0)
-    val sortOperator = new PreSortOperator(columnOrdering, info)
+    val sortOperator = new PreSortOperator(columnOrdering)
 
     val longs = Array[Long](
       9, 0,
@@ -101,7 +102,7 @@ class PreSortOperatorTest extends CypherFunSuite {
     val rows = longs.length / 2 // Since we have two columns per row
     val data = new Morsel(longs, Array[AnyValue](), rows)
 
-    sortOperator.operate(new Iteration(None), data, null, null)
+    sortOperator.operate(Iteration(None), MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, null)
 
     data.longs should equal(Array[Long](
       1, 8,
@@ -117,68 +118,73 @@ class PreSortOperatorTest extends CypherFunSuite {
   }
 
   test("sort a morsel with no valid data") {
+    val numberOfLongs = 1
+    val numberOfReferences = 0
     val slot = LongSlot(0, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot))
-    val info = new SlotConfiguration(mutable.Map("apa" -> slot), 1, 0)
-    val sortOperator = new PreSortOperator(columnOrdering, info)
+    val sortOperator = new PreSortOperator(columnOrdering)
 
     val longs = new Array[Long](10)
     val data = new Morsel(longs, Array[AnyValue](), 0)
 
-    sortOperator.operate(new Iteration(None), data, null, null)
+    sortOperator.operate(Iteration(None), MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, null)
 
     data.longs should equal(Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
   }
 
   test("sort a morsel with empty array") {
+    val numberOfLongs = 1
+    val numberOfReferences = 0
     val slot = LongSlot(0, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot))
-    val info = new SlotConfiguration(mutable.Map("apa" -> slot), 1, 0)
-    val sortOperator = new PreSortOperator(columnOrdering, info)
+    val sortOperator = new PreSortOperator(columnOrdering)
 
     val data = new Morsel(Array.empty, Array[AnyValue](), 0)
 
-    sortOperator.operate(new Iteration(None), data, null, null)
+    sortOperator.operate(Iteration(None), MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, null)
 
     data.longs shouldBe empty
   }
 
   test("top on a morsel with a single long column") {
+    val numberOfLongs = 1
+    val numberOfReferences = 0
     val slot = LongSlot(0, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot))
-    val info = new SlotConfiguration(mutable.Map("apa" -> slot), 1, 0)
-    val topOperator = new PreSortOperator(columnOrdering, info, Some(Literal(3)))
+    val topOperator = new PreSortOperator(columnOrdering, Some(Literal(3)))
 
     val longs = Array[Long](9, 8, 7, 6, 5, 4, 3, 2, 1)
     val data = new Morsel(longs, Array[AnyValue](), longs.length)
 
-    topOperator.operate(new Iteration(None), data, null, QueryState(VirtualValues.EMPTY_MAP, null))
+    topOperator.operate(Iteration(None), MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
 
     data.longs.take(3) should equal(Array[Long](1, 2, 3))
     data.validRows shouldBe 3
   }
 
   test("top with n > morselSize on a morsel with a single long column") {
+    val numberOfLongs = 1
+    val numberOfReferences = 0
     val slot = LongSlot(0, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot))
-    val info = new SlotConfiguration(mutable.Map("apa" -> slot), 1, 0)
-    val topOperator = new PreSortOperator(columnOrdering, info, Some(Literal(20)))
+    val topOperator = new PreSortOperator(columnOrdering, Some(Literal(20)))
 
     val longs = Array[Long](9, 8, 7, 6, 5, 4, 3, 2, 1)
     val data = new Morsel(longs, Array[AnyValue](), longs.length)
 
-    topOperator.operate(new Iteration(None), data, null, QueryState(VirtualValues.EMPTY_MAP, null))
+    topOperator.operate(Iteration(None), MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
 
     data.longs should equal(Array[Long](1, 2, 3, 4, 5, 6, 7, 8, 9))
     data.validRows shouldBe longs.length
   }
 
   test("top on a morsel with a one long slot and one ref slot, order by ref") {
+    val numberOfLongs = 1
+    val numberOfReferences = 1
     val slot1 = LongSlot(0, nullable = false, CTNode)
     val slot2 = RefSlot(0, nullable = false, CTNumber)
     val columnOrdering = Seq(Ascending(slot2))
-    val info = new SlotConfiguration(mutable.Map("apa1" -> slot1, "apa2" -> slot2), 1, 1)
-    val topOperator = new PreSortOperator(columnOrdering, info, Some(Literal(3)))
+    val topOperator = new PreSortOperator(columnOrdering, Some(Literal(3)))
 
     val longs = Array[Long](
       6, 5, 4,
@@ -190,7 +196,7 @@ class PreSortOperatorTest extends CypherFunSuite {
       intValue(3), intValue(2), intValue(1))
     val data = new Morsel(longs, refs, longs.length)
 
-    topOperator.operate(new Iteration(None), data, null, QueryState(VirtualValues.EMPTY_MAP, null))
+    topOperator.operate(Iteration(None), MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
 
     data.longs.take(3) should equal(Array[Long](
       1, 2, 3))
@@ -201,29 +207,31 @@ class PreSortOperatorTest extends CypherFunSuite {
   }
 
   test("top on a morsel with no valid data") {
+    val numberOfLongs = 1
+    val numberOfReferences = 0
     val slot = LongSlot(0, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot))
-    val info = new SlotConfiguration(mutable.Map("apa" -> slot), 1, 0)
-    val topOperator = new PreSortOperator(columnOrdering, info, Some(Literal(3)))
+    val topOperator = new PreSortOperator(columnOrdering, Some(Literal(3)))
 
     val longs = new Array[Long](10)
     val data = new Morsel(longs, Array[AnyValue](), 0)
 
-    topOperator.operate(new Iteration(None), data, null, QueryState(VirtualValues.EMPTY_MAP, null))
+    topOperator.operate(Iteration(None), MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
 
     data.longs should equal(Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
     data.validRows shouldBe 0
   }
 
   test("top on a morsel with empty array") {
+    val numberOfLongs = 1
+    val numberOfReferences = 0
     val slot = LongSlot(0, nullable = false, CTNode)
     val columnOrdering = Seq(Ascending(slot))
-    val info = new SlotConfiguration(mutable.Map("apa" -> slot), 1, 0)
-    val topOperator = new PreSortOperator(columnOrdering, info, Some(Literal(3)))
+    val topOperator = new PreSortOperator(columnOrdering, Some(Literal(3)))
 
     val data = new Morsel(Array.empty, Array[AnyValue](), 0)
 
-    topOperator.operate(new Iteration(None), data, null, QueryState(VirtualValues.EMPTY_MAP, null))
+    topOperator.operate(Iteration(None), MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
 
     data.longs shouldBe empty
     data.validRows shouldBe 0

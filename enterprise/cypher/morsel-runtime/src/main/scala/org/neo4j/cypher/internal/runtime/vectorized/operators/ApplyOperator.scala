@@ -22,15 +22,26 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.runtime.vectorized.expressions.AggregationExpressionOperator
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.vectorized._
 
-/**
-  *
-  * @param mapperOutputSlot
-  * Slot from AggregationMapper's pipeline where aggregation result is written to by the Mapper and read from by the Reducer.
-  * @param reducerOutputSlot
-  * Slot from AggregationReducers's pipeline where grouping is written to by the Reducer.
-  * @param aggregation
-  * Aggregation expression to be operated on by the Mapper.
-  */
-case class AggregationOffsets(mapperOutputSlot: Int, reducerOutputSlot: Int, aggregation: AggregationExpressionOperator)
+class ApplyOperator(lhs: Pipeline, rhs: Pipeline) extends MiddleOperator {
+
+  override def operate(iterationState: Iteration,
+                       outputRow: MorselExecutionContext,
+                       context: QueryContext,
+                       state: QueryState): Unit = {
+
+//    var readingPos = 0
+//
+////    while (readingPos < data.validRows) {
+////      val currentRow = new MorselExecutionContext(data, longsPerRow, refsPerRow, currentRow = readingPos)
+//////      val rhsQueryState = state.copy(initialContext = Some(currentRow))
+//////      val startMessage = StartLeafLoop(iteration)
+//////      rhs.operate()
+////
+////      readingPos += 1
+////    }
+  }
+
+}

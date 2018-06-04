@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.vectorized._
 
-class ProjectOperator(val projectionOps: Map[Slot, Expression], slots: SlotConfiguration) extends MiddleOperator {
+class ProjectOperator(val projectionOps: Map[Slot, Expression]) extends MiddleOperator {
 
   private val project = projectionOps.map {
     case (LongSlot(_, _, _),_) =>
@@ -42,17 +42,15 @@ class ProjectOperator(val projectionOps: Map[Slot, Expression], slots: SlotConfi
         ctx.setRefAt(offset, result)
   }.toArray
 
-  override def operate(iterationState: Iteration, data: Morsel, context: QueryContext, state: QueryState): Unit = {
-    var currentRow = 0
-    val longCount = slots.numberOfLongs
-    val refCount = slots.numberOfReferences
-    val executionContext = new MorselExecutionContext(data, longCount, refCount, currentRow = currentRow)
+  override def operate(iterationState: Iteration,
+                       currentRow: MorselExecutionContext,
+                       context: QueryContext,
+                       state: QueryState): Unit = {
     val queryState = new OldQueryState(context, resources = null, params = state.params)
 
-    while(currentRow < data.validRows) {
-      executionContext.currentRow = currentRow
-      project.foreach(p => p(executionContext, queryState))
-      currentRow += 1
+    while(currentRow.hasMoreRows) {
+      project.foreach(p => p(currentRow, queryState))
+      currentRow.moveToNextRow()
     }
   }
 }

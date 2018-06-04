@@ -31,17 +31,21 @@ import org.neo4j.values.AnyValue
 
 
 class ProduceResultOperator(slots: SlotConfiguration, fieldNames: Array[String]) extends MiddleOperator {
-  override def operate(iterationState: Iteration, data: Morsel, context: QueryContext, state: QueryState): Unit = {
-    val resultRow = new MorselResultRow(data, 0, slots, fieldNames, context)
-    (0 until data.validRows) foreach { position =>
-      resultRow.currentPos = position
+
+  override def operate(iterationState: Iteration,
+                       currentRow: MorselExecutionContext,
+                       context: QueryContext,
+                       state: QueryState): Unit = {
+    val resultRow = new MorselResultRow(currentRow, slots, fieldNames, context)
+
+    while(currentRow.hasMoreRows) {
       state.visitor.visit(resultRow)
+      currentRow.moveToNextRow()
     }
   }
 }
 
-class MorselResultRow(var morsel: Morsel,
-                      var currentPos: Int,
+class MorselResultRow(currentRow: MorselExecutionContext,
                       slots: SlotConfiguration,
                       fieldNames: Array[String],
                       queryContext: QueryContext) extends QueryResult.Record {
@@ -50,11 +54,13 @@ class MorselResultRow(var morsel: Morsel,
   private val updateArray: Array[() => AnyValue] = fieldNames.map(key => slots.get(key) match {
     case None => throw new IllegalStateException()
     case Some(RefSlot(offset, _, _)) => () =>
-       morsel.refs(currentPos * slots.numberOfReferences + offset)
+      currentRow.getRefAt(offset)
     case Some(LongSlot(offset, _, symbols.CTNode)) => () =>
-      queryContext.nodeOps.getById(morsel.longs(currentPos * slots.numberOfLongs + offset))
+      val long = currentRow.getLongAt(offset)
+      queryContext.nodeOps.getById(long)
     case Some(LongSlot(offset, _, symbols.CTRelationship)) => () =>
-      queryContext.relationshipOps.getById(morsel.longs(currentPos * slots.numberOfLongs + offset))
+      val long = currentRow.getLongAt(offset)
+      queryContext.relationshipOps.getById(long)
     case _ => throw new IllegalStateException
   })
 
