@@ -29,11 +29,9 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
-import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -318,21 +316,9 @@ public class ConstraintIndexCreatorTest
         verifyNoMoreInteractions( schemaRead );
     }
 
-    private class StubKernel implements Kernel, Session
+    private class StubKernel implements Kernel
     {
         private final List<KernelTransactionImplementation> transactions = new ArrayList<>();
-
-        @Override
-        public Transaction beginTransaction() throws TransactionFailureException
-        {
-            return remember( createTransaction() );
-        }
-
-        @Override
-        public Transaction beginTransaction( Transaction.Type type ) throws TransactionFailureException
-        {
-            return remember( createTransaction() );
-        }
 
         private KernelTransaction remember( KernelTransactionImplementation kernelTransaction )
         {
@@ -341,14 +327,9 @@ public class ConstraintIndexCreatorTest
         }
 
         @Override
-        public Session beginSession( LoginContext loginContext )
+        public Transaction beginTransaction( Transaction.Type type, LoginContext loginContext )
         {
-            return this;
-        }
-
-        @Override
-        public void close()
-        {
+            return remember( createTransaction() );
         }
     }
 

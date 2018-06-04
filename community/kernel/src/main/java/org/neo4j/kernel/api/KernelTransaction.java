@@ -22,12 +22,14 @@ package org.neo4j.kernel.api;
 import java.util.Optional;
 
 import org.neo4j.graphdb.NotInTransactionException;
+import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.ClockContext;
@@ -89,7 +91,7 @@ public interface KernelTransaction extends Transaction, AssertOpen
 
     /**
      * @return start time of this transaction, i.e. basically {@link System#currentTimeMillis()} when user called
-     * {@link org.neo4j.internal.kernel.api.Session#beginTransaction(Type)}.
+     * {@link Kernel#beginTransaction(Type, LoginContext)}.
      */
     long startTime();
 

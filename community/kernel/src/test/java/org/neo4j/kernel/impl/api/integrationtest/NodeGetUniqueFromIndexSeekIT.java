@@ -36,6 +36,7 @@ import org.neo4j.test.DoubleLatch;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 
@@ -87,7 +88,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         commit();
 
         // then
-        assertTrue( "Created node was not found", nodeId == foundId );
+        assertEquals( "Created node was not found", nodeId, foundId );
     }
 
     @Test
@@ -124,7 +125,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         commit();
 
         // then
-        assertTrue( "Created node was not found", nodeId == foundId );
+        assertEquals( "Created node was not found", nodeId, foundId );
     }
 
     @Test
@@ -180,7 +181,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         Runnable runnableForThread2 = () ->
         {
             latch.waitForAllToStart();
-            try ( Transaction tx = session.beginTransaction() )
+            try ( Transaction tx = kernel.beginTransaction( Transaction.Type.implicit, LoginContext.AUTH_DISABLED ) )
             {
                 tx.dataRead().lockingNodeUniqueIndexSeek( index, exact( propertyId1, value ) );
                 tx.success();
@@ -198,14 +199,8 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         thread2.start();
         latch.startAndWaitForAllToStart();
 
-        //noinspection UnusedLabel
-        spinUntilBlocking:
-        for (; ; )
+        while ( (thread2.getState() != Thread.State.TIMED_WAITING) && (thread2.getState() != Thread.State.WAITING) )
         {
-            if ( thread2.getState() == Thread.State.TIMED_WAITING || thread2.getState() == Thread.State.WAITING )
-            {
-                break;
-            }
             Thread.yield();
         }
 

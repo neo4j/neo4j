@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -31,7 +30,6 @@ import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.newapi.NewKernel;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -60,8 +58,7 @@ public class KernelImpl extends LifecycleAdapter implements InwardKernel
     private final TransactionMonitor transactionMonitor;
     private final Procedures procedures;
     private final Config config;
-
-    private final NewKernel newKernel;
+    private volatile boolean isRunning;
 
     public KernelImpl( KernelTransactions transactionFactory, TransactionHooks hooks, DatabaseHealth health, TransactionMonitor transactionMonitor,
             Procedures procedures, Config config )
@@ -72,18 +69,20 @@ public class KernelImpl extends LifecycleAdapter implements InwardKernel
         this.transactionMonitor = transactionMonitor;
         this.procedures = procedures;
         this.config = config;
-        this.newKernel = new NewKernel( this );
     }
 
     @Override
-    public KernelTransaction newTransaction( Transaction.Type type, LoginContext loginContext )
-            throws TransactionFailureException
+    public KernelTransaction beginTransaction( Transaction.Type type, LoginContext loginContext ) throws TransactionFailureException
     {
-        return newTransaction( type, loginContext, config.get( transaction_timeout ).toMillis() );
+        if ( !isRunning )
+        {
+            throw new IllegalStateException( "Kernel is not running, so it is not possible to use it" );
+        }
+        return beginTransaction( type, loginContext, config.get( transaction_timeout ).toMillis() );
     }
 
     @Override
-    public KernelTransaction newTransaction( Transaction.Type type, LoginContext loginContext, long timeout ) throws
+    public KernelTransaction beginTransaction( Transaction.Type type, LoginContext loginContext, long timeout ) throws
             TransactionFailureException
     {
         health.assertHealthy( TransactionFailureException.class );
@@ -119,19 +118,16 @@ public class KernelImpl extends LifecycleAdapter implements InwardKernel
     @Override
     public void start()
     {
-        newKernel.start();
+        isRunning = true;
     }
 
     @Override
     public void stop()
     {
-        newKernel.stop();
+        if ( !isRunning )
+        {
+            throw new IllegalStateException( "kernel is not running, so it is not possible to stop it" );
+        }
+        isRunning = false;
     }
-
-    @Override
-    public Session beginSession( LoginContext loginContext )
-    {
-        return newKernel.beginSession( loginContext );
-    }
-
 }

@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.eclipse.collections.api.iterator.IntIterator;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -38,14 +35,12 @@ import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
-import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.KernelImpl;
@@ -58,6 +53,7 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
+import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allIterator;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingIterator;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingIterator;
@@ -75,7 +71,6 @@ public abstract class KernelIntegrationTest
     protected GraphDatabaseAPI db;
     ThreadToStatementContextBridge statementContextSupplier;
     protected Kernel kernel;
-    protected Session session;
     protected IndexingService indexingService;
 
     private Transaction transaction;
@@ -83,43 +78,37 @@ public abstract class KernelIntegrationTest
 
     protected TokenWrite tokenWriteInNewTransaction() throws KernelException
     {
-        session = kernel.beginSession( AnonymousContext.writeToken() );
-        transaction = session.beginTransaction( KernelTransaction.Type.implicit );
+        transaction = kernel.beginTransaction( implicit, AnonymousContext.writeToken() );
         return transaction.tokenWrite();
     }
 
     protected Write dataWriteInNewTransaction() throws KernelException
     {
-        session = kernel.beginSession( AnonymousContext.write() );
-        transaction = session.beginTransaction( KernelTransaction.Type.implicit );
+        transaction = kernel.beginTransaction( implicit, AnonymousContext.write() );
         return transaction.dataWrite();
     }
 
     protected SchemaWrite schemaWriteInNewTransaction() throws KernelException
     {
-        session = kernel.beginSession( AUTH_DISABLED );
-        transaction = session.beginTransaction( KernelTransaction.Type.implicit );
+        transaction = kernel.beginTransaction( implicit, AUTH_DISABLED );
         return transaction.schemaWrite();
     }
 
     protected Procedures procs() throws TransactionFailureException
     {
-        session = kernel.beginSession( AnonymousContext.read() );
-        transaction = session.beginTransaction( KernelTransaction.Type.implicit );
+        transaction = kernel.beginTransaction( implicit, AnonymousContext.read() );
         return transaction.procedures();
     }
 
     protected Transaction newTransaction() throws TransactionFailureException
     {
-        session = kernel.beginSession( AnonymousContext.read() );
-        transaction = session.beginTransaction( KernelTransaction.Type.implicit );
+        transaction = kernel.beginTransaction( implicit, AnonymousContext.read() );
         return transaction;
     }
 
     protected Transaction newTransaction( LoginContext loginContext ) throws TransactionFailureException
     {
-        session = kernel.beginSession( loginContext );
-        transaction = session.beginTransaction( KernelTransaction.Type.implicit );
+        transaction = kernel.beginTransaction( implicit, loginContext );
         return transaction;
     }
 
@@ -211,84 +200,6 @@ public abstract class KernelIntegrationTest
     {
         stopDb();
         startDb();
-    }
-
-    boolean nodeHasLabel( Transaction transaction, long node, int label )
-    {
-        try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor() )
-        {
-            transaction.dataRead().singleNode( node, cursor );
-            return cursor.next() && cursor.hasLabel( label );
-        }
-    }
-
-    boolean nodeHasProperty( Transaction transaction, long node, int property )
-    {
-        try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor();
-              PropertyCursor properties = transaction.cursors().allocatePropertyCursor() )
-        {
-            transaction.dataRead().singleNode( node, cursor );
-            if ( !cursor.next() )
-            {
-                return false;
-            }
-            else
-            {
-                cursor.properties( properties );
-                while ( properties.next() )
-                {
-                    if ( properties.propertyKey() == property )
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-        }
-    }
-
-    Value nodeGetProperty( Transaction transaction, long node, int property )
-    {
-        try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor();
-              PropertyCursor properties = transaction.cursors().allocatePropertyCursor() )
-        {
-            transaction.dataRead().singleNode( node, cursor );
-            if ( !cursor.next() )
-            {
-                return NO_VALUE;
-            }
-            else
-            {
-                cursor.properties( properties );
-                while ( properties.next() )
-                {
-                    if ( properties.propertyKey() == property )
-                    {
-                        return properties.propertyValue();
-                    }
-                }
-                return NO_VALUE;
-            }
-        }
-    }
-
-    IntIterator nodeGetPropertyKeys( Transaction transaction, long node )
-    {
-        try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor();
-              PropertyCursor properties = transaction.cursors().allocatePropertyCursor() )
-        {
-            MutableIntSet props = new IntHashSet();
-            transaction.dataRead().singleNode( node, cursor );
-            if ( cursor.next() )
-            {
-                cursor.properties( properties );
-                while ( properties.next() )
-                {
-                    props.add( properties.propertyKey() );
-                }
-            }
-            return props.intIterator();
-        }
     }
 
     Value relationshipGetProperty( Transaction transaction, long relationship, int property )
