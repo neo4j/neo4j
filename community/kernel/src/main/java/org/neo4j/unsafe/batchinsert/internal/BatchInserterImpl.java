@@ -300,7 +300,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         indexStore = life.add( new IndexConfigStore( this.storeDir, fileSystem ) );
         schemaCache = new SchemaCache( new StandardConstraintSemantics(), schemaStore, indexProviderMap );
 
-        labelScanStore = new NativeLabelScanStore( pageCache, storeDir, fileSystem, FullStoreChangeStream.EMPTY, false, new Monitors(),
+        labelScanStore = new NativeLabelScanStore( pageCache, storeDir, fileSystem, FullStoreChangeStream.EMPTY, false, monitors,
                 RecoveryCleanupWorkCollector.IMMEDIATE );
         life.add( labelScanStore );
         actions = new BatchSchemaActions();

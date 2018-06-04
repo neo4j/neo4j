@@ -19,46 +19,49 @@
  */
 package org.neo4j.kernel.monitoring;
 
+import org.apache.commons.lang3.ClassUtils;
+import org.eclipse.collections.api.bag.MutableBag;
+import org.eclipse.collections.impl.bag.mutable.MultiReaderHashBag;
+
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Predicate;
+import java.util.stream.Stream;
 
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.neo4j.helpers.collection.Iterables.append;
-import static org.neo4j.helpers.collection.Iterables.asArray;
+import static org.apache.commons.lang3.ArrayUtils.isEmpty;
 
 /**
  * This can be used to create monitor instances using a Dynamic Proxy, which when invoked can delegate to any number of
- * listeners. Listeners typically also implement the monitor interface, but it's possible to use a reflective style
- * to either do generic listeners, or avoid the performance penalty of Method.invoke().
+ * listeners. Listeners also implement the monitor interface.
  *
  * The creation of monitors and registration of listeners may happen in any order. Listeners can be registered before
  * creating the actual monitor, and vice versa.
  *
- * Typically only the top level component that creates Monitors should have a reference to it. When creating subcomponents
- * that uses monitors they should get instances of the monitor interface in the constructor, or if they need to create them
- * on demand then pass in a {@link org.neo4j.function.Factory} for that monitor instead. This allows tests to not have to use
- * Monitors, and instead can pass in mocks or similar.
+ * Components that actually implement listening functionality must be registered using {{@link #addMonitorListener(Object, String...)}.
  *
- * The other type of component that would have direct references to the Monitors instance are those that actually implement
- * listening functionality, and must call addMonitorListener.
- *
- * This class, and the proxy objects it produces, are thread-safe.
+ * This class is thread-safe.
  */
 public class Monitors
 {
+    // Concurrency: Mutation of these data structures is always guarded by the monitor lock on this Monitors instance,
+    // while look-ups and reads are performed concurrently. The methodMonitorListeners lists (the map values) are
+    // read concurrently by the proxies, while changing the listener set always produce new lists that atomically
+    // replace the ones already in the methodMonitorListeners map.
+
+    /** Monitor interface method -> Listeners */
+    private final Map<Method,Set<MonitorListenerInvocationHandler>> methodMonitorListeners = new ConcurrentHashMap<>();
+    private final MutableBag<Class<?>> monitoredInterfaces = MultiReaderHashBag.newBag();
     private final Log log;
 
     public Monitors()
@@ -71,155 +74,78 @@ public class Monitors
         this.log = logProvider.getLog( Monitors.class );
     }
 
-    private static final AtomicBoolean FALSE = new AtomicBoolean( false );
-
-    // Concurrency: Mutation of these data structures is always guarded by the monitor lock on this Monitors instance,
-    // while look-ups and reads are performed concurrently. The methodMonitorListeners lists (the map values) are
-    // read concurrently by the proxies, while changing the listener set always produce new lists that atomically
-    // replace the ones already in the methodMonitorListeners map.
-
-    /** Monitor interface method -> Listeners */
-    private final Map<Method, List<MonitorListenerInvocationHandler>> methodMonitorListeners = new ConcurrentHashMap<>();
-
-    /**
-     * Monitor interface -> Has Listeners?
-     * Used to determine if recalculation of listeners is needed
-     */
-    private final Map<Class<?>,AtomicBoolean> monitoredInterfaces = new ConcurrentHashMap<>();
-
-    /**
-     * Listener predicate -> Listener
-     * Used to add listeners to monitors that are added after the listener
-     */
-    private final Map<Predicate<Method>, MonitorListenerInvocationHandler> monitorListeners = new ConcurrentHashMap<>();
-
-    public synchronized <T> T newMonitor( Class<T> monitorClass, Class<?> owningClass, String... tags )
+    public <T> T newMonitor( Class<T> monitorClass, Class<?> owningClass, String... tags )
     {
-        Iterable<String> tagIer = append( owningClass.getName(), Iterables.iterable( tags ) );
-        String[] tagArray = asArray( String.class, tagIer );
-        return newMonitor( monitorClass, tagArray );
+        String[] monitorTags = ArrayUtil.concat( tags, owningClass.getName() );
+        return newMonitor( monitorClass, monitorTags );
     }
 
-    public synchronized <T> T newMonitor( Class<T> monitorClass, String... tags )
+    public <T> T newMonitor( Class<T> monitorClass, String... tags )
     {
-        if ( !monitoredInterfaces.containsKey( monitorClass ) )
-        {
-            monitoredInterfaces.put( monitorClass, new AtomicBoolean( false ) );
-
-            for ( Method method : monitorClass.getMethods() )
-            {
-                recalculateMethodListeners( method );
-            }
-        }
-
+        requireInterface( monitorClass );
         ClassLoader classLoader = monitorClass.getClassLoader();
         MonitorInvocationHandler monitorInvocationHandler = new MonitorInvocationHandler( tags );
         return monitorClass.cast( Proxy.newProxyInstance( classLoader, new Class<?>[]{monitorClass}, monitorInvocationHandler ) );
     }
 
-    public synchronized void addMonitorListener( final Object monitorListener, String... tags )
+    public void addMonitorListener( Object monitorListener, String... tags )
     {
-        MonitorListenerInvocationHandler monitorListenerInvocationHandler =
-                tags.length == 0 ? new UntaggedMonitorListenerInvocationHandler( monitorListener )
-                                 : new TaggedMonitorListenerInvocationHandler( monitorListener, tags );
+        MonitorListenerInvocationHandler monitorListenerInvocationHandler = createInvocationHandler( monitorListener, tags );
 
-        for ( Class<?> monitorInterface : getInterfacesOf( monitorListener.getClass() ) )
+        List<Class<?>> listenerInterfaces = getAllInterfaces( monitorListener );
+        methodsStream( listenerInterfaces ).forEach( method ->
         {
-            for ( final Method method : monitorInterface.getMethods() )
-            {
-                monitorListeners.put(
-                        Predicate.isEqual( method ),
-                        monitorListenerInvocationHandler );
-
-                recalculateMethodListeners( method );
-            }
-        }
+            Set<MonitorListenerInvocationHandler> methodHandlers =
+                    methodMonitorListeners.computeIfAbsent( method, f -> Collections.newSetFromMap( new ConcurrentHashMap<>() ) );
+            methodHandlers.add( monitorListenerInvocationHandler );
+        } );
+        monitoredInterfaces.addAll( listenerInterfaces );
     }
 
-    public synchronized void removeMonitorListener( Object monitorListener )
+    public void removeMonitorListener( Object monitorListener )
     {
-        Iterator<Map.Entry<Predicate<Method>, MonitorListenerInvocationHandler>> iter =
-                monitorListeners.entrySet().iterator();
-
-        while ( iter.hasNext() )
+        List<Class<?>> listenerInterfaces = getAllInterfaces( monitorListener );
+        methodsStream( listenerInterfaces ).forEach( key -> methodMonitorListeners.computeIfPresent( key, ( method1, handlers ) ->
         {
-            Map.Entry<Predicate<Method>, MonitorListenerInvocationHandler> handlerEntry = iter.next();
-            if ( handlerEntry.getValue() instanceof UntaggedMonitorListenerInvocationHandler )
-            {
-                UntaggedMonitorListenerInvocationHandler handler =
-                        (UntaggedMonitorListenerInvocationHandler) handlerEntry.getValue();
-
-                if ( handler.getMonitorListener() == monitorListener )
-                {
-                    iter.remove();
-                }
-            }
-        }
-
-        recalculateAllMethodListeners();
+            handlers.removeIf( handler -> monitorListener.equals( handler.getMonitorListener() ) );
+            return handlers.isEmpty() ? null : handlers;
+        } ) );
+        listenerInterfaces.forEach( monitoredInterfaces::remove );
     }
 
-    /**
-     * While the intention is that the monitoring infrastructure itself should not
-     * be a bottleneck (if it is, we should optimize it), components that use the
-     * monitors may incur overhead in calculating whatever data they expose through
-     * their monitors. If no-one is listening, this overhead is wasteful.
-     *
-     * This is a fast (single hash-map lookup) way to find out if there are
-     * currently any listeners to a given monitor interface.
-     */
     public boolean hasListeners( Class<?> monitorClass )
     {
-        return monitoredInterfaces.getOrDefault( monitorClass, FALSE ).get();
+        return monitoredInterfaces.contains( monitorClass );
     }
 
-    private void recalculateMethodListeners( Method method )
+    private static List<Class<?>> getAllInterfaces( Object monitorListener )
     {
-        Class<?> monitorClass = method.getDeclaringClass();
-        List<MonitorListenerInvocationHandler> listeners = new ArrayList<>();
-        for ( Map.Entry<Predicate<Method>, MonitorListenerInvocationHandler> handlerEntry : monitorListeners.entrySet() )
-        {
-            if ( handlerEntry.getKey().test( method ) )
-            {
-                listeners.add( handlerEntry.getValue() );
-                markMonitorHasListener( monitorClass );
-            }
-        }
-        methodMonitorListeners.put( method, listeners );
+        return ClassUtils.getAllInterfaces( monitorListener.getClass() );
     }
 
-    private void recalculateAllMethodListeners()
+    private static Stream<Method> methodsStream( List<Class<?>> interfaces )
     {
-        // Mark all monitored interfaces as having no listeners
-        monitoredInterfaces.values().forEach( b -> b.set( false ) );
-        for ( Method method : methodMonitorListeners.keySet() )
-        {
-            recalculateMethodListeners( method );
-        }
+        return interfaces.stream().map( Class::getMethods ).flatMap( Arrays::stream );
     }
 
-    private Iterable<Class<?>> getInterfacesOf( Class<?> aClass )
+    private static MonitorListenerInvocationHandler createInvocationHandler( Object monitorListener, String[] tags )
     {
-        List<Class<?>> interfaces = new ArrayList<>();
-        while ( aClass != null )
-        {
-            Collections.addAll( interfaces, aClass.getInterfaces() );
-            aClass = aClass.getSuperclass();
-        }
-        return interfaces;
+        return isEmpty( tags ) ? new UntaggedMonitorListenerInvocationHandler( monitorListener )
+                               : new TaggedMonitorListenerInvocationHandler( monitorListener, tags );
     }
 
-    private void markMonitorHasListener( Class<?> monitorClass )
+    private static <T> void requireInterface( Class<T> monitorClass )
     {
-        AtomicBoolean isMonitored = monitoredInterfaces.get( monitorClass );
-        if ( isMonitored != null )
+        if ( !monitorClass.isInterface() )
         {
-            isMonitored.set( true );
+            throw new IllegalArgumentException( "Interfaces should be provided." );
         }
     }
-
     private interface MonitorListenerInvocationHandler
     {
+
+        Object getMonitorListener();
+
         void invoke( Object proxy, Method method, Object[] args, String... tags ) throws Throwable;
     }
 
@@ -232,7 +158,8 @@ public class Monitors
             this.monitorListener = monitorListener;
         }
 
-        Object getMonitorListener()
+        @Override
+        public Object getMonitorListener()
         {
             return monitorListener;
         }
@@ -257,20 +184,10 @@ public class Monitors
         @Override
         public void invoke( Object proxy, Method method, Object[] args, String... tags ) throws Throwable
         {
-            required:
-            for ( String requiredTag : this.tags )
+            if ( ArrayUtil.containsAll( this.tags, tags ) )
             {
-                for ( String tag : tags )
-                {
-                    if ( requiredTag.equals( tag ) )
-                    {
-                        continue required;
-                    }
-                }
-                return; // Not all required tags present
+                super.invoke( proxy, method, args, tags );
             }
-
-            super.invoke( proxy, method, args, tags );
         }
     }
 
@@ -292,8 +209,7 @@ public class Monitors
 
         private void invokeMonitorListeners( Object proxy, Method method, Object[] args )
         {
-            List<MonitorListenerInvocationHandler> handlers = methodMonitorListeners.get( method );
-
+            Set<MonitorListenerInvocationHandler> handlers = methodMonitorListeners.get( method );
             if ( handlers != null )
             {
                 for ( MonitorListenerInvocationHandler monitorListenerInvocationHandler : handlers )
