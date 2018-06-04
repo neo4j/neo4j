@@ -19,149 +19,80 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
+import java.util.function.LongPredicate;
+
+import org.neo4j.function.Predicates;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
-class DefaultRelationshipScanCursor extends RelationshipCursor implements RelationshipScanCursor
+import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
+
+class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRelationshipScanCursor> implements RelationshipScanCursor
 {
     private int type;
-    private long next;
-    private long highMark;
-    private long nextStoreReference;
-    private PageCursor pageCursor;
-    private LongSet addedRelationships;
+    private long single;
+    private LongIterator addedRelationships;
 
-    DefaultRelationshipScanCursor( DefaultCursors pool )
+    DefaultRelationshipScanCursor( DefaultCursors pool, StorageRelationshipScanCursor storeCursor )
     {
-        super( pool );
+        super( pool, storeCursor );
     }
 
     void scan( int type, Read read )
     {
-        if ( getId() != NO_ID )
-        {
-            reset();
-        }
-        if ( pageCursor == null )
-        {
-            pageCursor = read.relationshipPage( 0 );
-        }
-        this.next = 0;
+        storeCursor.scan( type );
         this.type = type;
-        this.highMark = read.relationshipHighMark();
-        this.nextStoreReference = NO_ID;
+        this.single = NO_ID;
         init( read );
-        this.addedRelationships = LongSets.immutable.empty();
+        this.addedRelationships = LongSets.immutable.empty().longIterator();
     }
 
     void single( long reference, Read read )
     {
-        if ( getId() != NO_ID )
-        {
-            reset();
-        }
-        if ( pageCursor == null )
-        {
-            pageCursor = read.relationshipPage( reference );
-        }
-        this.next = reference;
-        this.type = -1;
-        this.highMark = NO_ID;
-        this.nextStoreReference = NO_ID;
+        storeCursor.single( reference );
+        type = -1;
+        this.single = reference;
         init( read );
-        this.addedRelationships = LongSets.immutable.empty();
+        this.addedRelationships = LongSets.immutable.empty().longIterator();
     }
 
     @Override
     public boolean next()
     {
-        if ( next == NO_ID )
-        {
-            reset();
-            return false;
-        }
-
         // Check tx state
         boolean hasChanges = hasChanges();
-        TransactionState txs = hasChanges ? read.txState() : null;
+        LongPredicate isDeleted = hasChanges ? read.txState()::relationshipIsDeletedInThisTx : Predicates.alwaysFalseLong;
 
-        do
+        if ( hasChanges && addedRelationships.hasNext() )
         {
-            if ( hasChanges && containsRelationship( txs ) )
-            {
-                loadFromTxState( next++ );
-                setInUse( true );
-            }
-            else if ( hasChanges && txs.relationshipIsDeletedInThisTx( next ) )
-            {
-                next++;
-                setInUse( false );
-            }
-            else if ( nextStoreReference == next )
-            {
-                read.relationshipAdvance( this, pageCursor );
-                next++;
-                nextStoreReference++;
-            }
-            else
-            {
-                read.relationship( this, next++, pageCursor );
-                nextStoreReference = next;
-            }
+            read.txState().relationshipVisit( addedRelationships.next(), storeCursor );
+            return true;
+        }
 
-            if ( next > highMark )
+        while ( storeCursor.next() )
+        {
+            if ( !isDeleted.test( storeCursor.relationshipReference() ) )
             {
-                if ( isSingle() )
-                {
-                    next = NO_ID;
-                    return isWantedTypeAndInUse();
-                }
-                else
-                {
-                    highMark = read.relationshipHighMark();
-                    if ( next > highMark )
-                    {
-                        next = NO_ID;
-                        return isWantedTypeAndInUse();
-                    }
-                }
+                return true;
             }
         }
-        while ( !isWantedTypeAndInUse() );
-
-        return true;
-    }
-
-    private boolean isWantedTypeAndInUse()
-    {
-        return (type == -1 || type() == type) && inUse();
-    }
-
-    private boolean containsRelationship( TransactionState txs )
-    {
-        return isSingle() ? txs.relationshipIsAddedInThisTx( next ) : addedRelationships.contains( next );
+        return false;
     }
 
     @Override
     public void close()
     {
-        super.close();
         if ( !isClosed() )
         {
             read = null;
-            reset();
+            storeCursor.close();
 
             pool.accept( this );
         }
-    }
-
-    private void reset()
-    {
-        setId( next = NO_ID );
     }
 
     @Override
@@ -179,31 +110,34 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
         }
         else
         {
-            return "RelationshipScanCursor[id=" + getId() + ", open state with: highMark=" + highMark + ", next=" + next + ", type=" + type +
+            return "RelationshipScanCursor[id=" + storeCursor.relationshipReference() +
+                    ", open state with: single=" + single +
+                    ", type=" + type +
                     ", underlying record=" + super.toString() + " ]";
+        }
+    }
+
+    protected void collectAddedTxStateSnapshot()
+    {
+        if ( isSingle() )
+        {
+            addedRelationships = read.txState().relationshipIsAddedInThisTx( single )
+                                 ? LongHashSet.newSetWith( single ).longIterator()
+                                 : LongSets.immutable.empty().longIterator();
+        }
+        else
+        {
+            addedRelationships = read.txState().addedAndRemovedRelationships().getAdded().longIterator();
         }
     }
 
     private boolean isSingle()
     {
-        return highMark == NO_ID;
-    }
-
-    @Override
-    protected void collectAddedTxStateSnapshot()
-    {
-        if ( !isSingle() )
-        {
-            addedRelationships = read.txState().addedAndRemovedRelationships().getAdded().freeze();
-        }
+        return single != NO_ID;
     }
 
     public void release()
     {
-        if ( pageCursor != null )
-        {
-            pageCursor.close();
-            pageCursor = null;
-        }
+        storeCursor.release();
     }
 }

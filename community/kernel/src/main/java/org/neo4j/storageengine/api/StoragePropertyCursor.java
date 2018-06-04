@@ -19,44 +19,33 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-
-import org.neo4j.kernel.impl.locking.Lock;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 
 /**
- * Represents a single node from a cursor.
+ * Cursor that can read property data.
  */
-public interface NodeItem
+public interface StoragePropertyCursor extends StorageCursor
 {
     /**
-     * @return id of current node
-     * @throws IllegalStateException if no current entity is selected
+     * Initializes this cursor to that reading property data at the given {@code reference}.
+     *
+     * @param reference reference to start reading properties at.
      */
-    long id();
+    void init( long reference );
 
     /**
-     * @return label cursor for current node
-     * @throws IllegalStateException if no current node is selected
+     * @return property key of the property this cursor currently is placed at.
      */
-    MutableLongSet labels();
+    int propertyKey();
 
     /**
-     * @return whether or not this node has been marked as being dense, i.e. exceeding a certain threshold
-     * of number of relationships.
+     * @return value group of the property this cursor currently is placed at.
      */
-    boolean isDense();
+    ValueGroup propertyType();
 
     /**
-     * @param labelId label token id to check.
-     * @return whether or not this node has the given label.
+     * @return value of the property this cursor currently is placed at.
      */
-    boolean hasLabel( long labelId );
-
-    long nextGroupId();
-
-    long nextRelationshipId();
-
-    long nextPropertyId();
-
-    Lock lock();
+    Value propertyValue();
 }

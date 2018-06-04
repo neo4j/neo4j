@@ -17,25 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
-import java.util.ArrayList;
-import java.util.List;
+import org.neo4j.kernel.impl.newapi.References;
 
-import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
+import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
-public class BatchCollector<T> implements BatchSender
+class GroupReferenceEncoding
 {
-    private final List<T> batches = new ArrayList<>();
+    private static final long DIRECT = 0x1000_0000_0000_0000L;
 
-    @Override
-    public synchronized void send( Object batch )
+    /**
+     * Encode a relationship id as a group reference.
+     */
+    static long encodeRelationship( long relationshipId )
     {
-        batches.add( (T) batch );
+        return relationshipId | DIRECT | References.FLAG_MARKER;
     }
 
-    public List<T> getBatches()
+    /**
+     * Check whether a group reference is an encoded relationship id.
+     */
+    static boolean isRelationship( long groupReference )
     {
-        return batches;
+        assert groupReference != NO_ID;
+        return (groupReference & References.FLAG_MASK) == DIRECT;
     }
 }

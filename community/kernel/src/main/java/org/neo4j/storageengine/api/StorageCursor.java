@@ -19,42 +19,27 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.neo4j.kernel.impl.locking.Lock;
-
 /**
- * Represents a single relationship from a cursor.
+ * Base interface for a cursor accessing and reading data as part of {@link StorageReader}.
  */
-public interface RelationshipItem
+public interface StorageCursor extends AutoCloseable
 {
     /**
-     * @return id of current entity
-     * @throws IllegalStateException if no current entity is selected
+     * Positions this cursor and reads the next item that it has been designated to read.
+     * @return {@code true} if the item was read and in use, otherwise {@code false}.
      */
-    long id();
+    boolean next();
 
     /**
-     * @return relationship type for current relationship
+     * Closes the cursor so that calls to {@link #next()} will not return {@code true} anymore.
+     * After this point this cursor can still be used, by initializing it with any of the cursor-specific
+     * initialization method.
      */
-    int type();
+    @Override
+    void close();
 
     /**
-     * @return start node of this relationship
+     * Releases resources allocated by this cursor so that it cannot be initialized or used again after this call.
      */
-    long startNode();
-
-    /**
-     * @return end node of this relationship
-     */
-    long endNode();
-
-    /**
-     *
-     * @param nodeId of the node you are not interested in
-     * @return end node if start node is passed in, start node if end node is passed
-     */
-    long otherNode( long nodeId );
-
-    long nextPropertyId();
-
-    Lock lock();
+    void release();
 }

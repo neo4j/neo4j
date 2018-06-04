@@ -20,6 +20,7 @@
 package org.neo4j.storageengine.api;
 
 import java.util.Collection;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -29,6 +30,7 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 /**
  * A StorageEngine provides the functionality to durably store data, and read it back.
@@ -47,8 +49,7 @@ public interface StorageEngine
 
     /**
      * @return a new {@link CommandCreationContext} meant to be kept for multiple calls to
-     * {@link #createCommands(Collection, ReadableTransactionState, StorageReader, ResourceLocker,
-     * long)}.
+     * {@link #createCommands(Collection, ReadableTransactionState, StorageReader, ResourceLocker, long, Function)}.
      * Must be {@link CommandCreationContext#close() closed} after used, before being discarded.
      */
     CommandCreationContext allocateCommandCreationContext();
@@ -72,6 +73,7 @@ public interface StorageEngine
      * @param lastTransactionIdWhenStarted transaction id which was seen as last committed when this
      * transaction started, i.e. before any changes were made and before any data was read.
      * TODO Transitional (Collection), might be {@link Stream} or whatever.
+     * @param additionalTxStateVisitor any additional tx state visitor decoration.
      *
      * @throws TransactionFailureException if command generation fails or some prerequisite of some command
      * didn't validate, for example if trying to delete a node that still has relationships.
@@ -84,7 +86,8 @@ public interface StorageEngine
             ReadableTransactionState state,
             StorageReader storageReader,
             ResourceLocker locks,
-            long lastTransactionIdWhenStarted )
+            long lastTransactionIdWhenStarted,
+            Function<TxStateVisitor,TxStateVisitor> additionalTxStateVisitor )
             throws TransactionFailureException, CreateConstraintFailureException, ConstraintValidationException;
 
     /**

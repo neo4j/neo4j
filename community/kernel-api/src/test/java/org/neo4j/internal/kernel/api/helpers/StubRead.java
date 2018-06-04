@@ -170,25 +170,31 @@ public class StubRead implements Read
     }
 
     @Override
-    public Scan<RelationshipScanCursor> relationshipTypeScan( int type )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void relationshipGroups( long nodeReference, long reference, RelationshipGroupCursor cursor )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void relationships( long nodeReference, long reference, RelationshipTraversalCursor cursor )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
+    public Scan<RelationshipScanCursor> relationshipTypeScan( int type )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void nodeProperties( long nodeReference, long reference, PropertyCursor cursor )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void relationshipProperties( long relationshipReference, long reference, PropertyCursor cursor )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void relationshipGroups( long nodeReference, long reference, RelationshipGroupCursor cursor )
     {
         throw new UnsupportedOperationException();
     }
@@ -201,12 +207,6 @@ public class StubRead implements Read
 
     @Override
     public boolean relationshipDeletedInTransaction( long relationship )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void relationshipProperties( long relationshipReference, long reference, PropertyCursor cursor )
     {
         throw new UnsupportedOperationException();
     }

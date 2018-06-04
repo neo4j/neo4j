@@ -19,23 +19,34 @@
  */
 package org.neo4j.storageengine.api;
 
-/**
- * Single degree item from a node cursor.
- */
-public interface DegreeItem
+public interface StorageRelationshipGroupCursor extends AutoCloseable
 {
-    /**
-     * @return relationship type token id for this degree.
-     */
+    boolean next();
+
+    void setCurrent( int groupReference, int firstOut, int firstIn, int firstLoop );
+
+    @Override
+    void close();
+
     int type();
 
-    /**
-     * @return number of outgoing relationships for the {@link #type()}. Loops are included.
-     */
-    long outgoing();
+    int outgoingCount();
 
-    /**
-     * @return number of incoming relationships for the {@link #type()}. Loops are included.
-     */
-    long incoming();
+    int incomingCount();
+
+    int loopCount();
+
+    long outgoingReference();
+
+    long incomingReference();
+
+    long loopsReference();
+
+    void release();
+
+    long getOwningNode();
+
+    long groupReference();
+
+    void init( long nodeReference, long reference );
 }

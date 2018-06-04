@@ -19,20 +19,18 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.neo4j.values.storable.Value;
-
 /**
- * Property item returned from property cursors
+ * A {@link StorageCursor} for entities, i.e. which has properties.
  */
-public interface PropertyItem
+public interface StorageEntityCursor extends StorageCursor
 {
     /**
-     * @return the key id of the current property.
+     * @return {@code true} if the entity the cursor is at has any properties, otherwise {@code false}.
      */
-    int propertyKeyId();
+    boolean hasProperties();
 
     /**
-     * @return the value of the current property.
+     * @return a {@code long} reference to start reading properties for the entity this cursor is at.
      */
-    Value value();
+    long propertiesReference();
 }

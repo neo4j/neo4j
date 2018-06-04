@@ -19,17 +19,10 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.eclipse.collections.api.iterator.IntIterator;
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.IntSet;
-
-import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.function.Function;
-import java.util.function.IntPredicate;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
@@ -38,29 +31,12 @@ import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelExcep
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
-import org.neo4j.kernel.impl.locking.Lock;
-import org.neo4j.kernel.impl.store.InvalidRecordException;
-import org.neo4j.kernel.impl.store.RecordCursor;
-import org.neo4j.kernel.impl.store.RecordCursors;
-import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -96,58 +72,6 @@ public interface StorageReader extends AutoCloseable
     void close();
 
     /**
-     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link NodeItem} for selected nodes.
-     * No node is selected when this method returns, a call to {@link Cursor#next()} will have to be made
-     * to place the cursor over the first item and then more calls to move the cursor through the selection.
-     *
-     * @param nodeId id of node to get cursor for.
-     * @return a {@link Cursor} over {@link NodeItem} for the given {@code nodeId}.
-     */
-    Cursor<NodeItem> acquireSingleNodeCursor( long nodeId );
-
-    /**
-     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
-     * relationships. No relationship is selected when this method returns, a call to {@link Cursor#next()}
-     * will have to be made to place the cursor over the first item and then more calls to move the cursor
-     * through the selection.
-     *
-     * @param relationshipId id of relationship to get cursor for.
-     * @return a {@link Cursor} over {@link RelationshipItem} for the given {@code relationshipId}.
-     */
-    Cursor<RelationshipItem> acquireSingleRelationshipCursor( long relationshipId );
-
-    /**
-     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
-     * relationships. No relationship is selected when this method returns, a call to {@link Cursor#next()}
-     * will have to be made to place the cursor over the first item and then more calls to move the cursor
-     * through the selection.
-     *
-     * @param isDense if the node is dense
-     * @param nodeId the id of the node where to start traversing the relationships
-     * @param relationshipId the id of the first relationship in the chain
-     * @param direction the direction of the relationship wrt the node
-     * @param relTypeFilter the allowed types (it allows all types if unspecified)
-     * @return a {@link Cursor} over {@link RelationshipItem} for traversing the relationships associated to the node.
-     */
-    Cursor<RelationshipItem> acquireNodeRelationshipCursor(  boolean isDense, long nodeId, long relationshipId,
-            Direction direction, IntPredicate relTypeFilter );
-
-    /**
-     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
-     * relationships. No relationship is selected when this method returns, a call to {@link Cursor#next()}
-     * will have to be made to place the cursor over the first item and then more calls to move the cursor
-     * through the selection.
-     *
-     * @return a {@link Cursor} over all stored relationships.
-     */
-    Cursor<RelationshipItem> relationshipsGetAllCursor();
-
-    Cursor<PropertyItem> acquirePropertyCursor( long propertyId, Lock shortLivedReadLock, AssertOpen assertOpen );
-
-    Cursor<PropertyItem> acquireSinglePropertyCursor( long propertyId, int propertyKeyId, Lock shortLivedReadLock,
-            AssertOpen assertOpen );
-
-    /**
      * @return {@link LabelScanReader} capable of reading nodes for specific label ids.
      */
     LabelScanReader getLabelScanReader();
@@ -179,13 +103,6 @@ public interface StorageReader extends AutoCloseable
      * @throws IndexNotFoundKernelException if no such index exists.
      */
     IndexReader getFreshIndexReader( IndexDescriptor index ) throws IndexNotFoundKernelException;
-
-    /**
-     * Access to low level record cursors
-     *
-     * @return record cursors
-     */
-    RecordCursors recordCursors();
 
     /**
      * Reserves a node id for future use to store a node. The reason for it being exposed here is that
@@ -229,30 +146,6 @@ public interface StorageReader extends AutoCloseable
      * if the given index isn't related to a uniqueness constraint.
      */
     Long indexGetOwningUniquenessConstraintId( IndexDescriptor index );
-
-    /**
-     * @param index {@link IndexDescriptor} to get schema rule id for.
-     * @return schema rule id for matching index.
-     * @throws SchemaRuleNotFoundException if no such index exists in storage.
-     */
-    long indexGetCommittedId( IndexDescriptor index )
-            throws SchemaRuleNotFoundException;
-
-    /**
-     * @return iterator with property keys of all stored graph properties.
-     */
-    IntIterator graphGetPropertyKeys();
-
-    /**
-     * @param propertyKeyId property key id to get graph property for.
-     * @return property value of graph property with key {@code propertyKeyId}, or {@code null} if not found.
-     */
-    Object graphGetProperty( int propertyKeyId );
-
-    /**
-     * @return all stored graph properties.
-     */
-    Iterator<StorageProperty> graphGetAllProperties();
 
     /**
      * @param descriptor describing the label and property key (or keys) defining the requested constraint.
@@ -458,33 +351,6 @@ public interface StorageReader extends AutoCloseable
             RelationshipVisitor<EXCEPTION> relationshipVisitor ) throws EntityNotFoundException, EXCEPTION;
 
     /**
-     * @return ids of all stored nodes.
-     */
-    LongIterator nodesGetAll();
-
-    /**
-     * @return ids of all stored relationships. The returned iterator can optionally visit data about
-     * each relationship returned.
-     */
-    RelationshipIterator relationshipsGetAll();
-
-    Cursor<RelationshipItem> nodeGetRelationships( NodeItem nodeItem, Direction direction );
-
-    Cursor<RelationshipItem> nodeGetRelationships( NodeItem nodeItem, Direction direction,
-            IntPredicate typeIds );
-
-    Cursor<PropertyItem> nodeGetProperties( NodeItem node, AssertOpen assertOpen );
-
-    Cursor<PropertyItem> nodeGetProperty( NodeItem node, int propertyKeyId,
-            AssertOpen assertOpen );
-
-    Cursor<PropertyItem> relationshipGetProperties( RelationshipItem relationship,
-            AssertOpen assertOpen );
-
-    Cursor<PropertyItem> relationshipGetProperty( RelationshipItem relationshipItem,
-            int propertyKeyId, AssertOpen assertOpen );
-
-    /**
      * Releases a previously {@link #reserveNode() reserved} node id if it turns out to not actually being used,
      * for example in the event of a transaction rolling back.
      *
@@ -559,126 +425,30 @@ public interface StorageReader extends AutoCloseable
 
     boolean relationshipExists( long id );
 
-    IntSet relationshipTypes( NodeItem node );
-
-    void degrees( NodeItem nodeItem, DegreeVisitor visitor );
-
-    int degreeRelationshipsInGroup( long id, long groupId, Direction direction, Integer relType );
-
     <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StorageReader, T> factory );
 
-    Nodes nodes();
+    /**
+     * @return a new {@link StorageNodeCursor} capable of reading node data from the underlying storage.
+     */
+    StorageNodeCursor allocateNodeCursor();
 
-    Relationships relationships();
+    /**
+     * @return a new {@link StoragePropertyCursor} capable of reading property data from the underlying storage.
+     */
+    StoragePropertyCursor allocatePropertyCursor();
 
-    Groups groups();
+    /**
+     * @return a new {@link StorageRelationshipGroupCursor} capable of reading relationship group data from the underlying storage.
+     */
+    StorageRelationshipGroupCursor allocateRelationshipGroupCursor();
 
-    Properties properties();
+    /**
+     * @return a new {@link StorageRelationshipTraversalCursor} capable of traversing relationships from the underlying storage.
+     */
+    StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor();
 
-    interface RecordReads<RECORD>
-    {
-        /**
-         * Open a new PageCursor for reading nodes.
-         * <p>
-         * DANGER: make sure to always close this cursor.
-         *
-         * @param reference the initial node reference to access.
-         * @return the opened PageCursor
-         */
-        PageCursor openPageCursorForReading( long reference );
-
-        /**
-         * Load a node {@code record} with the node corresponding to the given node {@code reference}.
-         * <p>
-         * The provided page cursor will be used to get the record, and in doing this it will be redirected to the
-         * correct page if needed.
-         *
-         * @param reference the record reference, understood to be the absolute reference to the store.
-         * @param record the record to fill.
-         * @param mode loading behaviour, read more in {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad)}.
-         * @param cursor the PageCursor to use for record loading.
-         * @throws InvalidRecordException if record not in use and the {@code mode} allows for throwing.
-         */
-        void getRecordByCursor( long reference, RECORD record, RecordLoad mode, PageCursor cursor )
-                throws InvalidRecordException;
-
-        /**
-         * Reads a record from the store into {@code target}, see
-         * {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad)}.
-         * <p>
-         * This method requires that the cursor page and offset point to the first byte of the record in target on calling.
-         * The provided page cursor will be used to get the record, and in doing this it will be redirected to the
-         * next page if the input record was the last on it's page.
-         *
-         * @param record the record to fill.
-         * @param mode loading behaviour, read more in {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad)}.
-         * @param cursor the PageCursor to use for record loading.
-         * @throws InvalidRecordException if record not in use and the {@code mode} allows for throwing.
-         */
-        void nextRecordByCursor( RECORD record, RecordLoad mode, PageCursor cursor )
-                throws InvalidRecordException;
-
-        long getHighestPossibleIdInUse();
-    }
-
-    interface Nodes extends RecordReads<NodeRecord>
-    {
-        /**
-         * @return a new Record cursor for accessing DynamicRecords containing labels. This comes acquired.
-         */
-        RecordCursor<DynamicRecord> newLabelCursor();
-    }
-
-    interface Relationships extends RecordReads<RelationshipRecord>
-    {
-    }
-
-    interface Groups extends RecordReads<RelationshipGroupRecord>
-    {
-    }
-
-    interface Properties extends RecordReads<PropertyRecord>
-    {
-        /**
-         * Open a new PageCursor for reading strings.
-         * <p>
-         * DANGER: make sure to always close this cursor.
-         *
-         * @param reference the initial string reference to access.
-         * @return the opened PageCursor
-         */
-        PageCursor openStringPageCursor( long reference );
-
-        /**
-         * Open a new PageCursor for reading arrays.
-         * <p>
-         * DANGER: make sure to always close this cursor.
-         *
-         * @param reference the initial array reference to access.
-         * @return the opened PageCursor
-         */
-        PageCursor openArrayPageCursor( long reference );
-
-        /**
-         * Loads a string into the given buffer. If that is too small we recreate the buffer. The buffer is returned
-         * in write mode, and needs to be flipped before reading.
-         *
-         * @param reference the initial string reference to load
-         * @param buffer the buffer to load into
-         * @param page the page cursor to be used
-         * @return the ByteBuffer of the string
-         */
-        ByteBuffer loadString( long reference, ByteBuffer buffer, PageCursor page );
-
-        /**
-         * Loads a array into the given buffer. If that is too small we recreate the buffer. The buffer is returned
-         * in write mode, and needs to be flipped before reading.
-         *
-         * @param reference the initial array reference to load
-         * @param buffer the buffer to load into
-         * @param page the page cursor to be used
-         * @return the ByteBuffer of the array
-         */
-        ByteBuffer loadArray( long reference, ByteBuffer buffer, PageCursor page );
-    }
+    /**
+     * @return a new {@link StorageRelationshipScanCursor} capable of reading relationship data from the underlying storage.
+     */
+    StorageRelationshipScanCursor allocateRelationshipScanCursor();
 }

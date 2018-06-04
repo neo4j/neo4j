@@ -33,10 +33,6 @@ import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
  * to silently detect that we have a group reference, parse the groups, and setup the cursor to serve relationship
  * via this mode instead.
  *
- * The opposite problem also appears when the user acquires a relationship group reference from a non-dense node. See
- * {@link org.neo4j.kernel.impl.newapi.Read#relationships(long, long,
- * org.neo4j.internal.kernel.api.RelationshipTraversalCursor)} for more details.
- *
  * Node that {@code -1} is used to encode {@link AbstractBaseRecord#NO_ID that a reference is invalid}. In terms of
  * encoding {@code -1} is considered to have all flags, to setting one will not change {@code -1}. This however also
  * means that calling code must check for {@code -1} references before checking flags existence.
@@ -45,11 +41,11 @@ import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
  * the reference, the encoding must be cleared with {@link References#clearEncoding(long)}. To guard against using an
  * encoded reference, all encoded references are marked so they appear negative.
  */
-class References
+public class References
 {
-    static final long FLAG_MARKER = 0x8000_0000_0000_0000L;
-    static final long FLAG_MASK = 0x7000_0000_0000_0000L;
-    static final long FLAGS = 0xF000_0000_0000_0000L;
+    public static final long FLAG_MARKER = 0x8000_0000_0000_0000L;
+    public static final long FLAG_MASK = 0x7000_0000_0000_0000L;
+    public static final long FLAGS = 0xF000_0000_0000_0000L;
 
     /**
      * Clear all encoding from a reference.
@@ -57,7 +53,7 @@ class References
      * @param reference The reference to clear.
      * @return The cleared reference.
      */
-    static long clearEncoding( long reference )
+    public static long clearEncoding( long reference )
     {
         assert reference != NO_ID;
         return reference & ~FLAGS;

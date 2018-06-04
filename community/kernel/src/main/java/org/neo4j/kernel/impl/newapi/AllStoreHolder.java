@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
@@ -44,7 +43,6 @@ import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -72,14 +70,6 @@ import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RecordCursor;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -87,13 +77,9 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
-import org.neo4j.string.UTF8;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
-import org.neo4j.values.storable.ArrayValue;
-import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.neo4j.helpers.collection.Iterators.filter;
@@ -104,10 +90,6 @@ import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
 public class AllStoreHolder extends Read
 {
-    private final StorageReader.Nodes nodes;
-    private final StorageReader.Groups groups;
-    private final StorageReader.Properties properties;
-    private final StorageReader.Relationships relationships;
     private final StorageReader storageReader;
     private final ExplicitIndexStore explicitIndexStore;
     private final Procedures procedures;
@@ -123,10 +105,6 @@ public class AllStoreHolder extends Read
     {
         super( cursors, ktx );
         this.storageReader = storageReader;
-        this.nodes = storageReader.nodes();
-        this.relationships = storageReader.relationships();
-        this.groups = storageReader.groups();
-        this.properties = storageReader.properties();
         this.explicitIndexStore = explicitIndexStore;
         this.procedures = procedures;
         this.schemaState = schemaState;
@@ -670,131 +648,6 @@ public class AllStoreHolder extends Read
             return ktx.txState().constraintsChangesForRelationshipType( typeId ).apply( constraints );
         }
         return constraints;
-    }
-
-    @Override
-    PageCursor nodePage( long reference )
-    {
-        return nodes.openPageCursorForReading( reference );
-    }
-
-    @Override
-    PageCursor relationshipPage( long reference )
-    {
-        return relationships.openPageCursorForReading( reference );
-    }
-
-    @Override
-    PageCursor groupPage( long reference )
-    {
-        return groups.openPageCursorForReading( reference );
-    }
-
-    @Override
-    PageCursor propertyPage( long reference )
-    {
-        return properties.openPageCursorForReading( reference );
-    }
-
-    @Override
-    PageCursor stringPage( long reference )
-    {
-        return properties.openStringPageCursor( reference );
-    }
-
-    @Override
-    PageCursor arrayPage( long reference )
-    {
-        return properties.openArrayPageCursor( reference );
-    }
-
-    @Override
-    RecordCursor<DynamicRecord> labelCursor()
-    {
-        return nodes.newLabelCursor();
-    }
-
-    @Override
-    void node( NodeRecord record, long reference, PageCursor pageCursor )
-    {
-        nodes.getRecordByCursor( reference, record, RecordLoad.CHECK, pageCursor );
-    }
-
-    @Override
-    void nodeAdvance( NodeRecord record, PageCursor pageCursor )
-    {
-        nodes.nextRecordByCursor( record, RecordLoad.CHECK, pageCursor );
-    }
-
-    @Override
-    void relationship( RelationshipRecord record, long reference, PageCursor pageCursor )
-    {
-        // When scanning, we inspect RelationshipRecord.inUse(), so using RecordLoad.CHECK is fine
-        relationships.getRecordByCursor( reference, record, RecordLoad.CHECK, pageCursor );
-    }
-
-    @Override
-    void relationshipAdvance( RelationshipRecord record, PageCursor pageCursor )
-    {
-        // When scanning, we inspect RelationshipRecord.inUse(), so using RecordLoad.CHECK is fine
-        relationships.nextRecordByCursor( record, RecordLoad.CHECK, pageCursor );
-    }
-
-    @Override
-    void relationshipFull( RelationshipRecord record, long reference, PageCursor pageCursor )
-    {
-        // We need to load forcefully for relationship chain traversal since otherwise we cannot
-        // traverse over relationship records which have been concurrently deleted
-        // (flagged as inUse = false).
-        // see
-        //      org.neo4j.kernel.impl.store.RelationshipChainPointerChasingTest
-        //      org.neo4j.kernel.impl.locking.RelationshipCreateDeleteIT
-        relationships.getRecordByCursor( reference, record, RecordLoad.FORCE, pageCursor );
-    }
-
-    @Override
-    void property( PropertyRecord record, long reference, PageCursor pageCursor )
-    {
-        // We need to load forcefully here since otherwise we can have inconsistent reads
-        // for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
-        properties.getRecordByCursor( reference, record, RecordLoad.FORCE, pageCursor );
-    }
-
-    @Override
-    void group( RelationshipGroupRecord record, long reference, PageCursor page )
-    {
-        // We need to load forcefully here since otherwise we cannot traverse over groups
-        // records which have been concurrently deleted (flagged as inUse = false).
-        // @see #org.neo4j.kernel.impl.store.RelationshipChainPointerChasingTest
-        groups.getRecordByCursor( reference, record, RecordLoad.FORCE, page );
-    }
-
-    @Override
-    long nodeHighMark()
-    {
-        return nodes.getHighestPossibleIdInUse();
-    }
-
-    @Override
-    long relationshipHighMark()
-    {
-        return relationships.getHighestPossibleIdInUse();
-    }
-
-    @Override
-    TextValue string( DefaultPropertyCursor cursor, long reference, PageCursor page )
-    {
-        ByteBuffer buffer = cursor.buffer = properties.loadString( reference, cursor.buffer, page );
-        buffer.flip();
-        return Values.stringValue( UTF8.decode( buffer.array(), 0, buffer.limit() ) );
-    }
-
-    @Override
-    ArrayValue array( DefaultPropertyCursor cursor, long reference, PageCursor page )
-    {
-        ByteBuffer buffer = cursor.buffer = properties.loadArray( reference, cursor.buffer, page );
-        buffer.flip();
-        return PropertyStore.readArrayFromBuffer( buffer );
     }
 
     boolean nodeExistsInStore( long id )

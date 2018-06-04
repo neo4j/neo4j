@@ -38,7 +38,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -80,12 +79,13 @@ import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState.PropertyReceiver;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.NodeItem;
-import org.neo4j.storageengine.api.PropertyItem;
-import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
+import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -106,17 +106,13 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.counts_store_rotation_timeout;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
-import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
-import static org.neo4j.storageengine.api.Direction.BOTH;
 
 public class NeoStoresTest
 {
@@ -297,17 +293,15 @@ public class NeoStoresTest
     {
         StorageProperty property = new PropertyKeyValue( key, Values.of( value ) );
         StorageProperty oldProperty = null;
-        try ( Cursor<NodeItem> cursor = storageReader.acquireSingleNodeCursor( nodeId ) )
+        try ( StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor() )
         {
-            if ( cursor.next() )
+            nodeCursor.single( nodeId );
+            if ( nodeCursor.next() )
             {
-                if ( cursor.next() )
+                StorageProperty fetched = getProperty( key, nodeCursor.propertiesReference() );
+                if ( fetched != null )
                 {
-                    StorageProperty fetched = getProperty( key, cursor.get().nextPropertyId() );
-                    if ( fetched != null )
-                    {
-                        oldProperty = fetched;
-                    }
+                    oldProperty = fetched;
                 }
             }
         }
@@ -327,11 +321,12 @@ public class NeoStoresTest
     {
         StorageProperty property = new PropertyKeyValue( key, Values.of( value ) );
         Value oldValue = Values.NO_VALUE;
-        try ( Cursor<RelationshipItem> cursor = storageReader.acquireSingleRelationshipCursor( relationshipId ) )
+        try ( StorageRelationshipScanCursor cursor = storageReader.allocateRelationshipScanCursor() )
         {
+            cursor.single( relationshipId );
             if ( cursor.next() )
             {
-                StorageProperty fetched = getProperty( key, cursor.get().nextPropertyId() );
+                StorageProperty fetched = getProperty( key, cursor.propertiesReference() );
                 if ( fetched != null )
                 {
                     oldValue = fetched.value();
@@ -345,12 +340,12 @@ public class NeoStoresTest
 
     private StorageProperty getProperty( int key, long propertyId )
     {
-        try ( Cursor<PropertyItem> propertyCursor = storageReader
-                .acquireSinglePropertyCursor( propertyId, key, NO_LOCK, ALWAYS_OPEN ) )
+        try ( StoragePropertyCursor propertyCursor = storageReader.allocatePropertyCursor() )
         {
+            propertyCursor.init( propertyId );
             if ( propertyCursor.next() )
             {
-                Value oldValue = propertyCursor.get().value();
+                Value oldValue = propertyCursor.propertyValue();
                 if ( oldValue != null )
                 {
                     return new PropertyKeyValue( key, oldValue );
@@ -1033,26 +1028,23 @@ public class NeoStoresTest
     {
         int count = 0;
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
-              Cursor<NodeItem> nodeCursor = storageReader.acquireSingleNodeCursor( node ) )
+              StorageNodeCursor nodeCursor = allocateNodeCursor( node ) )
         {
-            nodeCursor.next();
-
-            NodeItem nodeItem = nodeCursor.get();
-            try ( Cursor<RelationshipItem> relationships = storageReader.acquireNodeRelationshipCursor(
-                    nodeItem.isDense(), nodeItem.id(), nodeItem.nextRelationshipId(), BOTH, ALWAYS_TRUE_INT ) )
+            assertTrue( nodeCursor.next() );
+            try ( StorageRelationshipTraversalCursor relationships = allocateRelationshipTraversalCursor( nodeCursor ) )
             {
                 while ( relationships.next() )
                 {
-                    long rel = relationships.get().id();
+                    long rel = relationships.relationshipReference();
                     if ( rel == rel1 )
                     {
-                        assertEquals( node, relationships.get().startNode() );
-                        assertEquals( relType1, relationships.get().type() );
+                        assertEquals( node, relationships.sourceNodeReference() );
+                        assertEquals( relType1, relationships.type() );
                     }
                     else if ( rel == rel2 )
                     {
-                        assertEquals( node, relationships.get().endNode() );
-                        assertEquals( relType2, relationships.get().type() );
+                        assertEquals( node, relationships.targetNodeReference() );
+                        assertEquals( relType2, relationships.type() );
                     }
                     else
                     {
@@ -1064,6 +1056,20 @@ public class NeoStoresTest
             }
         }
         return count;
+    }
+
+    private StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor( StorageNodeCursor node )
+    {
+        StorageRelationshipTraversalCursor relationships = storageReader.allocateRelationshipTraversalCursor();
+        relationships.init( node.nodeReference(), node.allRelationshipsReference() );
+        return relationships;
+    }
+
+    private StorageNodeCursor allocateNodeCursor( long nodeId )
+    {
+        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor();
+        nodeCursor.single( nodeId );
+        return nodeCursor;
     }
 
     private PropertyReceiver<StorageProperty> newPropertyReceiver( final Map<Integer,Pair<StorageProperty,Long>> props )
@@ -1117,25 +1123,23 @@ public class NeoStoresTest
         count = 0;
 
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
-              Cursor<NodeItem> nodeCursor = storageReader.acquireSingleNodeCursor( node ) )
+              StorageNodeCursor nodeCursor = allocateNodeCursor( node ) )
         {
-            nodeCursor.next();
-            NodeItem nodeItem = nodeCursor.get();
-            try ( Cursor<RelationshipItem> relationships = storageReader.acquireNodeRelationshipCursor(
-                    nodeItem.isDense(), nodeItem.id(), nodeItem.nextRelationshipId(), BOTH, ALWAYS_TRUE_INT ) )
+            assertTrue( nodeCursor.next() );
+            try ( StorageRelationshipTraversalCursor relationships = allocateRelationshipTraversalCursor( nodeCursor ) )
             {
                 while ( relationships.next() )
                 {
-                    long rel = relationships.get().id();
+                    long rel = relationships.relationshipReference();
                     if ( rel == rel1 )
                     {
-                        assertEquals( node, relationships.get().endNode() );
-                        assertEquals( relType1, relationships.get().type() );
+                        assertEquals( node, relationships.targetNodeReference() );
+                        assertEquals( relType1, relationships.type() );
                     }
                     else if ( rel == rel2 )
                     {
-                        assertEquals( node, relationships.get().startNode() );
-                        assertEquals( relType2, relationships.get().type() );
+                        assertEquals( node, relationships.sourceNodeReference() );
+                        assertEquals( relType2, relationships.type() );
                     }
                     else
                     {
@@ -1151,7 +1155,7 @@ public class NeoStoresTest
 
     private boolean nodeExists( long nodeId )
     {
-        try ( Cursor<NodeItem> node = storageReader.acquireSingleNodeCursor( nodeId ) )
+        try ( StorageNodeCursor node = allocateNodeCursor( nodeId ) )
         {
             return node.next();
         }
@@ -1408,12 +1412,10 @@ public class NeoStoresTest
     private void assertHasRelationships( long node )
     {
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
-              Cursor<NodeItem> nodeCursor = storageReader.acquireSingleNodeCursor( node ) )
+              StorageNodeCursor nodeCursor = allocateNodeCursor( node ) )
         {
-            nodeCursor.next();
-            NodeItem nodeItem = nodeCursor.get();
-            try ( Cursor<RelationshipItem> relationships = storageReader.acquireNodeRelationshipCursor(
-                    nodeItem.isDense(), nodeItem.id(), nodeItem.nextRelationshipId(), BOTH, ALWAYS_TRUE_INT ) )
+            assertTrue( nodeCursor.next() );
+            try ( StorageRelationshipTraversalCursor relationships = allocateRelationshipTraversalCursor( nodeCursor ) )
             {
                 assertTrue( relationships.next() );
             }
@@ -1518,8 +1520,9 @@ public class NeoStoresTest
     {
         for ( long relId : relIds )
         {
-            try ( Cursor<RelationshipItem> relationship = storageReader.acquireSingleRelationshipCursor( relId ) )
+            try ( StorageRelationshipScanCursor relationship = storageReader.allocateRelationshipScanCursor() )
             {
+                relationship.single( relId );
                 assertFalse( relationship.next() );
             }
         }
@@ -1528,13 +1531,16 @@ public class NeoStoresTest
     private void deleteRelationships( long nodeId )
     {
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
-              Cursor<NodeItem> nodeCursor = storageReader.acquireSingleNodeCursor( nodeId ) )
+              StorageNodeCursor nodeCursor = allocateNodeCursor( nodeId ) )
         {
             assertTrue( nodeCursor.next() );
-            NodeItem nodeItem = nodeCursor.get();
-            storageReader
-                    .acquireNodeRelationshipCursor( nodeItem.isDense(), nodeItem.id(), nodeItem.nextRelationshipId(),
-                            BOTH, ALWAYS_TRUE_INT ).forAll( rel -> relDelete( rel.id() ) );
+            try ( StorageRelationshipTraversalCursor relationships = allocateRelationshipTraversalCursor( nodeCursor ) )
+            {
+                while ( relationships.next() )
+                {
+                    relDelete( relationships.relationshipReference() );
+                }
+            }
         }
     }
 

@@ -22,13 +22,11 @@
  */
 package org.neo4j.kernel.impl.enterprise;
 
-import java.util.Iterator;
-import java.util.function.BiPredicate;
-
-import org.neo4j.cursor.Cursor;
+import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
@@ -40,8 +38,6 @@ import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceExcep
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
-import org.neo4j.storageengine.api.NodeItem;
-import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -75,24 +71,6 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
     }
 
     @Override
-    public void validateNodePropertyExistenceConstraint( Iterator<Cursor<NodeItem>> allNodes,
-            LabelSchemaDescriptor descriptor, BiPredicate<NodeItem,Integer> hasPropertyCheck )
-            throws CreateConstraintFailureException
-    {
-        while ( allNodes.hasNext() )
-        {
-            try ( Cursor<NodeItem> cursor = allNodes.next() )
-            {
-                NodeItem node = cursor.get();
-                for ( int propertyKey : descriptor.getPropertyIds() )
-                {
-                    validateNodePropertyExistenceConstraint( node, propertyKey, descriptor, hasPropertyCheck );
-                }
-            }
-        }
-    }
-
-    @Override
     public void validateNodePropertyExistenceConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
             PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor )
             throws CreateConstraintFailureException
@@ -117,29 +95,10 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
     }
 
     @Override
-    public void validateNodeKeyConstraint( Iterator<Cursor<NodeItem>> allNodes,
-            LabelSchemaDescriptor descriptor, BiPredicate<NodeItem,Integer> hasPropertyCheck )
-            throws CreateConstraintFailureException
-    {
-        validateNodePropertyExistenceConstraint( allNodes, descriptor, hasPropertyCheck );
-    }
-
-    @Override
     public void validateNodeKeyConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
             PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor ) throws CreateConstraintFailureException
     {
         validateNodePropertyExistenceConstraint( allNodes, nodeCursor, propertyCursor, descriptor );
-    }
-
-    private void validateNodePropertyExistenceConstraint( NodeItem node, int propertyKey,
-            LabelSchemaDescriptor descriptor, BiPredicate<NodeItem,Integer> hasPropertyCheck ) throws
-            CreateConstraintFailureException
-    {
-        if ( !hasPropertyCheck.test( node, propertyKey ) )
-        {
-            throw createConstraintFailure(
-                    new NodePropertyExistenceException( descriptor, VERIFICATION, node.id() ) );
-        }
     }
 
     private boolean hasProperty( PropertyCursor propertyCursor, int property )
@@ -152,26 +111,6 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
             }
         }
         return false;
-    }
-
-    @Override
-    public void validateRelationshipPropertyExistenceConstraint( Cursor<RelationshipItem> allRelationships,
-            RelationTypeSchemaDescriptor descriptor, BiPredicate<RelationshipItem,Integer> hasPropertyCheck )
-            throws CreateConstraintFailureException
-    {
-        while ( allRelationships.next() )
-        {
-            RelationshipItem relationship = allRelationships.get();
-            for ( int propertyId : descriptor.getPropertyIds() )
-            {
-                if ( relationship.type() == descriptor.getRelTypeId() &&
-                     !hasPropertyCheck.test( relationship, propertyId ) )
-                {
-                    throw createConstraintFailure(
-                            new RelationshipPropertyExistenceException( descriptor, VERIFICATION, relationship.id() ) );
-                }
-            }
-        }
     }
 
     @Override
@@ -202,8 +141,8 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
     }
 
     @Override
-    public TxStateVisitor decorateTxStateVisitor( StorageReader storageReader, ReadableTransactionState txState,
-            TxStateVisitor visitor )
+    public TxStateVisitor decorateTxStateVisitor( StorageReader storageReader,
+            Read read, CursorFactory cursorFactory, ReadableTransactionState txState, TxStateVisitor visitor )
     {
         if ( !txState.hasDataChanges() )
         {
@@ -215,6 +154,6 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
             return visitor;
         }
         return getOrCreatePropertyExistenceEnforcerFrom( storageReader )
-                .decorate( visitor, txState, storageReader );
+                .decorate( visitor, read, cursorFactory );
     }
 }

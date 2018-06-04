@@ -72,12 +72,6 @@ public class StubRelationshipCursor implements RelationshipTraversalCursor
     }
 
     @Override
-    public boolean hasProperties()
-    {
-        return false;
-    }
-
-    @Override
     public void source( NodeCursor cursor )
     {
         throw new UnsupportedOperationException( "not implemented" );

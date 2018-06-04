@@ -1293,11 +1293,11 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             {
                 tx.dataRead().singleRelationship( relationship, cursor );
                 assertTrue( cursor.next() );
-                assertFalse( cursor.hasProperties() );
+                assertFalse( hasProperties( cursor, tx ) );
                 tx.dataWrite().relationshipSetProperty( relationship,
                         tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" ),
                         stringValue( "foo" ) );
-                assertTrue( cursor.hasProperties() );
+                assertTrue( hasProperties( cursor, tx ) );
             }
         }
     }
@@ -1314,11 +1314,11 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             {
                 tx.dataRead().singleRelationship( relationship, cursor );
                 assertTrue( cursor.next() );
-                assertFalse( cursor.hasProperties() );
+                assertFalse( hasProperties( cursor, tx ) );
                 tx.dataWrite().relationshipSetProperty( relationship,
                         tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" ),
                         stringValue( "foo" ) );
-                assertTrue( cursor.hasProperties() );
+                assertTrue( hasProperties( cursor, tx ) );
             }
         }
     }
@@ -1351,13 +1351,13 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 tx.dataRead().singleRelationship( relationship, cursor );
                 assertTrue( cursor.next() );
 
-                assertTrue( cursor.hasProperties() );
+                assertTrue( hasProperties( cursor, tx ) );
                 tx.dataWrite().relationshipRemoveProperty( relationship, prop1 );
-                assertTrue( cursor.hasProperties() );
+                assertTrue( hasProperties( cursor, tx ) );
                 tx.dataWrite().relationshipRemoveProperty( relationship, prop2 );
-                assertTrue( cursor.hasProperties() );
+                assertTrue( hasProperties( cursor, tx ) );
                 tx.dataWrite().relationshipRemoveProperty( relationship, prop3 );
-                assertFalse( cursor.hasProperties() );
+                assertFalse( hasProperties( cursor, tx ) );
             }
         }
     }
@@ -1383,7 +1383,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             {
                 tx.dataRead().singleRelationship( relationship, relationships );
                 assertTrue( relationships.next() );
-                assertFalse( relationships.hasProperties() );
+                assertFalse( hasProperties( relationships, tx ) );
                 int prop = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
                 tx.dataWrite().relationshipSetProperty( relationship, prop, stringValue( "foo" ) );
                 relationships.properties( properties );
@@ -1391,6 +1391,15 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 assertTrue( properties.next() );
                 assertThat( properties.propertyType(), equalTo( ValueGroup.TEXT ) );
             }
+        }
+    }
+
+    private boolean hasProperties( RelationshipScanCursor cursor, Transaction tx )
+    {
+        try ( PropertyCursor propertyCursor = tx.cursors().allocatePropertyCursor() )
+        {
+            cursor.properties( propertyCursor );
+            return propertyCursor.next();
         }
     }
 

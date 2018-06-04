@@ -17,33 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
+package org.neo4j.storageengine.api;
 
-import org.neo4j.kernel.impl.store.CommonAbstractStore;
-
-class AllIdIterator extends HighIdAwareIterator<CommonAbstractStore<?,?>>
+/**
+ * Cursor over relationships.
+ */
+public interface StorageRelationshipScanCursor extends StorageRelationshipCursor
 {
-    private long currentId;
+    /**
+     * Initializes this cursor so that it will scan over existing relationships. Each call to {@link #next()} will
+     * advance the cursor so that the next node is read.
+     *
+     * @param type relationship type to scan over, or -1 for all relationships regardless of type.
+     */
+    void scan( int type );
 
-    AllIdIterator( CommonAbstractStore<?,?> store )
-    {
-        super( store );
-    }
-
-    @Override
-    protected boolean doFetchNext( long highId )
-    {
-        if ( currentId <= highId )
-        {
-            try
-            {
-                return next( currentId );
-            }
-            finally
-            {
-                currentId++;
-            }
-        }
-        return false;
-    }
+    /**
+     * Initializes this cursor so that the next call to {@link #next()} will place this cursor at that relationship.
+     * @param reference relationship to place this cursor at the next call to {@link #next()}.
+     */
+    void single( long reference );
 }
