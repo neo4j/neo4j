@@ -19,32 +19,26 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.server.rest.discovery.DiscoverableURIs;
 
 public class DiscoveryRepresentation extends MappingRepresentation
 {
-
-    private static final String DATA_URI_KEY = "data";
-    private static final String MANAGEMENT_URI_KEY = "management";
-    private static final String BOLT_URI_KEY = "bolt";
     private static final String DISCOVERY_REPRESENTATION_TYPE = "discovery";
-    private final String managementUri;
-    private final String dataUri;
-    private final AdvertisedSocketAddress boltAddress;
+    private final DiscoverableURIs uris;
 
-    public DiscoveryRepresentation( String managementUri, String dataUri, AdvertisedSocketAddress boltAddress )
+    /**
+     * @param uris URIs that we want to make publicly discoverable.
+     */
+    public DiscoveryRepresentation( DiscoverableURIs uris )
     {
         super( DISCOVERY_REPRESENTATION_TYPE );
-        this.managementUri = managementUri;
-        this.dataUri = dataUri;
-        this.boltAddress = boltAddress;
+        this.uris = uris;
     }
 
     @Override
     protected void serialize( MappingSerializer serializer )
     {
-        serializer.putRelativeUri( MANAGEMENT_URI_KEY, managementUri );
-        serializer.putRelativeUri( DATA_URI_KEY, dataUri );
-        serializer.putAbsoluteUri( BOLT_URI_KEY, "bolt://" + boltAddress.getHostname() + ":" + boltAddress.getPort() );
+        uris.forEachRelativeUri(serializer::putRelativeUri);
+        uris.forEachAbsoluteUri( serializer::putAbsoluteUri );
     }
 }

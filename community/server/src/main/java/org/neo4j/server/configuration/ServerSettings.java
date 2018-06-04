@@ -192,6 +192,15 @@ public class ServerSettings implements LoadableConfig
                   "Value is expected to contain dirictives like 'max-age', 'includeSubDomains' and 'preload'." )
     public static final Setting<String> http_strict_transport_security = setting( "dbms.security.http_strict_transport_security", STRING, NO_DEFAULT );
 
+    @Internal
+    @Description( "Publicly discoverable bolt:// URI to use for Neo4j Drivers wanting to access the data in this " +
+            "particular database instance. Normally this is the same as the advertised address configured for the " +
+            "connector, but this allows manually overriding that default." )
+    @DocumentedDefaultValue(
+            "Defaults to a bolt://-schemed version of the advertised address " + "of the first found bolt connector." )
+    public static final Setting<URI> bolt_discoverable_address =
+            setting( "unsupported.dbms.discoverable_bolt_address", Settings.URI, "" );
+
     @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Commands to be run when Neo4j Browser successfully connects to this server. Separate multiple " +
                   "commands with semi-colon." )

@@ -138,8 +138,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private TransactionHandleRegistry transactionRegistry;
     private boolean initialized;
-    private LifecycleAdapter serverComponents;
-    protected ConnectorPortRegister connectorPortRegister;
+    private ConnectorPortRegister connectorPortRegister;
     private HttpConnector httpConnector;
     private Optional<HttpConnector> httpsConnector;
     private AsyncRequestLog requestLog;
@@ -196,8 +195,7 @@ public abstract class AbstractNeoServer implements NeoServer
             registerModule( moduleClass );
         }
 
-        serverComponents = new ServerComponentsLifecycleAdapter();
-        life.add( serverComponents );
+        life.add( new ServerComponentsLifecycleAdapter() );
 
         this.initialized = true;
     }
@@ -209,7 +207,6 @@ public abstract class AbstractNeoServer implements NeoServer
         try
         {
             life.start();
-
         }
         catch ( Throwable t )
         {
@@ -469,7 +466,6 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( new TransactionFilter( database ) );
         singletons.add( new LoggingProvider( logProvider ) );
         singletons.add( providerForSingleton( logProvider.getLog( NeoServer.class ), Log.class ) );
-
         singletons.add( providerForSingleton( resolveDependency( UsageData.class ), UsageData.class ) );
 
         return singletons;
