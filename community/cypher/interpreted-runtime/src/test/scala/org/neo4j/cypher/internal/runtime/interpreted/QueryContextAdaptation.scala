@@ -202,4 +202,16 @@ trait QueryContextAdaptation {
   override def detachDeleteNode(node: Long): Int = ???
 
   override def assertSchemaWritesAllowed(): Unit = ???
+
+  override def nodeGetOutgoingDegree(node: Long): Int = ???
+
+  override def nodeGetOutgoingDegree(node: Long, relationship: Int): Int = ???
+
+  override def nodeGetIncomingDegree(node: Long): Int = ???
+
+  override def nodeGetIncomingDegree(node: Long, relationship: Int): Int = ???
+
+  override def nodeGetTotalDegree(node: Long): Int = ???
+
+  override def nodeGetTotalDegree(node: Long, relationship: Int): Int = ???
 }

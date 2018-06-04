@@ -23,10 +23,9 @@
 package org.neo4j.cypher.internal.runtime.compiled.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast._
-import org.neo4j.cypher.internal.runtime.EntityProducer
+import org.neo4j.cypher.internal.runtime.DbAccess
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.operations.{CypherBoolean, CypherDbAccess, CypherFunctions, CypherMath}
-import org.neo4j.internal.kernel.api.Transaction
+import org.neo4j.cypher.operations.{CypherBoolean, CypherFunctions, CypherMath}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.{MapValue, NodeValue, RelationshipValue}
@@ -82,8 +81,6 @@ object IntermediateCodeGeneration {
            r <- compile(rhs)
       } yield invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("multiply"), l, r)
 
-
-
     case Add(lhs, rhs) =>
       for {l <- compile(lhs)
            r <- compile(rhs)
@@ -97,7 +94,8 @@ object IntermediateCodeGeneration {
     //literals
     case d: DoubleLiteral => Some(invokeStatic(method[Values, DoubleValue, Double]("doubleValue"), constant(d.value)))
     case i: IntegerLiteral => Some(invokeStatic(method[Values, LongValue, Long]("longValue"), constant(i.value)))
-    case s: expressions.StringLiteral => Some(invokeStatic(method[Values, TextValue, String]("stringValue"), constant(s.value)))
+    case s: expressions.StringLiteral => Some(
+      invokeStatic(method[Values, TextValue, String]("stringValue"), constant(s.value)))
     case _: Null => Some(noValue)
     case _: True => Some(truthy)
     case _: False => Some(falsy)
@@ -148,61 +146,74 @@ object IntermediateCodeGeneration {
       Some(invoke(load("params"), method[MapValue, AnyValue, String]("get"), constant(name)))
 
     case NodeProperty(offset, token, _) =>
-      Some(invokeStatic(method[CypherDbAccess, Value, Transaction, Long, Int]("nodeProperty"),
-                        load("tx"),
-                        getLongAt(offset), constant(token)))
+      Some(invoke(load("dbAccess"), method[DbAccess, Value, Long, Int]("nodeProperty"),
+                  getLongAt(offset), constant(token)))
 
     case NodePropertyLate(offset, key, _) =>
-      Some(invokeStatic(method[CypherDbAccess, Value, Transaction, Long, String]("nodeProperty"),
-                        load("tx"), getLongAt(offset), constant(key)))
+      Some(invoke(load("dbAccess"), method[DbAccess, Value, Long, String]("nodeProperty"),
+                  getLongAt(offset), constant(key)))
 
     case NodePropertyExists(offset, token, _) =>
-      Some(invokeStatic(method[CypherDbAccess, BooleanValue, Transaction, Long, Int]("nodeHasProperty"),
-                        load("tx"), getLongAt(offset), constant(token)))
+      Some(
+        ternary(
+          invoke(load("dbAccess"), method[DbAccess, Boolean, Long, Int]("nodeHasProperty"),
+                 getLongAt(offset), constant(token)), truthy, falsy))
 
     case NodePropertyExistsLate(offset, key, _) =>
-      Some(invokeStatic(method[CypherDbAccess, BooleanValue, Transaction, Long, String]("nodeHasProperty"),
-                        load("tx"), getLongAt(offset), constant(key)))
+      Some(ternary(
+        invoke(load("dbAccess"), method[DbAccess, Boolean, Long, String]("nodeHasProperty"),
+               getLongAt(offset), constant(key)), truthy, falsy))
 
     case RelationshipProperty(offset, token, _) =>
-      Some(invokeStatic(method[CypherDbAccess, Value, Transaction, Long, Int]("relationshipProperty"),
-                        load("tx"), getLongAt(offset), constant(token)))
+      Some(invoke(load("dbAccess"), method[DbAccess, Value, Long, Int]("relationshipProperty"),
+                  getLongAt(offset), constant(token)))
 
     case RelationshipPropertyLate(offset, key, _) =>
-      Some(invokeStatic(method[CypherDbAccess, Value, Transaction, Long, String]("relationshipProperty"),
-                        load("tx"), getLongAt(offset), constant(key)))
+      Some(invoke(load("dbAccess"), method[DbAccess, Value, Long, String]("relationshipProperty"),
+                  getLongAt(offset), constant(key)))
 
     case RelationshipPropertyExists(offset, token, _) =>
-      Some(invokeStatic(method[CypherDbAccess, BooleanValue, Transaction, Long, Int]("relationshipHasProperty"),
-                        load("tx"), getLongAt(offset), constant(token)))
+      Some(ternary(
+        invoke(load("dbAccess"), method[DbAccess, Boolean, Long, Int]("relationshipHasProperty"),
+               getLongAt(offset), constant(token)),
+        truthy,
+        falsy)
+      )
 
     case RelationshipPropertyExistsLate(offset, key, _) =>
-      Some(invokeStatic(method[CypherDbAccess, BooleanValue, Transaction, Long, String]("relationshipHasProperty"),
-                        load("tx"), getLongAt(offset), constant(key)))
+      Some(ternary(
+        invoke(load("dbAccess"), method[DbAccess, Boolean, Long, String]("relationshipHasProperty"),
+               getLongAt(offset), constant(key)),
+        truthy,
+        falsy)
+      )
     case NodeFromSlot(offset, _) =>
-      Some(invoke(load("producer"), method[EntityProducer, NodeValue, Long]("nodeById"),
+      Some(invoke(load("dbAccess"), method[DbAccess, NodeValue, Long]("nodeById"),
                   getLongAt(offset)))
     case RelationshipFromSlot(offset, _) =>
-      Some(invoke(load("producer"), method[EntityProducer, RelationshipValue, Long]("relationshipById"),
+      Some(invoke(load("dbAccess"), method[DbAccess, RelationshipValue, Long]("relationshipById"),
                   getLongAt(offset)))
 
     case GetDegreePrimitive(offset, typ, dir) =>
       val methodName = dir match {
-        case SemanticDirection.OUTGOING => "getOutgoingDegree"
-        case SemanticDirection.INCOMING => "getIncomingDegree"
-        case SemanticDirection.BOTH => "getTotalDegree"
+        case SemanticDirection.OUTGOING => "nodeGetOutgoingDegree"
+        case SemanticDirection.INCOMING => "nodeGetIncomingDegree"
+        case SemanticDirection.BOTH => "nodeGetTotalDegree"
       }
       typ match {
         case None =>
-          Some(invokeStatic(method[CypherDbAccess, IntegralValue, Transaction, Long](methodName),
-                            load("tx"), getLongAt(offset)))
+          Some(
+            invokeStatic(method[Values, IntValue, Int]("intValue"),
+              invoke(load("dbAccess"), method[DbAccess, Int, Long](methodName), getLongAt(offset))))
 
         case Some(t) =>
-          Some(invokeStatic(method[CypherDbAccess, IntegralValue, Transaction, Long, String](methodName),
-                            load("tx"),  getLongAt(offset), constant(t)))
+          Some(
+            invokeStatic(method[Values, IntValue, Int]("intValue"),
+                         invoke(load("dbAccess"), method[DbAccess, Int, Long, String](methodName),
+                      getLongAt(offset), constant(t))))
       }
 
-      //slotted operations
+    //slotted operations
     case ReferenceFromSlot(offset, _) =>
       Some(getRefAt(offset))
     case IdFromSlot(offset) =>
@@ -231,10 +242,10 @@ object IntermediateCodeGeneration {
 
   private def getLongAt(offset: Int): IntermediateRepresentation =
     invoke(load("context"), method[ExecutionContext, Long, Int]("getLongAt"),
-                                              constant(offset))
+           constant(offset))
 
   private def getRefAt(offset: Int): IntermediateRepresentation =
     invoke(load("context"), method[ExecutionContext, AnyValue, Int]("getRefAt"),
-         constant(offset))
+           constant(offset))
 
 }

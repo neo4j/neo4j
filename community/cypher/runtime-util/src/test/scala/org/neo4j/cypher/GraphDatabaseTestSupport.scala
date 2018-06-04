@@ -27,7 +27,6 @@ import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.kernel.api.procs.{ProcedureSignature, UserFunctionSignature}
 import org.neo4j.kernel.api.InwardKernel
 import org.neo4j.kernel.api.proc._
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.kernel.{GraphDatabaseQueryService, monitoring}
 import org.neo4j.test.TestGraphDatabaseFactory
@@ -279,11 +278,6 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   def kernelMonitors: Monitors = graph.getDependencyResolver.resolveDependency(classOf[monitoring.Monitors])
-
-  def transaction: org.neo4j.internal.kernel.api.Transaction =
-    graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).getKernelTransactionBoundToThisThread(true)
-
-  def propertyToken(name: String): Int = graph.inTx(transaction.tokenRead().propertyKey(name))
 
   private def kernelAPI: InwardKernel = graph.getDependencyResolver.resolveDependency(classOf[InwardKernel])
 

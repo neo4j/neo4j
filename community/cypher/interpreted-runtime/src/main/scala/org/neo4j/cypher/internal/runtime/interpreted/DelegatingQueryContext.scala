@@ -175,10 +175,18 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def edgeGetEndNode(edge: RelationshipValue) = inner.edgeGetEndNode(edge)
 
-  override def nodeGetDegree(node: Long, dir: SemanticDirection): Int = singleDbHit(inner.nodeGetDegree(node, dir))
 
-  override def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int =
-    singleDbHit(inner.nodeGetDegree(node, dir, relTypeId))
+  override def nodeGetOutgoingDegree(node: Long): Int = singleDbHit(inner.nodeGetOutgoingDegree(node))
+
+  override def nodeGetOutgoingDegree(node: Long, relationship: Int): Int = singleDbHit(inner.nodeGetOutgoingDegree(node, relationship))
+
+  override def nodeGetIncomingDegree(node: Long): Int = singleDbHit(inner.nodeGetIncomingDegree(node))
+
+  override def nodeGetIncomingDegree(node: Long, relationship: Int): Int = singleDbHit(inner.nodeGetIncomingDegree(node, relationship))
+
+  override def nodeGetTotalDegree(node: Long): Int = singleDbHit(inner.nodeGetTotalDegree(node))
+
+  override def nodeGetTotalDegree(node: Long, relationship: Int): Int = singleDbHit(inner.nodeGetTotalDegree(node, relationship))
 
   override def nodeIsDense(node: Long): Boolean = singleDbHit(inner.nodeIsDense(node))
 

@@ -109,11 +109,23 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getNodesByLabelPrimitive(id: Int): LongIterator =
     translateException(inner.getNodesByLabelPrimitive(id))
 
-  override def nodeGetDegree(node: Long, dir: SemanticDirection): Int =
-    translateException(inner.nodeGetDegree(node, dir))
 
-  override def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int =
-    translateException(inner.nodeGetDegree(node, dir, relTypeId))
+  override def nodeGetOutgoingDegree(node: Long): Int =
+    translateException(inner.nodeGetOutgoingDegree(node))
+
+  override def nodeGetOutgoingDegree(node: Long, relationship: Int): Int =
+    translateException(inner.nodeGetOutgoingDegree(node, relationship))
+
+  override def nodeGetIncomingDegree(node: Long): Int =
+    translateException(inner.nodeGetIncomingDegree(node))
+
+  override def nodeGetIncomingDegree(node: Long, relationship: Int): Int =
+    translateException(inner.nodeGetIncomingDegree(node, relationship))
+
+  override def nodeGetTotalDegree(node: Long): Int = translateException(inner.nodeGetTotalDegree(node))
+
+  override def nodeGetTotalDegree(node: Long, relationship: Int): Int =
+    translateException(inner.nodeGetTotalDegree(node, relationship))
 
   override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V =
     translateException(inner.getOrCreateFromSchemaState(key, creator))

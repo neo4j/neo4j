@@ -50,7 +50,7 @@ import scala.collection.Iterator
  * The driver for this was clarifying who is responsible for ensuring query isolation. By exposing a query concept in
  * the core layer, we can move that responsibility outside of the scope of cypher.
  */
-trait QueryContext extends TokenContext with EntityProducer {
+trait QueryContext extends TokenContext with DbAccess {
 
   // See QueryContextAdaptation if you need a dummy that overrides all methods as ??? for writing a test
 
@@ -156,9 +156,17 @@ trait QueryContext extends TokenContext with EntityProducer {
 
   def edgeGetEndNode(edge: RelationshipValue): NodeValue
 
-  def nodeGetDegree(node: Long, dir: SemanticDirection): Int
+  def nodeGetDegree(node: Long, dir: SemanticDirection): Int = dir match {
+    case SemanticDirection.OUTGOING => nodeGetOutgoingDegree(node)
+    case SemanticDirection.INCOMING => nodeGetIncomingDegree(node)
+    case SemanticDirection.BOTH => nodeGetTotalDegree(node)
+  }
 
-  def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int
+  def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int = dir match {
+    case SemanticDirection.OUTGOING => nodeGetOutgoingDegree(node, relTypeId)
+    case SemanticDirection.INCOMING => nodeGetIncomingDegree(node, relTypeId)
+    case SemanticDirection.BOTH => nodeGetTotalDegree(node, relTypeId)
+  }
 
   def nodeIsDense(node: Long): Boolean
 
@@ -210,6 +218,36 @@ trait QueryContext extends TokenContext with EntityProducer {
   override def nodeById(id: Long): NodeValue = nodeOps.getById(id)
 
   override def relationshipById(id: Long): RelationshipValue = relationshipOps.getById(id)
+
+  override def nodeProperty(node: Long, property: Int): Value = nodeOps.getProperty(node, property)
+
+  override def nodeProperty(node: Long, property: String): Value =
+    nodeOps.getProperty(node, transactionalContext.tokenRead.propertyKey(property))
+
+  override def nodeHasProperty(node: Long, property: Int): Boolean = nodeOps.hasProperty(node, property)
+
+  override def nodeHasProperty(node: Long, property: String): Boolean =
+    nodeOps.hasProperty(node, transactionalContext.tokenRead.propertyKey(property))
+
+  override def relationshipProperty(node: Long, property: Int): Value = relationshipOps.getProperty(node, property)
+
+  override def relationshipProperty(node: Long, property: String): Value =
+    relationshipOps.getProperty(node, transactionalContext.tokenRead.propertyKey(property))
+
+  override def relationshipHasProperty(node: Long, property: Int): Boolean =
+    relationshipOps.hasProperty(node, property)
+
+  override def relationshipHasProperty(node: Long, property: String): Boolean =
+    relationshipOps.hasProperty(node, transactionalContext.tokenRead.propertyKey(property))
+
+  override def nodeGetOutgoingDegree(node: Long, relationship: String): Int =
+    nodeGetOutgoingDegree(node, transactionalContext.tokenRead.relationshipType(relationship))
+
+  override def nodeGetIncomingDegree(node: Long, relationship: String): Int =
+    nodeGetIncomingDegree(node, transactionalContext.tokenRead.relationshipType(relationship))
+
+  override def nodeGetTotalDegree(node: Long, relationship: String): Int =
+    nodeGetTotalDegree(node, transactionalContext.tokenRead.relationshipType(relationship))
 }
 
 trait Operations[T] {
