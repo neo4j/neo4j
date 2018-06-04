@@ -44,7 +44,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
@@ -100,9 +100,9 @@ public class ConstraintIndexCreatorTest
         when( indexingService.getIndexProxy( INDEX_ID ) ).thenReturn( indexProxy );
         when( indexingService.getIndexProxy( descriptor ) ).thenReturn( indexProxy );
         when( indexProxy.getDescriptor() ).thenReturn( index.withId( INDEX_ID ).withoutCapabilities() );
-        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+        NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
         ConstraintIndexCreator creator =
-                new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, logProvider );
+                new ConstraintIndexCreator( () -> kernel, indexingService, nodePropertyAccessor, logProvider );
 
         // when
         long indexId = creator.createUniquenessConstraintIndex( createTransaction(), descriptor, Optional.empty() );
@@ -131,14 +131,14 @@ public class ConstraintIndexCreatorTest
         IndexEntryConflictException cause = new IndexEntryConflictException( 2, 1, Values.of( "a" ) );
         doThrow( new IndexPopulationFailedKernelException( descriptor, "some index", cause ) )
                 .when( indexProxy ).awaitStoreScanCompleted();
-        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+        NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
         when( schemaRead.index( any( SchemaDescriptor.class ) ) )
                 .thenReturn(
                         IndexReference.NO_INDEX )   // first claim it doesn't exist, because it doesn't... so
                 // that it gets created
                 .thenReturn( indexReference ); // then after it failed claim it does exist
         ConstraintIndexCreator creator =
-                new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, logProvider );
+                new ConstraintIndexCreator( () -> kernel, indexingService, nodePropertyAccessor, logProvider );
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
@@ -173,9 +173,9 @@ public class ConstraintIndexCreatorTest
         StubKernel kernel = new StubKernel();
         IndexingService indexingService = mock( IndexingService.class );
 
-        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+        NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
         ConstraintIndexCreator creator =
-                new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, logProvider );
+                new ConstraintIndexCreator( () -> kernel, indexingService, nodePropertyAccessor, logProvider );
 
         // when
         creator.dropUniquenessConstraintIndex( index );
@@ -193,7 +193,7 @@ public class ConstraintIndexCreatorTest
         StubKernel kernel = new StubKernel();
         IndexingService indexingService = mock( IndexingService.class );
 
-        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+        NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
 
         when( schemaRead.indexGetCommittedId( indexReference ) ).thenReturn( INDEX_ID );
         IndexProxy indexProxy = mock( IndexProxy.class );
@@ -203,7 +203,7 @@ public class ConstraintIndexCreatorTest
         when( schemaRead.index( LABEL_ID, PROPERTY_KEY_ID ) ).thenReturn( IndexReference.NO_INDEX );
 
         ConstraintIndexCreator creator =
-                new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, logProvider );
+                new ConstraintIndexCreator( () -> kernel, indexingService, nodePropertyAccessor, logProvider );
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
@@ -228,12 +228,12 @@ public class ConstraintIndexCreatorTest
         when( schemaRead.indexGetCommittedId( indexReference ) ).thenReturn( orphanedConstraintIndexId );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( orphanedConstraintIndexId ) ).thenReturn( indexProxy );
-        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+        NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
         when( schemaRead.index( descriptor ) ).thenReturn( indexReference );
         when( schemaRead.indexGetOwningUniquenessConstraintId( indexReference ) )
                 .thenReturn( null ); // which means it has no owner
         ConstraintIndexCreator creator =
-                new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, logProvider );
+                new ConstraintIndexCreator( () -> kernel, indexingService, nodePropertyAccessor, logProvider );
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
@@ -262,14 +262,14 @@ public class ConstraintIndexCreatorTest
         when( schemaRead.indexGetCommittedId( indexReference ) ).thenReturn( constraintIndexId );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( constraintIndexId ) ).thenReturn( indexProxy );
-        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+        NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
         when( schemaRead.index( descriptor ) ).thenReturn( indexReference );
         when( schemaRead.indexGetOwningUniquenessConstraintId( indexReference ) )
                 .thenReturn( constraintIndexOwnerId ); // which means there's an owner
         when( tokenRead.nodeLabelName( LABEL_ID ) ).thenReturn( "MyLabel" );
         when( tokenRead.propertyKeyName( PROPERTY_KEY_ID ) ).thenReturn( "MyKey" );
         ConstraintIndexCreator creator =
-                new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, logProvider );
+                new ConstraintIndexCreator( () -> kernel, indexingService, nodePropertyAccessor, logProvider );
 
         // when
         try
@@ -302,8 +302,8 @@ public class ConstraintIndexCreatorTest
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( INDEX_ID ) ).thenReturn( indexProxy );
         when( indexingService.getIndexProxy( descriptor ) ).thenReturn( indexProxy );
-        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, logProvider );
+        NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, nodePropertyAccessor, logProvider );
         IndexProvider.Descriptor providerDescriptor = new IndexProvider.Descriptor( "Groovy", "1.2" );
 
         // when
@@ -329,7 +329,7 @@ public class ConstraintIndexCreatorTest
         when( indexingService.getIndexProxy( INDEX_ID ) ).thenReturn( indexProxy );
         when( indexingService.getIndexProxy( descriptor ) ).thenReturn( indexProxy );
         when( indexProxy.getDescriptor() ).thenReturn( index.withId( INDEX_ID ).withoutCapabilities() );
-        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+        NodePropertyAccessor propertyAccessor = mock( NodePropertyAccessor.class );
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, logProvider );
         KernelTransactionImplementation transaction = createTransaction();
 

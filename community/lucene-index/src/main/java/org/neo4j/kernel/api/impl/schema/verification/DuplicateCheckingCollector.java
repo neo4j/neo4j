@@ -30,23 +30,23 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.verification.DuplicateCheckStrategy.BucketsDuplicateCheckStrategy;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
 public class DuplicateCheckingCollector extends SimpleCollector
 {
-    protected final PropertyAccessor accessor;
+    protected final NodePropertyAccessor accessor;
     private final int propertyKeyId;
     protected LeafReader reader;
     DuplicateCheckStrategy duplicateCheckStrategy;
 
-    static DuplicateCheckingCollector forProperties( PropertyAccessor accessor, int[] propertyKeyIds )
+    static DuplicateCheckingCollector forProperties( NodePropertyAccessor accessor, int[] propertyKeyIds )
     {
         return (propertyKeyIds.length == 1) ? new DuplicateCheckingCollector( accessor, propertyKeyIds[0] )
                                             : new CompositeDuplicateCheckingCollector( accessor, propertyKeyIds );
     }
 
-    DuplicateCheckingCollector( PropertyAccessor accessor, int propertyKeyId )
+    DuplicateCheckingCollector( NodePropertyAccessor accessor, int propertyKeyId )
     {
         this.accessor = accessor;
         this.propertyKeyId = propertyKeyId;

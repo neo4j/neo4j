@@ -299,8 +299,8 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                     p.add( Arrays.asList(
                             add( nodeId1, descriptor.schema(), value ),
                             add( nodeId2, descriptor.schema(), value ) ) );
-                    NodePropertyAccessor propertyAccessor =
-                            new NodePropertyAccessor( nodeId1, descriptor.schema(), value );
+                    TestNodePropertyAccessor propertyAccessor =
+                            new TestNodePropertyAccessor( nodeId1, descriptor.schema(), value );
                     propertyAccessor.addNode( nodeId2, descriptor.schema(), value );
                     p.verifyDeferredConstraints( propertyAccessor );
 

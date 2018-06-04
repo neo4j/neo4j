@@ -21,13 +21,13 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.values.storable.Value;
 
 /**
  * The PropertyLoader provides a stream-lined interface for getting multiple property values from a node in a single
- * call. This can be used over the index provider API {@link PropertyAccessor} for better performance in these cases.
+ * call. This can be used over the index provider API {@link NodePropertyAccessor} for better performance in these cases.
  */
 public interface PropertyLoader
 {

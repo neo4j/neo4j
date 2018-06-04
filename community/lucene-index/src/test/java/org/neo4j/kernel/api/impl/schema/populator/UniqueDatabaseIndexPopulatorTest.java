@@ -46,7 +46,7 @@ import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
@@ -87,7 +87,7 @@ public class UniqueDatabaseIndexPopulatorTest
     private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private static final IndexDescriptor descriptor = TestIndexDescriptorFactory.forLabel( LABEL_ID, PROPERTY_KEY_ID );
 
-    private final PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+    private final NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
 
     private PartitionedIndexStorage indexStorage;
     private SchemaIndex index;
@@ -126,7 +126,7 @@ public class UniqueDatabaseIndexPopulatorTest
         addUpdate( populator, 3, "value3" );
 
         // when
-        populator.verifyDeferredConstraints( propertyAccessor );
+        populator.verifyDeferredConstraints( nodePropertyAccessor );
         populator.close( true );
 
         // then
@@ -150,7 +150,7 @@ public class UniqueDatabaseIndexPopulatorTest
         addUpdate( populator, 1, "value1" );
 
         // when
-        IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
+        IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor );
 
         updater.process( change( 1, schemaDescriptor, "value1", "value2" ) );
 
@@ -170,7 +170,7 @@ public class UniqueDatabaseIndexPopulatorTest
         addUpdate( populator, 1, "value1" );
 
         // when
-        IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
+        IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor );
 
         updater.process( remove( 1, schemaDescriptor, "value1" ) );
         updater.process( add( 1, schemaDescriptor, "value1" ) );
@@ -190,7 +190,7 @@ public class UniqueDatabaseIndexPopulatorTest
         addUpdate( populator, 1, "value1" );
 
         // when
-        IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
+        IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor );
 
         updater.process( remove( 1, schemaDescriptor, "value1" ) );
 
@@ -210,7 +210,7 @@ public class UniqueDatabaseIndexPopulatorTest
         addUpdate( populator, 2, "value2" );
 
         // when
-        IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
+        IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor );
 
         updater.process( change( 1, schemaDescriptor, "value1", "value2" ) );
         updater.process( change( 2, schemaDescriptor, "value2", "value1" ) );
@@ -233,13 +233,13 @@ public class UniqueDatabaseIndexPopulatorTest
         addUpdate( populator, 2, "value2" );
         addUpdate( populator, 3, value );
 
-        when( propertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( Values.of( value ) );
-        when( propertyAccessor.getNodePropertyValue( 3, PROPERTY_KEY_ID ) ).thenReturn( Values.of( value ) );
+        when( nodePropertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( Values.of( value ) );
+        when( nodePropertyAccessor.getNodePropertyValue( 3, PROPERTY_KEY_ID ) ).thenReturn( Values.of( value ) );
 
         // when
         try
         {
-            populator.verifyDeferredConstraints( propertyAccessor );
+            populator.verifyDeferredConstraints( nodePropertyAccessor );
 
             fail( "should have thrown exception" );
         }
@@ -262,13 +262,13 @@ public class UniqueDatabaseIndexPopulatorTest
         addUpdate( populator, 2, 2 );
         addUpdate( populator, 3, 1 );
 
-        when( propertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( Values.of( 1 ) );
-        when( propertyAccessor.getNodePropertyValue( 3, PROPERTY_KEY_ID ) ).thenReturn( Values.of( 1 ) );
+        when( nodePropertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( Values.of( 1 ) );
+        when( nodePropertyAccessor.getNodePropertyValue( 3, PROPERTY_KEY_ID ) ).thenReturn( Values.of( 1 ) );
 
         // when
         try
         {
-            populator.verifyDeferredConstraints( propertyAccessor );
+            populator.verifyDeferredConstraints( nodePropertyAccessor );
 
             fail( "should have thrown exception" );
         }
@@ -291,13 +291,13 @@ public class UniqueDatabaseIndexPopulatorTest
         addUpdate( populator, 2, "value2" );
 
         Value value = Values.of( "value1" );
-        when( propertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( value );
-        when( propertyAccessor.getNodePropertyValue( 3, PROPERTY_KEY_ID ) ).thenReturn( value );
+        when( nodePropertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( value );
+        when( nodePropertyAccessor.getNodePropertyValue( 3, PROPERTY_KEY_ID ) ).thenReturn( value );
 
         // when
         try
         {
-            IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
+            IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor );
             updater.process( add( 3, schemaDescriptor, "value1" ) );
             updater.close();
 
@@ -319,18 +319,18 @@ public class UniqueDatabaseIndexPopulatorTest
         populator = newPopulator();
 
         String valueString = "value1";
-        IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
+        IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor );
         updater.process( add( 1, schemaDescriptor, valueString ) );
         addUpdate( populator, 2, valueString );
 
         Value value = Values.of( valueString );
-        when( propertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( value );
-        when( propertyAccessor.getNodePropertyValue( 2, PROPERTY_KEY_ID ) ).thenReturn( value );
+        when( nodePropertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( value );
+        when( nodePropertyAccessor.getNodePropertyValue( 2, PROPERTY_KEY_ID ) ).thenReturn( value );
 
         // when
         try
         {
-            populator.verifyDeferredConstraints( propertyAccessor );
+            populator.verifyDeferredConstraints( nodePropertyAccessor );
 
             fail( "should have thrown exception" );
         }
@@ -349,10 +349,10 @@ public class UniqueDatabaseIndexPopulatorTest
         // given
         populator = newPopulator();
 
-        when( propertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn(
+        when( nodePropertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn(
                 Values.of( "value1" ) );
 
-        IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
+        IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor );
         updater.process( add( 1, schemaDescriptor, "value1" ) );
         updater.process( change( 1, schemaDescriptor, "value1", "value1" ) );
         updater.close();
@@ -360,7 +360,7 @@ public class UniqueDatabaseIndexPopulatorTest
         addUpdate( populator, 3, "value3" );
 
         // when
-        populator.verifyDeferredConstraints( propertyAccessor );
+        populator.verifyDeferredConstraints( nodePropertyAccessor );
         populator.close( true );
 
         // then
@@ -381,11 +381,11 @@ public class UniqueDatabaseIndexPopulatorTest
         addUpdate( populator, 3, 1000000000000000001L );
 
         // ... but the actual data in the store does not collide
-        when( propertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( Values.of( 1000000000000000001L ) );
-        when( propertyAccessor.getNodePropertyValue( 3, PROPERTY_KEY_ID ) ).thenReturn( Values.of( 1000000000000000002L ) );
+        when( nodePropertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( Values.of( 1000000000000000001L ) );
+        when( nodePropertyAccessor.getNodePropertyValue( 3, PROPERTY_KEY_ID ) ).thenReturn( Values.of( 1000000000000000002L ) );
 
         // Then our verification should NOT fail:
-        populator.verifyDeferredConstraints( propertyAccessor );
+        populator.verifyDeferredConstraints( nodePropertyAccessor );
     }
 
     @Test
@@ -395,18 +395,18 @@ public class UniqueDatabaseIndexPopulatorTest
         populator = newPopulator();
 
         int iterations = 228; // This value has to be high enough to stress the EntrySet implementation
-        IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
+        IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor );
 
         for ( int nodeId = 0; nodeId < iterations; nodeId++ )
         {
             updater.process( add( nodeId, schemaDescriptor, 1 ) );
-            when( propertyAccessor.getNodePropertyValue( nodeId, PROPERTY_KEY_ID ) ).thenReturn(
+            when( nodePropertyAccessor.getNodePropertyValue( nodeId, PROPERTY_KEY_ID ) ).thenReturn(
                     Values.of( nodeId ) );
         }
 
         // ... and the actual conflicting property:
         updater.process( add( iterations, schemaDescriptor, 1 ) );
-        when( propertyAccessor.getNodePropertyValue( iterations, PROPERTY_KEY_ID ) ).thenReturn(
+        when( nodePropertyAccessor.getNodePropertyValue( iterations, PROPERTY_KEY_ID ) ).thenReturn(
                 Values.of( 1 ) ); // This collision is real!!!
 
         // when
@@ -435,19 +435,19 @@ public class UniqueDatabaseIndexPopulatorTest
         for ( int nodeId = 0; nodeId < iterations; nodeId++ )
         {
             addUpdate( populator, nodeId, 1 );
-            when( propertyAccessor.getNodePropertyValue( nodeId, PROPERTY_KEY_ID ) ).thenReturn(
+            when( nodePropertyAccessor.getNodePropertyValue( nodeId, PROPERTY_KEY_ID ) ).thenReturn(
                     Values.of( nodeId ) );
         }
 
         // ... and the actual conflicting property:
         addUpdate( populator, iterations, 1 );
-        when( propertyAccessor.getNodePropertyValue( iterations, PROPERTY_KEY_ID ) ).thenReturn(
+        when( nodePropertyAccessor.getNodePropertyValue( iterations, PROPERTY_KEY_ID ) ).thenReturn(
                 Values.of( 1 ) ); // This collision is real!!!
 
         // when
         try
         {
-            populator.verifyDeferredConstraints( propertyAccessor );
+            populator.verifyDeferredConstraints( nodePropertyAccessor );
             fail( "should have thrown exception" );
         }
         // then
@@ -474,7 +474,7 @@ public class UniqueDatabaseIndexPopulatorTest
         OtherThreadExecutor<Void> executor = cleanup.add( new OtherThreadExecutor<>( "Deferred", null ) );
         executor.execute( (WorkerCommand<Void,Void>) state ->
         {
-            try ( IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor ) )
+            try ( IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor ) )
             {   // Just open it and let it be closed
             }
             return null;
@@ -482,7 +482,7 @@ public class UniqueDatabaseIndexPopulatorTest
         // ... and where we verify deferred constraints after
         executor.execute( (WorkerCommand<Void,Void>) state ->
         {
-            populator.verifyDeferredConstraints( propertyAccessor );
+            populator.verifyDeferredConstraints( nodePropertyAccessor );
             return null;
         } );
 
@@ -490,7 +490,7 @@ public class UniqueDatabaseIndexPopulatorTest
         // THEN it should be able to complete within a very reasonable time
         executor.execute( (WorkerCommand<Void,Void>) state ->
         {
-            try ( IndexUpdater secondUpdater = populator.newPopulatingUpdater( propertyAccessor ) )
+            try ( IndexUpdater secondUpdater = populator.newPopulatingUpdater( nodePropertyAccessor ) )
             {   // Just open it and let it be closed
             }
             return null;

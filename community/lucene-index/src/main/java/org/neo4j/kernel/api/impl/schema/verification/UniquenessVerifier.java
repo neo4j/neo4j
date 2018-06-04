@@ -24,16 +24,16 @@ import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
 /**
  * A component that verifies uniqueness of values in a lucene index.
  * During uniqueness constraint creation we ensure that already existing data is unique using
- * {@link #verify(PropertyAccessor, int[])}.
+ * {@link #verify(NodePropertyAccessor, int[])}.
  * Since updates can be applied while index is being populated we need to verify them as well.
  * Verification does not handle that automatically. They need to be collected in some way and then checked by
- * {@link #verify(PropertyAccessor, int[], List)}.
+ * {@link #verify(NodePropertyAccessor, int[], List)}.
  */
 public interface UniquenessVerifier extends Closeable
 {
@@ -45,7 +45,7 @@ public interface UniquenessVerifier extends Closeable
      * @throws IndexEntryConflictException if there are duplicates.
      * @throws IOException when Lucene throws {@link IOException}.
      */
-    void verify( PropertyAccessor accessor, int[] propKeyIds ) throws IndexEntryConflictException, IOException;
+    void verify( NodePropertyAccessor accessor, int[] propKeyIds ) throws IndexEntryConflictException, IOException;
 
     /**
      * Verifies uniqueness of given values and existing data.
@@ -56,6 +56,6 @@ public interface UniquenessVerifier extends Closeable
      * @throws IndexEntryConflictException if there are duplicates.
      * @throws IOException when Lucene throws {@link IOException}.
      */
-    void verify( PropertyAccessor accessor, int[] propKeyIds, List<Value[]> updatedValueTuples )
+    void verify( NodePropertyAccessor accessor, int[] propKeyIds, List<Value[]> updatedValueTuples )
             throws IndexEntryConflictException, IOException;
 }

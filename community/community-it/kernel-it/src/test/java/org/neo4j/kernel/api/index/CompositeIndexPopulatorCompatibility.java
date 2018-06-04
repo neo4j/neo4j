@@ -109,8 +109,8 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
                         IndexEntryUpdate.add( nodeId2, descriptor.schema(), value1, value2 ) ) );
                 try
                 {
-                    NodePropertyAccessor propertyAccessor =
-                            new NodePropertyAccessor( nodeId1, descriptor.schema(), value1, value2 );
+                    TestNodePropertyAccessor propertyAccessor =
+                            new TestNodePropertyAccessor( nodeId1, descriptor.schema(), value1, value2 );
                     propertyAccessor.addNode( nodeId2, descriptor.schema(), value1, value2 );
                     p.verifyDeferredConstraints( propertyAccessor );
 
@@ -138,8 +138,8 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
                         IndexEntryUpdate.add( nodeId1, descriptor.schema(), value1, value2 ),
                         IndexEntryUpdate.add( nodeId2, descriptor.schema(), value1, value3 ) ) );
 
-                NodePropertyAccessor propertyAccessor =
-                        new NodePropertyAccessor( nodeId1, descriptor.schema(), value1, value2 );
+                TestNodePropertyAccessor propertyAccessor =
+                        new TestNodePropertyAccessor( nodeId1, descriptor.schema(), value1, value2 );
                 propertyAccessor.addNode( nodeId2, descriptor.schema(), value1, value3 );
 
                 // then this should pass fine

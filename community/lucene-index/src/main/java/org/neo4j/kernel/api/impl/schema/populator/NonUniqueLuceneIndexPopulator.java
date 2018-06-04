@@ -19,14 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.schema.populator;
 
-import java.io.IOException;
-
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
@@ -49,13 +46,13 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     }
 
     @Override
-    public void verifyDeferredConstraints( PropertyAccessor accessor )
+    public void verifyDeferredConstraints( NodePropertyAccessor accessor )
     {
         // no constraints to verify so do nothing
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor )
+    public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor )
     {
         return new NonUniqueLuceneIndexPopulatingUpdater( writer, sampler );
     }

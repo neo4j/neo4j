@@ -42,7 +42,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -62,7 +62,7 @@ public abstract class NativeIndexPopulatorTest<KEY extends NativeIndexKey<KEY>,V
         extends NativeIndexTestUtil<KEY,VALUE>
 {
     private static final int LARGE_AMOUNT_OF_UPDATES = 1_000;
-    static final PropertyAccessor null_property_accessor = ( nodeId, propKeyId ) ->
+    static final NodePropertyAccessor null_property_accessor = ( nodeId, propKeyId ) ->
     {
         throw new RuntimeException( "Did not expect an attempt to go to store" );
     };

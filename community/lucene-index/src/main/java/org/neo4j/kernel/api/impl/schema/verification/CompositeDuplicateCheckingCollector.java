@@ -27,14 +27,14 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
 public class CompositeDuplicateCheckingCollector extends DuplicateCheckingCollector
 {
     private final int[] propertyKeyIds;
 
-    CompositeDuplicateCheckingCollector( PropertyAccessor accessor, int[] propertyKeyIds )
+    CompositeDuplicateCheckingCollector( NodePropertyAccessor accessor, int[] propertyKeyIds )
     {
         super( accessor, StatementConstants.NO_SUCH_PROPERTY_KEY );
         this.propertyKeyIds = propertyKeyIds;
