@@ -72,10 +72,10 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
 
     // when
     val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
-      planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+      planComparisonStrategy = ComparePlansWithAssertion(plan => {
         //THEN
-        plan should useOperators("Foreach", "CreateNode")
-      }, Configs.AllRulePlanners))
+        plan should useOperators("Foreach", "Create")
+      }, Configs.AllRulePlanners + Configs.Version3_1))
 
     // then
     assertStats(result, nodesCreated = 2, labelsAdded = 2)

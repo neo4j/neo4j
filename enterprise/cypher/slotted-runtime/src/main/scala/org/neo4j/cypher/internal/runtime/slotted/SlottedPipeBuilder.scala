@@ -190,12 +190,47 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         }
         ProjectionSlottedPipe(source, expressionsWithSlots)(id)
 
-      case CreateNode(_, idName, labels, props) =>
-        CreateNodeSlottedPipe(source, idName, slots, labels.map(LazyLabel.apply),
-          props.map(convertExpressions))(id)
+      case Create(_, nodes, relationships) =>
+        CreateSlottedPipe(
+          source,
+          nodes.map(n =>
+            CreateNodeSlottedCommand(
+              slots.getLongOffsetFor(n.idName),
+              n.labels.map(LazyLabel.apply),
+              n.properties.map(convertExpressions)
+            )
+          ).toIndexedSeq,
+          relationships.map(r =>
+            CreateRelationshipSlottedCommand(
+              slots.getLongOffsetFor(r.idName),
+              SlottedPipeBuilderUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(r.startNode)),
+              LazyType(r.relType.name),
+              SlottedPipeBuilderUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(r.endNode)),
+              r.properties.map(convertExpressions))
+          ).toIndexedSeq
+        )(id)
 
-      case MergeCreateNode(_, idName, labels, props) =>
-        MergeCreateNodeSlottedPipe(source, idName, slots, labels.map(LazyLabel.apply), props.map(convertExpressions))(id)
+      case MergeCreateNode(_, idName, labels, properties) =>
+        MergeCreateNodeSlottedPipe(
+          source,
+          CreateNodeSlottedCommand(
+            slots.getLongOffsetFor(idName),
+            labels.map(LazyLabel.apply),
+            properties.map(convertExpressions)
+          )
+        )(id)
+
+      case MergeCreateRelationship(_, idName, startNode, relType, endNode, properties) =>
+        MergeCreateRelationshipSlottedPipe(
+          source,
+          CreateRelationshipSlottedCommand(
+            slots.getLongOffsetFor(idName),
+            SlottedPipeBuilderUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(startNode)),
+            LazyType(relType.name),
+            SlottedPipeBuilderUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(endNode)),
+            properties.map(convertExpressions)
+          )
+        )(id)
 
       case EmptyResult(_) =>
         EmptyResultPipe(source)(id)
@@ -247,18 +282,6 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 
       case Distinct(_, groupingExpressions) =>
         chooseDistinctPipe(groupingExpressions, slots, source, id)
-
-      case CreateRelationship(_, idName, startNode, typ, endNode, props) =>
-        val fromSlot = slots(startNode)
-        val toSlot = slots(endNode)
-        CreateRelationshipSlottedPipe(source, idName, fromSlot, LazyType(typ)(context.semanticTable), toSlot,
-          slots, props.map(convertExpressions))(id = id)
-
-      case MergeCreateRelationship(_, idName, startNode, typ, endNode, props) =>
-        val fromSlot = slots(startNode)
-        val toSlot = slots(endNode)
-        MergeCreateRelationshipSlottedPipe(source, idName, fromSlot, LazyType(typ)(context.semanticTable),
-          toSlot, slots, props.map(convertExpressions))(id = id)
 
       case Top(_, sortItems, SignedDecimalIntegerLiteral("1")) =>
         Top1SlottedPipe(source, sortItems.map(translateColumnOrder(slots, _)).toList)(id = id)
@@ -452,8 +475,8 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         ForeachSlottedPipe(lhs, rhs, innerVariableSlot, convertExpressions(expression))(id)
 
       case Union(_, _) =>
-        val lhsSlots = slotConfigs(lhs.id())
-        val rhsSlots = slotConfigs(rhs.id())
+        val lhsSlots = slotConfigs(lhs.id)
+        val rhsSlots = slotConfigs(rhs.id)
         UnionSlottedPipe(lhs, rhs,
           SlottedPipeBuilder.computeUnionMapping(lhsSlots, slots),
           SlottedPipeBuilder.computeUnionMapping(rhsSlots, slots))(id = id)

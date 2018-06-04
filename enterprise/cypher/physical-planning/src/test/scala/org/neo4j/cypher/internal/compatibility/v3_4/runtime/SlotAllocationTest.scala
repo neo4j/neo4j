@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
 import org.opencypher.v9_0.ast.ASTAnnotationMap
 import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, VarPatternLength}
+import org.neo4j.cypher.internal.ir.v3_5.{CreateNode, PlannerQuery, VarPatternLength}
 import org.opencypher.v9_0.util.LabelId
 import org.opencypher.v9_0.util.symbols._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
@@ -420,7 +420,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     def expand(n:Int): LogicalPlan =
       n match {
         case 1 => NodeByLabelScan("n1", LabelName("label2")(pos), Set.empty)
-        case n => Expand(expand(n-1), "n"+(n-1), SemanticDirection.INCOMING, Seq.empty, "n"+n, "r"+(n-1), ExpandAll)
+        case _ => Expand(expand(n-1), "n"+(n-1), SemanticDirection.INCOMING, Seq.empty, "n"+n, "r"+(n-1), ExpandAll)
       }
     val N = 10
 
@@ -811,7 +811,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     val label = LabelToken("label2", LabelId(0))
     val argument = Argument()
     val list = literalIntList(1, 2, 3)
-    val rhs = CreateNode(argument, z, Seq.empty, None)
+    val rhs = Create(argument, List(CreateNode(z, Seq.empty, None)), Nil)
     val foreach = ForeachApply(lhs, rhs, "i", list)
 
     val semanticTableWithList = SemanticTable(ASTAnnotationMap(list -> ExpressionTypeInfo(ListType(CTInteger), Some(ListType(CTAny)))))
@@ -846,7 +846,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     val label = LabelToken("label2", LabelId(0))
     val argument = Argument()
     val list = literalList(Variable("x")(pos))
-    val rhs = CreateNode(argument, z, Seq.empty, None)
+    val rhs = Create(argument, List(CreateNode(z, Seq.empty, None)), Nil)
     val foreach = ForeachApply(lhs, rhs, "i", list)
 
     val semanticTableWithList = SemanticTable(ASTAnnotationMap(list -> ExpressionTypeInfo(ListType(CTNode), Some(ListType(CTNode)))))

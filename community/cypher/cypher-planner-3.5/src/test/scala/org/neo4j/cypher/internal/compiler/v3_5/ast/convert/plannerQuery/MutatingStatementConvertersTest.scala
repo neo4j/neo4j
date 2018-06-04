@@ -86,9 +86,9 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     ))
 
     query.queryGraph.mutatingPatterns should equal(Seq(
-      CreateNodePattern("a", Seq.empty, None),
-      CreateNodePattern("b", Seq.empty, None),
-      CreateRelationshipPattern("r", "a", RelTypeName("X")(pos), "b", None, SemanticDirection.OUTGOING)
+      CreatePattern(
+        nodes("a", "b"),
+        relationship("r", "a", "X", "b"))
     ))
 
     query.queryGraph.containsReads should be (false)
@@ -101,7 +101,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     ))
 
     query.queryGraph.patternNodes should equal(Set("n"))
-    query.queryGraph.mutatingPatterns should equal(Seq(CreateNodePattern("m", Seq.empty, None)))
+    query.queryGraph.mutatingPatterns should equal(Seq(CreatePattern(nodes("m"), Nil)))
 
     val next = query.tail.get
 
@@ -117,7 +117,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     val second = query.tail.get
 
     second.queryGraph.patternNodes should equal(Set("n"))
-    second.queryGraph.mutatingPatterns should equal(IndexedSeq(CreateNodePattern("m", Seq.empty, None)))
+    second.queryGraph.mutatingPatterns should equal(IndexedSeq(CreatePattern(nodes("m"), Nil)))
 
     val third = second.tail.get
 
@@ -134,8 +134,16 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
           ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos),
           RegularPlannerQuery(QueryGraph(Set.empty, Set.empty, Set("i"),
                                          Selections(Set.empty), Vector.empty, Seq.empty, Set.empty,
-                                         IndexedSeq(CreateNodePattern("a", Seq.empty, None))),
+                                         IndexedSeq(CreatePattern(nodes("a"), Nil))),
                               RegularQueryProjection(Map("i" -> Variable("i")(pos))), None)))
     )
+  }
+
+  private def nodes(names: String*) = {
+    names.map(name => CreateNode(name, Seq.empty, None))
+  }
+
+  private def relationship(name: String, startNode: String, relType:String, endNode: String) = {
+    List(CreateRelationship(name, startNode, RelTypeName(relType)(pos), endNode, SemanticDirection.OUTGOING, None))
   }
 }

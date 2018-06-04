@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.Cardinali
 import org.opencypher.v9_0.ast
 import org.opencypher.v9_0.ast._
 import org.neo4j.cypher.internal.ir.v3_5._
+import org.neo4j.cypher.internal.v3_5.logical.plans
 import org.opencypher.v9_0.util.attribution.{Attributes, IdGen}
 import org.opencypher.v9_0.util.attribution.IdGen
 import org.opencypher.v9_0.util.{ExhaustiveShortestPathForbiddenException, InternalException}
@@ -549,33 +550,25 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
     annotate(TriadicSelection(left, right, positivePredicate, sourceId, seenId, targetId), solved, context)
   }
 
-  def planCreateNode(inner: LogicalPlan, pattern: CreateNodePattern, context: LogicalPlanningContext): LogicalPlan = {
+  def planCreate(inner: LogicalPlan, pattern: CreatePattern, context: LogicalPlanningContext): LogicalPlan = {
 
     val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(pattern))
 
-    annotate(CreateNode(inner, pattern.nodeName, pattern.labels, pattern.properties), solved, context)
+    annotate(plans.Create(inner, pattern.nodes, pattern.relationships), solved, context)
   }
 
-  def planMergeCreateNode(inner: LogicalPlan, pattern: CreateNodePattern, context: LogicalPlanningContext): LogicalPlan = {
+  def planMergeCreateNode(inner: LogicalPlan, pattern: CreateNode, context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(pattern))
+    val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(CreatePattern(List(pattern), Nil)))
 
-    annotate(MergeCreateNode(inner, pattern.nodeName, pattern.labels, pattern.properties), solved, context)
+    annotate(MergeCreateNode(inner, pattern.idName, pattern.labels, pattern.properties), solved, context)
   }
 
-  def planCreateRelationship(inner: LogicalPlan, pattern: CreateRelationshipPattern, context: LogicalPlanningContext): LogicalPlan = {
+  def planMergeCreateRelationship(inner: LogicalPlan, pattern: CreateRelationship, context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(pattern))
+    val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(CreatePattern(Nil, List(pattern))))
 
-    annotate(CreateRelationship(inner, pattern.relName, pattern.startNode, pattern.relType,
-      pattern.endNode, pattern.properties), solved, context)
-  }
-
-  def planMergeCreateRelationship(inner: LogicalPlan, pattern: CreateRelationshipPattern, context: LogicalPlanningContext): LogicalPlan = {
-
-    val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(pattern))
-
-    annotate(MergeCreateRelationship(inner, pattern.relName, pattern.startNode, pattern.relType,
+    annotate(MergeCreateRelationship(inner, pattern.idName, pattern.startNode, pattern.relType,
       pattern.endNode, pattern.properties), solved, context)
   }
 
