@@ -21,11 +21,9 @@ package org.neo4j.kernel.impl.util.collection;
 
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
@@ -47,12 +45,6 @@ class OffHeapCollectionsFactory implements CollectionsFactory
     public MutableLongSet newLongSet()
     {
         return new LongHashSet();
-    }
-
-    @Override
-    public MutableIntSet newIntSet()
-    {
-        return new IntHashSet();
     }
 
     @Override
