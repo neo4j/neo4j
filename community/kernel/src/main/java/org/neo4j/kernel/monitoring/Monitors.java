@@ -105,17 +105,22 @@ public class Monitors
     public void removeMonitorListener( Object monitorListener )
     {
         List<Class<?>> listenerInterfaces = getAllInterfaces( monitorListener );
-        methodsStream( listenerInterfaces ).forEach( key -> methodMonitorListeners.computeIfPresent( key, ( method1, handlers ) ->
-        {
-            handlers.removeIf( handler -> monitorListener.equals( handler.getMonitorListener() ) );
-            return handlers.isEmpty() ? null : handlers;
-        } ) );
+        methodsStream( listenerInterfaces ).forEach( method -> cleanupMonitorListeners( monitorListener, method ) );
         listenerInterfaces.forEach( monitoredInterfaces::remove );
     }
 
     public boolean hasListeners( Class<?> monitorClass )
     {
         return monitoredInterfaces.contains( monitorClass );
+    }
+
+    private void cleanupMonitorListeners( Object monitorListener, Method key )
+    {
+        methodMonitorListeners.computeIfPresent( key, ( method1, handlers ) ->
+        {
+            handlers.removeIf( handler -> monitorListener.equals( handler.getMonitorListener() ) );
+            return handlers.isEmpty() ? null : handlers;
+        } );
     }
 
     private static List<Class<?>> getAllInterfaces( Object monitorListener )
@@ -134,7 +139,7 @@ public class Monitors
                                : new TaggedMonitorListenerInvocationHandler( monitorListener, tags );
     }
 
-    private static <T> void requireInterface( Class<T> monitorClass )
+    private static void requireInterface( Class monitorClass )
     {
         if ( !monitorClass.isInterface() )
         {
@@ -210,19 +215,20 @@ public class Monitors
         private void invokeMonitorListeners( Object proxy, Method method, Object[] args )
         {
             Set<MonitorListenerInvocationHandler> handlers = methodMonitorListeners.get( method );
-            if ( handlers != null )
+            if ( handlers == null )
             {
-                for ( MonitorListenerInvocationHandler monitorListenerInvocationHandler : handlers )
+                return;
+            }
+            for ( MonitorListenerInvocationHandler monitorListenerInvocationHandler : handlers )
+            {
+                try
                 {
-                    try
-                    {
-                        monitorListenerInvocationHandler.invoke( proxy, method, args, tags );
-                    }
-                    catch ( Throwable e )
-                    {
-                        String message = String.format( "Encountered exception while handling listener for monitor method %s", method.getName() );
-                        log.warn( message, e );
-                    }
+                    monitorListenerInvocationHandler.invoke( proxy, method, args, tags );
+                }
+                catch ( Throwable e )
+                {
+                    String message = String.format( "Encountered exception while handling listener for monitor method %s", method.getName() );
+                    log.warn( message, e );
                 }
             }
         }
