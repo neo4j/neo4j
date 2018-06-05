@@ -45,8 +45,8 @@ public class ContentTypeDispatcher extends ByteToMessageDecoder
     {
         if ( contentTypeProtocol.isExpecting( ContentType.ContentType ) )
         {
-            byte b = in.readByte();
-            ContentType contentType = getContentType( b );
+            byte messageCode = in.readByte();
+            ContentType contentType = getContentType( messageCode );
             contentTypeProtocol.expect( contentType );
         }
         else
@@ -55,15 +55,15 @@ public class ContentTypeDispatcher extends ByteToMessageDecoder
         }
     }
 
-    private ContentType getContentType( byte b )
+    private ContentType getContentType( byte messageCode )
     {
         for ( ContentType contentType : ContentType.values() )
         {
-            if ( contentType.get() == b )
+            if ( contentType.get() == messageCode )
             {
                 return contentType;
             }
         }
-        throw new IllegalArgumentException( "Illegal inbound. Could not find a ContentType with value " + b );
+        throw new IllegalArgumentException( "Illegal inbound. Could not find a ContentType with value " + messageCode );
     }
 }

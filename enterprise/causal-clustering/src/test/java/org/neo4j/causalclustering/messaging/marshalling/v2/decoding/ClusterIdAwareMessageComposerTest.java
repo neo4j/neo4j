@@ -27,12 +27,9 @@ import org.junit.Test;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
 import java.util.UUID;
-import java.util.function.BiFunction;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
-import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransaction;
 import org.neo4j.causalclustering.identity.ClusterId;
 
@@ -41,7 +38,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class RaftMessageComposerTest
+public class ClusterIdAwareMessageComposerTest
 {
 
     @Test
@@ -105,8 +102,8 @@ public class RaftMessageComposerTest
         return new RaftMessages.PruneRequest( 1 );
     }
 
-    private RaftMessageDecoder.RaftMessageCreator messageCreator( BiFunction<Queue<Long>,Queue<ReplicatedContent>,RaftMessages.BaseRaftMessage> biFunction )
+    private RaftMessageDecoder.ClusterIdAwareMessageComposer messageCreator( RaftMessageDecoder.LazyComposer biFunction )
     {
-        return new RaftMessageDecoder.RaftMessageCreator( biFunction, new ClusterId( UUID.randomUUID() ) );
+        return new RaftMessageDecoder.ClusterIdAwareMessageComposer( biFunction, new ClusterId( UUID.randomUUID() ) );
     }
 }
