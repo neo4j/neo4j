@@ -29,7 +29,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
+import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.RandomValues;
@@ -50,14 +50,14 @@ public class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialSchemaKey,Nativ
             Values.pointValue( WGS84, 180, 90 ),
     };
 
-    private final CoordinateReferenceSystem crs;
+    private final SpaceFillingCurveSettingsFactory curveFactory;
     private final SpaceFillingCurve curve;
 
-    SpatialLayoutTestUtil( IndexDescriptor descriptor, SpaceFillingCurveSettings settings, CoordinateReferenceSystem crs )
+    SpatialLayoutTestUtil( IndexDescriptor descriptor, SpaceFillingCurveSettingsFactory settings, CoordinateReferenceSystem crs )
     {
-        super( descriptor.withId( 0 ) );
-        this.curve = settings.curve();
-        this.crs = crs;
+        super( descriptor );
+        this.curveFactory = settings;
+        this.curve = settings.settingsFor( crs ).curve();
         // The layout is the same, but we might consider supporting other CRS here, too.
         assert crs == CoordinateReferenceSystem.WGS84;
     }
@@ -65,7 +65,7 @@ public class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialSchemaKey,Nativ
     @Override
     Layout<SpatialSchemaKey,NativeSchemaValue> createLayout()
     {
-        return new SpatialLayout( crs, curve );
+        return new SpatialLayout( curveFactory );
     }
 
     @Override

@@ -62,7 +62,7 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey<KEY>,VALUE extend
         this.readOnly = readOnly;
     }
 
-    abstract Layout<KEY,VALUE> layout( StoreIndexDescriptor descriptor );
+    abstract Layout<KEY,VALUE> layout( File storeFile, StoreIndexDescriptor descriptor );
 
     @Override
     public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
@@ -73,7 +73,7 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey<KEY>,VALUE extend
         }
 
         File storeFile = nativeIndexFileFromIndexId( descriptor.getId() );
-        return newIndexPopulator( storeFile, layout( descriptor ), descriptor, samplingConfig );
+        return newIndexPopulator( storeFile, layout( storeFile, descriptor ), descriptor, samplingConfig );
     }
 
     protected abstract IndexPopulator newIndexPopulator( File storeFile, Layout<KEY,VALUE> layout, StoreIndexDescriptor descriptor,
@@ -83,7 +83,7 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey<KEY>,VALUE extend
     public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         File storeFile = nativeIndexFileFromIndexId( descriptor.getId() );
-        return newIndexAccessor( storeFile, layout( descriptor ), descriptor, samplingConfig );
+        return newIndexAccessor( storeFile, layout( storeFile, descriptor ), descriptor, samplingConfig );
     }
 
     protected abstract IndexAccessor newIndexAccessor( File storeFile, Layout<KEY,VALUE> layout, StoreIndexDescriptor descriptor,

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo4j,"
- * Neo4j Sweden AB [http://neo4j.com]
+ * Copyright (c) 2002-2018 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
-public class DateNonUniqueSchemaIndexAccessorTest extends TemporalSchemaIndexAccessorTest
+public abstract class TemporalUniqueSchemaIndexPopulatorTest extends NativeUniqueSchemaIndexPopulatorTest<TemporalSchemaKey,NativeSchemaValue>
 {
     @Override
-    protected LayoutTestUtil<TemporalSchemaKey,NativeSchemaValue> createLayoutTestUtil()
+    NativeSchemaIndexPopulator<TemporalSchemaKey,NativeSchemaValue> createPopulator( IndexSamplingConfig samplingConfig )
     {
-        return new DateLayoutTestUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ) );
+        return new TemporalIndexPopulator( pageCache, fs, getIndexFile(), layout, monitor, indexDescriptor, samplingConfig );
     }
 }

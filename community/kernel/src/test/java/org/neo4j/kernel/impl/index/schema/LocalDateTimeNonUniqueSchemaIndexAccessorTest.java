@@ -19,26 +19,12 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.IOException;
-
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.values.storable.ValueGroup;
 
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
-
-public class LocalDateTimeNonUniqueSchemaIndexAccessorTest extends NativeSchemaIndexAccessorTest<LocalDateTimeSchemaKey,NativeSchemaValue>
+public class LocalDateTimeNonUniqueSchemaIndexAccessorTest extends TemporalSchemaIndexAccessorTest
 {
     @Override
-    NativeSchemaIndexAccessor<LocalDateTimeSchemaKey,NativeSchemaValue> makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
-    {
-        TemporalIndexFiles.FileLayout<LocalDateTimeSchemaKey> fileLayout =
-                new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.LOCAL_DATE_TIME );
-        return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, IMMEDIATE, monitor, indexDescriptor, samplingConfig );
-    }
-
-    @Override
-    protected LayoutTestUtil<LocalDateTimeSchemaKey,NativeSchemaValue> createLayoutTestUtil()
+    protected LayoutTestUtil<TemporalSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
         return new LocalDateTimeLayoutTestUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ) );
     }

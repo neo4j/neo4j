@@ -17,17 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema.fusion;
+package org.neo4j.kernel.impl.api.schema;
 
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 public class BridgingIndexProgressorTest
 {
@@ -37,7 +34,7 @@ public class BridgingIndexProgressorTest
         IndexDescriptor index = TestIndexDescriptorFactory.forLabel( 1, 2, 3 );
         BridgingIndexProgressor progressor = new BridgingIndexProgressor( null, index.schema().getPropertyIds() );
 
-        IndexProgressor[] parts = {mock(IndexProgressor.class), mock(IndexProgressor.class)};
+        IndexProgressor[] parts = {Mockito.mock(IndexProgressor.class), Mockito.mock(IndexProgressor.class)};
 
         // Given
         for ( IndexProgressor part : parts )
@@ -51,7 +48,7 @@ public class BridgingIndexProgressorTest
         // Then
         for ( IndexProgressor part : parts )
         {
-            verify( part, times( 1 ) ).close();
+            Mockito.verify( part, Mockito.times( 1 ) ).close();
         }
     }
 }

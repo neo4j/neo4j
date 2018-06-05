@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
@@ -34,24 +32,13 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMME
 abstract class SpatialSchemaIndexAccessorTest extends NativeSchemaIndexAccessorTest<SpatialSchemaKey,NativeSchemaValue>
 {
     static final CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
-    static final SpaceFillingCurveSettings settings = new SpaceFillingCurveSettingsFactory( Config.defaults() ).settingsFor( crs );
-
-    SpatialIndexFiles.SpatialFileLayout fileLayout;
+    static final SpaceFillingCurveSettingsFactory settings = new SpaceFillingCurveSettingsFactory( Config.defaults() );
 
     @Override
     NativeSchemaIndexAccessor<SpatialSchemaKey,NativeSchemaValue> makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
     {
-        fileLayout = new SpatialIndexFiles.SpatialFileLayout( CoordinateReferenceSystem.WGS84, settings, super.getIndexFile() );
-        SpatialIndexFiles.SpatialFileLayout fileLayout =
-                new SpatialIndexFiles.SpatialFileLayout( CoordinateReferenceSystem.WGS84, settings, super.getIndexFile() );
-        return new SpatialIndexAccessor.PartAccessor( pageCache, fs, fileLayout, IMMEDIATE, monitor, indexDescriptor, samplingConfig,
+        return new SpatialIndexAccessor( pageCache, fs, getIndexFile(), layout, IMMEDIATE, monitor, indexDescriptor, samplingConfig,
                 new StandardConfiguration() );
-    }
-
-    @Override
-    public File getIndexFile()
-    {
-        return fileLayout.indexFile;
     }
 
     @Override

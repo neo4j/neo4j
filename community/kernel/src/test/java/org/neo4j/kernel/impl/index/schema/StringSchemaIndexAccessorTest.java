@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
+
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
