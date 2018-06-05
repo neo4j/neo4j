@@ -261,7 +261,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-primitive-collections</artifactId>
-      <version>3.4.0-rc01</version>
+      <version>3.4.0</version>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>
