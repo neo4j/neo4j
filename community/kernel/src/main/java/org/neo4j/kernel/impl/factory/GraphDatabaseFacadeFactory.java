@@ -25,9 +25,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.neo4j.configuration.Internal;
-import org.neo4j.configuration.LoadableConfig;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -35,7 +32,6 @@ import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.StartupWaiter;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.VmPauseMonitorComponent;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
@@ -47,9 +43,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 
-import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
-import static org.neo4j.kernel.configuration.Settings.STRING;
-import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.impl.query.QueryEngineProvider.noEngine;
 
 /**
@@ -86,25 +79,6 @@ public class GraphDatabaseFacadeFactory
         Map<String,URLAccessRule> urlAccessRules();
 
         Iterable<QueryEngineProvider> executionEngines();
-    }
-
-    public static class Configuration implements LoadableConfig
-    {
-        @Internal
-        public static final Setting<Boolean> ephemeral =
-                setting( "unsupported.dbms.ephemeral", BOOLEAN, Settings.FALSE );
-
-        @Internal
-        public static final Setting<String> lock_manager =
-                setting( "unsupported.dbms.lock_manager", STRING, "" );
-
-        @Internal
-        public static final Setting<String> tracer =
-                setting( "unsupported.dbms.tracer", STRING, Settings.NO_DEFAULT );
-
-        @Internal
-        public static final Setting<String> editionName =
-                setting( "unsupported.dbms.edition", STRING, Edition.unknown.toString() );
     }
 
     protected final DatabaseInfo databaseInfo;

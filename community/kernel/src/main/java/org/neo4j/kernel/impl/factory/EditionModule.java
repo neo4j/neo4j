@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.function.Predicate;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -39,7 +40,6 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -163,7 +163,7 @@ public abstract class EditionModule
     {
         sysInfo.set( UsageDataKeys.edition, databaseInfo.edition );
         sysInfo.set( UsageDataKeys.operationalMode, databaseInfo.operationalMode );
-        config.augment( Configuration.editionName, databaseInfo.edition.toString() );
+        config.augment( GraphDatabaseSettings.editionName, databaseInfo.edition.toString() );
     }
 
     public abstract void setupSecurityModule( PlatformModule platformModule, Procedures procedures );

@@ -103,7 +103,7 @@ public class GraphDatabaseFactory
             @Override
             public GraphDatabaseService newDatabase( @Nonnull Config config )
             {
-                config.augment( GraphDatabaseFacadeFactory.Configuration.ephemeral, "false" );
+                config.augment( GraphDatabaseSettings.ephemeral, "false" );
                 return GraphDatabaseFactory.this.newEmbeddedDatabase( storeDir, config, state.databaseDependencies() );
             }
         };

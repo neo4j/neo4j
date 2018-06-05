@@ -70,7 +70,6 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.factory.AccessCapability;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
@@ -586,7 +585,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             SynchronizedArrayIdOrderingQueue explicitIndexTransactionOrdering, TransactionIdStore transactionIdStore )
     {
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 100_000 );
-        if ( config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral ) )
+        if ( config.get( GraphDatabaseSettings.ephemeral ) )
         {
             config.augmentDefaults( GraphDatabaseSettings.keep_logical_logs, "1 files" );
         }

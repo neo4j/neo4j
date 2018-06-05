@@ -28,6 +28,7 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
@@ -53,7 +54,7 @@ public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
         {
             Config config = Config.builder()
                     .withSettings( params )
-                    .withSetting( GraphDatabaseFacadeFactory.Configuration.ephemeral, "false" ).build();
+                    .withSetting( GraphDatabaseSettings.ephemeral, "false" ).build();
             return new GraphDatabaseFacadeFactory( DatabaseInfo.ENTERPRISE, EnterpriseEditionModule::new )
             {
                 @Override

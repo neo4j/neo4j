@@ -54,7 +54,6 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -115,7 +114,7 @@ public class TransactionTerminationIT
     {
         ServerControls server = cleanupRule.add( TestServerBuilders.newInProcessBuilder()
                 .withConfig( GraphDatabaseSettings.auth_enabled, Settings.FALSE )
-                .withConfig( GraphDatabaseFacadeFactory.Configuration.lock_manager, lockManagerName )
+                .withConfig( GraphDatabaseSettings.lock_manager, lockManagerName )
                 .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newServer() );
 
@@ -389,7 +388,7 @@ public class TransactionTerminationIT
 
     private ClusterManager.ManagedCluster startCluster()
     {
-        clusterRule.withSharedSetting( GraphDatabaseFacadeFactory.Configuration.lock_manager, lockManagerName );
+        clusterRule.withSharedSetting( GraphDatabaseSettings.lock_manager, lockManagerName );
 
         ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
         cluster.await( ClusterManager.allSeesAllAsAvailable() );

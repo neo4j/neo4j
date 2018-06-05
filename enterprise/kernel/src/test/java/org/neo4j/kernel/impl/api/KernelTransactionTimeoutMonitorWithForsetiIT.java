@@ -25,7 +25,7 @@ package org.neo4j.kernel.impl.api;
 import org.neo4j.kernel.impl.enterprise.lock.forseti.ForsetiLocksFactory;
 import org.neo4j.test.rule.DatabaseRule;
 
-import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.lock_manager;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.lock_manager;
 
 public class KernelTransactionTimeoutMonitorWithForsetiIT extends KernelTransactionTimeoutMonitorIT
 {

@@ -230,7 +230,7 @@ public class CommunityEditionModule extends EditionModule
 
     public static Locks createLockManager( Config config, Clock clock, LogService logging )
     {
-        String key = config.get( GraphDatabaseFacadeFactory.Configuration.lock_manager );
+        String key = config.get( GraphDatabaseSettings.lock_manager );
         for ( Locks.Factory candidate : Service.load( Locks.Factory.class ) )
         {
             String candidateId = candidate.getKeys().iterator().next();

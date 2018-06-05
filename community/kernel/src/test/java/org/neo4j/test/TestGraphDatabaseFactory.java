@@ -52,9 +52,9 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.time.SystemNanoClock;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.ephemeral;
 import static org.neo4j.kernel.configuration.Connector.ConnectorType.BOLT;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
-import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.ephemeral;
 
 
 /**

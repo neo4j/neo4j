@@ -174,7 +174,7 @@ public class PlatformModule
         new JvmChecker( logging.getInternalLog( JvmChecker.class ),
                 new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 
-        String desiredImplementationName = config.get( GraphDatabaseFacadeFactory.Configuration.tracer );
+        String desiredImplementationName = config.get( GraphDatabaseSettings.tracer );
         tracers = dependencies.satisfyDependency( new Tracers( desiredImplementationName,
                 logging.getInternalLog( Tracers.class ), monitors, jobScheduler, clock ) );
         dependencies.satisfyDependency( tracers.pageCacheTracer );

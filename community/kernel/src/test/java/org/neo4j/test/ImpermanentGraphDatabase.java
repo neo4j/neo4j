@@ -43,10 +43,10 @@ import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.ephemeral;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
-import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.ephemeral;
 
 /**
  * A database meant to be used in unit tests. It will always be empty on start.

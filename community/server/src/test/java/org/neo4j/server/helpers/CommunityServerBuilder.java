@@ -76,7 +76,7 @@ public class CommunityServerBuilder
     private static LifecycleManagingDatabase.GraphFactory IN_MEMORY_DB = ( config, dependencies ) ->
     {
         File storeDir = config.get( GraphDatabaseSettings.database_path );
-        config.augment( stringMap( GraphDatabaseFacadeFactory.Configuration.ephemeral.name(), "true",
+        config.augment( stringMap( GraphDatabaseSettings.ephemeral.name(), "true",
                 new BoltConnector( "bolt" ).listen_address.name(), "localhost:0" ) );
         return new ImpermanentGraphDatabase( storeDir, config,
                 GraphDatabaseDependencies.newDependencies( dependencies ) );

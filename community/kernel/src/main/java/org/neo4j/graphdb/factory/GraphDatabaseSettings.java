@@ -45,6 +45,7 @@ import org.neo4j.kernel.configuration.Migrator;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.configuration.ssl.SslPolicyConfigValidator;
+import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogTimeZone;
 
@@ -119,6 +120,18 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "Only allow read operations from this Neo4j instance. " +
             "This mode still requires write access to the directory for lock purposes." )
     public static final Setting<Boolean> read_only = setting( "dbms.read_only", BOOLEAN, FALSE );
+
+    @Internal
+    public static final Setting<Boolean> ephemeral = setting( "unsupported.dbms.ephemeral", BOOLEAN, FALSE );
+
+    @Internal
+    public static final Setting<String> lock_manager = setting( "unsupported.dbms.lock_manager", STRING, "" );
+
+    @Internal
+    public static final Setting<String> tracer = setting( "unsupported.dbms.tracer", STRING, NO_DEFAULT );
+
+    @Internal
+    public static final Setting<String> editionName = setting( "unsupported.dbms.edition", STRING, Edition.unknown.toString() );
 
     @Title( "Disconnected" )
     @Internal

@@ -41,7 +41,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -241,7 +240,7 @@ public class MetricsKernelExtensionFactoryIT
         GraphDatabaseService nullTracerDatabase =
                 builder.setConfig( MetricsSettings.neoEnabled, Settings.TRUE ).setConfig( csvEnabled, Settings.TRUE )
                         .setConfig( csvPath, outputPath.getAbsolutePath() )
-                        .setConfig( GraphDatabaseFacadeFactory.Configuration.tracer, "null" ) // key point!
+                        .setConfig( GraphDatabaseSettings.tracer, "null" ) // key point!
                         .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                         .newGraphDatabase();
         try ( Transaction tx = nullTracerDatabase.beginTx() )
