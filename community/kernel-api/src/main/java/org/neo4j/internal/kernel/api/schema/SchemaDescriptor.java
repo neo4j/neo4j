@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.schema;
 
+import java.util.Arrays;
 import java.util.function.Predicate;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
@@ -38,6 +39,11 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 public interface SchemaDescriptor extends SchemaDescriptorSupplier
 {
     int[] ANY_ENTITY_TOKEN = new int[0];
+
+    static boolean isAnyEntityTokenSchema( SchemaDescriptor schema )
+    {
+        return Arrays.equals(schema.getEntityTokenIds(), ANY_ENTITY_TOKEN );
+    }
 
     /**
      * Returns true if any of the given entity token ids are part of this schema unit.

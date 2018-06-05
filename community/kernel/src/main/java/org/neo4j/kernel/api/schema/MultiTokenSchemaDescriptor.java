@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.schema;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -35,6 +34,7 @@ import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
 import static java.util.stream.Collectors.joining;
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.isAnyEntityTokenSchema;
 
 public class MultiTokenSchemaDescriptor implements org.neo4j.internal.kernel.api.schema.MultiTokenSchemaDescriptor
 {
@@ -53,7 +53,7 @@ public class MultiTokenSchemaDescriptor implements org.neo4j.internal.kernel.api
     @Override
     public boolean isAffected( long[] entityTokenIds )
     {
-        if ( Arrays.equals( entityTokens, ANY_ENTITY_TOKEN ) )
+        if ( isAnyEntityTokenSchema( this ) )
         {
             return true;
         }
@@ -70,15 +70,13 @@ public class MultiTokenSchemaDescriptor implements org.neo4j.internal.kernel.api
     @Override
     public <R> R computeWith( SchemaComputer<R> computer )
     {
-        throw new NotImplementedException( "Not implemented" );
-//        return computer.computeSpecific( this );
+        throw new UnsupportedOperationException( "Not an valid operation for multitoken schema" );
     }
 
     @Override
     public void processWith( SchemaProcessor processor )
     {
-        throw new NotImplementedException( "Not implemented" );
-//        processor.processSpecific( this );
+        throw new UnsupportedOperationException( "Not an valid operation for multitoken schema" );
     }
 
     @Override

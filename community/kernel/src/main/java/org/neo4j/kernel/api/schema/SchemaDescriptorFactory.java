@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.schema;
 
-import java.util.function.IntConsumer;
-
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.storageengine.api.EntityType;
 
@@ -32,14 +30,14 @@ public class SchemaDescriptorFactory
 
     public static LabelSchemaDescriptor forLabel( int labelId, int... propertyIds )
     {
-        validateLabelId( labelId );
+        validateLabelIds( labelId );
         validatePropertyIds( propertyIds );
         return new LabelSchemaDescriptor( labelId, propertyIds );
     }
 
     public static RelationTypeSchemaDescriptor forRelType( int relTypeId, int... propertyIds )
     {
-        validateRelationshipTypeLabelId( relTypeId );
+        validateRelationshipTypeIds( relTypeId );
         validatePropertyIds( propertyIds );
         return new RelationTypeSchemaDescriptor( relTypeId, propertyIds );
     }
@@ -47,18 +45,16 @@ public class SchemaDescriptorFactory
     public static MultiTokenSchemaDescriptor multiToken( int[] entityTokens, EntityType entityType, int... propertyIds )
     {
         validatePropertyIds( propertyIds );
-        IntConsumer validator;
-        if ( entityType == EntityType.NODE )
+        switch ( entityType )
         {
-            validator = SchemaDescriptorFactory::validateLabelId;
-        }
-        else
-        {
-            validator = SchemaDescriptorFactory::validateRelationshipTypeLabelId;
-        }
-        for ( int entityToken : entityTokens )
-        {
-            validator.accept( entityToken );
+        case NODE:
+            validateLabelIds( entityTokens );
+            break;
+        case RELATIONSHIP:
+            validateRelationshipTypeIds( entityTokens );
+            break;
+        default:
+            throw new IllegalArgumentException( "Cannot create schemadescriptor of type :" + entityType );
         }
         return new MultiTokenSchemaDescriptor( entityTokens, entityType, propertyIds );
     }
@@ -75,20 +71,25 @@ public class SchemaDescriptorFactory
         }
     }
 
-    private static void validateRelationshipTypeLabelId( int relType )
+    private static void validateRelationshipTypeIds( int... relTypes )
     {
-        if ( StatementConstants.NO_SUCH_RELATIONSHIP_TYPE == relType )
+        for ( int relType : relTypes )
         {
-            throw new IllegalArgumentException(
-                    "Index schema descriptor can't be created for non existent relationship type." );
+            if ( StatementConstants.NO_SUCH_RELATIONSHIP_TYPE == relType )
+            {
+                throw new IllegalArgumentException( "Index schema descriptor can't be created for non existent relationship type." );
+            }
         }
     }
 
-    private static void validateLabelId( int labelId )
+    private static void validateLabelIds( int... labelIds )
     {
-        if ( StatementConstants.NO_SUCH_LABEL == labelId )
+        for ( int labelId : labelIds )
         {
-            throw new IllegalArgumentException( "Index schema descriptor can't be created for non existent label." );
+            if ( StatementConstants.NO_SUCH_LABEL == labelId )
+            {
+                throw new IllegalArgumentException( "Index schema descriptor can't be created for non existent label." );
+            }
         }
     }
 }
