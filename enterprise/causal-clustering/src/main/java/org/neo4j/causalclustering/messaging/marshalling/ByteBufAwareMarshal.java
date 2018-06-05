@@ -32,9 +32,9 @@ import org.neo4j.storageengine.api.WritableChannel;
 
 public interface ByteBufAwareMarshal extends Marshal
 {
-    /** May override buffer allocation size.
+    /** Provides a {@link ByteBufAwareMarshal} with unknown length that uses the same consumer for encode and marshal. May override buffer allocation size.
      * @param channelConsumer used by both encode and marshal to serialize the object.
-     * @return a simple serializer that encodes all the content at once.
+     * @return a {@link ByteBufAwareMarshal} that encodes all the content at once.
      */
     static ByteBufAwareMarshal simple( ThrowingConsumer<WritableChannel,IOException> channelConsumer )
     {
