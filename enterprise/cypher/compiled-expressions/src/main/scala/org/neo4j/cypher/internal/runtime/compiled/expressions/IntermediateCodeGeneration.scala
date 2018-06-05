@@ -111,14 +111,19 @@ class IntermediateCodeGeneration {
     case Or(lhs, rhs) =>
       for {l <- compile(lhs)
            r <- compile(rhs)
-      } yield invokeStatic(method[CypherBoolean, Value, Array[AnyValue]]("or"), arrayOf(l, r))
+      } yield generateOrs(List(l, r))
 
-    case Ors(exprs) =>
-      val compiled = exprs.flatMap(compile).toIndexedSeq
-      //we bail if some of the expressions weren't compiled
-      if (compiled.size < exprs.size) None
-      else Some(invokeStatic(method[CypherBoolean, Value, Array[AnyValue]]("or"), arrayOf(compiled: _*)))
+    case Ors(expressions) =>
+      val compiled = expressions.foldLeft[Option[List[IntermediateRepresentation]]](Some(List.empty)) { (acc, current) =>
+        for {l <- acc
+             e <- compile(current)} yield l :+ e
+      }
 
+      for (e <- compiled) yield e match {
+        case Nil => truthValue //this shouldn't really happen
+        case a :: Nil  => a
+        case list => generateOrs(list)
+      }
     case Xor(lhs, rhs) =>
       for {l <- compile(lhs)
            r <- compile(rhs)
@@ -331,38 +336,109 @@ class IntermediateCodeGeneration {
     * }
     * return seenNull ? NO_VALUE : returnValue;
     */
-  private def generateAnds(expressions: List[IntermediateRepresentation]) = {
+  private def generateAnds(expressions: List[IntermediateRepresentation]) =
+    generateCompositeBoolean(expressions, falseValue)
+
+  /**
+    * Ok OR and ORS are also complicated.  At the core we try to find a single `TRUE` if we find one there is no need to look
+    * at more predicates. If it doesn't find a `TRUE` it will either return `NULL` if any of the predicates has evaluated
+    * to `NULL` or `FALSE` if all predicates evaluated to `FALSE`.
+    *
+    * For example:
+    * - OR(FALSE, NULL) -> NULL
+    * - OR(NULL, FALSE) -> NULL
+    * - OR(TRUE, NULL) -> TRUE
+    * - OR(NULL, TRUE) -> TRUE
+    *
+    * Errors are an extra complication here, errors are treated as `NULL` except that we will throw an error instead of
+    * returning `NULL`, so for example:
+    *
+    * - OR(TRUE, 42) -> TRUE
+    * - OR(42, TRUE) -> TRUE
+    * - OR(FALSE, 42) -> throw type error
+    * - OR(42, FALSE) -> throw type error
+    *
+    * The generated code below will look something like;
+    *
+    * RuntimeException error = null;
+    * boolean seenNull = false;
+    * Value returnValue = null;
+    * try
+    * {
+    *   returnValue = [expressions.head];
+    * }
+    * catch( RuntimeException e)
+    * {
+    *   error = e;
+    * }
+    * seenNull = returnValue == NO_VALUE;
+    * if ( returnValue != TRUE )
+    * {
+    *    try
+    *    {
+    *      returnValue = expressions.tail.head;
+    *    }
+    *    catch( RuntimeException e)
+    *    {
+    *      error = e;
+    *    }
+    *    seenValue = returnValue == TRUE ? false : (seenValue ? true : returnValue == NO_VALUE);
+    *    if ( returnValue != TRUE )
+    *    {
+    *       try
+    *       {
+    *         returnValue = expressions.tail.tail.head;
+    *       }
+    *       catch( RuntimeException e)
+    *       {
+    *         error = e;
+    *       }
+    *       seenValue = returnValue == TRUE ? false : (seenValue ? true : returnValue == NO_VALUE);
+    *       ...[continue unroll until we are at the end of expressions]
+    *     }
+    * }
+    * if ( error != null && returnValue != TRUE )
+    * {
+    *   throw error;
+    * }
+    * return seenNull ? NO_VALUE : returnValue;
+    */
+  private def generateOrs(expressions: List[IntermediateRepresentation]) =
+    generateCompositeBoolean(expressions, truthValue)
+
+  private def generateCompositeBoolean(expressions: List[IntermediateRepresentation], breakValue: IntermediateRepresentation) = {
     //these are the temp variables used
     val returnValue = nextVariableName()
     val seenNull = nextVariableName()
     val error = nextVariableName()
     val exceptionName = nextVariableName()
-    //this is setting up  a `if (returnValue != FALSE)`
-    val ifNotFalse: IntermediateRepresentation => IntermediateRepresentation = condition(notEqual(load(returnValue), falseValue))
+    //this is setting up  a `if (returnValue != breakValue)`
+    val ifNotBreakValue: IntermediateRepresentation => IntermediateRepresentation = condition(notEqual(load(returnValue), breakValue))
     //this is the inner block of the condition
-    val inner = (e:IntermediateRepresentation) => Seq(tryCatch[RuntimeException](exceptionName)(assign(returnValue, invokeStatic(ASSERT_PREDICATE, e)))(
-      assign(error, load(exceptionName))),
+    val inner = (e: IntermediateRepresentation) => Seq(
+      tryCatch[RuntimeException](exceptionName)(assign(returnValue, invokeStatic(ASSERT_PREDICATE, e)))(
+        assign(error, load(exceptionName))),
       assign(seenNull,
-           ternary(equal(load(returnValue), falseValue), constant(false),
-                   ternary(load(seenNull),
-                           constant(true),
-                           equal(load(returnValue), noValue)))))
+             ternary(equal(load(returnValue), breakValue), constant(false),
+                     ternary(load(seenNull),
+                             constant(true),
+                             equal(load(returnValue), noValue)))))
 
     //this loop generates the nested expression:
-    //if (returnValue != FALSE) {
+    //if (returnValue != breakValue) {
     //  try {
     //    returnValue = ...;
     //  } catch ( RuntimeException e) { error = e}
     //  ...
-    //  if (returnValue != false ) {
+    //  if (returnValue != breakValue ) {
     //    try {
     //        returnValue = ...;
     //    } catch ( RuntimeException e) { error = e}
     //    ...
     def loop(e: List[IntermediateRepresentation]): IntermediateRepresentation = e match {
       case Nil => throw new InternalException("we should never get here")
-      case a :: Nil => ifNotFalse(block(inner(a):_*))
-      case hd::tl => ifNotFalse(block(inner(hd) :+ loop(tl):_*))
+      case a :: Nil => ifNotBreakValue(block(inner(a):_*))
+      case hd::tl => ifNotBreakValue(block(inner(hd) :+ loop(tl):_*))
     }
 
     block(
@@ -373,14 +449,14 @@ class IntermediateCodeGeneration {
       assign(seenNull, constant(false)),
       declare[Value](returnValue),
       assign(returnValue, constant(null)),
-      //assign returnValut to head of expressions
+      //assign returnValue to head of expressions
       tryCatch[RuntimeException](exceptionName)(assign(returnValue, invokeStatic(ASSERT_PREDICATE, expressions.head)))(
         assign(error, load(exceptionName))),
       assign(seenNull, equal(load(returnValue), noValue)),
       //generated unrolls tail of expression
       loop(expressions.tail),
-      //checks if there was an error and that we never evaluted to FALSE, if so throw
-      condition(and(notEqual(load(error), constant(null)), notEqual(load(returnValue), falseValue)))(
+      //checks if there was an error and that we never evaluated to breakValue, if so throw
+      condition(and(notEqual(load(error), constant(null)), notEqual(load(returnValue), breakValue)))(
         fail(load(error))),
       //otherwise check if we have seen a null which implicitly also mean we never seen a FALSE
       //if we seen a null we should return null otherwise we return whatever currently

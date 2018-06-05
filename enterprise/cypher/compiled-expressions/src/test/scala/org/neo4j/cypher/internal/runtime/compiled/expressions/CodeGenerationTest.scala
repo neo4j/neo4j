@@ -362,11 +362,34 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(xor(f, noValue)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.NO_VALUE)
   }
 
+  test("OR should throw on non-boolean input") {
+    a [CypherTypeException] should be thrownBy compile(or(literalInt(42), f)).evaluate(ctx, dbAccess, EMPTY_MAP)
+    a [CypherTypeException] should be thrownBy compile(or(f, literalInt(42))).evaluate(ctx, dbAccess, EMPTY_MAP)
+    compile(or(t, literalInt(42))).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.TRUE)
+    compile(or(literalInt(42), t)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.TRUE)
+  }
+
   test("ORS") {
     compile(ors(f, f, f, f, f, f, t, f)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.TRUE)
     compile(ors(f, f, f, f, f, f, f, f)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.FALSE)
     compile(ors(f, f, f, f, noValue, f, f, f)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.NO_VALUE)
     compile(ors(f, f, f, t, noValue, t, f, f)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.TRUE)
+  }
+
+  test("ORS should throw on non-boolean input") {
+    val compiled = compile(ors(parameter("a"), parameter("b"), parameter("c"), parameter("d"), parameter("e")))
+    val keys = Array("a", "b", "c", "d", "e")
+    compiled.evaluate(ctx, dbAccess,
+                      map(keys, Array(Values.FALSE, Values.FALSE, Values.FALSE, Values.FALSE, Values.FALSE))) should equal(Values.FALSE)
+
+    compiled.evaluate(ctx, dbAccess,
+                      map(keys, Array(Values.FALSE, Values.FALSE, Values.TRUE, Values.FALSE, Values.FALSE))) should equal(Values.TRUE)
+
+    compiled.evaluate(ctx, dbAccess,
+                      map(keys, Array(intValue(42), Values.FALSE, Values.TRUE, Values.FALSE, Values.FALSE))) should equal(Values.TRUE)
+
+    a [CypherTypeException] should be thrownBy compiled.evaluate(ctx, dbAccess,
+                                                                 map(keys, Array(intValue(42), Values.FALSE, Values.FALSE, Values.FALSE, Values.FALSE)))
   }
 
   test("AND") {
@@ -410,7 +433,6 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
     a [CypherTypeException] should be thrownBy compiled.evaluate(ctx, dbAccess,
                                     map(keys, Array(intValue(42), Values.TRUE, Values.TRUE, Values.TRUE, Values.TRUE)))
-
   }
 
   test("NOT") {

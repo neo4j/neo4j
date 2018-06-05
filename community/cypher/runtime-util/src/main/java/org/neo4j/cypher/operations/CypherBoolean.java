@@ -36,25 +36,6 @@ public final class CypherBoolean
         throw new UnsupportedOperationException( "Do not instantiate" );
     }
 
-    public static Value or( AnyValue... args )
-    {
-        boolean seenNull = false;
-        for ( AnyValue arg : args )
-        {
-            if ( arg == NO_VALUE )
-            {
-                seenNull = true;
-                continue;
-            }
-
-            if ( arg == Values.TRUE )
-            {
-                return Values.TRUE;
-            }
-        }
-        return seenNull ? NO_VALUE : Values.FALSE;
-    }
-
     public static Value xor( AnyValue lhs, AnyValue rhs )
     {
         boolean seenNull = false;
@@ -64,25 +45,6 @@ public final class CypherBoolean
         }
 
         return (lhs == Values.TRUE) ^ (rhs == Values.TRUE) ? Values.TRUE : Values.FALSE;
-    }
-
-    public static Value and( AnyValue... args )
-    {
-        boolean seenNull = false;
-        for ( AnyValue arg : args )
-        {
-            if ( arg == NO_VALUE )
-            {
-                seenNull = true;
-                continue;
-            }
-
-            if ( arg == Values.FALSE )
-            {
-                return Values.FALSE;
-            }
-        }
-        return seenNull ? NO_VALUE : Values.TRUE;
     }
 
     public static Value not( AnyValue in )
