@@ -25,6 +25,7 @@ import java.util.Iterator;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
+import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.values.storable.Values;
 
@@ -40,7 +41,7 @@ public class PropertyContainerStateImplTest
     public void shouldListAddedProperties()
     {
         // Given
-        PropertyContainerStateImpl state = new PropertyContainerStateImpl( 1 );
+        PropertyContainerStateImpl state = new PropertyContainerStateImpl( 1, OnHeapCollectionsFactory.INSTANCE );
         state.addProperty( 1, Values.of( "Hello" ) );
         state.addProperty( 2, Values.of( "Hello" ) );
         state.removeProperty( 1 );
@@ -57,7 +58,7 @@ public class PropertyContainerStateImplTest
     public void shouldListAddedPropertiesEvenIfPropertiesHaveBeenReplaced()
     {
         // Given
-        PropertyContainerStateImpl state = new PropertyContainerStateImpl( 1 );
+        PropertyContainerStateImpl state = new PropertyContainerStateImpl( 1, OnHeapCollectionsFactory.INSTANCE );
         state.addProperty( 1, Values.of( "Hello" ) );
         state.addProperty( 1, Values.of( "WAT" ) );
         state.addProperty( 2, Values.of( "Hello" ) );
@@ -77,7 +78,7 @@ public class PropertyContainerStateImplTest
     public void shouldConvertAddRemoveToChange()
     {
         // Given
-        PropertyContainerStateImpl state = new PropertyContainerStateImpl( 1 );
+        PropertyContainerStateImpl state = new PropertyContainerStateImpl( 1, OnHeapCollectionsFactory.INSTANCE );
 
         // When
         state.removeProperty( 4 );

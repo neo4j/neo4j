@@ -31,6 +31,7 @@ import java.util.Set;
 
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
 import org.neo4j.kernel.impl.newapi.RelationshipDirection;
+import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
 import org.neo4j.storageengine.api.Direction;
@@ -117,9 +118,9 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
 
     private Set<MutableLongDiffSets> indexDiffs;
 
-    NodeStateImpl( long id )
+    NodeStateImpl( long id, CollectionsFactory collectionsFactory )
     {
-        super( id );
+        super( id, collectionsFactory );
     }
 
     @Override

@@ -600,7 +600,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         {
             nodeStatesMap = collectionsFactory.newLongObjectMap();
         }
-        return nodeStatesMap.getIfAbsentPut( nodeId, () -> new NodeStateImpl( nodeId ) );
+        return nodeStatesMap.getIfAbsentPut( nodeId, () -> new NodeStateImpl( nodeId, collectionsFactory ) );
     }
 
     private RelationshipStateImpl getOrCreateRelationshipState( long relationshipId )
@@ -609,14 +609,14 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         {
             relationshipStatesMap = collectionsFactory.newLongObjectMap();
         }
-        return relationshipStatesMap.getIfAbsentPut( relationshipId, () -> new RelationshipStateImpl( relationshipId ) );
+        return relationshipStatesMap.getIfAbsentPut( relationshipId, () -> new RelationshipStateImpl( relationshipId, collectionsFactory ) );
     }
 
     private GraphState getOrCreateGraphState()
     {
         if ( graphState == null )
         {
-            graphState = new GraphState();
+            graphState = new GraphState( collectionsFactory );
         }
         return graphState;
     }

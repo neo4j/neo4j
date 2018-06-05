@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
+
 public class GraphState extends PropertyContainerStateImpl
 {
-    GraphState()
+    GraphState( CollectionsFactory collectionsFactory )
     {
-        super( -1 );
+        super( -1, collectionsFactory );
     }
 }

@@ -22,32 +22,35 @@ package org.neo4j.kernel.impl.api.state;
 import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.Iterator;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
+import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
+import static java.util.Objects.requireNonNull;
 
 class PropertyContainerStateImpl implements PropertyContainerState
 {
+    final CollectionsFactory collectionsFactory;
     private final long id;
 
     private MutableIntObjectMap<Value> addedProperties;
     private MutableIntObjectMap<Value> changedProperties;
-    private MutableIntSet removedProperties;
+    private MutableLongSet removedProperties;
 
-    PropertyContainerStateImpl( long id )
+    PropertyContainerStateImpl( long id, CollectionsFactory collectionsFactory )
     {
         this.id = id;
+        this.collectionsFactory = requireNonNull( collectionsFactory );
     }
 
     public long getId()
@@ -115,7 +118,7 @@ class PropertyContainerStateImpl implements PropertyContainerState
         }
         if ( removedProperties == null )
         {
-            removedProperties = new IntHashSet();
+            removedProperties = collectionsFactory.newLongSet();
         }
         removedProperties.add( propertyKeyId );
         if ( changedProperties != null )
@@ -139,7 +142,7 @@ class PropertyContainerStateImpl implements PropertyContainerState
     @Override
     public IntIterable removedProperties()
     {
-        return removedProperties == null ? IntSets.immutable.empty() : removedProperties;
+        return removedProperties == null ? IntSets.immutable.empty() : removedProperties.asLazy().collectInt( Math::toIntExact );
     }
 
     @Override

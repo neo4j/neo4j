@@ -25,6 +25,7 @@ import org.eclipse.collections.impl.factory.primitive.IntSets;
 import java.util.Iterator;
 
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 
@@ -87,9 +88,9 @@ class RelationshipStateImpl extends PropertyContainerStateImpl implements Relati
     private long endNode = -1;
     private int type = -1;
 
-    RelationshipStateImpl( long id )
+    RelationshipStateImpl( long id, CollectionsFactory collectionsFactory )
     {
-        super( id );
+        super( id, collectionsFactory );
     }
 
     void setMetaData( long startNode, long endNode, int type )
