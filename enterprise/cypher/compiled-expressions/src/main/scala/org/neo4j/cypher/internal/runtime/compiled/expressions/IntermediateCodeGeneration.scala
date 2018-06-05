@@ -34,6 +34,8 @@ import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.InternalException
 
+import scala.annotation.tailrec
+
 /**
   * Produces IntermediateRepresentation from a Cypher Expression
   */
@@ -125,94 +127,19 @@ class IntermediateCodeGeneration {
     case And(lhs, rhs) =>
       for {l <- compile(lhs)
            r <- compile(rhs)
-      } yield {
-        val returnValue = nextVariableName()
-        val seenNull = nextVariableName()
-        val error = nextVariableName()
-        val exceptionName = nextVariableName()
-        /**
-          * Ok AND is complicated. There is no order guarantee so `lhs` and `rhs` are interchangeable. At the core
-          * AND tries to find a single `FALSE` if it finds one the expression evaluates to `FALSE` and there is no need to look
-          * at more predicates. If it doesn't find a `FALSE` it will either return `NULL` if either lhs or rhs evaluates
-          * to `NULL` or `TRUE` if neither lhs nor rhs evaluates to `FALSE` or `NULL`.
-          *
-          * For example:
-          * - AND(FALSE, NULL) -> FALSE
-          * - AND(NULL, FALSE) -> FALSE
-          * - AND(TRUE, NULL) -> NULL
-          * - AND(NULL, TRUE) -> NULL
-          *
-          * Errors are an extra complication here, errors are treated as `NULL` except we will throw an error instead of
-          * returning `NULL`, so for example:
-          *
-          * - AND(FALSE, 42) -> FALSE
-          * - AND(42, FALSE) -> FALSE
-          * - AND(TRUE, 42) -> throw type error
-          * - AND(42, TRUE) -> throw type error
-          *
-          * The generated code below will look something like;
-          *
-          * RuntimeException error = null;
-          * boolean seenNull = false;
-          * Value returnValue = null;
-          * try
-          * {
-          *   returnValue = l;
-          * }
-          * catch( RuntimeException e)
-          * {
-          *   error = e;
-          * }
-          * seenNull = returnValue == NO_VALUE;
-          * if ( returnValue != FALSE )
-          * {
-          *    try
-          *    {
-          *      returnValue = r;
-          *    }
-          *    catch( RuntimeException e)
-          *    {
-          *      error = e;
-          *    }
-          *    seenValue = returnValue == FALSE ? false : (seenValue ? true : returnValue == NO_VALUE);
-          * }
-          * if ( error != null && returnValue != FALSE )
-          * {
-          *   throw error;
-          * }
-          * return seenNull ? NO_VALUE : returnValue;
-          */
-        block(
-          declare[RuntimeException](error),
-          assign(error, constant(null)),
-          declare[Boolean](seenNull),
-          assign(seenNull, constant(false)),
-          declare[Value](returnValue),
-          assign(returnValue, constant(null)),
-          tryCatch[RuntimeException](exceptionName)(assign(returnValue, invokeStatic(ASSERT_PREDICATE, l)))(
-            assign(error, load(exceptionName))),
-          assign(seenNull, equal(load(returnValue), noValue)),
-          condition(notEqual(load(returnValue), falseValue))(
-            block(
-              tryCatch[RuntimeException](exceptionName)(assign(returnValue, invokeStatic(ASSERT_PREDICATE, r)))(
-                assign(error, load(exceptionName))),
-              assign(seenNull,
-                     ternary(equal(load(returnValue), falseValue), constant(false),
-                             ternary(load(seenNull),
-                                     constant(true),
-                                     equal(load(returnValue), noValue))))
-            )
-          ),
-          condition(and(notEqual(load(error), constant(null)), notEqual(load(returnValue), falseValue)))(
-            fail(load(error))),
-          ternary(load(seenNull), noValue, load(returnValue)))
-      }
+      } yield generateAnds(List(l, r))
 
     case Ands(expressions) =>
-      val compiled = expressions.flatMap(compile).toIndexedSeq
-      //we bail if some of the expressions weren't compiled
-      if (compiled.size < expressions.size) None
-      else Some(invokeStatic(method[CypherBoolean, Value, Array[AnyValue]]("and"), arrayOf(compiled: _*)))
+      val compiled = expressions.foldLeft[Option[List[IntermediateRepresentation]]](Some(List.empty)) { (acc, current) =>
+        for {l <- acc
+             e <- compile(current)} yield l :+ e
+        }
+
+      for (e <- compiled) yield e match {
+        case Nil => truthValue //this shouldn't really happen
+        case a :: Nil  => a
+        case list => generateAnds(list)
+      }
 
     case Not(arg) =>
       compile(arg).map(invokeStatic(method[CypherBoolean, Value, AnyValue]("not"), _))
@@ -340,6 +267,126 @@ class IntermediateCodeGeneration {
     nextName
   }
 
+  /**
+    * Ok AND and ANDS are complicated.  At the core we try to find a single `FALSE` if we find one there is no need to look
+    * at more predicates. If it doesn't find a `FALSE` it will either return `NULL` if any of the predicates has evaluated
+    * to `NULL` or `TRUE` if all predicates evaluated to `TRUE`.
+    *
+    * For example:
+    * - AND(FALSE, NULL) -> FALSE
+    * - AND(NULL, FALSE) -> FALSE
+    * - AND(TRUE, NULL) -> NULL
+    * - AND(NULL, TRUE) -> NULL
+    *
+    * Errors are an extra complication here, errors are treated as `NULL` except that we will throw an error instead of
+    * returning `NULL`, so for example:
+    *
+    * - AND(FALSE, 42) -> FALSE
+    * - AND(42, FALSE) -> FALSE
+    * - AND(TRUE, 42) -> throw type error
+    * - AND(42, TRUE) -> throw type error
+    *
+    * The generated code below will look something like;
+    *
+    * RuntimeException error = null;
+    * boolean seenNull = false;
+    * Value returnValue = null;
+    * try
+    * {
+    *   returnValue = [expressions.head];
+    * }
+    * catch( RuntimeException e)
+    * {
+    *   error = e;
+    * }
+    * seenNull = returnValue == NO_VALUE;
+    * if ( returnValue != FALSE )
+    * {
+    *    try
+    *    {
+    *      returnValue = expressions.tail.head;
+    *    }
+    *    catch( RuntimeException e)
+    *    {
+    *      error = e;
+    *    }
+    *    seenValue = returnValue == FALSE ? false : (seenValue ? true : returnValue == NO_VALUE);
+    *    if ( returnValue != FALSE )
+    *    {
+    *       try
+    *       {
+    *         returnValue = expressions.tail.tail.head;
+    *       }
+    *       catch( RuntimeException e)
+    *       {
+    *         error = e;
+    *       }
+    *       seenValue = returnValue == FALSE ? false : (seenValue ? true : returnValue == NO_VALUE);
+    *       ...[continue unroll until we are at the end of expressions]
+    *     }
+    * }
+    * if ( error != null && returnValue != FALSE )
+    * {
+    *   throw error;
+    * }
+    * return seenNull ? NO_VALUE : returnValue;
+    */
+  private def generateAnds(expressions: List[IntermediateRepresentation]) = {
+    //these are the temp variables used
+    val returnValue = nextVariableName()
+    val seenNull = nextVariableName()
+    val error = nextVariableName()
+    val exceptionName = nextVariableName()
+    //this is setting up  a `if (returnValue != FALSE)`
+    val ifNotFalse: IntermediateRepresentation => IntermediateRepresentation = condition(notEqual(load(returnValue), falseValue))
+    //this is the inner block of the condition
+    val inner = (e:IntermediateRepresentation) => Seq(tryCatch[RuntimeException](exceptionName)(assign(returnValue, invokeStatic(ASSERT_PREDICATE, e)))(
+      assign(error, load(exceptionName))),
+      assign(seenNull,
+           ternary(equal(load(returnValue), falseValue), constant(false),
+                   ternary(load(seenNull),
+                           constant(true),
+                           equal(load(returnValue), noValue)))))
+
+    //this loop generates the nested expression:
+    //if (returnValue != FALSE) {
+    //  try {
+    //    returnValue = ...;
+    //  } catch ( RuntimeException e) { error = e}
+    //  ...
+    //  if (returnValue != false ) {
+    //    try {
+    //        returnValue = ...;
+    //    } catch ( RuntimeException e) { error = e}
+    //    ...
+    def loop(e: List[IntermediateRepresentation]): IntermediateRepresentation = e match {
+      case Nil => throw new InternalException("we should never get here")
+      case a :: Nil => ifNotFalse(block(inner(a):_*))
+      case hd::tl => ifNotFalse(block(inner(hd) :+ loop(tl):_*))
+    }
+
+    block(
+      //set up all temp variables
+      declare[RuntimeException](error),
+      assign(error, constant(null)),
+      declare[Boolean](seenNull),
+      assign(seenNull, constant(false)),
+      declare[Value](returnValue),
+      assign(returnValue, constant(null)),
+      //assign returnValut to head of expressions
+      tryCatch[RuntimeException](exceptionName)(assign(returnValue, invokeStatic(ASSERT_PREDICATE, expressions.head)))(
+        assign(error, load(exceptionName))),
+      assign(seenNull, equal(load(returnValue), noValue)),
+      //generated unrolls tail of expression
+      loop(expressions.tail),
+      //checks if there was an error and that we never evaluted to FALSE, if so throw
+      condition(and(notEqual(load(error), constant(null)), notEqual(load(returnValue), falseValue)))(
+        fail(load(error))),
+      //otherwise check if we have seen a null which implicitly also mean we never seen a FALSE
+      //if we seen a null we should return null otherwise we return whatever currently
+      //stored in returnValue
+      ternary(load(seenNull), noValue, load(returnValue)))
+  }
 }
 
 object IntermediateCodeGeneration {

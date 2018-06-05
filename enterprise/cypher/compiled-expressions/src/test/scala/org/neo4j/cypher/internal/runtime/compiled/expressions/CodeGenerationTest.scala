@@ -31,6 +31,7 @@ import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast._
 import org.neo4j.cypher.internal.runtime.DbAccess
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.LocalTimeValue.localTime
 import org.neo4j.values.storable.Values._
 import org.neo4j.values.storable.{DoubleValue, Values}
@@ -393,6 +394,23 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(ands(t, t, t, t, t, f)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.FALSE)
     compile(ands(t, t, t, t, noValue, t)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.NO_VALUE)
     compile(ands(t, t, t, f, noValue, f)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.FALSE)
+  }
+
+  test("ANDS should throw on non-boolean input") {
+    val compiled = compile(ands(parameter("a"), parameter("b"), parameter("c"), parameter("d"), parameter("e")))
+    val keys = Array("a", "b", "c", "d", "e")
+    compiled.evaluate(ctx, dbAccess,
+                      map(keys, Array(Values.TRUE, Values.TRUE, Values.TRUE, Values.TRUE, Values.TRUE))) should equal(Values.TRUE)
+
+    compiled.evaluate(ctx, dbAccess,
+                      map(keys, Array(Values.TRUE, Values.TRUE, Values.FALSE, Values.TRUE, Values.TRUE))) should equal(Values.FALSE)
+
+    compiled.evaluate(ctx, dbAccess,
+                      map(keys, Array(intValue(42), Values.TRUE, Values.FALSE, Values.TRUE, Values.TRUE))) should equal(Values.FALSE)
+
+    a [CypherTypeException] should be thrownBy compiled.evaluate(ctx, dbAccess,
+                                    map(keys, Array(intValue(42), Values.TRUE, Values.TRUE, Values.TRUE, Values.TRUE)))
+
   }
 
   test("NOT") {

@@ -47,7 +47,7 @@ import org.opencypher.v9_0.frontend.helpers.using
   */
 object CodeGeneration {
 
-  private val DEBUG = false
+  private val DEBUG = true
   private val VALUES = classOf[Values]
   private val VALUE = classOf[Value]
   private val LONG = classOf[LongValue]
@@ -153,7 +153,7 @@ object CodeGeneration {
       block.throwException(compileExpression(error, block))
       Expression.EMPTY
 
-    // lhs && rhs
+    //lhs && rhs
     case BooleanAnd(lhs, rhs) =>
       Expression.and(compileExpression(lhs, block), compileExpression(rhs, block))
   }
