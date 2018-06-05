@@ -19,8 +19,10 @@
  */
 package org.neo4j.io.mem;
 
-import sun.misc.Cleaner;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
@@ -35,7 +37,8 @@ public final class GrabAllocator implements MemoryAllocator
 {
     private final Grabs grabs;
     @SuppressWarnings( {"unused", "FieldCanBeLocal"} )
-    private final Cleaner cleaner;
+    private final Object cleaner;
+    private final MethodHandle cleanHandle;
 
     /**
      * Create a new GrabAllocator that will allocate the given amount of memory, to pointers that are aligned to the
@@ -47,7 +50,16 @@ public final class GrabAllocator implements MemoryAllocator
     GrabAllocator( long expectedMaxMemory, MemoryAllocationTracker memoryTracker )
     {
         this.grabs = new Grabs( expectedMaxMemory, memoryTracker );
-        this.cleaner = Cleaner.create( this, new GrabsDeallocator( grabs ) );
+        try
+        {
+            CleanerHandles handles = findCleanerHandles();
+            this.cleaner = handles.creator.invoke( this, new GrabsDeallocator( grabs ) );
+            this.cleanHandle = handles.cleaner;
+        }
+        catch ( Throwable throwable )
+        {
+            throw new LinkageError( "Unable to instantiate cleaner", throwable );
+        }
     }
 
     @Override
@@ -71,7 +83,14 @@ public final class GrabAllocator implements MemoryAllocator
     @Override
     public void close()
     {
-        cleaner.clean();
+        try
+        {
+            cleanHandle.invoke( cleaner );
+        }
+        catch ( Throwable throwable )
+        {
+            throw new LinkageError( "Unable to clean cleaner.", throwable );
+        }
     }
 
     private static class Grab
@@ -275,6 +294,57 @@ public final class GrabAllocator implements MemoryAllocator
                     // Okay, we tried.
                 }
             }
+        }
+    }
+
+    private static CleanerHandles findCleanerHandles()
+    {
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        try
+        {
+            Class<?> oldCleaner = Class.forName( "sun.misc.Cleaner" );
+            return CleanerHandles.of( findCreationMethod( "create", lookup, oldCleaner ), findCleanMethod( lookup, oldCleaner ) );
+        }
+        catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException oldCleanerException )
+        {
+            try
+            {
+                Class<?> newCleaner = Class.forName( "java.lang.ref.Cleaner" );
+                Class<?> newCleanable = Class.forName( "java.lang.ref.Cleaner$Cleanable" );
+                return CleanerHandles.of( findCreationMethod( "register", lookup, newCleaner ), findCleanMethod( lookup, newCleanable ) );
+            }
+            catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException newCleanerException )
+            {
+                throw new LinkageError( "Unable to find cleaner methods.", Exceptions.chain( newCleanerException, oldCleanerException ) );
+            }
+        }
+    }
+
+    private static MethodHandle findCleanMethod( MethodHandles.Lookup lookup, Class<?> oldCleaner ) throws IllegalAccessException, NoSuchMethodException
+    {
+        return lookup.unreflect( oldCleaner.getDeclaredMethod( "clean" ) );
+    }
+
+    private static MethodHandle findCreationMethod( String methodName, MethodHandles.Lookup lookup, Class<?> oldCleaner )
+            throws IllegalAccessException, NoSuchMethodException
+    {
+        return lookup.unreflect( oldCleaner.getDeclaredMethod( methodName, Object.class, Runnable.class ) );
+    }
+
+    private static final class CleanerHandles
+    {
+        private final MethodHandle creator;
+        private final MethodHandle cleaner;
+
+        static CleanerHandles of( MethodHandle creator, MethodHandle cleaner )
+        {
+            return new CleanerHandles( creator, cleaner );
+        }
+
+        private CleanerHandles( MethodHandle creator, MethodHandle cleaner )
+        {
+            this.creator = creator;
+            this.cleaner = cleaner;
         }
     }
 
