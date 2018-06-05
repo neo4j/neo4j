@@ -1217,7 +1217,7 @@
       <dependency>
         <groupId>org.eclipse.collections</groupId>
         <artifactId>eclipse-collections</artifactId>
-        <version>9.1.0</version>
+        <version>9.2.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.code.gson</groupId>
