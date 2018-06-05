@@ -35,6 +35,7 @@ public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ByteBuf>
 {
 
     private static final int DEFAULT_CHUNK_SIZE = 8192;
+    private static final int MINIMUM_CHUNK_SIZE = 7;
     private final byte contentType;
     private final ByteBufAwareMarshal byteBufAwareMarshal;
     private final int chunkSize;
@@ -45,9 +46,9 @@ public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ByteBuf>
     {
         this.byteBufAwareMarshal = byteBufAwareMarshal;
         this.chunkSize = chunkSize;
-        if ( chunkSize < 7 )
+        if ( chunkSize < MINIMUM_CHUNK_SIZE )
         {
-            throw new IllegalArgumentException( "Chunk size must be at least 4 bytes" );
+            throw new IllegalArgumentException( "Chunk size must be at least " + MINIMUM_CHUNK_SIZE + " bytes" );
         }
         this.contentType = contentType;
     }
@@ -111,7 +112,7 @@ public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ByteBuf>
             progress += buffer.readableBytes();
             return buffer;
         }
-        catch ( IOException e )
+        catch ( Throwable e )
         {
             buffer.release();
             throw e;

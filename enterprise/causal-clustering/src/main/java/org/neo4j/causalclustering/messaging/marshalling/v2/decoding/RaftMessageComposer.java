@@ -38,7 +38,7 @@ public class RaftMessageComposer extends MessageToMessageDecoder<Object>
 {
     private final Queue<ReplicatedContent> replicatedContents = new LinkedBlockingQueue<>();
     private final Queue<Long> raftLogEntryTerms = new LinkedBlockingQueue<>();
-    private RaftMessageDecoder.RaftMessageCreator messageCreator;
+    private RaftMessageDecoder.ClusterIdAwareMessageComposer messageComposer;
     private final Clock clock;
 
     public RaftMessageComposer( Clock clock )
@@ -60,21 +60,21 @@ public class RaftMessageComposer extends MessageToMessageDecoder<Object>
                 raftLogEntryTerms.add( term );
             }
         }
-        else if ( msg instanceof RaftMessageDecoder.RaftMessageCreator )
+        else if ( msg instanceof RaftMessageDecoder.ClusterIdAwareMessageComposer )
         {
-            if ( messageCreator != null )
+            if ( messageComposer != null )
             {
                 throw new IllegalStateException( "Received raft message header. Pipeline already contains message header waiting to build." );
             }
-            messageCreator = (RaftMessageDecoder.RaftMessageCreator) msg;
+            messageComposer = (RaftMessageDecoder.ClusterIdAwareMessageComposer) msg;
         }
         else
         {
             throw new IllegalStateException( "Unexpected object in the pipeline: " + msg );
         }
-        if ( messageCreator != null )
+        if ( messageComposer != null )
         {
-            RaftMessages.ClusterIdAwareMessage clusterIdAwareMessage = messageCreator.maybeCompose( clock, raftLogEntryTerms, replicatedContents );
+            RaftMessages.ClusterIdAwareMessage clusterIdAwareMessage = messageComposer.maybeCompose( clock, raftLogEntryTerms, replicatedContents );
             if ( clusterIdAwareMessage != null )
             {
                 clear( clusterIdAwareMessage );
@@ -85,7 +85,7 @@ public class RaftMessageComposer extends MessageToMessageDecoder<Object>
 
     private void clear( RaftMessages.ClusterIdAwareMessage message )
     {
-        messageCreator = null;
+        messageComposer = null;
         if ( !replicatedContents.isEmpty() || !raftLogEntryTerms.isEmpty() )
         {
             throw new IllegalStateException( String.format(

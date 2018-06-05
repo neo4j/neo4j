@@ -29,15 +29,15 @@ public enum ContentType
     RaftLogEntryTerms( (byte) 2 ),
     Message( (byte) 3 );
 
-    private final byte b;
+    private final byte messageCode;
 
-    ContentType( byte b )
+    ContentType( byte messageCode )
     {
-        this.b = b;
+        this.messageCode = messageCode;
     }
 
     public byte get()
     {
-        return b;
+        return messageCode;
     }
 }
