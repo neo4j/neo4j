@@ -41,7 +41,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
-public class ChunkedReplicatedTransactionInputStreamTest
+public class ChunkedTransactionStreamTest
 {
     @Test
     public void shouldStreamTransactions() throws Exception
