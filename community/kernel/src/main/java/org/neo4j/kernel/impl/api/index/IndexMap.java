@@ -33,7 +33,6 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -43,8 +42,6 @@ import java.util.Set;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.EntityType;
-
-import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.ANY_ENTITY_TOKEN;
 
 /**
  * Bundles various mappings to IndexProxy. Used by IndexingService via IndexMapReference.
@@ -131,7 +128,7 @@ public final class IndexMap implements Cloneable
         indexesByDescriptor.remove( schema );
         if ( schema.entityType() == EntityType.NODE )
         {
-            if ( Arrays.equals(schema.getEntityTokenIds(), ANY_ENTITY_TOKEN ) )
+            if ( SchemaDescriptor.isAnyEntityTokenSchema( schema ) )
             {
                 descriptorsForAllLabels.remove( schema );
             }
@@ -140,7 +137,7 @@ public final class IndexMap implements Cloneable
         }
         else if ( schema.entityType() == EntityType.RELATIONSHIP )
         {
-            if ( Arrays.equals(schema.getEntityTokenIds(), ANY_ENTITY_TOKEN ) )
+            if ( SchemaDescriptor.isAnyEntityTokenSchema( schema ) )
             {
                 descriptorsForAllReltypes.remove( schema );
             }
@@ -221,7 +218,7 @@ public final class IndexMap implements Cloneable
     {
         if ( schema.entityType() == EntityType.NODE )
         {
-            if ( Arrays.equals(schema.getEntityTokenIds(), ANY_ENTITY_TOKEN ) )
+            if ( SchemaDescriptor.isAnyEntityTokenSchema( schema ) )
             {
                 descriptorsForAllLabels.add( schema );
             }
@@ -236,7 +233,7 @@ public final class IndexMap implements Cloneable
         }
         else if ( schema.entityType() == EntityType.RELATIONSHIP )
         {
-            if ( Arrays.equals(schema.getEntityTokenIds(), ANY_ENTITY_TOKEN ) )
+            if ( SchemaDescriptor.isAnyEntityTokenSchema( schema ) )
             {
                 descriptorsForAllReltypes.add( schema );
             }

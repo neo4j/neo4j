@@ -169,7 +169,7 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
     public <INDEX_KEY extends SchemaDescriptorSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> forIndexKeys(
             Iterable<INDEX_KEY> indexKeys )
     {
-        Iterable<INDEX_KEY> potentiallyRelevant = Iterables.filter( this::atLeastOneRelevantChange, indexKeys );
+        Iterable<INDEX_KEY> potentiallyRelevant = Iterables.filter( indexKey -> atLeastOneRelevantChange( indexKey.schema() ), indexKeys );
 
         return gatherUpdatesForPotentials( potentiallyRelevant );
     }
@@ -197,7 +197,7 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
 
         for ( INDEX_KEY indexKey : indexKeys )
         {
-            if ( atLeastOneRelevantChange( indexKey ) )
+            if ( atLeastOneRelevantChange( indexKey.schema() ) )
             {
                 potentiallyRelevant.add( indexKey );
                 gatherPropsToLoad( indexKey.schema(), additionalPropertiesToLoad );
@@ -225,13 +225,11 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
             int[] propertyIds = schema.getPropertyIds();
             if ( relevantBefore && !relevantAfter )
             {
-                indexUpdates.add( IndexEntryUpdate.remove( entityId, indexKey, valuesBefore( propertyIds )
-                ) );
+                indexUpdates.add( IndexEntryUpdate.remove( entityId, indexKey, valuesBefore( propertyIds ) ) );
             }
             else if ( !relevantBefore && relevantAfter )
             {
-                indexUpdates.add( IndexEntryUpdate.add( entityId, indexKey, valuesAfter( propertyIds )
-                ) );
+                indexUpdates.add( IndexEntryUpdate.add( entityId, indexKey, valuesAfter( propertyIds ) ) );
             }
             else if ( relevantBefore && relevantAfter )
             {
@@ -279,16 +277,15 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
         }
     }
 
-    private boolean atLeastOneRelevantChange( SchemaDescriptorSupplier indexKey )
+    private boolean atLeastOneRelevantChange( SchemaDescriptor schema )
     {
-        SchemaDescriptor schema = indexKey.schema();
         boolean affectedBefore = schema.isAffected( entityTokensBefore );
         boolean affectedAfter = schema.isAffected( entityTokensAfter );
         if ( affectedBefore && affectedAfter )
         {
             for ( int propertyId : schema.getPropertyIds() )
             {
-                if ( knownProperties.get( propertyId ) != null )
+                if ( knownProperties.containsKey( propertyId ) )
                 {
                     return true;
                 }
@@ -303,8 +300,8 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
         boolean found = false;
         for ( int propertyId : propertyIds )
         {
-            PropertyValue propertyValue = knownProperties.get( propertyId );
-            if ( propertyValue == null || !propertyValue.hasBefore() )
+            PropertyValue propertyValue = knownProperties.getIfAbsent( propertyId, () -> noValue );
+            if ( !propertyValue.hasBefore() )
             {
                 if ( propertySchemaType == COMPLETE_ALL_TOKENS )
                 {
@@ -324,8 +321,8 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
         boolean found = false;
         for ( int propertyId : propertyIds )
         {
-            PropertyValue propertyValue = knownProperties.get( propertyId );
-            if ( propertyValue == null || !propertyValue.hasAfter() )
+            PropertyValue propertyValue = knownProperties.getIfAbsent( propertyId, () -> noValue );
+            if ( !propertyValue.hasAfter() )
             {
                 if ( propertySchemaType == COMPLETE_ALL_TOKENS )
                 {

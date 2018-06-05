@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -284,35 +283,8 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
             // Drop placeholder proxies for indexes that need to be rebuilt
             dropRecoveringIndexes( indexMap, rebuildingDescriptors.keySet() );
-
             // Rebuild indexes by recreating and repopulating them
-            MutableLongObjectMap<StoreIndexDescriptor> rebuildingNodeDescriptors = new LongObjectHashMap<>();
-            MutableLongObjectMap<StoreIndexDescriptor> rebuildingRelationshipDescriptors = new LongObjectHashMap<>();
-            Iterator<StoreIndexDescriptor> iterator = rebuildingDescriptors.iterator();
-            while ( iterator.hasNext() )
-            {
-                StoreIndexDescriptor descriptor = iterator.next();
-                if ( descriptor.schema().entityType() == EntityType.NODE )
-                {
-                    rebuildingNodeDescriptors.put( descriptor.getId(), descriptor );
-                }
-                else
-                {
-                    rebuildingRelationshipDescriptors.put( descriptor.getId(), descriptor );
-                }
-            }
-
-            if ( !rebuildingNodeDescriptors.isEmpty() )
-            {
-                IndexPopulationJob populationJob = newIndexPopulationJob( EntityType.NODE );
-                populate( rebuildingNodeDescriptors, indexMap, populationJob );
-            }
-
-            if ( !rebuildingRelationshipDescriptors.isEmpty() )
-            {
-                IndexPopulationJob populationJob = newIndexPopulationJob( EntityType.RELATIONSHIP );
-                populate( rebuildingRelationshipDescriptors, indexMap, populationJob );
-            }
+            populateIndexesOfAllTypes( rebuildingDescriptors, indexMap );
 
             return indexMap;
         } );
@@ -348,6 +320,22 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 } );
 
         state = State.RUNNING;
+    }
+
+    public void populateIndexesOfAllTypes( MutableLongObjectMap<StoreIndexDescriptor> rebuildingDescriptors, IndexMap indexMap )
+    {
+        Map<EntityType,MutableLongObjectMap<StoreIndexDescriptor>> rebuildingDescriptorsByType = new HashMap<>();
+        for ( StoreIndexDescriptor descriptor : rebuildingDescriptors )
+        {
+            rebuildingDescriptorsByType.computeIfAbsent( descriptor.schema().entityType(), type -> new LongObjectHashMap<>() )
+                    .put( descriptor.getId(), descriptor );
+        }
+
+        for ( Map.Entry<EntityType,MutableLongObjectMap<StoreIndexDescriptor>> descriptorToPopulate : rebuildingDescriptorsByType.entrySet() )
+        {
+            IndexPopulationJob populationJob = newIndexPopulationJob( descriptorToPopulate.getKey() );
+            populate( descriptorToPopulate.getValue(), indexMap, populationJob );
+        }
     }
 
     private void performRecoveredIndexDropActions()

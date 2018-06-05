@@ -50,17 +50,16 @@ public interface TokenNameLookup
     default String[] entityTokensGetNames( EntityType type, int[] entityTokenIds )
     {
         IntFunction<String> mapper;
-        if ( type == EntityType.NODE )
+        switch ( type )
         {
+        case NODE:
             mapper = this::labelGetName;
-        }
-        else if ( type == EntityType.RELATIONSHIP )
-        {
+            break;
+        case RELATIONSHIP:
             mapper = this::relationshipTypeGetName;
-        }
-        else
-        {
-            return new String[0];
+            break;
+        default:
+            throw new IllegalArgumentException( "Cannot lookup names for tokens of type: " + type );
         }
         String[] tokenNames = new String[entityTokenIds.length];
         for ( int i = 0; i < entityTokenIds.length; i++ )
