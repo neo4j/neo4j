@@ -23,9 +23,6 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
-import java.util.function.LongPredicate;
-
-import org.neo4j.function.Predicates;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
@@ -65,7 +62,6 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
     {
         // Check tx state
         boolean hasChanges = hasChanges();
-        LongPredicate isDeleted = hasChanges ? read.txState()::relationshipIsDeletedInThisTx : Predicates.alwaysFalseLong;
 
         if ( hasChanges && addedRelationships.hasNext() )
         {
@@ -75,7 +71,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
 
         while ( storeCursor.next() )
         {
-            if ( !isDeleted.test( storeCursor.relationshipReference() ) )
+            if ( !hasChanges || !read.txState().relationshipIsDeletedInThisTx( storeCursor.relationshipReference() ) )
             {
                 return true;
             }

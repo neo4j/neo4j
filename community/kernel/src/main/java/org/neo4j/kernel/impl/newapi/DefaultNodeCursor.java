@@ -24,9 +24,6 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
-import java.util.function.LongPredicate;
-
-import org.neo4j.function.Predicates;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -178,7 +175,6 @@ class DefaultNodeCursor implements NodeCursor
     {
         // Check tx state
         boolean hasChanges = hasChanges();
-        LongPredicate isDeleted = hasChanges ? read.txState()::nodeIsDeletedInThisTx : Predicates.alwaysFalseLong;
 
         if ( hasChanges && addedNodes.hasNext() )
         {

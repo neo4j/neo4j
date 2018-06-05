@@ -22,9 +22,6 @@ package org.neo4j.kernel.impl.newapi;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
-import java.util.function.LongPredicate;
-
-import org.neo4j.function.Predicates;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
@@ -169,7 +166,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
 
         case FILTER_TX_STATE:
             // The relationships in tx-state needs to be filtered according to the first relationship we discover,
-            // but let's have the store cursor bother with this detail.
+            // but let's not have the store cursor bother with this detail.
             storeCursor.init( nodeReference, clearEncoding( reference ) );
             initFiltering( FilterState.NOT_INITIALIZED, false );
             break;
@@ -246,12 +243,10 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     public boolean next()
     {
         boolean hasChanges;
-        LongPredicate isDeleted;
 
         if ( filterState == FilterState.NOT_INITIALIZED )
         {
             hasChanges = hasChanges(); // <- will setup filter state if needed
-            isDeleted = hasChanges ? read.txState()::relationshipIsDeletedInThisTx : Predicates.alwaysFalseLong;
 
             if ( filterState == FilterState.NOT_INITIALIZED && filterStore )
             {
@@ -259,7 +254,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
                 setupFilterState();
             }
 
-            if ( filterState != FilterState.NOT_INITIALIZED && !isDeleted.test( relationshipReference() ) )
+            if ( filterState != FilterState.NOT_INITIALIZED && !(hasChanges && read.txState().relationshipIsDeletedInThisTx( relationshipReference() )) )
             {
                 return true;
             }
@@ -267,7 +262,6 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         else
         {
             hasChanges = hasChanges();
-            isDeleted = hasChanges ? read.txState()::relationshipIsDeletedInThisTx : Predicates.alwaysFalseLong;
         }
 
         // tx-state relationships
@@ -279,7 +273,8 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
 
         while ( storeCursor.next() )
         {
-            boolean skip = (filterStore && !correctTypeAndDirection()) || isDeleted.test( storeCursor.relationshipReference() );
+            boolean skip = (filterStore && !correctTypeAndDirection()) ||
+                    (hasChanges && read.txState().relationshipIsDeletedInThisTx( storeCursor.relationshipReference() ) );
             if ( !skip )
             {
                 return true;
