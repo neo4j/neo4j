@@ -318,8 +318,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
       test("LIMIT should influence cardinality estimation by default value when expression contains timestamp()") {
         (0 until 100).map(i => createLabeledNode("Person"))
-        val wrongResultsConfig = Configs.Version3_2 + Configs.Version3_1 + Configs.Version2_3 + Configs.AllRulePlanners
-        // This will work on 3.2 when 3.2.12 is out
+        val wrongResultsConfig = Configs.Version3_1 + Configs.Version2_3 + Configs.AllRulePlanners
         val result = executeWith(Configs.Interpreted, s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT timestamp()", wrongResultsConfig)
         assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(result)("Limit")
       }

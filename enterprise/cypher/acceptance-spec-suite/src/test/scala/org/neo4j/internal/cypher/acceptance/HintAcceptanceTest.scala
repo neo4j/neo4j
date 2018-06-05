@@ -89,8 +89,7 @@ class HintAcceptanceTest
                   |RETURN a.prop, b.prop
                 """.stripMargin
 
-    // TODO: Once 3.2 comes out with this feature added, we should change the following line to not exclude 3.2
-    executeWith(Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Cost2_3 - Configs.Cost3_1 - Configs.Cost3_2, query,
+    executeWith(Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Cost2_3 - Configs.Cost3_1, query,
       planComparisonStrategy = ComparePlansWithAssertion((p) => {
         p should useOperatorTimes("NodeIndexSeek", 2)
       }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))

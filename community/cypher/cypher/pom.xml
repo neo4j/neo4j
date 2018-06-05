@@ -246,7 +246,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-compiler-3.2</artifactId>
-      <version>3.2.11</version>
+      <version>3.2.12</version>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>
