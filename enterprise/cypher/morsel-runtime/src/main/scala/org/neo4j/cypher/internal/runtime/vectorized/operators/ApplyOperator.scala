@@ -31,17 +31,7 @@ class ApplyOperator(lhs: Pipeline, rhs: Pipeline) extends MiddleOperator {
                        outputRow: MorselExecutionContext,
                        context: QueryContext,
                        state: QueryState): Unit = {
-
-//    var readingPos = 0
-//
-////    while (readingPos < data.validRows) {
-////      val currentRow = new MorselExecutionContext(data, longsPerRow, refsPerRow, currentRow = readingPos)
-//////      val rhsQueryState = state.copy(initialContext = Some(currentRow))
-//////      val startMessage = StartLeafLoop(iteration)
-//////      rhs.operate()
-////
-////      readingPos += 1
-////    }
+    throw new UnsupportedOperationException
   }
 
 }

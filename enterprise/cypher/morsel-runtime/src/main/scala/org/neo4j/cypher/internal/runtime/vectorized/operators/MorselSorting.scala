@@ -73,14 +73,14 @@ object MorselSorting {
     *
     * Does this by sorting into a temp morsel first and then copying back the sorted data.
     */
-  def createSortedMorselData(inputRow: MorselExecutionContext, arrayToSort: Array[Integer]): Unit = {
+  def createSortedMorselData(inputRow: MorselExecutionContext, outputToInputIndexes: Array[Integer]): Unit = {
     // Create a temporary morsel
     // TODO: Do this without creating extra arrays
     val tempMorsel = new Morsel(new Array[Long](inputRow.numberOfRows * inputRow.getLongsPerRow), new Array[AnyValue](inputRow.numberOfRows * inputRow.getRefsPerRow), inputRow.numberOfRows)
     val outputRow = MorselExecutionContext(tempMorsel, inputRow.getLongsPerRow, inputRow.getRefsPerRow)
 
     while (outputRow.hasMoreRows) {
-      val fromIndex = arrayToSort(outputRow.getCurrentRow)
+      val fromIndex = outputToInputIndexes(outputRow.getCurrentRow)
       inputRow.moveToRow(fromIndex)
 
       outputRow.copyFrom(inputRow)

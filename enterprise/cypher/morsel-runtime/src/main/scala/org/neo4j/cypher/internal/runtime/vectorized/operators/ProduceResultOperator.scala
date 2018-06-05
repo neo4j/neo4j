@@ -25,9 +25,9 @@ package org.neo4j.cypher.internal.runtime.vectorized.operators
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{LongSlot, RefSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.opencypher.v9_0.util.symbols
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.values.AnyValue
+import org.opencypher.v9_0.util.symbols
 
 
 class ProduceResultOperator(slots: SlotConfiguration, fieldNames: Array[String]) extends MiddleOperator {
@@ -56,11 +56,11 @@ class MorselResultRow(currentRow: MorselExecutionContext,
     case Some(RefSlot(offset, _, _)) => () =>
       currentRow.getRefAt(offset)
     case Some(LongSlot(offset, _, symbols.CTNode)) => () =>
-      val long = currentRow.getLongAt(offset)
-      queryContext.nodeOps.getById(long)
+      val nodeId = currentRow.getLongAt(offset)
+      queryContext.nodeOps.getById(nodeId)
     case Some(LongSlot(offset, _, symbols.CTRelationship)) => () =>
-      val long = currentRow.getLongAt(offset)
-      queryContext.relationshipOps.getById(long)
+      val relationshipId = currentRow.getLongAt(offset)
+      queryContext.relationshipOps.getById(relationshipId)
     case _ => throw new IllegalStateException
   })
 
