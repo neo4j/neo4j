@@ -27,17 +27,17 @@ import io.netty.handler.codec.MessageToMessageDecoder;
 
 import java.time.Clock;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 
 public class RaftMessageComposer extends MessageToMessageDecoder<Object>
 {
-    private final Queue<ReplicatedContent> replicatedContents = new LinkedBlockingQueue<>();
-    private final Queue<Long> raftLogEntryTerms = new LinkedBlockingQueue<>();
+    private final Queue<ReplicatedContent> replicatedContents = new LinkedList<>();
+    private final Queue<Long> raftLogEntryTerms = new LinkedList<>();
     private RaftMessageDecoder.ClusterIdAwareMessageComposer messageComposer;
     private final Clock clock;
 
