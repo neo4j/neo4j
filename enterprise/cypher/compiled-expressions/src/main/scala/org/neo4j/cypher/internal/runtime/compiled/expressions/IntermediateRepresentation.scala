@@ -181,6 +181,41 @@ case class DeclareLocalVariable(typ: Class[_], name: String) extends Intermediat
 case class AssignToLocalVariable(name: String, value: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
+  * try-catch block
+  * {{{
+  *   try
+  *   {
+  *     ops;
+  *   }
+  *   catch (exception name)
+  *   {
+  *     onError;
+  *   }
+  * }}}
+  * @param ops the operation to perform in the happy path
+  * @param onError the operation to perform if an exception is caught
+  * @param exception the type of the exception
+  * @param name the name of the caught exception
+  */
+case class TryCatch(ops: IntermediateRepresentation, onError: IntermediateRepresentation, exception: Class[_], name: String) extends IntermediateRepresentation
+
+/**
+  * Throw an error
+  * @param error the error to throw
+  */
+case class Throw(error: IntermediateRepresentation) extends IntermediateRepresentation
+
+/**
+  * Boolean && operator
+  * {{{
+  *   lhs && rhs;
+  * }}}
+  * @param lhs the left-hand side of and
+  * @param rhs the right-hand side of and
+  */
+case class BooleanAnd(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
+
+/**
   * Defines a method
   *
   * @param owner  the owner of the method
@@ -245,9 +280,18 @@ object IntermediateRepresentation {
 
   def block(ops: IntermediateRepresentation*): IntermediateRepresentation = Block(ops)
 
-  def condition(test: IntermediateRepresentation)(onTrue: IntermediateRepresentation): IntermediateRepresentation = Condition(test, onTrue)
+  def condition(test: IntermediateRepresentation)
+               (onTrue: IntermediateRepresentation): IntermediateRepresentation = Condition(test, onTrue)
 
   def declare[TYPE](name: String)(implicit typ: ClassTag[TYPE]) = DeclareLocalVariable(typ.runtimeClass, name)
 
   def assign(name: String, value: IntermediateRepresentation) = AssignToLocalVariable(name, value)
+
+  def tryCatch[E](name: String)(ops: IntermediateRepresentation)(onError: IntermediateRepresentation)
+                 (implicit typ: ClassTag[E]) =
+    TryCatch(ops, onError, typ.runtimeClass, name)
+
+  def fail(error: IntermediateRepresentation) = Throw(error)
+
+  def and(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) = BooleanAnd(lhs, rhs)
 }

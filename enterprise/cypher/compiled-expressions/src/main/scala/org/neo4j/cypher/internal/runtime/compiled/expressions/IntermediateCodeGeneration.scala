@@ -32,6 +32,7 @@ import org.neo4j.values.storable._
 import org.neo4j.values.virtual.{MapValue, NodeValue, RelationshipValue}
 import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.util.InternalException
 
 /**
   * Produces IntermediateRepresentation from a Cypher Expression
@@ -127,30 +128,89 @@ class IntermediateCodeGeneration {
       } yield {
         val returnValue = nextVariableName()
         val seenNull = nextVariableName()
+        val error = nextVariableName()
+        val exceptionName = nextVariableName()
+        /**
+          * Ok AND is complicated. There is no order guarantee so `lhs` and `rhs` are interchangeable. At the core
+          * AND tries to find a single `FALSE` if it finds one the expression evaluates to `FALSE` and there is no need to look
+          * at more predicates. If it doesn't find a `FALSE` it will either return `NULL` if either lhs or rhs evaluates
+          * to `NULL` or `TRUE` if neither lhs nor rhs evaluates to `FALSE` or `NULL`.
+          *
+          * For example:
+          * - AND(FALSE, NULL) -> FALSE
+          * - AND(NULL, FALSE) -> FALSE
+          * - AND(TRUE, NULL) -> NULL
+          * - AND(NULL, TRUE) -> NULL
+          *
+          * Errors are an extra complication here, errors are treated as `NULL` except we will throw an error instead of
+          * returning `NULL`, so for example:
+          *
+          * - AND(FALSE, 42) -> FALSE
+          * - AND(42, FALSE) -> FALSE
+          * - AND(TRUE, 42) -> throw type error
+          * - AND(42, TRUE) -> throw type error
+          *
+          * The generated code below will look something like;
+          *
+          * RuntimeException error = null;
+          * boolean seenNull = false;
+          * Value returnValue = null;
+          * try
+          * {
+          *   returnValue = l;
+          * }
+          * catch( RuntimeException e)
+          * {
+          *   error = e;
+          * }
+          * seenNull = returnValue == NO_VALUE;
+          * if ( returnValue != FALSE )
+          * {
+          *    try
+          *    {
+          *      returnValue = r;
+          *    }
+          *    catch( RuntimeException e)
+          *    {
+          *      error = e;
+          *    }
+          *    seenValue = returnValue == FALSE ? false : (seenValue ? true : returnValue == NO_VALUE);
+          * }
+          * if ( error != null && returnValue != FALSE )
+          * {
+          *   throw error;
+          * }
+          * return seenNull ? NO_VALUE : returnValue;
+          */
         block(
-          declare[Value](returnValue),
-          assign(returnValue, invokeStatic(ASSERT_PREDICATE, l)),
+          declare[RuntimeException](error),
+          assign(error, constant(null)),
           declare[Boolean](seenNull),
+          assign(seenNull, constant(false)),
+          declare[Value](returnValue),
+          assign(returnValue, constant(null)),
+          tryCatch[RuntimeException](exceptionName)(assign(returnValue, invokeStatic(ASSERT_PREDICATE, l)))(
+            assign(error, load(exceptionName))),
           assign(seenNull, equal(load(returnValue), noValue)),
           condition(notEqual(load(returnValue), falseValue))(
             block(
-              assign(returnValue, invokeStatic(ASSERT_PREDICATE, r)),
-
+              tryCatch[RuntimeException](exceptionName)(assign(returnValue, invokeStatic(ASSERT_PREDICATE, r)))(
+                assign(error, load(exceptionName))),
               assign(seenNull,
-                ternary(equal(load(returnValue), falseValue), constant(false),
-                     ternary(load(seenNull),
-                             constant(true),
-                             equal(load(returnValue), noValue))))
+                     ternary(equal(load(returnValue), falseValue), constant(false),
+                             ternary(load(seenNull),
+                                     constant(true),
+                                     equal(load(returnValue), noValue))))
             )
           ),
-          ternary(load(seenNull), noValue, load(returnValue))
-        )
+          condition(and(notEqual(load(error), constant(null)), notEqual(load(returnValue), falseValue)))(
+            fail(load(error))),
+          ternary(load(seenNull), noValue, load(returnValue)))
       }
+
     case Ands(expressions) =>
       val compiled = expressions.flatMap(compile).toIndexedSeq
       //we bail if some of the expressions weren't compiled
-
-
       if (compiled.size < expressions.size) None
       else Some(invokeStatic(method[CypherBoolean, Value, Array[AnyValue]]("and"), arrayOf(compiled: _*)))
 

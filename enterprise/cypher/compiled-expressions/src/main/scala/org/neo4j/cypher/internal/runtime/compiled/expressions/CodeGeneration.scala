@@ -22,6 +22,8 @@
  */
 package org.neo4j.cypher.internal.runtime.compiled.expressions
 
+import java.util.function.Consumer
+
 import org.neo4j.codegen
 import org.neo4j.codegen.CodeGenerator.generateCode
 import org.neo4j.codegen.Expression.{constant, getStatic, invoke, newArray}
@@ -44,6 +46,7 @@ import org.opencypher.v9_0.frontend.helpers.using
   * Produces runnable code from an IntermediateRepresentation
   */
 object CodeGeneration {
+
   private val DEBUG = false
   private val VALUES = classOf[Values]
   private val VALUE = classOf[Value]
@@ -135,5 +138,23 @@ object CodeGeneration {
     case AssignToLocalVariable(name, value) =>
       block.assign(block.local(name), compileExpression(value, block))
       Expression.EMPTY
+
+    //try {ops} catch(exception name)(onError)
+    case TryCatch(ops, onError, exception, name) =>
+      block.tryCatch(new Consumer[CodeBlock] {
+        override def accept(mainBlock: CodeBlock): Unit = compileExpression(ops, mainBlock)
+      }, new Consumer[CodeBlock] {
+        override def accept(errorBlock: CodeBlock): Unit = compileExpression(onError, errorBlock)
+      }, Parameter.param(exception, name))
+      Expression.EMPTY
+
+    //throw error
+    case Throw(error) =>
+      block.throwException(compileExpression(error, block))
+      Expression.EMPTY
+
+    // lhs && rhs
+    case BooleanAnd(lhs, rhs) =>
+      Expression.and(compileExpression(lhs, block), compileExpression(rhs, block))
   }
 }

@@ -385,6 +385,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     a [CypherTypeException] should be thrownBy compile(and(literalInt(42), t)).evaluate(ctx, dbAccess, EMPTY_MAP)
     a [CypherTypeException] should be thrownBy compile(and(t, literalInt(42))).evaluate(ctx, dbAccess, EMPTY_MAP)
     compile(and(f, literalInt(42))).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.FALSE)
+    compile(and(literalInt(42), f)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.FALSE)
   }
 
   test("ANDS") {
