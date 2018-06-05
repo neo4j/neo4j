@@ -35,9 +35,16 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.Usage;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -207,6 +214,40 @@ public class RestoreDatabaseCommandIT
     }
 
     @Test
+    public void restoreExplicitIndexesFromBackup() throws IOException, CommandFailed
+    {
+        String databaseName = "destination";
+        Config config = configWith( databaseName, directory.absolutePath().getAbsolutePath() );
+        File fromPath = new File( directory.absolutePath(), "from" );
+        File toPath = config.get( GraphDatabaseSettings.database_path );
+
+        createDbWithExplicitIndexAt( fromPath, 100 );
+
+        new RestoreDatabaseCommand( fileSystemRule.get(), fromPath, config, databaseName, true ).execute();
+
+        GraphDatabaseService restoredDatabase = createDatabase( toPath, toPath.getAbsolutePath() );
+
+        try ( Transaction transaction = restoredDatabase.beginTx() )
+        {
+            IndexManager indexManager = restoredDatabase.index();
+            String[] nodeIndexNames = indexManager.nodeIndexNames();
+            String[] relationshipIndexNames = indexManager.relationshipIndexNames();
+
+            for ( String nodeIndexName : nodeIndexNames )
+            {
+                countNodesByKeyValue( indexManager, nodeIndexName, "a", "b" );
+                countNodesByKeyValue( indexManager, nodeIndexName, "c", "d" );
+            }
+
+            for ( String relationshipIndexName : relationshipIndexNames )
+            {
+                countRelationshipByKeyValue( indexManager, relationshipIndexName, "x", "y" );
+            }
+        }
+        restoredDatabase.shutdown();
+    }
+
+    @Test
     public void restoreTransactionLogsInCustomDirectoryForTargetDatabaseWhenConfigured()
             throws IOException, CommandFailed
     {
@@ -222,11 +263,7 @@ public class RestoreDatabaseCommandIT
         int toNodeCount = 20;
         createDbAt( fromPath, fromNodeCount );
 
-        GraphDatabaseService db = new GraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( toPath )
-                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
-                .setConfig( GraphDatabaseSettings.logical_logs_location, customTransactionLogDirectory )
-                .newGraphDatabase();
+        GraphDatabaseService db = createDatabase( toPath, customTransactionLogDirectory );
         createTestData( toNodeCount, db );
         db.shutdown();
 
@@ -292,6 +329,22 @@ public class RestoreDatabaseCommandIT
         }
     }
 
+    private static void countRelationshipByKeyValue( IndexManager indexManager, String indexName, String key, String value )
+    {
+        try ( IndexHits<Relationship> nodes = indexManager.forRelationships( indexName ).get( key, value ) )
+        {
+            assertEquals( 50, nodes.size() );
+        }
+    }
+
+    private static void countNodesByKeyValue( IndexManager indexManager, String indexName, String key, String value )
+    {
+        try ( IndexHits<Node> nodes = indexManager.forNodes( indexName ).get( key, value ) )
+        {
+            assertEquals( 50, nodes.size() );
+        }
+    }
+
     private static Config configWith( String databaseName, String dataDirectory )
     {
         return Config.defaults( stringMap( GraphDatabaseSettings.active_database.name(), databaseName,
@@ -300,13 +353,48 @@ public class RestoreDatabaseCommandIT
 
     private void createDbAt( File fromPath, int nodesToCreate )
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( fromPath )
-                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
-                .setConfig( GraphDatabaseSettings.logical_logs_location, fromPath.getAbsolutePath() )
-                .newGraphDatabase();
+        GraphDatabaseService db = createDatabase( fromPath, fromPath.getAbsolutePath() );
 
         createTestData( nodesToCreate, db );
 
+        db.shutdown();
+    }
+
+    private GraphDatabaseService createDatabase( File fromPath, String absolutePath )
+    {
+        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( fromPath )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+                .setConfig( GraphDatabaseSettings.logical_logs_location, absolutePath )
+                .newGraphDatabase();
+    }
+
+    private void createDbWithExplicitIndexAt( File fromPath, int pairNumberOfNodesToCreate )
+    {
+        GraphDatabaseService db = createDatabase( fromPath, fromPath.getAbsolutePath() );
+
+        Index<Node> explicitNodeIndex;
+        RelationshipIndex explicitRelationshipIndex;
+        try ( Transaction transaction = db.beginTx() )
+        {
+            explicitNodeIndex = db.index().forNodes( "explicitNodeIndex" );
+            explicitRelationshipIndex = db.index().forRelationships( "explicitRelationshipIndex" );
+            transaction.success();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( int i = 0; i < pairNumberOfNodesToCreate; i += 2 )
+            {
+                Node node = db.createNode();
+                Node otherNode = db.createNode();
+                Relationship relationship = node.createRelationshipTo( otherNode, RelationshipType.withName( "rel" ) );
+
+                explicitNodeIndex.add( node, "a", "b" );
+                explicitNodeIndex.add( otherNode, "c", "d" );
+                explicitRelationshipIndex.add( relationship, "x", "y" );
+            }
+            tx.success();
+        }
         db.shutdown();
     }
 
