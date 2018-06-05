@@ -32,6 +32,7 @@ import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -80,6 +81,12 @@ public class MandatoryProperties
             {
                 recordConstraint( schema.getRelTypeId(), propertyId, relationships );
             }
+        }
+
+        @Override
+        public void processSpecific( MultiTokenSchemaDescriptor multiTokenSchemaDescriptor )
+        {
+            throw new IllegalStateException( "MultiTokenSchemaDescriptor cannot support constraints" );
         }
     };
 

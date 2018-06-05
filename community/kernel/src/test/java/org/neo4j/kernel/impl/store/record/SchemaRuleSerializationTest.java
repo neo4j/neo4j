@@ -35,12 +35,15 @@ import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.multiToken;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
 import static org.neo4j.test.assertion.Assert.assertException;
 
 public class SchemaRuleSerializationTest extends SchemaRuleTestBase
@@ -51,9 +54,15 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
 
     StoreIndexDescriptor indexCompositeRegular = forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withId( RULE_ID );
 
+    StoreIndexDescriptor indexMultiTokenRegular =
+            forSchema( multiToken( new int[]{LABEL_ID, LABEL_ID_2}, EntityType.NODE, new int[]{PROPERTY_ID_1, PROPERTY_ID_2} ) ).withId( RULE_ID );
+
     StoreIndexDescriptor indexCompositeUnique = uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withIds( RULE_ID_2, RULE_ID );
 
     StoreIndexDescriptor indexBigComposite = forLabel( LABEL_ID, IntStream.range(1, 200).toArray() ).withId( RULE_ID );
+
+    StoreIndexDescriptor indexBigMultiToken =
+            forSchema( multiToken( IntStream.range( 1, 200 ).toArray(), EntityType.RELATIONSHIP, IntStream.range( 1, 200 ).toArray() ) ).withId( RULE_ID );
 
     ConstraintRule constraintExistsLabel = ConstraintRule.constraintRule( RULE_ID,
             ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1 ) );
@@ -281,6 +290,13 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     {
         assertSerializeAndDeserializeConstraintRule( constraintCompositeLabel );
         assertSerializeAndDeserializeConstraintRule( constraintCompositeRelType );
+    }
+
+    @Test
+    public void shouldSerializeAndDeserializeMultiTokenRules() throws MalformedSchemaRuleException
+    {
+        assertSerializeAndDeserializeIndexRule( indexMultiTokenRegular );
+        assertSerializeAndDeserializeIndexRule( indexBigMultiToken );
     }
 
     @Test

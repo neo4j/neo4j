@@ -87,13 +87,13 @@ public class MultiTokenSchemaDescriptor implements SchemaDescriptor
     @Override
     public <R> R computeWith( SchemaComputer<R> computer )
     {
-        throw new UnsupportedOperationException( "Not an valid operation for multitoken schema" );
+        return computer.computeSpecific( this );
     }
 
     @Override
     public void processWith( SchemaProcessor processor )
     {
-        throw new UnsupportedOperationException( "Not an valid operation for multitoken schema" );
+        processor.processSpecific( this );
     }
 
     @Override

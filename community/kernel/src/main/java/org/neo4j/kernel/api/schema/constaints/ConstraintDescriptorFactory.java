@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.schema.constaints;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaComputer;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -93,6 +94,12 @@ public class ConstraintDescriptorFactory
                 {
                     return new RelExistenceConstraintDescriptor( schema );
                 }
+
+                @Override
+                public ConstraintDescriptor computeSpecific( MultiTokenSchemaDescriptor schema )
+                {
+                    throw new IllegalStateException( "MultiToken schema rules cannot support constraints" );
+                }
             };
 
     private static SchemaComputer<UniquenessConstraintDescriptor> convertToUniquenessConstraint =
@@ -113,6 +120,12 @@ public class ConstraintDescriptorFactory
                                     schema.getClass().getSimpleName()
                             ) );
                 }
+
+                @Override
+                public UniquenessConstraintDescriptor computeSpecific( MultiTokenSchemaDescriptor schema )
+                {
+                    throw new IllegalStateException( "MultiToken schema rules cannot support constraints" );
+                }
             };
 
     private static SchemaComputer<NodeKeyConstraintDescriptor> convertToNodeKeyConstraint =
@@ -132,6 +145,12 @@ public class ConstraintDescriptorFactory
                                     schema.userDescription( SchemaUtil.idTokenNameLookup ),
                                     schema.getClass().getSimpleName()
                             ) );
+                }
+
+                @Override
+                public NodeKeyConstraintDescriptor computeSpecific( MultiTokenSchemaDescriptor schema )
+                {
+                    throw new IllegalStateException( "MultiToken schema rules cannot support constraints" );
                 }
             };
 }

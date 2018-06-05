@@ -26,13 +26,14 @@ import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.SchemaRuleAccess;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
@@ -259,6 +260,33 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         public void processSpecific( RelationTypeSchemaDescriptor schema )
         {
             engine.comparativeCheck( records.relationshipType( schema.getRelTypeId() ), VALID_RELATIONSHIP_TYPE );
+            for ( int propertyId : schema.getPropertyIds() )
+            {
+                engine.comparativeCheck( records.propertyKey( propertyId ), VALID_PROPERTY_KEY );
+            }
+        }
+
+        @Override
+        public void processSpecific( MultiTokenSchemaDescriptor schema )
+        {
+            switch ( schema.entityType() )
+            {
+            case NODE:
+                for ( int entityTokenId : schema.getEntityTokenIds() )
+                {
+                    engine.comparativeCheck( records.label( entityTokenId ), VALID_LABEL );
+                }
+                break;
+            case RELATIONSHIP:
+                for ( int entityTokenId : schema.getEntityTokenIds() )
+                {
+                    engine.comparativeCheck( records.relationshipType( entityTokenId ), VALID_RELATIONSHIP_TYPE );
+                }
+                break;
+            default:
+                throw new IllegalArgumentException( "Schema with given entity type is not supported: " + schema.entityType() );
+            }
+
             for ( int propertyId : schema.getPropertyIds() )
             {
                 engine.comparativeCheck( records.propertyKey( propertyId ), VALID_PROPERTY_KEY );

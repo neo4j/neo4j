@@ -20,6 +20,7 @@
 package org.neo4j.storageengine.api.schema;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaComputer;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
@@ -169,6 +170,12 @@ public interface SchemaRule extends SchemaDescriptorSupplier
             public Kind computeSpecific( RelationTypeSchemaDescriptor schema )
             {
                 return RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT;
+            }
+
+            @Override
+            public Kind computeSpecific( MultiTokenSchemaDescriptor schema )
+            {
+                throw new IllegalStateException( "MultiToken schema rules cannot support constraints" );
             }
         };
     }
