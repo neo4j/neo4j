@@ -39,7 +39,7 @@ public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ByteBuf>
     private final byte contentType;
     private final ByteBufAwareMarshal byteBufAwareMarshal;
     private final int chunkSize;
-    private boolean lastByteWasWritten;
+    private boolean endOfInput;
     private int progress;
 
     public ChunkedReplicatedContent( byte contentType, ByteBufAwareMarshal byteBufAwareMarshal, int chunkSize )
@@ -68,7 +68,7 @@ public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ByteBuf>
     @Override
     public boolean isEndOfInput()
     {
-        return lastByteWasWritten;
+        return endOfInput;
     }
 
     @Override
@@ -86,15 +86,16 @@ public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ByteBuf>
     @Override
     public ByteBuf readChunk( ByteBufAllocator allocator ) throws IOException
     {
-        boolean endOfInput = isEndOfInput();
-        if ( endOfInput )
+        if ( isEndOfInput() )
         {
             return null;
         }
+        // assume this is the last chunk
+        boolean lastChunk = true;
         ByteBuf buffer = allocator.buffer( chunkSize );
         try
         {
-            buffer.writeBoolean( endOfInput );
+            buffer.writeBoolean( lastChunk );
             if ( progress() == 0 )
             {
                 // extra metadata on first chunk
@@ -103,10 +104,11 @@ public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ByteBuf>
             }
             if ( !byteBufAwareMarshal.encode( buffer ) )
             {
-                lastByteWasWritten = true;
+                this.endOfInput = true;
             }
-            if ( isEndOfInput() != endOfInput )
+            if ( isEndOfInput() != lastChunk )
             {
+                // status changed after writing to buffer.
                 buffer.setBoolean( 0, isEndOfInput() );
             }
             progress += buffer.readableBytes();
