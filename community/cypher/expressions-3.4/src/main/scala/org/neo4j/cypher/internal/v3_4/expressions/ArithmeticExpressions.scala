@@ -43,6 +43,7 @@ case class Subtract(lhs: Expression, rhs: Expression)(val position: InputPositio
     TypeSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
     TypeSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
     TypeSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat),
+    TypeSignature(argumentTypes = Vector(CTFloat, CTInteger), outputType = CTFloat),
     TypeSignature(argumentTypes = Vector(CTDuration, CTDuration), outputType = CTDuration),
     TypeSignature(argumentTypes = Vector(CTLocalTime, CTDuration), outputType = CTLocalTime),
     TypeSignature(argumentTypes = Vector(CTTime, CTDuration), outputType = CTTime),
@@ -76,6 +77,7 @@ case class Multiply(lhs: Expression, rhs: Expression)(val position: InputPositio
     TypeSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
     TypeSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
     TypeSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat),
+    TypeSignature(argumentTypes = Vector(CTFloat, CTInteger), outputType = CTFloat),
     TypeSignature(argumentTypes = Vector(CTDuration, CTFloat), outputType = CTDuration),
     TypeSignature(argumentTypes = Vector(CTDuration, CTInteger), outputType = CTDuration),
     TypeSignature(argumentTypes = Vector(CTFloat, CTDuration), outputType = CTDuration),
@@ -96,6 +98,7 @@ case class Divide(lhs: Expression, rhs: Expression)(val position: InputPosition)
     TypeSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
     TypeSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
     TypeSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat),
+    TypeSignature(argumentTypes = Vector(CTFloat, CTInteger), outputType = CTFloat),
     TypeSignature(argumentTypes = Vector(CTDuration, CTFloat), outputType = CTDuration),
     TypeSignature(argumentTypes = Vector(CTDuration, CTInteger), outputType = CTDuration)
   )
@@ -113,6 +116,7 @@ case class Modulo(lhs: Expression, rhs: Expression)(val position: InputPosition)
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
     TypeSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
+    TypeSignature(argumentTypes = Vector(CTFloat, CTInteger), outputType = CTFloat),
     TypeSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
 
