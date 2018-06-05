@@ -22,8 +22,11 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import java.time.LocalDate
+
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
 
 import scala.collection.Map
 
@@ -116,5 +119,29 @@ class HintAcceptanceTest
       planComparisonStrategy = ComparePlansWithAssertion((p) => {
         p should useOperatorTimes("NodeIndexSeek", 2)
       }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
+  }
+
+  test("should accept hint on spatial index with distance function") {
+    // Given
+    graph.createIndex("Business", "location")
+    graph.createIndex("Review", "date")
+
+    val business = createLabeledNode(Map("location" -> Values.pointValue(CoordinateReferenceSystem.WGS84, -111.977, 33.3288)), "Business")
+    val review = createLabeledNode(Map("date" -> LocalDate.parse("2017-03-01")), "Review")
+    relate(review, business, "REVIEWS")
+
+    // When
+    val query =
+      """MATCH (b:Business)<-[:REVIEWS]-(r:Review)
+        |USING INDEX b:Business(location)
+        |WHERE distance(b.location, point({latitude: 33.3288, longitude: -111.977})) < 6500
+        |AND date("2017-01-01") <= r.date <= date("2018-01-01")
+        |RETURN COUNT(*)""".stripMargin
+
+    val result = executeWith(Configs.Version3_4 - Configs.Compiled - Configs.AllRulePlanners, query)
+
+    // Then
+    result.toList should be(List(Map("COUNT(*)" -> 1)))
+
   }
 }

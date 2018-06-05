@@ -247,6 +247,7 @@ case class Match(
             | Index hints are only supported for the following predicates in WHERE
             | (either directly or as part of a top-level AND or OR):
             | equality comparison, inequality (range) comparison, STARTS WITH,
+            | point distance,
             | IN condition or checking property existence.
             | The comparison cannot be performed between two property values.
             | Note that the label and property comparison must be specified on a
@@ -288,8 +289,12 @@ case class Match(
           acc =>
             val newAcc: Seq[String] = Seq(expr.lhs, expr.rhs).foldLeft(acc) { (acc, expr) =>
               expr match {
-                case Property(Variable(id), PropertyKeyName(name)) if id == variable => acc :+ name
-                case _ => acc
+                case Property(Variable(id), PropertyKeyName(name)) if id == variable =>
+                  acc :+ name
+                case FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(Property(Variable(id), PropertyKeyName(name)), _)) if id == variable =>
+                  acc :+ name
+                case _ =>
+                  acc
               }
             }
             (newAcc, None)
