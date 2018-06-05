@@ -30,7 +30,6 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
-import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 
@@ -110,12 +109,12 @@ public interface IndexAccessor extends Closeable
      * Verifies that each value in this index is unique.
      * Index is guaranteed to not change while this call executes.
      *
-     * @param propertyAccessor {@link PropertyAccessor} for accessing properties from database storage
+     * @param nodePropertyAccessor {@link NodePropertyAccessor} for accessing properties from database storage
      * in the event of conflicting values.
      * @throws IndexEntryConflictException for first detected uniqueness conflict, if any.
      * @throws IOException on error reading from source files.
      */
-    void verifyDeferredConstraints( PropertyAccessor propertyAccessor ) throws IndexEntryConflictException, IOException;
+    void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException, IOException;
 
     /**
      * @return true if index was not shutdown properly and its internal state is dirty, false otherwise
@@ -195,7 +194,7 @@ public interface IndexAccessor extends Closeable
         }
 
         @Override
-        public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
+        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
         {
         }
 
@@ -270,10 +269,10 @@ public interface IndexAccessor extends Closeable
         }
 
         @Override
-        public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
+        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
                 throws IndexEntryConflictException, IOException
         {
-            delegate.verifyDeferredConstraints( propertyAccessor );
+            delegate.verifyDeferredConstraints( nodePropertyAccessor );
         }
 
         @Override

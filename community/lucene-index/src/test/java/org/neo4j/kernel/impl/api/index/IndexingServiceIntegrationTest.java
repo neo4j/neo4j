@@ -36,6 +36,8 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -51,6 +53,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
@@ -63,6 +66,7 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forRelType;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
 
 @RunWith( Parameterized.class )
@@ -131,6 +135,27 @@ public class IndexingServiceIntegrationTest
         int propertyId = propertyKeyTokenHolder.getIdByName( PROPERTY_NAME );
 
         StoreIndexDescriptor rule = forSchema( forLabel( foodId, propertyId ), indexDescriptor ).withId( schemaStore.nextId() );
+        indexingService.createIndexes( rule );
+        IndexProxy indexProxy = indexingService.getIndexProxy( rule.getId() );
+
+        waitIndexOnline( indexProxy );
+        assertEquals( InternalIndexState.ONLINE, indexProxy.getState() );
+        PopulationProgress progress = indexProxy.getIndexPopulationProgress();
+        assertEquals( progress.getCompleted(), progress.getTotal() );
+    }
+
+    @Test
+    public void testManualRelationshipIndexPopulation() throws IOException, IndexNotFoundKernelException, InterruptedException
+    {
+        IndexingService indexingService = getIndexingService( database );
+        SchemaStore schemaStore = getSchemaStore( database );
+
+        RelationshipTypeTokenHolder relationshipTypeTokenHolder = getRelationshipTypeTokenHolder( database );
+        PropertyKeyTokenHolder propertyKeyTokenHolder = getPropertyKeyTokenHolder( database );
+        int foodId = relationshipTypeTokenHolder.getIdByName( FOOD_LABEL );
+        int propertyId = propertyKeyTokenHolder.getIdByName( PROPERTY_NAME );
+
+        StoreIndexDescriptor rule = forSchema( forRelType( foodId, propertyId ), indexDescriptor ).withId( schemaStore.nextId() );
         indexingService.createIndexes( rule );
         IndexProxy indexProxy = indexingService.getIndexProxy( rule.getId() );
 
@@ -239,6 +264,11 @@ public class IndexingServiceIntegrationTest
         return getDependencyResolver( database ).resolveDependency( LabelTokenHolder.class );
     }
 
+    private RelationshipTypeTokenHolder getRelationshipTypeTokenHolder( GraphDatabaseService database )
+    {
+        return getDependencyResolver( database ).resolveDependency( RelationshipTypeTokenHolder.class );
+    }
+
     private DependencyResolver getDependencyResolver( GraphDatabaseService database )
     {
         return ((GraphDatabaseAPI)database).getDependencyResolver();
@@ -253,7 +283,10 @@ public class IndexingServiceIntegrationTest
             {
                 Node node = database.createNode( Label.label( FOOD_LABEL ), Label.label( CLOTHES_LABEL ),
                         Label.label( WEATHER_LABEL ) );
-                node.setProperty( PROPERTY_NAME, "Node" + index++ );
+                node.setProperty( PROPERTY_NAME, "Node" + index );
+                Relationship relationship = node.createRelationshipTo( node, RelationshipType.withName( FOOD_LABEL ) );
+                relationship.setProperty( PROPERTY_NAME, "Relationship" + index );
+                index++;
                 transaction.success();
             }
         }

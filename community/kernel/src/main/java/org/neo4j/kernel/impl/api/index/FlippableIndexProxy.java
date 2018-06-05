@@ -28,7 +28,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.ExceptionDuringFlipKernelException;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
@@ -39,7 +38,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -439,7 +438,7 @@ public class FlippableIndexProxy implements IndexProxy
     }
 
     @Override
-    public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
+    public void verifyDeferredConstraints( NodePropertyAccessor accessor ) throws IndexEntryConflictException, IOException
     {
         lock.readLock().lock();
         try

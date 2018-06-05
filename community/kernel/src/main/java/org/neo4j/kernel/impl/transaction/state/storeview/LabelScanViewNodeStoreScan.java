@@ -25,7 +25,7 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.api.index.NodeUpdates;
+import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -42,7 +42,7 @@ public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends Store
     public LabelScanViewNodeStoreScan( NodeStore nodeStore, LockService locks,
             PropertyStore propertyStore,
             LabelScanStore labelScanStore, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
-            Visitor<NodeUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds,
+            Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds,
             IntPredicate propertyKeyIdFilter )
     {
         super( nodeStore, locks, propertyStore, labelUpdateVisitor, propertyUpdatesVisitor, labelIds,
@@ -51,7 +51,7 @@ public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends Store
     }
 
     @Override
-    public PrimitiveLongResourceIterator getNodeIdIterator()
+    public PrimitiveLongResourceIterator getEntityIdIterator()
     {
         return new LabelScanViewIdIterator( labelScanStore.newReader(), labelIds );
     }

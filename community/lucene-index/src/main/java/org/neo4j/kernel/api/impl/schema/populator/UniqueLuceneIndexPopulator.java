@@ -25,7 +25,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -34,7 +34,7 @@ import org.neo4j.storageengine.api.schema.IndexSample;
  * A {@link LuceneIndexPopulator} used for unique Lucene schema indexes.
  * Performs sampling using {@link UniqueIndexSampler}.
  * Verifies uniqueness of added and changed values using
- * {@link SchemaIndex#verifyUniqueness(PropertyAccessor, int[])} method.
+ * {@link SchemaIndex#verifyUniqueness(NodePropertyAccessor, int[])} method.
  */
 public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
@@ -49,13 +49,13 @@ public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
     }
 
     @Override
-    public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
+    public void verifyDeferredConstraints( NodePropertyAccessor accessor ) throws IndexEntryConflictException, IOException
     {
         luceneIndex.verifyUniqueness( accessor, propertyKeyIds );
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( final PropertyAccessor accessor )
+    public IndexUpdater newPopulatingUpdater( final NodePropertyAccessor accessor )
     {
         return new UniqueLuceneIndexPopulatingUpdater( writer, propertyKeyIds, luceneIndex, accessor, sampler );
     }

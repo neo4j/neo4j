@@ -44,7 +44,7 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -178,8 +178,8 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldBeAbleToRemoveAConstraintIndexWithoutOwner() throws Exception
     {
         // given
-        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
+        NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, nodePropertyAccessor );
 
         IndexDescriptor constraintIndex = creator.createConstraintIndex( descriptor, Optional.empty() );
         // then

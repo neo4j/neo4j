@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.verification.DuplicateCheckingCollector;
 import org.neo4j.kernel.api.impl.schema.verification.PartitionedUniquenessVerifier;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.values.storable.Values;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -68,9 +68,9 @@ public class PartitionedUniquenessVerifierTest
     public void verifyPropertyUpdates() throws Exception
     {
         PartitionedUniquenessVerifier verifier = createPartitionedVerifier();
-        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+        NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
 
-        verifier.verify( propertyAccessor, new int[]{42}, valueTupleList( "a", "b" ) );
+        verifier.verify( nodePropertyAccessor, new int[]{42}, valueTupleList( "a", "b" ) );
 
         verifySearchInvocations( searcher1, "a", "b" );
         verifySearchInvocations( searcher2, "a", "b" );

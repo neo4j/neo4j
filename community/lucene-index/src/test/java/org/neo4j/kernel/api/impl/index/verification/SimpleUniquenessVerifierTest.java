@@ -45,7 +45,7 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.verification.SimpleUniquenessVerifier;
 import org.neo4j.kernel.api.impl.schema.verification.UniquenessVerifier;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -103,78 +103,78 @@ public class SimpleUniquenessVerifierTest
     public void populationVerificationNoDuplicates() throws Exception
     {
         List<Object> data = asList( "string1", 42, 43, 44, 45L, (byte) 46, 47.0, (float) 48.1, "string2" );
-        PropertyAccessor propertyAccessor = newPropertyAccessor( data );
+        NodePropertyAccessor nodePropertyAccessor = newPropertyAccessor( data );
 
         insert( data );
 
-        assertNoDuplicates( propertyAccessor );
+        assertNoDuplicates( nodePropertyAccessor );
     }
 
     @Test
     public void populationVerificationOneDuplicate() throws IOException
     {
         List<Object> data = asList( "cat", 21, 22, 23, 24L, (byte) 25, 26.0, (float) 22, "dog" );
-        PropertyAccessor propertyAccessor = newPropertyAccessor( data );
+        NodePropertyAccessor nodePropertyAccessor = newPropertyAccessor( data );
 
         insert( data );
 
-        assertHasDuplicates( propertyAccessor );
+        assertHasDuplicates( nodePropertyAccessor );
     }
 
     @Test
     public void populationVerificationManyDuplicate() throws IOException
     {
         List<Object> data = asList( "dog", "cat", "dog", "dog", "dog", "dog" );
-        PropertyAccessor propertyAccessor = newPropertyAccessor( data );
+        NodePropertyAccessor nodePropertyAccessor = newPropertyAccessor( data );
 
         insert( data );
 
-        assertHasDuplicates( propertyAccessor );
+        assertHasDuplicates( nodePropertyAccessor );
     }
 
     @Test
     public void updatesVerificationNoDuplicates() throws Exception
     {
         List<Object> data = asList( "lucene", 1337975550, 43.10, 'a', 'b', 'c', (byte) 12 );
-        PropertyAccessor propertyAccessor = newPropertyAccessor( data );
+        NodePropertyAccessor nodePropertyAccessor = newPropertyAccessor( data );
 
         insert( data );
 
-        assertNoDuplicatesCreated( propertyAccessor, valueTupleList( 1337975550, 'c', (byte) 12 ) );
+        assertNoDuplicatesCreated( nodePropertyAccessor, valueTupleList( 1337975550, 'c', (byte) 12 ) );
     }
 
     @Test
     public void updatesVerificationOneDuplicate() throws IOException
     {
         List<Object> data = asList( "foo", "bar", "baz", 100, 200, 'q', 'u', 'x', "aa", 300, 'u', -100 );
-        PropertyAccessor propertyAccessor = newPropertyAccessor( data );
+        NodePropertyAccessor nodePropertyAccessor = newPropertyAccessor( data );
 
         insert( data );
 
-        assertDuplicatesCreated( propertyAccessor, valueTupleList( "aa", 'u', -100 ) );
+        assertDuplicatesCreated( nodePropertyAccessor, valueTupleList( "aa", 'u', -100 ) );
     }
 
     @Test
     public void updatesVerificationManyDuplicate() throws IOException
     {
         List<Object> data = asList( -99, 'a', -10.0, -99.99999, "apa", (float) -99.99999, "mod", "div", "div", -10 );
-        PropertyAccessor propertyAccessor = newPropertyAccessor( data );
+        NodePropertyAccessor nodePropertyAccessor = newPropertyAccessor( data );
 
         insert( data );
 
-        assertDuplicatesCreated( propertyAccessor, valueTupleList( (float) -99.99999, 'a', -10, "div" ) );
+        assertDuplicatesCreated( nodePropertyAccessor, valueTupleList( (float) -99.99999, 'a', -10, "div" ) );
     }
 
     @Test
     public void numericIndexVerificationNoDuplicates() throws Exception
     {
         List<Object> data = asList( Integer.MAX_VALUE - 2, Integer.MAX_VALUE - 1, Integer.MAX_VALUE );
-        PropertyAccessor propertyAccessor = newPropertyAccessor( data );
+        NodePropertyAccessor nodePropertyAccessor = newPropertyAccessor( data );
 
         insert( data );
 
         IndexSearcher indexSearcher = spy( searcherManager.acquire() );
-        runUniquenessVerification( propertyAccessor, indexSearcher );
+        runUniquenessVerification( nodePropertyAccessor, indexSearcher );
 
         verify( indexSearcher, never() ).search( any( Query.class ), any( Collector.class ) );
     }
@@ -183,12 +183,12 @@ public class SimpleUniquenessVerifierTest
     public void numericIndexVerificationSomePossibleDuplicates() throws Exception
     {
         List<Object> data = asList( 42, Long.MAX_VALUE - 1, Long.MAX_VALUE );
-        PropertyAccessor propertyAccessor = newPropertyAccessor( data );
+        NodePropertyAccessor nodePropertyAccessor = newPropertyAccessor( data );
 
         insert( data );
 
         IndexSearcher indexSearcher = spy( searcherManager.acquire() );
-        runUniquenessVerification( propertyAccessor, indexSearcher );
+        runUniquenessVerification( nodePropertyAccessor, indexSearcher );
 
         verify( indexSearcher ).search( any( Query.class ), any( Collector.class ) );
     }
@@ -197,14 +197,14 @@ public class SimpleUniquenessVerifierTest
     public void numericIndexVerificationSomeWithDuplicates() throws Exception
     {
         List<Object> data = asList( Integer.MAX_VALUE, Long.MAX_VALUE, 42, Long.MAX_VALUE );
-        PropertyAccessor propertyAccessor = newPropertyAccessor( data );
+        NodePropertyAccessor nodePropertyAccessor = newPropertyAccessor( data );
 
         insert( data );
 
         IndexSearcher indexSearcher = spy( searcherManager.acquire() );
         try
         {
-            runUniquenessVerification( propertyAccessor, indexSearcher );
+            runUniquenessVerification( nodePropertyAccessor, indexSearcher );
             fail( "Exception expected" );
         }
         catch ( Throwable t )
@@ -215,7 +215,7 @@ public class SimpleUniquenessVerifierTest
         verify( indexSearcher ).search( any( Query.class ), any( Collector.class ) );
     }
 
-    private void runUniquenessVerification( PropertyAccessor propertyAccessor, IndexSearcher indexSearcher )
+    private void runUniquenessVerification( NodePropertyAccessor nodePropertyAccessor, IndexSearcher indexSearcher )
             throws IOException, IndexEntryConflictException
     {
         try
@@ -225,7 +225,7 @@ public class SimpleUniquenessVerifierTest
 
             try ( UniquenessVerifier verifier = new SimpleUniquenessVerifier( partitionSearcher ) )
             {
-                verifier.verify( propertyAccessor, PROPERTY_KEY_IDS );
+                verifier.verify( nodePropertyAccessor, PROPERTY_KEY_IDS );
             }
         }
         finally
@@ -234,28 +234,28 @@ public class SimpleUniquenessVerifierTest
         }
     }
 
-    private void assertNoDuplicates( PropertyAccessor propertyAccessor ) throws Exception
+    private void assertNoDuplicates( NodePropertyAccessor nodePropertyAccessor ) throws Exception
     {
         try ( UniquenessVerifier verifier = newSimpleUniquenessVerifier() )
         {
-            verifier.verify( propertyAccessor, PROPERTY_KEY_IDS );
+            verifier.verify( nodePropertyAccessor, PROPERTY_KEY_IDS );
         }
     }
 
-    private void assertNoDuplicatesCreated( PropertyAccessor propertyAccessor, List<Value[]> updatedPropertyValues )
+    private void assertNoDuplicatesCreated( NodePropertyAccessor nodePropertyAccessor, List<Value[]> updatedPropertyValues )
             throws Exception
     {
         try ( UniquenessVerifier verifier = newSimpleUniquenessVerifier() )
         {
-            verifier.verify( propertyAccessor, PROPERTY_KEY_IDS, updatedPropertyValues );
+            verifier.verify( nodePropertyAccessor, PROPERTY_KEY_IDS, updatedPropertyValues );
         }
     }
 
-    private void assertHasDuplicates( PropertyAccessor propertyAccessor )
+    private void assertHasDuplicates( NodePropertyAccessor nodePropertyAccessor )
     {
         try ( UniquenessVerifier verifier = newSimpleUniquenessVerifier() )
         {
-            verifier.verify( propertyAccessor, PROPERTY_KEY_IDS );
+            verifier.verify( nodePropertyAccessor, PROPERTY_KEY_IDS );
             fail( "Uniqueness verification was successful. This is not expected..." );
         }
         catch ( Throwable t )
@@ -264,11 +264,11 @@ public class SimpleUniquenessVerifierTest
         }
     }
 
-    private void assertDuplicatesCreated( PropertyAccessor propertyAccessor, List<Value[]> updatedPropertyValues )
+    private void assertDuplicatesCreated( NodePropertyAccessor nodePropertyAccessor, List<Value[]> updatedPropertyValues )
     {
         try ( UniquenessVerifier verifier = newSimpleUniquenessVerifier() )
         {
-            verifier.verify( propertyAccessor, PROPERTY_KEY_IDS, updatedPropertyValues );
+            verifier.verify( nodePropertyAccessor, PROPERTY_KEY_IDS, updatedPropertyValues );
             fail( "Uniqueness verification was successful. This is not expected..." );
         }
         catch ( Throwable t )
@@ -287,7 +287,7 @@ public class SimpleUniquenessVerifierTest
         searcherManager.maybeRefreshBlocking();
     }
 
-    private PropertyAccessor newPropertyAccessor( List<Object> propertyValues )
+    private NodePropertyAccessor newPropertyAccessor( List<Object> propertyValues )
     {
         return new TestPropertyAccessor(
                 propertyValues.stream()

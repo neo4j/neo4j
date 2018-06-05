@@ -42,13 +42,13 @@ import org.neo4j.consistency.store.synthetic.LabelScanIndex;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.Scanner;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 
 import static java.lang.String.format;
 import static org.neo4j.consistency.checking.full.MultiPassStore.ARRAYS;
@@ -138,7 +138,7 @@ public class ConsistencyCheckTasks
             tasks.add( create( "RelationshipGroupStore-RelGrp", nativeStores.getRelationshipGroupStore(),
                     relGrpProcessor, ROUND_ROBIN ) );
 
-            PropertyReader propertyReader = new PropertyReader( nativeStores );
+            NodePropertyReader propertyReader = new NodePropertyReader( nativeStores );
             tasks.add( recordScanner( CheckStage.Stage8_PS_Props.name(),
                     new IterableStore<>( nativeStores.getNodeStore(), true ),
                     new PropertyAndNode2LabelIndexProcessor( reporter, checkIndexes ? indexes : null,
