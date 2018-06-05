@@ -374,18 +374,15 @@ public final class UnsafeUtil
         }
     }
 
-    public static long allocateMemory( long sizeInBytes )
-    {
-        return allocateMemory( sizeInBytes, GlobalMemoryTracker.INSTANCE );
-    }
-
     /**
      * Allocate a block of memory of the given size in bytes, and return a pointer to that memory.
      * <p>
      * The memory is aligned such that it can be used for any data type.
      * The memory is uninitialised, so it may contain random garbage, or it may not.
+     *
+     * @return a pointer to the allocated memory
      */
-    public static long allocateMemory( long bytes, MemoryAllocationTracker allocationTracker )
+    public static long allocateMemory( long bytes )
     {
         final long pointer = unsafe.allocateMemory( bytes );
         if ( DIRTY_MEMORY )
@@ -393,8 +390,21 @@ public final class UnsafeUtil
             setMemory( pointer, bytes, (byte) 0xA5 );
         }
         addAllocatedPointer( pointer, bytes );
-        allocationTracker.allocated( bytes );
         GlobalMemoryTracker.INSTANCE.allocated( bytes );
+        return pointer;
+    }
+
+    /**
+     * Allocate a block of memory of the given size in bytes and update memory allocation tracker accordingly.
+     * <p>
+     * The memory is aligned such that it can be used for any data type.
+     * The memory is uninitialised, so it may contain random garbage, or it may not.
+     * @return a pointer to the allocated memory
+     */
+    public static long allocateMemory( long bytes, MemoryAllocationTracker allocationTracker )
+    {
+        final long pointer = allocateMemory( bytes );
+        allocationTracker.allocated( bytes );
         return pointer;
     }
 
@@ -426,13 +436,21 @@ public final class UnsafeUtil
     }
 
     /**
-     * Free the memory that was allocated with {@link #allocateMemory}.
+     * Free the memory that was allocated with {@link #allocateMemory} and update memory allocation tracker accordingly.
      */
     public static void free( long pointer, long bytes, MemoryAllocationTracker allocationTracker )
     {
+        free( pointer, bytes );
+        allocationTracker.deallocated( bytes );
+    }
+
+    /**
+     * Free the memory that was allocated with {@link #allocateMemory}.
+     */
+    public static void free( long pointer, long bytes )
+    {
         checkFree( pointer );
         unsafe.freeMemory( pointer );
-        allocationTracker.deallocated( bytes );
         GlobalMemoryTracker.INSTANCE.deallocated( bytes );
     }
 
