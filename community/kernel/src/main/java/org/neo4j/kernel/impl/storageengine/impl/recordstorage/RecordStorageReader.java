@@ -134,9 +134,9 @@ public class RecordStorageReader implements StorageReader
      * All the nulls in this method is a testament to the fact that we probably need to break apart this reader,
      * separating index stuff out from store stuff.
      */
-    public static RecordStorageReader newReader( NeoStores stores )
+    public RecordStorageReader( NeoStores stores )
     {
-        return new RecordStorageReader( null, null, null, null, stores, null, null, null, null, null );
+        this( null, null, null, null, stores, null, null, null, null, null );
     }
 
     @Override

@@ -173,7 +173,6 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.helpers.Numbers.safeCastLongToInt;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader.newReader;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 
@@ -319,7 +318,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         flushStrategy = new BatchedFlushStrategy( recordAccess, config.get( GraphDatabaseSettings
                 .batch_inserter_batch_size ) );
         cursors = new RecordCursors( neoStores );
-        storageReader = newReader( neoStores );
+        storageReader = new RecordStorageReader( neoStores );
     }
 
     private StoreLocker tryLockStore( FileSystemAbstraction fileSystem )

@@ -88,7 +88,6 @@ import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionM
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
 import static java.util.Arrays.asList;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader.newReader;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
@@ -521,7 +520,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             @Override
             public InputChunk newChunk()
             {
-                return new RelationshipRecordChunk( newReader( legacyStore ), requiresPropertyMigration );
+                return new RelationshipRecordChunk( new RecordStorageReader( legacyStore ), requiresPropertyMigration );
             }
         };
     }
@@ -533,7 +532,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             @Override
             public InputChunk newChunk()
             {
-                return new NodeRecordChunk( newReader( legacyStore ), requiresPropertyMigration );
+                return new NodeRecordChunk( new RecordStorageReader( legacyStore ), requiresPropertyMigration );
             }
         };
     }

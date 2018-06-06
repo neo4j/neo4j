@@ -47,7 +47,7 @@ public class StoreScanChunkIT
         {
             RecordStorageEngine recordStorageEngine = database.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
             NeoStores neoStores = recordStorageEngine.testAccessNeoStores();
-            RecordStorageReader storageReader = RecordStorageReader.newReader( neoStores );
+            RecordStorageReader storageReader = new RecordStorageReader( neoStores );
             TestStoreScanChunk scanChunk1 = new TestStoreScanChunk( storageReader, false );
             TestStoreScanChunk scanChunk2 = new TestStoreScanChunk( storageReader, false );
             assertNotSame( scanChunk1.getCursor(), scanChunk2.getCursor() );
