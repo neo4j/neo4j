@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -45,7 +45,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
         this.type = type;
         this.single = NO_ID;
         init( read );
-        this.addedRelationships = LongSets.immutable.empty().longIterator();
+        this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
     }
 
     void single( long reference, Read read )
@@ -54,7 +54,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
         type = -1;
         this.single = reference;
         init( read );
-        this.addedRelationships = LongSets.immutable.empty().longIterator();
+        this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
     }
 
     @Override
@@ -119,7 +119,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
         {
             addedRelationships = read.txState().relationshipIsAddedInThisTx( single )
                                  ? LongHashSet.newSetWith( single ).longIterator()
-                                 : LongSets.immutable.empty().longIterator();
+                                 : ImmutableEmptyLongIterator.INSTANCE;
         }
         else
         {

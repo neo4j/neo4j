@@ -28,7 +28,6 @@ import org.mockito.Mockito;
 
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
@@ -71,6 +70,7 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
@@ -119,7 +119,7 @@ public class KernelTransactionTestBase
                     any( ReadableTransactionState.class ),
                     any( StorageReader.class ), any( ResourceLocker.class ),
                     anyLong(),
-                    any( Function.class ) );
+                    any( TxStateVisitor.Decorator.class ) );
     }
 
     public KernelTransactionImplementation newTransaction( long transactionTimeoutMillis )

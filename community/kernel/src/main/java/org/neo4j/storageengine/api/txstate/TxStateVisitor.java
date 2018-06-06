@@ -23,6 +23,7 @@ import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.set.primitive.LongSet;
 
 import java.util.Iterator;
+import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
@@ -272,4 +273,13 @@ public interface TxStateVisitor extends AutoCloseable
             actual.close();
         }
     }
+
+    /**
+     * Interface for allowing decoration of a TxStateVisitor with one or more other visitor(s).
+     */
+    interface Decorator extends Function<TxStateVisitor,TxStateVisitor>
+    {
+    }
+
+    Decorator NO_DECORATION = txStateVisitor -> txStateVisitor;
 }

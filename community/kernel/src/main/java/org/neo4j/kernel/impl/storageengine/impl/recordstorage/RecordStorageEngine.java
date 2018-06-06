@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -267,7 +266,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @SuppressWarnings( "resource" )
     @Override
     public void createCommands( Collection<StorageCommand> commands, ReadableTransactionState txState, StorageReader storageReader, ResourceLocker locks,
-            long lastTransactionIdWhenStarted, Function<TxStateVisitor,TxStateVisitor> additionalTxStateVisitor )
+            long lastTransactionIdWhenStarted, TxStateVisitor.Decorator additionalTxStateVisitor )
             throws TransactionFailureException, CreateConstraintFailureException, ConstraintValidationException
     {
         if ( txState != null )

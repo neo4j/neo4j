@@ -33,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -54,6 +53,7 @@ import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
+import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.DoubleLatch;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -382,7 +382,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
                 any( TransactionState.class ),
                 any( StorageReader.class ),
                 any( ResourceLocker.class ),
-                anyLong(), any( Function.class ) );
+                anyLong(), any( TxStateVisitor.Decorator.class ) );
 
         try ( KernelTransactionImplementation transaction = newTransaction( loginContext() ) )
         {

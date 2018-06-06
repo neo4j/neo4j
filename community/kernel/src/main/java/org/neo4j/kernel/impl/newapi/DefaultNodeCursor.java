@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import org.neo4j.internal.kernel.api.LabelSet;
@@ -57,7 +57,7 @@ class DefaultNodeCursor implements NodeCursor
         this.read = read;
         this.single = NO_ID;
         this.hasChanges = HasChanges.MAYBE;
-        this.addedNodes = LongSets.immutable.empty().longIterator();
+        this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
     }
 
     void single( long reference, Read read )
@@ -66,7 +66,7 @@ class DefaultNodeCursor implements NodeCursor
         this.read = read;
         this.single = reference;
         this.hasChanges = HasChanges.MAYBE;
-        this.addedNodes = LongSets.immutable.empty().longIterator();
+        this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
     }
 
     @Override
@@ -199,7 +199,7 @@ class DefaultNodeCursor implements NodeCursor
         {
             read = null;
             hasChanges = HasChanges.MAYBE;
-            addedNodes = LongSets.immutable.empty().longIterator();
+            addedNodes = ImmutableEmptyLongIterator.INSTANCE;
             storeCursor.close();
 
             pool.accept( this );
@@ -227,7 +227,7 @@ class DefaultNodeCursor implements NodeCursor
                 if ( single != NO_ID )
                 {
                     addedNodes = read.txState().nodeIsAddedInThisTx( single ) ?
-                                 LongHashSet.newSetWith( single ).longIterator() : LongSets.immutable.empty().longIterator();
+                                 LongHashSet.newSetWith( single ).longIterator() : ImmutableEmptyLongIterator.INSTANCE;
                 }
                 else
                 {

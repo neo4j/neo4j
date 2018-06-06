@@ -26,7 +26,6 @@ import org.junit.Test;
 
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -140,7 +139,7 @@ public class ReplicatedTokenHolderTest
             } );
             return null;
         } ).when( storageEngine ).createCommands( anyCollection(), any( ReadableTransactionState.class ),
-                any( StorageReader.class ), any( ResourceLocker.class ), anyLong(), any( Function.class ) );
+                any( StorageReader.class ), any( ResourceLocker.class ), anyLong(), any( TxStateVisitor.Decorator.class ) );
 
         StorageReader readLayer = mock( StorageReader.class );
         when( storageEngine.newReader() ).thenReturn( readLayer );

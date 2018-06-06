@@ -20,7 +20,6 @@
 package org.neo4j.storageengine.api;
 
 import java.util.Collection;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -49,7 +48,7 @@ public interface StorageEngine
 
     /**
      * @return a new {@link CommandCreationContext} meant to be kept for multiple calls to
-     * {@link #createCommands(Collection, ReadableTransactionState, StorageReader, ResourceLocker, long, Function)}.
+     * {@link #createCommands(Collection, ReadableTransactionState, StorageReader, ResourceLocker, long, TxStateVisitor.Decorator)}.
      * Must be {@link CommandCreationContext#close() closed} after used, before being discarded.
      */
     CommandCreationContext allocateCommandCreationContext();
@@ -87,7 +86,7 @@ public interface StorageEngine
             StorageReader storageReader,
             ResourceLocker locks,
             long lastTransactionIdWhenStarted,
-            Function<TxStateVisitor,TxStateVisitor> additionalTxStateVisitor )
+            TxStateVisitor.Decorator additionalTxStateVisitor )
             throws TransactionFailureException, CreateConstraintFailureException, ConstraintValidationException;
 
     /**
