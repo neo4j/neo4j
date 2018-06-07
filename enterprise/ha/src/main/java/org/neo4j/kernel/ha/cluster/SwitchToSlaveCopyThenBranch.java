@@ -102,7 +102,7 @@ public class SwitchToSlaveCopyThenBranch extends SwitchToSlave
                 masterClientResolver,
                 monitor,
                 new StoreCopyClient( storeDir, config, kernelExtensions, logService.getUserLogProvider(),
-                        fileSystemAbstraction, pageCache, storeCopyMonitor, false ),
+                        fileSystemAbstraction, pageCache, storeCopyMonitor, false, false ),
                 neoDataSourceSupplier,
                 transactionIdStoreSupplier,
                 slaveServerFactory,

@@ -39,6 +39,8 @@ import java.util.List;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
@@ -329,6 +331,18 @@ public class OnlineBackupContextFactoryTest
             // then
             assertEquals( expected.get( useCase ), context.getRequiredArguments().getSelectedBackupProtocol() );
         }
+    }
+
+    @Test
+    public void configIsProvided1mRotation() throws CommandFailed, IncorrectUsage
+    {
+        OnlineBackupContextFactory builder = new OnlineBackupContextFactory( homeDir, configDir );
+
+        //
+        OnlineBackupContext context = builder.createContext( requiredAnd() );
+
+        // then
+        assertEquals( ByteUnit.mebiBytes( 1 ), context.getConfig().get( GraphDatabaseSettings.logical_log_rotation_threshold ).longValue() );
     }
 
     private String[] requiredAnd( String... additionalArgs )

@@ -25,22 +25,35 @@ package org.neo4j.causalclustering.catchup.tx;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
+import org.neo4j.kernel.impl.transaction.log.ReadOnlyLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
+import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
+import static org.neo4j.kernel.impl.store.StoreType.COUNTS;
+import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
+import static org.neo4j.kernel.impl.store.StoreType.NODE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
 public class TransactionLogCatchUpWriter implements TxPullResponseListener, AutoCloseable
@@ -52,22 +65,31 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
     private final TransactionLogWriter writer;
     private final LogFiles logFiles;
     private final File storeDir;
+    private final NeoStores stores;
+    private final boolean rotateTransactionsManually;
 
     private long lastTxId = -1;
     private long expectedTxId;
 
     TransactionLogCatchUpWriter( File storeDir, FileSystemAbstraction fs, PageCache pageCache, Config config,
-            LogProvider logProvider, long fromTxId, boolean asPartOfStoreCopy, boolean keepTxLogsInStoreDir ) throws IOException
+            LogProvider logProvider, long fromTxId, boolean asPartOfStoreCopy, boolean keepTxLogsInStoreDir,
+            boolean forceTransactionRotations ) throws IOException
     {
         this.pageCache = pageCache;
         this.log = logProvider.getLog( getClass() );
         this.asPartOfStoreCopy = asPartOfStoreCopy;
-        LogFilesBuilder logFilesBuilder = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache )
-                .withLastCommittedTransactionIdSupplier( () -> fromTxId - 1 );
-        if ( !keepTxLogsInStoreDir )
-        {
-            logFilesBuilder.withConfig( config );
-        }
+        this.rotateTransactionsManually = forceTransactionRotations;
+        RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( Config.defaults(), storeDir, pageCache, logProvider );
+        this.stores = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs, recordFormats, logProvider, EMPTY )
+                .openNeoStores( META_DATA );
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependency( stores.getMetaDataStore() );
+        LogFilesBuilder logFilesBuilder = LogFilesBuilder
+                .builder( storeDir, fs )
+                .withDependencies( dependencies )
+                .withLastCommittedTransactionIdSupplier( () -> fromTxId - 1 )
+                .withConfig( customisedConfig( config, keepTxLogsInStoreDir, forceTransactionRotations ) )
+                .withLogVersionRepository( stores.getMetaDataStore() );
         this.logFiles = logFilesBuilder.build();
         this.lifespan.add( logFiles );
         this.writer = new TransactionLogWriter( new LogEntryWriter( logFiles.getLogFile().getWriter() ) );
@@ -75,11 +97,36 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
         this.expectedTxId = fromTxId;
     }
 
+    private Config customisedConfig( Config original, boolean keepTxLogsInStoreDir, boolean forceTransactionRotations )
+    {
+        Config config = Config.builder()
+                .build();
+        if ( !keepTxLogsInStoreDir )
+        {
+            original.getRaw( GraphDatabaseSettings.logical_logs_location.name() )
+                    .ifPresent( v -> config.augment( GraphDatabaseSettings.logical_logs_location, v ) );
+        }
+        if ( forceTransactionRotations )
+        {
+            original.getRaw( GraphDatabaseSettings.logical_log_rotation_threshold.name() )
+                    .ifPresent( v -> config.augment( GraphDatabaseSettings.logical_log_rotation_threshold, v ) );
+        }
+        return config;
+    }
+
     @Override
     public synchronized void onTxReceived( TxPullResponse txPullResponse )
     {
         CommittedTransactionRepresentation tx = txPullResponse.tx();
         long receivedTxId = tx.getCommitEntry().getTxId();
+
+        // neo4j admin backup clients pull transactions indefinitely and have no monitoring mechanism for tx log rotation
+        // Other cases, ex. Read Replicas have an external mechanism that rotates independently of this process and don't need to
+        // manually rotate while pulling
+        if ( rotateTransactionsManually && logFiles.getLogFile().rotationNeeded() )
+        {
+            rotateTransactionLogs( logFiles );
+        }
 
         if ( receivedTxId != expectedTxId )
         {
@@ -96,6 +143,18 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
         catch ( IOException e )
         {
             log.error( "Failed when appending to transaction log", e );
+        }
+    }
+
+    private static void rotateTransactionLogs( LogFiles logFiles )
+    {
+        try
+        {
+            logFiles.getLogFile().rotate();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
         }
     }
 
@@ -132,5 +191,6 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
             File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
             MetaDataStore.setRecord( pageCache, neoStoreFile, LAST_TRANSACTION_ID, lastTxId );
         }
+        stores.close();
     }
 }

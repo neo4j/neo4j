@@ -98,7 +98,7 @@ public class CoreStateDownloaderTest
         downloader.downloadSnapshot( catchupAddressProvider );
 
         // then
-        verify( remoteStore, never() ).tryCatchingUp( any(), any(), any(), anyBoolean() );
+        verify( remoteStore, never() ).tryCatchingUp( any(), any(), any(), anyBoolean(), anyBoolean() );
         verify( storeCopyProcess ).replaceWithStoreFrom( catchupAddressProvider, remoteStoreId );
     }
 
@@ -130,8 +130,8 @@ public class CoreStateDownloaderTest
         assertFalse( downloader.downloadSnapshot( catchupAddressProvider ) );
 
         // then
-        verify( remoteStore, never() ).copy( any(), any(), any() );
-        verify( remoteStore, never() ).tryCatchingUp( any(), any(), any(), anyBoolean() );
+        verify( remoteStore, never() ).copy( any(), any(), any(), anyBoolean() );
+        verify( remoteStore, never() ).tryCatchingUp( any(), any(), any(), anyBoolean(), anyBoolean() );
     }
 
     @Test
@@ -140,14 +140,14 @@ public class CoreStateDownloaderTest
         // given
         when( localDatabase.isEmpty() ).thenReturn( false );
         when( remoteStore.getStoreId( remoteAddress ) ).thenReturn( storeId );
-        when( remoteStore.tryCatchingUp( remoteAddress, storeId, storeDir, false ) ).thenReturn( SUCCESS_END_OF_STREAM );
+        when( remoteStore.tryCatchingUp( remoteAddress, storeId, storeDir, false, false ) ).thenReturn( SUCCESS_END_OF_STREAM );
 
         // when
         downloader.downloadSnapshot( catchupAddressProvider );
 
         // then
-        verify( remoteStore ).tryCatchingUp( remoteAddress, storeId, storeDir, false );
-        verify( remoteStore, never() ).copy( any(), any(), any() );
+        verify( remoteStore ).tryCatchingUp( remoteAddress, storeId, storeDir, false, false );
+        verify( remoteStore, never() ).copy( any(), any(), any(), anyBoolean() );
     }
 
     @Test
@@ -156,13 +156,13 @@ public class CoreStateDownloaderTest
         // given
         when( localDatabase.isEmpty() ).thenReturn( false );
         when( remoteStore.getStoreId( remoteAddress ) ).thenReturn( storeId );
-        when( remoteStore.tryCatchingUp( remoteAddress, storeId, storeDir, false ) ).thenReturn( E_TRANSACTION_PRUNED );
+        when( remoteStore.tryCatchingUp( remoteAddress, storeId, storeDir, false, false ) ).thenReturn( E_TRANSACTION_PRUNED );
 
         // when
         downloader.downloadSnapshot( catchupAddressProvider );
 
         // then
-        verify( remoteStore ).tryCatchingUp( remoteAddress, storeId, storeDir, false );
+        verify( remoteStore ).tryCatchingUp( remoteAddress, storeId, storeDir, false, false );
         verify( storeCopyProcess ).replaceWithStoreFrom( catchupAddressProvider, storeId );
     }
 }

@@ -42,9 +42,11 @@ import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
 import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.util.OptionalHostnamePort;
 
 import static org.neo4j.consistency.ConsistencyCheckSettings.consistency_check_graph;
@@ -188,9 +190,11 @@ class OnlineBackupContextFactory
                                    .withConnectorsDisabled()
                                    .build();
             additionalConfig.map( this::loadAdditionalConfigFile ).ifPresent( config::augment );
+
             // We only replace the page cache memory setting.
             // Any other custom page swapper, etc. settings are preserved and used.
             config.augment( pagecache_memory, pagecacheMemory );
+            overrideConfigWithBackupSpecificSettings( config );
 
             // Build consistency-checker configuration.
             // Note: We can remove the loading from config file in 4.0.
@@ -211,6 +215,12 @@ class OnlineBackupContextFactory
         {
             throw new CommandFailed( e.getMessage(), e );
         }
+    }
+
+    private void overrideConfigWithBackupSpecificSettings( Config config )
+    {
+        // We don't want to pile up tx logs
+        config.augment( GraphDatabaseSettings.logical_log_rotation_threshold, "1m" ); // Forces rotations to be performed when catching up
     }
 
     private Path getBackupDirectory( Arguments arguments ) throws CommandFailed

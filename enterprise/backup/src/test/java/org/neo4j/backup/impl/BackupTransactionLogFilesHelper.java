@@ -20,24 +20,24 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.causalclustering.catchup.tx;
+package org.neo4j.backup.impl;
 
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 
-public class TransactionLogCatchUpFactory
+public class BackupTransactionLogFilesHelper
 {
-    public TransactionLogCatchUpWriter create( File storeDir, FileSystemAbstraction fs, PageCache pageCache,
-            Config config, LogProvider logProvider, long fromTxId, boolean asPartOfStoreCopy, boolean keepTxLogsInStoreDir,
-            boolean rotateTransactionsManually )
-            throws IOException
+    LogFiles readLogFiles( File backupDir ) throws IOException
     {
-        return new TransactionLogCatchUpWriter( storeDir, fs, pageCache, config, logProvider, fromTxId,
-                asPartOfStoreCopy, keepTxLogsInStoreDir, rotateTransactionsManually );
+        FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
+        PageCache pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fileSystemAbstraction );
+        return LogFilesBuilder.activeFilesBuilder( backupDir, fileSystemAbstraction, pageCache ).build();
     }
 }
