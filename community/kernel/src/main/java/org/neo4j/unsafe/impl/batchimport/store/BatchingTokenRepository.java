@@ -26,12 +26,12 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.ToIntFunction;
 
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.Loaders;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.kernel.impl.transaction.state.Loaders;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.Loader;
 import org.neo4j.kernel.impl.transaction.state.TokenCreator;
@@ -54,7 +54,7 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord>
     private int highId;
     private int highestCreatedId;
 
-    public BatchingTokenRepository( TokenStore<RECORD> store, Loader<RECORD,Void> loader )
+    BatchingTokenRepository( TokenStore<RECORD> store, Loader<RECORD,Void> loader )
     {
         this.store = store;
         this.loader = loader;
@@ -208,7 +208,7 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord>
     public static class BatchingPropertyKeyTokenRepository
             extends BatchingTokenRepository<PropertyKeyTokenRecord>
     {
-        public BatchingPropertyKeyTokenRepository( TokenStore<PropertyKeyTokenRecord> store )
+        BatchingPropertyKeyTokenRepository( TokenStore<PropertyKeyTokenRecord> store )
         {
             super( store, Loaders.propertyKeyTokenLoader( store ) );
         }
@@ -216,7 +216,7 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord>
 
     public static class BatchingLabelTokenRepository extends BatchingTokenRepository<LabelTokenRecord>
     {
-        public BatchingLabelTokenRepository( TokenStore<LabelTokenRecord> store )
+        BatchingLabelTokenRepository( TokenStore<LabelTokenRecord> store )
         {
             super( store, Loaders.labelTokenLoader( store ) );
         }
@@ -225,7 +225,7 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord>
     public static class BatchingRelationshipTypeTokenRepository
             extends BatchingTokenRepository<RelationshipTypeTokenRecord>
     {
-        public BatchingRelationshipTypeTokenRepository( TokenStore<RelationshipTypeTokenRecord> store )
+        BatchingRelationshipTypeTokenRepository( TokenStore<RelationshipTypeTokenRecord> store )
         {
             super( store, Loaders.relationshipTypeTokenLoader( store ) );
         }

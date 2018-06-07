@@ -24,6 +24,7 @@ import java.util.Collection;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.api.CommandVisitor;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyRecordChange;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -38,7 +39,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.storageengine.api.schema.SchemaRule;

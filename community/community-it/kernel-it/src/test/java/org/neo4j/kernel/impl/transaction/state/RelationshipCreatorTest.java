@@ -35,6 +35,8 @@ import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RelationshipCreator;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;

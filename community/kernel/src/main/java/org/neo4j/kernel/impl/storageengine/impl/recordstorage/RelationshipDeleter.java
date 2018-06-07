@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.state;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
@@ -26,18 +26,21 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.transaction.state.DirectionIdentifier;
+import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
+import org.neo4j.kernel.impl.transaction.state.RecordAccessSet;
 import org.neo4j.kernel.impl.util.DirectionWrapper;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 
-import static org.neo4j.kernel.impl.transaction.state.RelationshipCreator.relCount;
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RelationshipCreator.relCount;
 
-public class RelationshipDeleter
+class RelationshipDeleter
 {
     private final RelationshipGroupGetter relGroupGetter;
     private final PropertyDeleter propertyChainDeleter;
 
-    public RelationshipDeleter( RelationshipGroupGetter relGroupGetter, PropertyDeleter propertyChainDeleter )
+    RelationshipDeleter( RelationshipGroupGetter relGroupGetter, PropertyDeleter propertyChainDeleter )
     {
         this.relGroupGetter = relGroupGetter;
         this.propertyChainDeleter = propertyChainDeleter;
@@ -51,7 +54,7 @@ public class RelationshipDeleter
      *
      * @param id The id of the relationship to delete.
      */
-    public void relDelete( long id, RecordAccessSet recordChanges, ResourceLocker locks )
+    void relDelete( long id, RecordAccessSet recordChanges, ResourceLocker locks )
     {
         RelationshipRecord record = recordChanges.getRelRecords().getOrLoad( id, null ).forChangingLinkage();
         propertyChainDeleter.deletePropertyChain( record, recordChanges.getPropertyRecords() );
@@ -163,7 +166,7 @@ public class RelationshipDeleter
             assert groupChange != null || loop : "Group has been deleted";
             if ( groupChange != null )
             {
-                RelationshipGroupRecord group = groupChange.forReadingData();
+                RelationshipGroupRecord group;
                 if ( rel.isFirstInSecondChain() )
                 {
                     group = groupChange.forChangingData();
@@ -182,12 +185,12 @@ public class RelationshipDeleter
         }
     }
 
-    private boolean decrementTotalRelationshipCount( long nodeId, RelationshipRecord rel, long firstRelId,
+    private void decrementTotalRelationshipCount( long nodeId, RelationshipRecord rel, long firstRelId,
             RecordAccess<RelationshipRecord, Void> relRecords, ResourceLocker locks )
     {
         if ( firstRelId == Record.NO_PREV_RELATIONSHIP.intValue() )
         {
-            return true;
+            return;
         }
         boolean firstInChain = relIsFirstInChain( nodeId, rel );
         if ( !firstInChain )
@@ -205,7 +208,6 @@ public class RelationshipDeleter
             firstRel.setSecondPrevRel( firstInChain ? relCount( nodeId, rel ) - 1 : relCount( nodeId, firstRel ) - 1 );
             firstRel.setFirstInSecondChain( true );
         }
-        return false;
     }
 
     private void deleteGroup( RecordProxy<NodeRecord, Void> nodeChange,

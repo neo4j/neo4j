@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.batchinsert.internal;
 
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.Loaders;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -32,7 +33,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-import org.neo4j.kernel.impl.transaction.state.Loaders;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.transaction.state.RecordAccessSet;
 import org.neo4j.storageengine.api.schema.SchemaRule;

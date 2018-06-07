@@ -83,18 +83,12 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
-import org.neo4j.kernel.impl.transaction.state.Loaders;
 import org.neo4j.kernel.impl.transaction.state.OnlineIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.PrepareTrackingRecordFormats;
-import org.neo4j.kernel.impl.transaction.state.PropertyDeleter;
-import org.neo4j.kernel.impl.transaction.state.PropertyTraverser;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.kernel.impl.transaction.state.RecordChangeSet;
-import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
-import org.neo4j.kernel.impl.transaction.state.RelationshipDeleter;
-import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.rule.NeoStoresRule;

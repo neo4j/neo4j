@@ -31,8 +31,8 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.unsafe.impl.batchimport.staging.LonelyProcessingStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyDeleter.deletePropertyRecordIncludingValueRecords;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
-import static org.neo4j.kernel.impl.transaction.state.PropertyDeleter.deletePropertyRecordIncludingValueRecords;
 
 public class DeleteDuplicateNodesStep extends LonelyProcessingStep
 {

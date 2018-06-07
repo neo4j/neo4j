@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.Loaders;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;

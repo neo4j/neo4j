@@ -38,8 +38,6 @@ import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.transaction.state.Loaders;
-import org.neo4j.kernel.impl.transaction.state.PropertyTraverser;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
