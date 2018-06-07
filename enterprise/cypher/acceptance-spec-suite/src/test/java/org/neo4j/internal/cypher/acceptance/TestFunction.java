@@ -53,12 +53,13 @@ public class TestFunction
     }
 
     @UserFunction( "test.sum" )
-    public double sum(@Name("numbers") List<Number> list) {
+    public double sum( @Name( "numbers" ) List<Number> list )
+    {
         double sum = 0;
-        for (Number number : list) {
+        for ( Number number : list )
+        {
             sum += number.doubleValue();
         }
         return sum;
     }
-
 }
