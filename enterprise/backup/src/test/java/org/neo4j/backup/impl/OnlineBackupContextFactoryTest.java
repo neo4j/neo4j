@@ -59,7 +59,7 @@ import static org.neo4j.backup.impl.SelectedBackupProtocol.ANY;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 
-public class OnlineBackupContextBuilderTest
+public class OnlineBackupContextFactoryTest
 {
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
@@ -85,7 +85,7 @@ public class OnlineBackupContextBuilderTest
     @Test
     public void unspecifiedHostnameIsEmptyOptional() throws Exception
     {
-        OnlineBackupContextBuilder handler = new OnlineBackupContextBuilder( homeDir, configDir );
+        OnlineBackupContextFactory handler = new OnlineBackupContextFactory( homeDir, configDir );
         OnlineBackupContext context = handler.createContext( requiredAnd( "--from=:1234" ) );
         OnlineBackupRequiredArguments requiredArguments = context.getRequiredArguments();
 
@@ -96,7 +96,7 @@ public class OnlineBackupContextBuilderTest
     @Test
     public void unspecifiedPortIsEmptyOptional() throws Exception
     {
-        OnlineBackupContextBuilder handler = new OnlineBackupContextBuilder( homeDir, configDir );
+        OnlineBackupContextFactory handler = new OnlineBackupContextFactory( homeDir, configDir );
         OnlineBackupContext context = handler.createContext( requiredAnd( "--from=abc" ) );
         OnlineBackupRequiredArguments requiredArguments = context.getRequiredArguments();
 
@@ -107,7 +107,7 @@ public class OnlineBackupContextBuilderTest
     @Test
     public void acceptHostWithTrailingPort() throws Exception
     {
-        OnlineBackupContextBuilder handler = new OnlineBackupContextBuilder( homeDir, configDir );
+        OnlineBackupContextFactory handler = new OnlineBackupContextFactory( homeDir, configDir );
         OnlineBackupContext context = handler.createContext( requiredAnd( "--from=foo.bar.server:" ) );
         OnlineBackupRequiredArguments requiredArguments = context.getRequiredArguments();
         assertEquals( "foo.bar.server", requiredArguments.getAddress().getHostname().get() );
@@ -117,7 +117,7 @@ public class OnlineBackupContextBuilderTest
     @Test
     public void acceptPortWithPrecedingEmptyHost() throws Exception
     {
-        OnlineBackupContextBuilder handler = new OnlineBackupContextBuilder( homeDir, configDir );
+        OnlineBackupContextFactory handler = new OnlineBackupContextFactory( homeDir, configDir );
         OnlineBackupContext context = handler.createContext( requiredAnd( "--from=:1234" ) );
         OnlineBackupRequiredArguments requiredArguments = context.getRequiredArguments();
         assertFalse( requiredArguments.getAddress().getHostname().isPresent() );
@@ -127,7 +127,7 @@ public class OnlineBackupContextBuilderTest
     @Test
     public void acceptBothIfSpecified() throws Exception
     {
-        OnlineBackupContextBuilder handler = new OnlineBackupContextBuilder( homeDir, configDir );
+        OnlineBackupContextFactory handler = new OnlineBackupContextFactory( homeDir, configDir );
         OnlineBackupContext context = handler.createContext( requiredAnd( "--from=foo.bar.server:1234" ) );
         OnlineBackupRequiredArguments requiredArguments = context.getRequiredArguments();
         assertEquals( "foo.bar.server", requiredArguments.getAddress().getHostname().get() );
@@ -139,13 +139,13 @@ public class OnlineBackupContextBuilderTest
     {
         expected.expect( IncorrectUsage.class );
         expected.expectMessage( "Missing argument 'backup-dir'" );
-        new OnlineBackupContextBuilder( homeDir, configDir ).createContext();
+        new OnlineBackupContextFactory( homeDir, configDir ).createContext();
     }
 
     @Test
     public void shouldDefaultTimeoutToTwentyMinutes() throws Exception
     {
-        OnlineBackupContextBuilder handler = new OnlineBackupContextBuilder( homeDir, configDir );
+        OnlineBackupContextFactory handler = new OnlineBackupContextFactory( homeDir, configDir );
         OnlineBackupContext context = handler.createContext( "--backup-dir=/", "--name=mybackup" );
         OnlineBackupRequiredArguments requiredArguments = context.getRequiredArguments();
 
@@ -155,7 +155,7 @@ public class OnlineBackupContextBuilderTest
     @Test
     public void shouldInterpretAUnitlessTimeoutAsSeconds() throws Exception
     {
-        OnlineBackupContextBuilder handler = new OnlineBackupContextBuilder( homeDir, configDir );
+        OnlineBackupContextFactory handler = new OnlineBackupContextFactory( homeDir, configDir );
         OnlineBackupContext context = handler.createContext( "--timeout=10", "--backup-dir=/", "--name=mybackup" );
         OnlineBackupRequiredArguments requiredArguments = context.getRequiredArguments();
 
@@ -165,7 +165,7 @@ public class OnlineBackupContextBuilderTest
     @Test
     public void shouldParseATimeoutWithUnits() throws Exception
     {
-        OnlineBackupContextBuilder handler = new OnlineBackupContextBuilder( homeDir, configDir );
+        OnlineBackupContextFactory handler = new OnlineBackupContextFactory( homeDir, configDir );
         OnlineBackupContext context = handler.createContext( requiredAnd( "--timeout=10h" ) );
         OnlineBackupRequiredArguments requiredArguments = context.getRequiredArguments();
 
@@ -178,7 +178,7 @@ public class OnlineBackupContextBuilderTest
         expected.expect( IncorrectUsage.class );
         expected.expectMessage( "Missing argument 'name'" );
 
-        OnlineBackupContextBuilder handler = new OnlineBackupContextBuilder( homeDir, configDir );
+        OnlineBackupContextFactory handler = new OnlineBackupContextFactory( homeDir, configDir );
         handler.createContext( "--backup-dir=/" );
     }
 
@@ -187,7 +187,7 @@ public class OnlineBackupContextBuilderTest
     {
         expected.expect( IncorrectUsage.class );
         expected.expectMessage( "cc-report-dir must be a path" );
-        OnlineBackupContextBuilder handler = new OnlineBackupContextBuilder( homeDir, configDir );
+        OnlineBackupContextFactory handler = new OnlineBackupContextFactory( homeDir, configDir );
         handler.createContext( requiredAnd( "--check-consistency", "--cc-report-dir" ) );
     }
 
@@ -202,7 +202,7 @@ public class OnlineBackupContextBuilderTest
         expected.expectCause( hasCause( any( NoSuchFileException.class ) ) );
 
         // expect
-        OnlineBackupContextBuilder handler = new OnlineBackupContextBuilder( homeDir, configDir );
+        OnlineBackupContextFactory handler = new OnlineBackupContextFactory( homeDir, configDir );
         handler.createContext( requiredAnd( "--additional-config=" + additionalConf ) );
     }
 
@@ -217,7 +217,7 @@ public class OnlineBackupContextBuilderTest
         Files.write( homeDirConfigFile, asList( "causal_clustering.minimum_core_cluster_size_at_startup=5", "causal_clustering.raft_in_queue_max_batch=21" ) );
 
         // when
-        OnlineBackupContextBuilder handler = new OnlineBackupContextBuilder( homeDir, configDir );
+        OnlineBackupContextFactory handler = new OnlineBackupContextFactory( homeDir, configDir );
         Config config = handler.createContext( requiredAnd() ).getConfig();
 
         // then
@@ -236,7 +236,7 @@ public class OnlineBackupContextBuilderTest
         Files.write( additionalConf, singletonList( "causal_clustering.minimum_core_cluster_size_at_startup=5" ) );
 
         // when
-        OnlineBackupContextBuilder handler = new OnlineBackupContextBuilder( homeDir, configDir );
+        OnlineBackupContextFactory handler = new OnlineBackupContextFactory( homeDir, configDir );
         OnlineBackupContext context = handler.createContext( requiredAnd( "--additional-config=" + additionalConf ) );
         Config config = context.getConfig();
 
@@ -252,7 +252,7 @@ public class OnlineBackupContextBuilderTest
         Files.write( configFile, singletonList( pagecache_memory.name() + "=42m" ) );
 
         // when
-        OnlineBackupContextBuilder contextBuilder = new OnlineBackupContextBuilder( homeDir, configDir );
+        OnlineBackupContextFactory contextBuilder = new OnlineBackupContextFactory( homeDir, configDir );
         OnlineBackupContext context = contextBuilder.createContext( requiredAnd() );
 
         // then
@@ -267,7 +267,7 @@ public class OnlineBackupContextBuilderTest
         Files.write( additionalConf, singletonList( pagecache_memory.name() + "=42m" ) );
 
         // when
-        OnlineBackupContextBuilder builder = new OnlineBackupContextBuilder( homeDir, configDir );
+        OnlineBackupContextFactory builder = new OnlineBackupContextFactory( homeDir, configDir );
         OnlineBackupContext context = builder.createContext( requiredAnd( "--additional-config=" + additionalConf ) );
 
         // then
@@ -278,7 +278,7 @@ public class OnlineBackupContextBuilderTest
     public void mustRespectPageCacheConfigFromCommandLineArguments() throws Exception
     {
         // when
-        OnlineBackupContextBuilder builder = new OnlineBackupContextBuilder( homeDir, configDir );
+        OnlineBackupContextFactory builder = new OnlineBackupContextFactory( homeDir, configDir );
         OnlineBackupContext context = builder.createContext( requiredAnd( "--pagecache=42m" ) );
 
         // then
@@ -293,7 +293,7 @@ public class OnlineBackupContextBuilderTest
         Path backupDir = homeDir.resolve( "poke" );
         Path backupPath = backupDir.resolve( name );
         Files.createDirectories( backupDir );
-        OnlineBackupContextBuilder builder = new OnlineBackupContextBuilder( homeDir, configDir );
+        OnlineBackupContextFactory builder = new OnlineBackupContextFactory( homeDir, configDir );
         OnlineBackupContext context = builder.createContext( "--backup-dir=" + backupDir, "--name=" + name );
         assertThat( context.getConfig().get( logical_logs_location ).getAbsolutePath(), is( backupPath.toString() ) );
     }
@@ -302,7 +302,7 @@ public class OnlineBackupContextBuilderTest
     public void defaultProtocolIsAny() throws CommandFailed, IncorrectUsage
     {
         // given
-        OnlineBackupContextBuilder builder = new OnlineBackupContextBuilder( homeDir, configDir );
+        OnlineBackupContextFactory builder = new OnlineBackupContextFactory( homeDir, configDir );
 
         // when context resolved without proto override value
         OnlineBackupContext context = builder.createContext( requiredAnd() );
@@ -321,7 +321,7 @@ public class OnlineBackupContextBuilderTest
         for ( int useCase = 0; useCase < input.size(); useCase++ )
         {
             // given
-            OnlineBackupContextBuilder builder = new OnlineBackupContextBuilder( homeDir, configDir );
+            OnlineBackupContextFactory builder = new OnlineBackupContextFactory( homeDir, configDir );
 
             // when
             OnlineBackupContext context = builder.createContext( requiredAnd( "--protocol=" + input.get( useCase ) ) );

@@ -55,7 +55,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_locat
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.kernel.impl.util.Converters.toOptionalHostnamePortFromRawAddress;
 
-class OnlineBackupContextBuilder
+class OnlineBackupContextFactory
 {
     static final String ARG_NAME_BACKUP_DIRECTORY = "backup-dir";
     static final String ARG_DESC_BACKUP_DIRECTORY = "Directory to place backup in.";
@@ -114,7 +114,7 @@ class OnlineBackupContextBuilder
     private final Path homeDir;
     private final Path configDir;
 
-    OnlineBackupContextBuilder( Path homeDir, Path configDir )
+    OnlineBackupContextFactory( Path homeDir, Path configDir )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;

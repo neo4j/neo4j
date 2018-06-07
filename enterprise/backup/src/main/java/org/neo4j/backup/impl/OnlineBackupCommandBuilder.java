@@ -260,7 +260,7 @@ public class OnlineBackupCommandBuilder
     {
         return Optional.ofNullable( selectedBackupProtocol )
                 .map( SelectedBackupProtocol::getName )
-                .map( argValue -> format( "--%s=%s", OnlineBackupContextBuilder.ARG_NAME_PROTO_OVERRIDE, argValue ) )
+                .map( argValue -> format( "--%s=%s", OnlineBackupContextFactory.ARG_NAME_PROTO_OVERRIDE, argValue ) )
                 .orElse( "" );
     }
 

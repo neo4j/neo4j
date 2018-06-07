@@ -99,17 +99,6 @@ public class OnlineBackupCommandHaIT
     private static final String PROP_NAME = "name";
     private static final String PROP_RANDOM = "random";
 
-    private static void createSomeData( GraphDatabaseService db )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = db.createNode();
-            node.setProperty( "name", "Neo" );
-            db.createNode().createRelationshipTo( node, RelationshipType.withName( "KNOWS" ) );
-            tx.success();
-        }
-    }
-
     @Before
     public void resetTasks()
     {
@@ -287,6 +276,17 @@ public class OnlineBackupCommandHaIT
         assertFalse( output.contains( "Start receiving index snapshot id 1" ) );
         assertFalse( output.contains( "Finished receiving index snapshot id 1" ) );
         assertFalse( output.contains( "Finished receiving index snapshots" ) );
+    }
+
+    private static void createSomeData( GraphDatabaseService db )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            node.setProperty( "name", "Neo" );
+            db.createNode().createRelationshipTo( node, RelationshipType.withName( "KNOWS" ) );
+            tx.success();
+        }
     }
 
     private void repeatedlyPopulateDatabase( GraphDatabaseService db, AtomicBoolean continueFlagReference )
