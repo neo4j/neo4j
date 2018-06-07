@@ -37,7 +37,7 @@ class UpdateGraphTest extends CypherFunSuite {
   test("overlap when reading all labels and creating a specific label") {
     //MATCH (a) CREATE (:L)
     val qg = QueryGraph(patternNodes = Set("a"))
-    val ug = QueryGraph(mutatingPatterns = IndexedSeq(CreateNodePattern("b", Seq(LabelName("L")(pos)), None)))
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
     ug.overlaps(qg) shouldBe true
   }
@@ -46,7 +46,7 @@ class UpdateGraphTest extends CypherFunSuite {
     //MATCH (a:L) CREATE (b:L)
     val selections = Selections.from(HasLabels(Variable("a")(pos), Seq(LabelName("L")(pos)))(pos))
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
-    val ug = QueryGraph(mutatingPatterns = IndexedSeq(CreateNodePattern("b", Seq(LabelName("L")(pos)), None)))
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
     ug.overlaps(qg) shouldBe true
   }
@@ -55,7 +55,7 @@ class UpdateGraphTest extends CypherFunSuite {
     //MATCH (a:L1:L2) CREATE (b:L3)
     val selections = Selections.from(HasLabels(Variable("a")(pos), Seq(LabelName("L1")(pos), LabelName("L2")(pos)))(pos))
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
-    val ug = QueryGraph(mutatingPatterns = IndexedSeq(CreateNodePattern("b", Seq(LabelName("L3")(pos), LabelName("L3")(pos)), None)))
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L3")))
 
     ug.overlaps(qg) shouldBe false
   }
@@ -65,7 +65,7 @@ class UpdateGraphTest extends CypherFunSuite {
     val selections = Selections.from(In(Variable("a")(pos),
       Property(Variable("a")(pos), PropertyKeyName("foo")(pos))(pos))(pos))
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
-    val ug = QueryGraph(mutatingPatterns = IndexedSeq(CreateNodePattern("b", Seq(LabelName("L")(pos)), None)))
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
     ug.overlaps(qg) shouldBe false
   }
@@ -76,7 +76,7 @@ class UpdateGraphTest extends CypherFunSuite {
       In(Variable("a")(pos),Property(Variable("a")(pos), PropertyKeyName("foo")(pos))(pos))(pos),
       HasLabels(Variable("a")(pos), Seq(LabelName("L")(pos)))(pos)))
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
-    val ug = QueryGraph(mutatingPatterns = IndexedSeq(CreateNodePattern("b", Seq(LabelName("L")(pos)), None)))
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
     ug.overlaps(qg) shouldBe false
   }
@@ -86,8 +86,7 @@ class UpdateGraphTest extends CypherFunSuite {
     val qg = QueryGraph(patternRelationships =
       Set(PatternRelationship("r", ("a", "b"),
         SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)))
-    val ug = QueryGraph(mutatingPatterns = IndexedSeq(CreateRelationshipPattern("r2",
-      "a", RelTypeName("T")(pos), "b", None, SemanticDirection.OUTGOING)))
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(createRelationship("r2", "a", "T", "b")))
 
     ug.overlaps(qg) shouldBe true
   }
@@ -97,8 +96,7 @@ class UpdateGraphTest extends CypherFunSuite {
     val qg = QueryGraph(patternRelationships =
       Set(PatternRelationship("r", ("a", "b"),
         SemanticDirection.OUTGOING, Seq(RelTypeName("T1")(pos)), SimplePatternLength)))
-    val ug = QueryGraph(mutatingPatterns = IndexedSeq(CreateRelationshipPattern("r2",
-      "a", RelTypeName("T2")(pos), "b", None, SemanticDirection.OUTGOING)))
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(createRelationship("r2", "a", "T2", "b")))
 
     ug.overlaps(qg) shouldBe false
   }
@@ -108,8 +106,7 @@ class UpdateGraphTest extends CypherFunSuite {
     val qg = QueryGraph(patternRelationships =
       Set(PatternRelationship("r", ("a", "b"),
         SemanticDirection.OUTGOING, Seq(RelTypeName("T1")(pos)), SimplePatternLength)))
-    val ug = QueryGraph(mutatingPatterns = IndexedSeq(CreateRelationshipPattern("r2",
-      "a", RelTypeName("T1")(pos), "b", None, SemanticDirection.OUTGOING)))
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(createRelationship("r2", "a", "T1", "b")))
 
     ug.overlaps(qg) shouldBe true
   }
@@ -122,8 +119,7 @@ class UpdateGraphTest extends CypherFunSuite {
       Set(PatternRelationship("r", ("a", "b"),
         SemanticDirection.OUTGOING, Seq(RelTypeName("T1")(pos)), SimplePatternLength)),
       selections = selections)
-    val ug = QueryGraph(mutatingPatterns = IndexedSeq(CreateRelationshipPattern("r2",
-      "a", RelTypeName("T1")(pos), "b", None, SemanticDirection.OUTGOING)))
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(createRelationship("r2", "a", "T1", "b")))
 
     ug.overlaps(qg) shouldBe false
   }
@@ -136,10 +132,21 @@ class UpdateGraphTest extends CypherFunSuite {
       Set(PatternRelationship("r", ("a", "b"),
         SemanticDirection.OUTGOING, Seq(RelTypeName("T1")(pos)), SimplePatternLength)),
       selections = selections)
-    val ug = QueryGraph(mutatingPatterns = IndexedSeq(CreateRelationshipPattern("r2",
-      "a", RelTypeName("T1")(pos), "b",
-      Some(MapExpression(Seq((PropertyKeyName("foo")(pos),
-        SignedDecimalIntegerLiteral("42")(pos))))(pos)), SemanticDirection.OUTGOING)))
+    val ug = QueryGraph(mutatingPatterns =
+      IndexedSeq(
+        CreatePattern(
+          Nil,
+          List(
+            CreateRelationship("r2", "a", RelTypeName("T1")(pos), "b", SemanticDirection.OUTGOING,
+              Some(
+                MapExpression(Seq(
+                  (PropertyKeyName("foo")(pos), SignedDecimalIntegerLiteral("42")(pos))
+                ))(pos)
+              )
+            )
+          )
+        )
+      ))
 
     ug.overlaps(qg) shouldBe true
   }
@@ -151,7 +158,7 @@ class UpdateGraphTest extends CypherFunSuite {
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(
       DeleteExpression(Variable("a")(pos), forced = false),
       MergeNodePattern(
-        CreateNodePattern("b", Seq(LabelName("L3")(pos), LabelName("L3")(pos)), None),
+        CreateNode("b", Seq(LabelName("L3")(pos), LabelName("L3")(pos)), None),
         QueryGraph.empty, Seq.empty, Seq.empty)
     ))
 
@@ -167,4 +174,13 @@ class UpdateGraphTest extends CypherFunSuite {
 
     ug.overlaps(qg) shouldBe true
   }
+
+  private def createNode(name: String, labels: String*) =
+    CreatePattern(List(CreateNode(name, labels.map(l => LabelName(l)(pos)), None)), Nil)
+
+  private def createRelationship(name: String, start: String, relType: String, end: String) =
+    CreatePattern(
+      Nil,
+      List(CreateRelationship(name, start, RelTypeName(relType)(pos), end, SemanticDirection.OUTGOING, None))
+    )
 }

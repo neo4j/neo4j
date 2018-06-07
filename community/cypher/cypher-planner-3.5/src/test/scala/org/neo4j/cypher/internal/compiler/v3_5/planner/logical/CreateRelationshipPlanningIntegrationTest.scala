@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.ir.v3_5.{CreateNode, CreateRelationship}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.expressions.{RelTypeName, Variable}
+import org.opencypher.v9_0.expressions.{RelTypeName, SemanticDirection, Variable}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 
 class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -29,11 +30,16 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
   test("should plan single create") {
     planFor("CREATE (a)-[r:R]->(b)")._2 should equal(
       EmptyResult(
-        CreateRelationship(
-          CreateNode(
-            CreateNode(Argument(), "a", Seq.empty, None),
-            "b", Seq.empty, None),
-          "r", "a", relType("R"), "b", None)
+        Create(
+          Argument(),
+          List(
+            CreateNode("a", Seq.empty, None),
+            CreateNode("b", Seq.empty, None)
+          ),
+          List(
+            CreateRelationship("r", "a", relType("R"), "b", SemanticDirection.OUTGOING, None)
+          )
+        )
       )
     )
   }
@@ -41,19 +47,20 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
   test("should plan complicated create") {
     planFor("CREATE (a)-[r1:R1]->(b)<-[r2:R2]-(c)-[r3:R3]->(d)")._2 should equal(
       EmptyResult(
-        CreateRelationship(
-          CreateRelationship(
-            CreateRelationship(
-              CreateNode(
-                CreateNode(
-                  CreateNode(
-                    CreateNode(Argument(),"a",Seq.empty,None),
-                    "b",Seq.empty,None),
-                  "c",Seq.empty,None),
-                "d",Seq.empty,None),
-              "r1","a",relType("R1"),"b",None),
-            "r2","c",relType("R2"),"b",None),
-          "r3","c",relType("R3"),"d",None)
+        Create(
+          Argument(),
+          List(
+            CreateNode("a", Seq.empty, None),
+            CreateNode("b", Seq.empty, None),
+            CreateNode("c", Seq.empty, None),
+            CreateNode("d", Seq.empty, None)
+          ),
+          List(
+            CreateRelationship("r1", "a", relType("R1"), "b", SemanticDirection.OUTGOING, None),
+            CreateRelationship("r2", "b", relType("R2"), "c", SemanticDirection.INCOMING, None),
+            CreateRelationship("r3", "c", relType("R3"), "d", SemanticDirection.OUTGOING, None)
+          )
+        )
       )
     )
   }
@@ -61,15 +68,18 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
   test("should plan reversed create pattern") {
     planFor("CREATE (a)<-[r1:R1]-(b)<-[r2:R2]-(c)")._2 should equal(
       EmptyResult(
-        CreateRelationship(
-          CreateRelationship(
-            CreateNode(
-              CreateNode(
-                CreateNode(Argument(),"a",Seq.empty,None),
-                "b",Seq.empty,None),
-              "c",Seq.empty,None),
-            "r1","b",relType("R1"),"a",None),
-          "r2","c",relType("R2"),"b",None)
+        Create(
+          Argument(),
+          List(
+            CreateNode("a", Seq.empty, None),
+            CreateNode("b", Seq.empty, None),
+            CreateNode("c", Seq.empty, None)
+          ),
+          List(
+            CreateRelationship("r1", "a", relType("R1"), "b", SemanticDirection.INCOMING, None),
+            CreateRelationship("r2", "b", relType("R2"), "c", SemanticDirection.INCOMING, None)
+          )
+        )
       )
     )
   }
@@ -77,11 +87,15 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
   test("should plan only one create node when the other node is already in scope when creating a relationship") {
     planFor("MATCH (n) CREATE (n)-[r:T]->(b)")._2 should equal(
       EmptyResult(
-        CreateRelationship(
-          CreateNode(
-            AllNodesScan("n", Set()),
-            "b", Seq.empty, None),
-          "r", "n", RelTypeName("T")(pos), "b", None)
+        Create(
+          AllNodesScan("n", Set()),
+          List(
+            CreateNode("b", Seq.empty, None)
+          ),
+          List(
+            CreateRelationship("r", "n", relType("T"), "b", SemanticDirection.OUTGOING, None)
+          )
+        )
       )
     )
   }
@@ -89,12 +103,16 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
   test("should not plan two create nodes when they are already in scope when creating a relationship") {
     planFor("MATCH (n) MATCH (m) CREATE (n)-[r:T]->(m)")._2 should equal(
       EmptyResult(
-        CreateRelationship(
+        Create(
           CartesianProduct(
             AllNodesScan("n", Set()),
             AllNodesScan("m", Set())
           ),
-          "r", "n", RelTypeName("T")(pos), "m", None)
+          Nil,
+          List(
+            CreateRelationship("r", "n", relType("T"), "m", SemanticDirection.OUTGOING, None)
+          )
+        )
       )
     )
   }
@@ -102,13 +120,22 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
   test("should not plan two create nodes when they are already in scope and aliased when creating a relationship") {
     planFor("MATCH (n) MATCH (m) WITH n AS a, m AS b CREATE (a)-[r:T]->(b)")._2 should equal(
       EmptyResult(
-        CreateRelationship(
+        Create(
           Projection(
             CartesianProduct(
               AllNodesScan("n", Set()),
               AllNodesScan("m", Set())
-            ), Map("a" -> Variable("n")(pos), "b" -> Variable("m")(pos))),
-          "r", "a", RelTypeName("T")(pos), "b", None)
+            ),
+            Map(
+              "a" -> Variable("n")(pos),
+              "b" -> Variable("m")(pos)
+            )
+          ),
+          Nil,
+          List(
+            CreateRelationship("r", "a", relType("T"), "b", SemanticDirection.OUTGOING, None)
+          )
+        )
       )
     )
   }
@@ -116,13 +143,18 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
   test("should plan only one create node when the other node is already in scope and aliased when creating a relationship") {
     planFor("MATCH (n) WITH n AS a CREATE (a)-[r:T]->(b)")._2 should equal(
       EmptyResult(
-        CreateRelationship(
-          CreateNode(
-            Projection(
-              AllNodesScan("n", Set()),
-              Map("a" -> Variable("n")(pos))),
-            "b", Seq.empty, None),
-          "r", "a", RelTypeName("T")(pos), "b", None)
+        Create(
+          Projection(
+            AllNodesScan("n", Set()),
+            Map("a" -> Variable("n")(pos))
+          ),
+          List(
+            CreateNode("b", Seq.empty, None)
+          ),
+          List(
+            CreateRelationship("r", "a", relType("T"), "b", SemanticDirection.OUTGOING, None)
+          )
+        )
       )
     )
   }

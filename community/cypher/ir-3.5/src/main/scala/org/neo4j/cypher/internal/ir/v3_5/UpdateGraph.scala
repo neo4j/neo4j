@@ -41,10 +41,10 @@ trait UpdateGraph {
     foreachPatterns.exists(_.innerUpdates.allQueryGraphs.exists(_.containsMergeRecursive))
 
   /*
-   * Finds all nodes being created with CREATE (a)
+   * Finds all nodes being created with CREATE ...
    */
-  def createNodePatterns: Seq[CreateNodePattern] = mutatingPatterns.collect {
-    case p: CreateNodePattern => p
+  def createPatterns: Seq[CreatePattern] = mutatingPatterns.collect {
+    case p: CreatePattern => p
   }
 
   def mergeNodePatterns: Seq[MergeNodePattern] = mutatingPatterns.collect {
@@ -57,13 +57,6 @@ trait UpdateGraph {
 
   def foreachPatterns: Seq[ForeachPattern] = mutatingPatterns.collect {
     case p: ForeachPattern => p
-  }
-
-  /*
-   * Finds all nodes being created with CREATE ()-[r]->()
-   */
-  def createRelationshipPatterns: Seq[CreateRelationshipPattern] = mutatingPatterns.collect {
-    case p: CreateRelationshipPattern => p
   }
 
   /*
@@ -90,22 +83,25 @@ trait UpdateGraph {
   /*
    * Finds all node properties being created with CREATE (:L)
    */
-  def createLabels: Set[LabelName] = createNodePatterns.flatMap(_.labels).toSet ++
-    mergeNodePatterns.flatMap(_.createNodePattern.labels) ++
-    mergeRelationshipPatterns.flatMap(_.createNodePatterns.flatMap(_.labels))
+  def createLabels: Set[LabelName] =
+    createPatterns.flatMap(_.nodes.flatMap(_.labels)).toSet ++
+    mergeNodePatterns.flatMap(_.createNode.labels) ++
+    mergeRelationshipPatterns.flatMap(_.createNodes.flatMap(_.labels))
 
   /*
    * Finds all node properties being created with CREATE ({prop...})
    */
-  def createNodeProperties: CreatesPropertyKeys = CreatesPropertyKeys(createNodePatterns.flatMap(_.properties):_*) +
-    CreatesPropertyKeys(mergeNodePatterns.flatMap(_.createNodePattern.properties):_*) +
-    CreatesPropertyKeys(mergeRelationshipPatterns.flatMap(_.createNodePatterns.flatMap(c => c.properties)):_*)
+  def createNodeProperties: CreatesPropertyKeys =
+    CreatesPropertyKeys(createPatterns.flatMap(_.nodes.flatMap(_.properties)):_*) +
+    CreatesPropertyKeys(mergeNodePatterns.flatMap(_.createNode.properties):_*) +
+    CreatesPropertyKeys(mergeRelationshipPatterns.flatMap(_.createNodes.flatMap(c => c.properties)):_*)
 
   /*
    * Finds all rel properties being created with CREATE
    */
-  def createRelProperties: CreatesPropertyKeys = CreatesPropertyKeys(createRelationshipPatterns.flatMap(_.properties):_*) +
-    CreatesPropertyKeys(mergeRelationshipPatterns.flatMap(_.createRelPatterns.flatMap(c => c.properties)):_*)
+  def createRelProperties: CreatesPropertyKeys =
+    CreatesPropertyKeys(createPatterns.flatMap(_.relationships.flatMap(_.properties)):_*) +
+    CreatesPropertyKeys(mergeRelationshipPatterns.flatMap(_.createRelationships.flatMap(c => c.properties)):_*)
 
   /*
    * finds all label names being removed on given node, REMOVE a:L
@@ -117,15 +113,21 @@ trait UpdateGraph {
   /*
    * Relationship types being created with, CREATE/MERGE ()-[:T]->()
    */
-  def createRelTypes: Set[RelTypeName] = (createRelationshipPatterns.map(_.relType) ++
-    mergeRelationshipPatterns.flatMap(_.createRelPatterns.map(_.relType))).toSet
+  def createRelTypes: Set[RelTypeName] =
+    (createPatterns.flatMap(_.relationships.map(_.relType)) ++
+     mergeRelationshipPatterns.flatMap(_.createRelationships.map(_.relType))).toSet
 
   /*
    * Does this UpdateGraph update nodes?
    */
   // NOTE: Put foreachPatterns first to shortcut unnecessary recursion
-  def updatesNodes: Boolean = foreachPatterns.nonEmpty || createNodePatterns.nonEmpty || removeLabelPatterns.nonEmpty ||
-    mergeNodePatterns.nonEmpty || mergeRelationshipPatterns.nonEmpty || setLabelPatterns.nonEmpty ||
+  def updatesNodes: Boolean =
+    foreachPatterns.nonEmpty ||
+    createPatterns.exists(_.nodes.nonEmpty) ||
+    removeLabelPatterns.nonEmpty ||
+    mergeNodePatterns.nonEmpty ||
+    mergeRelationshipPatterns.nonEmpty ||
+    setLabelPatterns.nonEmpty ||
     setNodePropertyPatterns.nonEmpty
 
   def foreachOverlap(qg: QueryGraph): Boolean =
@@ -183,7 +185,7 @@ trait UpdateGraph {
   }
 
   def createsNodes: Boolean = mutatingPatterns.exists {
-    case _: CreateNodePattern => true
+    case c: CreatePattern if c.nodes.nonEmpty => true
     case _: MergeNodePattern => true
     case MergeRelationshipPattern(nodesToCreate, _, _, _, _) => nodesToCreate.nonEmpty
     case _ => false
@@ -245,7 +247,9 @@ trait UpdateGraph {
   }
 
   private def allRelPatternsWrittenNonEmpty: Boolean = {
-    val allRelPatternsWritten = createRelationshipPatterns ++ mergeRelationshipPatterns.flatMap(_.createRelPatterns)
+    val allRelPatternsWritten =
+      createPatterns.filter(_.relationships.nonEmpty) ++ mergeRelationshipPatterns.flatMap(_.createRelationships)
+
     allRelPatternsWritten.nonEmpty
   }
 

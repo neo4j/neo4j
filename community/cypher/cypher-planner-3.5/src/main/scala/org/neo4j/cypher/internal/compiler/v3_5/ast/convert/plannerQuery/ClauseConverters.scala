@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.v3_5.logical.plans.ResolvedCall
 import org.opencypher.v9_0.expressions._
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 object ClauseConverters {
 
@@ -116,78 +117,85 @@ object ClauseConverters {
         builder.amendQueryGraph(_.addMutatingPatterns(toSetPattern(acc.semanticTable)(item)))
     }
 
-  private def addCreateToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Create): PlannerQueryBuilder =
-    clause.pattern.patternParts.foldLeft(builder) {
+  private def addCreateToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Create): PlannerQueryBuilder = {
+
+    val nodes = new ArrayBuffer[CreateNode]()
+    val relationships = new ArrayBuffer[CreateRelationship]()
+
+    // We need this locally to avoid creating node twice is they occur
+    // multiple times in this clause, but haven't occured before
+    val seenPatternNodes = mutable.Set[String]()
+    seenPatternNodes ++= builder.allSeenPatternNodes
+
+    clause.pattern.patternParts.foreach {
       //CREATE (n :L1:L2 {prop: 42})
-      case (acc, EveryPath(NodePattern(Some(id), labels, props))) =>
-        acc
-          .amendQueryGraph(_.addMutatingPatterns(CreateNodePattern(id.name, labels, props)))
+      case EveryPath(NodePattern(Some(id), labels, props)) =>
+        nodes += CreateNode(id.name, labels, props)
+        seenPatternNodes += id.name
 
       //CREATE (n)-[r: R]->(m)
-      case (acc, EveryPath(pattern: RelationshipChain)) =>
+      case EveryPath(pattern: RelationshipChain) =>
 
-        val (nodes, rels) = allCreatePatterns(pattern)
+        val (currentNodes, currentRelationships) = allCreatePatterns(pattern)
+
         //remove duplicates from loops, (a:L)-[:ER1]->(a)
-        val dedupedNodes = dedup(nodes)
-
-        val seenPatternNodes = acc.allSeenPatternNodes
+        val dedupedNodes = dedup(currentNodes)
 
         //create nodes that are not already matched or created
-        val nodesToCreate = dedupedNodes.filterNot(pattern => seenPatternNodes(pattern.nodeName))
+        val (nodesCreatedBefore, nodesToCreate) = dedupedNodes.partition(pattern => seenPatternNodes(pattern.idName))
 
         //we must check that we are not trying to set a pattern or label on any already created nodes
-        val nodesCreatedBefore = dedupedNodes.filter(pattern => seenPatternNodes(pattern.nodeName))
         nodesCreatedBefore.collectFirst {
           case c if c.labels.nonEmpty || c.properties.nonEmpty =>
             throw new SyntaxException(
-              s"Can't create node `${c.nodeName}` with labels or properties here. The variable is already declared in this context")
+              s"Can't create node `${c.idName}` with labels or properties here. The variable is already declared in this context")
         }
 
-        val allMutatingPatterns = mutable.ListBuffer[MutatingPattern]()
-        allMutatingPatterns.appendAll(nodesToCreate)
-        allMutatingPatterns.appendAll(rels)
-
-        acc
-          .amendQueryGraph(_.addMutatingPatterns(allMutatingPatterns))
+        nodes ++= nodesToCreate
+        seenPatternNodes ++= nodesToCreate.map(_.idName)
+        relationships ++= currentRelationships
 
       case x => throw new InternalException(s"Received an AST-clause that has no representation the QG: $clause")
     }
 
-  private def dedup(nodePatterns: Vector[CreateNodePattern]) = {
+    builder.amendQueryGraph(_.addMutatingPatterns(CreatePattern(nodes, relationships)))
+  }
+
+  private def dedup(nodePatterns: Vector[CreateNode]) = {
     val seen = mutable.Set.empty[String]
-    val result = mutable.ListBuffer.empty[CreateNodePattern]
+    val result = mutable.ListBuffer.empty[CreateNode]
     nodePatterns.foreach { pattern =>
-      if (!seen(pattern.nodeName)) result.append(pattern)
+      if (!seen(pattern.idName)) result.append(pattern)
       else if (pattern.labels.nonEmpty || pattern.properties.nonEmpty) {
         //reused patterns must be pure variable
-        throw new SyntaxException(s"Can't create node `${pattern.nodeName}` with labels or properties here. The variable is already declared in this context")
+        throw new SyntaxException(s"Can't create node `${pattern.idName}` with labels or properties here. The variable is already declared in this context")
       }
-      seen.add(pattern.nodeName)
+      seen.add(pattern.idName)
     }
     result.toIndexedSeq
   }
 
-  private def allCreatePatterns(element: PatternElement): (Vector[CreateNodePattern], Vector[CreateRelationshipPattern]) = element match {
+  private def allCreatePatterns(element: PatternElement): (Vector[CreateNode], Vector[CreateRelationship]) = element match {
     case NodePattern(None, _, _) => throw new InternalException("All nodes must be named at this instance")
     //CREATE ()
     case NodePattern(Some(variable), labels, props) =>
-      (Vector(CreateNodePattern(variable.name, labels, props)), Vector.empty)
+      (Vector(CreateNode(variable.name, labels, props)), Vector.empty)
 
     //CREATE ()-[:R]->()
     case RelationshipChain(leftNode: NodePattern, rel, rightNode) =>
       val leftIdName = leftNode.variable.get.name
       val rightIdName = rightNode.variable.get.name
 
-
       //Semantic checking enforces types.size == 1
       val relType = rel.types.headOption.getOrElse(
         throw new InternalException("Expected single relationship type"))
 
       (Vector(
-        CreateNodePattern(leftIdName, leftNode.labels, leftNode.properties),
-        CreateNodePattern(rightIdName, rightNode.labels, rightNode.properties)
-      ), Vector(CreateRelationshipPattern(rel.variable.get.name,
-        leftIdName, relType, rightIdName, rel.properties, rel.direction)))
+        CreateNode(leftIdName, leftNode.labels, leftNode.properties),
+        CreateNode(rightIdName, rightNode.labels, rightNode.properties)
+      ), Vector(
+        CreateRelationship(rel.variable.get.name, leftIdName, relType, rightIdName, rel.direction, rel.properties)
+      ))
 
     //CREATE ()->[:R]->()-[:R]->...->()
     case RelationshipChain(left, rel, rightNode) =>
@@ -195,10 +203,10 @@ object ClauseConverters {
       val rightIdName = rightNode.variable.get.name
 
       (nodes :+
-        CreateNodePattern(rightIdName, rightNode.labels, rightNode.properties)
+        CreateNode(rightIdName, rightNode.labels, rightNode.properties)
         , rels :+
-        CreateRelationshipPattern(rel.variable.get.name, nodes.last.nodeName, rel.types.head,
-          rightIdName, rel.properties, rel.direction))
+        CreateRelationship(rel.variable.get.name, nodes.last.idName, rel.types.head,
+          rightIdName, rel.direction, rel.properties))
   }
 
   private def addDeleteToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Delete): PlannerQueryBuilder = {
@@ -294,7 +302,7 @@ object ClauseConverters {
         val currentlyAvailableVariables = builder.currentlyAvailableVariables
         val labelPredicates = labels.map(l => HasLabels(id, Seq(l))(id.position))
         val propertyPredicates = toPropertySelection(id, toPropertyMap(props))
-        val createNodePattern = CreateNodePattern(id.name, labels, props)
+        val createNodePattern = CreateNode(id.name, labels, props)
 
         val matchGraph = QueryGraph(
           patternNodes = Set(id.name),
@@ -320,14 +328,14 @@ object ClauseConverters {
 
         val seenPatternNodes = acc.allSeenPatternNodes
         //create nodes that are not already matched or created
-        val nodesToCreate = dedupedNodes.filterNot(pattern => seenPatternNodes(pattern.nodeName))
+        val nodesToCreate = dedupedNodes.filterNot(pattern => seenPatternNodes(pattern.idName))
         //we must check that we are not trying to set a pattern or label on any already created nodes
-        val nodesCreatedBefore = dedupedNodes.filter(pattern => seenPatternNodes(pattern.nodeName)).toSet
+        val nodesCreatedBefore = dedupedNodes.filter(pattern => seenPatternNodes(pattern.idName)).toSet
 
         nodesCreatedBefore.collectFirst {
           case c if c.labels.nonEmpty || c.properties.nonEmpty =>
             throw new SyntaxException(
-              s"Can't create node `${c.nodeName}` with labels or properties here. The variable is already declared in this context")
+              s"Can't create node `${c.idName}` with labels or properties here. The variable is already declared in this context")
         }
 
         val pos = pattern.position
@@ -335,20 +343,20 @@ object ClauseConverters {
         val selections = asSelections(clause.where)
 
         val hasLabels = nodes.flatMap(n =>
-          n.labels.map(l => HasLabels(Variable(n.nodeName)(pos), Seq(l))(pos))
+          n.labels.map(l => HasLabels(Variable(n.idName)(pos), Seq(l))(pos))
         )
 
         val hasProps = nodes.flatMap(n =>
-          toPropertySelection(Variable(n.nodeName)(pos), toPropertyMap(n.properties))
-        ) ++ rels.flatMap(n =>
-          toPropertySelection(Variable(n.relName)(pos), toPropertyMap(n.properties)))
+          toPropertySelection(Variable(n.idName)(pos), toPropertyMap(n.properties))
+        ) ++ rels.flatMap(r =>
+          toPropertySelection(Variable(r.idName)(pos), toPropertyMap(r.properties)))
 
         val matchGraph = QueryGraph(
-          patternNodes = nodes.map(_.nodeName).toSet,
-          patternRelationships = rels.map(r => PatternRelationship(r.relName, (r.leftNode, r.rightNode),
+          patternNodes = nodes.map(_.idName).toSet,
+          patternRelationships = rels.map(r => PatternRelationship(r.idName, (r.leftNode, r.rightNode),
             r.direction, Seq(r.relType), SimplePatternLength)).toSet,
           selections = selections ++ Selections.from(hasLabels ++ hasProps),
-          argumentIds = builder.currentlyAvailableVariables ++ nodesCreatedBefore.map(_.nodeName)
+          argumentIds = builder.currentlyAvailableVariables ++ nodesCreatedBefore.map(_.idName)
         )
 
         val queryGraph = QueryGraph.empty
@@ -444,9 +452,11 @@ object ClauseConverters {
                         .addArgumentIds(foreachVariable.name +: currentlyAvailableVariables.toIndexedSeq))
       .withHorizon(projectionToInnerUpdates)
 
-    val innerPlannerQuery = clause.updates.foldLeft(innerBuilder) {
-      case (acc, innerClause) => addToLogicalPlanInput(acc, innerClause)
-    }.build()
+    val innerPlannerQuery =
+      StatementConverters.flattenCreates(clause.updates)
+        .foldLeft(innerBuilder) {
+          case (acc, innerClause) => addToLogicalPlanInput(acc, innerClause)
+        }.build()
 
     val foreachPattern = ForeachPattern(
       variable = clause.variable.name,

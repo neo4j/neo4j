@@ -253,17 +253,26 @@ case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
       case ProduceResult(_, columns) =>
         ProduceResultsPipe(source, columns)(id = id)
 
-      case CreateNode(_, idName, labels, props) =>
-        CreateNodePipe(source, idName, labels.map(LazyLabel.apply), props.map(buildExpression))(id = id)
+      case Create(_, nodes, relationships) =>
+        CreatePipe(
+          source,
+          nodes.map(n =>
+            CreateNodeCommand(n.idName, n.labels.map(LazyLabel.apply), n.properties.map(buildExpression))
+          ).toArray,
+          relationships.map(r =>
+            CreateRelationshipCommand(r.idName, r.startNode, LazyType(r.relType.name), r.endNode, r.properties.map(buildExpression))
+          ).toArray
+        )(id = id)
 
       case MergeCreateNode(_, idName, labels, props) =>
-        MergeCreateNodePipe(source, idName, labels.map(LazyLabel.apply), props.map(buildExpression))(id = id)
-
-      case CreateRelationship(_, idName, startNode, typ, endNode, props) =>
-        CreateRelationshipPipe(source, idName, startNode, LazyType(typ)(semanticTable), endNode, props.map(buildExpression))(id = id)
+        MergeCreateNodePipe(source,
+          CreateNodeCommand(idName, labels.map(LazyLabel.apply), props.map(buildExpression))
+        )(id = id)
 
       case MergeCreateRelationship(_, idName, startNode, typ, endNode, props) =>
-        MergeCreateRelationshipPipe(source, idName, startNode, LazyType(typ)(semanticTable), endNode, props.map(buildExpression))(id = id)
+        MergeCreateRelationshipPipe(source,
+          CreateRelationshipCommand(idName, startNode, LazyType(typ)(semanticTable), endNode, props.map(buildExpression))
+        )(id = id)
 
       case SetLabels(_, name, labels) =>
         SetPipe(source, SetLabelsOperation(name, labels.map(LazyLabel.apply)))(id = id)

@@ -73,24 +73,27 @@ case class RemoveLabelPattern(idName: String, labels: Seq[LabelName]) extends Mu
   override def dependencies: Set[String] = Set(idName)
 }
 
-case class CreateNodePattern(nodeName: String, labels: Seq[LabelName], properties: Option[Expression]) extends MutatingPattern {
-  override def coveredIds = Set(nodeName)
-
-  override def dependencies: Set[String] = deps(properties)
-}
-
-case class CreateRelationshipPattern(relName: String, leftNode: String, relType: RelTypeName, rightNode: String,
-                                     properties: Option[Expression], direction: SemanticDirection) extends  MutatingPattern {
-  def startNode = inOrder._1
-
-  def endNode = inOrder._2
-
-  //WHEN merging we can have an undirected CREATE, it is interpreted left-to-right
-  def inOrder =  if (direction == SemanticDirection.OUTGOING || direction == SemanticDirection.BOTH) (leftNode, rightNode) else (rightNode, leftNode)
-
-  override def coveredIds = Set(relName)
-
-  override def dependencies: Set[String] = deps(properties) + leftNode + rightNode
+case class CreatePattern(nodes: Seq[CreateNode], relationships: Seq[CreateRelationship]) extends MutatingPattern {
+  override def coveredIds: Set[String] = {
+    val builder = Set.newBuilder[String]
+    for (node <- nodes)
+      builder += node.idName
+    for (relationship <- relationships) {
+      builder += relationship.idName
+    }
+    builder.result()
+  }
+  override def dependencies: Set[String] = {
+    val builder = Set.newBuilder[String]
+    for (node <- nodes)
+      builder ++= deps(node.properties)
+    for (relationship <- relationships) {
+      builder ++= deps(relationship.properties)
+      builder += relationship.leftNode
+      builder += relationship.rightNode
+    }
+    builder.result()
+  }
 }
 
 case class DeleteExpression(expression: Expression, forced: Boolean) extends MutatingPattern with NoSymbols {
@@ -102,20 +105,28 @@ sealed trait MergePattern {
   def matchGraph: QueryGraph
 }
 
-case class MergeNodePattern(createNodePattern: CreateNodePattern, matchGraph: QueryGraph, onCreate: Seq[SetMutatingPattern],
+case class MergeNodePattern(createNode: CreateNode,
+                            matchGraph: QueryGraph,
+                            onCreate: Seq[SetMutatingPattern],
                             onMatch: Seq[SetMutatingPattern]) extends MutatingPattern with MergePattern {
-  override def coveredIds = matchGraph.allCoveredIds
-
-  override def dependencies: Set[String] = createNodePattern.dependencies ++ onCreate.flatMap(_.dependencies) ++ onMatch.flatMap(_.dependencies)
-}
-
-case class MergeRelationshipPattern(createNodePatterns: Seq[CreateNodePattern], createRelPatterns: Seq[CreateRelationshipPattern],
-                                    matchGraph: QueryGraph, onCreate: Seq[SetMutatingPattern], onMatch: Seq[SetMutatingPattern]) extends MutatingPattern with MergePattern {
-  override def coveredIds = matchGraph.allCoveredIds
+  override def coveredIds: Set[String] = matchGraph.allCoveredIds
 
   override def dependencies: Set[String] =
-    createNodePatterns.flatMap(_.dependencies).toSet ++
-    createRelPatterns.flatMap(_.dependencies).toSet ++
+    createNode.properties.map(_.dependencies.map(_.name)).getOrElse(Set.empty) ++
+      onCreate.flatMap(_.dependencies) ++
+      onMatch.flatMap(_.dependencies)
+}
+
+case class MergeRelationshipPattern(createNodes: Seq[CreateNode],
+                                    createRelationships: Seq[CreateRelationship],
+                                    matchGraph: QueryGraph,
+                                    onCreate: Seq[SetMutatingPattern],
+                                    onMatch: Seq[SetMutatingPattern]) extends MutatingPattern with MergePattern {
+  override def coveredIds: Set[String] = matchGraph.allCoveredIds
+
+  override def dependencies: Set[String] =
+    createNodes.flatMap(_.dependencies).toSet ++
+    createRelationships.flatMap(_.dependencies).toSet ++
       onCreate.flatMap(_.dependencies) ++
       onMatch.flatMap(_.dependencies)
 }

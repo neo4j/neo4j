@@ -79,19 +79,18 @@ case object PlanUpdates
         context.logicalPlanProducer.planForeachApply(source, innerUpdatePlan, foreach, context)
 
       //CREATE ()
-      case p: CreateNodePattern => context.logicalPlanProducer.planCreateNode(source, p, context)
-
       //CREATE (a)-[:R]->(b)
-      case p: CreateRelationshipPattern => context.logicalPlanProducer.planCreateRelationship(source, p, context)
+      //CREATE (), (a)-[:R]->(b), (x)-[:X]->(y)-[:Y]->(z {prop:2})
+      case p: CreatePattern => context.logicalPlanProducer.planCreate(source, p, context)
 
       //MERGE ()
       case p: MergeNodePattern =>
-        planMerge(source, p.matchGraph, Seq(p.createNodePattern), Seq.empty, p.onCreate,
+        planMerge(source, p.matchGraph, Seq(p.createNode), Seq.empty, p.onCreate,
           p.onMatch, first, context, solveds, cardinalities, p)
 
       //MERGE (a)-[:T]->(b)
       case p: MergeRelationshipPattern =>
-        planMerge(source, p.matchGraph, p.createNodePatterns, p.createRelPatterns, p.onCreate,
+        planMerge(source, p.matchGraph, p.createNodes, p.createRelationships, p.onCreate,
           p.onMatch, first, context, solveds, cardinalities, p)
 
       //SET n:Foo:Bar
@@ -172,8 +171,8 @@ case object PlanUpdates
    * Note also that merge uses a special leaf planner to enforce the correct behavior
    * when having uniqueness constraints, and unnestApply will remove a lot of the extra Applies
    */
-  def planMerge(source: LogicalPlan, matchGraph: QueryGraph, createNodePatterns: Seq[CreateNodePattern],
-                createRelationshipPatterns: Seq[CreateRelationshipPattern], onCreatePatterns: Seq[SetMutatingPattern],
+  def planMerge(source: LogicalPlan, matchGraph: QueryGraph, createNodePatterns: Seq[CreateNode],
+                createRelationshipPatterns: Seq[CreateRelationship], onCreatePatterns: Seq[SetMutatingPattern],
                 onMatchPatterns: Seq[SetMutatingPattern], first: Boolean, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities,
                 solvedMutatingPattern: MutatingPattern): LogicalPlan = {
 
@@ -186,7 +185,7 @@ case object PlanUpdates
     val innerContext: LogicalPlanningContext =
       context.withUpdatedCardinalityInformation(source, solveds, cardinalities).copy(config = context.config.withLeafPlanners(leafPlanners))
 
-    val ids: Seq[String] = createNodePatterns.map(_.nodeName) ++ createRelationshipPatterns.map(_.relName)
+    val ids: Seq[String] = createNodePatterns.map(_.idName) ++ createRelationshipPatterns.map(_.idName)
 
     val mergeMatch = mergeMatchPart(source, matchGraph, producer, createNodePatterns, createRelationshipPatterns, innerContext, solveds, cardinalities, ids)
 
@@ -227,8 +226,8 @@ case object PlanUpdates
   private def mergeMatchPart(source: LogicalPlan,
                              matchGraph: QueryGraph,
                              producer: LogicalPlanProducer,
-                             createNodePatterns: Seq[CreateNodePattern],
-                             createRelationshipPatterns: Seq[CreateRelationshipPattern],
+                             createNodePatterns: Seq[CreateNode],
+                             createRelationshipPatterns: Seq[CreateRelationship],
                              context: LogicalPlanningContext,
                              solveds: Solveds,
                              cardinalities: Cardinalities,

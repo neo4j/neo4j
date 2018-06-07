@@ -55,7 +55,7 @@ object SlotAllocation {
                           argumentSizes: ArgumentSizes)
 
   /**
-    * Allocate slot for every operator in the logical plan tree {@code lp}.
+    * Allocate slot for every operator in the logical plan tree `lp`.
     *
     * @param lp the logical plan to process.
     * @return the slot configurations of every operator.
@@ -242,7 +242,7 @@ object SlotAllocation {
   }
 
   /**
-    * Compute the slot configuration of a leaf logical plan operator {@code lp}.
+    * Compute the slot configuration of a leaf logical plan operator `lp`.
     *
     * @param lp the operator to compute slots for.
     * @param nullable true if new slots are nullable
@@ -287,7 +287,7 @@ object SlotAllocation {
     }
 
   /**
-    * Compute the slot configuration of a single source logical plan operator {@code lp}.
+    * Compute the slot configuration of a single source logical plan operator `lp`.
     *
     * @param lp the operator to compute slots for.
     * @param nullable true if new slots are nullable
@@ -408,16 +408,13 @@ object SlotAllocation {
         result.newLong(to, nullable, CTNode)
         result
 
-      case CreateNode(_, name, _, _) =>
-        source.newLong(name, nullable = false, CTNode)
+      case Create(_, nodes, relationships) =>
+        nodes.foreach(n => source.newLong(n.idName, nullable = false, CTNode))
+        relationships.foreach(r => source.newLong(r.idName, nullable = false, CTRelationship))
         source
 
       case _:MergeCreateNode =>
         // The variable name should already have been allocated by the NodeLeafPlan
-        source
-
-      case CreateRelationship(_, name, _, _, _, _) =>
-        source.newLong(name, nullable = false, CTRelationship)
         source
 
       case MergeCreateRelationship(_, name, _, _, _, _) =>
@@ -499,7 +496,7 @@ object SlotAllocation {
     }
 
   /**
-    * Compute the slot configuration of a branching logical plan operator {@code lp}.
+    * Compute the slot configuration of a branching logical plan operator `lp`.
     *
     * @param lp the operator to compute slots for.
     * @param nullable true if new slots are nullable

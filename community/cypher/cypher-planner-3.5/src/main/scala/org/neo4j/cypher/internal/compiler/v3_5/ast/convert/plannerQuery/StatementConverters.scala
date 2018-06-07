@@ -19,19 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.convert.plannerQuery
 
-import org.opencypher.v9_0.util.{ASTNode, InternalException}
+import org.opencypher.v9_0.util.{ASTNode, InputPosition, InternalException}
 import org.neo4j.cypher.internal.compiler.v3_5.ast.convert.plannerQuery.ClauseConverters._
 import org.opencypher.v9_0.ast._
 import org.opencypher.v9_0.ast
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5.{PeriodicCommit, UnionQuery}
-import org.opencypher.v9_0.expressions.{And, Or}
+import org.opencypher.v9_0.expressions.{And, Or, Pattern, PatternPart}
 
 object StatementConverters {
   import org.opencypher.v9_0.util.Foldable._
 
   def toPlannerQueryBuilder(q: SingleQuery, semanticTable: SemanticTable): PlannerQueryBuilder =
-    q.clauses.foldLeft(PlannerQueryBuilder(semanticTable)) {
+    flattenCreates(q.clauses).foldLeft(PlannerQueryBuilder(semanticTable)) {
       case (acc, clause) => addToLogicalPlanInput(acc, clause)
     }
 
@@ -76,5 +76,36 @@ object StatementConverters {
       case _ =>
         throw new InternalException(s"Received an AST-clause that has no representation the QG: $query")
     }
+  }
+
+  /**
+    * Flatten consecutive CREATE clauses into one.
+    *
+    *   CREATE (a) CREATE (b) => CREATE (a),(b)
+    */
+  def flattenCreates(clauses: Seq[Clause]): Seq[Clause] = {
+    val builder = Seq.newBuilder[Clause]
+    var prevCreate: Option[(Seq[PatternPart], InputPosition)] = None
+    for (clause <- clauses) {
+      (clause, prevCreate) match {
+        case (c: Create, None) =>
+          prevCreate = Some((c.pattern.patternParts, c.position))
+
+        case (c: Create, Some((prevParts, pos))) =>
+          prevCreate = Some((prevParts ++ c.pattern.patternParts, pos))
+
+        case (nonCreate, Some((prevParts, pos))) =>
+          builder += Create(Pattern(prevParts)(pos))(pos)
+          builder += nonCreate
+          prevCreate = None
+
+        case (nonCreate, None) =>
+          builder += nonCreate
+      }
+    }
+    for ((prevParts, pos) <- prevCreate)
+      builder += Create(Pattern(prevParts)(pos))(pos)
+    builder.result()
+//    clauses
   }
 }

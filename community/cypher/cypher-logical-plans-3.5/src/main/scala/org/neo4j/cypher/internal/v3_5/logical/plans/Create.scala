@@ -19,20 +19,22 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_5.StrictnessMode
+import org.neo4j.cypher.internal.ir.v3_5.{CreateNode, CreateRelationship, StrictnessMode}
 import org.opencypher.v9_0.util.attribution.IdGen
-import org.opencypher.v9_0.expressions.{Expression, RelTypeName}
 
 /**
-  * For each input row, create a new relationship with the provided type and properties,
-  * and assign it to the variable 'idName'.
+  * For each input row, create new nodes and relationships.
   */
-case class CreateRelationship(source: LogicalPlan, idName: String, startNode: String, typ: RelTypeName, endNode: String, properties: Option[Expression])
-                             (implicit idGen: IdGen) extends LogicalPlan(idGen) {
+case class Create(source: LogicalPlan,
+                  nodes: Seq[CreateNode],
+                  relationships: Seq[CreateRelationship])
+                 (implicit idGen: IdGen) extends LogicalPlan(idGen) {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
-  override val availableSymbols: Set[String] = source.availableSymbols + idName + startNode + endNode
+  override val availableSymbols: Set[String] = {
+    source.availableSymbols ++ nodes.map(_.idName) ++ relationships.map(_.idName)
+  }
 
   override def rhs: Option[LogicalPlan] = None
 

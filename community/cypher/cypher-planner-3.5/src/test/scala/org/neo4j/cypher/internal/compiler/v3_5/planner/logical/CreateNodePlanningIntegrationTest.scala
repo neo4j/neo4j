@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.ir.v3_5.CreateNode
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.opencypher.v9_0.expressions.{MapExpression, PropertyKeyName, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
@@ -29,42 +30,54 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
   test("should plan single create") {
     planFor("CREATE (a)")._2 should equal(
       EmptyResult(
-        CreateNode(Argument(), "a", Seq.empty, None))
+        Create(Argument(), List(CreateNode("a", Seq.empty, None)), Nil)
+      )
     )
   }
 
   test("should plan for multiple creates") {
     planFor("CREATE (a), (b), (c)")._2 should equal(
       EmptyResult(
-        CreateNode(
-          CreateNode(
-            CreateNode(Argument(), "a", Seq.empty, None),
-            "b", Seq.empty, None),
-          "c", Seq.empty, None))
+        Create(
+          Argument(),
+          List(
+            CreateNode("a", Seq.empty, None),
+            CreateNode("b", Seq.empty, None),
+            CreateNode("c", Seq.empty, None)
+          ),
+          Nil
+        )
+      )
     )
   }
 
   test("should plan for multiple creates via multiple statements") {
     planFor("CREATE (a) CREATE (b) CREATE (c)")._2 should equal(
       EmptyResult(
-        CreateNode(
-          CreateNode(
-            CreateNode(Argument(), "a", Seq.empty, None),
-            "b", Seq.empty, None),
-          "c", Seq.empty, None))
+        Create(
+          Argument(),
+          List(
+            CreateNode("a",Seq.empty,None),
+            CreateNode("b",Seq.empty,None),
+            CreateNode("c",Seq.empty,None)
+          ),
+          Nil
+        )
+      )
     )
   }
 
   test("should plan single create with return") {
     planFor("CREATE (a) return a")._2 should equal(
-        CreateNode(Argument(), "a", Seq.empty, None)
+      Create(Argument(), List(CreateNode("a", Seq.empty, None)), Nil)
     )
   }
 
   test("should plan create with labels") {
     planFor("CREATE (a:A:B)")._2 should equal(
       EmptyResult(
-        CreateNode(Argument(), "a", Seq(lblName("A"), lblName("B")), None))
+        Create(Argument(), List(CreateNode("a", Seq(lblName("A"), lblName("B")), None)), Nil)
+      )
     )
   }
 
@@ -72,10 +85,16 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
 
     planFor("CREATE (a {prop: 42})")._2 should equal(
       EmptyResult(
-        CreateNode(Argument(), "a", Seq.empty,
-          Some(
-            MapExpression(Seq((PropertyKeyName("prop")(pos), SignedDecimalIntegerLiteral("42")(pos))))(pos)
-          )
+        Create(
+          Argument(),
+          List(
+            CreateNode("a", Seq.empty,
+              Some(
+                MapExpression(Seq((PropertyKeyName("prop")(pos), SignedDecimalIntegerLiteral("42")(pos))))(pos)
+              )
+            )
+          ),
+          Nil
         )
       )
     )
@@ -84,7 +103,7 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
   test("should plan match and create") {
     planFor("MATCH (a) CREATE (b)")._2 should equal(
       EmptyResult(
-          CreateNode(AllNodesScan("a", Set.empty), "b", Seq.empty, None)
+        Create(AllNodesScan("a", Set.empty), List(CreateNode("b", Seq.empty, None)), Nil)
       )
     )
   }
@@ -92,18 +111,21 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
   test("should plan create in tail") {
     planFor("MATCH (a) CREATE (b) WITH * MATCH(c) CREATE (d)")._2 should equal(
       EmptyResult(
-        CreateNode(
+        Create(
           Eager(
             Apply(
               Eager(
-                CreateNode(
+                Create(
                   AllNodesScan("a", Set.empty),
-                  "b", Seq.empty, None)
+                  List(CreateNode("b", Seq.empty, None)), Nil
+                )
               ),
               AllNodesScan("c", Set("a", "b"))
             )
           ),
-          "d", Seq.empty, None))
+          List(CreateNode("d", Seq.empty, None)), Nil
+        )
+      )
     )
   }
 }

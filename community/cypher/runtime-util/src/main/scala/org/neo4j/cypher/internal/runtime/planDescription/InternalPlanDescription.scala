@@ -338,7 +338,7 @@ final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription])
 
   override def name: String = s"${similar.head.name}(${similar.size})"
 
-  override def variables: Set[String] = similar.foldLeft(Set.empty[String]) { (acc, plan) =>
+  override lazy val variables: Set[String] = similar.foldLeft(Set.empty[String]) { (acc, plan) =>
     acc ++ plan.variables
   }
 

@@ -24,10 +24,76 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.runtime.CreateTempFileTestSupport
 import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport
   with CreateTempFileTestSupport {
+
+  private val BIG_TIMEOUT = 60 seconds
+  private val BIG_N = 1000
+  private val BIG_CREATE_CONFIGS =
+    TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
+    TestConfiguration(Versions.V3_3, Planners.Default, Runtimes(Runtimes.Interpreted))
+
+  test("handle big CREATE clause") {
+    var query = "CREATE (x)"
+    for (i <- 1 to BIG_N) {
+      query += s" ,(a$i)-[:R]->(b$i)"
+    }
+
+    val futureResult = Future(executeWith(BIG_CREATE_CONFIGS, query, executeExpectedFailures = false))
+    val result = Await.result(futureResult, BIG_TIMEOUT)
+    assertStats(result, nodesCreated = BIG_N * 2 + 1, relationshipsCreated = BIG_N)
+  }
+
+  test("handle many CREATE clauses") {
+    var query = "CREATE (x)"
+    for (i <- 1 to BIG_N) {
+      query += s" CREATE (a$i)-[:R]->(b$i)"
+    }
+
+    val futureResult = Future(executeWith(BIG_CREATE_CONFIGS, query, executeExpectedFailures = false))
+    val result = Await.result(futureResult, BIG_TIMEOUT)
+    assertStats(result, nodesCreated = BIG_N * 2 + 1, relationshipsCreated = BIG_N)
+  }
+
+  test("PROFILE big CREATE clause") {
+    var query = "PROFILE CREATE (x)"
+    for (i <- 1 to BIG_N) {
+      query += s" ,(a$i)-[:R]->(b$i)"
+    }
+
+    val futureResult = Future(executeWith(BIG_CREATE_CONFIGS, query, executeExpectedFailures = false))
+    val result = Await.result(futureResult, BIG_TIMEOUT)
+    assertStats(result, nodesCreated = BIG_N * 2 + 1, relationshipsCreated = BIG_N)
+
+    val planDescription = Await.result(Future(result.executionPlanDescription()), BIG_TIMEOUT)
+    val creates = planDescription.find("Create")
+    creates.size should equal(1)
+    val expectedTotalDbHits: Long = BIG_N * 3
+    creates.head.totalDbHits.get should be > expectedTotalDbHits
+  }
+
+  test("PROFILE many CREATE clauses") {
+    var query = "PROFILE CREATE (x)"
+    for (i <- 1 to BIG_N) {
+      query += s" CREATE (a$i)-[:R]->(b$i)"
+    }
+
+    val futureResult = Future(executeWith(BIG_CREATE_CONFIGS, query, executeExpectedFailures = false))
+    val result = Await.result(futureResult, BIG_TIMEOUT)
+    assertStats(result, nodesCreated = BIG_N * 2 + 1, relationshipsCreated = BIG_N)
+
+    val planDescription = Await.result(Future(result.executionPlanDescription()), BIG_TIMEOUT)
+    val creates = planDescription.find("Create")
+    creates.size should equal(1)
+    val expectedTotalDbHits: Long = BIG_N * 3
+    creates.head.totalDbHits.get should be > expectedTotalDbHits
+  }
 
   test("handle null value in property map from parameter for create node") {
     val query = "CREATE (a {props}) RETURN a.foo, a.bar"

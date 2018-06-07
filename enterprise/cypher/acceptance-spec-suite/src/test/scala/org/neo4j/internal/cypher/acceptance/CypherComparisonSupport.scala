@@ -138,8 +138,9 @@ trait CypherComparisonSupport extends CypherTestSupport {
                             query: String,
                             expectedDifferentResults: TestConfiguration = Configs.Empty,
                             planComparisonStrategy: PlanComparisonStrategy = DoNotComparePlans,
-                            resultAssertionInTx: Option[(InternalExecutionResult) => Unit] = None,
+                            resultAssertionInTx: Option[InternalExecutionResult => Unit] = None,
                             executeBefore: () => Unit = () => {},
+                            executeExpectedFailures: Boolean = true,
                             params: Map[String, Any] = Map.empty): InternalExecutionResult = {
     // Never consider Morsel even if test requests it
     val expectSucceedEffective = expectSucceed - Configs.Morsel
@@ -152,11 +153,24 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
       val positiveResults = ((Configs.AbsolutelyAll.scenarios ++ explicitlyRequestedExperimentalScenarios) - baseScenario).flatMap {
         thisScenario =>
-          executeScenario(thisScenario, query, expectSucceedEffective.containsScenario(thisScenario), executeBefore, params, resultAssertionInTx)
+          executeScenario(thisScenario,
+                          query,
+                          expectSucceedEffective.containsScenario(thisScenario),
+                          executeBefore,
+                          params,
+                          resultAssertionInTx,
+                          executeExpectedFailures)
       }
 
       //Must be run last and have no rollback to be able to do certain result assertions
-      val baseOption = executeScenario(baseScenario, query, expectedToSucceed = true, executeBefore, params, resultAssertionInTx = None, rollback = false)
+      val baseOption = executeScenario(baseScenario,
+                                       query,
+                                       expectedToSucceed = true,
+                                       executeBefore,
+                                       params,
+                                       resultAssertionInTx = None,
+                                       executeExpectedFailures = false,
+                                       rollback = false)
 
       // Assumption: baseOption.get is safe because the baseScenario is expected to succeed
       val baseResult = baseOption.get._2
@@ -208,12 +222,16 @@ trait CypherComparisonSupport extends CypherTestSupport {
                               expectedToSucceed: Boolean,
                               executeBefore: () => Unit,
                               params: Map[String, Any],
-                              resultAssertionInTx: Option[(InternalExecutionResult) => Unit],
+                              resultAssertionInTx: Option[InternalExecutionResult => Unit],
+                              executeExpectedFailures: Boolean,
                               rollback: Boolean = true) = {
 
     def execute = {
       executeBefore()
-      val tryRes = Try(innerExecute(s"CYPHER ${scenario.preparserOptions} $query", params))
+      val tryRes =
+        if (expectedToSucceed || executeExpectedFailures)
+          Try(innerExecute(s"CYPHER ${scenario.preparserOptions} $query", params))
+        else Failure(NotExecutedException)
       if (expectedToSucceed && resultAssertionInTx.isDefined) {
         tryRes match {
           case Success(thisResult) =>
@@ -479,10 +497,10 @@ object CypherComparisonSupport {
         case Runtimes.ProcedureOrSchema => "<procedure or schema runtime>"
         case _ => runtime.preparserOption
       }
-      s"${versionName} ${plannerName} ${runtimeName}"
+      s"$versionName $plannerName $runtimeName"
     }
 
-    def preparserOptions: String = s"${version.name} ${planner.preparserOption} ${runtime.preparserOption}"
+    def preparserOptions: String = List(version.name, planner.preparserOption, runtime.preparserOption).mkString(" ")
 
     def checkResultForSuccess(query: String, internalExecutionResult: InternalExecutionResult): Unit = {
       val (reportedRuntime: String, reportedPlanner: String, reportedVersion: String, reportedPlannerVersion: String) = extractConfiguration(internalExecutionResult)
@@ -668,4 +686,5 @@ object CypherComparisonSupport {
 
   }
 
+  object NotExecutedException extends Exception
 }

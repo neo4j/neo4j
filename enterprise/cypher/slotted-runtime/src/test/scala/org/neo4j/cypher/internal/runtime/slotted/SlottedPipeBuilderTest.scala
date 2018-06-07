@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v3_5.planner.{HardcodedGraphStatistics, LogicalPlanningTestSupport2}
 import org.opencypher.v9_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_5.VarPatternLength
+import org.neo4j.cypher.internal.ir.v3_5.{CreateNode, VarPatternLength}
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IDPPlannerName, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
@@ -105,7 +105,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val label = LabelName("label")(pos)
     val allNodeScan: AllNodesScan = AllNodesScan(x, Set.empty)
     val eager = Eager(allNodeScan)
-    val createNode = CreateNode(eager, z, Seq(label), None)
+    val createNode = Create(eager, List(CreateNode(z, Seq(label), None)), Nil)
 
     // when
     val pipe = build(createNode)
@@ -119,11 +119,13 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
       .newLong("z", false, CTNode)
 
     pipe should equal(
-      CreateNodeSlottedPipe(
+      CreateSlottedPipe(
         EagerSlottedPipe(
           AllNodesScanSlottedPipe("x", beforeEagerSlots, Size.zero)(),
           afterEagerSlots)(),
-        "z", afterEagerSlots, Seq(LazyLabel(label)), None)()
+        Array(CreateNodeSlottedCommand(afterEagerSlots.getLongOffsetFor("z"), Seq(LazyLabel(label)), None)),
+        IndexedSeq()
+      )()
     )
   }
 
@@ -131,19 +133,18 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     // given
     val label = LabelName("label")(pos)
     val argument = Argument()
-    val createNode = CreateNode(argument, z, Seq(label), None)
+    val createNode = Create(argument, List(CreateNode(z, Seq(label), None)), Nil)
 
     // when
     val pipe = build(createNode)
 
     // then
+    val slots = SlotConfiguration.empty.newLong("z", false, CTNode)
     pipe should equal(
-      CreateNodeSlottedPipe(
-        ArgumentSlottedPipe(SlotConfiguration.empty.newLong("z", false, CTNode), Size.zero)(),
-        "z",
-        SlotConfiguration(Map("z" -> LongSlot(0, nullable = false, CTNode)), 1, 0),
-        Seq(LazyLabel(label)),
-        None
+      CreateSlottedPipe(
+        ArgumentSlottedPipe(slots, Size.zero)(),
+        Array(CreateNodeSlottedCommand(slots.getLongOffsetFor("z"), Seq(LazyLabel(label)), None)),
+        IndexedSeq()
       )()
     )
   }

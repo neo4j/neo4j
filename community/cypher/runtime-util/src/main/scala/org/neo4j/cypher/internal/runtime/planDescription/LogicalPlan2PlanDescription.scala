@@ -138,11 +138,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "EagerAggregation", children, Seq(KeyNames(groupingExpressions.keySet.toIndexedSeq)),
                             variables)
 
-      case _: CreateNode =>
-        PlanDescriptionImpl(id, "CreateNode", children, Seq.empty, variables)
-
-      case _: CreateRelationship =>
-        PlanDescriptionImpl(id, "CreateRelationship", children, Seq.empty, variables)
+      case _: Create =>
+        PlanDescriptionImpl(id, "Create", children, Seq.empty, variables)
 
       case _: DeleteExpression | _: DeleteNode | _: DeletePath | _: DeleteRelationship =>
         PlanDescriptionImpl(id, "Delete", children, Seq.empty, variables)
