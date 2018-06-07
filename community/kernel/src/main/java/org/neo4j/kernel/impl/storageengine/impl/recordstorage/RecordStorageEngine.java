@@ -112,7 +112,6 @@ import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
-import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -122,16 +121,6 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_REC
 
 public class RecordStorageEngine implements StorageEngine, Lifecycle
 {
-    private static final boolean takePropertyReadLocks = FeatureToggles.flag(
-            RecordStorageEngine.class, "propertyReadLocks", false );
-    static
-    {
-        if ( takePropertyReadLocks )
-        {
-            throw new UnsupportedOperationException( "Acquiring property read locks are no longer supported" );
-        }
-    }
-
     private final IndexingService indexingService;
     private final NeoStores neoStores;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
