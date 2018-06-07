@@ -19,40 +19,64 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.hamcrest.Matchers;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
-import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.id.BatchingIdSequence;
-import org.neo4j.kernel.impl.store.id.IdSequence;
+import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.transaction.state.RecordAccess.Loader;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.unsafe.batchinsert.internal.DirectRecordAccess;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 
 public class PropertyCreatorTest
 {
-    private final IdSequence idGenerator = new BatchingIdSequence();
-    private final PropertyCreator creator = new PropertyCreator( null, null, idGenerator, new PropertyTraverser(), false );
+    @Rule
+    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule();
 
-    // The RecordAccess will take on the role of both store and tx state and the PropertyCreator
-    // will know no difference
-    @SuppressWarnings( "unchecked" )
-    private final RecordAccess<PropertyRecord,PrimitiveRecord> records =
-            new DirectRecordAccess<>( mock( RecordStore.class ), new PropertyRecordLoader() );
     private final MyPrimitiveProxy primitive = new MyPrimitiveProxy();
+    private NeoStores neoStores;
+    private PropertyStore propertyStore;
+    private PropertyCreator creator;
+    private DirectRecordAccess<PropertyRecord,PrimitiveRecord> records;
+
+    @Before
+    public void startStore()
+    {
+        neoStores = new StoreFactory( storage.directory().directory(), Config.defaults(), new DefaultIdGeneratorFactory( storage.fileSystem() ),
+                storage.pageCache(), storage.fileSystem(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY ).openNeoStores( true,
+                StoreType.PROPERTY, StoreType.PROPERTY_STRING, StoreType.PROPERTY_ARRAY );
+        propertyStore = neoStores.getPropertyStore();
+        records = new DirectRecordAccess<>( propertyStore, Loaders.propertyLoader( propertyStore ) );
+        creator = new PropertyCreator( propertyStore, new PropertyTraverser() );
+    }
+
+    @After
+    public void closeStore()
+    {
+        neoStores.close();
+    }
 
     @Test
     public void shouldAddPropertyToEmptyChain()
@@ -216,12 +240,81 @@ public class PropertyCreatorTest
                 record( property( 3, 3 ), property( 4, 4 ), property( 5, 5 ) ) );
     }
 
+    @Test
+    public void canAddMultipleShortStringsToTheSameNode()
+    {
+        // GIVEN
+        existingChain();
+
+        // WHEN
+        setProperty( 0, "value" );
+        setProperty( 1, "esrever" );
+
+        // THEN
+        assertChain( record( property( 0, "value", false ), property( 1, "esrever", false ) ) );
+    }
+
+    @Test
+    public void canUpdateShortStringInplace()
+    {
+        // GIVEN
+        existingChain( record( property( 0, "value" ) ) );
+
+        // WHEN
+        long before = propertyRecordsInUse();
+        setProperty( 0, "other" );
+        long after = propertyRecordsInUse();
+
+        // THEN
+        assertChain( record( property( 0, "other" ) ) );
+        assertEquals( before, after );
+    }
+
+    @Test
+    public void canReplaceLongStringWithShortString()
+    {
+        // GIVEN
+        long recordCount = dynamicStringRecordsInUse();
+        long propCount = propertyRecordsInUse();
+        existingChain( record( property( 0, "this is a really long string, believe me!" ) ) );
+        assertEquals( recordCount + 1, dynamicStringRecordsInUse() );
+        assertEquals( propCount + 1, propertyRecordsInUse() );
+
+        // WHEN
+        setProperty( 0, "value" );
+
+        // THEN
+        assertChain( record( property( 0, "value", false ) ) );
+        assertEquals( recordCount + 1, dynamicStringRecordsInUse() );
+        assertEquals( propCount + 1, propertyRecordsInUse() );
+    }
+
+    @Test
+    public void canReplaceShortStringWithLongString()
+    {
+        // GIVEN
+        long recordCount = dynamicStringRecordsInUse();
+        long propCount = propertyRecordsInUse();
+        existingChain( record( property( 0, "value" ) ) );
+        assertEquals( recordCount, dynamicStringRecordsInUse() );
+        assertEquals( propCount + 1, propertyRecordsInUse() );
+
+        // WHEN
+        String longString = "this is a really long string, believe me!";
+        setProperty( 0, longString );
+
+        // THEN
+        assertChain( record( property( 0, longString, true ) ) );
+        assertEquals( recordCount + 1, dynamicStringRecordsInUse() );
+        assertEquals( propCount + 1, propertyRecordsInUse() );
+    }
+
     private void existingChain( ExpectedRecord... initialRecords )
     {
         PropertyRecord prev = null;
         for ( ExpectedRecord initialRecord : initialRecords )
         {
-            PropertyRecord record = this.records.create( idGenerator.nextId(), primitive.record ).forChangingData();
+            PropertyRecord record = this.records.create( propertyStore.nextId(), primitive.record ).forChangingData();
             record.setInUse( true );
             existingRecord( record, initialRecord );
 
@@ -246,7 +339,7 @@ public class PropertyCreatorTest
         for ( ExpectedProperty initialProperty : initialRecord.properties )
         {
             PropertyBlock block = new PropertyBlock();
-            PropertyStore.encodeValue( block, initialProperty.key, initialProperty.value, null, null, true );
+            propertyStore.encodeValue( block, initialProperty.key, initialProperty.value );
             record.addPropertyBlock( block );
         }
         assertTrue( record.size() <= PropertyType.getPayloadSize() );
@@ -276,7 +369,18 @@ public class PropertyCreatorTest
         {
             PropertyBlock block = record.getPropertyBlock( expectedProperty.key );
             assertNotNull( block );
-            assertEquals( expectedProperty.value, block.getType().value( block, null ) );
+            assertEquals( expectedProperty.value, block.getType().value( block, propertyStore ) );
+            if ( expectedProperty.assertHasDynamicRecords != null )
+            {
+                if ( expectedProperty.assertHasDynamicRecords )
+                {
+                    assertThat( block.getValueRecords().size(), Matchers.greaterThan( 0 ) );
+                }
+                else
+                {
+                    assertEquals( 0, block.getValueRecords().size() );
+                }
+            }
         }
     }
 
@@ -284,12 +388,18 @@ public class PropertyCreatorTest
     {
         private final int key;
         private final Value value;
+        private final Boolean assertHasDynamicRecords;
 
         ExpectedProperty( int key, Object value )
         {
-            super();
+            this( key, value, null /*don't care*/ );
+        }
+
+        ExpectedProperty( int key, Object value, Boolean assertHasDynamicRecords )
+        {
             this.key = key;
             this.value = Values.of( value );
+            this.assertHasDynamicRecords = assertHasDynamicRecords;
         }
     }
 
@@ -306,6 +416,11 @@ public class PropertyCreatorTest
     private static ExpectedProperty property( int key, Object value )
     {
         return new ExpectedProperty( key, value );
+    }
+
+    private static ExpectedProperty property( int key, Object value, boolean hasDynamicRecords )
+    {
+        return new ExpectedProperty( key, value, hasDynamicRecords );
     }
 
     private ExpectedRecord record( ExpectedProperty... properties )
@@ -380,31 +495,13 @@ public class PropertyCreatorTest
         }
     }
 
-    private static class PropertyRecordLoader implements Loader<PropertyRecord,PrimitiveRecord>
+    private long propertyRecordsInUse()
     {
-        private final Loader<PropertyRecord,PrimitiveRecord> actual = Loaders.propertyLoader( null );
+        return propertyStore.getHighId();
+    }
 
-        @Override
-        public PropertyRecord newUnused( long key, PrimitiveRecord additionalData )
-        {
-            return actual.newUnused( key, additionalData );
-        }
-
-        @Override
-        public PropertyRecord load( long key, PrimitiveRecord additionalData )
-        {
-            return null;
-        }
-
-        @Override
-        public void ensureHeavy( PropertyRecord record )
-        {
-        }
-
-        @Override
-        public PropertyRecord clone( PropertyRecord record )
-        {
-            return record.clone();
-        }
+    private long dynamicStringRecordsInUse()
+    {
+        return propertyStore.getStringStore().getHighId();
     }
 }
