@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.state;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import java.util.Iterator;
 import java.util.function.Consumer;
@@ -31,6 +31,8 @@ import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.transaction.state.PropertyTraverser;
+import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.values.storable.Value;
 
@@ -47,7 +49,7 @@ public class PropertyCreator
         this( propertyStore.getStringStore(), propertyStore.getArrayStore(), propertyStore, traverser, propertyStore.allowStorePointsAndTemporal() );
     }
 
-    public PropertyCreator( DynamicRecordAllocator stringRecordAllocator, DynamicRecordAllocator arrayRecordAllocator, IdSequence propertyRecordIdGenerator,
+    PropertyCreator( DynamicRecordAllocator stringRecordAllocator, DynamicRecordAllocator arrayRecordAllocator, IdSequence propertyRecordIdGenerator,
             PropertyTraverser traverser, boolean allowStorePointsAndTemporal )
     {
         this.stringRecordAllocator = stringRecordAllocator;
@@ -136,7 +138,7 @@ public class PropertyCreator
 
         // At this point we haven't added the property block, although we may have found room for it
         // along the way. If we didn't then just create a new record, it's fine
-        PropertyRecord freeHost = null;
+        PropertyRecord freeHost;
         if ( freeHostProxy == null )
         {
             // We couldn't find free space along the way, so create a new host record
@@ -204,8 +206,7 @@ public class PropertyCreator
         return createPropertyChain( owner, properties, propertyRecords, p -> {} );
     }
 
-    public long createPropertyChain( PrimitiveRecord owner, Iterator<PropertyBlock> properties,
-            RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords,
+    private long createPropertyChain( PrimitiveRecord owner, Iterator<PropertyBlock> properties, RecordAccess<PropertyRecord,PrimitiveRecord> propertyRecords,
             Consumer<PropertyRecord> createdPropertyRecords )
     {
         if ( properties == null || !properties.hasNext() )

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.state;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -48,7 +48,16 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.Mode;
+import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
+import org.neo4j.kernel.impl.transaction.state.PropertyDeleter;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
+import org.neo4j.kernel.impl.transaction.state.RecordAccessSet;
+import org.neo4j.kernel.impl.transaction.state.RecordChangeSet;
+import org.neo4j.kernel.impl.transaction.state.RecordChanges;
+import org.neo4j.kernel.impl.transaction.state.RecordState;
+import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
+import org.neo4j.kernel.impl.transaction.state.RelationshipDeleter;
+import org.neo4j.kernel.impl.transaction.state.TokenCreator;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageProperty;
@@ -269,12 +278,12 @@ public class TransactionRecordState implements RecordState
         return after;
     }
 
-    public void relCreate( long id, int typeId, long startNodeId, long endNodeId )
+    void relCreate( long id, int typeId, long startNodeId, long endNodeId )
     {
         relationshipCreator.relationshipCreate( id, typeId, startNodeId, endNodeId, recordChangeSet, locks );
     }
 
-    public void relDelete( long relId )
+    void relDelete( long relId )
     {
         relationshipDeleter.relDelete( relId, recordChangeSet, locks );
     }
@@ -336,7 +345,7 @@ public class TransactionRecordState implements RecordState
      *            removed.
      * @param propertyKey The index key of the property.
      */
-    public void relRemoveProperty( long relId, int propertyKey )
+    void relRemoveProperty( long relId, int propertyKey )
     {
         RecordProxy<RelationshipRecord, Void> rel = recordChangeSet.getRelRecords().getOrLoad( relId, null );
         propertyDeleter.removeProperty( rel, propertyKey, recordChangeSet.getPropertyRecords() );
@@ -363,7 +372,7 @@ public class TransactionRecordState implements RecordState
      * @param propertyKey The index of the key of the property to change.
      * @param value The new value of the property.
      */
-    public void relChangeProperty( long relId, int propertyKey, Value value )
+    void relChangeProperty( long relId, int propertyKey, Value value )
     {
         RecordProxy<RelationshipRecord, Void> rel = recordChangeSet.getRelRecords().getOrLoad( relId, null );
         propertyCreator.primitiveSetProperty( rel, propertyKey, value, recordChangeSet.getPropertyRecords() );
@@ -376,7 +385,7 @@ public class TransactionRecordState implements RecordState
      * @param propertyKey The index of the key of the property to change.
      * @param value The new value of the property.
      */
-    public void nodeChangeProperty( long nodeId, int propertyKey, Value value )
+    void nodeChangeProperty( long nodeId, int propertyKey, Value value )
     {
         RecordProxy<NodeRecord, Void> node = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null );
         propertyCreator.primitiveSetProperty( node, propertyKey, value, recordChangeSet.getPropertyRecords() );
@@ -389,7 +398,7 @@ public class TransactionRecordState implements RecordState
      * @param propertyKey The index of the key of the property to add.
      * @param value The value of the property.
      */
-    public void relAddProperty( long relId, int propertyKey, Value value )
+    void relAddProperty( long relId, int propertyKey, Value value )
     {
         RecordProxy<RelationshipRecord, Void> rel = recordChangeSet.getRelRecords().getOrLoad( relId, null );
         propertyCreator.primitiveSetProperty( rel, propertyKey, value, recordChangeSet.getPropertyRecords() );
@@ -401,7 +410,7 @@ public class TransactionRecordState implements RecordState
      * @param propertyKey The index of the key of the property to add.
      * @param value The value of the property.
      */
-    public void nodeAddProperty( long nodeId, int propertyKey, Value value )
+    void nodeAddProperty( long nodeId, int propertyKey, Value value )
     {
         RecordProxy<NodeRecord, Void> node = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null );
         propertyCreator.primitiveSetProperty( node, propertyKey, value, recordChangeSet.getPropertyRecords() );
@@ -425,7 +434,7 @@ public class TransactionRecordState implements RecordState
      * @param key The key of the property index, as a string.
      * @param id The property index record id.
      */
-    public void createPropertyKeyToken( String key, long id )
+    void createPropertyKeyToken( String key, long id )
     {
         TokenCreator<PropertyKeyTokenRecord> creator =
                 new TokenCreator<>( neoStores.getPropertyKeyTokenStore() );
@@ -438,7 +447,7 @@ public class TransactionRecordState implements RecordState
      * @param name The key of the property index, as a string.
      * @param id The property index record id.
      */
-    public void createLabelToken( String name, long id )
+    void createLabelToken( String name, long id )
     {
         TokenCreator<LabelTokenRecord> creator =
                 new TokenCreator<>( neoStores.getLabelTokenStore() );
@@ -452,7 +461,7 @@ public class TransactionRecordState implements RecordState
      * @param name The name of the relationship type.
      * @param id The id of the new relationship type record.
      */
-    public void createRelationshipTypeToken( String name, long id )
+    void createRelationshipTypeToken( String name, long id )
     {
         TokenCreator<RelationshipTypeTokenRecord> creator =
                 new TokenCreator<>( neoStores.getRelationshipTypeTokenStore() );
@@ -535,7 +544,7 @@ public class TransactionRecordState implements RecordState
      *  @param propertyKey The index of the key of the property to add.
      * @param value The value of the property.
      */
-    public void graphAddProperty( int propertyKey, Value value )
+    void graphAddProperty( int propertyKey, Value value )
     {
         propertyCreator.primitiveSetProperty( getOrLoadNeoStoreRecord(), propertyKey, value,
                 recordChangeSet.getPropertyRecords() );
@@ -548,7 +557,7 @@ public class TransactionRecordState implements RecordState
      * @param propertyKey The index of the key of the property to change.
      * @param value The new value of the property.
      */
-    public void graphChangeProperty( int propertyKey, Value value )
+    void graphChangeProperty( int propertyKey, Value value )
     {
         propertyCreator.primitiveSetProperty( getOrLoadNeoStoreRecord(), propertyKey, value,
                 recordChangeSet.getPropertyRecords() );
@@ -560,13 +569,13 @@ public class TransactionRecordState implements RecordState
      *
      * @param propertyKey The index key of the property.
      */
-    public void graphRemoveProperty( int propertyKey )
+    void graphRemoveProperty( int propertyKey )
     {
         RecordProxy<NeoStoreRecord, Void> recordChange = getOrLoadNeoStoreRecord();
         propertyDeleter.removeProperty( recordChange, propertyKey, recordChangeSet.getPropertyRecords() );
     }
 
-    public void createSchemaRule( SchemaRule schemaRule )
+    void createSchemaRule( SchemaRule schemaRule )
     {
         for ( DynamicRecord change : recordChangeSet.getSchemaRuleChanges()
                 .create( schemaRule.getId(), schemaRule )
@@ -577,7 +586,7 @@ public class TransactionRecordState implements RecordState
         }
     }
 
-    public void dropSchemaRule( SchemaRule rule )
+    void dropSchemaRule( SchemaRule rule )
     {
         RecordProxy<SchemaRecord, SchemaRule> change =
                 recordChangeSet.getSchemaRuleChanges().getOrLoad( rule.getId(), rule );
@@ -589,7 +598,7 @@ public class TransactionRecordState implements RecordState
         records.setInUse( false );
     }
 
-    public void changeSchemaRule( SchemaRule rule, SchemaRule updatedRule )
+    private void changeSchemaRule( SchemaRule rule, SchemaRule updatedRule )
     {
         //Read the current record
         RecordProxy<SchemaRecord,SchemaRule> change = recordChangeSet.getSchemaRuleChanges()
@@ -605,19 +614,19 @@ public class TransactionRecordState implements RecordState
         dynamicRecords.setDynamicRecords( schemaStore.allocateFrom( updatedRule ) );
     }
 
-    public void addLabelToNode( long labelId, long nodeId )
+    void addLabelToNode( long labelId, long nodeId )
     {
         NodeRecord nodeRecord = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null ).forChangingData();
         parseLabelsField( nodeRecord ).add( labelId, nodeStore, nodeStore.getDynamicLabelStore() );
     }
 
-    public void removeLabelFromNode( long labelId, long nodeId )
+    void removeLabelFromNode( long labelId, long nodeId )
     {
         NodeRecord nodeRecord = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null ).forChangingData();
         parseLabelsField( nodeRecord ).remove( labelId, nodeStore );
     }
 
-    public void setConstraintIndexOwner( StoreIndexDescriptor storeIndex, long constraintId )
+    void setConstraintIndexOwner( StoreIndexDescriptor storeIndex, long constraintId )
     {
         StoreIndexDescriptor updatedStoreIndex = storeIndex.withOwningConstraint( constraintId );
         changeSchemaRule( storeIndex, updatedStoreIndex );

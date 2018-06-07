@@ -44,14 +44,8 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
-<<<<<<< HEAD
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
-=======
-import org.neo4j.kernel.impl.core.LabelTokenHolder;
->>>>>>> A bunch of tests avoids accessing NeoStores directly
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -175,15 +169,8 @@ public class TestRecoveryScenarios
         try ( org.neo4j.internal.kernel.api.Transaction tx = db.getDependencyResolver().resolveDependency( Kernel.class ).beginTransaction(
                 explicit, LoginContext.AUTH_DISABLED ) )
         {
-<<<<<<< HEAD
-            CountsTracker tracker = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
-                    .testAccessNeoStores().getCounts();
-            assertEquals( 0, tracker.nodeCount( -1, newDoubleLongRegister() ).readSecond() );
-            final TokenHolder holder = db.getDependencyResolver().resolveDependency( TokenHolders.class ).labelTokens();
-=======
             assertEquals( 0, tx.dataRead().countsForNode( -1 ) );
-            final LabelTokenHolder holder = db.getDependencyResolver().resolveDependency( LabelTokenHolder.class );
->>>>>>> A bunch of tests avoids accessing NeoStores directly
+            final TokenHolder holder = db.getDependencyResolver().resolveDependency( TokenHolders.class ).labelTokens();
             int labelId = holder.getIdByName( label.name() );
             assertEquals( 0, tx.dataRead().countsForNode( labelId ) );
             tx.success();

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.state;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
@@ -81,8 +81,20 @@ import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
+import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
+import org.neo4j.kernel.impl.transaction.state.Loaders;
+import org.neo4j.kernel.impl.transaction.state.OnlineIndexUpdates;
+import org.neo4j.kernel.impl.transaction.state.PrepareTrackingRecordFormats;
+import org.neo4j.kernel.impl.transaction.state.PropertyDeleter;
+import org.neo4j.kernel.impl.transaction.state.PropertyTraverser;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
+
 import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.kernel.impl.transaction.state.RecordChangeSet;
+import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
+import org.neo4j.kernel.impl.transaction.state.RelationshipDeleter;
+import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.rule.NeoStoresRule;
@@ -124,14 +136,12 @@ public class TransactionRecordStateTest
     private final long[] secondLabelId = new long[]{4};
     private final long[] bothLabelIds = new long[]{3, 4};
 
-    public static void assertRelationshipGroupDoesNotExist( RecordChangeSet recordChangeSet, NodeRecord node,
-            int type )
+    private static void assertRelationshipGroupDoesNotExist( RecordChangeSet recordChangeSet, NodeRecord node, int type )
     {
         assertNull( getRelationshipGroup( recordChangeSet, node, type ) );
     }
 
-    public static void assertDenseRelationshipCounts( RecordChangeSet recordChangeSet,
-            long nodeId, int type, int outCount, int inCount )
+    private static void assertDenseRelationshipCounts( RecordChangeSet recordChangeSet, long nodeId, int type, int outCount, int inCount )
     {
         RelationshipGroupRecord group = getRelationshipGroup( recordChangeSet,
                 recordChangeSet.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), type ).forReadingData();

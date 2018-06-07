@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
-import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.TransactionRecordState;
 import org.neo4j.kernel.spi.explicitindex.ExplicitIndexProviderTransaction;
 import org.neo4j.kernel.spi.explicitindex.IndexCommandFactory;
 import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
