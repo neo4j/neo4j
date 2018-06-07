@@ -58,8 +58,8 @@ public class RaftProtocolClientInstallerV2 implements ProtocolInstaller<Orientat
     private final Log log;
     private final NettyPipelineBuilderFactory clientPipelineBuilderFactory;
 
-    public RaftProtocolClientInstallerV2( NettyPipelineBuilderFactory clientPipelineBuilderFactory, List<ModifierProtocolInstaller<Orientation.Client>> modifiers,
-            LogProvider logProvider )
+    public RaftProtocolClientInstallerV2( NettyPipelineBuilderFactory clientPipelineBuilderFactory,
+            List<ModifierProtocolInstaller<Orientation.Client>> modifiers, LogProvider logProvider )
     {
         this.modifiers = modifiers;
         this.log = logProvider.getLog( getClass() );

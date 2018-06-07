@@ -196,7 +196,9 @@ public class RaftMessageDecoder extends ByteToMessageDecoder
     /**
      * Builds the raft message. Should return {@code null} if provided collections does not contain enough data for building the message.
      */
-    interface LazyComposer extends BiFunction<Queue<Long>,Queue<ReplicatedContent>,RaftMessages.RaftMessage> {}
+    interface LazyComposer extends BiFunction<Queue<Long>,Queue<ReplicatedContent>,RaftMessages.RaftMessage>
+    {
+    }
 
     private static LazyComposer noContent( RaftMessages.RaftMessage message )
     {
@@ -250,7 +252,10 @@ public class RaftMessageDecoder extends ByteToMessageDecoder
     {
         private final MemberId from;
 
-        NewEntryRequestComposer( MemberId from ) {this.from = from;}
+        NewEntryRequestComposer( MemberId from )
+        {
+            this.from = from;
+        }
 
         @Override
         public RaftMessages.BaseRaftMessage apply( Queue<Long> rle, Queue<ReplicatedContent> rc )
