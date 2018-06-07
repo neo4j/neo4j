@@ -33,11 +33,12 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
@@ -53,14 +54,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_background_sampling_enabled;
+
 import static org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
+import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
-import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class RebuildCountsTest
 {
     @Test
-    public void shouldRebuildMissingCountsStoreOnStart() throws IOException
+    public void shouldRebuildMissingCountsStoreOnStart() throws IOException, TransactionFailureException
     {
         // given
         createAliensAndHumans();
@@ -71,10 +74,13 @@ public class RebuildCountsTest
         restart( fs );
 
         // then
-        CountsTracker tracker = counts();
-        assertEquals( ALIENS + HUMANS, tracker.nodeCount( -1, newDoubleLongRegister() ).readSecond() );
-        assertEquals( ALIENS, tracker.nodeCount( labelId( ALIEN ), newDoubleLongRegister() ).readSecond() );
-        assertEquals( HUMANS, tracker.nodeCount( labelId( HUMAN ), newDoubleLongRegister() ).readSecond() );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( Kernel.class )
+                .beginTransaction( explicit, AUTH_DISABLED ) )
+        {
+            assertEquals( ALIENS + HUMANS, tx.dataRead().countsForNode( -1 ) );
+            assertEquals( ALIENS, tx.dataRead().countsForNode( labelId( ALIEN ) ) );
+            assertEquals( HUMANS, tx.dataRead().countsForNode( labelId( HUMAN ) ) );
+        }
 
         // and also
         LogMatcherBuilder matcherBuilder = inLog( MetaDataStore.class );
@@ -83,7 +89,7 @@ public class RebuildCountsTest
     }
 
     @Test
-    public void shouldRebuildMissingCountsStoreAfterRecovery() throws IOException
+    public void shouldRebuildMissingCountsStoreAfterRecovery() throws IOException, TransactionFailureException
     {
         // given
         createAliensAndHumans();
@@ -96,10 +102,13 @@ public class RebuildCountsTest
         restart( fs );
 
         // then
-        CountsTracker tracker = counts();
-        assertEquals( ALIENS, tracker.nodeCount( -1, newDoubleLongRegister() ).readSecond() );
-        assertEquals( ALIENS, tracker.nodeCount( labelId( ALIEN ), newDoubleLongRegister() ).readSecond() );
-        assertEquals( 0, tracker.nodeCount( labelId( HUMAN ), newDoubleLongRegister() ).readSecond() );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( Kernel.class )
+                .beginTransaction( explicit, AUTH_DISABLED ) )
+        {
+            assertEquals( ALIENS, tx.dataRead().countsForNode( -1 ) );
+            assertEquals( ALIENS, tx.dataRead().countsForNode( labelId( ALIEN ) ) );
+            assertEquals( 0, tx.dataRead().countsForNode( labelId( HUMAN ) ) );
+        }
 
         // and also
         LogMatcherBuilder matcherBuilder = inLog( MetaDataStore.class );
@@ -147,12 +156,6 @@ public class RebuildCountsTest
             return contextBridge.getKernelTransactionBoundToThisThread( true )
                     .tokenRead().nodeLabel( alien.name() );
         }
-    }
-
-    private CountsTracker counts()
-    {
-        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( RecordStorageEngine.class )
-                .testAccessNeoStores().getCounts();
     }
 
     private void deleteCounts( FileSystemAbstraction snapshot )

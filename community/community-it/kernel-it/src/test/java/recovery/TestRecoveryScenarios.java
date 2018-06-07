@@ -37,15 +37,21 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
+<<<<<<< HEAD
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+=======
+import org.neo4j.kernel.impl.core.LabelTokenHolder;
+>>>>>>> A bunch of tests avoids accessing NeoStores directly
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -58,8 +64,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.register.Registers.newDoubleLongRegister;
-
+import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 
 /**
  * Arbitrary recovery scenarios boiled down to as small tests as possible
@@ -167,14 +172,20 @@ public class TestRecoveryScenarios
 
         // THEN
         // -- really the problem was that recovery threw exception, so mostly assert that.
-        try ( Transaction tx = db.beginTx() )
+        try ( org.neo4j.internal.kernel.api.Transaction tx = db.getDependencyResolver().resolveDependency( Kernel.class ).beginTransaction(
+                explicit, LoginContext.AUTH_DISABLED ) )
         {
+<<<<<<< HEAD
             CountsTracker tracker = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
                     .testAccessNeoStores().getCounts();
             assertEquals( 0, tracker.nodeCount( -1, newDoubleLongRegister() ).readSecond() );
             final TokenHolder holder = db.getDependencyResolver().resolveDependency( TokenHolders.class ).labelTokens();
+=======
+            assertEquals( 0, tx.dataRead().countsForNode( -1 ) );
+            final LabelTokenHolder holder = db.getDependencyResolver().resolveDependency( LabelTokenHolder.class );
+>>>>>>> A bunch of tests avoids accessing NeoStores directly
             int labelId = holder.getIdByName( label.name() );
-            assertEquals( 0, tracker.nodeCount( labelId, newDoubleLongRegister() ).readSecond() );
+            assertEquals( 0, tx.dataRead().countsForNode( labelId ) );
             tx.success();
         }
     }

@@ -33,6 +33,7 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.impl.index.DummyIndexExtensionFactory;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.test.rule.DatabaseRule;
@@ -106,14 +107,15 @@ public class TransactionRepresentationCommitProcessIT
         done.set( true );
         workers.awaitAndThrowOnError();
 
-        NeoStores neoStores = getDependency(RecordStorageEngine.class).testAccessNeoStores();
+        NeoStores neoStores = getDependency( RecordStorageEngine.class ).testAccessNeoStores();
         assertThat( "Count store should be rotated once at least", neoStores.getCounts().txId(), greaterThan( 0L ) );
 
         long lastRotationTx = getDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
+        TransactionIdStore txIdStore = getDependency( TransactionIdStore.class );
         assertEquals( "NeoStore last closed transaction id should be equal last count store rotation transaction id.",
-                neoStores.getMetaDataStore().getLastClosedTransactionId(), lastRotationTx );
+                txIdStore.getLastClosedTransactionId(), lastRotationTx );
         assertEquals( "Last closed transaction should be last rotated tx in count store",
-                neoStores.getMetaDataStore().getLastClosedTransactionId(), neoStores.getCounts().txId() );
+                txIdStore.getLastClosedTransactionId(), neoStores.getCounts().txId() );
     }
 
     private <T> T getDependency( Class<T> clazz )

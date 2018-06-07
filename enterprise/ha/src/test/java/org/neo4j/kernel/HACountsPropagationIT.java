@@ -29,16 +29,16 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.register.Registers.newDoubleLongRegister;
+import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 public class HACountsPropagationIT
 {
@@ -49,7 +49,7 @@ public class HACountsPropagationIT
             .withSharedSetting( HaSettings.pull_interval, PULL_INTERVAL + "ms" );
 
     @Test
-    public void shouldPropagateNodeCountsInHA()
+    public void shouldPropagateNodeCountsInHA() throws TransactionFailureException
     {
         ManagedCluster cluster = clusterRule.startCluster();
         HighlyAvailableGraphDatabase master = cluster.getMaster();
@@ -64,20 +64,17 @@ public class HACountsPropagationIT
 
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
-            CountsTracker counts = counts( db );
-            assertEquals( 2, counts.nodeCount( -1, newDoubleLongRegister() ).readSecond() );
-            assertEquals( 1, counts.nodeCount( 0 /* A */, newDoubleLongRegister() ).readSecond() );
+            try ( org.neo4j.internal.kernel.api.Transaction tx = db.getDependencyResolver().resolveDependency( Kernel.class )
+                    .beginTransaction( explicit, AUTH_DISABLED ) )
+            {
+                assertEquals( 2, tx.dataRead().countsForNode( -1 ) );
+                assertEquals( 1, tx.dataRead().countsForNode( 0 /* A */ ) );
+            }
         }
     }
 
-    private CountsTracker counts( GraphDatabaseAPI db )
-    {
-        return db.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
-                .testAccessNeoStores().getCounts();
-    }
-
     @Test
-    public void shouldPropagateRelationshipCountsInHA()
+    public void shouldPropagateRelationshipCountsInHA() throws TransactionFailureException
     {
         ManagedCluster cluster = clusterRule.startCluster();
         HighlyAvailableGraphDatabase master = cluster.getMaster();
@@ -93,11 +90,14 @@ public class HACountsPropagationIT
 
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
-            CountsTracker counts = counts( db );
-            assertEquals( 1, counts.relationshipCount( -1, -1, -1, newDoubleLongRegister() ).readSecond() );
-            assertEquals( 1, counts.relationshipCount( -1, -1, 0, newDoubleLongRegister() ).readSecond() );
-            assertEquals( 1, counts.relationshipCount( -1, 0, -1, newDoubleLongRegister() ).readSecond() );
-            assertEquals( 1, counts.relationshipCount( -1, 0, 0, newDoubleLongRegister() ).readSecond() );
+            try ( org.neo4j.internal.kernel.api.Transaction tx = db.getDependencyResolver().resolveDependency( Kernel.class )
+                    .beginTransaction( explicit, AUTH_DISABLED ) )
+            {
+                assertEquals( 1, tx.dataRead().countsForRelationship( -1, -1, -1 ) );
+                assertEquals( 1, tx.dataRead().countsForRelationship( -1, -1, 0 ) );
+                assertEquals( 1, tx.dataRead().countsForRelationship( -1, 0, -1 ) );
+                assertEquals( 1, tx.dataRead().countsForRelationship( -1, 0, 0 ) );
+            }
         }
     }
 }

@@ -76,6 +76,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -499,5 +500,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public NeoStores testAccessNeoStores()
     {
         return neoStores;
+    }
+
+    @Override
+    public StoreId getStoreId()
+    {
+        return neoStores.getMetaDataStore().getStoreId();
     }
 }

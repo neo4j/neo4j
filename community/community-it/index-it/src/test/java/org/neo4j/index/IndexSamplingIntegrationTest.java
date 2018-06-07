@@ -31,21 +31,14 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
-import org.neo4j.kernel.impl.store.counts.keys.IndexSampleKey;
-import org.neo4j.kernel.impl.store.counts.keys.IndexStatisticsKey;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
@@ -57,6 +50,8 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 public class IndexSamplingIntegrationTest
 {
@@ -195,29 +190,14 @@ public class IndexSamplingIntegrationTest
         assertEquals( nodes - deletedNodes, indexSizeRegister.readSecond() );
     }
 
-    private long indexId( GraphDatabaseAPI api ) throws IndexNotFoundKernelException
+    private IndexReference indexId( org.neo4j.internal.kernel.api.Transaction tx )
     {
-        ThreadToStatementContextBridge contextBridge =
-                api.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        try ( Transaction tx = api.beginTx() )
-        {
-            KernelTransaction ktx =
-                    contextBridge.getKernelTransactionBoundToThisThread( true );
-            try ( Statement ignore = ktx.acquireStatement() )
-            {
-                IndexingService indexingService =
-                        api.getDependencyResolver().resolveDependency( IndexingService.class );
-                TokenRead tokenRead = ktx.tokenRead();
-                int labelId = tokenRead.nodeLabel( label.name() );
-                int propertyKeyId = tokenRead.propertyKey( property );
-                long indexId = indexingService.getIndexId( SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
-                tx.success();
-                return indexId;
-            }
-        }
+        int labelId = tx.tokenRead().nodeLabel( label.name() );
+        int propertyKeyId = tx.tokenRead().propertyKey( property );
+        return tx.schemaRead().index( labelId, propertyKeyId );
     }
 
-    private DoubleLongRegister fetchIndexSamplingValues( GraphDatabaseService db ) throws IndexNotFoundKernelException
+    private DoubleLongRegister fetchIndexSamplingValues( GraphDatabaseService db ) throws IndexNotFoundKernelException, TransactionFailureException
     {
         try
         {
@@ -225,10 +205,11 @@ public class IndexSamplingIntegrationTest
             db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
             @SuppressWarnings( "deprecation" )
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
-            CountsTracker countsTracker = api.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
-                    .testAccessNeoStores().getCounts();
-            IndexSampleKey key = CountsKeyFactory.indexSampleKey( indexId( api ) );
-            return countsTracker.get( key, Registers.newDoubleLongRegister() );
+            try ( org.neo4j.internal.kernel.api.Transaction tx = api.getDependencyResolver().resolveDependency( Kernel.class )
+                    .beginTransaction( explicit, AUTH_DISABLED ) )
+            {
+                return tx.schemaRead().indexSample( indexId( tx ), Registers.newDoubleLongRegister() );
+            }
         }
         finally
         {
@@ -239,7 +220,7 @@ public class IndexSamplingIntegrationTest
         }
     }
 
-    private DoubleLongRegister fetchIndexSizeValues( GraphDatabaseService db ) throws IndexNotFoundKernelException
+    private DoubleLongRegister fetchIndexSizeValues( GraphDatabaseService db ) throws IndexNotFoundKernelException, TransactionFailureException
     {
         try
         {
@@ -247,10 +228,11 @@ public class IndexSamplingIntegrationTest
             db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
             @SuppressWarnings( "deprecation" )
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
-            CountsTracker countsTracker = api.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
-                    .testAccessNeoStores().getCounts();
-            IndexStatisticsKey key = CountsKeyFactory.indexStatisticsKey( indexId( api ) );
-            return countsTracker.get( key, Registers.newDoubleLongRegister() );
+            try ( org.neo4j.internal.kernel.api.Transaction tx = api.getDependencyResolver().resolveDependency( Kernel.class )
+                    .beginTransaction( explicit, AUTH_DISABLED ) )
+            {
+                return tx.schemaRead().indexUpdatesAndSize( indexId( tx ), Registers.newDoubleLongRegister() );
+            }
         }
         finally
         {

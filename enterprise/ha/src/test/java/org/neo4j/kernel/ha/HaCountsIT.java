@@ -26,27 +26,30 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class HaCountsIT
@@ -135,18 +138,18 @@ public class HaCountsIT
         // when creating a node on the master
         createANode( master, LABEL, PROPERTY_VALUE, PROPERTY_NAME );
         IndexDescriptor schemaIndexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
-        long indexId = awaitOnline( master, schemaIndexDescriptor );
+        awaitOnline( master );
 
         // and the slaves got the updates
         cluster.sync( master );
 
-        long index1 = awaitOnline( slave1, schemaIndexDescriptor );
-        long index2 = awaitOnline( slave2, schemaIndexDescriptor );
+        awaitOnline( slave1 );
+        awaitOnline( slave2 );
 
         // then the slaves has updated counts
-        assertOnIndexCounts( 0, 1, 1, 1, indexId, master );
-        assertOnIndexCounts( 0, 1, 1, 1, index1, slave1 );
-        assertOnIndexCounts( 0, 1, 1, 1, index2, slave2 );
+        assertOnIndexCounts( 0, 1, 1, 1, schemaIndexDescriptor, master );
+        assertOnIndexCounts( 0, 1, 1, 1, schemaIndexDescriptor, slave1 );
+        assertOnIndexCounts( 0, 1, 1, 1, schemaIndexDescriptor, slave2 );
     }
 
     @Test
@@ -155,18 +158,18 @@ public class HaCountsIT
         // when creating a node on the master
         createANode( slave1, LABEL, PROPERTY_VALUE, PROPERTY_NAME );
         IndexDescriptor schemaIndexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
-        long indexId = awaitOnline( master, schemaIndexDescriptor );
+        awaitOnline( master );
 
         // and the updates are propagate in the cluster
         cluster.sync();
 
-        long index1 = awaitOnline( slave1, schemaIndexDescriptor );
-        long index2 = awaitOnline( slave2, schemaIndexDescriptor );
+        awaitOnline( slave1 );
+        awaitOnline( slave2 );
 
         // then the slaves has updated counts
-        assertOnIndexCounts( 0, 1, 1, 1, indexId, master );
-        assertOnIndexCounts( 0, 1, 1, 1, index1, slave1 );
-        assertOnIndexCounts( 0, 1, 1, 1, index2, slave2 );
+        assertOnIndexCounts( 0, 1, 1, 1, schemaIndexDescriptor, master );
+        assertOnIndexCounts( 0, 1, 1, 1, schemaIndexDescriptor, slave1 );
+        assertOnIndexCounts( 0, 1, 1, 1, schemaIndexDescriptor, slave2 );
     }
 
     private void createANode( HighlyAvailableGraphDatabase db, Label label, String value, String property )
@@ -208,13 +211,16 @@ public class HaCountsIT
 
     private void assertOnIndexCounts( int expectedIndexUpdates, int expectedIndexSize,
                                       int expectedUniqueValues, int expectedSampleSize,
-                                      long indexId, HighlyAvailableGraphDatabase db )
+                                      IndexDescriptor indexDescriptor, HighlyAvailableGraphDatabase db )
+            throws TransactionFailureException, IndexNotFoundKernelException
     {
-        CountsTracker counts = counts( db );
-        assertDoubleLongEquals( expectedIndexUpdates, expectedIndexSize,
-                counts.indexUpdatesAndSize( indexId, newDoubleLongRegister() ) );
-        assertDoubleLongEquals( expectedUniqueValues, expectedSampleSize,
-                counts.indexSample( indexId, newDoubleLongRegister() ) );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = db.getDependencyResolver().resolveDependency( Kernel.class )
+                .beginTransaction( explicit, AUTH_DISABLED ) )
+        {
+            IndexReference indexReference = tx.schemaRead().index( indexDescriptor.label(), indexDescriptor.properties() );
+            assertDoubleLongEquals( expectedIndexUpdates, expectedIndexSize, tx.schemaRead().indexUpdatesAndSize( indexReference, newDoubleLongRegister() ) );
+            assertDoubleLongEquals( expectedUniqueValues, expectedSampleSize, tx.schemaRead().indexSample( indexReference, newDoubleLongRegister() ) );
+        }
     }
 
     private void assertDoubleLongEquals( int expectedFirst, int expectedSecond, DoubleLongRegister actualValues )
@@ -224,19 +230,6 @@ public class HaCountsIT
         assertTrue( msg, actualValues.hasValues( expectedFirst, expectedSecond ) );
     }
 
-    private CountsTracker counts( HighlyAvailableGraphDatabase db )
-    {
-        return db.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
-                .testAccessNeoStores().getCounts();
-    }
-
-    private Statement statement( HighlyAvailableGraphDatabase db )
-    {
-        return db.getDependencyResolver()
-                 .resolveDependency( ThreadToStatementContextBridge.class )
-                 .get();
-    }
-
     private KernelTransaction kernelTransaction( HighlyAvailableGraphDatabase db )
     {
         return db.getDependencyResolver()
@@ -244,44 +237,12 @@ public class HaCountsIT
                 .getKernelTransactionBoundToThisThread(true);
     }
 
-    private IndexingService indexingService( HighlyAvailableGraphDatabase db )
+    private void awaitOnline( HighlyAvailableGraphDatabase db )
     {
-        return db.getDependencyResolver().resolveDependency( IndexingService.class );
-    }
-
-    private long awaitOnline( HighlyAvailableGraphDatabase db, IndexDescriptor index )
-            throws KernelException
-    {
-        long start = System.currentTimeMillis();
-        long end = start + 60_000;
-        while ( System.currentTimeMillis() < end )
+        try ( Transaction tx = db.beginTx() )
         {
-            try ( Transaction tx = db.beginTx() )
-            {
-                KernelTransaction transaction = kernelTransaction( db );
-                switch ( transaction.schemaRead().indexGetState( index ) )
-                {
-                case ONLINE:
-                    return indexingService( db ).getIndexId( index.schema() );
-
-                case FAILED:
-                    throw new IllegalStateException( "Index failed instead of becoming ONLINE" );
-
-                default:
-                    break;
-                }
-                tx.success();
-
-                try
-                {
-                    Thread.sleep( 100 );
-                }
-                catch ( InterruptedException e )
-                {
-                    // ignored
-                }
-            }
+            db.schema().awaitIndexesOnline( 60, TimeUnit.SECONDS );
+            tx.success();
         }
-        throw new IllegalStateException( "Index did not become ONLINE within reasonable time" );
     }
 }

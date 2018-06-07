@@ -52,7 +52,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder.DatabaseCreator;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -69,7 +68,6 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.UpdateCapturingIndexProvider;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -115,6 +113,7 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.helpers.collection.Iterables.asList;
+import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.kernel.configuration.Config.defaults;
 
 public class RecoveryIT
@@ -147,11 +146,13 @@ public class RecoveryIT
         File restoreDbStoreDir = copyTransactionLogs();
 
         GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir );
-        NeoStores neoStore = ((GraphDatabaseAPI) recoveredDatabase).getDependencyResolver()
-                .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
-        assertEquals( numberOfNodes, neoStore.getNodeStore().getHighId() );
-        // Make sure id generator has been rebuilt so this doesn't throw null pointer exception
-        assertTrue( neoStore.getNodeStore().nextId() > 0 );
+        try ( Transaction tx = recoveredDatabase.beginTx() )
+        {
+            assertEquals( numberOfNodes, count( recoveredDatabase.getAllNodes() ) );
+
+            // Make sure id generator has been rebuilt so this doesn't throw null pointer exception
+            recoveredDatabase.createNode();
+        }
 
         database.shutdown();
         recoveredDatabase.shutdown();
@@ -174,7 +175,7 @@ public class RecoveryIT
         GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir );
         try ( Transaction transaction = recoveredDatabase.beginTx() )
         {
-            assertEquals( 10, Iterables.count( recoveredDatabase.getAllNodes() ) );
+            assertEquals( 10, count( recoveredDatabase.getAllNodes() ) );
         }
         logProvider.assertContainsMessageContaining( "10% completed" );
         logProvider.assertContainsMessageContaining( "100% completed" );

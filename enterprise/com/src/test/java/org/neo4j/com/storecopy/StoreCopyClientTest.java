@@ -476,8 +476,7 @@ public class StoreCopyClientTest
                     new Monitors().newMonitor( StoreCopyServer.Monitor.class ) ).flushStoresAndStreamStoreFiles( "test", writer, includeLogs );
 
             final StoreId storeId =
-                    original.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
-                            .testAccessNeoStores().getMetaDataStore().getStoreId();
+                    original.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).getStoreId();
 
             ResponsePacker responsePacker = new ResponsePacker( logicalTransactionStore,
                     transactionIdStore, () -> storeId );

@@ -25,21 +25,20 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -62,24 +61,12 @@ public class CountsStoreRecoveryTest
         crashAndRestart();
 
         // then
-        final AtomicInteger number = new AtomicInteger( 0 );
-        counts().accept( new CountsVisitor.Adapter()
+        try ( StorageReader reader = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( StorageEngine.class ).newReader() )
         {
-            @Override
-            public void visitNodeCount( int labelId, long count )
-            {
-                number.incrementAndGet();
-                if ( labelId != -1 )
-                {
-                    assertEquals( 1, count );
-                }
-                else
-                {
-                    assertEquals( 2, count );
-                }
-            }
-        } );
-        assertEquals( 3, number.get() );
+            assertEquals( 1, reader.countsForNode( reader.labelGetForName( "A" ) ) );
+            assertEquals( 1, reader.countsForNode( reader.labelGetForName( "B" ) ) );
+            assertEquals( 2, reader.countsForNode( -1 ) );
+        }
     }
 
     private void flushNeoStoreOnly()
@@ -88,13 +75,6 @@ public class CountsStoreRecoveryTest
                 .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
         metaDataStore.flush();
-    }
-
-    private CountsTracker counts()
-    {
-        return ((GraphDatabaseAPI) db).getDependencyResolver()
-                                      .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores()
-                                      .getCounts();
     }
 
     private void checkPoint() throws IOException
