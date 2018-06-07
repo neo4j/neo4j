@@ -18,7 +18,7 @@
     <packaging>jar</packaging>
     <description>A package for low level tools.</description>
     <properties>
-        <license-text.header>../build/AGPL-3-header.txt</license-text.header>
+        <license-text.header>headers/AGPL-3-header.txt</license-text.header>
         <moduleName>org.neo4j.tools</moduleName>
     </properties>
 

@@ -33,7 +33,7 @@
   </modules>
 
   <properties>
-    <license-text.header>../../build/AGPL-3-header.txt</license-text.header>
+    <license-text.header>headers/AGPL-3-header.txt</license-text.header>
     <!-- other filter properties -->
     <neo4j.version>${project.version}</neo4j.version>
 
@@ -89,7 +89,7 @@
         <groupId>org.neo4j.build.plugins</groupId>
         <artifactId>licensing-maven-plugin</artifactId>
         <configuration>
-          <prependText>notice-agpl-prefix.txt</prependText>
+          <prependText>licensing/notice-agpl-prefix.txt</prependText>
           <excludedGroups>^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1})$</excludedGroups>
         </configuration>
         <executions>
@@ -97,7 +97,7 @@
             <id>list-all-licenses</id>
             <configuration>
               <licensingRequirementFiles combine.children="append">
-                <licensingRequirementFile>licensing-requirements-browser.xml</licensingRequirementFile>
+                <licensingRequirementFile>licensing/licensing-requirements-browser.xml</licensingRequirementFile>
               </licensingRequirementFiles>
             </configuration>
           </execution>
@@ -139,7 +139,7 @@
     <!-- Defined to allow maven to calculate build order, it's used in the plugin above -->
     <dependency>
       <groupId>org.neo4j.build</groupId>
-      <artifactId>licensecheck-config</artifactId>
+      <artifactId>resources</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>

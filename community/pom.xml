@@ -18,7 +18,7 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <license-text.header>../build/GPL-3-header.txt</license-text.header>
+    <license-text.header>headers/GPL-3-header.txt</license-text.header>
   </properties>
 
   <modules>
@@ -54,7 +54,6 @@
     <module>server-plugin-test</module>
     <module>consistency-check</module>
     <module>neo4j-harness</module>
-    <module>licensecheck-config</module>
     <module>dbms</module>
     <module>command-line</module>
     <module>procedure-compiler</module>

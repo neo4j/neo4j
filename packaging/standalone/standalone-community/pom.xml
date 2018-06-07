@@ -27,7 +27,6 @@
   </scm>
 
   <properties>
-    <license-text.header>../../../build/AGPL-3-header.txt</license-text.header>
     <neo4j.mainClass>org.neo4j.server.CommunityEntryPoint</neo4j.mainClass>
   </properties>
 
@@ -104,7 +103,7 @@ terms of the relevant Commercial Agreement.
         <groupId>org.neo4j.build.plugins</groupId>
         <artifactId>licensing-maven-plugin</artifactId>
         <configuration>
-          <prependText>notice-gpl-prefix.txt</prependText>
+          <prependText>licensing/notice-gpl-prefix.txt</prependText>
         </configuration>
         <executions>
           <execution>

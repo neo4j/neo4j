@@ -20,8 +20,8 @@
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
     <properties>
-        <license-text.header>../../build/AGPL-3-header.txt</license-text.header>
-        <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
+        <license-text.header>headers/AGPL-3-header.txt</license-text.header>
+        <licensing.prepend.text>licensing/notice-agpl-prefix.txt</licensing.prepend.text>
         <moduleName>org.neo4j.harness.enterprise</moduleName>
     </properties>
 

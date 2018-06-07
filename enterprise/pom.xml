@@ -24,7 +24,7 @@
   </scm>
 
   <properties>
-    <license-text.header>../build/AGPL-3-header.txt</license-text.header>
+    <license-text.header>headers/AGPL-3-header.txt</license-text.header>
   </properties>
 
   <modules>

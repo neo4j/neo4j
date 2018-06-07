@@ -1,4 +1,4 @@
-Copyright (c) ${inceptionYear}-${currentYear} "Neo4j,"
+Copyright (c) ${project.inceptionYear}-${currentYear} "Neo4j,"
 Neo4j Sweden AB [http://neo4j.com]
 
 This file is part of Neo4j.
