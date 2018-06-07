@@ -106,6 +106,5 @@ object StatementConverters {
     for ((prevParts, pos) <- prevCreate)
       builder += Create(Pattern(prevParts)(pos))(pos)
     builder.result()
-//    clauses
   }
 }

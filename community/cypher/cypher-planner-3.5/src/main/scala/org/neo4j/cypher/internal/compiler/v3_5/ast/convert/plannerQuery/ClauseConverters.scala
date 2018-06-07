@@ -122,7 +122,7 @@ object ClauseConverters {
     val nodes = new ArrayBuffer[CreateNode]()
     val relationships = new ArrayBuffer[CreateRelationship]()
 
-    // We need this locally to avoid creating node twice is they occur
+    // We need this locally to avoid creating nodes twice if they occur
     // multiple times in this clause, but haven't occured before
     val seenPatternNodes = mutable.Set[String]()
     seenPatternNodes ++= builder.allSeenPatternNodes
