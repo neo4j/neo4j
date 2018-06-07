@@ -201,4 +201,24 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
       TestConfiguration(Versions(Versions.V3_1, Versions.V3_3), Planners.Cost, Runtimes.Default)
     failWithError(config, query, List("Expected to find a node at"))
   }
+
+  /*
+   There is a bug in slot-allocation of FOREACH which slots this from executing under slotted. Please adjust
+   the test once that is fixed.
+   */
+  test("foreach with inner function invocation should work ") {
+    // given
+    val foo = createLabeledNode("Foo")
+    val bar = createLabeledNode("Bar")
+    relate(foo, bar)
+
+    // when
+    val query =
+      """MATCH p = (begin)-[*]->(end)
+        |FOREACH (n IN nodes(p) | SET n.marked = true)""".stripMargin
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+
+    // then
+    assertStats(result, propertiesWritten = 2)
+  }
 }
