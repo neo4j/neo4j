@@ -124,7 +124,7 @@ public class LuceneIndexAccessor implements IndexAccessor
     @Override
     public boolean isDirty()
     {
-        return luceneIndex.isValid();
+        return !luceneIndex.isValid();
     }
 
     private class LuceneIndexUpdater implements IndexUpdater
