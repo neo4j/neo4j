@@ -178,6 +178,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
             }
 
             @Override
+            public void cleanupFailed( Throwable throwable )
+            {   // no-op
+            }
+
+            @Override
             public void startupState( boolean clean )
             {   // no-op
             }
@@ -217,6 +222,12 @@ public class GBPTree<KEY,VALUE> implements Closeable
          * Called when cleanup job is closed and lock is released
          */
         void cleanupClosed();
+
+        /**
+         * Called when cleanup job catches a throwable
+         * @param throwable cause of failure
+         */
+        void cleanupFailed( Throwable throwable );
 
         /**
          * Report tree state on startup.
@@ -1096,7 +1107,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             CrashGenerationCleaner crashGenerationCleaner =
                     new CrashGenerationCleaner( pagedFile, bTreeNode, IdSpace.MIN_TREE_NODE_ID, highTreeNodeId,
                             stableGeneration, unstableGeneration, monitor );
-            return new GBPTreeCleanupJob( crashGenerationCleaner, lock, monitor );
+            return new GBPTreeCleanupJob( crashGenerationCleaner, lock, monitor, indexFile );
         }
     }
 

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.labelscan;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
 import java.util.StringJoiner;
 
 import org.neo4j.kernel.api.labelscan.LabelScanStore.Monitor;
@@ -41,43 +43,43 @@ public class LoggingMonitor extends Monitor.Adaptor
     @Override
     public void noIndex()
     {
-        log.info( "No scan store found, this might just be first use. Preparing to rebuild." );
+        log.info( "No label index found, this might just be first use. Preparing to rebuild." );
     }
 
     @Override
     public void notValidIndex()
     {
-        log.warn( "Scan store could not be read. Preparing to rebuild." );
+        log.warn( "Label index could not be read. Preparing to rebuild." );
     }
 
     @Override
     public void rebuilding()
     {
-        log.info( "Rebuilding scan store, this may take a while" );
+        log.info( "Rebuilding label index, this may take a while" );
     }
 
     @Override
     public void rebuilt( long roughNodeCount )
     {
-        log.info( "Scan store rebuilt (roughly " + roughNodeCount + " nodes)" );
+        log.info( "Label index rebuilt (roughly " + roughNodeCount + " nodes)" );
     }
 
     @Override
     public void recoveryCleanupRegistered()
     {
-        log.info( "Scan store cleanup job registered" );
+        log.info( "Label index cleanup job registered" );
     }
 
     @Override
     public void recoveryCleanupStarted()
     {
-        log.info( "Scan store cleanup job started" );
+        log.info( "Label index cleanup job started" );
     }
 
     @Override
     public void recoveryCleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
     {
-        StringJoiner joiner = new StringJoiner( ", ", "Scan store cleanup job finished: ", "" );
+        StringJoiner joiner = new StringJoiner( ", ", "Label index cleanup job finished: ", "" );
         joiner.add( "Number of pages visited: " + numberOfPagesVisited );
         joiner.add( "Number of cleaned crashed pointers: " + numberOfCleanedCrashPointers );
         joiner.add( "Time spent: " + duration( durationMillis ) );
@@ -87,6 +89,12 @@ public class LoggingMonitor extends Monitor.Adaptor
     @Override
     public void recoveryCleanupClosed()
     {
-        log.info( "Scan store cleanup job closed" );
+        log.info( "Label index cleanup job closed" );
+    }
+
+    @Override
+    public void recoveryCleanupFailed( Throwable throwable )
+    {
+        log.info( "Label index cleanup job failed.\nCaused by: " + ExceptionUtils.getStackTrace( throwable ) );
     }
 }

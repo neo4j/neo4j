@@ -70,32 +70,7 @@ class NativeSchemaNumberIndex<KEY extends SchemaNumberKey, VALUE extends SchemaN
 
     private GBPTree.Monitor treeMonitor( )
     {
-        return new GBPTree.Monitor.Adaptor()
-        {
-            @Override
-            public void cleanupRegistered()
-            {
-                monitor.recoveryCleanupRegistered( indexId, descriptor );
-            }
-
-            @Override
-            public void cleanupStarted()
-            {
-                monitor.recoveryCleanupStarted( indexId, descriptor );
-            }
-
-            @Override
-            public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
-            {
-                monitor.recoveryCleanupFinished( indexId, descriptor, numberOfPagesVisited, numberOfCleanedCrashPointers, durationMillis );
-            }
-
-            @Override
-            public void cleanupClosed()
-            {
-                monitor.recoveryCleanupClosed( indexId, descriptor );
-            }
-        };
+        return new NativeIndexTreeMonitor();
     }
 
     private void ensureDirectoryExist() throws IOException
@@ -124,6 +99,39 @@ class NativeSchemaNumberIndex<KEY extends SchemaNumberKey, VALUE extends SchemaN
         if ( tree == null )
         {
             throw new IllegalStateException( "Index has been closed" );
+        }
+    }
+
+    private class NativeIndexTreeMonitor extends GBPTree.Monitor.Adaptor
+    {
+        @Override
+        public void cleanupRegistered()
+        {
+            monitor.recoveryCleanupRegistered( indexId, descriptor );
+        }
+
+        @Override
+        public void cleanupStarted()
+        {
+            monitor.recoveryCleanupStarted( indexId, descriptor );
+        }
+
+        @Override
+        public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
+        {
+            monitor.recoveryCleanupFinished( indexId, descriptor, numberOfPagesVisited, numberOfCleanedCrashPointers, durationMillis );
+        }
+
+        @Override
+        public void cleanupClosed()
+        {
+            monitor.recoveryCleanupClosed( indexId, descriptor );
+        }
+
+        @Override
+        public void cleanupFailed( Throwable throwable )
+        {
+            monitor.recoveryCleanupFailed( indexId, descriptor, throwable );
         }
     }
 }

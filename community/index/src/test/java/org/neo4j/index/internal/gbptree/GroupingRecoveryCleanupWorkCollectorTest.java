@@ -179,7 +179,7 @@ public class GroupingRecoveryCleanupWorkCollectorTest
         }
 
         @Override
-        public Exception getCause()
+        public Throwable getCause()
         {
             return null;
         }

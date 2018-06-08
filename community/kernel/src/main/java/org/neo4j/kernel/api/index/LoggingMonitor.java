@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
 import java.util.StringJoiner;
 
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -69,6 +71,13 @@ public class LoggingMonitor implements SchemaIndexProvider.Monitor
     public void recoveryCleanupClosed( long indexId, IndexDescriptor descriptor )
     {
         log.info( "Schema index cleanup job closed: " + indexDescription( indexId, descriptor ) );
+    }
+
+    @Override
+    public void recoveryCleanupFailed( long indexId, IndexDescriptor descriptor, Throwable throwable )
+    {
+        log.info( "Schema index cleanup job failed: " + indexDescription( indexId, descriptor ) + ".\n" +
+                "Caused by: " + ExceptionUtils.getStackTrace( throwable ) );
     }
 
     private String indexDescription( long indexId, IndexDescriptor indexDescriptor )

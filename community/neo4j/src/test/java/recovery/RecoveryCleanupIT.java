@@ -134,14 +134,14 @@ public class RecoveryCleanupIT
         startDatabase().shutdown();
 
         // then
-        logProvider.assertContainsLogCallContaining( "Scan store cleanup job registered" );
-        logProvider.assertContainsLogCallContaining( "Scan store cleanup job started" );
+        logProvider.assertContainsLogCallContaining( "Label index cleanup job registered" );
+        logProvider.assertContainsLogCallContaining( "Label index cleanup job started" );
         logProvider.assertContainsMessageMatching( Matchers.stringContainsInOrder( Iterables.asIterable(
-                "Scan store cleanup job finished",
+                "Label index cleanup job finished",
                 "Number of pages visited",
                 "Number of cleaned crashed pointers",
                 "Time spent" ) ) );
-        logProvider.assertContainsLogCallContaining( "Scan store cleanup job closed" );
+        logProvider.assertContainsLogCallContaining( "Label index cleanup job closed" );
     }
 
     @Test

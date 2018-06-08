@@ -375,33 +375,7 @@ public class NativeLabelScanStore implements LabelScanStore
 
     private GBPTree.Monitor treeMonitor()
     {
-        return new GBPTree.Monitor.Adaptor()
-        {
-            @Override
-            public void cleanupRegistered()
-            {
-                monitor.recoveryCleanupRegistered();
-            }
-
-            @Override
-            public void cleanupStarted()
-            {
-                monitor.recoveryCleanupStarted();
-            }
-
-            @Override
-            public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
-                    long durationMillis )
-            {
-                monitor.recoveryCleanupFinished( numberOfPagesVisited, numberOfCleanedCrashPointers, durationMillis );
-            }
-
-            @Override
-            public void cleanupClosed()
-            {
-                monitor.recoveryCleanupClosed();
-            }
-        };
+        return new LabelIndexTreeMonitor();
     }
 
     @Override
@@ -499,5 +473,38 @@ public class NativeLabelScanStore implements LabelScanStore
     public boolean isDirty()
     {
         return index == null || index.wasDirtyOnStartup();
+    }
+
+    private class LabelIndexTreeMonitor extends GBPTree.Monitor.Adaptor
+    {
+        @Override
+        public void cleanupRegistered()
+        {
+            monitor.recoveryCleanupRegistered();
+        }
+
+        @Override
+        public void cleanupStarted()
+        {
+            monitor.recoveryCleanupStarted();
+        }
+
+        @Override
+        public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
+        {
+            monitor.recoveryCleanupFinished( numberOfPagesVisited, numberOfCleanedCrashPointers, durationMillis );
+        }
+
+        @Override
+        public void cleanupClosed()
+        {
+            monitor.recoveryCleanupClosed();
+        }
+
+        @Override
+        public void cleanupFailed( Throwable throwable )
+        {
+            monitor.recoveryCleanupFailed( throwable );
+        }
     }
 }

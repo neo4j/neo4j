@@ -19,24 +19,29 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import java.io.File;
+import java.util.StringJoiner;
+
 class GBPTreeCleanupJob implements CleanupJob
 {
     private final CrashGenerationCleaner crashGenerationCleaner;
     private final GBPTreeLock gbpTreeLock;
     private final GBPTree.Monitor monitor;
+    private final File indexFile;
     private volatile boolean needed;
-    private volatile Exception failure;
+    private volatile Throwable failure;
 
     /**
      * @param crashGenerationCleaner {@link CrashGenerationCleaner} to use for cleaning.
      * @param gbpTreeLock {@link GBPTreeLock} to be released when job has either successfully finished or failed.
-     * @param monitor
+     * @param indexFile Target file
      */
-    GBPTreeCleanupJob( CrashGenerationCleaner crashGenerationCleaner, GBPTreeLock gbpTreeLock, GBPTree.Monitor monitor )
+    GBPTreeCleanupJob( CrashGenerationCleaner crashGenerationCleaner, GBPTreeLock gbpTreeLock, GBPTree.Monitor monitor, File indexFile )
     {
         this.crashGenerationCleaner = crashGenerationCleaner;
         this.gbpTreeLock = gbpTreeLock;
         this.monitor = monitor;
+        this.indexFile = indexFile;
         this.needed = true;
 
     }
@@ -54,7 +59,7 @@ class GBPTreeCleanupJob implements CleanupJob
     }
 
     @Override
-    public Exception getCause()
+    public Throwable getCause()
     {
         return failure;
     }
@@ -74,9 +79,20 @@ class GBPTreeCleanupJob implements CleanupJob
             crashGenerationCleaner.clean();
             needed = false;
         }
-        catch ( Exception e )
+        catch ( Throwable e )
         {
+            monitor.cleanupFailed( e );
             failure = e;
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        StringJoiner joiner = new StringJoiner( ", ", "CleanupJob(", ")" );
+        joiner.add( "file=" + indexFile.getAbsolutePath() );
+        joiner.add( "needed=" + needed );
+        joiner.add( "failure=" + (failure == null ? null : failure.toString()) );
+        return joiner.toString();
     }
 }

@@ -84,6 +84,11 @@ public interface LabelScanStore extends Lifecycle
             public void recoveryCleanupClosed()
             {   // empty
             }
+
+            @Override
+            public void recoveryCleanupFailed( Throwable throwable )
+            {   // empty
+            }
         }
 
         void init();
@@ -103,6 +108,8 @@ public interface LabelScanStore extends Lifecycle
         void recoveryCleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis );
 
         void recoveryCleanupClosed();
+
+        void recoveryCleanupFailed( Throwable throwable );
     }
 
     /**

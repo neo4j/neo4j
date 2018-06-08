@@ -40,7 +40,7 @@ public interface CleanupJob extends Runnable
     /**
      * @return Cause of failure if {@link #hasFailed()} or {@code null} if job has not failed.
      */
-    Exception getCause();
+    Throwable getCause();
 
     /**
      * Mark this job as closed and cleanup all it's resources.
@@ -70,7 +70,7 @@ public interface CleanupJob extends Runnable
         }
 
         @Override
-        public Exception getCause()
+        public Throwable getCause()
         {
             return null;
         }
