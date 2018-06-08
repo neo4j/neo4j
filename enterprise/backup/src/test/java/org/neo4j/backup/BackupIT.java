@@ -20,6 +20,7 @@
 package org.neo4j.backup;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -35,6 +36,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import org.neo4j.com.ports.allocation.PortAuthority;
@@ -69,6 +73,7 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -92,12 +97,14 @@ public class BackupIT
     private final TestDirectory testDir = TestDirectory.testDirectory();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final RandomRule random = new RandomRule();
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( testDir )
             .around( fileSystemRule )
             .around( pageCacheRule )
-            .around( SuppressOutput.suppressAll() );
+            .around( SuppressOutput.suppressAll() )
+            .around( random );
 
     @Parameter
     public String recordFormatName;
@@ -114,7 +121,7 @@ public class BackupIT
     }
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         servers = new ArrayList<>();
         serverPath = testDir.directory( "server" );
@@ -133,7 +140,7 @@ public class BackupIT
     }
 
     @Test
-    public void makeSureFullFailsWhenDbExists() throws Exception
+    public void makeSureFullFailsWhenDbExists()
     {
         int backupPort = PortAuthority.allocatePort();
         createInitialDataSet( serverPath );
@@ -153,7 +160,7 @@ public class BackupIT
     }
 
     @Test
-    public void makeSureIncrementalFailsWhenNoDb() throws Exception
+    public void makeSureIncrementalFailsWhenNoDb()
     {
         int backupPort = PortAuthority.allocatePort();
         createInitialDataSet( serverPath );
@@ -211,7 +218,7 @@ public class BackupIT
     }
 
     @Test
-    public void fullThenIncremental() throws Exception
+    public void fullThenIncremental()
     {
         DbRepresentation initialDataSetRepresentation = createInitialDataSet( serverPath );
         int backupPort = PortAuthority.allocatePort();
@@ -232,7 +239,7 @@ public class BackupIT
     }
 
     @Test
-    public void makeSureNoLogFileRemains() throws Exception
+    public void makeSureNoLogFileRemains()
     {
         createInitialDataSet( serverPath );
         int backupPort = PortAuthority.allocatePort();
@@ -258,7 +265,7 @@ public class BackupIT
     }
 
     @Test
-    public void makeSureStoreIdIsEnforced() throws Exception
+    public void makeSureStoreIdIsEnforced()
     {
         // Create data set X on server A
         DbRepresentation initialDataSetRepresentation = createInitialDataSet( serverPath );
@@ -346,7 +353,7 @@ public class BackupIT
     }
 
     @Test
-    public void backupIndexWithNoCommits() throws Exception
+    public void backupIndexWithNoCommits()
     {
         int backupPort = PortAuthority.allocatePort();
         GraphDatabaseService db = null;
@@ -424,7 +431,61 @@ public class BackupIT
     }
 
     @Test
-    public void shouldRetainFileLocksAfterFullBackupOnLiveDatabase() throws Exception
+    public void backupMultipleSchemaIndexes() throws InterruptedException
+    {
+        // given
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        MutableBoolean end = new MutableBoolean();
+        int backupPort = PortAuthority.allocatePort();
+        GraphDatabaseService db = getEmbeddedTestDataBaseService( backupPort );
+        int numberOfIndexedLabels = 100;
+        List<Label> indexedLabels = createIndexes( db, numberOfIndexedLabels );
+
+        // start thread that continuously writes to indexes
+        executorService.submit( () ->
+        {
+            while ( !end.booleanValue() )
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    db.createNode( indexedLabels.get( random.nextInt( numberOfIndexedLabels ) ) ).setProperty( "prop", random.propertyValue() );
+                    tx.success();
+                }
+            }
+        } );
+        executorService.shutdown();
+
+        // create backup
+        OnlineBackup backup = OnlineBackup.from( "127.0.0.1", backupPort ).full( backupPath.getPath() );
+        assertTrue( "Should be consistent", backup.isConsistent() );
+        end.setValue( true );
+        executorService.awaitTermination( 1, TimeUnit.MINUTES );
+        db.shutdown();
+    }
+
+    private List<Label> createIndexes( GraphDatabaseService db, int indexCount )
+    {
+        ArrayList<Label> indexedLabels = new ArrayList<>( indexCount );
+        for ( int i = 0; i < indexCount; i++ )
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                Label label = Label.label( "label" + i );
+                indexedLabels.add( label );
+                db.schema().indexFor( label ).on( "prop" ).create();
+                tx.success();
+            }
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.success();
+        }
+        return indexedLabels;
+    }
+
+    @Test
+    public void shouldRetainFileLocksAfterFullBackupOnLiveDatabase()
     {
         int backupPort = PortAuthority.allocatePort();
         File sourcePath = testDir.directory( "serverdb-lock" );
@@ -447,7 +508,7 @@ public class BackupIT
     }
 
     @Test
-    public void shouldIncrementallyBackupDenseNodes() throws Exception
+    public void shouldIncrementallyBackupDenseNodes()
     {
         int backupPort = PortAuthority.allocatePort();
         GraphDatabaseService db = startGraphDatabase( serverPath, true, backupPort );
@@ -567,7 +628,7 @@ public class BackupIT
         }
 
         @Override
-        protected void startup( File path ) throws Throwable
+        protected void startup( File path )
         {
             GraphDatabaseService db = null;
             try
@@ -601,7 +662,7 @@ public class BackupIT
         return MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
     }
 
-    private ServerInterface startServer( File path, int backupPort ) throws Exception
+    private ServerInterface startServer( File path, int backupPort )
     {
         ServerInterface server = new EmbeddedServer( path, "127.0.0.1:" + backupPort );
         server.awaitStarted();
@@ -609,7 +670,7 @@ public class BackupIT
         return server;
     }
 
-    private void shutdownServer( ServerInterface server ) throws Exception
+    private void shutdownServer( ServerInterface server )
     {
         server.shutdown();
         servers.remove( server );
