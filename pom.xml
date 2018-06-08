@@ -98,11 +98,11 @@
     <junit.version>5.2.0</junit.version>
     <junit.platform.version>1.2.0</junit.platform.version>
 
-    <licensing.year>2018</licensing.year>
+    <currentYear>2018</currentYear>
   </properties>
 
   <modules>
-    <module>build</module>
+    <module>build-resources</module>
     <module>community</module>
     <module>enterprise</module>
     <module>integrationtests</module>
@@ -553,7 +553,7 @@
           <dependencies>
             <dependency>
               <groupId>org.neo4j.build</groupId>
-              <artifactId>resources</artifactId>
+              <artifactId>build-resources</artifactId>
               <version>${project.version}</version>
             </dependency>
           </dependencies>
@@ -593,13 +593,13 @@
               <g4>SLASHSTAR_STYLE</g4>
             </mapping>
             <properties>
-              <currentYear>${licensing.year}</currentYear>
+              <currentYear>${currentYear}</currentYear>
             </properties>
           </configuration>
           <dependencies>
             <dependency>
               <groupId>org.neo4j.build</groupId>
-              <artifactId>resources</artifactId>
+              <artifactId>build-resources</artifactId>
               <version>${project.version}</version>
             </dependency>
           </dependencies>
@@ -785,7 +785,7 @@
           </dependency>
           <dependency>
             <groupId>org.neo4j.build</groupId>
-            <artifactId>resources</artifactId>
+            <artifactId>build-resources</artifactId>
             <version>${project.version}</version>
           </dependency>
         </dependencies>
