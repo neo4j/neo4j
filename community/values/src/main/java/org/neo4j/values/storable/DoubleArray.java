@@ -21,7 +21,6 @@ package org.neo4j.values.storable;
 
 import java.util.Arrays;
 
-import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
@@ -137,6 +136,12 @@ public class DoubleArray extends FloatingPointArray
     @Override
     public String toString()
     {
-        return format( "DoubleArray%s", Arrays.toString( value ) );
+        return format( "%s%s", getTypeName(), Arrays.toString( value ) );
+    }
+
+    @Override
+    public String getTypeName()
+    {
+        return "DoubleArray";
     }
 }

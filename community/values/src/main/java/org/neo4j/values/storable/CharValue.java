@@ -225,6 +225,12 @@ public final class CharValue extends TextValue
     @Override
     public String toString()
     {
-        return format( "Char('%s')", value );
+        return format( "%s('%s')", getTypeName(), value );
+    }
+
+    @Override
+    public String getTypeName()
+    {
+        return "Char";
     }
 }

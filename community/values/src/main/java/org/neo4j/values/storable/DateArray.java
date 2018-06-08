@@ -75,4 +75,10 @@ public class DateArray extends TemporalArray<LocalDate,DateValue>
     {
         return compareToNonPrimitiveArray( (DateArray) otherValue );
     }
+
+    @Override
+    public String getTypeName()
+    {
+        return "DateArray";
+    }
 }

@@ -201,6 +201,12 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
     }
 
     @Override
+    public String getTypeName()
+    {
+        return "Date";
+    }
+
+    @Override
     LocalDate temporal()
     {
         return value;

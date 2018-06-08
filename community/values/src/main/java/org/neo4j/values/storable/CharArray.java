@@ -131,6 +131,12 @@ public class CharArray extends TextArray
     @Override
     public String toString()
     {
-        return format( "CharArray%s", Arrays.toString( value ) );
+        return format( "%s%s", getTypeName(), Arrays.toString( value ) );
+    }
+
+    @Override
+    public String getTypeName()
+    {
+        return "CharArray";
     }
 }

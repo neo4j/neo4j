@@ -88,4 +88,20 @@ public class Labels implements LabelSet
     {
         return labels;
     }
+
+    @Override
+    public int hashCode()
+    {
+        return Arrays.hashCode( labels );
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        if ( obj instanceof LabelSet )
+        {
+            return Arrays.equals( labels, ((LabelSet) obj).all() );
+        }
+        return false;
+    }
 }

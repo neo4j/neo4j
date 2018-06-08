@@ -66,6 +66,12 @@ public abstract class BooleanValue extends ScalarValue
         return hashFunction.update( hash, hashCode() );
     }
 
+    @Override
+    public String getTypeName()
+    {
+        return "Boolean";
+    }
+
     public static final BooleanValue TRUE = new BooleanValue()
     {
         @Override
@@ -120,7 +126,7 @@ public abstract class BooleanValue extends ScalarValue
         @Override
         public String toString()
         {
-            return format( "Boolean('%s')", Boolean.toString( true ) );
+            return format( "%s('%s')", getTypeName(), Boolean.toString( true ) );
         }
     };
 
@@ -178,7 +184,7 @@ public abstract class BooleanValue extends ScalarValue
         @Override
         public String toString()
         {
-            return format( "Boolean('%s')", Boolean.toString( false ) );
+            return format( "%s('%s')", getTypeName(), Boolean.toString( false ) );
         }
     };
 }

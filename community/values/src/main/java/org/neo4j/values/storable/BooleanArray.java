@@ -49,6 +49,12 @@ public class BooleanArray extends ArrayValue
     }
 
     @Override
+    public String getTypeName()
+    {
+        return "BooleanArray";
+    }
+
+    @Override
     public boolean equals( Value other )
     {
         return other.equals( this.value );
@@ -132,6 +138,6 @@ public class BooleanArray extends ArrayValue
     @Override
     public String toString()
     {
-        return format( "BooleanArray%s", Arrays.toString( value ) );
+        return format( "%s%s", getTypeName(), Arrays.toString( value ) );
     }
 }

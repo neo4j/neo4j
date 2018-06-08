@@ -76,6 +76,12 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
         return new TimeValue( OffsetTime.ofInstant( assertValidArgument( () -> Instant.ofEpochSecond( 0, nanosOfDayUTC ) ), offset ) );
     }
 
+    @Override
+    public String getTypeName()
+    {
+        return "Time";
+    }
+
     public static TimeValue parse( CharSequence text, Supplier<ZoneId> defaultZone, CSVHeaderInformation fieldsFromHeader )
     {
         if ( fieldsFromHeader != null )

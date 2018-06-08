@@ -198,6 +198,12 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
     }
 
     @Override
+    public String getTypeName()
+    {
+        return "LocalTime";
+    }
+
+    @Override
     LocalDate getDatePart()
     {
         throw new UnsupportedTemporalUnitException( String.format( "Cannot get the date of: %s", this ) );

@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import java.util.Arrays;
 import java.util.NoSuchElementException;
 
 /**
@@ -63,6 +64,22 @@ public interface LabelSet
         public long[] all()
         {
             return EMPTY;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Arrays.hashCode( EMPTY );
+        }
+
+        @Override
+        public boolean equals( Object obj )
+        {
+            if ( obj instanceof LabelSet )
+            {
+                return ((LabelSet) obj).all().length == 0;
+            }
+            return false;
         }
     };
 }

@@ -287,6 +287,12 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     }
 
     @Override
+    public String getTypeName()
+    {
+        return "LocalDateTime";
+    }
+
+    @Override
     LocalDateTime temporal()
     {
         return value;

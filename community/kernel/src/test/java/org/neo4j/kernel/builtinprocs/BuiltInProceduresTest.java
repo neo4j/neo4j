@@ -502,6 +502,7 @@ public class BuiltInProceduresTest
         new SpecialBuiltInProcedures( "1.3.37", Edition.enterprise.toString() ).accept( procs );
         procs.registerProcedure( BuiltInProcedures.class );
         procs.registerProcedure( BuiltInDbmsProcedures.class );
+        procs.registerProcedure( BuiltInSchemaProcedures.class );
 
         when( tx.acquireStatement() ).thenReturn( statement );
         when( tx.tokenRead() ).thenReturn( tokens );

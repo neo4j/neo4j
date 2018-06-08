@@ -75,4 +75,10 @@ public class LocalTimeArray extends TemporalArray<LocalTime, LocalTimeValue>
     {
         return compareToNonPrimitiveArray( (LocalTimeArray) otherValue );
     }
+
+    @Override
+    public String getTypeName()
+    {
+        return "LocalTimeArray";
+    }
 }

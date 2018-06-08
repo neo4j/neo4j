@@ -138,4 +138,10 @@ public class IntArray extends IntegralArray
     {
         return format( "IntArray%s", Arrays.toString( value ) );
     }
+
+    @Override
+    public String getTypeName()
+    {
+        return "IntegerArray";
+    }
 }

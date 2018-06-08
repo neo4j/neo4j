@@ -64,12 +64,18 @@ public final class LongValue extends IntegralValue
     @Override
     public String toString()
     {
-        return format( "Long(%d)", value );
+        return format( "%s(%d)", getTypeName(), value );
     }
 
     @Override
     public <T> T map( ValueMapper<T> mapper )
     {
         return mapper.mapLong( this );
+    }
+
+    @Override
+    public String getTypeName()
+    {
+        return "Long";
     }
 }

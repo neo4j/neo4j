@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import org.neo4j.internal.kernel.api.LabelSet;
@@ -70,6 +71,22 @@ class NodeData
             public long[] all()
             {
                 return labels;
+            }
+
+            @Override
+            public int hashCode()
+            {
+                return Arrays.hashCode( labels );
+            }
+
+            @Override
+            public boolean equals( Object obj )
+            {
+                if ( obj instanceof LabelSet )
+                {
+                    return Arrays.equals( labels, ((LabelSet) obj).all() );
+                }
+                return false;
             }
         };
     }
