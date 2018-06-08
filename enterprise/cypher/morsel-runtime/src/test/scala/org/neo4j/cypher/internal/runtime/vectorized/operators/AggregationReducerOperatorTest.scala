@@ -23,7 +23,7 @@
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RefSlot
-import org.neo4j.cypher.internal.runtime.vectorized._
+import org.neo4j.cypher.internal.runtime.vectorized.{Morsel, QueryState, _}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.stringValue
@@ -38,8 +38,7 @@ class AggregationReducerOperatorTest extends CypherFunSuite {
     val numberOfLongs = 0
     val numberOfReferences = 2
     val groupSlot = RefSlot(0, nullable = false, CTAny)
-    val aggregation = new AggregationReduceOperator(
-                                                    Array(AggregationOffsets(1, 1, DummyEvenNodeIdAggregation(0))),
+    val aggregation = new AggregationReduceOperator(Array(AggregationOffsets(1, 1, DummyEvenNodeIdAggregation(0))),
                                                     Array(GroupingOffsets(groupSlot, groupSlot, new DummyExpression())))
     val in = 1 to 5 map ( i => {
       val refs = new Array[AnyValue](10)
@@ -53,8 +52,8 @@ class AggregationReducerOperatorTest extends CypherFunSuite {
 
     val out = new Morsel(Array.empty, new Array[AnyValue](20), 2)
     // When
-    aggregation.operate(
-      StartLoopWithEagerData(in.toArray, Iteration(None)), MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
+    aggregation.init(null, null, in)
+      .operate(MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
 
     // Then
     out.refs(0) should equal(stringValue("k1"))
@@ -69,13 +68,11 @@ class AggregationReducerOperatorTest extends CypherFunSuite {
     val numberOfReferences = 3
     val groupSlot1 = RefSlot(0, nullable = false, CTAny)
     val groupSlot2 = RefSlot(1, nullable = false, CTAny)
-    val aggregation = new AggregationReduceOperator(
-                                                    Array(AggregationOffsets(2, 2, DummyEvenNodeIdAggregation(0))),
+    val aggregation = new AggregationReduceOperator(Array(AggregationOffsets(2, 2, DummyEvenNodeIdAggregation(0))),
                                                     Array(GroupingOffsets(groupSlot1, groupSlot1,
                                                                           new DummyExpression()),
                                                           GroupingOffsets(groupSlot2, groupSlot2,
                                                                           new DummyExpression())
-
                                                           ))
     val in = 1 to 5 map ( i => {
       val refs = new Array[AnyValue](15)
@@ -91,8 +88,8 @@ class AggregationReducerOperatorTest extends CypherFunSuite {
 
     val out = new Morsel(Array.empty, new Array[AnyValue](20), 2)
     // When
-    aggregation.operate(
-      StartLoopWithEagerData(in.toArray, Iteration(None)), MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
+    aggregation.init(null, null, in)
+      .operate(MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
 
     // Then
     out.refs(0) should equal(stringValue("k11"))
@@ -132,8 +129,8 @@ class AggregationReducerOperatorTest extends CypherFunSuite {
 
     val out = new Morsel(Array.empty, new Array[AnyValue](20), 2)
     // When
-    aggregation.operate(
-      StartLoopWithEagerData(in.toArray, Iteration(None)), MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
+    aggregation.init(null, null, in)
+      .operate(MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
 
     // Then
     out.refs(0) should equal(stringValue("k21"))
@@ -184,8 +181,8 @@ class AggregationReducerOperatorTest extends CypherFunSuite {
 
     val out = new Morsel(Array.empty, new Array[AnyValue](20), 2)
     // When
-    aggregation.operate(
-      StartLoopWithEagerData(in.toArray, Iteration(None)), MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
+    aggregation.init(null, null, in)
+      .operate(MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
 
     // Then
     out.refs(0) should equal(stringValue("k21"))

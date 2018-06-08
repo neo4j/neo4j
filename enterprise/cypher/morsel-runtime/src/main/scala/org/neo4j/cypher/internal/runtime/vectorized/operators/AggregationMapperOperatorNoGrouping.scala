@@ -34,31 +34,37 @@ the subsequent reduce steps these local aggregations are merged into a single gl
  */
 class AggregationMapperOperatorNoGrouping(aggregations: Array[AggregationOffsets]) extends MiddleOperator {
 
+  override def init(queryContext: QueryContext): OperatorTask = new OTask()
 
-  override def operate(iterationState: Iteration, currentRow: MorselExecutionContext, context: QueryContext, state: QueryState): Unit = {
-    val aggregationMappers = aggregations.map(_.aggregation.createAggregationMapper)
-    val queryState = new OldQueryState(context, resources = null, params = state.params)
+  class OTask() extends OperatorTask {
+    override def operate(currentRow: MorselExecutionContext,
+                         context: QueryContext,
+                         state: QueryState): Unit = {
 
-    //loop over the entire morsel and apply the aggregation
-    while (currentRow.hasMoreRows) {
-      var accCount = 0
-      while (accCount < aggregations.length) {
-        aggregationMappers(accCount).map(currentRow, queryState)
-        accCount += 1
+      val aggregationMappers = aggregations.map(_.aggregation.createAggregationMapper)
+      val queryState = new OldQueryState(context, resources = null, params = state.params)
+
+      //loop over the entire morsel and apply the aggregation
+      while (currentRow.hasMoreRows) {
+        var accCount = 0
+        while (accCount < aggregations.length) {
+          aggregationMappers(accCount).map(currentRow, queryState)
+          accCount += 1
+        }
+        currentRow.moveToNextRow()
+      }
+
+      //Write the local aggregation value to the morsel in order for the
+      //reducer to pick it up later
+      var i = 0
+      currentRow.resetToFirstRow()
+      while (i < aggregations.length) {
+        val aggregation = aggregations(i)
+        currentRow.setRefAt(aggregation.mapperOutputSlot, aggregationMappers(i).result)
+        i += 1
       }
       currentRow.moveToNextRow()
+      currentRow.finishedWriting()
     }
-
-    //Write the local aggregation value to the morsel in order for the
-    //reducer to pick it up later
-    var i = 0
-    currentRow.resetToFirstRow()
-    while (i < aggregations.length) {
-      val aggregation = aggregations(i)
-      currentRow.setRefAt(aggregation.mapperOutputSlot, aggregationMappers(i).result)
-      i += 1
-    }
-    currentRow.moveToNextRow()
-    currentRow.finishedWriting()
   }
 }

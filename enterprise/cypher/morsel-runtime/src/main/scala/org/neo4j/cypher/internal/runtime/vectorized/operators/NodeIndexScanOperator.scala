@@ -25,33 +25,36 @@ package org.neo4j.cypher.internal.runtime.vectorized.operators
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.neo4j.internal.kernel.api.{IndexOrder, NodeValueIndexCursor}
+import org.neo4j.internal.kernel.api.{IndexOrder, IndexReference, NodeValueIndexCursor}
 
 
 class NodeIndexScanOperator(offset: Int, label: Int, propertyKey: Int, argumentSize: SlotConfiguration.Size)
   extends NodeIndexOperator[NodeValueIndexCursor](offset) {
 
-  override def operate(message: Message,
-                       currentRow: MorselExecutionContext,
-                       context: QueryContext,
-                       state: QueryState): Continuation = {
-    var valueIndexCursor: NodeValueIndexCursor  = null
-    var iterationState: Iteration = null
+  override def init(context: QueryContext, state: QueryState, inputMorsel: MorselExecutionContext): ContinuableOperatorTask = {
+    val valueIndexCursor = context.transactionalContext.cursors.allocateNodeValueIndexCursor()
     val read = context.transactionalContext.dataRead
     val index = context.transactionalContext.schemaRead.index(label, propertyKey)
+    new OTask(valueIndexCursor, index)
+  }
 
-    message match {
-      case StartLeafLoop(is) =>
-        valueIndexCursor = context.transactionalContext.cursors.allocateNodeValueIndexCursor()
+  class OTask(valueIndexCursor: NodeValueIndexCursor, index: IndexReference) extends ContinuableOperatorTask {
+
+    var hasMore = false
+    override def operate(currentRow: MorselExecutionContext,
+                         context: QueryContext,
+                         state: QueryState): Unit = {
+
+      val read = context.transactionalContext.dataRead
+
+      if (!hasMore) {
         read.nodeIndexScan(index, valueIndexCursor, IndexOrder.NONE)
-        iterationState = is
-      case ContinueLoopWith(ContinueWithSource(cursor, is)) =>
-        valueIndexCursor = cursor.asInstanceOf[NodeValueIndexCursor]
-        iterationState = is
-      case _ => throw new IllegalStateException()
+      }
+
+      iterate(currentRow, valueIndexCursor, argumentSize)
     }
 
-    iterate(currentRow, valueIndexCursor, iterationState, argumentSize)
+    override def canContinue: Boolean = hasMore
   }
 
   override def addDependency(pipeline: Pipeline): Dependency = NoDependencies

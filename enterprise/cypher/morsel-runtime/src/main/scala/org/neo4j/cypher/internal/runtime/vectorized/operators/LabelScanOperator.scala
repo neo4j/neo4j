@@ -31,29 +31,24 @@ import org.neo4j.internal.kernel.api.NodeLabelIndexCursor
 class LabelScanOperator(offset: Int, label: LazyLabel, argumentSize: SlotConfiguration.Size)
   extends NodeIndexOperator[NodeLabelIndexCursor](offset) {
 
-  override def operate(message: Message,
-                       currentRow: MorselExecutionContext,
-                       context: QueryContext,
-                       state: QueryState): Continuation = {
-    var nodeCursor: NodeLabelIndexCursor  = null
-    var iterationState: Iteration = null
+  override def init(context: QueryContext, state: QueryState, inputMorsel: MorselExecutionContext): ContinuableOperatorTask = {
+    val cursor = context.transactionalContext.cursors.allocateNodeLabelIndexCursor()
     val read = context.transactionalContext.dataRead
     val labelId = label.getOptId(context)
-    if (labelId.isEmpty) return EndOfLoop(iterationState)
+    read.nodeLabelScan(labelId.get.id, cursor)
+    new OTask(cursor)
+  }
 
-    message match {
-      case StartLeafLoop(is) =>
-        nodeCursor = context.transactionalContext.cursors.allocateNodeLabelIndexCursor()
-        read.nodeLabelScan(labelId.get.id,  nodeCursor)
-        iterationState = is
-      case ContinueLoopWith(ContinueWithSource(cursor, is)) =>
-        nodeCursor = cursor.asInstanceOf[NodeLabelIndexCursor]
-        iterationState = is
-      case _ => throw new IllegalStateException()
+  class OTask(nodeCursor: NodeLabelIndexCursor) extends ContinuableOperatorTask {
 
+    var hasMore = false
+    override def operate(currentRow: MorselExecutionContext,
+                         context: QueryContext,
+                         state: QueryState): Unit = {
+      hasMore = iterate(currentRow, nodeCursor, argumentSize)
     }
 
-    iterate(currentRow, nodeCursor, iterationState, argumentSize)
+    override def canContinue: Boolean = hasMore
   }
 
   override def addDependency(pipeline: Pipeline): Dependency = NoDependencies

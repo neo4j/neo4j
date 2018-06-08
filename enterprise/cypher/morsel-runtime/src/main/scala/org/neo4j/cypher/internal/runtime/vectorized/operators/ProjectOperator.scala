@@ -42,15 +42,18 @@ class ProjectOperator(val projectionOps: Map[Slot, Expression]) extends MiddleOp
         ctx.setRefAt(offset, result)
   }.toArray
 
-  override def operate(iterationState: Iteration,
-                       currentRow: MorselExecutionContext,
-                       context: QueryContext,
-                       state: QueryState): Unit = {
-    val queryState = new OldQueryState(context, resources = null, params = state.params)
+  override def init(queryContext: QueryContext): OperatorTask = new OTask()
 
-    while(currentRow.hasMoreRows) {
-      project.foreach(p => p(currentRow, queryState))
-      currentRow.moveToNextRow()
+  class OTask() extends OperatorTask {
+    override def operate(currentRow: MorselExecutionContext,
+                         context: QueryContext,
+                         state: QueryState): Unit = {
+      val queryState = new OldQueryState(context, resources = null, params = state.params)
+
+      while(currentRow.hasMoreRows) {
+        project.foreach(p => p(currentRow, queryState))
+        currentRow.moveToNextRow()
+      }
     }
   }
 }

@@ -32,15 +32,16 @@ import org.opencypher.v9_0.util.symbols
 
 class ProduceResultOperator(slots: SlotConfiguration, fieldNames: Array[String]) extends MiddleOperator {
 
-  override def operate(iterationState: Iteration,
-                       currentRow: MorselExecutionContext,
-                       context: QueryContext,
-                       state: QueryState): Unit = {
-    val resultRow = new MorselResultRow(currentRow, slots, fieldNames, context)
+  override def init(queryContext: QueryContext): OperatorTask = new OTask()
 
-    while(currentRow.hasMoreRows) {
-      state.visitor.visit(resultRow)
-      currentRow.moveToNextRow()
+  class OTask() extends OperatorTask {
+    override def operate(currentRow: MorselExecutionContext, context: QueryContext, state: QueryState): Unit = {
+      val resultRow = new MorselResultRow(currentRow, slots, fieldNames, context)
+
+      while(currentRow.hasMoreRows) {
+        state.visitor.visit(resultRow)
+        currentRow.moveToNextRow()
+      }
     }
   }
 }

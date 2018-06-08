@@ -42,33 +42,40 @@ class AggregationMapperOperator(aggregations: Array[AggregationOffsets], groupin
   private val groupingFunction = AggregationHelper.groupingFunction(groupings)
   private val addGroupingValuesToResult = AggregationHelper.computeGroupingSetter(groupings)(_.mapperOutputSlot)
 
-  override def operate(iterationState: Iteration, currentRow: MorselExecutionContext, context: QueryContext, state: QueryState): Unit = {
+  override def init(queryContext: QueryContext): OperatorTask = new OTask()
 
-    val result = MutableMap[AnyValue, Array[(Int,AggregationMapper)]]()
-    val queryState = new OldQueryState(context, resources = null, params = state.params)
+  class OTask() extends OperatorTask {
+    override def operate(currentRow: MorselExecutionContext,
+                         context: QueryContext,
+                         state: QueryState): Unit = {
 
-    //loop over the entire morsel and apply the aggregation
-    while (currentRow.hasMoreRows) {
-      val groupingValue: AnyValue = groupingFunction(currentRow, queryState)
-      val functions = result
-        .getOrElseUpdate(groupingValue, aggregations.map(a => a.mapperOutputSlot -> a.aggregation.createAggregationMapper))
-      functions.foreach(f => f._2.map(currentRow, queryState))
-      currentRow.moveToNextRow()
-    }
+      val result = MutableMap[AnyValue, Array[(Int,AggregationMapper)]]()
 
-    //reuse and reset morsel context
-    currentRow.resetToFirstRow()
-    result.foreach {
-      case (key, aggregator) =>
-        addGroupingValuesToResult(currentRow, key)
-        var i = 0
-        while (i < aggregations.length) {
-          val (offset, mapper) = aggregator(i)
-          currentRow.setRefAt(offset, mapper.result)
-          i += 1
-        }
+      val queryState = new OldQueryState(context, resources = null, params = state.params)
+
+      //loop over the entire morsel and apply the aggregation
+      while (currentRow.hasMoreRows) {
+        val groupingValue: AnyValue = groupingFunction(currentRow, queryState)
+        val functions = result
+          .getOrElseUpdate(groupingValue, aggregations.map(a => a.mapperOutputSlot -> a.aggregation.createAggregationMapper))
+        functions.foreach(f => f._2.map(currentRow, queryState))
         currentRow.moveToNextRow()
+      }
+
+      //reuse and reset morsel context
+      currentRow.resetToFirstRow()
+      result.foreach {
+        case (key, aggregator) =>
+          addGroupingValuesToResult(currentRow, key)
+          var i = 0
+          while (i < aggregations.length) {
+            val (offset, mapper) = aggregator(i)
+            currentRow.setRefAt(offset, mapper.result)
+            i += 1
+          }
+          currentRow.moveToNextRow()
+      }
+      currentRow.finishedWriting()
     }
-    currentRow.finishedWriting()
   }
 }

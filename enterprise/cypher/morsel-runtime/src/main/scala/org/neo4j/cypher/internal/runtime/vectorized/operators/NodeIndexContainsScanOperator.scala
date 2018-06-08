@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.neo4j.internal.kernel.api.{IndexOrder, IndexQuery, NodeValueIndexCursor}
+import org.neo4j.internal.kernel.api._
 import org.neo4j.values.storable.{TextValue, Values}
 import org.opencypher.v9_0.util.CypherTypeException
 
@@ -35,23 +35,30 @@ class NodeIndexContainsScanOperator(offset: Int, label: Int, propertyKey: Int, v
                                     argumentSize: SlotConfiguration.Size)
   extends NodeIndexOperator[NodeValueIndexCursor](offset) {
 
-  override def operate(message: Message,
-                       currentRow: MorselExecutionContext,
-                       context: QueryContext,
-                       state: QueryState): Continuation = {
-    var valueIndexCursor: NodeValueIndexCursor  = null
-    var iterationState: Iteration = null
+  override def init(context: QueryContext,
+                    state: QueryState,
+                    inputMorsel: MorselExecutionContext): ContinuableOperatorTask = {
+    val valueIndexCursor: NodeValueIndexCursor = context.transactionalContext.cursors.allocateNodeValueIndexCursor()
     val read = context.transactionalContext.dataRead
     val index = context.transactionalContext.schemaRead.index(label, propertyKey)
+    new OTask(valueIndexCursor, index)
+  }
 
-    var nullExpression: Boolean = false
+  class OTask(valueIndexCursor: NodeValueIndexCursor, index: IndexReference) extends ContinuableOperatorTask {
 
-    message match {
-      case StartLeafLoop(is) =>
+    var hasMore = false
+    override def operate(currentRow: MorselExecutionContext,
+                         context: QueryContext,
+                         state: QueryState): Unit = {
+
+      val read = context.transactionalContext.dataRead
+
+      var nullExpression: Boolean = false
+
+      if (!hasMore) {
         val queryState = new OldQueryState(context, resources = null, params = state.params)
         val value = valueExpr(currentRow, queryState)
 
-        valueIndexCursor = context.transactionalContext.cursors.allocateNodeValueIndexCursor()
         value match {
           case value: TextValue =>
             read.nodeIndexSeek(index, valueIndexCursor, IndexOrder.NONE, IndexQuery.stringContains(index.properties()(0), value.stringValue()))
@@ -60,21 +67,16 @@ class NodeIndexContainsScanOperator(offset: Int, label: Int, propertyKey: Int, v
             nullExpression = true
           case x => throw new CypherTypeException(s"Expected a string value, but got $x")
         }
+      }
 
-        iterationState = is
-      case ContinueLoopWith(ContinueWithSource(cursor, is)) =>
-        valueIndexCursor = cursor.asInstanceOf[NodeValueIndexCursor]
-        iterationState = is
-      case _ => throw new IllegalStateException()
+      if (!nullExpression)
+        hasMore = iterate(currentRow, valueIndexCursor, argumentSize)
+      else
+        hasMore = false
     }
 
-    if(!nullExpression)
-      iterate(currentRow, valueIndexCursor, iterationState, argumentSize)
-    else
-      EndOfLoop(iterationState)
+    override def canContinue: Boolean = hasMore
   }
-
-
 
   override def addDependency(pipeline: Pipeline): Dependency = NoDependencies
 }

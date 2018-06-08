@@ -40,6 +40,15 @@ class NodeIndexSeekOperator(offset: Int,
                             override val indexMode: IndexSeekMode = IndexSeek)
   extends Operator with NodeIndexSeeker {
 
+  override def init(context: QueryContext, state: QueryState, currentRow: MorselExecutionContext): ContinuableOperatorTask = {
+    val valueIndexCursor = context.transactionalContext.cursors.allocateNodeValueIndexCursor()
+    val read = context.transactionalContext.dataRead
+    val queryState = new OldQueryState(context, resources = null, params = state.params)
+    val indexReference = reference(context)
+    val nodeIterator = indexSeek(queryState, indexReference, currentRow)
+    new OTask(nodeIterator)
+  }
+
   override val propertyIds: Array[Int] = propertyKeys.map(_.nameId.id).toArray
 
   private var reference: IndexReference = IndexReference.NO_INDEX
@@ -51,42 +60,22 @@ class NodeIndexSeekOperator(offset: Int,
     reference
   }
 
-  override def operate(message: Message,
-                       currentRow: MorselExecutionContext,
-                       context: QueryContext,
-                       state: QueryState): Continuation = {
-    var nodeIterator: Iterator[NodeValue] = null
-    var iterationState: Iteration = null
+  class OTask(nodeIterator: Iterator[NodeValue]) extends ContinuableOperatorTask {
+    override def operate(currentRow: MorselExecutionContext,
+                         context: QueryContext,
+                         state: QueryState): Unit = {
 
-    message match {
-      case StartLeafLoop(is) =>
-        val queryState = new OldQueryState(context, resources = null, params = state.params)
-        val indexReference = reference(context)
-        nodeIterator = indexSeek(queryState, indexReference, currentRow)
-        iterationState = is
-      case ContinueLoopWith(ContinueWithSource(iterator, is)) =>
-        nodeIterator = iterator.asInstanceOf[Iterator[NodeValue]]
-        iterationState = is
-      case _ => throw new IllegalStateException()
+      var processedRows = 0
+      while (currentRow.hasMoreRows && nodeIterator.hasNext) {
+//        iterationState.copyArgumentStateTo(currentRow, argumentSize.nLongs, argumentSize.nReferences)
+        currentRow.setLongAt(offset, nodeIterator.next().id())
+        currentRow.moveToNextRow()
+      }
 
-    }
-   iterate(currentRow, nodeIterator, iterationState)
-  }
-
-  protected def iterate(currentRow: MorselExecutionContext, nodeIterator: Iterator[NodeValue], iterationState: Iteration): Continuation = {
-    while (currentRow.hasMoreRows && nodeIterator.hasNext) {
-      iterationState.copyArgumentStateTo(currentRow, argumentSize.nLongs, argumentSize.nReferences)
-      currentRow.setLongAt(offset, nodeIterator.next().id())
-      currentRow.moveToNextRow()
+      currentRow.finishedWriting()
     }
 
-    currentRow.finishedWriting()
-
-    if (nodeIterator.hasNext)
-      ContinueWithSource(nodeIterator, iterationState)
-    else {
-      EndOfLoop(iterationState)
-    }
+    override def canContinue: Boolean = nodeIterator.hasNext
   }
 
   override def addDependency(pipeline: Pipeline): Dependency = NoDependencies

@@ -26,12 +26,5 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
 
 class ApplyOperator(lhs: Pipeline, rhs: Pipeline) extends MiddleOperator {
-
-  override def operate(iterationState: Iteration,
-                       outputRow: MorselExecutionContext,
-                       context: QueryContext,
-                       state: QueryState): Unit = {
-    throw new UnsupportedOperationException
-  }
-
+  override def init(context: QueryContext): OperatorTask = ???
 }

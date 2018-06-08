@@ -34,16 +34,14 @@ class AggregationReducerOperatorNoGroupingTest extends CypherFunSuite {
     // Given
     val numberOfLongs = 1
     val numberOfReferences = 1
-    val aggregation = new AggregationReduceOperatorNoGrouping(
-                                                              Array(AggregationOffsets(0, 0, DummyEvenNodeIdAggregation(0))))
+    val aggregation = new AggregationReduceOperatorNoGrouping(Array(AggregationOffsets(0, 0, DummyEvenNodeIdAggregation(0))))
     val refs = new Array[AnyValue](10)
     refs(0) = Values.longArray(Array(2,4,42))
     val in = new Morsel(Array.empty, refs, refs.length)
     val out = new Morsel(new Array[Long](10), new Array[AnyValue](10), refs.length)
     // When
-    aggregation.operate(
-      StartLoopWithEagerData(Array(MorselExecutionContext(in, numberOfLongs, numberOfReferences)), Iteration(None)),
-      MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
+    aggregation.init(null, null, Array(MorselExecutionContext(in, numberOfLongs, numberOfReferences)))
+      .operate(MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
 
     // Then
     out.refs(0) should equal(Values.longArray(Array(2,4,42)))
@@ -53,8 +51,7 @@ class AggregationReducerOperatorNoGroupingTest extends CypherFunSuite {
     // Given
     val numberOfLongs = 1
     val numberOfReferences = 1
-    val aggregation = new AggregationReduceOperatorNoGrouping(
-                                                              Array(AggregationOffsets(0, 0, DummyEvenNodeIdAggregation(0))))
+    val aggregation = new AggregationReduceOperatorNoGrouping(Array(AggregationOffsets(0, 0, DummyEvenNodeIdAggregation(0))))
     val in = 1 to 10 map ( i => {
       val refs = new Array[AnyValue](10)
       refs(0) = Values.longArray(Array(2*i))
@@ -63,9 +60,10 @@ class AggregationReducerOperatorNoGroupingTest extends CypherFunSuite {
     })
 
     val out = new Morsel(new Array[Long](10), new Array[AnyValue](10), 10)
+
     // When
-    aggregation.operate(
-      StartLoopWithEagerData(in.toArray, Iteration(None)), MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
+    aggregation.init(null, null, in).operate(MorselExecutionContext(out, numberOfLongs, numberOfReferences),
+                                             null, QueryState(VirtualValues.EMPTY_MAP, null))
 
     // Then
     out.refs(0) should equal(Values.longArray(Array(2,4,6,8,10,12,14,16,18,20)))

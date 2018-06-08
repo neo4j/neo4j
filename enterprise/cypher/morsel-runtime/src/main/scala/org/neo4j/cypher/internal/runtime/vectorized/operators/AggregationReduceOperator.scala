@@ -29,11 +29,11 @@ import org.neo4j.values.AnyValue
 
 import scala.collection.mutable.{Map => MutableMap}
 
-
 /*
 Responsible for reducing the output of AggregationMapperOperatorNoGrouping
  */
-class AggregationReduceOperator(aggregations: Array[AggregationOffsets], groupings: Array[GroupingOffsets]) extends Operator {
+class AggregationReduceOperator(aggregations: Array[AggregationOffsets],
+                                groupings: Array[GroupingOffsets]) extends ReduceOperator {
 
   //These are assigned at compile time to save some time at runtime
   private val addGroupingValuesToResult = AggregationHelper.computeGroupingSetter(groupings)(_.reducerOutputSlot)
@@ -43,36 +43,32 @@ class AggregationReduceOperator(aggregations: Array[AggregationOffsets], groupin
   type MapperOutputSlot = Int
   type ReducerOutputSlot = Int
 
-  override def operate(message: Message, outputRow: MorselExecutionContext, context: QueryContext, state: QueryState): Continuation = {
-    var iterationState: Iteration = null
-    var iterator: Iterator[(GroupingKey, Array[(MapperOutputSlot, ReducerOutputSlot, AggregationReducer)])] = null
+  override def init(queryContext: QueryContext,
+                    state: QueryState,
+                    inputMorsels: Seq[MorselExecutionContext]): ContinuableOperatorTask = {
+    var iterator: Iterator[(GroupingKey, Array[(MapperOutputSlot, ReducerOutputSlot, AggregationReducer)])] =
+      getIterator(inputMorsels.toArray)
+    new OTask(iterator)
+  }
 
-    message match {
-      case StartLoopWithEagerData(inputs, is) =>
-        iterationState = is
-        iterator = getIterator(inputs)
+  class OTask(iterator: Iterator[(AnyValue, Array[(Int, Int, AggregationReducer)])]) extends ContinuableOperatorTask {
+    override def operate(outputRow: MorselExecutionContext, context: QueryContext, state: QueryState): Unit = {
 
-      case ContinueLoopWith(ContinueWithSource(it: Iterator[_], is)) =>
-        iterator = it.asInstanceOf[Iterator[(GroupingKey, Array[(MapperOutputSlot, ReducerOutputSlot, AggregationReducer)])]]
-        iterationState = is
-      case _ => throw new IllegalStateException()
-    }
-
-    while (iterator.hasNext && outputRow.hasMoreRows) {
-      val (key, aggregator) = iterator.next()
-      addGroupingValuesToResult(outputRow, key)
-      var i = 0
-      while (i < aggregations.length) {
-        val (_, offset, reducer) = aggregator(i)
-        outputRow.setRefAt(offset, reducer.result)
-        i += 1
+      while (iterator.hasNext && outputRow.hasMoreRows) {
+        val (key, aggregator) = iterator.next()
+        addGroupingValuesToResult(outputRow, key)
+        var i = 0
+        while (i < aggregations.length) {
+          val (_, offset, reducer) = aggregator(i)
+          outputRow.setRefAt(offset, reducer.result)
+          i += 1
+        }
+        outputRow.moveToNextRow()
       }
-      outputRow.moveToNextRow()
+      outputRow.finishedWriting()
     }
-    outputRow.finishedWriting()
 
-    if (iterator.hasNext) ContinueWithSource(iterator, iterationState)
-    else EndOfLoop(iterationState)
+    override def canContinue: Boolean = iterator.hasNext
   }
 
   private def getIterator(inputRows: Array[MorselExecutionContext]) = {

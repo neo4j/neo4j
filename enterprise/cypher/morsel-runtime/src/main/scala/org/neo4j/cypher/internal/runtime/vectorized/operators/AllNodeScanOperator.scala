@@ -29,47 +29,44 @@ import org.neo4j.internal.kernel.api.NodeCursor
 
 class AllNodeScanOperator(offset: Int, argumentSize: SlotConfiguration.Size) extends Operator {
 
-  override def operate(message: Message,
-                       currentRow: MorselExecutionContext,
-                       context: QueryContext,
-                       state: QueryState): Continuation = {
-    var nodeCursor: NodeCursor = null
-    var iterationState: Iteration = null
-    val read = context.transactionalContext.dataRead
+  override def init(queryContext: QueryContext,
+                    state: QueryState,
+                    inputMorsel: MorselExecutionContext): ContinuableOperatorTask = {
+    val nodeCursor = queryContext.transactionalContext.cursors.allocateNodeCursor()
+    queryContext.transactionalContext.dataRead.allNodesScan(nodeCursor)
+    new OTask(nodeCursor)
+  }
 
-    message match {
-      case StartLeafLoop(is) =>
-        nodeCursor = context.transactionalContext.cursors.allocateNodeCursor()
-        read.allNodesScan(nodeCursor)
-        iterationState = is
-      case ContinueLoopWith(ContinueWithSource(cursor, is)) =>
-        nodeCursor = cursor.asInstanceOf[NodeCursor]
-        iterationState = is
-      case _ => throw new IllegalStateException()
-    }
+  class OTask(var nodeCursor: NodeCursor) extends ContinuableOperatorTask {
 
-    var cursorHasMore = true
+    var hasMore = true
 
-    while (currentRow.hasMoreRows && cursorHasMore) {
-      cursorHasMore = nodeCursor.next()
-      if (cursorHasMore) {
-        iterationState.copyArgumentStateTo(currentRow, argumentSize.nLongs, argumentSize.nReferences)
-        currentRow.setLongAt(offset, nodeCursor.nodeReference())
-        currentRow.moveToNextRow()
+    override def operate(currentRow: MorselExecutionContext,
+                         context: QueryContext,
+                         state: QueryState): Unit = {
+
+      var cursorHasMore = true
+
+      while (currentRow.hasMoreRows && cursorHasMore) {
+        cursorHasMore = nodeCursor.next()
+        if (cursorHasMore) {
+//          iterationState.copyArgumentStateTo(currentRow, argumentSize.nLongs, argumentSize.nReferences)
+          currentRow.setLongAt(offset, nodeCursor.nodeReference())
+          currentRow.moveToNextRow()
+      }
+
+      currentRow.finishedWriting()
+
+        if (!hasMore) {
+          if (nodeCursor != null) {
+            nodeCursor.close()
+            nodeCursor = null
+          }
+        }
       }
     }
 
-    currentRow.finishedWriting()
-
-    if (cursorHasMore)
-      ContinueWithSource(nodeCursor, iterationState)
-    else {
-      if (nodeCursor != null) {
-        nodeCursor.close()
-        nodeCursor = null
-      }
-      EndOfLoop(iterationState)
-    }
+    override def canContinue: Boolean = hasMore
   }
 
   override def addDependency(pipeline: Pipeline): Dependency = NoDependencies
