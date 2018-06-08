@@ -87,6 +87,7 @@
 
     <license-text.header>headers/AGPL-3-header.txt</license-text.header>
 
+    <openCypher.frontend.version>9.0.1</openCypher.frontend.version>
     <scala-maven-plugin.version>3.3.2</scala-maven-plugin.version>
     <scala.version>2.11.12</scala.version>
     <scala.binary.version>2.11</scala.binary.version>

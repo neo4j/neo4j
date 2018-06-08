@@ -1,0 +1,297 @@
+/*
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.commandline.dbms;
+
+import org.apache.commons.lang3.mutable.MutableLong;
+import org.hamcrest.Matcher;
+import org.hamcrest.Matchers;
+import org.junit.Rule;
+import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.StringReader;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Map;
+
+import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.commandline.admin.RealOutsideWorld;
+import org.neo4j.configuration.ExternalSettings;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.ArrayUtil;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.ByteUnit;
+import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.values.storable.RandomValues;
+import org.neo4j.values.storable.Value;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.bytesToString;
+import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendOsMemory;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.active_database;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
+import static org.neo4j.io.ByteUnit.gibiBytes;
+import static org.neo4j.io.ByteUnit.mebiBytes;
+
+public class MemoryRecommendationsCommandTest
+{
+    @Rule
+    public final TestDirectory directory = TestDirectory.testDirectory();
+
+    @Test
+    public void mustRecommendOSMemory()
+    {
+        assertThat( recommendOsMemory( mebiBytes( 100 ) ), between( mebiBytes( 45 ), mebiBytes( 55 ) ) );
+        assertThat( recommendOsMemory( gibiBytes( 1 ) ), between( mebiBytes( 450 ), mebiBytes( 550 ) ) );
+        assertThat( recommendOsMemory( gibiBytes( 3 ) ), between( mebiBytes( 1256 ), mebiBytes( 1356 ) ) );
+        assertThat( recommendOsMemory( gibiBytes( 192 ) ), between( gibiBytes( 17 ), gibiBytes( 19 ) ) );
+        assertThat( recommendOsMemory( gibiBytes( 1920 ) ), Matchers.greaterThan( gibiBytes( 29 ) ) );
+    }
+
+    @Test
+    public void mustRecommendHeapMemory()
+    {
+        assertThat( MemoryRecommendationsCommand.recommendHeapMemory( mebiBytes( 100 ) ), between( mebiBytes( 45 ), mebiBytes( 55 ) ) );
+        assertThat( MemoryRecommendationsCommand.recommendHeapMemory( gibiBytes( 1 ) ), between( mebiBytes( 450 ), mebiBytes( 550 ) ) );
+        assertThat( MemoryRecommendationsCommand.recommendHeapMemory( gibiBytes( 3 ) ), between( mebiBytes( 1256 ), mebiBytes( 1356 ) ) );
+        assertThat( MemoryRecommendationsCommand.recommendHeapMemory( gibiBytes( 6 ) ), between( mebiBytes( 3000 ), mebiBytes( 3200 ) ) );
+        assertThat( MemoryRecommendationsCommand.recommendHeapMemory( gibiBytes( 192 ) ), between( gibiBytes( 30 ), gibiBytes( 32 ) ) );
+        assertThat( MemoryRecommendationsCommand.recommendHeapMemory( gibiBytes( 1920 ) ), between( gibiBytes( 30 ), gibiBytes( 32 ) ) );
+    }
+
+    @Test
+    public void mustRecommendPageCacheMemory()
+    {
+        assertThat( MemoryRecommendationsCommand.recommendPageCacheMemory( mebiBytes( 100 ) ), between( mebiBytes( 95 ), mebiBytes( 105 ) ) );
+        assertThat( MemoryRecommendationsCommand.recommendPageCacheMemory( gibiBytes( 1 ) ), between( mebiBytes( 95 ), mebiBytes( 105 ) ) );
+        assertThat( MemoryRecommendationsCommand.recommendPageCacheMemory( gibiBytes( 3 ) ), between( mebiBytes( 470 ), mebiBytes( 530 ) ) );
+        assertThat( MemoryRecommendationsCommand.recommendPageCacheMemory( gibiBytes( 6 ) ), between( mebiBytes( 980 ), mebiBytes( 1048 ) ) );
+        assertThat( MemoryRecommendationsCommand.recommendPageCacheMemory( gibiBytes( 192 ) ), between( gibiBytes( 140 ), gibiBytes( 150 ) ) );
+        assertThat( MemoryRecommendationsCommand.recommendPageCacheMemory( gibiBytes( 1920 ) ), between( gibiBytes( 1850 ), gibiBytes( 1900 ) ) );
+
+        // Also never recommend more than 16 TiB of page cache memory, regardless of how much is available.
+        assertThat( MemoryRecommendationsCommand.recommendPageCacheMemory( ByteUnit.exbiBytes( 1 ) ), Matchers.lessThan( ByteUnit.tebiBytes( 17 ) ) );
+    }
+
+    @Test
+    public void bytesToStringMustBeParseableBySettings()
+    {
+        Setting<Long> setting = Settings.buildSetting( "arg", Settings.BYTES ).build();
+        for ( int i = 1; i < 10_000; i++ )
+        {
+            int mebibytes = 75 * i;
+            long expectedBytes = mebiBytes( mebibytes );
+            String bytesToString = bytesToString( expectedBytes );
+            long actualBytes = setting.apply( s -> bytesToString );
+            long tenPercent = (long) (expectedBytes * 0.1);
+            assertThat( mebibytes + "m",
+                    actualBytes,
+                    between( expectedBytes - tenPercent, expectedBytes + tenPercent ) );
+        }
+    }
+
+    private Matcher<Long> between( long lowerBound, long upperBound )
+    {
+        return Matchers.both( Matchers.greaterThanOrEqualTo( lowerBound ) ).and( Matchers.lessThanOrEqualTo( upperBound ) );
+    }
+
+    @Test
+    public void mustPrintRecommendationsAsConfigReadableOutput() throws Exception
+    {
+        StringBuilder output = new StringBuilder();
+        Path homeDir = Paths.get( "home" );
+        Path configDir = Paths.get( "home", "config" );
+        OutsideWorld outsideWorld = new RealOutsideWorld()
+        {
+            @Override
+            public void stdOutLine( String text )
+            {
+                output.append( text ).append( System.lineSeparator() );
+            }
+        };
+        MemoryRecommendationsCommand command = new MemoryRecommendationsCommand( homeDir, configDir, outsideWorld );
+        String heap = bytesToString( MemoryRecommendationsCommand.recommendHeapMemory( gibiBytes( 8 ) ) );
+        String pagecache = bytesToString( MemoryRecommendationsCommand.recommendPageCacheMemory( gibiBytes( 8 ) ) );
+
+        command.execute( new String[]{"--memory=8g"} );
+
+        Map<String,String> stringMap = MapUtil.load( new StringReader( output.toString() ) );
+        assertThat( stringMap.get( ExternalSettings.initialHeapSize.name() ), Matchers.is( heap ) );
+        assertThat( stringMap.get( ExternalSettings.maxHeapSize.name() ), Matchers.is( heap ) );
+        assertThat( stringMap.get( GraphDatabaseSettings.pagecache_memory.name() ), Matchers.is( pagecache ) );
+    }
+
+    @Test
+    public void mustPrintMinimalPageCacheMemorySettingForConfiguredDb() throws Exception
+    {
+        // given
+        StringBuilder output = new StringBuilder();
+        Path homeDir = directory.directory().toPath();
+        Path configDir = homeDir.resolve( "conf" );
+        configDir.toFile().mkdirs();
+        Path configFile = configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME );
+        String databaseName = "mydb";
+        MapUtil.store( MapUtil.stringMap( GraphDatabaseSettings.data_directory.name(), homeDir.toString() ), configFile.toFile() );
+        File storeDir = Config.fromFile( configFile ).withHome( homeDir ).withSetting( active_database, databaseName ).build().get( database_path );
+        createDatabaseWithNativeIndexes( storeDir );
+        OutsideWorld outsideWorld = new RealOutsideWorld()
+        {
+            @Override
+            public void stdOutLine( String text )
+            {
+                output.append( text ).append( System.lineSeparator() );
+            }
+        };
+        MemoryRecommendationsCommand command = new MemoryRecommendationsCommand( homeDir, configDir, outsideWorld );
+        String heap = bytesToString( MemoryRecommendationsCommand.recommendHeapMemory( gibiBytes( 8 ) ) );
+        String pagecache = bytesToString( MemoryRecommendationsCommand.recommendPageCacheMemory( gibiBytes( 8 ) ) );
+
+        // when
+        command.execute( ArrayUtil.array( "--database", databaseName, "--memory", "8g" ) );
+
+        // then
+        String memrecString = output.toString();
+        Map<String,String> stringMap = MapUtil.load( new StringReader( memrecString ) );
+        assertThat( stringMap.get( ExternalSettings.initialHeapSize.name() ), Matchers.is( heap ) );
+        assertThat( stringMap.get( ExternalSettings.maxHeapSize.name() ), Matchers.is( heap ) );
+        assertThat( stringMap.get( GraphDatabaseSettings.pagecache_memory.name() ), Matchers.is( pagecache ) );
+
+        long[] expectedSizes = calculatePageCacheFileSize( storeDir );
+        long expectedPageCacheSize = expectedSizes[0];
+        long expectedLuceneSize = expectedSizes[1];
+        assertThat( memrecString, containsString( "Lucene indexes: " + bytesToString( expectedLuceneSize ) ) );
+        assertThat( memrecString, containsString( "Data volume and native indexes: " + bytesToString( expectedPageCacheSize ) ) );
+    }
+
+    private long[] calculatePageCacheFileSize( File storeDir ) throws IOException
+    {
+        MutableLong pageCacheTotal = new MutableLong();
+        MutableLong luceneTotal = new MutableLong();
+        for ( StoreType storeType : StoreType.values() )
+        {
+            if ( storeType.isRecordStore() )
+            {
+                File file = new File( storeDir, storeType.getStoreFile().storeFileName() );
+                long length = file.length();
+                pageCacheTotal.add( length );
+            }
+        }
+
+        Files.walkFileTree( IndexDirectoryStructure.baseSchemaIndexFolder( storeDir ).toPath(), new SimpleFileVisitor<Path>()
+        {
+            @Override
+            public FileVisitResult visitFile( Path path, BasicFileAttributes attrs ) throws IOException
+            {
+                File file = path.toFile();
+                Path name = path.getName( path.getNameCount() - 3 );
+                boolean isLuceneFile = (path.getNameCount() >= 3 && name.toString().startsWith( "lucene-" )) ||
+                        (path.getNameCount() >= 4 && path.getName( path.getNameCount() - 4 ).toString().equals( "lucene" ));
+                if ( !FailureStorage.DEFAULT_FAILURE_FILE_NAME.equals( file.getName() ) )
+                {
+                    (isLuceneFile ? luceneTotal : pageCacheTotal).add( file.length() );
+                }
+                return FileVisitResult.CONTINUE;
+            }
+        } );
+        return new long[]{pageCacheTotal.longValue(), luceneTotal.longValue()};
+    }
+
+    private void createDatabaseWithNativeIndexes( File storeDir )
+    {
+        // Create one index for every provider that we have
+        for ( GraphDatabaseSettings.SchemaIndex schemaIndex : GraphDatabaseSettings.SchemaIndex.values() )
+        {
+            GraphDatabaseService db =
+                    new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).setConfig( GraphDatabaseSettings.default_schema_provider,
+                            schemaIndex.providerName() ).newGraphDatabase();
+            String key = "key-" + schemaIndex.name();
+            try
+            {
+                Label labelOne = Label.label( "one" );
+                try ( Transaction tx = db.beginTx() )
+                {
+                    db.schema().indexFor( labelOne ).on( key ).create();
+                    tx.success();
+                }
+
+                try ( Transaction tx = db.beginTx() )
+                {
+                    RandomValues randomValues = RandomValues.create();
+                    for ( int i = 0; i < 10_000; i++ )
+                    {
+                        db.createNode( labelOne ).setProperty( key, randomIndexValue( i, randomValues ).asObject());
+                    }
+                    tx.success();
+                }
+            }
+            finally
+            {
+                db.shutdown();
+            }
+        }
+    }
+
+    private Value randomIndexValue( int i, RandomValues randomValues )
+    {
+        switch ( i % 11 )
+        {
+        case 0:
+            return randomValues.nextIntValue();
+        case 1:
+            return randomValues.nextDigitString();
+        case 2:
+            return randomValues.nextDateValue();
+        case 3:
+            return randomValues.nextDateTimeValue();
+        case 4:
+            return randomValues.nextLocalDateTimeValue();
+        case 5:
+            return randomValues.nextDuration();
+        case 6:
+            return randomValues.nextTimeValue();
+        case 7:
+            return randomValues.nextLocalTimeValue();
+        case 8:
+            return randomValues.nextCartesianPoint();
+        case 9:
+            return randomValues.nextCartesian3DPoint();
+        case 10:
+            return randomValues.nextLongArray(  );
+        default:
+            throw new UnsupportedOperationException( "Unexpected" );
+        }
+    }
+}

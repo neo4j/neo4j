@@ -14,7 +14,7 @@
   <name>Neo4j - Community</name>
   <packaging>jar</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
-  <description>A meta package containing the most used Neo4j libraries. Intended use: as a Maven dependency.</description>
+  <description>Neo4j Community Edition</description>
 
   <properties>
     <license-text.header>headers/GPL-3-header.txt</license-text.header>
@@ -76,6 +76,11 @@ the relevant Commercial Agreement.
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-jmx</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-bolt</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

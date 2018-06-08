@@ -23,13 +23,17 @@
 package org.neo4j.server.security.enterprise.auth;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -41,6 +45,8 @@ import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -72,7 +78,6 @@ import static org.hamcrest.Matchers.isA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.bolt.v1.runtime.integration.TransactionIT.createHttpServer;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -1433,6 +1438,43 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             transformed.add( transformedMap );
         }
         return transformed;
+    }
+
+    public static Server createHttpServer(
+            DoubleLatch latch, Barrier.Control innerBarrier, int firstBatchSize, int otherBatchSize )
+    {
+        Server server = new Server( 0 );
+        server.setHandler( new AbstractHandler()
+        {
+            @Override
+            public void handle(
+                    String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response )
+                    throws IOException
+            {
+                response.setContentType( "text/plain; charset=utf-8" );
+                response.setStatus( HttpServletResponse.SC_OK );
+                PrintWriter out = response.getWriter();
+
+                writeBatch( out, firstBatchSize );
+                out.flush();
+                latch.start();
+                innerBarrier.reached();
+
+                latch.finish();
+                writeBatch( out, otherBatchSize );
+                baseRequest.setHandled(true);
+            }
+
+            private void writeBatch( PrintWriter out, int batchSize )
+            {
+                for ( int i = 0; i < batchSize; i++ )
+                {
+                    out.write( format( "%d %d\n", i, i * i ) );
+                    i++;
+                }
+            }
+        } );
+        return server;
     }
 
     private static OffsetDateTime getStartTime()

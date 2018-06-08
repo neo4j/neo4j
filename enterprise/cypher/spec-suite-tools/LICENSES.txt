@@ -4,22 +4,32 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
+  Apache Commons Compress
   Apache Commons Lang
+  Apache Commons Text
   Caffeine cache
   casbah-commons
   casbah-core
   casbah-query
+  Data Mapper for Jackson
   Gherkin Repackaged Dependencies
+  Jackson
   Joda convert
   Joda-Time
+  jPowerShell
+  jProcesses
   json4s-ast
   json4s-core
   json4s-native
+  Lucene codecs
+  Lucene Common Analyzers
   Lucene Core
   Lucene Memory
+  Lucene QueryParsers
   MongoDB Java Driver
   Netty/All-in-One
   nscala-time
+  Objenesis
   openCypher AST for the Cypher Query Language
   openCypher Expressions
   openCypher Front End
@@ -33,6 +43,7 @@ Apache Software License, Version 2.0
   parboiled-scala
   salat-core
   salat-util
+  WMI4Java
 ------------------------------------------------------------------------------
 
                                  Apache License

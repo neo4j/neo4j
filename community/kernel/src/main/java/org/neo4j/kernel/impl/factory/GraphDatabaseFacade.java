@@ -134,14 +134,13 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     private Schema schema;
     private Supplier<IndexManager> indexManager;
     private ThreadToStatementContextBridge statementContext;
-    protected EditionModule editionModule;
     private SPI spi;
     private TransactionalContextFactory contextFactory;
     private Config config;
     private RelationshipTypeTokenHolder relationshipTypeTokenHolder;
 
     /**
-     * This is what you need to implemenent to get your very own {@link GraphDatabaseFacade}. This SPI exists as a thin
+     * This is what you need to implement to get your very own {@link GraphDatabaseFacade}. This SPI exists as a thin
      * layer to make it easy to provide
      * alternate {@link org.neo4j.graphdb.GraphDatabaseService} instances without having to re-implement this whole API
      * implementation.
@@ -200,10 +199,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     /**
      * Create a new Core API facade, backed by the given SPI and using pre-resolved dependencies
      */
-    public void init( EditionModule editionModule, SPI spi, ThreadToStatementContextBridge txBridge, Config config,
+    public void init( SPI spi, ThreadToStatementContextBridge txBridge, Config config,
             RelationshipTypeTokenHolder relationshipTypeTokenHolder )
     {
-        this.editionModule = editionModule;
         this.spi = spi;
         this.config = config;
         this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;

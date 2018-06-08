@@ -26,7 +26,7 @@
     <module>configuration</module>
     <module>resource</module>
     <module>collections</module>
-      <module>concurrent</module>
+    <module>concurrent</module>
     <module>graphdb-api</module>
     <module>procedure-api</module>
     <module>unsafe</module>
@@ -61,6 +61,7 @@
     <module>values</module>
     <module>ssl</module>
     <module>spatial-index</module>
+    <module>community-it</module>
   </modules>
 
   <licenses>

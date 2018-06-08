@@ -151,7 +151,6 @@ import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.ValueUtils;
-import org.neo4j.kernel.internal.EmbeddedGraphDatabase;
 import org.neo4j.kernel.internal.locker.GlobalStoreLocker;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -163,6 +162,7 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchRelationship;
+import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.Boolean.parseBoolean;
@@ -721,8 +721,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     {
         if ( parseBoolean( params.get( GraphDatabaseSettings.allow_upgrade.name() ) ) )
         {
-            throw new IllegalArgumentException( "Batch inserter is not allowed to do upgrade of a store" +
-                                                ", use " + EmbeddedGraphDatabase.class.getSimpleName() + " instead" );
+            throw new IllegalArgumentException( "Batch inserter is not allowed to do upgrade of a store." );
         }
     }
 
@@ -1117,7 +1116,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
     }
 
-    // test-access
+    @VisibleForTesting
     NeoStores getNeoStores()
     {
         return neoStores;

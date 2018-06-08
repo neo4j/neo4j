@@ -23,12 +23,12 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.ir.v3_5.SimplePatternLength
 import org.neo4j.cypher.internal.planner.v3_5.spi.DelegatingGraphStatistics
-import org.opencypher.v9_0.util.{Cardinality, LabelId, RelTypeId}
-import org.opencypher.v9_0.util.Foldable._
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.expressions._
 import org.neo4j.cypher.internal.v3_5.logical.plans.{Limit, _}
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureLargeOptionalMatchStructure
+import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.util.Foldable._
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.{Cardinality, LabelId, RelTypeId}
 
 class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

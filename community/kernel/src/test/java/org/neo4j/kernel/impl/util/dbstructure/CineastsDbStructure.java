@@ -34,8 +34,7 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 // (using org.neo4j.kernel.impl.util.dbstructure.InvocationTracer)
 //
 
-public enum CineastsDbStructure
-implements Visitable<DbStructureVisitor>
+public enum CineastsDbStructure implements Visitable<DbStructureVisitor>
 {
     INSTANCE;
 

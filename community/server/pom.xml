@@ -109,7 +109,7 @@
             <!-- We need this one, or transitive dependencies of kernel
         will end up in the test scope. -->
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-kernel</artifactId>
+            <artifactId>neo4j</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -202,10 +202,10 @@
             <artifactId>jackson-jaxrs</artifactId>
         </dependency>
 
-    <dependency>
-      <groupId>org.bouncycastle</groupId>
-      <artifactId>bcprov-jdk15on</artifactId>
-    </dependency>
+        <dependency>
+          <groupId>org.bouncycastle</groupId>
+          <artifactId>bcprov-jdk15on</artifactId>
+        </dependency>
     <!-- This dependency is needed for Netty to be able to generate
     self signed certificate on a JDK without sun.security.* package -->
         <dependency>
@@ -217,6 +217,13 @@
         <dependency>
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-client</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j.community</groupId>
+            <artifactId>it-test-support</artifactId>
+            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
 

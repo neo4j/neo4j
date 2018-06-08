@@ -35,7 +35,7 @@ import static org.neo4j.kernel.configuration.Settings.FALSE;
 /**
  * Factory for Neo4j database instances with Enterprise Edition features.
  *
- * @see org.neo4j.graphdb.factory.GraphDatabaseFactory
+ * @see GraphDatabaseFactory
  */
 public class EnterpriseGraphDatabaseFactory extends GraphDatabaseFactory
 {
@@ -55,9 +55,7 @@ public class EnterpriseGraphDatabaseFactory extends GraphDatabaseFactory
             public GraphDatabaseService newDatabase( Config config )
             {
                 config.augment( GraphDatabaseSettings.ephemeral, FALSE );
-                return new EnterpriseGraphDatabase( storeDir,
-                        config,
-                        state.databaseDependencies() );
+                return new EnterpriseGraphDatabase( storeDir, config, state.databaseDependencies() );
             }
         };
     }

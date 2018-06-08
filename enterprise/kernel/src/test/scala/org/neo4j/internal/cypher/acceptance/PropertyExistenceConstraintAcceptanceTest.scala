@@ -26,7 +26,6 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v3_5.helpers.ListSupport
 import org.neo4j.kernel.api.exceptions.Status
 
-
 class PropertyExistenceConstraintAcceptanceTest
   extends ExecutionEngineFunSuite
     with QueryStatisticsTestSupport
