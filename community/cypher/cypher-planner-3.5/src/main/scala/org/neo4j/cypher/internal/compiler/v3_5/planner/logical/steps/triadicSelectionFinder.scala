@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{CandidateGenerator, LogicalPlanningContext}
 import org.neo4j.cypher.internal.ir.v3_5.QueryGraph
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.opencypher.v9_0.util.attribution.SameId
-import org.opencypher.v9_0.expressions._
 import org.neo4j.cypher.internal.v3_5.logical.plans.{Expand, ExpandAll, LogicalPlan, Selection}
+import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.util.attribution.SameId
 
 object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
 
@@ -59,10 +59,10 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
   private def findMatchingOuterExpand(positivePredicate: Boolean, triadicPredicate: Expression,
                                               patternExpression: PatternExpression, incomingPredicates: Seq[Expression], expand: Expand, qg: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] = expand match {
     case exp2@Expand(exp1: Expand, _, _, _, _, _, ExpandAll) =>
-      findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, Seq.empty, exp1, exp2.selfThis, qg, context)
+      findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, Seq.empty, exp1, exp2, qg, context)
 
     case exp2@Expand(Selection(innerPredicates, exp1: Expand), _, _, _, _, _, ExpandAll) =>
-      findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, innerPredicates, exp1, exp2.selfThis, qg, context)
+      findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, innerPredicates, exp1, exp2, qg, context)
 
     case _ => Seq.empty
   }

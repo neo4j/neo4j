@@ -20,10 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.v3_5.logical.plans._
-import org.opencypher.v9_0.util.{Rewriter, topDown}
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans._
-import org.opencypher.v9_0.util.attribution.SameId
 import org.opencypher.v9_0.expressions.{Expression, FunctionInvocation}
+import org.opencypher.v9_0.util.attribution.SameId
+import org.opencypher.v9_0.util.{Rewriter, topDown}
 
 import scala.collection.mutable
 
@@ -99,10 +98,10 @@ case object pruningVarExpander extends Rewriter {
         val distinctSet = findDistinctSet(plan)
 
         val innerRewriter = topDown(Rewriter.lift {
-          case expand@VarExpand(lhs, fromId, dir, _, relTypes, toId, _, length, ExpandAll, _, _, _, _, predicates) if distinctSet(expand.selfThis) =>
+          case expand@VarExpand(lhs, fromId, dir, _, relTypes, toId, _, length, ExpandAll, _, _, _, _, predicates) if distinctSet(expand) =>
             if (length.max.get > 1)
               PruningVarExpand(lhs, fromId, dir, relTypes, toId, length.min, length.max.get, predicates)(SameId(expand.id))
-            else expand.selfThis
+            else expand
         })
         plan.endoRewrite(innerRewriter)
 
