@@ -320,15 +320,15 @@ public final class GrabAllocator implements MemoryAllocator
         }
     }
 
-    private static MethodHandle findCleanMethod( MethodHandles.Lookup lookup, Class<?> oldCleaner ) throws IllegalAccessException, NoSuchMethodException
+    private static MethodHandle findCleanMethod( MethodHandles.Lookup lookup, Class<?> cleaner ) throws IllegalAccessException, NoSuchMethodException
     {
-        return lookup.unreflect( oldCleaner.getDeclaredMethod( "clean" ) );
+        return lookup.unreflect( cleaner.getDeclaredMethod( "clean" ) );
     }
 
-    private static MethodHandle findCreationMethod( String methodName, MethodHandles.Lookup lookup, Class<?> oldCleaner )
+    private static MethodHandle findCreationMethod( String methodName, MethodHandles.Lookup lookup, Class<?> cleaner )
             throws IllegalAccessException, NoSuchMethodException
     {
-        return lookup.unreflect( oldCleaner.getDeclaredMethod( methodName, Object.class, Runnable.class ) );
+        return lookup.unreflect( cleaner.getDeclaredMethod( methodName, Object.class, Runnable.class ) );
     }
 
     private static final class CleanerHandles
