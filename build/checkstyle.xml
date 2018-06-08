@@ -8,15 +8,6 @@
   <property name="charset" value="UTF-8"/>
   <property name="fileExtensions" value="java"/>
 
-  <!-- Require license headers (GPL, AGPL or Apache 2.0) -->
-  <module name="RegexpSingleline">
-    <property name="format"
-              value="^(\s|\*)*Copyright \(c\) 2002-[0-9]{4} &quot;Neo Technology,&quot;*$|^(\s|\*)*Licensed to Neo Technology under one or more contributor*$"/>
-    <property name="minimum" value="1"/>
-    <property name="maximum" value="1"/>
-    <property name="message" value="Missing, wrong or duplicated license header"/>
-  </module>
-
   <!-- Prohibit tabs -->
   <module name="FileTabCharacter">
     <property name="eachLine" value="true"/>
