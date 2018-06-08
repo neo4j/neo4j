@@ -117,7 +117,7 @@ public class IndexProcedures implements AutoCloseable
         }
         catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
         {
-            throw new ProcedureException( e.status(), e, "" );
+            throw new ProcedureException( e.status(), e, e.getMessage() );
         }
     }
 

@@ -58,6 +58,7 @@ import org.neo4j.values.storable.TextValue;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -66,6 +67,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE10;
+import static org.neo4j.helpers.Exceptions.rootCause;
 import static org.neo4j.values.storable.Values.stringValue;
 
 @RunWith( Parameterized.class )
@@ -356,7 +358,7 @@ public class EnterpriseCreateIndexProcedureIT extends KernelIntegrationTest
         {
             // then
             // good
-            assertTrue( "correct cause", e.getCause() instanceof UniquePropertyValueValidationException );
+            assertThat( rootCause( e ), instanceOf( UniquePropertyValueValidationException.class ) );
         }
     }
 
