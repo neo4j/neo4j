@@ -64,7 +64,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
-    <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
+    <licensing.prepend.text>licensing/notice-agpl-prefix.txt</licensing.prepend.text>
     <lucene.version>5.5.5</lucene.version>
     <bouncycastle.version>1.59</bouncycastle.version>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
@@ -85,7 +85,7 @@
     <forkCounts>0</forkCounts>
     <maven.build.timestamp.format>yyMMddHHmmssSSS</maven.build.timestamp.format>
 
-    <license-text.header>build/AGPL-3-header.txt</license-text.header>
+    <license-text.header>headers/AGPL-3-header.txt</license-text.header>
 
     <scala-maven-plugin.version>3.3.2</scala-maven-plugin.version>
     <scala.version>2.11.12</scala.version>
@@ -97,10 +97,12 @@
     <jersey.version>1.19.3</jersey.version>
     <junit.version>5.2.0</junit.version>
     <junit.platform.version>1.2.0</junit.platform.version>
-    <checkstyle.strict>true</checkstyle.strict>
+
+    <licensing.year>2018</licensing.year>
   </properties>
 
   <modules>
+    <module>build</module>
     <module>community</module>
     <module>enterprise</module>
     <module>integrationtests</module>
@@ -537,12 +539,12 @@
               </goals>
               <configuration>
                 <licensingRequirementFiles>
-                  <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
+                  <licensingRequirementFile>licensing/licensing-requirements-base.xml</licensingRequirementFile>
                 </licensingRequirementFiles>
                 <thirdPartyLicensingFilename>${project.artifactId}-${project.version}-NOTICE.txt
                 </thirdPartyLicensingFilename>
                 <checkExistingNoticeFile>${project.build.directory}/../NOTICE.txt</checkExistingNoticeFile>
-                <listPrependText>list-prefix.txt</listPrependText>
+                <listPrependText>licensing/list-prefix.txt</listPrependText>
                 <listReport>${project.artifactId}-${project.version}-LICENSES.txt</listReport>
                 <checkExistingLicensesFile>${project.build.directory}/../LICENSES.txt</checkExistingLicensesFile>
               </configuration>
@@ -551,7 +553,53 @@
           <dependencies>
             <dependency>
               <groupId>org.neo4j.build</groupId>
-              <artifactId>licensecheck-config</artifactId>
+              <artifactId>resources</artifactId>
+              <version>${project.version}</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+        <plugin>
+          <groupId>com.mycila</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <version>3.0</version>
+          <executions>
+            <execution>
+              <id>check-licenses</id>
+              <!-- fail as early as possible -->
+              <phase>initialize</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <strictCheck>true</strictCheck>
+            <header>${license-text.header}</header>
+            <includes>
+              <include>src/**/*.java</include>
+              <include>src/**/*.js</include>
+              <include>src/**/*.scala</include>
+              <include>src/**/*.xml</include>
+              <include>src/**/*.feature</include>
+              <include>src/**/*.g4</include>
+            </includes>
+            <excludes>
+              <exclude>**/cypher-shell/*</exclude>
+            </excludes>
+            <mapping>
+              <java>SLASHSTAR_STYLE</java>
+              <scala>SLASHSTAR_STYLE</scala>
+              <feature>SCRIPT_STYLE</feature>
+              <g4>SLASHSTAR_STYLE</g4>
+            </mapping>
+            <properties>
+              <currentYear>${licensing.year}</currentYear>
+            </properties>
+          </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.neo4j.build</groupId>
+              <artifactId>resources</artifactId>
               <version>${project.version}</version>
             </dependency>
           </dependencies>
@@ -687,11 +735,6 @@
           <version>1.4.0</version>
         </plugin>
         <plugin>
-          <groupId>org.neo4j.build.plugins</groupId>
-          <artifactId>license-maven-plugin</artifactId>
-          <version>3</version>
-        </plugin>
-        <plugin>
           <groupId>org.owasp</groupId>
           <artifactId>dependency-check-maven</artifactId>
           <version>3.1.2</version>
@@ -727,11 +770,11 @@
         <artifactId>maven-checkstyle-plugin</artifactId>
         <version>3.0.0</version>
         <configuration>
-          <configLocation>build/checkstyle.xml</configLocation>
+          <configLocation>checkstyle/checkstyle.xml</configLocation>
           <consoleOutput>true</consoleOutput>
           <logViolationsToConsole>true</logViolationsToConsole>
-          <failsOnError>${checkstyle.strict}</failsOnError>
-          <failOnViolation>${checkstyle.strict}</failOnViolation>
+          <failsOnError>true</failsOnError>
+          <failOnViolation>true</failOnViolation>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
         </configuration>
         <dependencies>
@@ -739,6 +782,11 @@
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
             <version>8.10</version>
+          </dependency>
+          <dependency>
+            <groupId>org.neo4j.build</groupId>
+            <artifactId>resources</artifactId>
+            <version>${project.version}</version>
           </dependency>
         </dependencies>
         <executions>
@@ -765,49 +813,6 @@
             </goals>
           </execution>
         </executions>
-      </plugin>
-
-      <!-- Always validate licenses -->
-      <plugin>
-        <groupId>org.neo4j.build.plugins</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>check-licenses</id>
-            <!-- fail as early as possible -->
-            <phase>initialize</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <strictCheck>true</strictCheck>
-          <header>${license-text.header}</header>
-          <includes>
-            <include>src/**/*.java</include>
-            <include>src/**/*.js</include>
-            <include>src/**/*.scala</include>
-            <include>src/**/*.xml</include>
-            <include>src/**/*.feature</include>
-            <include>src/**/*.g4</include>
-          </includes>
-          <excludes>
-            <exclude>**/lib/*.js</exclude>
-            <exclude>**/lib/**/*.js</exclude>
-            <exclude>**/javascript/vend/**</exclude>
-          </excludes>
-          <mapping>
-            <java>SLASHSTAR_STYLE</java>
-            <scala>SLASHSTAR_STYLE</scala>
-            <feature>SCRIPT_STYLE</feature>
-            <g4>SLASHSTAR_STYLE</g4>
-          </mapping>
-          <timestampPropertyName>currentYear</timestampPropertyName>
-          <properties>
-            <inceptionYear>${project.inceptionYear}</inceptionYear>
-          </properties>
-        </configuration>
       </plugin>
 
       <!-- Always enforce -->
@@ -841,6 +846,10 @@
           <plugin>
             <groupId>org.neo4j.build.plugins</groupId>
             <artifactId>licensing-maven-plugin</artifactId>
+          </plugin>
+          <plugin>
+            <groupId>com.mycila</groupId>
+            <artifactId>license-maven-plugin</artifactId>
           </plugin>
         </plugins>
       </build>

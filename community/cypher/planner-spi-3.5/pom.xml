@@ -23,7 +23,7 @@
   </scm>
 
   <properties>
-    <license-text.header>../../../build/GPL-3-header.txt</license-text.header>
+    <license-text.header>headers/GPL-3-header.txt</license-text.header>
     <moduleName>org.neo4j.cypher.internal.planner.v3_5.spi</moduleName>
   </properties>
 

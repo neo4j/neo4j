@@ -18,7 +18,7 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <license-text.header>../../../build/GPL-3-header.txt</license-text.header>
+    <license-text.header>headers/GPL-3-header.txt</license-text.header>
     <moduleName>org.neo4j.cypher.internal.compatibility.v3_5.runtime</moduleName>
   </properties>
 

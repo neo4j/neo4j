@@ -15,7 +15,7 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <license-text.header>../../build/AGPL-3-header.txt</license-text.header>
+    <license-text.header>headers/AGPL-3-header.txt</license-text.header>
     <moduleName>org.neo4j.cluster</moduleName>
   </properties>
 
