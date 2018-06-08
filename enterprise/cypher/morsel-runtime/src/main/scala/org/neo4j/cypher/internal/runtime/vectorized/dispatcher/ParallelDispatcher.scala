@@ -35,7 +35,7 @@ import org.opencypher.v9_0.util.TaskCloser
 
 import scala.collection.JavaConverters._
 
-class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) extends Dispatcher {
+class ParallelDispatcher  (morselSize: Int, workers: Int, executor: Executor) extends Dispatcher {
 
   def execute[E <: Exception](operators: Pipeline,
                               queryContext: QueryContext,

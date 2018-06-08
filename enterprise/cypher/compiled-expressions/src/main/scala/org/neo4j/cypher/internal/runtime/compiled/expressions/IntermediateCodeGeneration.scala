@@ -22,6 +22,7 @@
  */
 package org.neo4j.cypher.internal.runtime.compiled.expressions
 
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast._
 import org.neo4j.cypher.internal.runtime.DbAccess
 import org.neo4j.cypher.internal.runtime.compiled.expressions.IntermediateRepresentation.method
@@ -34,183 +35,227 @@ import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.InternalException
 
-import scala.annotation.tailrec
-
 /**
   * Produces IntermediateRepresentation from a Cypher Expression
   */
-class IntermediateCodeGeneration {
+class IntermediateCodeGeneration(slots: SlotConfiguration) {
 
   private var counter: Int = 0
 
   import IntermediateCodeGeneration._
   import IntermediateRepresentation._
 
-  def compile(expression: Expression): Option[IntermediateRepresentation] = expression match {
+  def compile(expression: Expression): Option[IntermediateExpression] = expression match {
 
     //functions
     case c: FunctionInvocation => c.function match {
       case functions.Acos =>
-        compile(c.args.head).map(invokeStatic(method[CypherFunctions, Value, AnyValue]("acos"), _))
+        compile(c.args.head).map(in => IntermediateExpression(
+          invokeStatic(method[CypherFunctions, Value, AnyValue]("acos"), in.ir), in.nullable))
       case functions.Cos =>
-        compile(c.args.head).map(invokeStatic(method[CypherFunctions, Value, AnyValue]("cos"), _))
+        compile(c.args.head).map(in => IntermediateExpression(
+          invokeStatic(method[CypherFunctions, Value, AnyValue]("cos"), in.ir), in.nullable))
       case functions.Cot =>
-        compile(c.args.head).map(invokeStatic(method[CypherFunctions, Value, AnyValue]("cot"), _))
+        compile(c.args.head).map(in => IntermediateExpression(
+          invokeStatic(method[CypherFunctions, Value, AnyValue]("cot"), in.ir), in.nullable))
       case functions.Asin =>
-        compile(c.args.head).map(invokeStatic(method[CypherFunctions, Value, AnyValue]("asin"), _))
+        compile(c.args.head).map(in => IntermediateExpression(
+          invokeStatic(method[CypherFunctions, Value, AnyValue]("asin"), in.ir), in.nullable))
       case functions.Haversin =>
-        compile(c.args.head).map(invokeStatic(method[CypherFunctions, Value, AnyValue]("haversin"), _))
+        compile(c.args.head).map(in => IntermediateExpression(
+          invokeStatic(method[CypherFunctions, Value, AnyValue]("haversin"), in.ir), in.nullable))
       case functions.Sin =>
-        compile(c.args.head).map(invokeStatic(method[CypherFunctions, Value, AnyValue]("sin"), _))
+        compile(c.args.head).map(in => IntermediateExpression(
+          invokeStatic(method[CypherFunctions, Value, AnyValue]("sin"), in.ir), in.nullable))
       case functions.Atan =>
-        compile(c.args.head).map(invokeStatic(method[CypherFunctions, Value, AnyValue]("atan"), _))
+        compile(c.args.head).map(in => IntermediateExpression(
+          invokeStatic(method[CypherFunctions, Value, AnyValue]("atan"), in.ir), in.nullable))
       case functions.Atan2 =>
-        compile(c.args.head).map(invokeStatic(method[CypherFunctions, Value, AnyValue]("atan2"), _))
+        compile(c.args.head).map(in => IntermediateExpression(
+          invokeStatic(method[CypherFunctions, Value, AnyValue]("atan2"), in.ir), in.nullable))
       case functions.Tan =>
-        compile(c.args.head).map(invokeStatic(method[CypherFunctions, Value, AnyValue]("tan"), _))
+        compile(c.args.head).map(in => IntermediateExpression(
+          invokeStatic(method[CypherFunctions, Value, AnyValue]("tan"), in.ir), in.nullable))
       case functions.Round =>
-        compile(c.args.head).map(invokeStatic(method[CypherFunctions, Value, AnyValue]("round"), _))
+        compile(c.args.head).map(in => IntermediateExpression(
+          invokeStatic(method[CypherFunctions, Value, AnyValue]("round"), in.ir), in.nullable))
       case functions.Rand =>
-        Some(invokeStatic(method[CypherFunctions, DoubleValue]("rand")))
+        Some(IntermediateExpression(invokeStatic(method[CypherFunctions, DoubleValue]("rand")),
+                                    nullable = false))
       case functions.Abs =>
-        compile(c.args.head).map(invokeStatic(method[CypherFunctions, Value, AnyValue]("abs"), _))
+        compile(c.args.head).map(in => IntermediateExpression(
+          invokeStatic(method[CypherFunctions, Value, AnyValue]("abs"), in.ir), in.nullable))
       case functions.Ceil =>
-        compile(c.args.head).map(invokeStatic(method[CypherFunctions, Value, AnyValue]("ceil"), _))
+        compile(c.args.head).map(in => IntermediateExpression(
+          invokeStatic(method[CypherFunctions, Value, AnyValue]("ceil"), in.ir), in.nullable))
       case functions.Floor =>
-        compile(c.args.head).map(invokeStatic(method[CypherFunctions, Value, AnyValue]("floor"), _))
+        compile(c.args.head).map(in => IntermediateExpression(
+          invokeStatic(method[CypherFunctions, Value, AnyValue]("floor"), in.ir), in.nullable))
 
       case _ => None
     }
 
     //math
-    case Multiply(lhs, rhs) =>
+    case m@Multiply(lhs, rhs) =>
       for {l <- compile(lhs)
            r <- compile(rhs)
-      } yield invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("multiply"), l, r)
+      } yield {
+        IntermediateExpression(
+          invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("multiply"), l.ir, r.ir),
+          l.nullable || r.nullable)
+      }
 
     case Add(lhs, rhs) =>
       for {l <- compile(lhs)
            r <- compile(rhs)
-      } yield invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("add"), l, r)
+      } yield {
+        IntermediateExpression(
+          invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("add"), l.ir, r.ir), l.nullable || r.nullable)
+      }
 
     case Subtract(lhs, rhs) =>
       for {l <- compile(lhs)
            r <- compile(rhs)
-      } yield invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("subtract"), l, r)
+      } yield {
+        IntermediateExpression(
+          invokeStatic(method[CypherMath, AnyValue, AnyValue, AnyValue]("subtract"), l.ir, r.ir), l.nullable || r.nullable)
+
+      }
 
     //literals
-    case d: DoubleLiteral => Some(invokeStatic(method[Values, DoubleValue, Double]("doubleValue"), constant(d.value)))
-    case i: IntegerLiteral => Some(invokeStatic(method[Values, LongValue, Long]("longValue"), constant(i.value)))
-    case s: expressions.StringLiteral => Some(
-      invokeStatic(method[Values, TextValue, String]("stringValue"), constant(s.value)))
-    case _: Null => Some(noValue)
-    case _: True => Some(truthValue)
-    case _: False => Some(falseValue)
+    case d: DoubleLiteral => Some(IntermediateExpression(
+      invokeStatic(method[Values, DoubleValue, Double]("doubleValue"), constant(d.value)), nullable = false))
+    case i: IntegerLiteral => Some(IntermediateExpression(
+      invokeStatic(method[Values, LongValue, Long]("longValue"), constant(i.value)), nullable = false))
+    case s: expressions.StringLiteral => Some(IntermediateExpression(
+      invokeStatic(method[Values, TextValue, String]("stringValue"), constant(s.value)), nullable = false) )
+    case _: Null => Some(IntermediateExpression(noValue, nullable = true))
+    case _: True => Some(IntermediateExpression(truthValue, nullable = false))
+    case _: False => Some(IntermediateExpression(falseValue, nullable = false))
 
     //boolean operators
     case Or(lhs, rhs) =>
       for {l <- compile(lhs)
            r <- compile(rhs)
-      } yield generateOrs(List(l, r))
+      } yield IntermediateExpression(generateOrs(List(l.ir, r.ir)), l.nullable || r.nullable)
 
     case Ors(expressions) =>
-      val compiled = expressions.foldLeft[Option[List[IntermediateRepresentation]]](Some(List.empty)) { (acc, current) =>
+      val compiled = expressions.foldLeft[Option[List[IntermediateExpression]]](Some(List.empty)) { (acc, current) =>
         for {l <- acc
              e <- compile(current)} yield l :+ e
       }
 
       for (e <- compiled) yield e match {
-        case Nil => truthValue //this will not really happen because of rewriters etc
+        case Nil => IntermediateExpression(truthValue, nullable = false) //this will not really happen because of rewriters etc
         case a :: Nil  => a
-        case list => generateOrs(list)
+        case list => IntermediateExpression(generateOrs(list.map(_.ir)), list.exists(_.nullable))
       }
+
     case Xor(lhs, rhs) =>
       for {l <- compile(lhs)
            r <- compile(rhs)
-      } yield invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("xor"), l, r)
+      } yield IntermediateExpression(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("xor"), l.ir, r.ir),
+                                     l.nullable | l.nullable)
 
     case And(lhs, rhs) =>
       for {l <- compile(lhs)
            r <- compile(rhs)
-      } yield generateAnds(List(l, r))
+      } yield IntermediateExpression(generateAnds(List(l.ir, r.ir)), l.nullable || l.nullable)
 
     case Ands(expressions) =>
-      val compiled = expressions.foldLeft[Option[List[IntermediateRepresentation]]](Some(List.empty)) { (acc, current) =>
+      val compiled = expressions.foldLeft[Option[List[IntermediateExpression]]](Some(List.empty)) { (acc, current) =>
         for {l <- acc
              e <- compile(current)} yield l :+ e
         }
 
       for (e <- compiled) yield e match {
-        case Nil => truthValue ///this will not really happen because of rewriters etc
+        case Nil => IntermediateExpression(truthValue, nullable = false) //this will not really happen because of rewriters etc
         case a :: Nil  => a
-        case list => generateAnds(list)
+        case list => IntermediateExpression(generateAnds(list.map(_.ir)), list.exists(_.nullable))
       }
 
     case Not(arg) =>
-      compile(arg).map(invokeStatic(method[CypherBoolean, Value, AnyValue]("not"), _))
+      compile(arg).map(a =>
+        IntermediateExpression(
+          invokeStatic(method[CypherBoolean, Value, AnyValue]("not"), a.ir), a.nullable))
 
     case Equals(lhs, rhs) =>
       for {l <- compile(lhs)
            r <- compile(rhs)
-      } yield invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("equals"), l, r)
+      } yield IntermediateExpression(
+                invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("equals"), l.ir, r.ir), l.nullable | r.nullable)
+
 
     case NotEquals(lhs, rhs) =>
       for {l <- compile(lhs)
            r <- compile(rhs)
-      } yield invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("notEquals"), l, r)
+      } yield IntermediateExpression(
+        invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("notEquals"), l.ir, r.ir), l.nullable | r.nullable)
 
     //data access
-    case Parameter(name, _) =>
-      Some(invoke(load("params"), method[MapValue, AnyValue, String]("get"), constant(name)))
+    case Parameter(name, _) => //TODO parameters that are autogenerated from literals should have nullable = false
+      Some(IntermediateExpression(invoke(load("params"), method[MapValue, AnyValue, String]("get"),
+                                         constant(name)), nullable = true))
 
     case NodeProperty(offset, token, _) =>
-      Some(invoke(load("dbAccess"), method[DbAccess, Value, Long, Int]("nodeProperty"),
-                  getLongAt(offset), constant(token)))
+      Some(IntermediateExpression(
+        invoke(load("dbAccess"), method[DbAccess, Value, Long, Int]("nodeProperty"),
+                  getLongAt(offset), constant(token)), nullable = true))
 
     case NodePropertyLate(offset, key, _) =>
-      Some(invoke(load("dbAccess"), method[DbAccess, Value, Long, String]("nodeProperty"),
-                  getLongAt(offset), constant(key)))
+      Some(IntermediateExpression(
+        invoke(load("dbAccess"), method[DbAccess, Value, Long, String]("nodeProperty"),
+                  getLongAt(offset), constant(key)), nullable = true))
 
     case NodePropertyExists(offset, token, _) =>
       Some(
-        ternary(
+        IntermediateExpression(
+          ternary(
           invoke(load("dbAccess"), method[DbAccess, Boolean, Long, Int]("nodeHasProperty"),
-                 getLongAt(offset), constant(token)), truthValue, falseValue))
+                 getLongAt(offset), constant(token)), truthValue, falseValue), nullable = false))
 
     case NodePropertyExistsLate(offset, key, _) =>
-      Some(ternary(
+      Some(IntermediateExpression(
+        ternary(
         invoke(load("dbAccess"), method[DbAccess, Boolean, Long, String]("nodeHasProperty"),
-               getLongAt(offset), constant(key)), truthValue, falseValue))
+               getLongAt(offset), constant(key)), truthValue, falseValue), nullable = false))
 
     case RelationshipProperty(offset, token, _) =>
-      Some(invoke(load("dbAccess"), method[DbAccess, Value, Long, Int]("relationshipProperty"),
-                  getLongAt(offset), constant(token)))
+      Some(IntermediateExpression(
+        invoke(load("dbAccess"), method[DbAccess, Value, Long, Int]("relationshipProperty"),
+                  getLongAt(offset), constant(token)), nullable = true))
 
     case RelationshipPropertyLate(offset, key, _) =>
-      Some(invoke(load("dbAccess"), method[DbAccess, Value, Long, String]("relationshipProperty"),
-                  getLongAt(offset), constant(key)))
+      Some(IntermediateExpression(
+        invoke(load("dbAccess"), method[DbAccess, Value, Long, String]("relationshipProperty"),
+                  getLongAt(offset), constant(key)), nullable = true))
 
     case RelationshipPropertyExists(offset, token, _) =>
-      Some(ternary(
-        invoke(load("dbAccess"), method[DbAccess, Boolean, Long, Int]("relationshipHasProperty"),
-               getLongAt(offset), constant(token)),
-        truthValue,
-        falseValue)
+      Some(IntermediateExpression(
+        ternary(
+          invoke(load("dbAccess"), method[DbAccess, Boolean, Long, Int]("relationshipHasProperty"),
+                 getLongAt(offset), constant(token)),
+          truthValue,
+          falseValue), nullable = false)
       )
 
     case RelationshipPropertyExistsLate(offset, key, _) =>
-      Some(ternary(
+      Some(IntermediateExpression(
+        ternary(
         invoke(load("dbAccess"), method[DbAccess, Boolean, Long, String]("relationshipHasProperty"),
                getLongAt(offset), constant(key)),
         truthValue,
-        falseValue)
-      )
-    case NodeFromSlot(offset, _) =>
-      Some(invoke(load("dbAccess"), method[DbAccess, NodeValue, Long]("nodeById"),
-                  getLongAt(offset)))
-    case RelationshipFromSlot(offset, _) =>
-      Some(invoke(load("dbAccess"), method[DbAccess, RelationshipValue, Long]("relationshipById"),
-                  getLongAt(offset)))
+        falseValue), nullable = false))
+
+    case NodeFromSlot(offset, name) =>
+      Some(IntermediateExpression(
+        invoke(load("dbAccess"), method[DbAccess, NodeValue, Long]("nodeById"), getLongAt(offset)),
+        nullable = slots.get(name).forall(_.nullable)))
+
+    case RelationshipFromSlot(offset, name) =>
+      Some(IntermediateExpression(
+        invoke(load("dbAccess"), method[DbAccess, RelationshipValue, Long]("relationshipById"),
+                  getLongAt(offset)), nullable = slots.get(name).forall(_.nullable)))
 
     case GetDegreePrimitive(offset, typ, dir) =>
       val methodName = dir match {
@@ -221,39 +266,51 @@ class IntermediateCodeGeneration {
       typ match {
         case None =>
           Some(
-            invokeStatic(method[Values, IntValue, Int]("intValue"),
-              invoke(load("dbAccess"), method[DbAccess, Int, Long](methodName), getLongAt(offset))))
+            IntermediateExpression(
+              invokeStatic(method[Values, IntValue, Int]("intValue"),
+                           invoke(load("dbAccess"), method[DbAccess, Int, Long](methodName), getLongAt(offset))),
+              nullable = false))
 
         case Some(t) =>
           Some(
-            invokeStatic(method[Values, IntValue, Int]("intValue"),
-                         invoke(load("dbAccess"), method[DbAccess, Int, Long, String](methodName),
-                      getLongAt(offset), constant(t))))
+            IntermediateExpression(
+              invokeStatic(method[Values, IntValue, Int]("intValue"),
+                           invoke(load("dbAccess"), method[DbAccess, Int, Long, String](methodName),
+                                  getLongAt(offset), constant(t))), nullable = false))
       }
 
     //slotted operations
-    case ReferenceFromSlot(offset, _) =>
-      Some(getRefAt(offset))
+    case ReferenceFromSlot(offset, name) =>
+      Some(IntermediateExpression(getRefAt(offset), slots.get(name).forall(_.nullable) ))
     case IdFromSlot(offset) =>
-      Some(invokeStatic(method[Values, LongValue, Long]("longValue"), getLongAt(offset)))
+      Some(IntermediateExpression(invokeStatic(method[Values, LongValue, Long]("longValue"), getLongAt(offset)),
+                                  nullable = false))
 
     case PrimitiveEquals(lhs, rhs) =>
       for {l <- compile(lhs)
            r <- compile(rhs)
       } yield
-        ternary(invoke(l, method[AnyValue, Boolean, AnyRef]("equals"), r), truthValue, falseValue)
+        IntermediateExpression(
+          ternary(invoke(l.ir, method[AnyValue, Boolean, AnyRef]("equals"), r.ir), truthValue, falseValue),
+          nullable = false)
 
     case NullCheck(offset, inner) =>
-      compile(inner).map(ternary(equal(getLongAt(offset), constant(-1L)), noValue, _))
+      compile(inner).map(i =>
+                           IntermediateExpression(
+                             ternary(equal(getLongAt(offset), constant(-1L)), noValue, i.ir),
+                             nullable = true))
 
     case NullCheckVariable(offset, inner) =>
-      compile(inner).map(ternary(equal(getLongAt(offset), constant(-1L)), noValue, _))
+      compile(inner).map(i => IntermediateExpression(ternary(equal(getLongAt(offset), constant(-1L)), noValue, i.ir),
+                                                  nullable = true))
 
     case NullCheckProperty(offset, inner) =>
-      compile(inner).map(ternary(equal(getLongAt(offset), constant(-1L)), noValue, _))
+      compile(inner).map(i =>
+                           IntermediateExpression(ternary(equal(getLongAt(offset), constant(-1L)), noValue, i.ir),
+                                                      nullable = true))
 
     case IsPrimitiveNull(offset) =>
-      Some(ternary(equal(getLongAt(offset), constant(-1L)), truthValue, falseValue))
+      Some(IntermediateExpression(ternary(equal(getLongAt(offset), constant(-1L)), truthValue, falseValue), nullable = false))
 
     case _ => None
   }

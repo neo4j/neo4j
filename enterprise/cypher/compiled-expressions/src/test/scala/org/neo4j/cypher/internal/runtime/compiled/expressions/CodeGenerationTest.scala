@@ -28,6 +28,7 @@ import java.util.concurrent.ThreadLocalRandom
 
 import org.mockito.Mockito.when
 import org.neo4j.cypher.CypherTypeException
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast._
 import org.neo4j.cypher.internal.runtime.DbAccess
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
@@ -527,7 +528,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   }
 
   private def compile(e: Expression) =
-    CodeGeneration.compile(new IntermediateCodeGeneration().compile(e).getOrElse(fail()))
+    CodeGeneration.compile(new IntermediateCodeGeneration(SlotConfiguration.empty).compile(e).map(_.ir).getOrElse(fail()))
 
   private def function(name: String, e: Expression) =
     FunctionInvocation(FunctionName(name)(pos), e)(pos)

@@ -57,7 +57,7 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
   override def compileToExecutable(state: LogicalPlanState, context: EnterpriseRuntimeContext): ExecutionPlan_V35 = {
       val (logicalPlan,physicalPlan) = rewritePlan(context, state.logicalPlan, state.semanticTable())
       val converters: ExpressionConverters = new ExpressionConverters(
-        new CompiledExpressionConverter(context.log),
+        new CompiledExpressionConverter(context.log, physicalPlan(state.logicalPlan.id)),
         MorselExpressionConverters,
         SlottedExpressionConverters,
         CommunityExpressionConverter)

@@ -228,6 +228,9 @@ case class Method(owner: Class[_], output: Class[_], name: String, params: Class
   def asReference: MethodReference = MethodReference.methodReference(owner, output, name, params: _*)
 }
 
+case class IntermediateExpression(ir: IntermediateRepresentation, nullable: Boolean)
+
+
 /**
   * Defines a simple dsl to facilitate constructing intermediate representation
   */
