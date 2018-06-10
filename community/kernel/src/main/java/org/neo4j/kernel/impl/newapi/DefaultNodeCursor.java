@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
@@ -227,7 +228,7 @@ class DefaultNodeCursor implements NodeCursor
                 if ( single != NO_ID )
                 {
                     addedNodes = read.txState().nodeIsAddedInThisTx( single ) ?
-                                 LongHashSet.newSetWith( single ).longIterator() : ImmutableEmptyLongIterator.INSTANCE;
+                                 LongSets.immutable.of( single ).longIterator() : ImmutableEmptyLongIterator.INSTANCE;
                 }
                 else
                 {
