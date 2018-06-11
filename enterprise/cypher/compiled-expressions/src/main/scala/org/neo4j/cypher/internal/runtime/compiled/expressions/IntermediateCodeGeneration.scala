@@ -120,7 +120,7 @@ class IntermediateCodeGeneration {
       }
 
       for (e <- compiled) yield e match {
-        case Nil => truthValue //this shouldn't really happen
+        case Nil => truthValue //this will not really happen because of rewriters etc
         case a :: Nil  => a
         case list => generateOrs(list)
       }
@@ -141,7 +141,7 @@ class IntermediateCodeGeneration {
         }
 
       for (e <- compiled) yield e match {
-        case Nil => truthValue //this shouldn't really happen
+        case Nil => truthValue ///this will not really happen because of rewriters etc
         case a :: Nil  => a
         case list => generateAnds(list)
       }

@@ -24,7 +24,7 @@ import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
 
 /**
- * Used to grant expression db access
+ * Used to expose db access to expressions
  */
 public interface DbAccess
 {
