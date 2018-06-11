@@ -19,7 +19,7 @@
  */
 package org.neo4j.io.fs;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,16 +28,16 @@ import org.neo4j.graphdb.mockfs.SelectiveFileSystemAbstraction;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
 
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class SelectiveFileSystemAbstractionTest
+class SelectiveFileSystemAbstractionTest
 {
     @Test
-    public void shouldUseCorrectFileSystemForChosenFile() throws Exception
+    void shouldUseCorrectFileSystemForChosenFile() throws Exception
     {
         // given
         File specialFile = new File( "special" );
@@ -58,7 +58,7 @@ public class SelectiveFileSystemAbstractionTest
     }
 
     @Test
-    public void shouldUseDefaultFileSystemForOtherFiles() throws Exception
+    void shouldUseDefaultFileSystemForOtherFiles() throws Exception
     {
         // given
         File specialFile = new File( "special" );
@@ -82,7 +82,7 @@ public class SelectiveFileSystemAbstractionTest
     }
 
     @Test
-    public void provideSelectiveWatcher() throws IOException
+    void provideSelectiveWatcher() throws IOException
     {
         File specialFile = new File( "special" );
         File otherFile = new File( "other" );

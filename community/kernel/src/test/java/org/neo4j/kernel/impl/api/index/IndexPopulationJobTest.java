@@ -40,14 +40,12 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -94,6 +92,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
 import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
@@ -113,7 +112,6 @@ public class IndexPopulationJobTest
     private final String age = "age";
 
     private Kernel kernel;
-    private Session session;
     private IndexStoreView indexStoreView;
     private DatabaseSchemaState stateHolder;
     private int labelId;
@@ -124,11 +122,10 @@ public class IndexPopulationJobTest
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" ).newGraphDatabase();
         kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
-        session = kernel.beginSession( AUTH_DISABLED );
         stateHolder = new DatabaseSchemaState( NullLogProvider.getInstance() );
         indexStoreView = indexStoreView();
 
-        try ( Transaction tx = session.beginTransaction( KernelTransaction.Type.implicit ) )
+        try ( Transaction tx = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
         {
             labelId = tx.tokenWrite().labelGetOrCreateForName( FIRST.name() );
             tx.tokenWrite().labelGetOrCreateForName( SECOND.name() );
@@ -139,7 +136,6 @@ public class IndexPopulationJobTest
     @After
     public void after()
     {
-        session.close();
         db.shutdown();
     }
 
@@ -626,7 +622,7 @@ public class IndexPopulationJobTest
     private IndexDescriptor indexDescriptor( Label label, String propertyKey, boolean constraint )
             throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
     {
-        try ( Transaction tx = session.beginTransaction( KernelTransaction.Type.implicit ) )
+        try ( Transaction tx = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
         {
             int labelId = tx.tokenWrite().labelGetOrCreateForName( label.name() );
             int propertyKeyId = tx.tokenWrite().propertyKeyGetOrCreateForName( propertyKey );
@@ -655,7 +651,7 @@ public class IndexPopulationJobTest
 
     private int getPropertyKeyForName( String name ) throws TransactionFailureException
     {
-        try ( Transaction tx = session.beginTransaction( KernelTransaction.Type.implicit ) )
+        try ( Transaction tx = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
         {
             int result = tx.tokenRead().propertyKey( name );
             tx.success();

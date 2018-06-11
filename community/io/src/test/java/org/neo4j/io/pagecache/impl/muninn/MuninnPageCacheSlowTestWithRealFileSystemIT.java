@@ -19,21 +19,24 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import org.junit.Rule;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-public class MuninnPageCacheSlowTestWithRealFileSystemIT extends MuninnPageCacheSlowIT
+@ExtendWith( TestDirectoryExtension.class )
+class MuninnPageCacheSlowTestWithRealFileSystemIT extends MuninnPageCacheSlowIT
 {
-    @Rule
-    public TestDirectory directory = TestDirectory.testDirectory();
+    @Inject
+    TestDirectory directory;
 
     @Override
     protected Fixture<MuninnPageCache> createFixture()
     {
         return super.createFixture()
                     .withFileSystemAbstraction( DefaultFileSystemAbstraction::new )
-                    .withFileConstructor( pathname -> directory.file( pathname ) );
+                    .withFileConstructor( directory::file );
     }
 }

@@ -20,7 +20,7 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,13 +51,15 @@ import org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer.Fault;
 
+import static java.time.Duration.ofMillis;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
@@ -97,15 +99,14 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void ableToEvictAllPageInAPageCache() throws IOException
+    void ableToEvictAllPageInAPageCache() throws IOException
     {
         writeInitialDataTo( file( "a" ) );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
         RecordingPageCursorTracer cursorTracer = new RecordingPageCursorTracer();
-        ConfigurablePageCursorTracerSupplier<RecordingPageCursorTracer> cursorTracerSupplier =
-                new ConfigurablePageCursorTracerSupplier<>( cursorTracer );
+        ConfigurablePageCursorTracerSupplier<RecordingPageCursorTracer> cursorTracerSupplier = new ConfigurablePageCursorTracerSupplier<>( cursorTracer );
         try ( MuninnPageCache pageCache = createPageCache( fs, 2, blockCacheFlush( tracer ), cursorTracerSupplier );
-              PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
+                PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
         {
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
             {
@@ -120,16 +121,15 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void mustEvictCleanPageWithoutFlushing() throws Exception
+    void mustEvictCleanPageWithoutFlushing() throws Exception
     {
         writeInitialDataTo( file( "a" ) );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
         RecordingPageCursorTracer cursorTracer = new RecordingPageCursorTracer();
-        ConfigurablePageCursorTracerSupplier<RecordingPageCursorTracer> cursorTracerSupplier =
-                new ConfigurablePageCursorTracerSupplier<>( cursorTracer );
+        ConfigurablePageCursorTracerSupplier<RecordingPageCursorTracer> cursorTracerSupplier = new ConfigurablePageCursorTracerSupplier<>( cursorTracer );
 
         try ( MuninnPageCache pageCache = createPageCache( fs, 2, blockCacheFlush( tracer ), cursorTracerSupplier );
-              PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
+                PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
         {
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
             {
@@ -147,16 +147,15 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void mustFlushDirtyPagesOnEvictingFirstPage() throws Exception
+    void mustFlushDirtyPagesOnEvictingFirstPage() throws Exception
     {
         writeInitialDataTo( file( "a" ) );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
         RecordingPageCursorTracer cursorTracer = new RecordingPageCursorTracer();
-        ConfigurablePageCursorTracerSupplier<RecordingPageCursorTracer> cursorTracerSupplier =
-                new ConfigurablePageCursorTracerSupplier<>( cursorTracer );
+        ConfigurablePageCursorTracerSupplier<RecordingPageCursorTracer> cursorTracerSupplier = new ConfigurablePageCursorTracerSupplier<>( cursorTracer );
 
         try ( MuninnPageCache pageCache = createPageCache( fs, 2, blockCacheFlush( tracer ), cursorTracerSupplier );
-              PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
+                PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
         {
 
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
@@ -180,16 +179,15 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void mustFlushDirtyPagesOnEvictingLastPage() throws Exception
+    void mustFlushDirtyPagesOnEvictingLastPage() throws Exception
     {
         writeInitialDataTo( file( "a" ) );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
         RecordingPageCursorTracer cursorTracer = new RecordingPageCursorTracer();
-        ConfigurablePageCursorTracerSupplier<RecordingPageCursorTracer> cursorTracerSupplier =
-                new ConfigurablePageCursorTracerSupplier<>( cursorTracer );
+        ConfigurablePageCursorTracerSupplier<RecordingPageCursorTracer> cursorTracerSupplier = new ConfigurablePageCursorTracerSupplier<>( cursorTracer );
 
         try ( MuninnPageCache pageCache = createPageCache( fs, 2, blockCacheFlush( tracer ), cursorTracerSupplier );
-              PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
+                PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
         {
             try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_WRITE_LOCK ) )
             {
@@ -212,16 +210,15 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void mustFlushDirtyPagesOnEvictingAllPages() throws Exception
+    void mustFlushDirtyPagesOnEvictingAllPages() throws Exception
     {
         writeInitialDataTo( file( "a" ) );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
         RecordingPageCursorTracer cursorTracer = new RecordingPageCursorTracer( Fault.class );
-        ConfigurablePageCursorTracerSupplier<RecordingPageCursorTracer> cursorTracerSupplier =
-                new ConfigurablePageCursorTracerSupplier<>( cursorTracer );
+        ConfigurablePageCursorTracerSupplier<RecordingPageCursorTracer> cursorTracerSupplier = new ConfigurablePageCursorTracerSupplier<>( cursorTracer );
 
         try ( MuninnPageCache pageCache = createPageCache( fs, 4, blockCacheFlush( tracer ), cursorTracerSupplier );
-              PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
+                PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
         {
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW ) )
             {
@@ -249,13 +246,12 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void trackPageModificationTransactionId() throws Exception
+    void trackPageModificationTransactionId() throws Exception
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 0 );
         VersionContextSupplier versionContextSupplier = new ConfiguredVersionContextSupplier( cursorContext );
-        try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                versionContextSupplier );
-              PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
+        try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, versionContextSupplier );
+                PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
         {
             cursorContext.initWrite( 7 );
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
@@ -275,13 +271,12 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void pageModificationTrackingNoticeWriteFromAnotherThread() throws Exception
+    void pageModificationTrackingNoticeWriteFromAnotherThread() throws Exception
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 0 );
         VersionContextSupplier versionContextSupplier = new ConfiguredVersionContextSupplier( cursorContext );
-        try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                versionContextSupplier );
-              PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
+        try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, versionContextSupplier );
+                PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
         {
             cursorContext.initWrite( 7 );
 
@@ -310,13 +305,12 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void pageModificationTracksHighestModifierTransactionId() throws IOException
+    void pageModificationTracksHighestModifierTransactionId() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 0 );
         VersionContextSupplier versionContextSupplier = new ConfiguredVersionContextSupplier( cursorContext );
-        try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                versionContextSupplier );
-              PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
+        try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, versionContextSupplier );
+                PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
         {
             cursorContext.initWrite( 1 );
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
@@ -348,13 +342,12 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void markCursorContextDirtyWhenRepositionCursorOnItsCurrentPage() throws IOException
+    void markCursorContextDirtyWhenRepositionCursorOnItsCurrentPage() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 3 );
         VersionContextSupplier versionContextSupplier = new ConfiguredVersionContextSupplier( cursorContext );
-        try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                versionContextSupplier );
-              PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
+        try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, versionContextSupplier );
+                PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
         {
             cursorContext.initRead();
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
@@ -372,13 +365,12 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void markCursorContextAsDirtyWhenReadingDataFromMoreRecentTransactions() throws IOException
+    void markCursorContextAsDirtyWhenReadingDataFromMoreRecentTransactions() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 3 );
         VersionContextSupplier versionContextSupplier = new ConfiguredVersionContextSupplier( cursorContext );
-        try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                versionContextSupplier );
-              PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
+        try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, versionContextSupplier );
+                PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
         {
             cursorContext.initWrite( 7 );
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
@@ -399,13 +391,12 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void doNotMarkCursorContextAsDirtyWhenReadingDataFromOlderTransactions() throws IOException
+    void doNotMarkCursorContextAsDirtyWhenReadingDataFromOlderTransactions() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 23 );
         VersionContextSupplier versionContextSupplier = new ConfiguredVersionContextSupplier( cursorContext );
-        try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                versionContextSupplier );
-              PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
+        try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, versionContextSupplier );
+                PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
         {
             cursorContext.initWrite( 17 );
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
@@ -426,13 +417,12 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void markContextAsDirtyWhenAnyEvictedPageHaveModificationTransactionHigherThenReader() throws IOException
+    void markContextAsDirtyWhenAnyEvictedPageHaveModificationTransactionHigherThenReader() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 5 );
         VersionContextSupplier versionContextSupplier = new ConfiguredVersionContextSupplier( cursorContext );
-        try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                versionContextSupplier );
-              PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
+        try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, versionContextSupplier );
+                PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
         {
             cursorContext.initWrite( 3 );
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
@@ -461,13 +451,12 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void doNotMarkContextAsDirtyWhenAnyEvictedPageHaveModificationTransactionLowerThenReader() throws IOException
+    void doNotMarkContextAsDirtyWhenAnyEvictedPageHaveModificationTransactionLowerThenReader() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 15 );
         VersionContextSupplier versionContextSupplier = new ConfiguredVersionContextSupplier( cursorContext );
-        try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                versionContextSupplier );
-              PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
+        try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, versionContextSupplier );
+                PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
         {
             cursorContext.initWrite( 3 );
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
@@ -496,13 +485,12 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void closingTheCursorMustUnlockModifiedPage() throws Exception
+    void closingTheCursorMustUnlockModifiedPage() throws Exception
     {
         writeInitialDataTo( file( "a" ) );
 
-        try ( MuninnPageCache pageCache = createPageCache( fs, 2,
-                PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
-              PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
+        try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+                PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
         {
             Future<?> task = executor.submit( () ->
             {
@@ -535,148 +523,158 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         }
     }
 
-    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
-    public void mustUnblockPageFaultersWhenEvictionGetsException() throws Exception
+    @Test
+    void mustUnblockPageFaultersWhenEvictionGetsException()
     {
-        writeInitialDataTo( file( "a" ) );
-
-        MutableBoolean throwException = new MutableBoolean( true );
-        FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
+        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
-            @Override
-            public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
+            writeInitialDataTo( file( "a" ) );
+
+            MutableBoolean throwException = new MutableBoolean( true );
+            FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
             {
-                return new DelegatingStoreChannel( super.open( fileName, openMode ) )
+                @Override
+                public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
                 {
-                    @Override
-                    public void writeAll( ByteBuffer src, long position ) throws IOException
+                    return new DelegatingStoreChannel( super.open( fileName, openMode ) )
                     {
-                        if ( throwException.booleanValue() )
+                        @Override
+                        public void writeAll( ByteBuffer src, long position ) throws IOException
                         {
-                            throw new IOException( "uh-oh..." );
+                            if ( throwException.booleanValue() )
+                            {
+                                throw new IOException( "uh-oh..." );
+                            }
+                            else
+                            {
+                                super.writeAll( src, position );
+                            }
                         }
-                        else
-                        {
-                            super.writeAll( src, position );
-                        }
-                    }
-                };
-            }
-        };
-
-        try ( MuninnPageCache pageCache = createPageCache( fs, 2,
-                PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
-              PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
-        {
-            // The basic idea is that this loop, which will encounter a lot of page faults, must not block forever even
-            // though the eviction thread is unable to flush any dirty pages because the file system throws
-            // exceptions on all writes.
-            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
-            {
-                for ( int i = 0; i < 1000; i++ )
-                {
-                    assertTrue( cursor.next() );
+                    };
                 }
-                fail( "Expected an exception at this point" );
-            }
-            catch ( IOException ignore )
-            {
-                // Good.
-            }
+            };
 
-            throwException.setFalse();
-        }
+            try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+                    PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
+            {
+                // The basic idea is that this loop, which will encounter a lot of page faults, must not block forever even
+                // though the eviction thread is unable to flush any dirty pages because the file system throws
+                // exceptions on all writes.
+                try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+                {
+                    for ( int i = 0; i < 1000; i++ )
+                    {
+                        assertTrue( cursor.next() );
+                    }
+                    fail( "Expected an exception at this point" );
+                }
+                catch ( IOException ignore )
+                {
+                    // Good.
+                }
+
+                throwException.setFalse();
+            }
+        } );
     }
 
-    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
-    public void pageCacheFlushAndForceMustClearBackgroundEvictionException() throws Exception
+    @Test
+    void pageCacheFlushAndForceMustClearBackgroundEvictionException()
     {
-        MutableBoolean throwException = new MutableBoolean( true );
-        FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
+        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
-            @Override
-            public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
+            MutableBoolean throwException = new MutableBoolean( true );
+            FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
             {
-                return new DelegatingStoreChannel( super.open( fileName, openMode ) )
+                @Override
+                public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
                 {
-                    @Override
-                    public void writeAll( ByteBuffer src, long position ) throws IOException
+                    return new DelegatingStoreChannel( super.open( fileName, openMode ) )
                     {
-                        if ( throwException.booleanValue() )
+                        @Override
+                        public void writeAll( ByteBuffer src, long position ) throws IOException
                         {
-                            throw new IOException( "uh-oh..." );
+                            if ( throwException.booleanValue() )
+                            {
+                                throw new IOException( "uh-oh..." );
+                            }
+                            else
+                            {
+                                super.writeAll( src, position );
+                            }
                         }
-                        else
-                        {
-                            super.writeAll( src, position );
-                        }
-                    }
-                };
-            }
-        };
+                    };
+                }
+            };
 
-        try ( MuninnPageCache pageCache = createPageCache( fs, 2,
-                PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
-              PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
-        {
-            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+            try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+                    PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
             {
-                assertTrue( cursor.next() ); // Page 0 is now dirty, but flushing it will throw an exception.
-            }
-
-            // This will run into that exception, in background eviction:
-            pageCache.evictPages( 1, 0, EvictionRunEvent.NULL );
-
-            // We now have a background eviction exception. A successful flushAndForce should clear it, though.
-            throwException.setFalse();
-            pageCache.flushAndForce();
-
-            // And with a cleared exception, we should be able to work with the page cache without worry.
-            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
-            {
-                for ( int i = 0; i < maxPages * 20; i++ )
+                try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
                 {
-                    assertTrue( cursor.next() );
+                    assertTrue( cursor.next() ); // Page 0 is now dirty, but flushing it will throw an exception.
+                }
+
+                // This will run into that exception, in background eviction:
+                pageCache.evictPages( 1, 0, EvictionRunEvent.NULL );
+
+                // We now have a background eviction exception. A successful flushAndForce should clear it, though.
+                throwException.setFalse();
+                pageCache.flushAndForce();
+
+                // And with a cleared exception, we should be able to work with the page cache without worry.
+                try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+                {
+                    for ( int i = 0; i < maxPages * 20; i++ )
+                    {
+                        assertTrue( cursor.next() );
+                    }
                 }
             }
-        }
+        } );
     }
 
-    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
-    public void mustThrowIfMappingFileWouldOverflowReferenceCount() throws Exception
+    @Test
+    void mustThrowIfMappingFileWouldOverflowReferenceCount()
     {
-        File file = file( "a" );
-        writeInitialDataTo( file );
-        try ( MuninnPageCache pageCache = createPageCache( fs, 30, PageCacheTracer.NULL,
-                DefaultPageCursorTracerSupplier.NULL ) )
+        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
-            PagedFile pf = null;
-            int i = 0;
+            File file = file( "a" );
+            writeInitialDataTo( file );
+            try ( MuninnPageCache pageCache = createPageCache( fs, 30, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.NULL ) )
+            {
+                PagedFile pf = null;
+                int i = 0;
 
-            try
-            {
-                expectedException.expect( IllegalStateException.class );
-                for ( ; i < Integer.MAX_VALUE; i++ )
+                try
                 {
-                    pf = pageCache.map( file, filePageSize );
+                    for ( ; i < Integer.MAX_VALUE; i++ )
+                    {
+                        pf = pageCache.map( file, filePageSize );
+                    }
+                    fail("Failure was expected");
+                }
+                catch ( IllegalStateException ile )
+                {
+                    // expected
+                }
+                finally
+                {
+                    for ( int j = 0; j < i; j++ )
+                    {
+                        try
+                        {
+                            pf.close();
+                        }
+                        catch ( Exception e )
+                        {
+                            //noinspection ThrowFromFinallyBlock
+                            throw new AssertionError( "Did not expect pf.close() to throw", e );
+                        }
+                    }
                 }
             }
-            finally
-            {
-                for ( int j = 0; j < i; j++ )
-                {
-                    try
-                    {
-                        pf.close();
-                    }
-                    catch ( Exception e )
-                    {
-                        //noinspection ThrowFromFinallyBlock
-                        throw new AssertionError( "Did not expect pf.close() to throw", e );
-                    }
-                }
-            }
-        }
+        } );
     }
 
     private void evictAllPages( MuninnPageCache pageCache ) throws IOException

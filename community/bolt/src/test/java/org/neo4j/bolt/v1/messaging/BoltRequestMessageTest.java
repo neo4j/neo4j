@@ -41,6 +41,8 @@ import org.neo4j.values.virtual.VirtualValues;
 import static java.lang.System.lineSeparator;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.neo4j.bolt.v1.messaging.message.AckFailureMessage.ackFailure;
 import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
@@ -113,6 +115,30 @@ public class BoltRequestMessageTest
         assertThat( serialized( rel ),
                 equalTo( "B1 71 91 B5 52 0C 01 02 85 4B 4E 4F 57 53 A2 84" + lineSeparator() +
                          "6E 61 6D 65 83 42 6F 62 83 61 67 65 0E" ) );
+    }
+
+    @Test
+    public void shouldReturnMessageWithValidSignature()
+    {
+        for ( BoltRequestMessage message : BoltRequestMessage.values() )
+        {
+            assertEquals( message, BoltRequestMessage.withSignature( message.signature() ) );
+        }
+    }
+
+    @Test
+    public void shouldReturnNullWithInvalidSignature()
+    {
+        assertNull( BoltRequestMessage.withSignature( -1 ) );
+        assertNull( BoltRequestMessage.withSignature( -42 ) );
+        assertNull( BoltRequestMessage.withSignature( Integer.MIN_VALUE ) );
+
+        assertNull( BoltRequestMessage.withSignature( 42 ) );
+        assertNull( BoltRequestMessage.withSignature( Integer.MAX_VALUE ) );
+
+        BoltRequestMessage[] messages = BoltRequestMessage.values();
+        assertNull( BoltRequestMessage.withSignature( messages[0].signature() - 1 ) );
+        assertNull( BoltRequestMessage.withSignature( messages[messages.length - 1].signature() + 1 ) );
     }
 
     private String serialized( AnyValue object ) throws IOException

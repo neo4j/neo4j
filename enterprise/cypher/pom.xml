@@ -2,7 +2,6 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>cypher-parent</artifactId>
@@ -18,10 +17,10 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
-    <license-text.header>../../build/AGPL-3-header.txt</license-text.header>
+    <licensing.prepend.text>licensing/notice-agpl-prefix.txt</licensing.prepend.text>
+    <license-text.header>headers/AGPL-3-header.txt</license-text.header>
     <opencypher.version>1.0.0-M09</opencypher.version>
-    <openCypher.version>1.0.0</openCypher.version>
+    <openCypher.frontend.version>9.0.1</openCypher.frontend.version>
   </properties>
 
   <scm>
@@ -45,6 +44,7 @@
         <module>physical-planning</module>
         <module>slotted-runtime</module>
         <module>morsel-runtime</module>
+        <module>compiled-expressions</module>
         <module>cypher</module>
       </modules>
     </profile>

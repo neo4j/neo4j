@@ -50,43 +50,41 @@ public class BoltRequestMessageReader
         try
         {
             unpacker.unpackStructHeader();
-            final int signature = (int) unpacker.unpackStructSignature();
+            int signature = unpacker.unpackStructSignature();
             BoltRequestMessage message = BoltRequestMessage.withSignature( signature );
-            try
-            {
-                switch ( message )
-                {
-                case INIT:
-                    String clientName = unpacker.unpackString();
-                    Map<String,Object> authToken = readAuthToken( unpacker );
-                    handler.onInit( clientName, authToken );
-                    break;
-                case ACK_FAILURE:
-                    handler.onAckFailure();
-                    break;
-                case RESET:
-                    handler.onReset();
-                    break;
-                case RUN:
-                    String statement = unpacker.unpackString();
-                    MapValue params = unpacker.unpackMap();
-                    handler.onRun( statement, params );
-                    break;
-                case DISCARD_ALL:
-                    handler.onDiscardAll();
-                    break;
-                case PULL_ALL:
-                    handler.onPullAll();
-                    break;
-                default:
-                    throw new BoltIOException( Status.Request.InvalidFormat,
-                            String.format( "Message 0x%s is not supported.", Integer.toHexString( signature ) ) );
-                }
-            }
-            catch ( IllegalArgumentException e )
+            if ( message == null )
             {
                 throw new BoltIOException( Status.Request.InvalidFormat,
                         String.format( "Message 0x%s is not a valid message signature.", Integer.toHexString( signature ) ) );
+            }
+
+            switch ( message )
+            {
+            case INIT:
+                String clientName = unpacker.unpackString();
+                Map<String,Object> authToken = readAuthToken( unpacker );
+                handler.onInit( clientName, authToken );
+                break;
+            case ACK_FAILURE:
+                handler.onAckFailure();
+                break;
+            case RESET:
+                handler.onReset();
+                break;
+            case RUN:
+                String statement = unpacker.unpackString();
+                MapValue params = unpacker.unpackMap();
+                handler.onRun( statement, params );
+                break;
+            case DISCARD_ALL:
+                handler.onDiscardAll();
+                break;
+            case PULL_ALL:
+                handler.onPullAll();
+                break;
+            default:
+                throw new BoltIOException( Status.Request.InvalidFormat,
+                        String.format( "Message 0x%s is not supported.", Integer.toHexString( signature ) ) );
             }
         }
         catch ( PackStream.PackStreamException e )

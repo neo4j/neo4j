@@ -934,7 +934,7 @@ public class NeoStoresTest
 
     private void startTx() throws TransactionFailureException
     {
-        tx = ds.getKernel().newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
+        tx = ds.getKernel().beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
         transaction = ((KernelTransactionImplementation) tx).txState();
     }
 

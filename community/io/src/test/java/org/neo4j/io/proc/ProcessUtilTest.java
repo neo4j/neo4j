@@ -19,18 +19,18 @@
  */
 package org.neo4j.io.proc;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
-public class ProcessUtilTest
+class ProcessUtilTest
 {
     private static final String HELLO_WORLD = "Hello World";
 
@@ -40,7 +40,7 @@ public class ProcessUtilTest
     }
 
     @Test
-    public void mustFindWorkingJavaExecutableAndClassPath() throws Exception
+    void mustFindWorkingJavaExecutableAndClassPath() throws Exception
     {
         List<String> command = new ArrayList<>();
         command.add( ProcessUtil.getJavaExecutable().toString() );

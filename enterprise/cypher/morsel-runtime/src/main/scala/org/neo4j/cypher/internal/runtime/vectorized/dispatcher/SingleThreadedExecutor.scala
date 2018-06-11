@@ -43,10 +43,11 @@ class SingleThreadedExecutor(morselSize: Int = 100000) extends Dispatcher {
     }
 
     val jobStack: mutable.Stack[(Message, Pipeline)] = new mutable.Stack[(Message, Pipeline)]()
-    val iteration = new Iteration(None)
+    val iteration = Iteration(None)
     jobStack.push((StartLeafLoop(iteration), leafOp))
     val state = QueryState(params, visitor)
-    val eagerAcc = new mutable.ArrayBuffer[Morsel]()
+    // TODO use PipeLineWithEagerDependency(eagerData) instead
+    val eagerAcc = new mutable.ArrayBuffer[MorselExecutionContext]()
     var eagerRecipient: Pipeline = null
     do {
       if(eagerAcc.nonEmpty) {
@@ -64,16 +65,16 @@ class SingleThreadedExecutor(morselSize: Int = 100000) extends Dispatcher {
         }
 
         pipeline.parent match {
-          case Some(mother) if mother.dependency.isInstanceOf[Eager] =>
+          case Some(mother@PipeLineWithEagerDependency(_)) =>
             if(eagerRecipient != null && mother != eagerRecipient) {
               taskCloser.close(success = false)
               throw new InternalException("oh noes")
             }
             eagerRecipient = mother
-            eagerAcc.append(data)
+            eagerAcc.append(MorselExecutionContext(data, pipeline))
 
-          case Some(mother) if mother.dependency.isInstanceOf[Lazy] =>
-            jobStack.push((StartLoopWithSingleMorsel(data, iteration), pipeline.parent.get))
+          case Some(Pipeline(_,_,_, Lazy(_))) =>
+            jobStack.push((StartLoopWithSingleMorsel(MorselExecutionContext(data, pipeline), iteration), pipeline.parent.get))
 
           case _ =>
         }

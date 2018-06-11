@@ -25,7 +25,6 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Optional;
@@ -279,12 +278,6 @@ public class QueryExecutionLocksIT
         public void cleanForReuse()
         {
             delegate.cleanForReuse();
-        }
-
-        @Override
-        public boolean twoLayerTransactionState()
-        {
-            return delegate.twoLayerTransactionState();
         }
 
         @Override

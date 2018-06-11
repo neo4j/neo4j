@@ -19,13 +19,10 @@
  */
 package org.neo4j.io.pagecache;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,9 +44,8 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.test.rule.RepeatRule;
 
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 
 public abstract class PageCacheTestSupport<T extends PageCache>
@@ -59,22 +55,17 @@ public abstract class PageCacheTestSupport<T extends PageCache>
     protected static final long LONG_TIMEOUT_MILLIS = 360_000;
     protected static ExecutorService executor;
 
-    @BeforeClass
+    @BeforeAll
     public static void startExecutor()
     {
         executor = Executors.newCachedThreadPool();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopExecutor()
     {
         executor.shutdown();
     }
-
-    public RepeatRule repeatRule = new RepeatRule();
-    public ExpectedException expectedException = ExpectedException.none();
-    @Rule
-    public RuleChain rules = RuleChain.outerRule( repeatRule ).around( expectedException );
 
     protected int recordSize = 9;
     protected int maxPages = 20;
@@ -91,7 +82,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
 
     protected abstract Fixture<T> createFixture();
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException
     {
         fixture = createFixture();
@@ -100,7 +91,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         ensureExists( file( "a" ) );
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         Thread.interrupted(); // Clear stray interrupts
@@ -183,18 +174,6 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         return file;
     }
 
-    protected void ensureDirectoryExists( File dir )
-    {
-        fs.mkdir( dir );
-    }
-
-    protected File existingDirectory( String name ) throws IOException
-    {
-        File dir = file( name );
-        ensureDirectoryExists( dir );
-        return dir;
-    }
-
     /**
      * Verifies the records on the current page of the cursor.
      * <p>
@@ -230,7 +209,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
      * <p>
      * This does the do-while-retry loop internally.
      */
-    protected void verifyRecordsMatchExpected( long pageId, int offset, ByteBuffer actualPageContents ) throws IOException
+    protected void verifyRecordsMatchExpected( long pageId, int offset, ByteBuffer actualPageContents )
     {
         ByteBuffer expectedPageContents = ByteBuffer.allocate( filePageSize );
         for ( int i = 0; i < recordsPerFilePage; i++ )

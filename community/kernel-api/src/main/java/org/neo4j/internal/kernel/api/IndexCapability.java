@@ -32,6 +32,7 @@ public interface IndexCapability
 {
     IndexOrder[] ORDER_ASC = {IndexOrder.ASCENDING};
     IndexOrder[] ORDER_NONE = new IndexOrder[0];
+    IndexLimitation[] LIMITIATION_NONE = new IndexLimitation[0];
 
     /**
      * What possible orderings is this index capable to provide for a query on given combination of {@link ValueCategory}.
@@ -58,6 +59,15 @@ public interface IndexCapability
      * {@code valueCategories} and {@link IndexReference#properties()} differ {@link IndexValueCapability#NO} is returned.
      */
     IndexValueCapability valueCapability( ValueCategory... valueCategories );
+
+    /**
+     * @return an array of limitations that this index has. It could be anything that planning could look at and
+     * either try to avoid or issue warning for.
+     */
+    default IndexLimitation[] limitations()
+    {
+        return LIMITIATION_NONE;
+    }
 
     default boolean singleWildcard( ValueCategory[] valueCategories )
     {

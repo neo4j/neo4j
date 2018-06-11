@@ -19,7 +19,7 @@
 
   <properties>
     <moduleName>org.neo4j.cypher</moduleName>
-    <license-text.header>../../../build/GPL-3-header.txt</license-text.header>
+    <license-text.header>headers/GPL-3-header.txt</license-text.header>
   </properties>
 
   <scm>
@@ -261,7 +261,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-primitive-collections</artifactId>
-      <version>3.4.0-rc01</version>
+      <version>3.4.0</version>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>
@@ -277,7 +277,7 @@
       <dependency>
           <groupId>org.opencypher</groupId>
           <artifactId>util-9.0</artifactId>
-          <version>${openCypher.version}</version>
+          <version>${openCypher.frontend.version}</version>
       </dependency>
 
     <dependency>
@@ -333,7 +333,7 @@
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>util-9.0</artifactId>
-      <version>${openCypher.version}</version>
+      <version>${openCypher.frontend.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
@@ -341,7 +341,7 @@
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>ast-9.0</artifactId>
-      <version>${openCypher.version}</version>
+      <version>${openCypher.frontend.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
@@ -349,7 +349,7 @@
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>parser-9.0</artifactId>
-      <version>${openCypher.version}</version>
+      <version>${openCypher.frontend.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>

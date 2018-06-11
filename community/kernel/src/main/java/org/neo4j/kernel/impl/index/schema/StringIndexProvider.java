@@ -26,6 +26,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.IndexLimitation;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -88,6 +89,8 @@ public class StringIndexProvider extends NativeIndexProvider<StringSchemaKey,Nat
      */
     private static class StringIndexCapability implements IndexCapability
     {
+        private final IndexLimitation[] limitations = {IndexLimitation.SLOW_CONTAINS};
+
         @Override
         public IndexOrder[] orderCapability( ValueCategory... valueCategories )
         {
@@ -110,6 +113,12 @@ public class StringIndexProvider extends NativeIndexProvider<StringSchemaKey,Nat
                 return IndexValueCapability.PARTIAL;
             }
             return IndexValueCapability.NO;
+        }
+
+        @Override
+        public IndexLimitation[] limitations()
+        {
+            return limitations;
         }
 
         private boolean support( ValueCategory[] valueCategories )

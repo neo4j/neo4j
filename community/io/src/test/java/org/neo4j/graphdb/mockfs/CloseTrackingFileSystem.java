@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb.mockfs;
 
-import java.io.IOException;
 import java.util.zip.ZipOutputStream;
 
 import org.neo4j.io.fs.FileSystemAbstraction;

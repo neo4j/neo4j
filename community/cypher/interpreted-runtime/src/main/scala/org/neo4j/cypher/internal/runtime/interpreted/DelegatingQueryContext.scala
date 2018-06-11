@@ -307,6 +307,8 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
 
   override def databaseInfo: DatabaseInfo = inner.databaseInfo
 
+  override def transaction: Transaction = inner.transaction
+
   override def cursors: CursorFactory = inner.cursors
 
   override def dataRead: Read = inner.dataRead

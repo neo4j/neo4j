@@ -192,6 +192,7 @@ Feature "ShortestPathAcceptance": Scenario "Find no shortest path when a length 
 Feature "ShortestPathAcceptance": Scenario "Find no shortest path when the start node is null"
 Feature "ShortestPathAcceptance": Scenario "Find all shortest paths"
 Feature "ShortestPathAcceptance": Scenario "Find a combination of a shortest path and a pattern expression"
+Feature "ShortestPathAcceptance": Scenario "Find shortest path when there are shorter paths with same start and end node"
 Feature "SkipLimitAcceptance": Scenario "Combining LIMIT and aggregation"
 Feature "SkipLimitAcceptance": Scenario "Limit before sort"
 Feature "SkipLimitAcceptance": Scenario "Limit before top"

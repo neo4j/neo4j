@@ -49,9 +49,6 @@ abstract class LogicalPlan(idGen: IdGen)
 
   self =>
 
-  // FIXME this is a workaround due to a scala bug (https://github.com/scala/bug/issues/10667, should be removed when the scala bug is fixed
-  def selfThis: this.type = this
-
   def lhs: Option[LogicalPlan]
   def rhs: Option[LogicalPlan]
   def availableSymbols: Set[String]

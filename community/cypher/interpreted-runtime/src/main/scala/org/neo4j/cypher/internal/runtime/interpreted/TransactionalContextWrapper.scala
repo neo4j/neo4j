@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
 
 case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTransactionalContext {
-  def twoLayerTransactionState: Boolean = tc.twoLayerTransactionState()
 
   def getOrBeginNewIfClosed(): TransactionalContextWrapper = TransactionalContextWrapper(tc.getOrBeginNewIfClosed())
 
@@ -53,6 +52,7 @@ case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTr
   // needed only for compatibility with 2.3
   def acquireWriteLock(p: PropertyContainer): Lock = tc.acquireWriteLock(p)
 
+  override def transaction: Transaction = tc.kernelTransaction
 
   override def cursors: CursorFactory = tc.kernelTransaction.cursors()
 

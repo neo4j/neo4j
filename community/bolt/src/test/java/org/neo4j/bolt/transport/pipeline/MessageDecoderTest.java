@@ -25,6 +25,7 @@ import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -45,18 +46,28 @@ import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.ValueUtils;
+import org.neo4j.logging.Log;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.VirtualValues;
 
+import static io.netty.buffer.ByteBufUtil.hexDump;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.INIT;
 import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.RUN;
 import static org.neo4j.bolt.v1.messaging.example.Edges.ALICE_KNOWS_BOB;
@@ -70,6 +81,7 @@ import static org.neo4j.bolt.v1.messaging.message.ResetMessage.reset;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
 import static org.neo4j.values.storable.Values.durationValue;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 @RunWith( Parameterized.class )
 public class MessageDecoderTest
@@ -101,7 +113,7 @@ public class MessageDecoderTest
     public void shouldDispatchInit() throws Exception
     {
         BoltRequestMessageHandler handler = mock( BoltRequestMessageHandler.class );
-        channel = new EmbeddedChannel( new MessageDecoder( packerUnderTest, handler ) );
+        channel = new EmbeddedChannel( newDecoder( handler ) );
 
         String userAgent = "Test/User Agent 1.0";
         Map<String, Object> authToken = MapUtil.map( "scheme", "basic", "principal", "user", "credentials", "password" );
@@ -117,7 +129,7 @@ public class MessageDecoderTest
     public void shouldDispatchAckFailure() throws Exception
     {
         BoltRequestMessageHandler handler = mock( BoltRequestMessageHandler.class );
-        channel = new EmbeddedChannel( new MessageDecoder( packerUnderTest, handler ) );
+        channel = new EmbeddedChannel( newDecoder( handler ) );
 
         channel.writeInbound( Unpooled.wrappedBuffer( serialize( packerUnderTest, ackFailure() ) ) );
         channel.finishAndReleaseAll();
@@ -130,7 +142,7 @@ public class MessageDecoderTest
     public void shouldDispatchReset() throws Exception
     {
         BoltRequestMessageHandler handler = mock( BoltRequestMessageHandler.class );
-        channel = new EmbeddedChannel( new MessageDecoder( packerUnderTest, handler ) );
+        channel = new EmbeddedChannel( newDecoder( handler ) );
 
         channel.writeInbound( Unpooled.wrappedBuffer( serialize( packerUnderTest, reset() ) ) );
         channel.finishAndReleaseAll();
@@ -143,7 +155,7 @@ public class MessageDecoderTest
     public void shouldDispatchRun() throws Exception
     {
         BoltRequestMessageHandler handler = mock( BoltRequestMessageHandler.class );
-        channel = new EmbeddedChannel( new MessageDecoder( packerUnderTest, handler ) );
+        channel = new EmbeddedChannel( newDecoder( handler ) );
 
         String statement = "RETURN 1";
         MapValue parameters = ValueUtils.asMapValue( MapUtil.map( "param1", 1, "param2", "2", "param3", true, "param4", 5.0 ) );
@@ -159,7 +171,7 @@ public class MessageDecoderTest
     public void shouldDispatchDiscardAll() throws Exception
     {
         BoltRequestMessageHandler handler = mock( BoltRequestMessageHandler.class );
-        channel = new EmbeddedChannel( new MessageDecoder( packerUnderTest, handler ) );
+        channel = new EmbeddedChannel( newDecoder( handler ) );
 
         channel.writeInbound( Unpooled.wrappedBuffer( serialize( packerUnderTest, discardAll() ) ) );
         channel.finishAndReleaseAll();
@@ -172,7 +184,7 @@ public class MessageDecoderTest
     public void shouldDispatchPullAll() throws Exception
     {
         BoltRequestMessageHandler handler = mock( BoltRequestMessageHandler.class );
-        channel = new EmbeddedChannel( new MessageDecoder( packerUnderTest, handler ) );
+        channel = new EmbeddedChannel( newDecoder( handler ) );
 
         channel.writeInbound( Unpooled.wrappedBuffer( serialize( packerUnderTest, pullAll() ) ) );
         channel.finishAndReleaseAll();
@@ -185,7 +197,7 @@ public class MessageDecoderTest
     public void shouldCallExternalErrorOnInitWithNullKeys() throws Exception
     {
         BoltRequestMessageHandler handler = mock( BoltRequestMessageHandler.class );
-        channel = new EmbeddedChannel( new MessageDecoder( packerUnderTest, handler ) );
+        channel = new EmbeddedChannel( newDecoder( handler ) );
 
         String userAgent = "Test/User Agent 1.0";
         Map<String,Object> authToken = MapUtil.map( "scheme", "basic", null, "user", "credentials", "password" );
@@ -202,7 +214,7 @@ public class MessageDecoderTest
     public void shouldCallExternalErrorOnInitWithDuplicateKeys() throws Exception
     {
         BoltRequestMessageHandler handler = mock( BoltRequestMessageHandler.class );
-        channel = new EmbeddedChannel( new MessageDecoder( packerUnderTest, handler ) );
+        channel = new EmbeddedChannel( newDecoder( handler ) );
 
         // Generate INIT message with duplicate keys
         PackedOutputArray out = new PackedOutputArray();
@@ -329,6 +341,60 @@ public class MessageDecoderTest
         }
     }
 
+    @Test
+    public void shouldLogContentOfTheMessageOnIOError() throws Exception
+    {
+        BoltRequestMessageHandler handler = mock( BoltRequestMessageHandler.class );
+
+        LogService logService = mock( LogService.class );
+        Log log = mock( Log.class );
+        when( logService.getInternalLog( MessageDecoder.class ) ).thenReturn( log );
+
+        channel = new EmbeddedChannel( new MessageDecoder( packerUnderTest, handler, logService ) );
+
+        byte invalidMessageSignature = Byte.MAX_VALUE;
+        byte[] messageBytes = packMessageWithSignature( invalidMessageSignature );
+
+        try
+        {
+            channel.writeInbound( Unpooled.wrappedBuffer( messageBytes ) );
+            fail( "Exception expected" );
+        }
+        catch ( Exception ignore )
+        {
+        }
+
+        assertMessageHexDumpLogged( log, messageBytes );
+    }
+
+    @Test
+    public void shouldLogContentOfTheMessageOnError() throws Exception
+    {
+        BoltRequestMessageHandler handler = mock( BoltRequestMessageHandler.class );
+        RuntimeException error = new RuntimeException( "Hello!" );
+        doThrow( error ).when( handler ).onRun( any(), any() );
+
+        LogService logService = mock( LogService.class );
+        Log log = mock( Log.class );
+        when( logService.getInternalLog( MessageDecoder.class ) ).thenReturn( log );
+
+        channel = new EmbeddedChannel( new MessageDecoder( packerUnderTest, handler, logService ) );
+
+        byte[] messageBytes = packMessageWithSignature( RUN.signature() );
+
+        try
+        {
+            channel.writeInbound( Unpooled.wrappedBuffer( messageBytes ) );
+            fail( "Exception expected" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertEquals( error, e );
+        }
+
+        assertMessageHexDumpLogged( log, messageBytes );
+    }
+
     private void testUnpackableStructParametersWithKnownType( AnyValue parameterValue, String expectedMessage ) throws IOException
     {
         testUnpackableStructParametersWithKnownType( packerUnderTest, parameterValue, expectedMessage );
@@ -341,7 +407,7 @@ public class MessageDecoderTest
         MapValue parameters = VirtualValues.map(  new String[]{"x"}, new AnyValue[]{parameterValue } );
 
         BoltRequestMessageHandler handler = mock( BoltRequestMessageHandler.class );
-        channel = new EmbeddedChannel( new MessageDecoder( packerUnderTest, handler ) );
+        channel = new EmbeddedChannel( newDecoder( handler ) );
 
         channel.writeInbound( Unpooled.wrappedBuffer( serialize( packerForSerialization, run( statement, parameters ) ) ) );
         channel.finishAndReleaseAll();
@@ -353,9 +419,31 @@ public class MessageDecoderTest
     private void unpack( byte[] input ) throws IOException
     {
         BoltRequestMessageHandler handler = mock( BoltRequestMessageHandler.class );
-        channel = new EmbeddedChannel( new MessageDecoder( packerUnderTest, handler ) );
+        channel = new EmbeddedChannel( newDecoder( handler ) );
 
         channel.writeInbound( Unpooled.wrappedBuffer( input ) );
         channel.finishAndReleaseAll();
+    }
+
+    private byte[] packMessageWithSignature( byte signature ) throws IOException
+    {
+        PackedOutputArray out = new PackedOutputArray();
+        Neo4jPack.Packer packer = packerUnderTest.newPacker( out );
+        packer.packStructHeader( 2, signature );
+        packer.pack( "RETURN 'Hello World!'" );
+        packer.pack( EMPTY_MAP );
+        return out.bytes();
+    }
+
+    private MessageDecoder newDecoder( BoltRequestMessageHandler handler )
+    {
+        return new MessageDecoder( packerUnderTest, handler, NullLogService.getInstance() );
+    }
+
+    private static void assertMessageHexDumpLogged( Log logMock, byte[] messageBytes )
+    {
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass( String.class );
+        verify( logMock ).error( captor.capture() );
+        assertThat( captor.getValue(), containsString( hexDump( messageBytes ) ) );
     }
 }

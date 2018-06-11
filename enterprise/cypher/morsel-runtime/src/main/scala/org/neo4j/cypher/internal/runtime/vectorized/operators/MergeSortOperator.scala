@@ -24,87 +24,77 @@ package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import java.util.{Comparator, PriorityQueue}
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.slotted.pipes.ColumnOrder
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.neo4j.cypher.internal.runtime.vectorized.operators.MorselSorting.MorselWithReadPos
 import org.neo4j.values.storable.NumberValue
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 
 /**
   * This operator takes pre-sorted inputs, and merges them together, producing a stream of Morsels with the sorted data
   * If countExpression != None, this expression evaluates to a limit for TopN
   */
-class MergeSortOperator(orderBy: Seq[ColumnOrder], slots: SlotConfiguration, countExpression: Option[Expression] = None) extends Operator {
+class MergeSortOperator(orderBy: Seq[ColumnOrder], countExpression: Option[Expression] = None) extends Operator {
 
-  private val comparator: Comparator[MorselWithReadPos] = orderBy
-    .map(MorselSorting.createMorselComparator(slots))
-    .reduce((a: Comparator[MorselWithReadPos], b: Comparator[MorselWithReadPos]) => a.thenComparing(b))
+  private val comparator: Comparator[MorselExecutionContext] = orderBy
+    .map(MorselSorting.createMorselComparator)
+    .reduce((a: Comparator[MorselExecutionContext], b: Comparator[MorselExecutionContext]) => a.thenComparing(b))
 
   /*
   This operator works by keeping the input morsels ordered by their current element. For each row that will be
   produced, we remove the first morsel and consume the current row. If there is more data left, we re-insert
   the morsel, now pointing to the next row.
    */
-  override def operate(message: Message, output: Morsel, context: QueryContext, state: QueryState): Continuation = {
+  override def operate(message: Message,
+                       outputRow: MorselExecutionContext,
+                       context: QueryContext,
+                       state: QueryState): Continuation = {
 
     var iterationState: Iteration = null
-    var sortedInputs: PriorityQueue[MorselWithReadPos] = null
-    var writePos = 0
+    var sortedInputs: PriorityQueue[MorselExecutionContext] = null
     var totalPos = 0
 
     message match {
       case StartLoopWithEagerData(inputs, is) =>
         iterationState = is
-        sortedInputs = new PriorityQueue[MorselWithReadPos](inputs.length, comparator)
-        inputs.foreach { morsel =>
-          if (morsel.validRows > 0) sortedInputs.add(new MorselWithReadPos(morsel, 0))
+        sortedInputs = new PriorityQueue[MorselExecutionContext](inputs.length, comparator)
+        inputs.foreach { row =>
+          if (row.hasData) sortedInputs.add(row)
         }
       case ContinueLoopWith(ContinueWithSource((inputs: PriorityQueue[_], lastTotalPos: Int), is)) =>
-        sortedInputs = inputs.asInstanceOf[PriorityQueue[MorselWithReadPos]]
+        sortedInputs = inputs.asInstanceOf[PriorityQueue[MorselExecutionContext]]
         totalPos = lastTotalPos
         iterationState = is
       case _ => throw new IllegalStateException()
 
     }
-    val longCount = slots.numberOfLongs
-    val refCount = slots.numberOfReferences
 
     // potentially calculate the limit
     val limit = countExpression.map { count =>
-      val firstRow = new MorselExecutionContext(sortedInputs.peek().m, longCount, refCount, currentRow = 0)
+      val firstRow = sortedInputs.peek()
       val queryState = new OldQueryState(context, resources = null, params = state.params)
       count(firstRow, queryState).asInstanceOf[NumberValue].longValue()
     }
     def limitNotReached = limit.fold(true){l:Long => totalPos < l}
 
-    while(!sortedInputs.isEmpty && writePos < output.validRows && limitNotReached) {
-      val nextMorsel: MorselWithReadPos = sortedInputs.poll()
-      val fromLongIdx = nextMorsel.pos * longCount
-      val fromRefIdx = nextMorsel.pos * refCount
-      val toLongIdx = writePos * longCount
-      val toRefIdx = writePos * refCount
-      System.arraycopy(nextMorsel.m.longs, fromLongIdx, output.longs, toLongIdx, longCount)
-      System.arraycopy(nextMorsel.m.refs, fromRefIdx, output.refs, toRefIdx, refCount)
-      writePos += 1
+    while(!sortedInputs.isEmpty && outputRow.hasMoreRows && limitNotReached) {
+      val nextRow: MorselExecutionContext = sortedInputs.poll()
+      outputRow.copyFrom(nextRow)
       totalPos += 1
-      nextMorsel.pos += 1
-
+      nextRow.moveToNextRow()
+      outputRow.moveToNextRow()
       // If there is more data in this Morsel, we'll re-insert it into the sortedInputs
-      if (nextMorsel.pos < nextMorsel.m.validRows) {
-        sortedInputs.add(nextMorsel)
+      if (nextRow.hasMoreRows) {
+        sortedInputs.add(nextRow)
       }
     }
 
-    val continuation = if (!sortedInputs.isEmpty && limitNotReached) {
+    outputRow.finishedWriting()
+    if (!sortedInputs.isEmpty && limitNotReached) {
       ContinueWithSource((sortedInputs, totalPos), iterationState)
     } else
       EndOfLoop(iterationState)
-
-    output.validRows = writePos
-    continuation
   }
 
   override def addDependency(pipeline: Pipeline) = Eager(pipeline)

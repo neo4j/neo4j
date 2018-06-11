@@ -19,16 +19,16 @@
  */
 package org.neo4j.io.fs;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class OffsetChannelTest
+class OffsetChannelTest
 {
     private long offset = 128;
     private StoreChannel actual = mock( StoreChannel.class );
@@ -39,28 +39,28 @@ public class OffsetChannelTest
     private ByteBuffer[] buffers = new ByteBuffer[0];
 
     @Test
-    public void tryLock() throws Exception
+    void tryLock() throws Exception
     {
         channel.tryLock();
         verify( actual ).tryLock();
     }
 
     @Test
-    public void write() throws Exception
+    void write() throws Exception
     {
         channel.write( buf );
         verify( actual ).write( buf );
     }
 
     @Test
-    public void writeAll() throws Exception
+    void writeAll() throws Exception
     {
         channel.writeAll( buf );
         verify( actual ).writeAll( buf );
     }
 
     @Test
-    public void writeAllWithPosition() throws Exception
+    void writeAllWithPosition() throws Exception
     {
         long position = 500;
         channel.writeAll( buf, position );
@@ -68,21 +68,21 @@ public class OffsetChannelTest
     }
 
     @Test
-    public void read() throws Exception
+    void read() throws Exception
     {
         channel.read( buf );
         verify( actual ).read( buf );
     }
 
     @Test
-    public void force() throws Exception
+    void force() throws Exception
     {
         channel.force( false );
         verify( actual ).force( false );
     }
 
     @Test
-    public void readWithPosition() throws Exception
+    void readWithPosition() throws Exception
     {
         long position = 500;
         channel.read( buf, position );
@@ -90,7 +90,7 @@ public class OffsetChannelTest
     }
 
     @Test
-    public void position() throws Exception
+    void position() throws Exception
     {
         long position = 500;
         when( actual.position() ).thenReturn( position );
@@ -99,7 +99,7 @@ public class OffsetChannelTest
     }
 
     @Test
-    public void positionWithPosition() throws Exception
+    void positionWithPosition() throws Exception
     {
         long position = 500;
         channel.position( position );
@@ -107,7 +107,7 @@ public class OffsetChannelTest
     }
 
     @Test
-    public void size() throws Exception
+    void size() throws Exception
     {
         long size = 256;
         when( actual.size() ).thenReturn( size );
@@ -116,7 +116,7 @@ public class OffsetChannelTest
     }
 
     @Test
-    public void truncate() throws Exception
+    void truncate() throws Exception
     {
         long size = 256;
         channel.truncate( size );
@@ -124,21 +124,21 @@ public class OffsetChannelTest
     }
 
     @Test
-    public void flush() throws Exception
+    void flush() throws Exception
     {
         channel.flush();
         verify( actual ).flush();
     }
 
     @Test
-    public void writeMultiple() throws Exception
+    void writeMultiple() throws Exception
     {
         channel.write( buffers );
         verify( actual ).write( buffers );
     }
 
     @Test
-    public void writeMultipleExtended() throws Exception
+    void writeMultipleExtended() throws Exception
     {
         int off = 16;
         int len = 32;
@@ -147,14 +147,14 @@ public class OffsetChannelTest
     }
 
     @Test
-    public void readMultiple() throws Exception
+    void readMultiple() throws Exception
     {
         channel.read( buffers );
         verify( actual ).read( buffers );
     }
 
     @Test
-    public void readMultipleExtended() throws Exception
+    void readMultipleExtended() throws Exception
     {
         int off = 16;
         int len = 32;
@@ -163,14 +163,14 @@ public class OffsetChannelTest
     }
 
     @Test
-    public void isOpen()
+    void isOpen()
     {
         channel.isOpen();
         verify( actual ).isOpen();
     }
 
     @Test
-    public void close() throws Exception
+    void close() throws Exception
     {
         channel.close();
         verify( actual ).close();

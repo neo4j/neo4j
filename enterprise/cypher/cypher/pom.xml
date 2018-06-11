@@ -24,7 +24,7 @@
   </scm>
 
   <properties>
-    <license-text.header>../../../build/AGPL-3-header.txt</license-text.header>
+    <license-text.header>headers/AGPL-3-header.txt</license-text.header>
     <moduleName>org.neo4j.cypher.enterprise</moduleName>
   </properties>
 
@@ -125,7 +125,6 @@
       <version>${project.version}</version>
     </dependency>
 
-
     <!-- neo4j testing -->
 
     <dependency>
@@ -180,7 +179,7 @@
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>ast-9.0</artifactId>
-      <version>${openCypher.version}</version>
+      <version>${openCypher.frontend.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
@@ -188,7 +187,7 @@
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>util-9.0</artifactId>
-      <version>${openCypher.version}</version>
+      <version>${openCypher.frontend.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>

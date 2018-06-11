@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner
 
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.test_helpers.ContextHelper
-import org.opencypher.v9_0.ast.Query
-import org.opencypher.v9_0.frontend.phases.RecordingNotificationLogger
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.v3_5.{MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification}
 import org.neo4j.cypher.internal.planner.v3_5.spi.IDPPlannerName
+import org.opencypher.v9_0.ast.Query
+import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.opencypher.v9_0.frontend.phases.RecordingNotificationLogger
 import org.opencypher.v9_0.util._
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestSupport with LogicalPlanConstructionTestSupport {
 

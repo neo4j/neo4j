@@ -66,7 +66,7 @@ public class DefaultBoltProtocolPipelineInstaller implements BoltProtocolPipelin
 
         pipeline.addLast( new ChunkDecoder() );
         pipeline.addLast( new MessageAccumulator() );
-        pipeline.addLast( new MessageDecoder( neo4jPack, messageHandler ) );
+        pipeline.addLast( new MessageDecoder( neo4jPack, messageHandler, logging ) );
         pipeline.addLast( new HouseKeeper( connection, logging ) );
     }
 

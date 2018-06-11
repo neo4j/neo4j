@@ -68,6 +68,8 @@ public abstract class TextValue extends ScalarValue
 
     public abstract TextValue reverse();
 
+    public abstract TextValue plus( TextValue other );
+
     public abstract int compareTo( TextValue other );
 
     @Override

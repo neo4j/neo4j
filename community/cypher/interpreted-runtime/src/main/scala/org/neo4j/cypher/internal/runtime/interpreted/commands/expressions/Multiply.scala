@@ -21,21 +21,14 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.operations.CypherMath
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{DurationValue, NumberValue}
+import org.neo4j.values.storable.NumberValue
 
 case class Multiply(a: Expression, b: Expression) extends Arithmetics(a, b) {
 
-  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
-    val aVal = a(ctx, state)
-    val bVal = b(ctx, state)
-
-    (aVal, bVal) match {
-      case (x: DurationValue, y: NumberValue) => x.mul(y)
-      case (x: NumberValue, y: DurationValue) => y.mul(x)
-      case _ => applyWithValues(aVal, bVal)
-    }
-  }
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue =
+    CypherMath.multiply(a(ctx, state), b(ctx, state))
 
   def calc(a: NumberValue, b: NumberValue): AnyValue = a.times(b)
 

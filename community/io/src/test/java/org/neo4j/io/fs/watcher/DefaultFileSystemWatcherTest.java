@@ -19,9 +19,8 @@
  */
 package org.neo4j.io.fs.watcher;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,41 +35,42 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class DefaultFileSystemWatcherTest
+@ExtendWith( TestDirectoryExtension.class )
+class DefaultFileSystemWatcherTest
 {
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    TestDirectory testDirectory;
     private WatchService watchServiceMock = mock( WatchService.class );
 
     @Test
-    public void fileWatchRegistrationIsIllegal() throws Exception
+    void fileWatchRegistrationIsIllegal()
     {
         DefaultFileSystemWatcher watcher = createWatcher();
 
-        expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( "Only directories can be registered to be monitored." );
-
-        watcher.watch( new File( "notADirectory" ) );
+        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> watcher.watch( new File( "notADirectory" ) ) );
+        assertThat( exception.getMessage(), containsString( "Only directories can be registered to be monitored." ) );
     }
 
     @Test
-    public void registerMultipleDirectoriesForMonitoring() throws Exception
+    void registerMultipleDirectoriesForMonitoring() throws Exception
     {
         try ( DefaultFileSystemWatcher watcher = new DefaultFileSystemWatcher(
                 FileSystems.getDefault().newWatchService() ) )
@@ -84,7 +84,7 @@ public class DefaultFileSystemWatcherTest
     }
 
     @Test
-    public void notifyListenersOnDeletion() throws InterruptedException
+    void notifyListenersOnDeletion() throws InterruptedException
     {
         TestFileSystemWatcher watcher = createWatcher();
         AssertableFileEventListener listener1 = new AssertableFileEventListener();
@@ -108,7 +108,7 @@ public class DefaultFileSystemWatcherTest
     }
 
     @Test
-    public void notifyListenersOnModification() throws InterruptedException
+    void notifyListenersOnModification() throws InterruptedException
     {
         TestFileSystemWatcher watcher = createWatcher();
         AssertableFileEventListener listener1 = new AssertableFileEventListener();
@@ -135,7 +135,7 @@ public class DefaultFileSystemWatcherTest
     }
 
     @Test
-    public void stopWatchingAndCloseEverythingOnClosed() throws IOException
+    void stopWatchingAndCloseEverythingOnClosed() throws IOException
     {
         TestFileSystemWatcher watcher = createWatcher();
         watcher.close();
@@ -145,7 +145,7 @@ public class DefaultFileSystemWatcherTest
     }
 
     @Test
-    public void skipEmptyEvent() throws InterruptedException
+    void skipEmptyEvent() throws InterruptedException
     {
         TestFileSystemWatcher watcher = createWatcher();
 

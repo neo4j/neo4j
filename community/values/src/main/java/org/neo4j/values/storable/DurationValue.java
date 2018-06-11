@@ -177,7 +177,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     {
     }
 
-    private static final DurationValue ZERO = new DurationValue( 0, 0, 0, 0 );
+    public static final DurationValue ZERO = new DurationValue( 0, 0, 0, 0 );
     private static final List<TemporalUnit> UNITS = unmodifiableList( asList( MONTHS, DAYS, SECONDS, NANOS ) );
     // This comparator is safe until 292,271,023,045 years. After that, we have an overflow.
     private static final Comparator<DurationValue> COMPARATOR =
@@ -201,7 +201,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
 
     private DurationValue( long months, long days, long seconds, long nanos )
     {
-        seconds += nanos / NANOS_PER_SECOND;
+        seconds = Math.addExact( seconds, nanos / NANOS_PER_SECOND);
         nanos %= NANOS_PER_SECOND;
         // normalize nanos to be between 0 and NANOS_PER_SECOND-1
         if ( nanos < 0 )
@@ -918,19 +918,19 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     public DurationValue add( DurationValue that )
     {
         return duration(
-                this.months + that.months,
-                this.days + that.days,
-                this.seconds + that.seconds,
-                this.nanos + that.nanos );
+                Math.addExact( this.months, that.months ),
+                Math.addExact( this.days, that.days ),
+                Math.addExact( this.seconds, that.seconds ),
+                Math.addExact( this.nanos, that.nanos ) );
     }
 
     public DurationValue sub( DurationValue that )
     {
         return duration(
-                this.months - that.months,
-                this.days - that.days,
-                this.seconds - that.seconds,
-                this.nanos - that.nanos );
+                Math.subtractExact( this.months, that.months ),
+                Math.subtractExact( this.days, that.days ),
+                Math.subtractExact( this.seconds, that.seconds ),
+                Math.subtractExact( this.nanos, that.nanos ) );
     }
 
     public DurationValue mul( NumberValue number )
@@ -938,7 +938,11 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         if ( number instanceof IntegralValue )
         {
             long factor = number.longValue();
-            return duration( months * factor, days * factor, seconds * factor, nanos * factor );
+            return duration(
+                    Math.multiplyExact( months, factor ),
+                    Math.multiplyExact( days, factor ),
+                    Math.multiplyExact( seconds, factor ),
+                    Math.multiplyExact( nanos, factor ) );
         }
         if ( number instanceof FloatingPointValue )
         {
@@ -954,16 +958,33 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         return approximate( months / divisor, days / divisor, seconds / divisor, nanos / divisor );
     }
 
-    private static DurationValue approximate( double months, double days, double seconds, double nanos )
+    /**
+     * Returns an approximation of the provided values by rounding to whole units and recalculating
+     * the remainder into the smaller units.
+     */
+    public static DurationValue approximate( double months, double days, double seconds, double nanos )
     {
-        long m = (long) months;
+        long m = safeDoubleToLong( months );
         days += AVG_DAYS_PER_MONTH * (months - m);
-        long d = (long) days;
+        long d = safeDoubleToLong( days );
         seconds += SECONDS_PER_DAY * (days - d);
-        long s = (long) seconds;
+        long s = safeDoubleToLong( seconds );
         nanos += NANOS_PER_SECOND * (seconds - s);
-        long n = (long) nanos;
+        long n = safeDoubleToLong( nanos );
         return duration( m, d, s, n );
+    }
+
+    /**
+     * Will cast a double to a long, but only if it is inside the limits of [Long.MIN_VALUE, LONG.MAX_VALUE]
+     * We need this to detect overflow errors, whereas normal truncation is OK while approximating.
+     */
+    private static long safeDoubleToLong( double d )
+    {
+        if ( d > Long.MAX_VALUE || d < Long.MIN_VALUE )
+        {
+            throw new ArithmeticException( "long overflow" );
+        }
+        return (long) d;
     }
 
     private static Temporal assertValidPlus( Temporal temporal, long amountToAdd, TemporalUnit unit )

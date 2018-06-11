@@ -30,7 +30,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 
 import scala.collection.Map
 
-class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
+abstract class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should not use morsel by default") {
     //Given
@@ -391,6 +391,76 @@ class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
    asScalaResult(result).toList should not be empty
   }
 
+  test("aggregation should not overflow morsel") {
+    // Given
+    graph.execute( """
+                     |CREATE (zadie: AUTHOR {name: "Zadie Smith"})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "White teeth"})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "The Autograph Man"})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "On Beauty"})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "NW"})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "Swing Time"})""".stripMargin)
+
+    // When
+    val result = graph.execute("CYPHER runtime=morsel  MATCH (a)-[r]->(b) RETURN b.book as book, count(r), count(distinct a)")
+
+    // Then
+    asScalaResult(result).toList should not be empty
+  }
+
+  test("should not duplicate results in queries with multiple eager pipelines") {
+    // Given
+    graph.execute( """
+                     |CREATE (zadie: AUTHOR {name: "Zadie Smith"})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "White teeth", rating: 5})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "The Autograph Man", rating: 3})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "On Beauty", rating: 4})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "NW"})
+                     |CREATE (zadie)-[:WROTE]->(:BOOK {book: "Swing Time", rating: 5})""".stripMargin)
+
+    // When
+    val result = graph.execute("CYPHER runtime=morsel  MATCH (b:BOOK) RETURN b.book as book, count(b.rating) ORDER BY book")
+
+    // Then
+    asScalaResult(result).toList should have size 5
+  }
+
+  ignore("should support apply") {
+
+    graph.createIndex("Person", "name")
+    graph.inTx(graph.schema().awaitIndexesOnline(5, TimeUnit.SECONDS))
+
+    for(i <- 0 until 100) {
+      createLabeledNode(Map("name" -> "me", "secondName" -> s"me$i"), "Person")
+      createLabeledNode(Map("name" -> s"me$i", "secondName" -> "you"), "Person")
+    }
+
+    val query =
+      """MATCH (p:Person { name:'me' })
+        |MATCH (q:Person { name: p.secondName })
+        |RETURN p, q""".stripMargin
+
+    // When
+    val result = graph.execute(s"CYPHER runtime=morsel $query")
+    // Then
+    val resultSet = asScalaResult(result).toSet
+    println(result.getExecutionPlanDescription)
+  }
+}
+
+
+class ParallelMorselRuntimeAcceptanceTest extends MorselRuntimeAcceptanceTest {
   //we use a ridiculously small morsel size in order to trigger as many morsel overflows as possible
-  override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_morsel_size -> "4")
+  override def databaseConfig(): Map[Setting[_], String] = Map(
+    GraphDatabaseSettings.cypher_morsel_size -> "4",
+    GraphDatabaseSettings.cypher_worker_count -> "0"
+  )
+}
+
+class SequentialMorselRuntimeAcceptanceTest extends MorselRuntimeAcceptanceTest {
+  //we use a ridiculously small morsel size in order to trigger as many morsel overflows as possible
+  override def databaseConfig(): Map[Setting[_], String] = Map(
+    GraphDatabaseSettings.cypher_morsel_size -> "4",
+    GraphDatabaseSettings.cypher_worker_count -> "1"
+  )
 }

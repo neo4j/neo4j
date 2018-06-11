@@ -53,7 +53,6 @@ import org.neo4j.causalclustering.discovery.RoleInfo;
 import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Transaction.Type;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -378,7 +377,7 @@ public class ClusterOverviewIT
         Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
 
         List<MemberInfo> infos = new ArrayList<>();
-        try ( Session session = kernel.beginSession( AnonymousContext.read() ); Transaction tx = session.beginTransaction( Type.implicit ) )
+        try ( Transaction tx = kernel.beginTransaction( Type.implicit, AnonymousContext.read() ) )
         {
             RawIterator<Object[],ProcedureException> itr =
                     tx.procedures().procedureCallRead( procedureName( "dbms", "cluster", ClusterOverviewProcedure.PROCEDURE_NAME ), null );

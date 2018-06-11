@@ -153,6 +153,20 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    public boolean nodeDeletedInTransaction( long node )
+    {
+        ktx.assertOpen();
+        return hasTxStateWithChanges() && txState().nodeIsDeletedInThisTx( node );
+    }
+
+    @Override
+    public boolean relationshipDeletedInTransaction( long relationship )
+    {
+        ktx.assertOpen();
+        return hasTxStateWithChanges() && txState().relationshipIsDeletedInThisTx( relationship );
+    }
+
+    @Override
     public long countsForNode( int labelId )
     {
         long count = countsForNodeWithoutTxState( labelId );

@@ -280,17 +280,21 @@ public class FileUtils
 
     public static void copyRecursively( File fromDirectory, File toDirectory, FileFilter filter ) throws IOException
     {
-        for ( File fromFile : fromDirectory.listFiles( filter ) )
+        File[] files = fromDirectory.listFiles( filter );
+        if ( files != null )
         {
-            File toFile = new File( toDirectory, fromFile.getName() );
-            if ( fromFile.isDirectory() )
+            for ( File fromFile : files )
             {
-                Files.createDirectories( toFile.toPath() );
-                copyRecursively( fromFile, toFile, filter );
-            }
-            else
-            {
-                copyFile( fromFile, toFile );
+                File toFile = new File( toDirectory, fromFile.getName() );
+                if ( fromFile.isDirectory() )
+                {
+                    Files.createDirectories( toFile.toPath() );
+                    copyRecursively( fromFile, toFile, filter );
+                }
+                else
+                {
+                    copyFile( fromFile, toFile );
+                }
             }
         }
     }

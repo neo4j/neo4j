@@ -194,6 +194,18 @@ public class StubRead implements Read
     }
 
     @Override
+    public boolean nodeDeletedInTransaction( long node )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean relationshipDeletedInTransaction( long relationship )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void relationshipProperties( long relationshipReference, long reference, PropertyCursor cursor )
     {
         throw new UnsupportedOperationException();

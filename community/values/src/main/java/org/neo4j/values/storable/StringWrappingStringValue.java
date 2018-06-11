@@ -136,6 +136,12 @@ final class StringWrappingStringValue extends StringValue
     }
 
     @Override
+    public TextValue plus( TextValue other )
+    {
+        return new StringWrappingStringValue( value + other.stringValue() );
+    }
+
+    @Override
     Matcher matcher( Pattern pattern )
     {
         return pattern.matcher( value );

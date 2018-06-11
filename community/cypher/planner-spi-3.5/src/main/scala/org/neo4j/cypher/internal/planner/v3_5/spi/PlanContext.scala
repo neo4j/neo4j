@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.planner.v3_5.spi
 
-import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.v3_5.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
+import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 
 /**
  * PlanContext is an internal access layer to the graph that is solely used during plan building
@@ -47,6 +47,11 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
   def indexExistsForLabel(labelId: Int): Boolean
 
   /**
+    * Gets an index index if it exists (general or unique) for a given label and properties
+    */
+  def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
+
+  /**
     * Checks if an index exists (general or unique) for a given label and properties
     */
   def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean
@@ -64,8 +69,6 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
   def statistics: GraphStatistics
 
   def notificationLogger(): InternalNotificationLogger
-
-  def twoLayerTransactionState(): Boolean
 }
 
 trait ProcedureSignatureResolver {

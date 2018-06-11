@@ -92,6 +92,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
@@ -427,7 +428,7 @@ public class StoreUpgradeIT
     private static void checkIndexCounts( Store store, GraphDatabaseAPI db ) throws KernelException
     {
         InwardKernel kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
+        try ( KernelTransaction tx = kernel.beginTransaction( implicit, AnonymousContext.read() );
               Statement ignore = tx.acquireStatement() )
         {
             SchemaRead schemaRead = tx.schemaRead();

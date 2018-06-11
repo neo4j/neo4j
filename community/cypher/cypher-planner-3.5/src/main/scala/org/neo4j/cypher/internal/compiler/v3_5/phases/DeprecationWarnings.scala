@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.phases
 
+import org.neo4j.cypher.internal.compiler.v3_5.{DeprecatedFieldNotification, DeprecatedProcedureNotification, ProcedureWarningNotification}
 import org.opencypher.v9_0.ast.{ProcedureResultItem, Statement, UnresolvedCall}
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.DEPRECATION_WARNINGS
 import org.opencypher.v9_0.frontend.phases.{BaseContext, BaseState, VisitorPhase}

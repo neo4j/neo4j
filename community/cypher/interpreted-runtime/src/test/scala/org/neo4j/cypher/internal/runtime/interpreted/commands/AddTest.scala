@@ -64,7 +64,7 @@ class AddTest extends CypherFunSuite {
   }
 
   test("numberPlusBool") {
-    val expr = Add(Literal("1"), Literal(true))
+    val expr = Add(Literal(1), Literal(true))
     intercept[CypherTypeException](expr(m, s))
   }
 

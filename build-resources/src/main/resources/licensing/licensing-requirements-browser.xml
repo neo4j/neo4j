@@ -1,0 +1,641 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (c) 2002-2018 "Neo4j,"
+    Neo4j Sweden AB [http://neo4j.com]
+
+    This file is part of Neo4j.
+
+    Neo4j is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+-->
+<licensing-requirements>
+  <missing-artifacts>
+
+    <!-- Media -->
+    <artifact id="font-awesome" name="Font Awesome">
+      <license>SIL OFL 1.1</license>
+    </artifact>
+    <artifact id="font-awesome-css" name="Font Awesome CSS">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="bootstrap" name="bootstrap">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="inconsolata" name="Inconsolata Font">
+      <license>SIL OFL 1.1</license>
+    </artifact>
+    <artifact id="open-sans" name="Open Sans Font">
+      <license>SIL OFL 1.1</license>
+    </artifact>
+
+    <!-- Embedded libraries -->
+    <artifact id="canvg" name="canvg">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="d3" name="D3.js">
+      <license>BSD License</license>
+    </artifact>
+
+    <!-- Auto-generated from yarn -->
+    <artifact id="ansi-escapes.js" name="ansi-escapes.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="ansi-regex.js" name="ansi-regex.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="ansi-styles.js" name="ansi-styles.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="antlr4.js" name="antlr4.js">
+      <license>BSD</license>
+    </artifact>
+    <artifact id="app-root-path.js" name="app-root-path.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="argparse.js" name="argparse.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="asap.js" name="asap.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="ascii-data-table.js" name="ascii-data-table.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="assertion-error.js" name="assertion-error.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="attr-accept.js" name="attr-accept.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="babel-runtime.js" name="babel-runtime.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="balanced-match.js" name="balanced-match.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="base64-js.js" name="base64-js.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="base64url.js" name="base64url.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="brace-expansion.js" name="brace-expansion.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="buffer-equal-constant-time.js" name="buffer-equal-constant-time.js">
+      <license>BSD-3-Clause</license>
+    </artifact>
+    <artifact id="buffer.js" name="buffer.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="chai.js" name="chai.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="chalk.js" name="chalk.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="check-error.js" name="check-error.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="ci-info.js" name="ci-info.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="classnames.js" name="classnames.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="cli-cursor.js" name="cli-cursor.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="cli-spinners.js" name="cli-spinners.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="cli-truncate.js" name="cli-truncate.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="code-point-at.js" name="code-point-at.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="codemirror.js" name="codemirror.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="color-convert.js" name="color-convert.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="color-name.js" name="color-name.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="commander.js" name="commander.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="concat-map.js" name="concat-map.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="core-js.js" name="core-js.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="cosmiconfig.js" name="cosmiconfig.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="cross-spawn.js" name="cross-spawn.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="css-color-keywords.js" name="css-color-keywords.js">
+      <license>ISC</license>
+    </artifact>
+    <artifact id="css-to-react-native.js" name="css-to-react-native.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="date-fns.js" name="date-fns.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="deep-eql.js" name="deep-eql.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="disposables.js" name="disposables.js">
+      <license>Apache-2.0</license>
+    </artifact>
+    <artifact id="dnd-core.js" name="dnd-core.js">
+      <license>BSD-3-Clause</license>
+    </artifact>
+    <artifact id="dom-storage.js" name="dom-storage.js">
+      <license>Apache2</license>
+    </artifact>
+    <artifact id="ecdsa-sig-formatter.js" name="ecdsa-sig-formatter.js">
+      <license>Apache-2.0</license>
+    </artifact>
+    <artifact id="elegant-spinner.js" name="elegant-spinner.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="encoding.js" name="encoding.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="error-ex.js" name="error-ex.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="escape-string-regexp.js" name="escape-string-regexp.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="esprima.js" name="esprima.js">
+      <license>BSD-2-Clause</license>
+    </artifact>
+    <artifact id="execa.js" name="execa.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="exit-hook.js" name="exit-hook.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="faye-websocket.js" name="faye-websocket.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="fbjs.js" name="fbjs.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="figures.js" name="figures.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="file-saver.js" name="file-saver.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="firebase.js" name="firebase.js">
+      <license>Apache-2.0</license>
+    </artifact>
+    <artifact id="fuzzaldrin.js" name="fuzzaldrin.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="get-func-name.js" name="get-func-name.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="get-own-enumerable-property-symbols.js" name="get-own-enumerable-property-symbols.js">
+      <license>ISC</license>
+    </artifact>
+    <artifact id="get-stream.js" name="get-stream.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="graceful-fs.js" name="graceful-fs.js">
+      <license>ISC</license>
+    </artifact>
+    <artifact id="has-ansi.js" name="has-ansi.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="has-flag.js" name="has-flag.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="hoek.js" name="hoek.js">
+      <license>BSD-3-Clause</license>
+    </artifact>
+    <artifact id="hoist-non-react-statics.js" name="hoist-non-react-statics.js">
+      <license>BSD-3-Clause</license>
+    </artifact>
+    <artifact id="http-parser-js.js" name="http-parser-js.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="husky.js" name="husky.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="iconv-lite.js" name="iconv-lite.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="ieee754.js" name="ieee754.js">
+      <license>BSD-3-Clause</license>
+    </artifact>
+    <artifact id="immutability-helper.js" name="immutability-helper.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="indent-string.js" name="indent-string.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="invariant.js" name="invariant.js">
+      <license>BSD-3-Clause</license>
+    </artifact>
+    <artifact id="is-arrayish.js" name="is-arrayish.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="is-ci.js" name="is-ci.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="is-extglob.js" name="is-extglob.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="is-finite.js" name="is-finite.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="is-fullwidth-code-point.js" name="is-fullwidth-code-point.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="is-function.js" name="is-function.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="is-glob.js" name="is-glob.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="is-obj.js" name="is-obj.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="is-plain-object.js" name="is-plain-object.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="is-promise.js" name="is-promise.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="is-regexp.js" name="is-regexp.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="is-stream.js" name="is-stream.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="isemail.js" name="isemail.js">
+      <license>BSD-2-Clause</license>
+    </artifact>
+    <artifact id="isexe.js" name="isexe.js">
+      <license>ISC</license>
+    </artifact>
+    <artifact id="isobject.js" name="isobject.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="isomorphic-fetch.js" name="isomorphic-fetch.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="jest-get-type.js" name="jest-get-type.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="jest-validate.js" name="jest-validate.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="joi.js" name="joi.js">
+      <license>BSD-3-Clause</license>
+    </artifact>
+    <artifact id="js-tokens.js" name="js-tokens.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="js-yaml.js" name="js-yaml.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="jsonic.js" name="jsonic.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="jsonwebtoken.js" name="jsonwebtoken.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="jwa.js" name="jwa.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="jws.js" name="jws.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="leven.js" name="leven.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="lint-staged.js" name="lint-staged.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="listr-silent-renderer.js" name="listr-silent-renderer.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="listr-update-renderer.js" name="listr-update-renderer.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="listr-verbose-renderer.js" name="listr-verbose-renderer.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="listr.js" name="listr.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="lodash-es.js" name="lodash-es.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="lodash.debounce" name="">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="lodash.once" name="">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="lodash.js" name="lodash.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="log-symbols.js" name="log-symbols.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="log-update.js" name="log-update.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="loose-envify.js" name="loose-envify.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="lru-cache.js" name="lru-cache.js">
+      <license>ISC</license>
+    </artifact>
+    <artifact id="minimatch.js" name="minimatch.js">
+      <license>ISC</license>
+    </artifact>
+    <artifact id="minimist.js" name="minimist.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="moment.js" name="moment.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="ms.js" name="ms.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="node-fetch.js" name="node-fetch.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="node-noop.js" name="node-noop.js">
+      <license>BSD-2-Clause</license>
+    </artifact>
+    <artifact id="normalize-path.js" name="normalize-path.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="npm-path.js" name="npm-path.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="npm-run-path.js" name="npm-run-path.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="npm-which.js" name="npm-which.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="number-is-nan.js" name="number-is-nan.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="object-assign.js" name="object-assign.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="onetime.js" name="onetime.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="ora.js" name="ora.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="os-homedir.js" name="os-homedir.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="p-finally.js" name="p-finally.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="p-map.js" name="p-map.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="parse-json.js" name="parse-json.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="path-key.js" name="path-key.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="pathval.js" name="pathval.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="pinkie-promise.js" name="pinkie-promise.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="pinkie.js" name="pinkie.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="postcss-value-parser.js" name="postcss-value-parser.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="preact-compat.js" name="preact-compat.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="preact-redux.js" name="preact-redux.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="preact-render-to-string.js" name="preact-render-to-string.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="preact-suber.js" name="preact-suber.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="preact-transition-group.js" name="preact-transition-group.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="preact.js" name="preact.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="pretty-format.js" name="pretty-format.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="promise-polyfill.js" name="promise-polyfill.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="promise.js" name="promise.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="prop-types.js" name="prop-types.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="pseudomap.js" name="pseudomap.js">
+      <license>ISC</license>
+    </artifact>
+    <artifact id="querystringify.js" name="querystringify.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="react-addons-pure-render-mixin.js" name="react-addons-pure-render-mixin.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="react-dnd-html5-backend.js" name="react-dnd-html5-backend.js">
+      <license>BSD-3-Clause</license>
+    </artifact>
+    <artifact id="react-dnd.js" name="react-dnd.js">
+      <license>BSD-3-Clause</license>
+    </artifact>
+    <artifact id="react-dropzone.js" name="react-dropzone.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="react-icon-base.js" name="react-icon-base.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="react-icons.js" name="react-icons.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="react-timeago.js" name="react-timeago.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="redux-observable.js" name="redux-observable.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="redux.js" name="redux.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="regenerator-runtime.js" name="regenerator-runtime.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="repeating.js" name="repeating.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="require-from-string.js" name="require-from-string.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="requires-port.js" name="requires-port.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="restore-cursor.js" name="restore-cursor.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="rxjs.js" name="rxjs.js">
+      <license>Apache-2.0</license>
+    </artifact>
+    <artifact id="safe-buffer.js" name="safe-buffer.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="save-as.js" name="save-as.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="sax.js" name="sax.js">
+      <license>ISC</license>
+    </artifact>
+    <artifact id="setimmediate.js" name="setimmediate.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="shebang-command.js" name="shebang-command.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="shebang-regex.js" name="shebang-regex.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="signal-exit.js" name="signal-exit.js">
+      <license>ISC</license>
+    </artifact>
+    <artifact id="slice-ansi.js" name="slice-ansi.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="sprintf-js.js" name="sprintf-js.js">
+      <license>BSD-3-Clause</license>
+    </artifact>
+    <artifact id="staged-git-files.js" name="staged-git-files.js">
+      <license>BSD-2-Clause</license>
+    </artifact>
+    <artifact id="standalone-react-addons-pure-render-mixin.js" name="standalone-react-addons-pure-render-mixin.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="stream-to-observable.js" name="stream-to-observable.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="string-width.js" name="string-width.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="stringify-object.js" name="stringify-object.js">
+      <license>BSD-2-Clause</license>
+    </artifact>
+    <artifact id="strip-ansi.js" name="strip-ansi.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="strip-eof.js" name="strip-eof.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="strip-indent.js" name="strip-indent.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="styled-components.js" name="styled-components.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="stylis.js" name="stylis.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="suber.js" name="suber.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="supports-color.js" name="supports-color.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="swipe-js-iso.js" name="swipe-js-iso.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="symbol-observable.js" name="symbol-observable.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="topo.js" name="topo.js">
+      <license>BSD-3-Clause</license>
+    </artifact>
+    <artifact id="type-detect.js" name="type-detect.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="ua-parser-js.js" name="ua-parser-js.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="url-parse.js" name="url-parse.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="uuid.js" name="uuid.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="websocket-driver.js" name="websocket-driver.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="websocket-extensions.js" name="websocket-extensions.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="whatwg-fetch.js" name="whatwg-fetch.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="which.js" name="which.js">
+      <license>ISC</license>
+    </artifact>
+    <artifact id="xml2js.js" name="xml2js.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="xmlbuilder.js" name="xmlbuilder.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="xmlhttprequest.js" name="xmlhttprequest.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="xtend.js" name="xtend.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="yallist.js" name="yallist.js">
+      <license>ISC</license>
+    </artifact>
+  </missing-artifacts>
+</licensing-requirements>

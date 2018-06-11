@@ -24,7 +24,7 @@
   </scm>
 
   <properties>
-    <license-text.header>../build/AGPL-3-header.txt</license-text.header>
+    <license-text.header>headers/AGPL-3-header.txt</license-text.header>
   </properties>
 
   <modules>
@@ -44,7 +44,6 @@
     <module>deferred-locks</module>
     <module>ha</module>
     <module>procedure-compiler-enterprise-tests</module>
-    <module>fulltext-addon</module>
   </modules>
 
   <profiles>

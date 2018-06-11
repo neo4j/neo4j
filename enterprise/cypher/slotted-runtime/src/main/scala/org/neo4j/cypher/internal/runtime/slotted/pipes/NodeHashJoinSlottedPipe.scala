@@ -21,11 +21,13 @@ package org.neo4j.cypher.internal.runtime.slotted.pipes
 
 import java.util
 
+import org.eclipse.collections.api.multimap.list.MutableListMultimap
+import org.eclipse.collections.impl.factory.Multimaps
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
-import org.neo4j.cypher.internal.runtime.{LongArrayHashMultiMap, PrefetchingIterator}
+import org.neo4j.cypher.internal.runtime.PrefetchingIterator
 import org.opencypher.v9_0.util.attribution.Id
 
 case class NodeHashJoinSlottedPipe(lhsOffsets: Array[Int],
@@ -58,15 +60,15 @@ case class NodeHashJoinSlottedPipe(lhsOffsets: Array[Int],
     probeInput(rhsIterator, state, table)
   }
 
-  private def buildProbeTable(lhsInput: Iterator[ExecutionContext], queryState: QueryState): LongArrayHashMultiMap[ExecutionContext] = {
-    val table = new LongArrayHashMultiMap[ExecutionContext](32, width)
+  private def buildProbeTable(lhsInput: Iterator[ExecutionContext], queryState: QueryState): MutableListMultimap[Key, ExecutionContext] = {
+    val table = Multimaps.mutable.list.empty[Key, ExecutionContext]()
 
-    val key = new Array[Long](width)
     for (current <- lhsInput) {
+      val key = new Array[Long](width)
       fillKeyArray(current, key, lhsOffsets)
 
       if (key(0) != -1)
-        table.add(key, current)
+        table.put(new Key(key), current)
     }
 
     table
@@ -74,7 +76,7 @@ case class NodeHashJoinSlottedPipe(lhsOffsets: Array[Int],
 
   private def probeInput(rhsInput: Iterator[ExecutionContext],
                          queryState: QueryState,
-                         probeTable: LongArrayHashMultiMap[ExecutionContext]): Iterator[ExecutionContext] =
+                         probeTable: MutableListMultimap[Key, ExecutionContext]): Iterator[ExecutionContext] =
     new PrefetchingIterator[ExecutionContext] {
       private val key = new Array[Long](width)
       private var matches: util.Iterator[ExecutionContext] = util.Collections.emptyIterator()
@@ -94,7 +96,7 @@ case class NodeHashJoinSlottedPipe(lhsOffsets: Array[Int],
           currentRhsRow = rhsInput.next()
           fillKeyArray(currentRhsRow, key, rhsOffsets)
           if (key(0) != -1 /*If we have nulls in the key, no match will be found*/ ) {
-            matches = probeTable.get(key)
+            matches = probeTable.get(new Key(key)).iterator()
             if (matches.hasNext) {
               // If we did not recurse back in like this, we would have to double up on the logic for creating output rows from matches
               return produceNext()

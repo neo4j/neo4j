@@ -18,7 +18,7 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <license-text.header>../../../build/GPL-3-header.txt</license-text.header>
+    <license-text.header>headers/GPL-3-header.txt</license-text.header>
     <moduleName>org.neo4j.cypher.internal.compatibility.v3_5.runtime.slotted</moduleName>
   </properties>
 
@@ -114,6 +114,11 @@
       <artifactId>neo4j-cypher-physical-planning</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-compiled-expressions</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
 
     <!-- neo4j testing -->
@@ -163,7 +168,7 @@
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>ast-9.0</artifactId>
-      <version>${openCypher.version}</version>
+      <version>${openCypher.frontend.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
@@ -171,7 +176,7 @@
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>util-9.0</artifactId>
-      <version>${openCypher.version}</version>
+      <version>${openCypher.frontend.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>

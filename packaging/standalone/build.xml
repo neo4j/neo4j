@@ -1,14 +1,13 @@
 <project default="extract-shell-zip">
-  <property name="shell.dist" location="../../cypher-shell"/>
-  <property name="shell.zip" location="${shell.dist}.zip"/>
+  <property name="shell.dir" location="../../../../cypher-shell"/>
+  <property name="shell.zip" location="${shell.dir}/cypher-shell.zip"/>
   <!-- Extract zip file -->
 
   <target name="find-shell-zip" description="See if shell zip file exists">
     <available file="${shell.zip}" property="zip.present"/>
     <echo>Checking if ${shell.zip} exists: ${zip.present}</echo>
   </target>
-  <target name="extract-shell-zip" depends="find-shell-zip"
-          if="zip.present">
+  <target name="extract-shell-zip" depends="find-shell-zip" if="zip.present">
     <echo>Unzipping...</echo>
     <unzip src="${shell.zip}" dest="src/main/distribution"/>
   </target>

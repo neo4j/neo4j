@@ -53,8 +53,13 @@ public class MachineRoom
 
     public static BoltStateMachine newMachine()
     {
+        return newMachine( mock( BoltStateMachineSPI.class, RETURNS_MOCKS ) );
+    }
+
+    public static BoltStateMachine newMachine( BoltStateMachineSPI spi )
+    {
         BoltChannel boltChannel = mock( BoltChannel.class );
-        return new BoltStateMachine( mock( BoltStateMachineSPI.class, RETURNS_MOCKS ), boltChannel, Clock.systemUTC(), NullLogService.getInstance() );
+        return new BoltStateMachine( spi, boltChannel, Clock.systemUTC(), NullLogService.getInstance() );
     }
 
     public static BoltStateMachine newMachine( BoltStateMachine.State state ) throws AuthenticationException, BoltConnectionFatality
@@ -87,16 +92,17 @@ public class MachineRoom
         return machine;
     }
 
-    private static void init( BoltStateMachine machine ) throws AuthenticationException, BoltConnectionFatality
+    public static BoltStateMachine init( BoltStateMachine machine ) throws AuthenticationException, BoltConnectionFatality
     {
-        init( machine, null );
+        return init( machine, null );
     }
 
-    private static void init( BoltStateMachine machine, String owner ) throws AuthenticationException, BoltConnectionFatality
+    private static BoltStateMachine init( BoltStateMachine machine, String owner ) throws AuthenticationException, BoltConnectionFatality
     {
         AuthenticationResult authenticationResult = mock( AuthenticationResult.class );
         when( machine.spi.authenticate( any() ) ).thenReturn( authenticationResult );
         machine.init( USER_AGENT, owner == null ? emptyMap() : Collections.singletonMap( AuthToken.PRINCIPAL, owner ), nullResponseHandler() );
+        return machine;
     }
 
     private static void runBegin( BoltStateMachine machine ) throws BoltConnectionFatality

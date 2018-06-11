@@ -24,7 +24,7 @@
 
   <properties>
     <moduleName>org.neo4j.cypher.internal.runtime.util</moduleName>
-    <license-text.header>../../../build/GPL-3-header.txt</license-text.header>
+    <license-text.header>headers/GPL-3-header.txt</license-text.header>
   </properties>
 
   <licenses>
@@ -131,7 +131,7 @@
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>util-9.0</artifactId>
-      <version>${openCypher.version}</version>
+      <version>${openCypher.frontend.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
@@ -139,7 +139,7 @@
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>expressions-9.0</artifactId>
-      <version>${openCypher.version}</version>
+      <version>${openCypher.frontend.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>

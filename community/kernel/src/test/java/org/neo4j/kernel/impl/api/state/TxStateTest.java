@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.junit.After;
@@ -34,17 +36,23 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.function.Predicates;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
+import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -1199,6 +1207,58 @@ public class TxStateTest
                 fail( "Should not delete any relationship" );
             }
         } );
+    }
+
+    @Test
+    public void doNotVisitNotModifiedPropertiesOnModifiedNodes() throws ConstraintValidationException, CreateConstraintFailureException
+    {
+        state.nodeDoAddLabel( 5, 1 );
+        MutableBoolean labelsChecked = new MutableBoolean();
+        state.accept( new TxStateVisitor.Adapter()
+        {
+            @Override
+            public void visitNodeLabelChanges( long id, LongSet added, LongSet removed )
+            {
+                labelsChecked.setTrue();
+                assertEquals( 1, id );
+                assertEquals( 1, added.size() );
+                assertTrue( added.contains( 5 ) );
+                assertTrue( removed.isEmpty() );
+            }
+
+            @Override
+            public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed, IntIterable removed )
+            {
+                fail( "Properties were not changed." );
+            }
+        } );
+        assertTrue( labelsChecked.booleanValue() );
+    }
+
+    @Test
+    public void doNotVisitNotModifiedLabelsOnModifiedNodes() throws ConstraintValidationException, CreateConstraintFailureException
+    {
+        state.nodeDoAddProperty( 1, 2, Values.stringValue( "propertyValue" ) );
+        MutableBoolean propertiesChecked = new MutableBoolean();
+        state.accept( new TxStateVisitor.Adapter()
+        {
+            @Override
+            public void visitNodeLabelChanges( long id, LongSet added, LongSet removed )
+            {
+                fail( "Labels were not changed." );
+            }
+
+            @Override
+            public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed, IntIterable removed )
+            {
+                propertiesChecked.setTrue();
+                assertEquals( 1, id );
+                assertFalse( changed.hasNext() );
+                assertTrue( removed.isEmpty() );
+                assertEquals( 1, Iterators.count( added, Predicates.alwaysTrue() ) );
+            }
+        } );
+        assertTrue( propertiesChecked.booleanValue() );
     }
 
     @Test

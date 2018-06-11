@@ -25,23 +25,27 @@ package org.neo4j.cypher.internal.runtime.vectorized.operators
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{LongSlot, RefSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.opencypher.v9_0.util.symbols
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.values.AnyValue
+import org.opencypher.v9_0.util.symbols
 
 
 class ProduceResultOperator(slots: SlotConfiguration, fieldNames: Array[String]) extends MiddleOperator {
-  override def operate(iterationState: Iteration, data: Morsel, context: QueryContext, state: QueryState): Unit = {
-    val resultRow = new MorselResultRow(data, 0, slots, fieldNames, context)
-    (0 until data.validRows) foreach { position =>
-      resultRow.currentPos = position
+
+  override def operate(iterationState: Iteration,
+                       currentRow: MorselExecutionContext,
+                       context: QueryContext,
+                       state: QueryState): Unit = {
+    val resultRow = new MorselResultRow(currentRow, slots, fieldNames, context)
+
+    while(currentRow.hasMoreRows) {
       state.visitor.visit(resultRow)
+      currentRow.moveToNextRow()
     }
   }
 }
 
-class MorselResultRow(var morsel: Morsel,
-                      var currentPos: Int,
+class MorselResultRow(currentRow: MorselExecutionContext,
                       slots: SlotConfiguration,
                       fieldNames: Array[String],
                       queryContext: QueryContext) extends QueryResult.Record {
@@ -50,11 +54,13 @@ class MorselResultRow(var morsel: Morsel,
   private val updateArray: Array[() => AnyValue] = fieldNames.map(key => slots.get(key) match {
     case None => throw new IllegalStateException()
     case Some(RefSlot(offset, _, _)) => () =>
-       morsel.refs(currentPos * slots.numberOfReferences + offset)
+      currentRow.getRefAt(offset)
     case Some(LongSlot(offset, _, symbols.CTNode)) => () =>
-      queryContext.nodeOps.getById(morsel.longs(currentPos * slots.numberOfLongs + offset))
+      val nodeId = currentRow.getLongAt(offset)
+      queryContext.nodeOps.getById(nodeId)
     case Some(LongSlot(offset, _, symbols.CTRelationship)) => () =>
-      queryContext.relationshipOps.getById(morsel.longs(currentPos * slots.numberOfLongs + offset))
+      val relationshipId = currentRow.getLongAt(offset)
+      queryContext.relationshipOps.getById(relationshipId)
     case _ => throw new IllegalStateException
   })
 

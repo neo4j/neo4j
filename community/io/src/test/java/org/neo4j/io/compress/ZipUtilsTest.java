@@ -19,9 +19,8 @@
  */
 package org.neo4j.io.compress;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -30,30 +29,26 @@ import java.io.IOException;
 import java.util.zip.ZipInputStream;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ZipUtilsTest
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+class ZipUtilsTest
 {
 
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    private DefaultFileSystemAbstraction fileSystem;
-
-    @Before
-    public void setUp() throws Exception
-    {
-        fileSystem = fileSystemRule.get();
-    }
+    @Inject
+    TestDirectory testDirectory;
+    @Inject
+    DefaultFileSystemAbstraction fileSystem;
 
     @Test
-    public void doNotCreateZipArchiveForNonExistentSource() throws IOException
+    void doNotCreateZipArchiveForNonExistentSource() throws IOException
     {
         File archiveFile = testDirectory.file( "archive.zip" );
         ZipUtils.zip( fileSystem, testDirectory.file( "doesNotExist" ), archiveFile );
@@ -61,7 +56,7 @@ public class ZipUtilsTest
     }
 
     @Test
-    public void doNotCreateZipArchiveForEmptyDirectory() throws IOException
+    void doNotCreateZipArchiveForEmptyDirectory() throws IOException
     {
         File archiveFile = testDirectory.file( "archive.zip" );
         File emptyDirectory = testDirectory.directory( "emptyDirectory" );
@@ -70,7 +65,7 @@ public class ZipUtilsTest
     }
 
     @Test
-    public void archiveDirectory() throws IOException
+    void archiveDirectory() throws IOException
     {
         File archiveFile = testDirectory.file( "directoryArchive.zip" );
         File directory = testDirectory.directory( "directory" );
@@ -83,7 +78,7 @@ public class ZipUtilsTest
     }
 
     @Test
-    public void archiveDirectoryWithSubdirectories() throws IOException
+    void archiveDirectoryWithSubdirectories() throws IOException
     {
         File archiveFile = testDirectory.file( "directoryWithSubdirectoriesArchive.zip" );
         File directoryArchive = testDirectory.directory( "directoryWithSubdirs" );
@@ -96,14 +91,14 @@ public class ZipUtilsTest
         fileSystem.create( new File( subdir1, "c" ) ).close();
         fileSystem.create( new File( subdir2, "d" ) ).close();
 
-        ZipUtils.zip( fileSystemRule.get(), directoryArchive, archiveFile );
+        ZipUtils.zip( fileSystem, directoryArchive, archiveFile );
 
-        assertTrue( fileSystemRule.get().fileExists( archiveFile ) );
+        assertTrue( fileSystem.fileExists( archiveFile ) );
         assertEquals( 6, countArchiveEntries( archiveFile ) );
     }
 
     @Test
-    public void archiveFile() throws IOException
+    void archiveFile() throws IOException
     {
         File archiveFile = testDirectory.file( "fileArchive.zip" );
         File aFile = testDirectory.file( "a" );

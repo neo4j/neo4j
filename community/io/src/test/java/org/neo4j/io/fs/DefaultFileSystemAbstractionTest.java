@@ -19,19 +19,17 @@
  */
 package org.neo4j.io.fs;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
 import static java.lang.String.format;
-
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.io.fs.DefaultFileSystemAbstraction.UNABLE_TO_CREATE_DIRECTORY_FORMAT;
 
 public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
@@ -43,7 +41,7 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
     }
 
     @Test
-    public void shouldFailGracefullyWhenPathCannotBeCreated()
+    void shouldFailGracefullyWhenPathCannotBeCreated()
     {
         path = new File( testDirectory.directory(), String.valueOf( UUID.randomUUID() ) )
         {
@@ -54,17 +52,9 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
             }
         };
 
-        try
-        {
-            fsa.mkdirs( path );
-
-            fail();
-        }
-        catch ( IOException e )
-        {
-            assertFalse( fsa.fileExists( path ) );
-            String expectedMessage = format( UNABLE_TO_CREATE_DIRECTORY_FORMAT, path );
-            assertThat( e.getMessage(), is( expectedMessage ) );
-        }
+        IOException exception = assertThrows( IOException.class, () -> fsa.mkdirs( path ) );
+        assertFalse( fsa.fileExists( path ) );
+        String expectedMessage = format( UNABLE_TO_CREATE_DIRECTORY_FORMAT, path );
+        assertThat( exception.getMessage(), is( expectedMessage ) );
     }
 }

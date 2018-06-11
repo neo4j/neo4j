@@ -24,4 +24,13 @@ package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import org.neo4j.cypher.internal.runtime.vectorized.expressions.AggregationExpressionOperator
 
-case class AggregationOffsets(incoming: Int, outgoing: Int, aggregation: AggregationExpressionOperator)
+/**
+  *
+  * @param mapperOutputSlot
+  * Slot from AggregationMapper's pipeline where aggregation result is written to by the Mapper and read from by the Reducer.
+  * @param reducerOutputSlot
+  * Slot from AggregationReducers's pipeline where grouping is written to by the Reducer.
+  * @param aggregation
+  * Aggregation expression to be operated on by the Mapper.
+  */
+case class AggregationOffsets(mapperOutputSlot: Int, reducerOutputSlot: Int, aggregation: AggregationExpressionOperator)

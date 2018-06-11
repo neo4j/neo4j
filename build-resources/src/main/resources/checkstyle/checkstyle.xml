@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC
+        "-//Puppy Crawl//DTD Check Configuration 1.2//EN"
+        "http://www.puppycrawl.com/dtds/configuration_1_2.dtd">
+
+<module name="Checker">
+
+  <property name="charset" value="UTF-8"/>
+  <property name="fileExtensions" value="java"/>
+
+  <!-- Require license headers (GPL, AGPL or Apache 2.0) -->
+  <module name="RegexpSingleline">
+    <property name="format"
+              value="^(\s|\*)*Copyright \(c\) 2002-[0-9]{4} &quot;Neo4j,&quot;"/>
+    <property name="minimum" value="1"/>
+    <property name="maximum" value="1"/>
+    <property name="message" value="Missing, wrong or duplicated license header"/>
+  </module>
+
+  <!-- Prohibit tabs -->
+  <module name="FileTabCharacter">
+    <property name="eachLine" value="true"/>
+  </module>
+
+  <!-- Require new line at the end of file -->
+  <module name="NewlineAtEndOfFile">
+    <property name="lineSeparator" value="lf_cr_crlf" />
+  </module>
+
+  <!-- Prohibit trailing spaces -->
+  <module name="RegexpSingleline">
+    <property name="format" value="\s+$"/>
+    <property name="minimum" value="0"/>
+    <property name="maximum" value="0"/>
+    <property name="message" value="Line has trailing spaces."/>
+  </module>
+
+  <!-- Prohibit consecutive empty lines (except the lines after package/import) -->
+  <module name="RegexpMultiline">
+    <property name="format" value="\n *(?!package )(?!import )[^\n]+\n{3,}"/>
+    <property name="message" value="Two or more consecutive empty lines"/>
+  </module>
+
+  <module name="TreeWalker">
+
+    <module name="PackageDeclaration"/>
+    <module name="UpperEll"/>
+    <module name="ArrayTypeStyle"/>
+    <module name="MissingOverride"/>
+    <module name="EmptyStatement"/>
+    <module name="SuperFinalize"/>
+    <module name="EqualsHashCode"/>
+    <module name="ModifierOrder"/>
+    <module name="RedundantImport"/>
+    <module name="MissingSwitchDefault"/>
+    <module name="DefaultComesLast"/>
+    <module name="MethodParamPad"/>
+    <module name="TypecastParenPad"/>
+    <module name="EmptyCatchBlock">
+      <property name="exceptionVariableName" value="ignore|ignored"/>
+    </module>
+    <module name="AnnotationLocation">
+      <property name="allowSamelineMultipleAnnotations" value="false"/>
+      <property name="allowSamelineSingleParameterlessAnnotation" value="false"/>
+      <property name="allowSamelineParameterizedAnnotation" value="false"/>
+    </module>
+    <module name="UnnecessaryParentheses"/>
+    <module name="LeftCurly">
+      <property name="option" value="nl"/>
+      <property name="tokens" value="INTERFACE_DEF, CLASS_DEF, ANNOTATION_DEF, ENUM_DEF, CTOR_DEF, METHOD_DEF, ENUM_CONSTANT_DEF, LITERAL_WHILE, LITERAL_TRY, LITERAL_CATCH, LITERAL_FINALLY, LITERAL_SYNCHRONIZED, LITERAL_SWITCH, LITERAL_DO, LITERAL_IF, LITERAL_ELSE, LITERAL_FOR, STATIC_INIT, OBJBLOCK"/>
+    </module>
+    <module name="RightCurly">
+      <property name="option" value="alone"/>
+    </module>
+    <module name="NeedBraces"/>
+    <module name="RedundantModifier"/>
+    <module name="WhitespaceAround">
+      <property name="allowEmptyConstructors" value="true"/>
+      <property name="allowEmptyLambdas" value="true"/>
+      <property name="allowEmptyMethods" value="true"/>
+    </module>
+    <module name="OneStatementPerLine"/>
+    <module name="ParenPad">
+      <property name="tokens"
+                value="ANNOTATION, ANNOTATION_FIELD_DEF, CTOR_CALL, CTOR_DEF, ENUM_CONSTANT_DEF, LITERAL_CATCH, LITERAL_DO, LITERAL_FOR, LITERAL_IF, LITERAL_NEW, LITERAL_SWITCH, LITERAL_SYNCHRONIZED, LITERAL_WHILE, RESOURCE_SPECIFICATION, SUPER_CTOR_CALL, LAMBDA, METHOD_DEF"/>
+      <property name="option" value="space"/>
+    </module>
+    <module name="AvoidStarImport"/>
+    <module name="GenericWhitespace"/>
+    <module name="ExplicitInitialization"/>
+    <module name="LineLength">
+      <property name="max" value="160"/>
+      <property name="ignorePattern" value="a href|href|http://|https://"/>
+    </module>
+
+    <module name="IllegalImport">
+      <property name="illegalPkgs" value="junit.framework"/>
+    </module>
+    <module name="LocalVariableName">
+      <property name="allowOneCharVarInForLoop" value="true"/>
+    </module>
+  </module>
+
+</module>

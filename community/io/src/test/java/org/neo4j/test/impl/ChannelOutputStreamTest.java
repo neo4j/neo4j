@@ -19,42 +19,46 @@
  */
 package org.neo4j.test.impl;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
-import org.neo4j.test.rule.fs.FileSystemRule;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
-public class ChannelOutputStreamTest
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@ExtendWith( TestDirectoryExtension.class )
+class ChannelOutputStreamTest
 {
-    @Rule
-    public FileSystemRule fs = new EphemeralFileSystemRule();
-
-    @Rule
-    public TemporaryFolder tmpDir = new TemporaryFolder();
+    @Inject
+    TestDirectory tmpDir;
 
     @Test
-    public void shouldStoreAByteAtBoundary() throws Exception
+    void shouldStoreAByteAtBoundary() throws Exception
     {
-        File workFile = tmpDir.newFile();
-        fs.mkdirs( tmpDir.getRoot() );
-        OutputStream out = fs.openAsOutputStream( workFile, false );
+        try ( EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction() )
+        {
+            File workFile = tmpDir.file( "a" );
+            fs.mkdirs( tmpDir.directory() );
+            OutputStream out = fs.openAsOutputStream( workFile, false );
 
-        // When I write a byte[] that is larger than the internal buffer in
-        // ChannelOutputStream..
-        byte[] b = new byte[8097];
-        b[b.length - 1] = 7;
-        out.write( b );
-        out.flush();
+            // When I write a byte[] that is larger than the internal buffer in
+            // ChannelOutputStream..
+            byte[] b = new byte[8097];
+            b[b.length - 1] = 7;
+            out.write( b );
+            out.flush();
 
-        // Then it should get cleanly written and be readable
-        InputStream in = fs.openAsInputStream( workFile );
-        in.skip( 8096 );
-        assert in.read() == 7;
+            // Then it should get cleanly written and be readable
+            InputStream in = fs.openAsInputStream( workFile );
+            in.skip( 8096 );
+            assertEquals( 7, in.read() );
+        }
     }
 }

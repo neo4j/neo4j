@@ -29,6 +29,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
+import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
@@ -55,7 +56,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -119,9 +119,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
         catch ( IOException e )
         {
-            System.err.println(
-                    "WARNING: EphemeralFileSystemAbstraction could not initialise current working directory" );
-            e.printStackTrace();
+            throw new UncheckedIOException( "EphemeralFileSystemAbstraction could not initialise current working directory", e );
         }
     }
 
@@ -334,11 +332,8 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
         catch ( IOException e )
         {
-            System.err.println( "WARNING: EphemeralFileSystemAbstraction could not canonicalise file: " + file );
-            e.printStackTrace();
+            throw new UncheckedIOException( "EphemeralFileSystemAbstraction could not canonicalise file: " + file, e );
         }
-        // Ugly fallback
-        return file.getAbsoluteFile();
     }
 
     @Override

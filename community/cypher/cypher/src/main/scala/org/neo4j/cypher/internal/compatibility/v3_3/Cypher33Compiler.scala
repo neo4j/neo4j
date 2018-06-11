@@ -25,11 +25,12 @@ import org.neo4j.cypher.exceptionHandler.{RunSafely, runSafely => runtimeRunSafe
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_3.helpers.as3_3
+import org.neo4j.cypher.internal.compatibility.v3_5.notification.LogicalPlanNotifications
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{ExecutionPlan => ExecutionPlan_v3_5}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{CommunityRuntimeContext => CommunityRuntimeContextv3_5, _}
-import org.neo4j.cypher.internal.compatibility.v3_5.{LogicalPlanNotifications, ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextv3_5}
+import org.neo4j.cypher.internal.compatibility.v3_5.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextv3_5}
 import org.neo4j.cypher.internal.compiler.v3_3
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{idp => idpV3_3}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.{logical => logicalV3_3}
@@ -44,7 +45,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseState, Monitors => Mo
 import org.neo4j.cypher.internal.planner.v3_5.spi.{CostBasedPlannerName, PlanContext, InstrumentedGraphStatistics => InstrumentedGraphStatisticsv3_5, MutableGraphStatisticsSnapshot => MutableGraphStatisticsSnapshotv3_5}
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.spi.v3_3.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_3, TransactionBoundGraphStatistics => TransactionBoundGraphStatisticsV3_3, TransactionBoundPlanContext => TransactionBoundPlanContextV3_3}
-import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy}
+import org.neo4j.cypher.{CypherPlannerOption, CypherUpdateStrategy}
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
@@ -58,9 +59,8 @@ T <: Transformer[CONTEXT3_5, LogicalPlanState, CompilationState]](configv3_5: Cy
                                                                   kernelMonitors: KernelMonitors,
                                                                   log: Log,
                                                                   planner: CypherPlannerOption,
-                                                                  runtime: CypherRuntimeOption,
                                                                   updateStrategy: CypherUpdateStrategy,
-                                                                  runtimeBuilder: RuntimeBuilder[T],
+                                                                  runtime: CypherRuntime[CONTEXT3_5],
                                                                   contextCreatorV3_3: v3_3.ContextCreator[CONTEXT3_3],
                                                                   contextCreatorV3_5: ContextCreator[CONTEXT3_5],
                                                                   txIdProvider: () => Long)
@@ -69,9 +69,8 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_5, T, StatementV3_3](
                                                                                 kernelMonitors,
                                                                                 log,
                                                                                 planner,
-                                                                                runtime,
                                                                                 updateStrategy,
-                                                                                runtimeBuilder,
+                                                                                runtime,
                                                                                 contextCreatorV3_5,
                                                                                 txIdProvider) with CachingCompiler[BaseState] {
 
@@ -203,8 +202,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_5, T, StatementV3_3](
         LogicalPlanNotifications
           .checkForNotifications(logicalPlanStatev3_5.maybeLogicalPlan.get, planContextv3_5, configv3_5)
           .foreach(notificationLoggerv3_5.log)
-        val result = createExecPlan.transform(logicalPlanStatev3_5, contextv3_5)
-        result.maybeExecutionPlan.get
+        runtime.compileToExecutable(logicalPlanStatev3_5, contextv3_5)
       }
 
       val executionPlan3_5 =

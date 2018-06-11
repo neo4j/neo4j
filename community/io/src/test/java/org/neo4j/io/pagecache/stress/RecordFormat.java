@@ -23,8 +23,8 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 public class RecordFormat
 {

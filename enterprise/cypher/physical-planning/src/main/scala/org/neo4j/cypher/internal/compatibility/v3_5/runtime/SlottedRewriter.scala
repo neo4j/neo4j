@@ -55,7 +55,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
        */
       case oldPlan@Projection(_, expressions) =>
         val slotConfiguration = slotConfigurations(oldPlan.id)
-        val rewriter = rewriteCreator(slotConfiguration, oldPlan.selfThis, slotConfigurations)
+        val rewriter = rewriteCreator(slotConfiguration, oldPlan, slotConfigurations)
 
         val newExpressions = expressions collect {
           case (column, expression) => column -> expression.endoRewrite(rewriter)
@@ -91,8 +91,8 @@ class SlottedRewriter(tokenContext: TokenContext) {
         newPlan
 
       case plan@ValueHashJoin(lhs, rhs, e@Equals(lhsExp, rhsExp)) =>
-        val lhsRewriter = rewriteCreator(slotConfigurations(lhs.id), plan.selfThis, slotConfigurations)
-        val rhsRewriter = rewriteCreator(slotConfigurations(rhs.id), plan.selfThis, slotConfigurations)
+        val lhsRewriter = rewriteCreator(slotConfigurations(lhs.id), plan, slotConfigurations)
+        val rhsRewriter = rewriteCreator(slotConfigurations(rhs.id), plan, slotConfigurations)
         val lhsExpAfterRewrite = lhsExp.endoRewrite(lhsRewriter)
         val rhsExpAfterRewrite = rhsExp.endoRewrite(rhsRewriter)
         plan.copy(join = Equals(lhsExpAfterRewrite, rhsExpAfterRewrite)(e.position))(SameId(plan.id))

@@ -259,6 +259,18 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
+    public boolean nodeDeletedInTransaction( long node )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public boolean relationshipDeletedInTransaction( long relationship )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
     public UserFunctionHandle functionGet( QualifiedName name )
     {
        throw new UnsupportedOperationException();
