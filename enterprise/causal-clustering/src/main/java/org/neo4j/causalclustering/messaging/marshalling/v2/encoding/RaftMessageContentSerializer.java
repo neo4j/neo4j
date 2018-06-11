@@ -94,10 +94,13 @@ public class RaftMessageContentSerializer extends MessageToMessageEncoder<RaftMe
         @Override
         public Object[] handle( RaftMessages.AppendEntries.Request request ) throws Exception
         {
-            return Stream.concat(
-                    Arrays.stream( request.entries() ).flatMap( entry -> serializableContents( entry.content() ) ),
-                    Stream.of( ContentType.RaftLogEntryTerms, serializable( Arrays.stream( request.entries() ).mapToLong( RaftLogEntry::term ).toArray() ) ) )
-                    .toArray( Object[]::new );
+            Stream<Object> terms = Stream.of( ContentType.RaftLogEntryTerms,
+                    serializable( Arrays.stream( request.entries() ).mapToLong( RaftLogEntry::term ).toArray() ) );
+
+            Stream<Object> contents = Arrays.stream( request.entries() )
+                    .flatMap( entry -> serializableContents( entry.content() ) );
+
+            return Stream.concat( terms, contents ).toArray( Object[]::new );
         }
 
         @Override
