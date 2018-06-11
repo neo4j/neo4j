@@ -29,6 +29,7 @@ import java.time.Clock;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Queue;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
@@ -74,12 +75,12 @@ public class RaftMessageComposer extends MessageToMessageDecoder<Object>
         }
         if ( messageComposer != null )
         {
-            RaftMessages.ClusterIdAwareMessage clusterIdAwareMessage = messageComposer.maybeCompose( clock, raftLogEntryTerms, replicatedContents );
-            if ( clusterIdAwareMessage != null )
+            Optional<RaftMessages.ClusterIdAwareMessage> clusterIdAwareMessage = messageComposer.maybeCompose( clock, raftLogEntryTerms, replicatedContents );
+            clusterIdAwareMessage.ifPresent( message ->
             {
-                clear( clusterIdAwareMessage );
-                out.add( clusterIdAwareMessage );
-            }
+                clear( message );
+                out.add( message );
+            } );
         }
     }
 

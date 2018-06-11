@@ -27,6 +27,7 @@ import org.junit.Test;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
@@ -40,7 +41,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class ClusterIdAwareMessageComposerTest
 {
-
     @Test
     public void shouldThrowExceptionOnConflictingMessageHeaders()
     {
@@ -48,8 +48,8 @@ public class ClusterIdAwareMessageComposerTest
         {
             RaftMessageComposer raftMessageComposer = new RaftMessageComposer( Clock.systemUTC() );
 
-            raftMessageComposer.decode( null, messageCreator( ( a, b ) -> null ), null );
-            raftMessageComposer.decode( null, messageCreator( ( a, b ) -> null ), null );
+            raftMessageComposer.decode( null, messageCreator( ( a, b ) -> Optional.empty() ), null );
+            raftMessageComposer.decode( null, messageCreator( ( a, b ) -> Optional.empty() ), null );
         }
         catch ( IllegalStateException e )
         {
@@ -60,7 +60,7 @@ public class ClusterIdAwareMessageComposerTest
     }
 
     @Test
-    public void shouldThrowExceptionIfNotAllResoucesAreUsed()
+    public void shouldThrowExceptionIfNotAllResourcesAreUsed()
     {
         try
         {
@@ -69,7 +69,7 @@ public class ClusterIdAwareMessageComposerTest
             ReplicatedTransaction replicatedTransaction = new ReplicatedTransaction( new byte[0] );
             raftMessageComposer.decode( null, replicatedTransaction, null );
             List<Object> out = new ArrayList<>();
-            raftMessageComposer.decode( null, messageCreator( ( a, b ) -> dummyRequest() ), out );
+            raftMessageComposer.decode( null, messageCreator( ( a, b ) -> Optional.of( dummyRequest() ) ), out );
         }
         catch ( IllegalStateException e )
         {
@@ -102,8 +102,8 @@ public class ClusterIdAwareMessageComposerTest
         return new RaftMessages.PruneRequest( 1 );
     }
 
-    private RaftMessageDecoder.ClusterIdAwareMessageComposer messageCreator( RaftMessageDecoder.LazyComposer biFunction )
+    private RaftMessageDecoder.ClusterIdAwareMessageComposer messageCreator( RaftMessageDecoder.LazyComposer composer )
     {
-        return new RaftMessageDecoder.ClusterIdAwareMessageComposer( biFunction, new ClusterId( UUID.randomUUID() ) );
+        return new RaftMessageDecoder.ClusterIdAwareMessageComposer( composer, new ClusterId( UUID.randomUUID() ) );
     }
 }
