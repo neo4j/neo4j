@@ -45,7 +45,7 @@ public class ContentBuilder<CONTENT>
 
     public static <C> ContentBuilder<C> finished( C content )
     {
-        return new ContentBuilder<>( c1 -> content, true );
+        return new ContentBuilder<>( ignored -> content, true );
     }
 
     private ContentBuilder( Function<CONTENT,CONTENT> contentFunction, boolean isComplete )
@@ -63,18 +63,18 @@ public class ContentBuilder<CONTENT>
     }
 
     /** Composes this with the given builder and updates {@link #isComplete()} with the provided builder.
-     * @param replicatedContentBuilder that will be combined with this builder
+     * @param contentBuilder that will be combined with this builder
      * @return The combined builder
      * @throws IllegalStateException if the current builder is already complete
      */
-    public ContentBuilder<CONTENT> combine( ContentBuilder<CONTENT> replicatedContentBuilder )
+    public ContentBuilder<CONTENT> combine( ContentBuilder<CONTENT> contentBuilder )
     {
         if ( isComplete )
         {
             throw new IllegalStateException( "This content builder has already completed and cannot be combined." );
         }
-        contentFunction = contentFunction.compose( replicatedContentBuilder.contentFunction );
-        isComplete = replicatedContentBuilder.isComplete;
+        contentFunction = contentFunction.compose( contentBuilder.contentFunction );
+        isComplete = contentBuilder.isComplete;
         return this;
     }
 
