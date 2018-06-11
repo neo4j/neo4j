@@ -276,7 +276,7 @@ public class CheckPointSchedulerTest
         checkpointerStarter.get();
 
         assertTrue( "Checkpointer should be created.", checkPointer.isCheckpointCreated() );
-        assertTrue( "Limiter should be enabled in the end.", ioLimiter.isLimitEnabled() );
+        assertTrue( "Limiter should be enabled in the end.", ioLimiter.isLimited() );
     }
 
     @Test
@@ -366,7 +366,8 @@ public class CheckPointSchedulerTest
             limitEnabled = true;
         }
 
-        boolean isLimitEnabled()
+        @Override
+        public boolean isLimited()
         {
             return limitEnabled;
         }
@@ -389,7 +390,7 @@ public class CheckPointSchedulerTest
         public long checkPointIfNeeded( TriggerInfo triggerInfo )
         {
             latch.countDown();
-            while ( ioLimiter.isLimitEnabled() )
+            while ( ioLimiter.isLimited() )
             {
                 //spin while limiter enabled
             }

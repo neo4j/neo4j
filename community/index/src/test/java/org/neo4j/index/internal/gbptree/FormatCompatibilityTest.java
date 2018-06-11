@@ -264,7 +264,7 @@ public class FormatCompatibilityTest
                     put( writer, key );
                 }
             }
-            tree.checkpoint( IOLimiter.unlimited() );
+            tree.checkpoint( IOLimiter.UNLIMITED );
         }
         ZipUtils.zip( fsRule.get(), storeFile, directory.file( zipName ) );
     }

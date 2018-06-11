@@ -83,7 +83,7 @@ import static org.junit.rules.RuleChain.outerRule;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
-import static org.neo4j.io.pagecache.IOLimiter.unlimited;
+import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
@@ -321,7 +321,7 @@ public class GBPTreeTest
                     writer.put( key, value );
                 }
             }
-            index.checkpoint( unlimited() );
+            index.checkpoint( UNLIMITED );
         }
 
         // THEN
@@ -483,7 +483,7 @@ public class GBPTreeTest
         BiConsumer<GBPTree<MutableLong,MutableLong>,byte[]> beforeClose = ( index, expected ) ->
         {
             ThrowingRunnable throwingRunnable = () ->
-                    index.checkpoint( unlimited(), cursor -> cursor.putBytes( expected ) );
+                    index.checkpoint( UNLIMITED, cursor -> cursor.putBytes( expected ) );
             ThrowingRunnable.throwing( throwingRunnable ).run();
         };
         verifyHeaderDataAfterClose( beforeClose );
@@ -496,12 +496,12 @@ public class GBPTreeTest
         {
             ThrowingRunnable throwingRunnable = () ->
             {
-                index.checkpoint( unlimited(), cursor -> cursor.putBytes( expected ) );
+                index.checkpoint( UNLIMITED, cursor -> cursor.putBytes( expected ) );
                 insert( index, 0, 1 );
 
                 // WHEN
                 // Should carry over header data
-                index.checkpoint( unlimited() );
+                index.checkpoint( UNLIMITED );
             };
             ThrowingRunnable.throwing( throwingRunnable ).run();
         };
@@ -515,7 +515,7 @@ public class GBPTreeTest
         {
             ThrowingRunnable throwingRunnable = () ->
             {
-                index.checkpoint( unlimited(), cursor -> cursor.putBytes( expected ) );
+                index.checkpoint( UNLIMITED, cursor -> cursor.putBytes( expected ) );
                 insert( index, 0, 1 );
 
                 // No checkpoint
@@ -532,9 +532,9 @@ public class GBPTreeTest
         {
             ThrowingRunnable throwingRunnable = () ->
             {
-                index.checkpoint( unlimited(), cursor -> cursor.putBytes( expected ) );
+                index.checkpoint( UNLIMITED, cursor -> cursor.putBytes( expected ) );
                 ThreadLocalRandom.current().nextBytes( expected );
-                index.checkpoint( unlimited(), cursor -> cursor.putBytes( expected ) );
+                index.checkpoint( UNLIMITED, cursor -> cursor.putBytes( expected ) );
             };
             ThrowingRunnable.throwing( throwingRunnable ).run();
         };
@@ -613,7 +613,7 @@ public class GBPTreeTest
         Consumer<PageCursor> headerWriter = pc -> pc.putBytes( "failed".getBytes() );
         try ( GBPTree<MutableLong,MutableLong> index = index( pageCache ).with( RecoveryCleanupWorkCollector.IGNORE ).build() )
         {
-            index.checkpoint( IOLimiter.unlimited(), headerWriter );
+            index.checkpoint( UNLIMITED, headerWriter );
         }
 
         verifyHeader( pageCache, "failed".getBytes() );
@@ -811,7 +811,7 @@ public class GBPTreeTest
 
             // WHEN
             monitor.enabled = true;
-            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( unlimited() ) ) );
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( UNLIMITED ) ) );
             monitor.barrier.awaitUninterruptibly();
             // now we're in the smack middle of a checkpoint
             Future<?> writerClose = executor.submit( throwing( () -> index.writer().close() ) );
@@ -842,7 +842,7 @@ public class GBPTreeTest
                 }
             } ) );
             barrier.awaitUninterruptibly();
-            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( unlimited() ) ) );
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( UNLIMITED ) ) );
             shouldWait( checkpoint );
 
             // THEN
@@ -963,7 +963,7 @@ public class GBPTreeTest
             {
                 writer.put( new MutableLong( 1L ), new MutableLong( 2L ) );
             }
-            index.checkpoint( IOLimiter.unlimited() );
+            index.checkpoint( UNLIMITED );
         }
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
@@ -987,7 +987,7 @@ public class GBPTreeTest
             index.writer().close();
 
             // THEN
-            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( IOLimiter.unlimited() ) ) );
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( UNLIMITED ) ) );
             shouldWait( checkpoint );
 
             monitor.barrier.release();
@@ -1011,7 +1011,7 @@ public class GBPTreeTest
             monitor.barrier.awaitUninterruptibly();
 
             // THEN
-            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( IOLimiter.unlimited() ) ) );
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( UNLIMITED ) ) );
             shouldWait( checkpoint );
 
             monitor.barrier.release();
@@ -1213,7 +1213,7 @@ public class GBPTreeTest
             Future<?> cleanup = executor.submit( throwing( collector::start ) );
             shouldWait( cleanup );
 
-            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( IOLimiter.unlimited() ) ) );
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( UNLIMITED ) ) );
             shouldWait( checkpoint );
 
             cleanupMonitor.barrier.release();
@@ -1262,7 +1262,7 @@ public class GBPTreeTest
             {
                 writer.put( new MutableLong( 0 ), new MutableLong( 1 ) );
             }
-            index.checkpoint( unlimited() );
+            index.checkpoint( UNLIMITED );
             assertEquals( 1, checkpointCounter.count() );
         }
 
@@ -1280,7 +1280,7 @@ public class GBPTreeTest
         try ( GBPTree<MutableLong,MutableLong> index = index().with( checkpointCounter ).build() )
         {
             checkpointCounter.reset();
-            index.checkpoint( unlimited() );
+            index.checkpoint( UNLIMITED );
 
             // THEN
             assertEquals( 1, checkpointCounter.count() );
@@ -1322,7 +1322,7 @@ public class GBPTreeTest
             insert( index, key, value );
 
             // WHEN
-            index.checkpoint( unlimited() );
+            index.checkpoint( UNLIMITED );
         }
 
         // THEN
@@ -1408,7 +1408,7 @@ public class GBPTreeTest
         {
             insert( index, 0, 1 );
 
-            index.checkpoint( unlimited() );
+            index.checkpoint( UNLIMITED );
         }
 
         // WHEN
@@ -1501,7 +1501,7 @@ public class GBPTreeTest
         {
             insert( index, 0, 1 );
 
-            index.checkpoint( IOLimiter.unlimited() );
+            index.checkpoint( UNLIMITED );
         }
 
         // WHEN

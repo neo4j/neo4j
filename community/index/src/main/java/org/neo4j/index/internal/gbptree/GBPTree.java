@@ -488,7 +488,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         changesSinceLastCheckpoint = true;
 
         // Checkpoint to make the created root node stable. Forcing tree state also piggy-backs on this.
-        checkpoint( IOLimiter.unlimited(), headerWriter );
+        checkpoint( IOLimiter.UNLIMITED, headerWriter );
         clean = true;
     }
 

@@ -1052,11 +1052,11 @@ public class IndexingServiceTest
 
         IndexingService indexingService = createIndexServiceWithCustomIndexMap( indexMapReference );
 
-        indexingService.forceAll( IOLimiter.unlimited() );
-        verify( validIndex1, times( 1 ) ).force( IOLimiter.unlimited() );
-        verify( validIndex2, times( 1 ) ).force( IOLimiter.unlimited() );
-        verify( validIndex3, times( 1 ) ).force( IOLimiter.unlimited() );
-        verify( validIndex4, times( 1 ) ).force( IOLimiter.unlimited() );
+        indexingService.forceAll( IOLimiter.UNLIMITED );
+        verify( validIndex1, times( 1 ) ).force( IOLimiter.UNLIMITED );
+        verify( validIndex2, times( 1 ) ).force( IOLimiter.UNLIMITED );
+        verify( validIndex3, times( 1 ) ).force( IOLimiter.UNLIMITED );
+        verify( validIndex4, times( 1 ) ).force( IOLimiter.UNLIMITED );
     }
 
     @Test
@@ -1080,7 +1080,7 @@ public class IndexingServiceTest
 
         expectedException.expectMessage( "Unable to force" );
         expectedException.expect( UnderlyingStorageException.class );
-        indexingService.forceAll( IOLimiter.unlimited() );
+        indexingService.forceAll( IOLimiter.UNLIMITED );
     }
 
     @Test

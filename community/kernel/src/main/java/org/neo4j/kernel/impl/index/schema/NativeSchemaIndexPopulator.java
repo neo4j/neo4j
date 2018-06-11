@@ -304,12 +304,12 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey<KEY
         {
             failureBytes = ArrayUtils.EMPTY_BYTE_ARRAY;
         }
-        tree.checkpoint( IOLimiter.unlimited(), new FailureHeaderWriter( failureBytes ) );
+        tree.checkpoint( IOLimiter.UNLIMITED, new FailureHeaderWriter( failureBytes ) );
     }
 
     void markTreeAsOnline() throws IOException
     {
-        tree.checkpoint( IOLimiter.unlimited(), pc -> pc.putByte( BYTE_ONLINE ) );
+        tree.checkpoint( IOLimiter.UNLIMITED, pc -> pc.putByte( BYTE_ONLINE ) );
     }
 
     static class IndexUpdateApply<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>

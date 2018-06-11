@@ -125,7 +125,7 @@ public abstract class LabelScanStoreTest
     public void forceShouldNotForceWriterOnReadOnlyScanStore()
     {
         createAndStartReadOnly();
-        store.force( IOLimiter.unlimited() );
+        store.force( IOLimiter.UNLIMITED );
     }
 
     @Test

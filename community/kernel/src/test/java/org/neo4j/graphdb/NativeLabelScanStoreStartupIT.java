@@ -82,7 +82,7 @@ public class NativeLabelScanStoreStartupIT
         createTestNode();
         long[] labels = readNodesForLabel( labelScanStore );
         assertEquals( "Label scan store see 1 label for node", 1, labels.length );
-        labelScanStore.force( IOLimiter.unlimited() );
+        labelScanStore.force( IOLimiter.UNLIMITED );
         labelScanStore.shutdown();
         workCollector.shutdown();
 

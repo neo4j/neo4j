@@ -107,8 +107,13 @@ public interface IOLimiter
      * An IOPSLimiter implementation that does not restrict the rate of IO. Use this implementation if you want the
      * flush to go as fast as possible.
      */
-    static IOLimiter unlimited()
+    IOLimiter UNLIMITED = ( previousStamp, recentlyCompletedIOs, flushable ) -> previousStamp;
+
+    /**
+     * @return {@code true} if IO is currently limited
+     */
+    default boolean isLimited()
     {
-        return ( previousStamp, recentlyCompletedIOs, flushable ) -> previousStamp;
+        return false;
     }
 }

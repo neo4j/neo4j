@@ -47,7 +47,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.rules.RuleChain.outerRule;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
-import static org.neo4j.io.pagecache.IOLimiter.unlimited;
+import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
 public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
@@ -585,7 +585,7 @@ public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
         @Override
         public void execute( GBPTree<KEY,VALUE> index ) throws IOException
         {
-            index.checkpoint( unlimited() );
+            index.checkpoint( UNLIMITED );
         }
 
         @Override

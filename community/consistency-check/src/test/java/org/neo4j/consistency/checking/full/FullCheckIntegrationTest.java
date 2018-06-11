@@ -575,7 +575,7 @@ public class FullCheckIntegrationTest
                     }
                 }
             }
-            accessor.force( IOLimiter.unlimited() );
+            accessor.force( IOLimiter.UNLIMITED );
             accessor.close();
         }
 
@@ -602,7 +602,7 @@ public class FullCheckIntegrationTest
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
             updater.process( IndexEntryUpdate.add( 42, indexRule.schema(), values( indexRule ) ) );
             updater.close();
-            accessor.force( IOLimiter.unlimited() );
+            accessor.force( IOLimiter.UNLIMITED );
             accessor.close();
         }
 
