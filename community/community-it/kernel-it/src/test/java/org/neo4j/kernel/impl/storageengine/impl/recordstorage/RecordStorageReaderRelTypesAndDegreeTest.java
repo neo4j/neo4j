@@ -31,7 +31,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -364,11 +363,11 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
                 asSet( IN, OUT ) );
 
         testRelationshipTypesForDenseNode( nodeId -> markRelGroupNotInUse( nodeId, IN, OUT ),
-                Iterators.asSet( LOOP ) );
+                asSet( LOOP ) );
         testRelationshipTypesForDenseNode( nodeId -> markRelGroupNotInUse( nodeId, IN, LOOP ),
-                Iterators.asSet( OUT ) );
+                asSet( OUT ) );
         testRelationshipTypesForDenseNode( nodeId -> markRelGroupNotInUse( nodeId, OUT, LOOP ),
-                Iterators.asSet( IN ) );
+                asSet( IN ) );
 
         testRelationshipTypesForDenseNode(
                 nodeId -> markRelGroupNotInUse( nodeId, IN, OUT, LOOP ),

@@ -41,6 +41,7 @@ import org.neo4j.test.DoubleLatch;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
+import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class ControlledPopulationIndexProvider extends IndexProvider
 {
@@ -84,7 +85,7 @@ public class ControlledPopulationIndexProvider extends IndexProvider
 
     public void awaitFullyPopulated()
     {
-        DoubleLatch.awaitLatch( writerLatch );
+        awaitLatch( writerLatch );
     }
 
     @Override

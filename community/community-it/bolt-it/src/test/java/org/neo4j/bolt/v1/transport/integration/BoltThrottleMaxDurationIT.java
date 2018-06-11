@@ -20,7 +20,6 @@
 package org.neo4j.bolt.v1.transport.integration;
 
 import org.apache.commons.lang3.StringUtils;
-import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
@@ -40,9 +39,6 @@ import java.util.function.Consumer;
 
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
-import org.neo4j.bolt.v1.messaging.message.InitMessage;
-import org.neo4j.bolt.v1.messaging.message.RunMessage;
-import org.neo4j.bolt.v1.messaging.util.MessageMatchers;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
@@ -53,7 +49,6 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.matchers.CommonMatchers;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -64,7 +59,12 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
+import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
+import static org.neo4j.test.matchers.CommonMatchers.matchesExceptionMessage;
 
 @RunWith( Parameterized.class )
 public class BoltThrottleMaxDurationIT
@@ -137,17 +137,17 @@ public class BoltThrottleMaxDurationIT
         client.connect( address )
                 .send( util.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( util.chunk(
-                        InitMessage.init( "TestClient/1.1", emptyMap() ) ) );
+                        init( "TestClient/1.1", emptyMap() ) ) );
 
-        MatcherAssert.assertThat( client, TransportTestUtil.eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        MatcherAssert.assertThat( client, util.eventuallyReceives( MessageMatchers.msgSuccess() ) );
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess() ) );
 
         Future sender = otherThread.execute( state ->
         {
             for ( int i = 0; i < numberOfRunDiscardPairs; i++ )
             {
                 client.send( util.chunk(
-                        RunMessage.run( "RETURN $data as data", ValueUtils.asMapValue( singletonMap( "data", largeString ) ) ),
+                        run( "RETURN $data as data", ValueUtils.asMapValue( singletonMap( "data", largeString ) ) ),
                         pullAll()
                 ) );
             }
@@ -168,7 +168,7 @@ public class BoltThrottleMaxDurationIT
 
         logProvider.assertAtLeastOnce( AssertableLogProvider.inLog( Matchers.containsString( BoltConnection.class.getPackage().getName() ) ).error(
                 startsWith( "Unexpected error detected in bolt session" ),
-                CommonMatchers.matchesExceptionMessage( containsString( "will be closed because the client did not consume outgoing buffers for " ) ) ) );
+                matchesExceptionMessage( containsString( "will be closed because the client did not consume outgoing buffers for " ) ) ) );
     }
 
 }

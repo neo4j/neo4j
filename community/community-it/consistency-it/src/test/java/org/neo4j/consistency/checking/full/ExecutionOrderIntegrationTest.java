@@ -73,7 +73,6 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.test.Property;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -83,6 +82,8 @@ import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCh
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.Property.property;
+import static org.neo4j.test.Property.set;
 
 public class ExecutionOrderIntegrationTest
 {
@@ -95,8 +96,8 @@ public class ExecutionOrderIntegrationTest
             // TODO: create bigger sample graph here
             try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
             {
-                Node node1 = Property.set( graphDb.createNode( label( "Foo" ) ) );
-                Node node2 = Property.set( graphDb.createNode( label( "Foo" ) ), Property.property( "key", "value" ) );
+                Node node1 = set( graphDb.createNode( label( "Foo" ) ) );
+                Node node2 = set( graphDb.createNode( label( "Foo" ) ), property( "key", "value" ) );
                 node1.createRelationshipTo( node2, RelationshipType.withName( "C" ) );
                 tx.success();
             }

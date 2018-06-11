@@ -32,13 +32,13 @@ public class MandatoryTransactionsForConstraintDefinitionTest
     @Test
     public void shouldRequireTransactionsWhenCallingMethodsOnIndexDefinitions()
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ConstraintDefinitionFacadeMethods.ALL_CONSTRAINT_DEFINITION_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_CONSTRAINT_DEFINITION_FACADE_METHODS );
     }
 
     @Test
     public void shouldTerminateWhenCallingMethodsOnIndexDefinitions()
     {
-        assertFacadeMethodsThrowAfterTerminate( ConstraintDefinitionFacadeMethods.ALL_CONSTRAINT_DEFINITION_FACADE_METHODS );
+        assertFacadeMethodsThrowAfterTerminate( ALL_CONSTRAINT_DEFINITION_FACADE_METHODS );
     }
 
     @Override

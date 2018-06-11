@@ -30,13 +30,13 @@ public class MandatoryTransactionsForIndexManagerFacadeTest extends AbstractMand
     @Test
     public void shouldRequireTransactionsWhenCallingMethodsOnIndexManagerFacade()
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), IndexManagerFacadeMethods.ALL_INDEX_MANAGER_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_INDEX_MANAGER_FACADE_METHODS );
     }
 
     @Test
     public void shouldTerminateWhenCallingMethodsOnIndexManagerFacade()
     {
-        assertFacadeMethodsThrowAfterTerminate( IndexManagerFacadeMethods.ALL_INDEX_MANAGER_FACADE_METHODS );
+        assertFacadeMethodsThrowAfterTerminate( ALL_INDEX_MANAGER_FACADE_METHODS );
     }
 
     @Override

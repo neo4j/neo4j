@@ -69,7 +69,6 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
-import org.neo4j.unsafe.impl.batchimport.staging.ProcessorAssignmentStrategies;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Values;
 
@@ -90,6 +89,7 @@ import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.longs;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.strings;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
+import static org.neo4j.unsafe.impl.batchimport.staging.ProcessorAssignmentStrategies.eagerRandomSaturation;
 
 @RunWith( Parameterized.class )
 public class ParallelBatchImporterTest
@@ -165,7 +165,7 @@ public class ParallelBatchImporterTest
     public void shouldImportCsvData() throws Exception
     {
         // GIVEN
-        ExecutionMonitor processorAssigner = ProcessorAssignmentStrategies.eagerRandomSaturation( config.maxNumberOfProcessors() );
+        ExecutionMonitor processorAssigner = eagerRandomSaturation( config.maxNumberOfProcessors() );
         File storeDir = directory.directory( "dir" + random.nextAlphaNumericString( 8, 8 ) );
         storeDir.mkdirs();
         final BatchImporter inserter = new ParallelBatchImporter( storeDir,

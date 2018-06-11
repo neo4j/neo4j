@@ -54,6 +54,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeNotNull;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.test.rule.SuppressOutput.suppress;
 
 @RunWith( Parameterized.class )
 public class UniquenessRecoveryTest
@@ -79,7 +80,7 @@ public class UniquenessRecoveryTest
     }
 
     @Rule
-    public final SuppressOutput muted = SuppressOutput.suppress( SuppressOutput.System.out );
+    public final SuppressOutput muted = suppress( SuppressOutput.System.out );
     @Rule
     public final TestDirectory dir = TestDirectory.testDirectory();
     private final Configuration config;

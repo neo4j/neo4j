@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
+import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.graphdb.facade.embedded.EmbeddedGraphDatabase;
 import org.neo4j.graphdb.factory.module.CommunityEditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
@@ -123,26 +124,26 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         this( storeDir, params, getDependencies( kernelExtensions ) );
     }
 
-    private static GraphDatabaseFacadeFactory.Dependencies getDependencies( Iterable<KernelExtensionFactory<?>> kernelExtensions )
+    private static Dependencies getDependencies( Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
         return newDependencies().kernelExtensions( kernelExtensions );
     }
 
-    public ImpermanentGraphDatabase( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
+    public ImpermanentGraphDatabase( File storeDir, Map<String, String> params, Dependencies dependencies )
     {
         super( storeDir, params, dependencies );
         trackUnclosedUse( storeDir );
     }
 
     public ImpermanentGraphDatabase( File storeDir, Config config,
-            GraphDatabaseFacadeFactory.Dependencies dependencies )
+            Dependencies dependencies )
     {
         super( storeDir, config, dependencies );
         trackUnclosedUse( storeDir );
     }
 
     @Override
-    protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
+    protected void create( File storeDir, Map<String, String> params, Dependencies dependencies )
     {
         new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
         {
@@ -190,7 +191,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     protected static class ImpermanentPlatformModule extends PlatformModule
     {
         public ImpermanentPlatformModule( File storeDir, Config config, DatabaseInfo databaseInfo,
-                                          GraphDatabaseFacadeFactory.Dependencies dependencies,
+                                          Dependencies dependencies,
                                           GraphDatabaseFacade graphDatabaseFacade )
         {
             super( storeDir, withForcedInMemoryConfiguration(config), databaseInfo, dependencies, graphDatabaseFacade );

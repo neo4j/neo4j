@@ -21,7 +21,6 @@ package org.neo4j.commandline.dbms;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.hamcrest.Matcher;
-import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -38,33 +37,50 @@ import java.util.Map;
 
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.RealOutsideWorld;
-import org.neo4j.configuration.ExternalSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 
+import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.bytesToString;
+import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendHeapMemory;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendOsMemory;
+import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendPageCacheMemory;
+import static org.neo4j.configuration.ExternalSettings.initialHeapSize;
+import static org.neo4j.configuration.ExternalSettings.maxHeapSize;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.active_database;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.helpers.ArrayUtil.array;
+import static org.neo4j.helpers.collection.MapUtil.load;
+import static org.neo4j.helpers.collection.MapUtil.store;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.io.ByteUnit.exbiBytes;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.io.ByteUnit.tebiBytes;
+import static org.neo4j.kernel.configuration.Config.DEFAULT_CONFIG_FILE_NAME;
+import static org.neo4j.kernel.configuration.Config.fromFile;
+import static org.neo4j.kernel.configuration.Settings.BYTES;
+import static org.neo4j.kernel.configuration.Settings.buildSetting;
 
 public class MemoryRecommendationsCommandTest
 {
@@ -78,38 +94,38 @@ public class MemoryRecommendationsCommandTest
         assertThat( recommendOsMemory( gibiBytes( 1 ) ), between( mebiBytes( 450 ), mebiBytes( 550 ) ) );
         assertThat( recommendOsMemory( gibiBytes( 3 ) ), between( mebiBytes( 1256 ), mebiBytes( 1356 ) ) );
         assertThat( recommendOsMemory( gibiBytes( 192 ) ), between( gibiBytes( 17 ), gibiBytes( 19 ) ) );
-        assertThat( recommendOsMemory( gibiBytes( 1920 ) ), Matchers.greaterThan( gibiBytes( 29 ) ) );
+        assertThat( recommendOsMemory( gibiBytes( 1920 ) ), greaterThan( gibiBytes( 29 ) ) );
     }
 
     @Test
     public void mustRecommendHeapMemory()
     {
-        assertThat( MemoryRecommendationsCommand.recommendHeapMemory( mebiBytes( 100 ) ), between( mebiBytes( 45 ), mebiBytes( 55 ) ) );
-        assertThat( MemoryRecommendationsCommand.recommendHeapMemory( gibiBytes( 1 ) ), between( mebiBytes( 450 ), mebiBytes( 550 ) ) );
-        assertThat( MemoryRecommendationsCommand.recommendHeapMemory( gibiBytes( 3 ) ), between( mebiBytes( 1256 ), mebiBytes( 1356 ) ) );
-        assertThat( MemoryRecommendationsCommand.recommendHeapMemory( gibiBytes( 6 ) ), between( mebiBytes( 3000 ), mebiBytes( 3200 ) ) );
-        assertThat( MemoryRecommendationsCommand.recommendHeapMemory( gibiBytes( 192 ) ), between( gibiBytes( 30 ), gibiBytes( 32 ) ) );
-        assertThat( MemoryRecommendationsCommand.recommendHeapMemory( gibiBytes( 1920 ) ), between( gibiBytes( 30 ), gibiBytes( 32 ) ) );
+        assertThat( recommendHeapMemory( mebiBytes( 100 ) ), between( mebiBytes( 45 ), mebiBytes( 55 ) ) );
+        assertThat( recommendHeapMemory( gibiBytes( 1 ) ), between( mebiBytes( 450 ), mebiBytes( 550 ) ) );
+        assertThat( recommendHeapMemory( gibiBytes( 3 ) ), between( mebiBytes( 1256 ), mebiBytes( 1356 ) ) );
+        assertThat( recommendHeapMemory( gibiBytes( 6 ) ), between( mebiBytes( 3000 ), mebiBytes( 3200 ) ) );
+        assertThat( recommendHeapMemory( gibiBytes( 192 ) ), between( gibiBytes( 30 ), gibiBytes( 32 ) ) );
+        assertThat( recommendHeapMemory( gibiBytes( 1920 ) ), between( gibiBytes( 30 ), gibiBytes( 32 ) ) );
     }
 
     @Test
     public void mustRecommendPageCacheMemory()
     {
-        assertThat( MemoryRecommendationsCommand.recommendPageCacheMemory( mebiBytes( 100 ) ), between( mebiBytes( 95 ), mebiBytes( 105 ) ) );
-        assertThat( MemoryRecommendationsCommand.recommendPageCacheMemory( gibiBytes( 1 ) ), between( mebiBytes( 95 ), mebiBytes( 105 ) ) );
-        assertThat( MemoryRecommendationsCommand.recommendPageCacheMemory( gibiBytes( 3 ) ), between( mebiBytes( 470 ), mebiBytes( 530 ) ) );
-        assertThat( MemoryRecommendationsCommand.recommendPageCacheMemory( gibiBytes( 6 ) ), between( mebiBytes( 980 ), mebiBytes( 1048 ) ) );
-        assertThat( MemoryRecommendationsCommand.recommendPageCacheMemory( gibiBytes( 192 ) ), between( gibiBytes( 140 ), gibiBytes( 150 ) ) );
-        assertThat( MemoryRecommendationsCommand.recommendPageCacheMemory( gibiBytes( 1920 ) ), between( gibiBytes( 1850 ), gibiBytes( 1900 ) ) );
+        assertThat( recommendPageCacheMemory( mebiBytes( 100 ) ), between( mebiBytes( 95 ), mebiBytes( 105 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 1 ) ), between( mebiBytes( 95 ), mebiBytes( 105 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 3 ) ), between( mebiBytes( 470 ), mebiBytes( 530 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 6 ) ), between( mebiBytes( 980 ), mebiBytes( 1048 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 192 ) ), between( gibiBytes( 140 ), gibiBytes( 150 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 1920 ) ), between( gibiBytes( 1850 ), gibiBytes( 1900 ) ) );
 
         // Also never recommend more than 16 TiB of page cache memory, regardless of how much is available.
-        assertThat( MemoryRecommendationsCommand.recommendPageCacheMemory( ByteUnit.exbiBytes( 1 ) ), Matchers.lessThan( ByteUnit.tebiBytes( 17 ) ) );
+        assertThat( recommendPageCacheMemory( exbiBytes( 1 ) ), lessThan( tebiBytes( 17 ) ) );
     }
 
     @Test
     public void bytesToStringMustBeParseableBySettings()
     {
-        Setting<Long> setting = Settings.buildSetting( "arg", Settings.BYTES ).build();
+        Setting<Long> setting = buildSetting( "arg", BYTES ).build();
         for ( int i = 1; i < 10_000; i++ )
         {
             int mebibytes = 75 * i;
@@ -125,7 +141,7 @@ public class MemoryRecommendationsCommandTest
 
     private Matcher<Long> between( long lowerBound, long upperBound )
     {
-        return Matchers.both( Matchers.greaterThanOrEqualTo( lowerBound ) ).and( Matchers.lessThanOrEqualTo( upperBound ) );
+        return both( greaterThanOrEqualTo( lowerBound ) ).and( lessThanOrEqualTo( upperBound ) );
     }
 
     @Test
@@ -143,15 +159,15 @@ public class MemoryRecommendationsCommandTest
             }
         };
         MemoryRecommendationsCommand command = new MemoryRecommendationsCommand( homeDir, configDir, outsideWorld );
-        String heap = bytesToString( MemoryRecommendationsCommand.recommendHeapMemory( gibiBytes( 8 ) ) );
-        String pagecache = bytesToString( MemoryRecommendationsCommand.recommendPageCacheMemory( gibiBytes( 8 ) ) );
+        String heap = bytesToString( recommendHeapMemory( gibiBytes( 8 ) ) );
+        String pagecache = bytesToString( recommendPageCacheMemory( gibiBytes( 8 ) ) );
 
         command.execute( new String[]{"--memory=8g"} );
 
-        Map<String,String> stringMap = MapUtil.load( new StringReader( output.toString() ) );
-        assertThat( stringMap.get( ExternalSettings.initialHeapSize.name() ), Matchers.is( heap ) );
-        assertThat( stringMap.get( ExternalSettings.maxHeapSize.name() ), Matchers.is( heap ) );
-        assertThat( stringMap.get( GraphDatabaseSettings.pagecache_memory.name() ), Matchers.is( pagecache ) );
+        Map<String,String> stringMap = load( new StringReader( output.toString() ) );
+        assertThat( stringMap.get( initialHeapSize.name() ), is( heap ) );
+        assertThat( stringMap.get( maxHeapSize.name() ), is( heap ) );
+        assertThat( stringMap.get( pagecache_memory.name() ), is( pagecache ) );
     }
 
     @Test
@@ -162,10 +178,10 @@ public class MemoryRecommendationsCommandTest
         Path homeDir = directory.directory().toPath();
         Path configDir = homeDir.resolve( "conf" );
         configDir.toFile().mkdirs();
-        Path configFile = configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME );
+        Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
         String databaseName = "mydb";
-        MapUtil.store( MapUtil.stringMap( GraphDatabaseSettings.data_directory.name(), homeDir.toString() ), configFile.toFile() );
-        File storeDir = Config.fromFile( configFile ).withHome( homeDir ).withSetting( active_database, databaseName ).build().get( database_path );
+        store( stringMap( data_directory.name(), homeDir.toString() ), configFile.toFile() );
+        File storeDir = fromFile( configFile ).withHome( homeDir ).withSetting( active_database, databaseName ).build().get( database_path );
         createDatabaseWithNativeIndexes( storeDir );
         OutsideWorld outsideWorld = new RealOutsideWorld()
         {
@@ -176,18 +192,18 @@ public class MemoryRecommendationsCommandTest
             }
         };
         MemoryRecommendationsCommand command = new MemoryRecommendationsCommand( homeDir, configDir, outsideWorld );
-        String heap = bytesToString( MemoryRecommendationsCommand.recommendHeapMemory( gibiBytes( 8 ) ) );
-        String pagecache = bytesToString( MemoryRecommendationsCommand.recommendPageCacheMemory( gibiBytes( 8 ) ) );
+        String heap = bytesToString( recommendHeapMemory( gibiBytes( 8 ) ) );
+        String pagecache = bytesToString( recommendPageCacheMemory( gibiBytes( 8 ) ) );
 
         // when
-        command.execute( ArrayUtil.array( "--database", databaseName, "--memory", "8g" ) );
+        command.execute( array( "--database", databaseName, "--memory", "8g" ) );
 
         // then
         String memrecString = output.toString();
-        Map<String,String> stringMap = MapUtil.load( new StringReader( memrecString ) );
-        assertThat( stringMap.get( ExternalSettings.initialHeapSize.name() ), Matchers.is( heap ) );
-        assertThat( stringMap.get( ExternalSettings.maxHeapSize.name() ), Matchers.is( heap ) );
-        assertThat( stringMap.get( GraphDatabaseSettings.pagecache_memory.name() ), Matchers.is( pagecache ) );
+        Map<String,String> stringMap = load( new StringReader( memrecString ) );
+        assertThat( stringMap.get( initialHeapSize.name() ), is( heap ) );
+        assertThat( stringMap.get( maxHeapSize.name() ), is( heap ) );
+        assertThat( stringMap.get( pagecache_memory.name() ), is( pagecache ) );
 
         long[] expectedSizes = calculatePageCacheFileSize( storeDir );
         long expectedPageCacheSize = expectedSizes[0];
@@ -232,10 +248,10 @@ public class MemoryRecommendationsCommandTest
     private void createDatabaseWithNativeIndexes( File storeDir )
     {
         // Create one index for every provider that we have
-        for ( GraphDatabaseSettings.SchemaIndex schemaIndex : GraphDatabaseSettings.SchemaIndex.values() )
+        for ( SchemaIndex schemaIndex : SchemaIndex.values() )
         {
             GraphDatabaseService db =
-                    new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).setConfig( GraphDatabaseSettings.default_schema_provider,
+                    new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).setConfig( default_schema_provider,
                             schemaIndex.providerName() ).newGraphDatabase();
             String key = "key-" + schemaIndex.name();
             try

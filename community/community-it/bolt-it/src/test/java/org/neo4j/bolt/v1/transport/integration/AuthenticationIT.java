@@ -44,7 +44,6 @@ import org.neo4j.bolt.v1.messaging.message.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.message.ResetMessage;
 import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
 import org.neo4j.bolt.v1.messaging.message.RunMessage;
-import org.neo4j.bolt.v1.messaging.util.MessageMatchers;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
@@ -65,7 +64,9 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgIgnored;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class AuthenticationIT extends AbstractBoltTransportsTest
@@ -134,7 +135,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         assertThat( connection, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "The client is unauthorized due to authentication failure." ) ) );
 
-        assertThat( connection, TransportTestUtil.eventuallyDisconnects() );
+        assertThat( connection, eventuallyDisconnects() );
     }
 
     @Test
@@ -175,7 +176,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         assertThat( connection, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "The client is unauthorized due to authentication failure." ) ) );
 
-        assertThat( connection, TransportTestUtil.eventuallyDisconnects() );
+        assertThat( connection, eventuallyDisconnects() );
     }
 
     @Test
@@ -195,7 +196,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 "Unsupported authentication token, the value associated with the key `principal` " +
                 "must be a String but was: ArrayList" ) ) );
 
-        assertThat( connection, TransportTestUtil.eventuallyDisconnects() );
+        assertThat( connection, eventuallyDisconnects() );
     }
 
     @Test
@@ -214,7 +215,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         assertThat( connection, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "Unsupported authentication token, missing key `credentials`" ) ) );
 
-        assertThat( connection, TransportTestUtil.eventuallyDisconnects() );
+        assertThat( connection, eventuallyDisconnects() );
     }
 
     @Test
@@ -232,7 +233,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         assertThat( connection, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "Unsupported authentication token, missing key `scheme`" ) ) );
 
-        assertThat( connection, TransportTestUtil.eventuallyDisconnects() );
+        assertThat( connection, eventuallyDisconnects() );
     }
 
     @Test
@@ -251,7 +252,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         assertThat( connection, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "Unsupported authentication token, scheme 'unknown' is not supported." ) ) );
 
-        assertThat( connection, TransportTestUtil.eventuallyDisconnects() );
+        assertThat( connection, eventuallyDisconnects() );
     }
 
     @Test
@@ -474,7 +475,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 AckFailureMessage.ackFailure(),
                 RunMessage.run( "CALL dbms.security.changePassword", singletonMap( "password", "abc" ) ),
                 PullAllMessage.pullAll() ) );
-        assertThat( connection, util.eventuallyReceives( MessageMatchers.msgIgnored(), msgSuccess(), msgSuccess(), msgSuccess() ) );
+        assertThat( connection, util.eventuallyReceives( msgIgnored(), msgSuccess(), msgSuccess(), msgSuccess() ) );
     }
 
     @Test
@@ -505,7 +506,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 AckFailureMessage.ackFailure(),
                 RunMessage.run( "CALL dbms.security.changePassword", singletonMap( "password", "abc" ) ),
                 PullAllMessage.pullAll() ) );
-        assertThat( connection, util.eventuallyReceives( MessageMatchers.msgIgnored(), msgSuccess(), msgSuccess(), msgSuccess() ) );
+        assertThat( connection, util.eventuallyReceives( msgIgnored(), msgSuccess(), msgSuccess(), msgSuccess() ) );
     }
 
     @Test
@@ -531,7 +532,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         assertThat( connection, util.eventuallyReceives( msgFailure( Status.Security.CredentialsExpired,
                 "The credentials you provided were valid, but must be changed before you can use this instance." ) ) );
 
-        assertThat( connection, TransportTestUtil.eventuallyDisconnects() );
+        assertThat( connection, eventuallyDisconnects() );
     }
 
     class FailureMsgMatcher extends TypeSafeMatcher<ResponseMessage>
@@ -583,7 +584,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
 
             assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
             assertThat( connection, util.eventuallyReceives( failureRecorder ) );
-            assertThat( connection, TransportTestUtil.eventuallyDisconnects() );
+            assertThat( connection, eventuallyDisconnects() );
         }
         catch ( Exception ex )
         {

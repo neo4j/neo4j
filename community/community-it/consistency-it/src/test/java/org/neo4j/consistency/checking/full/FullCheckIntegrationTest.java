@@ -47,7 +47,6 @@ import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.GraphStoreFixture.Applier;
 import org.neo4j.consistency.checking.GraphStoreFixture.IdGenerator;
 import org.neo4j.consistency.checking.GraphStoreFixture.TransactionDataBuilder;
-import org.neo4j.consistency.checking.SchemaRuleUtil;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.graphdb.DependencyResolver;
@@ -109,7 +108,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.string.UTF8;
-import org.neo4j.test.Property;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -124,6 +122,9 @@ import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
 import static org.neo4j.consistency.checking.SchemaRuleUtil.constraintIndexRule;
 import static org.neo4j.consistency.checking.SchemaRuleUtil.indexRule;
+import static org.neo4j.consistency.checking.SchemaRuleUtil.nodePropertyExistenceConstraintRule;
+import static org.neo4j.consistency.checking.SchemaRuleUtil.relPropertyExistenceConstraintRule;
+import static org.neo4j.consistency.checking.SchemaRuleUtil.uniquenessConstraintRule;
 import static org.neo4j.consistency.checking.full.FullCheckIntegrationTest.ConsistencySummaryVerifier.on;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
@@ -147,6 +148,8 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.NO_PREV_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.util.Bits.bits;
+import static org.neo4j.test.Property.property;
+import static org.neo4j.test.Property.set;
 
 public class FullCheckIntegrationTest
 {
@@ -242,16 +245,16 @@ public class FullCheckIntegrationTest
 
             try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
             {
-                Node node1 = Property.set( db.createNode( label( "label1" ) ) );
-                Node node2 = Property.set( db.createNode( label( "label2" ) ), Property.property( PROP1, VALUE1 ) );
+                Node node1 = set( db.createNode( label( "label1" ) ) );
+                Node node2 = set( db.createNode( label( "label2" ) ), property( PROP1, VALUE1 ) );
                 node1.createRelationshipTo( node2, withName( "C" ) );
                 // Just to create one more rel type
                 db.createNode().createRelationshipTo( db.createNode(), withName( "T" ) );
-                indexedNodes.add( Property.set( db.createNode( label( "label3" ) ), Property.property( PROP1, VALUE1 ) ).getId() );
-                indexedNodes.add( Property.set( db.createNode( label( "label3" ) ),
-                        Property.property( PROP1, VALUE1 ), Property.property( PROP2, VALUE2 ) ).getId() );
+                indexedNodes.add( set( db.createNode( label( "label3" ) ), property( PROP1, VALUE1 ) ).getId() );
+                indexedNodes.add( set( db.createNode( label( "label3" ) ),
+                        property( PROP1, VALUE1 ), property( PROP2, VALUE2 ) ).getId() );
 
-                Property.set( db.createNode( label( "label4" ) ), Property.property( PROP1, VALUE1 ) );
+                set( db.createNode( label( "label4" ) ), property( PROP1, VALUE1 ) );
                 tx.success();
 
                 KernelTransaction ktx = transactionOn( db );
@@ -1092,7 +1095,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord record2Before = record2.clone();
 
                 StoreIndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId2 );
-                ConstraintRule rule2 = SchemaRuleUtil.uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
+                ConstraintRule rule2 = uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
 
                 Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );
                 Collection<DynamicRecord> records2 = serializeRule( rule2, record2 );
@@ -2290,14 +2293,14 @@ public class FullCheckIntegrationTest
     private void createNodePropertyExistenceConstraint( int labelId, int propertyKeyId )
     {
         SchemaStore schemaStore = (SchemaStore) fixture.directStoreAccess().nativeStores().getSchemaStore();
-        ConstraintRule rule = SchemaRuleUtil.nodePropertyExistenceConstraintRule( schemaStore.nextId(), labelId, propertyKeyId );
+        ConstraintRule rule = nodePropertyExistenceConstraintRule( schemaStore.nextId(), labelId, propertyKeyId );
         writeToSchemaStore( schemaStore, rule );
     }
 
     private void createRelationshipPropertyExistenceConstraint( int relTypeId, int propertyKeyId )
     {
         SchemaStore schemaStore = (SchemaStore) fixture.directStoreAccess().nativeStores().getSchemaStore();
-        ConstraintRule rule = SchemaRuleUtil.relPropertyExistenceConstraintRule( schemaStore.nextId(), relTypeId, propertyKeyId );
+        ConstraintRule rule = relPropertyExistenceConstraintRule( schemaStore.nextId(), relTypeId, propertyKeyId );
         writeToSchemaStore( schemaStore, rule );
     }
 

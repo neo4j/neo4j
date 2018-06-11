@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.TestLabels;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
@@ -55,6 +54,9 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.io.fs.FileUtils.copyRecursively;
+import static org.neo4j.test.TestLabels.LABEL_ONE;
+import static org.neo4j.test.TestLabels.LABEL_THREE;
+import static org.neo4j.test.TestLabels.LABEL_TWO;
 
 public class IndexConsistencyIT
 {
@@ -65,7 +67,7 @@ public class IndexConsistencyIT
     public final RandomRule random = new RandomRule();
 
     private final AssertableLogProvider log = new AssertableLogProvider();
-    private static final Label[] LABELS = new Label[]{TestLabels.LABEL_ONE, TestLabels.LABEL_TWO, TestLabels.LABEL_THREE};
+    private static final Label[] LABELS = new Label[]{LABEL_ONE, LABEL_TWO, LABEL_THREE};
     private static final String PROPERTY_KEY = "numericProperty";
     private static final double DELETE_RATIO = 0.2;
     private static final double UPDATE_RATIO = 0.2;
@@ -84,7 +86,7 @@ public class IndexConsistencyIT
 
         try ( Transaction tx = db.beginTx() )
         {
-            createNewNode( new Label[]{TestLabels.LABEL_ONE} );
+            createNewNode( new Label[]{LABEL_ONE} );
             tx.success();
         }
 
@@ -145,7 +147,7 @@ public class IndexConsistencyIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( TestLabels.LABEL_ONE ).on( PROPERTY_KEY ).create();
+            db.schema().indexFor( LABEL_ONE ).on( PROPERTY_KEY ).create();
             tx.success();
         }
         try ( Transaction tx = db.beginTx() )

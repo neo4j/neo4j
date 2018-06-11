@@ -31,13 +31,13 @@ public class MandatoryTransactionsForConstraintCreatorTest
     @Test
     public void shouldRequireTransactionsWhenCallingMethodsConstraintCreators()
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ConstraintCreatorFacadeMethods.ALL_CONSTRAINT_CREATOR_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_CONSTRAINT_CREATOR_FACADE_METHODS );
     }
 
     @Test
     public void shouldTerminateWhenCallingMethodsConstraintCreators()
     {
-        assertFacadeMethodsThrowAfterTerminate( ConstraintCreatorFacadeMethods.ALL_CONSTRAINT_CREATOR_FACADE_METHODS );
+        assertFacadeMethodsThrowAfterTerminate( ALL_CONSTRAINT_CREATOR_FACADE_METHODS );
     }
 
     @Override

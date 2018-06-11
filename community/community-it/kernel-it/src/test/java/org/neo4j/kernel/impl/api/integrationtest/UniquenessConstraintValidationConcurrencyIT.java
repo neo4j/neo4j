@@ -79,7 +79,7 @@ public class UniquenessConstraintValidationConcurrencyIT
             }
             finally
             {
-                assertThat( otherThread, OtherThreadRule.isWaiting() );
+                assertThat( otherThread, isWaiting() );
             }
         } );
 
@@ -103,7 +103,7 @@ public class UniquenessConstraintValidationConcurrencyIT
             }
             finally
             {
-                assertThat( otherThread, OtherThreadRule.isWaiting() );
+                assertThat( otherThread, isWaiting() );
             }
         } );
 

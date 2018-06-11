@@ -33,8 +33,6 @@ import java.util.List;
 import org.neo4j.bolt.messaging.StructType;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessage;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
-import org.neo4j.bolt.v1.messaging.message.InitMessage;
-import org.neo4j.bolt.v1.messaging.util.MessageMatchers;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
@@ -52,7 +50,10 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
 
 @RunWith( Parameterized.class )
@@ -159,26 +160,26 @@ public class UnsupportedStructTypesV2IT
     {
         connection.connect( address ).send( util.defaultAcceptedVersions() );
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        connection.send( util.chunk( InitMessage.init( USER_AGENT, Collections.emptyMap() ) ) );
-        assertThat( connection, util.eventuallyReceives( MessageMatchers.msgSuccess() ) );
+        connection.send( util.chunk( init( USER_AGENT, Collections.emptyMap() ) ) );
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         connection.send( util.chunk( 64, createRunWith( valuePacker ) ) );
 
         assertThat( connection,
                 util.eventuallyReceives( msgFailure( Status.Statement.TypeError, expectedMessage ) ) );
-        assertThat( connection, TransportTestUtil.eventuallyDisconnects() );
+        assertThat( connection, eventuallyDisconnects() );
     }
 
     private void testDisconnectWithUnpackableValue( ThrowingConsumer<Neo4jPack.Packer, IOException> valuePacker, String expectedMessage ) throws Exception
     {
         connection.connect( address ).send( util.defaultAcceptedVersions() );
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        connection.send( util.chunk( InitMessage.init( USER_AGENT, Collections.emptyMap() ) ) );
-        assertThat( connection, util.eventuallyReceives( MessageMatchers.msgSuccess() ) );
+        connection.send( util.chunk( init( USER_AGENT, Collections.emptyMap() ) ) );
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         connection.send( util.chunk( 64, createRunWith( valuePacker ) ) );
 
-        assertThat( connection, TransportTestUtil.eventuallyDisconnects() );
+        assertThat( connection, eventuallyDisconnects() );
     }
 
     private byte[] createRunWith( ThrowingConsumer<Neo4jPack.Packer, IOException> valuePacker ) throws IOException

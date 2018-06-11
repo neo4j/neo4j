@@ -20,7 +20,6 @@
 package org.neo4j.bolt.v1.runtime.integration;
 
 import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -29,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.testing.BoltMatchers;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.testing.RecordedBoltResponse;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessage;
@@ -54,6 +52,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
+import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
 import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.IGNORED;
@@ -152,7 +151,7 @@ public class BoltConnectionIT
         machine.run( "CREATE (n {k:'k'}) RETURN n.k", EMPTY_PARAMS, recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), BoltMatchers.succeeded() );
+        assertThat( recorder.nextResponse(), succeeded() );
 
         // When
         recorder.reset();
@@ -179,7 +178,7 @@ public class BoltConnectionIT
         machine.run( "RETURN 1", EMPTY_PARAMS, recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), BoltMatchers.succeeded() );
+        assertThat( recorder.nextResponse(), succeeded() );
     }
 
     @Test
@@ -198,7 +197,7 @@ public class BoltConnectionIT
         machine.run( "RETURN 1", EMPTY_PARAMS, recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), BoltMatchers.succeeded() );
+        assertThat( recorder.nextResponse(), succeeded() );
     }
 
     @Test
@@ -214,17 +213,17 @@ public class BoltConnectionIT
         machine.pullAll( recorder );
         machine.run( "COMMIT", EMPTY_PARAMS, recorder );
         machine.pullAll( recorder );
-        assertThat( recorder.nextResponse(), BoltMatchers.succeeded() );
-        assertThat( recorder.nextResponse(), BoltMatchers.succeeded() );
-        assertThat( recorder.nextResponse(), BoltMatchers.succeeded() );
-        assertThat( recorder.nextResponse(), BoltMatchers.succeeded() );
+        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse(), succeeded() );
 
         // When I run a new statement
         recorder.reset();
         machine.run( "BEGIN", EMPTY_PARAMS, recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), BoltMatchers.succeeded() );
+        assertThat( recorder.nextResponse(), succeeded() );
     }
 
     @Test
@@ -334,7 +333,7 @@ public class BoltConnectionIT
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         machine.run( "MATCH (n:Victim) DELETE n", EMPTY_PARAMS, recorder );
         // Then the statement running should have succeeded
-        assertThat( recorder.nextResponse(), BoltMatchers.succeeded() );
+        assertThat( recorder.nextResponse(), succeeded() );
 
         recorder.reset();
         machine.discardAll( recorder );
@@ -373,8 +372,8 @@ public class BoltConnectionIT
         machine.run( "ROLLBACK", EMPTY_PARAMS, recorder );
 
         // Then both operations should succeed
-        assertThat( recorder.nextResponse(), BoltMatchers.succeeded() );
-        assertThat( recorder.nextResponse(), BoltMatchers.succeeded() );
+        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse(), succeeded() );
     }
 
     @Test
@@ -637,7 +636,7 @@ public class BoltConnectionIT
         machine.run( statement, params, nullResponseHandler() );
         machine.pullAll( recorder );
         RecordedBoltResponse response = recorder.nextResponse();
-        Assert.assertEquals( expectedResponse, response.message() );
+        assertEquals( expectedResponse, response.message() );
         return response.records();
     }
 

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.recovery;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -37,12 +36,13 @@ import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.mockito.matcher.LogMatchers;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.test.mockito.matcher.LogMatchers.checkPoint;
 import static org.neo4j.test.mockito.matcher.LogMatchers.commandEntry;
 import static org.neo4j.test.mockito.matcher.LogMatchers.commitEntry;
+import static org.neo4j.test.mockito.matcher.LogMatchers.containsExactly;
 import static org.neo4j.test.mockito.matcher.LogMatchers.logEntries;
 import static org.neo4j.test.mockito.matcher.LogMatchers.startEntry;
 
@@ -72,7 +72,7 @@ public class KernelRecoveryTest
 
             // Then the logical log should be in sync
             File logFile = new File( storeDir, TransactionLogFiles.DEFAULT_NAME + ".0" );
-            MatcherAssert.assertThat( logEntries( crashedFs, logFile ), LogMatchers.containsExactly(
+            assertThat( logEntries( crashedFs, logFile ), containsExactly(
                     // Tx before recovery
                     startEntry( -1, -1 ), commandEntry( node1, NodeCommand.class ),
                     commandEntry( StatementConstants.ANY_LABEL, NodeCountsCommand.class ), commitEntry( 2 ),

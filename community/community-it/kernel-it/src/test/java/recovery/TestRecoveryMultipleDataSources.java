@@ -19,7 +19,6 @@
  */
 package recovery;
 
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -72,7 +71,7 @@ public class TestRecoveryMultipleDataSources
         try ( Transaction ignored = db.beginTx();
               ResourceIterator<RelationshipType> typeResourceIterator = db.getAllRelationshipTypes().iterator() )
         {
-            Assert.assertEquals( MyRelTypes.TEST.name(), typeResourceIterator.next().name() );
+            assertEquals( MyRelTypes.TEST.name(), typeResourceIterator.next().name() );
         }
         finally
         {

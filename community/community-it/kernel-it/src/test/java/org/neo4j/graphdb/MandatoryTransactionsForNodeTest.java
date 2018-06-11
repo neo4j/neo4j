@@ -28,13 +28,13 @@ public class MandatoryTransactionsForNodeTest extends AbstractMandatoryTransacti
     @Test
     public void shouldRequireTransactionsWhenCallingMethodsOnNode()
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), NodeFacadeMethods.ALL_NODE_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_NODE_FACADE_METHODS );
     }
 
     @Test
     public void shouldTerminateWhenCallingMethodsOnNode()
     {
-        assertFacadeMethodsThrowAfterTerminate( NodeFacadeMethods.ALL_NODE_FACADE_METHODS );
+        assertFacadeMethodsThrowAfterTerminate( ALL_NODE_FACADE_METHODS );
     }
 
     @Override

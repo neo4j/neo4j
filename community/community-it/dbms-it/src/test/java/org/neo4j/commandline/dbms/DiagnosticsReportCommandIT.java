@@ -19,7 +19,6 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -43,8 +42,10 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
 public class DiagnosticsReportCommandIT
@@ -103,7 +104,7 @@ public class DiagnosticsReportCommandIT
         // Verify that we took a thread dump
         File reports = testDirectory.directory( "reports" );
         File[] files = reports.listFiles();
-        assertThat( files, CoreMatchers.notNullValue() );
+        assertThat( files, notNullValue() );
         assertThat( files.length, is( 1 ) );
 
         Path report = files[0].toPath();
@@ -112,7 +113,7 @@ public class DiagnosticsReportCommandIT
         try ( FileSystem fs = FileSystems.newFileSystem( uri, Collections.emptyMap() ) )
         {
             String threadDump = new String( Files.readAllBytes( fs.getPath( "threaddump.txt" ) ) );
-            assertThat( threadDump, CoreMatchers.containsString( DiagnosticsReportCommandIT.class.getCanonicalName() ) );
+            assertThat( threadDump, containsString( DiagnosticsReportCommandIT.class.getCanonicalName() ) );
         }
     }
 

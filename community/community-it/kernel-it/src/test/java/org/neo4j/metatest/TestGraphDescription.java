@@ -20,7 +20,6 @@
 package org.neo4j.metatest;
 
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -165,7 +164,7 @@ public class TestGraphDescription implements GraphHolder
         verifyIKnowYou( "knows", "me" );
         try ( Transaction ignored = graphdb.beginTx() )
         {
-            Assert.assertEquals( true, data.get().get( "I" ).getProperty( "bool" ) );
+            assertEquals( true, data.get().get( "I" ).getProperty( "bool" ) );
             assertFalse( "node autoindex enabled.", graphdb().index().getNodeAutoIndexer().isEnabled() );
             try ( IndexHits<Relationship> relationships = graphdb().index()
                     .getRelationshipAutoIndexer().getAutoIndex().get( "name", "relProp" ) )

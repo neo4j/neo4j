@@ -68,8 +68,8 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
             // when
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
             withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p -> p.add( Arrays.asList(
-                    IndexQueryHelper.add( 1, descriptor.schema(), "v1", "v2" ),
-                    IndexQueryHelper.add( 2, descriptor.schema(), "v1", "v2" ) ) ) );
+                    add( 1, descriptor.schema(), "v1", "v2" ),
+                    add( 2, descriptor.schema(), "v1", "v2" ) ) ) );
 
             // then
             try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig ) )

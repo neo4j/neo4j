@@ -23,8 +23,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.hamcrest.core.AllOf;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -35,7 +33,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.testing.BoltMatchers;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
@@ -53,11 +50,16 @@ import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.AllOf.allOf;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.testing.BoltMatchers.containsRecord;
 import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
 import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
+import static org.neo4j.bolt.testing.BoltMatchers.succeededWithMetadata;
+import static org.neo4j.bolt.testing.BoltMatchers.succeededWithRecord;
+import static org.neo4j.bolt.testing.BoltMatchers.wasIgnored;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
@@ -162,7 +164,7 @@ public class TransactionIT
         assertThat( recorder.nextResponse(), succeeded() );
         assertThat( recorder.nextResponse(), succeeded() );
         assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( recorder.nextResponse(), BoltMatchers.succeededWithMetadata( "bookmark", BOOKMARK_PATTERN ) );
+        assertThat( recorder.nextResponse(), succeededWithMetadata( "bookmark", BOOKMARK_PATTERN ) );
     }
 
     @Test
@@ -189,7 +191,7 @@ public class TransactionIT
         assertThat( recorder.nextResponse(), succeeded() );
         assertThat( recorder.nextResponse(), succeeded() );
         assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( recorder.nextResponse(), BoltMatchers.succeededWithMetadata( "bookmark", BOOKMARK_PATTERN ) );
+        assertThat( recorder.nextResponse(), succeededWithMetadata( "bookmark", BOOKMARK_PATTERN ) );
     }
 
     @Test
@@ -234,9 +236,9 @@ public class TransactionIT
             machine.run( "COMMIT", EMPTY_MAP, nullResponseHandler() );
             machine.pullAll( recorder );
 
-            assertThat( recorder.nextResponse(), BoltMatchers.succeededWithMetadata( "bookmark", BOOKMARK_PATTERN ) );
-            assertThat( recorder.nextResponse(), BoltMatchers.succeededWithRecord( "two" ) );
-            assertThat( recorder.nextResponse(), BoltMatchers.succeededWithMetadata( "bookmark", BOOKMARK_PATTERN ) );
+            assertThat( recorder.nextResponse(), succeededWithMetadata( "bookmark", BOOKMARK_PATTERN ) );
+            assertThat( recorder.nextResponse(), succeededWithRecord( "two" ) );
+            assertThat( recorder.nextResponse(), succeededWithMetadata( "bookmark", BOOKMARK_PATTERN ) );
         }
 
         thread.join();
@@ -329,8 +331,8 @@ public class TransactionIT
         machine.pullAll( recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), BoltMatchers.succeededWithRecord( 1L ) );
-        assertThat( recorder.nextResponse(), BoltMatchers.succeededWithRecord( 1L ) );
+        assertThat( recorder.nextResponse(), succeededWithRecord( 1L ) );
+        assertThat( recorder.nextResponse(), succeededWithRecord( 1L ) );
     }
 
     @Test
@@ -352,8 +354,8 @@ public class TransactionIT
         machine.discardAll( nullResponseHandler() );
 
         // Then
-        assertThat( recorder.nextResponse(), BoltMatchers.succeededWithRecord( 1L ) );
-        assertThat( recorder.nextResponse(), BoltMatchers.succeededWithRecord( 1L ) );
+        assertThat( recorder.nextResponse(), succeededWithRecord( 1L ) );
+        assertThat( recorder.nextResponse(), succeededWithRecord( 1L ) );
     }
 
     @Test
@@ -375,8 +377,8 @@ public class TransactionIT
         machine.discardAll( nullResponseHandler() );
 
         // Then
-        assertThat( recorder.nextResponse(), BoltMatchers.succeededWithRecord( 1L ) );
-        assertThat( recorder.nextResponse(), BoltMatchers.succeededWithRecord( 1L ) );
+        assertThat( recorder.nextResponse(), succeededWithRecord( 1L ) );
+        assertThat( recorder.nextResponse(), succeededWithRecord( 1L ) );
     }
 
     @Test
@@ -396,11 +398,11 @@ public class TransactionIT
 
         // Then
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Statement.SyntaxError ) );
-        assertThat( recorder.nextResponse(), BoltMatchers.wasIgnored() );
+        assertThat( recorder.nextResponse(), wasIgnored() );
         assertThat( recorder.nextResponse(), succeeded() );
         assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( recorder.nextResponse(), BoltMatchers.succeededWithRecord( 2L ) );
-        Assert.assertEquals( recorder.responseCount(), 0 );
+        assertThat( recorder.nextResponse(), succeededWithRecord( 2L ) );
+        assertEquals( recorder.responseCount(), 0 );
     }
 
     @Test
@@ -420,11 +422,11 @@ public class TransactionIT
 
         // Then
         assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( recorder.nextResponse(), AllOf.allOf( containsRecord( 1L ), failedWithStatus( Status.Statement.ArithmeticError ) ) );
+        assertThat( recorder.nextResponse(), allOf( containsRecord( 1L ), failedWithStatus( Status.Statement.ArithmeticError ) ) );
         assertThat( recorder.nextResponse(), succeeded() );
         assertThat( recorder.nextResponse(), succeeded() );
-        assertThat( recorder.nextResponse(), BoltMatchers.succeededWithRecord( 2L ) );
-        Assert.assertEquals( recorder.responseCount(), 0 );
+        assertThat( recorder.nextResponse(), succeededWithRecord( 2L ) );
+        assertEquals( recorder.responseCount(), 0 );
     }
 
     public static Server createHttpServer(

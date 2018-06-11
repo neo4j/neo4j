@@ -53,6 +53,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_background_sampling_enabled;
+import static org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class RebuildCountsTest
@@ -75,7 +77,7 @@ public class RebuildCountsTest
         assertEquals( HUMANS, tracker.nodeCount( labelId( HUMAN ), newDoubleLongRegister() ).readSecond() );
 
         // and also
-        AssertableLogProvider.LogMatcherBuilder matcherBuilder = AssertableLogProvider.inLog( MetaDataStore.class );
+        LogMatcherBuilder matcherBuilder = inLog( MetaDataStore.class );
         internalLogProvider.assertAtLeastOnce( matcherBuilder.warn( "Missing counts store, rebuilding it." ) );
         internalLogProvider.assertAtLeastOnce( matcherBuilder.warn( "Counts store rebuild completed." ) );
     }
@@ -100,7 +102,7 @@ public class RebuildCountsTest
         assertEquals( 0, tracker.nodeCount( labelId( HUMAN ), newDoubleLongRegister() ).readSecond() );
 
         // and also
-        AssertableLogProvider.LogMatcherBuilder matcherBuilder = AssertableLogProvider.inLog( MetaDataStore.class );
+        LogMatcherBuilder matcherBuilder = inLog( MetaDataStore.class );
         internalLogProvider.assertAtLeastOnce( matcherBuilder.warn( "Missing counts store, rebuilding it." ) );
         internalLogProvider.assertAtLeastOnce( matcherBuilder.warn( "Counts store rebuild completed." ) );
     }

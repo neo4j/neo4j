@@ -31,13 +31,13 @@ public class MandatoryTransactionsForUniquenessConstraintDefinitionTest
     @Test
     public void shouldRequireTransactionsWhenCallingMethodsOnUniquenessConstraintDefinitions()
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ConstraintDefinitionFacadeMethods.ALL_CONSTRAINT_DEFINITION_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_CONSTRAINT_DEFINITION_FACADE_METHODS );
     }
 
     @Test
     public void shouldTerminateWhenCallingMethodsOnUniquenessConstraintDefinitions()
     {
-        assertFacadeMethodsThrowAfterTerminate( ConstraintDefinitionFacadeMethods.ALL_CONSTRAINT_DEFINITION_FACADE_METHODS );
+        assertFacadeMethodsThrowAfterTerminate( ALL_CONSTRAINT_DEFINITION_FACADE_METHODS );
     }
 
     @Override

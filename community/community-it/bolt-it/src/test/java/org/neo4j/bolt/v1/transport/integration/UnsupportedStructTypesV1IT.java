@@ -40,8 +40,6 @@ import java.util.List;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessage;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
-import org.neo4j.bolt.v1.messaging.message.InitMessage;
-import org.neo4j.bolt.v1.messaging.util.MessageMatchers;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
@@ -57,7 +55,10 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.values.storable.Values.pointValue;
 
@@ -157,14 +158,14 @@ public class UnsupportedStructTypesV1IT
     {
         connection.connect( address ).send( util.defaultAcceptedVersions() );
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        connection.send( util.chunk( InitMessage.init( USER_AGENT, Collections.emptyMap() ) ) );
-        assertThat( connection, util.eventuallyReceives( MessageMatchers.msgSuccess() ) );
+        connection.send( util.chunk( init( USER_AGENT, Collections.emptyMap() ) ) );
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         connection.send( util.chunk( 64, createRunWithV2Value( value ) ) );
 
         assertThat( connection,
                 util.eventuallyReceives( msgFailure( Status.Statement.TypeError, description + " values cannot be unpacked with this version of bolt." ) ) );
-        assertThat( connection, TransportTestUtil.eventuallyDisconnects() );
+        assertThat( connection, eventuallyDisconnects() );
     }
 
     private byte[] createRunWithV2Value( AnyValue value ) throws IOException

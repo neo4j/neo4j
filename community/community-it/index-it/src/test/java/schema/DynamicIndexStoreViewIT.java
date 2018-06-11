@@ -39,11 +39,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
-import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
+
+import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class DynamicIndexStoreViewIT
 {
@@ -137,7 +138,7 @@ public class DynamicIndexStoreViewIT
         public void run()
         {
             RandomValues randomValues = RandomValues.create();
-            DoubleLatch.awaitLatch( startSignal );
+            awaitLatch( startSignal );
             while ( !endSignal.get() )
             {
                 try ( Transaction transaction = databaseService.beginTx() )

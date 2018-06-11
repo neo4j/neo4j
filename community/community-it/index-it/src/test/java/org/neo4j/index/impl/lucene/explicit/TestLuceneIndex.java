@@ -33,7 +33,6 @@ import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -1944,12 +1943,12 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         t2.beginTransaction();
         Node node = t2.getOrCreate( key, value, 0 ).get();
         assertNotNull( node );
-        Assert.assertEquals( 0, t2.getProperty( node, key ) );
+        assertEquals( 0, t2.getProperty( node, key ) );
         Future<Node> futurePut = t1.getOrCreate( key, value, 1 );
         t1.waitUntilWaiting();
         t2.commit();
         assertEquals( node, futurePut.get() );
-        Assert.assertEquals( 0, t1.getProperty( node, key ) );
+        assertEquals( 0, t1.getProperty( node, key ) );
         t1.commit();
 
         assertEquals( node, index.get( key, value ).getSingle() );

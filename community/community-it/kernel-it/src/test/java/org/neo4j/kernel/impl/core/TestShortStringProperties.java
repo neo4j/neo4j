@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.hamcrest.Matchers;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,6 +33,7 @@ import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.GraphTransactionRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -178,7 +178,7 @@ public class TestShortStringProperties
 
         assertEquals( recordCount, dynamicRecordsInUse() );
         assertEquals( propCount, propertyRecordsInUse() );
-        assertThat( node, inTx( db, Matchers.not( hasProperty( "key" ) ) ) );
+        assertThat( node, inTx( db, not( hasProperty( "key" ) ) ) );
     }
 
     @Test

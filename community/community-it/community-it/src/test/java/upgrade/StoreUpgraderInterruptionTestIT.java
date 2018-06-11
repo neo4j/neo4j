@@ -71,6 +71,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion;
 
 @RunWith( Parameterized.class )
 public class StoreUpgraderInterruptionTestIT
@@ -149,7 +150,7 @@ public class StoreUpgraderInterruptionTestIT
         newUpgrader(upgradableDatabase, pageCache, progressMonitor, indexMigrator, migrator ).migrateIfNeeded(
                 workingDirectory );
 
-        assertTrue( MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion( check, workingDirectory ) );
+        assertTrue( checkNeoStoreHasDefaultFormatVersion( check, workingDirectory ) );
 
         // Since consistency checker is in read only mode we need to start/stop db to generate label scan store.
         startStopDatabase( workingDirectory );
@@ -203,14 +204,14 @@ public class StoreUpgraderInterruptionTestIT
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
 
-        assertTrue( MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion( check, workingDirectory ) );
+        assertTrue( checkNeoStoreHasDefaultFormatVersion( check, workingDirectory ) );
 
         progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
         newUpgrader( upgradableDatabase, pageCache, progressMonitor, createIndexMigrator(), migrator )
                 .migrateIfNeeded( workingDirectory );
 
-        assertTrue( MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion( check, workingDirectory ) );
+        assertTrue( checkNeoStoreHasDefaultFormatVersion( check, workingDirectory ) );
 
         pageCache.close();
 

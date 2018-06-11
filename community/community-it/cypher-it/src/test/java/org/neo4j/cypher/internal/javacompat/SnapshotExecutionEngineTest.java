@@ -22,8 +22,6 @@ package org.neo4j.cypher.internal.javacompat;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.ArgumentMatchers;
-import org.mockito.Mockito;
 
 import java.util.Collections;
 
@@ -42,8 +40,12 @@ import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class SnapshotExecutionEngineTest
 {
@@ -69,12 +71,12 @@ public class SnapshotExecutionEngineTest
         versionContext = mock( VersionContext.class );
 
         executionEngine = createExecutionEngine(cypherService);
-        Mockito.when( kernelStatement.getVersionContext() ).thenReturn( versionContext );
-        Mockito.when( transactionalContext.statement() ).thenReturn( kernelStatement );
+        when( kernelStatement.getVersionContext() ).thenReturn( versionContext );
+        when( transactionalContext.statement() ).thenReturn( kernelStatement );
         Result result = mock( Result.class );
         QueryStatistics statistics = mock( QueryStatistics.class );
-        Mockito.when( result.getQueryStatistics() ).thenReturn( statistics );
-        Mockito.when( executor.execute( ArgumentMatchers.any(), ArgumentMatchers.anyMap(), ArgumentMatchers.any() ) ).thenReturn( result );
+        when( result.getQueryStatistics() ).thenReturn( statistics );
+        when( executor.execute( any(), anyMap(), any() ) ).thenReturn( result );
     }
 
     @Test
@@ -82,25 +84,25 @@ public class SnapshotExecutionEngineTest
     {
         executionEngine.executeWithRetries( "query", Collections.emptyMap(), transactionalContext, executor );
 
-        verify( executor, Mockito.times( 1 ) ).execute( ArgumentMatchers.any(), ArgumentMatchers.anyMap(), ArgumentMatchers.any() );
-        verify( versionContext, Mockito.times( 1 ) ).initRead();
+        verify( executor, times( 1 ) ).execute( any(), anyMap(), any() );
+        verify( versionContext, times( 1 ) ).initRead();
     }
 
     @Test
     public void executeQueryAfterSeveralRetries() throws QueryExecutionKernelException
     {
-        Mockito.when( versionContext.isDirty() ).thenReturn( true, true, false );
+        when( versionContext.isDirty() ).thenReturn( true, true, false );
 
         executionEngine.executeWithRetries( "query", Collections.emptyMap(), transactionalContext, executor );
 
-        verify( executor, Mockito.times( 3 ) ).execute( ArgumentMatchers.any(), ArgumentMatchers.anyMap(), ArgumentMatchers.any() );
-        verify( versionContext, Mockito.times( 3 ) ).initRead();
+        verify( executor, times( 3 ) ).execute( any(), anyMap(), any() );
+        verify( versionContext, times( 3 ) ).initRead();
     }
 
     @Test
     public void failQueryAfterMaxRetriesReached() throws QueryExecutionKernelException
     {
-        Mockito.when( versionContext.isDirty() ).thenReturn( true );
+        when( versionContext.isDirty() ).thenReturn( true );
 
         try
         {
@@ -111,8 +113,8 @@ public class SnapshotExecutionEngineTest
             assertEquals( "Unable to get clean data snapshot for query 'query' after 5 attempts.", e.getMessage() );
         }
 
-        verify( executor, Mockito.times( 5 ) ).execute( ArgumentMatchers.any(), ArgumentMatchers.anyMap(), ArgumentMatchers.any() );
-        verify( versionContext, Mockito.times( 5 ) ).initRead();
+        verify( executor, times( 5 ) ).execute( any(), anyMap(), any() );
+        verify( versionContext, times( 5 ) ).initRead();
     }
 
     private class TestSnapshotExecutionEngine extends SnapshotExecutionEngine

@@ -19,8 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.core.IsNot;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,7 +30,6 @@ import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.test.mockito.matcher.Neo4jMatchers;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -44,9 +41,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.contains;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.createIndex;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.findNodesByLabelAndProperty;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getConstraints;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexes;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.isEmpty;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.waitForIndex;
 
 public class SchemaAcceptanceTest
 {
@@ -77,7 +79,7 @@ public class SchemaAcceptanceTest
         IndexDefinition index = createIndex( db, label, propertyKey );
 
         // THEN
-        MatcherAssert.assertThat( getIndexes( db, label ), containsOnly( index ) );
+        assertThat( getIndexes( db, label ), containsOnly( index ) );
     }
 
     @Test
@@ -87,7 +89,7 @@ public class SchemaAcceptanceTest
         IndexDefinition index = createIndex( db, label, propertyKey, secondPropertyKey );
 
         // THEN
-        MatcherAssert.assertThat( getIndexes( db, label ), containsOnly( index ) );
+        assertThat( getIndexes( db, label ), containsOnly( index ) );
     }
 
     @Test
@@ -108,10 +110,10 @@ public class SchemaAcceptanceTest
             index = indexDef;
             tx.success();
         }
-        Neo4jMatchers.waitForIndex( db, indexDef );
+        waitForIndex( db, indexDef );
 
         // THEN
-        MatcherAssert.assertThat( getIndexes( db, label ), containsOnly( index ) );
+        assertThat( getIndexes( db, label ), containsOnly( index ) );
     }
 
     @Test
@@ -193,7 +195,7 @@ public class SchemaAcceptanceTest
         dropIndex( index );
 
         // THEN
-        MatcherAssert.assertThat( getIndexes( db, label ), Neo4jMatchers.isEmpty() );
+        assertThat( getIndexes( db, label ), isEmpty() );
     }
 
     @Test
@@ -219,7 +221,7 @@ public class SchemaAcceptanceTest
         }
 
         // THEN
-        assertThat( "Index should have been deleted", getIndexes( db, label ), IsNot.not( Neo4jMatchers.contains( index ) ) );
+        assertThat( "Index should have been deleted", getIndexes( db, label ), not( contains( index ) ) );
     }
 
     @Test
@@ -241,7 +243,7 @@ public class SchemaAcceptanceTest
         }
 
         // THEN
-        assertThat( "Index should have been deleted", getIndexes( db, label ), IsNot.not( Neo4jMatchers.contains( index ) ) );
+        assertThat( "Index should have been deleted", getIndexes( db, label ), not( contains( index ) ) );
     }
 
     @Test
@@ -272,7 +274,7 @@ public class SchemaAcceptanceTest
         createIndex( db, label, "other_property" );
 
         // PASS
-        Neo4jMatchers.waitForIndex( db, index );
+        waitForIndex( db, index );
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1L, TimeUnit.MINUTES );
@@ -290,10 +292,10 @@ public class SchemaAcceptanceTest
 
         // create an index
         IndexDefinition index = createIndex( db, label, propertyKey );
-        Neo4jMatchers.waitForIndex( db, index );
+        waitForIndex( db, index );
 
         // THEN
-        MatcherAssert.assertThat( Neo4jMatchers.findNodesByLabelAndProperty( label, propertyKey, "Neo", db ), containsOnly( node ) );
+        assertThat( findNodesByLabelAndProperty( label, propertyKey, "Neo", db ), containsOnly( node ) );
     }
 
     @Test
@@ -304,18 +306,18 @@ public class SchemaAcceptanceTest
 
         // create an index
         IndexDefinition index = createIndex( db, label, propertyKey );
-        Neo4jMatchers.waitForIndex( db, index );
+        waitForIndex( db, index );
 
         // delete the index right away
         dropIndex( index );
 
         // WHEN recreating that index
         createIndex( db, label, propertyKey );
-        Neo4jMatchers.waitForIndex( db, index );
+        waitForIndex( db, index );
 
         // THEN it should exist and be usable
-        MatcherAssert.assertThat( getIndexes( db, label ), Neo4jMatchers.contains( index ) );
-        MatcherAssert.assertThat( Neo4jMatchers.findNodesByLabelAndProperty( label, propertyKey, "Neo", db ), containsOnly( node ) );
+        assertThat( getIndexes( db, label ), contains( index ) );
+        assertThat( findNodesByLabelAndProperty( label, propertyKey, "Neo", db ), containsOnly( node ) );
     }
 
     @Test
@@ -343,7 +345,7 @@ public class SchemaAcceptanceTest
         createUniquenessConstraint( Labels.MY_OTHER_LABEL, propertyKey );
 
         // WHEN THEN
-        MatcherAssert.assertThat( Neo4jMatchers.getConstraints( db, label ), containsOnly( constraint1 ) );
+        assertThat( getConstraints( db, label ), containsOnly( constraint1 ) );
     }
 
     @Test
@@ -354,7 +356,7 @@ public class SchemaAcceptanceTest
         ConstraintDefinition constraint2 = createUniquenessConstraint( Labels.MY_OTHER_LABEL, propertyKey );
 
         // WHEN THEN
-        MatcherAssert.assertThat( Neo4jMatchers.getConstraints( db ), containsOnly( constraint1, constraint2 ) );
+        assertThat( getConstraints( db ), containsOnly( constraint1, constraint2 ) );
     }
 
     @Test
@@ -367,7 +369,7 @@ public class SchemaAcceptanceTest
         dropConstraint( db, constraint );
 
         // THEN
-        MatcherAssert.assertThat( Neo4jMatchers.getConstraints( db, label ), Neo4jMatchers.isEmpty() );
+        assertThat( getConstraints( db, label ), isEmpty() );
     }
 
     @Test

@@ -50,6 +50,7 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
@@ -936,7 +937,7 @@ public class NotificationAcceptanceTest
         Result result = db().execute( version + query );
 
         // then
-        assertThat( Iterables.asList( result.getNotifications() ), Matchers.empty() );
+        assertThat( Iterables.asList( result.getNotifications() ), empty() );
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
         assertThat( arguments.get( "version" ), equalTo( version ) );
         result.close();

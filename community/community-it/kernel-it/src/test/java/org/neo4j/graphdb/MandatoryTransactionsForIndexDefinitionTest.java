@@ -31,13 +31,13 @@ public class MandatoryTransactionsForIndexDefinitionTest
     @Test
     public void shouldRequireTransactionsWhenCallingMethodsOnIndexDefinitions()
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), IndexDefinitionFacadeMethods.ALL_INDEX_DEFINITION_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_INDEX_DEFINITION_FACADE_METHODS );
     }
 
     @Test
     public void shouldTerminateWhenCallingMethodsOnIndexDefinitions()
     {
-        assertFacadeMethodsThrowAfterTerminate( IndexDefinitionFacadeMethods.ALL_INDEX_DEFINITION_FACADE_METHODS );
+        assertFacadeMethodsThrowAfterTerminate( ALL_INDEX_DEFINITION_FACADE_METHODS );
     }
 
     @Override

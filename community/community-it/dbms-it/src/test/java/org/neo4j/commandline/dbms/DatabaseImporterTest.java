@@ -22,8 +22,6 @@ package org.neo4j.commandline.dbms;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.hamcrest.core.IsNot;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -42,7 +40,10 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.core.IsNot.not;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class DatabaseImporterTest
@@ -96,7 +97,7 @@ public class DatabaseImporterTest
 
         DatabaseImporter importer =
                 new DatabaseImporter( Args.parse( arguments ), getConfigWith( home, "bar" ), new NullOutsideWorld() );
-        assertThat( destination, IsNot.not( isExistingDatabase() ) );
+        assertThat( destination, not( isExistingDatabase() ) );
         importer.doImport();
         assertThat( destination, isExistingDatabase() );
     }
@@ -109,7 +110,7 @@ public class DatabaseImporterTest
         File from = provideStoreDirectory();
         File oldMessagesLog = new File( from, "messages.log" );
 
-        Assert.assertTrue( oldMessagesLog.createNewFile() );
+        assertTrue( oldMessagesLog.createNewFile() );
 
         File destination = new File( new File( new File( home, "data" ), "databases" ), "bar" );
 
@@ -119,7 +120,7 @@ public class DatabaseImporterTest
 
         File messagesLog = new File( destination, "messages.log" );
         importer.doImport();
-        Assert.assertFalse( messagesLog.exists() );
+        assertFalse( messagesLog.exists() );
     }
 
     private Config getConfigWith( File homeDir, String databaseName )

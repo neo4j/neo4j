@@ -46,13 +46,13 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.TestLabels;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 /**
  * Issue came up when observing that recovering an INDEX DROP command didn't actually call {@link IndexProxy#drop()},
@@ -111,7 +111,7 @@ public class RecoverIndexDropIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            IndexDefinition index = db.schema().indexFor( TestLabels.LABEL_ONE ).on( KEY ).create();
+            IndexDefinition index = db.schema().indexFor( LABEL_ONE ).on( KEY ).create();
             tx.success();
             return index;
         }

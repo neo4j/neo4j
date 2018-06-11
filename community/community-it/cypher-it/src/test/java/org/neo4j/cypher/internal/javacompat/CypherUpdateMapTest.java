@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import org.hamcrest.Matcher;
-import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,11 +28,12 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.mockito.matcher.Neo4jMatchers;
 
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 public class CypherUpdateMapTest
 {
@@ -63,14 +63,14 @@ public class CypherUpdateMapTest
 
         Node node2 = getNodeByIdInTx( 0 );
 
-        assertThat( node2, inTxS( Matchers.not( hasProperty( "key1" ) ) ) );
-        assertThat( node2, inTxS( Matchers.not( hasProperty( "key2" ) ) ) );
+        assertThat( node2, inTxS( not( hasProperty( "key1" ) ) ) );
+        assertThat( node2, inTxS( not( hasProperty( "key2" ) ) ) );
         assertThat( node2, inTxS( hasProperty( "key3" ).withValue(5678) ) );
     }
 
     public <T> Matcher<? super T> inTxS( final Matcher<T> inner )
     {
-        return Neo4jMatchers.inTx( db, inner, false );
+        return inTx( db, inner, false );
     }
 
     private Node getNodeByIdInTx( int nodeId )

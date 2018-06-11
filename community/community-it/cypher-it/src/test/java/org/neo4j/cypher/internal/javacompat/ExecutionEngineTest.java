@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.hamcrest.core.Is;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -44,6 +43,7 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
@@ -83,10 +83,10 @@ public class ExecutionEngineTest
     private void verifyResult( Result result )
     {
         Map firstRowValue = (Map) result.next().values().iterator().next();
-        assertThat( firstRowValue.get( "key" ), Is.is( "Value" ) );
+        assertThat( firstRowValue.get( "key" ), is( "Value" ) );
         List theList = (List) firstRowValue.get( "collectionKey" );
-        assertThat( ((Map) theList.get( 0 )).get( "inner" ), Is.is( "Map1" ) );
-        assertThat( ((Map) theList.get( 1 )).get( "inner" ), Is.is( "Map2" ) );
+        assertThat( ((Map) theList.get( 0 )).get( "inner" ), is( "Map1" ) );
+        assertThat( ((Map) theList.get( 1 )).get( "inner" ), is( "Map2" ) );
     }
 
     private TransactionalContext createTransactionContext( GraphDatabaseQueryService graph, InternalTransaction tx,

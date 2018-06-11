@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store;
 
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -119,8 +118,8 @@ public class RelationshipGroupStoreTest
             node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
             node.createRelationshipTo( db.createNode(), MyRelTypes.TEST2 );
             assertEquals( 2, node.getDegree() );
-            Assert.assertEquals( 1, node.getDegree( MyRelTypes.TEST ) );
-            Assert.assertEquals( 1, node.getDegree( MyRelTypes.TEST2 ) );
+            assertEquals( 1, node.getDegree( MyRelTypes.TEST ) );
+            assertEquals( 1, node.getDegree( MyRelTypes.TEST2 ) );
             tx.success();
         }
 

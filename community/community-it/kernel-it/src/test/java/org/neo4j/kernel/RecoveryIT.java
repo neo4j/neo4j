@@ -102,6 +102,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.Long.max;
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -113,6 +114,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
 import static org.neo4j.helpers.ArrayUtil.array;
+import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.kernel.configuration.Config.defaults;
 
 public class RecoveryIT
@@ -315,7 +317,7 @@ public class RecoveryIT
         UpdateCapturingIndexProvider updateCapturingIndexProvider = new UpdateCapturingIndexProvider( indexProvider, new HashMap<>() );
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory()
-                .setKernelExtensions( Arrays.asList( new InMemoryIndexProviderFactory( updateCapturingIndexProvider ) ) )
+                .setKernelExtensions( asList( new InMemoryIndexProviderFactory( updateCapturingIndexProvider ) ) )
                 .setFileSystem( fs );
         GraphDatabaseService db = dbFactory.newImpermanentDatabase( storeDir );
         Label label = TestLabels.LABEL_ONE;
@@ -356,7 +358,7 @@ public class RecoveryIT
         fs.close();
         db = dbFactory
                 .setFileSystem( crashedFs )
-                .setKernelExtensions( Arrays.asList( new InMemoryIndexProviderFactory( recoveredUpdateCapturingIndexProvider ) ) )
+                .setKernelExtensions( asList( new InMemoryIndexProviderFactory( recoveredUpdateCapturingIndexProvider ) ) )
                 .newImpermanentDatabase( storeDir );
         long lastCommittedTxIdAfterRecovered = lastCommittedTxId( db );
         Map<Long,Collection<IndexEntryUpdate<?>>> updatesAfterRecovery = recoveredUpdateCapturingIndexProvider.snapshot();
@@ -628,7 +630,7 @@ public class RecoveryIT
 
     private void onRandomRelationship( List<Node> nodes, Consumer<Relationship> action )
     {
-        random.among( nodes, node -> random.among( Iterables.asList( node.getRelationships() ), action ) );
+        random.among( nodes, node -> random.among( asList( node.getRelationships() ), action ) );
     }
 
     private RelationshipType randomRelationshipType()

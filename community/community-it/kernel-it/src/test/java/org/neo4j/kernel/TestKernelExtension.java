@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import org.neo4j.kernel.configuration.Config;
@@ -27,6 +26,8 @@ import org.neo4j.kernel.extension.KernelExtensionFactoryContractTest;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Test the implementation of the {@link org.neo4j.kernel.extension.KernelExtensionFactory} framework. Treats the
@@ -54,7 +55,7 @@ public final class TestKernelExtension extends KernelExtensionFactoryContractTes
         GraphDatabaseAPI graphdb = graphdb( 0 );
         try
         {
-            Assert.assertEquals( LifecycleStatus.STARTED, graphdb.getDependencyResolver().resolveDependency(
+            assertEquals( LifecycleStatus.STARTED, graphdb.getDependencyResolver().resolveDependency(
                     KernelExtensions.class ).resolveDependency( DummyExtension.class ).getStatus() );
         }
         finally
@@ -72,10 +73,10 @@ public final class TestKernelExtension extends KernelExtensionFactoryContractTes
         GraphDatabaseAPI graphdb = graphdb( 0 );
         try
         {
-            Assert.assertEquals( graphdb.getDependencyResolver().resolveDependency( Config.class ),
+            assertEquals( graphdb.getDependencyResolver().resolveDependency( Config.class ),
                     graphdb.getDependencyResolver().resolveDependency( KernelExtensions.class ).resolveDependency(
                             DummyExtension.class ).getDependencies().getConfig() );
-            Assert.assertEquals( graphdb.getDependencyResolver().resolveDependency( NeoStoreDataSource.class ),
+            assertEquals( graphdb.getDependencyResolver().resolveDependency( NeoStoreDataSource.class ),
                     graphdb.getDependencyResolver().resolveDependency( KernelExtensions.class ).resolveDependency(
                             DummyExtension.class ).getDependencies().getNeoStoreDataSource().get() );
         }
@@ -94,7 +95,7 @@ public final class TestKernelExtension extends KernelExtensionFactoryContractTes
         GraphDatabaseAPI graphdb = graphdb( 0 );
         graphdb.shutdown();
 
-        Assert.assertEquals( LifecycleStatus.SHUTDOWN, graphdb.getDependencyResolver().resolveDependency( KernelExtensions
+        assertEquals( LifecycleStatus.SHUTDOWN, graphdb.getDependencyResolver().resolveDependency( KernelExtensions
                 .class ).resolveDependency( DummyExtension.class ).getStatus() );
     }
 }

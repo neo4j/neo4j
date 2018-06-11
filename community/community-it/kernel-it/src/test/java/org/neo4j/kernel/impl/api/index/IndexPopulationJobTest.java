@@ -340,7 +340,7 @@ public class IndexPopulationJobTest
         job.run();
 
         // Then
-        LogMatcherBuilder match = AssertableLogProvider.inLog( IndexPopulationJob.class );
+        LogMatcherBuilder match = inLog( IndexPopulationJob.class );
         logProvider.assertExactly(
                 match.info( "Index population started: [%s]", ":FIRST(name)" ),
                 match.info( "Index creation finished. Index [%s] is %s.", ":FIRST(name)", "ONLINE" )
@@ -386,7 +386,7 @@ public class IndexPopulationJobTest
         job.run();
 
         // Then
-        LogMatcherBuilder match = AssertableLogProvider.inLog( IndexPopulationJob.class );
+        LogMatcherBuilder match = inLog( IndexPopulationJob.class );
         logProvider.assertAtLeastOnce(
                 match.error( is( "Failed to populate index: [:FIRST(name)]" ), sameInstance( failure ) )
         );
@@ -650,8 +650,8 @@ public class IndexPopulationJobTest
             int propertyKeyId = tx.tokenWrite().propertyKeyGetOrCreateForName( propertyKey );
             SchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId );
             IndexDescriptor descriptor = constraint ?
-                                         IndexDescriptorFactory.uniqueForSchema( schema, TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR ) :
-                                         IndexDescriptorFactory.forSchema( schema, TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR );
+                                         IndexDescriptorFactory.uniqueForSchema( schema, PROVIDER_DESCRIPTOR ) :
+                                         IndexDescriptorFactory.forSchema( schema, PROVIDER_DESCRIPTOR );
             tx.success();
             return descriptor;
         }

@@ -31,13 +31,13 @@ public class MandatoryTransactionsForIndexCreatorTest
     @Test
     public void shouldRequireTransactionsWhenCallingMethodsOnIndexCreators()
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), IndexCreatorFacadeMethods.ALL_INDEX_CREATOR_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_INDEX_CREATOR_FACADE_METHODS );
     }
 
     @Test
     public void shouldTerminateWhenCallingMethodsOnIndexCreators()
     {
-        assertFacadeMethodsThrowAfterTerminate( IndexCreatorFacadeMethods.ALL_INDEX_CREATOR_FACADE_METHODS );
+        assertFacadeMethodsThrowAfterTerminate( ALL_INDEX_CREATOR_FACADE_METHODS );
     }
 
     @Override

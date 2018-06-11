@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.v1.transport.integration;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,7 +38,9 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.BoltConnector;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.REQUIRED;
 
 @RunWith( Parameterized.class )
@@ -91,6 +92,6 @@ public class RequiredTransportEncryptionIT
         client.connect( address )
                 .send( util.acceptedVersions( 1, 0, 0, 0 ) );
 
-        MatcherAssert.assertThat( client, TransportTestUtil.eventuallyDisconnects() );
+        assertThat( client, eventuallyDisconnects() );
     }
 }

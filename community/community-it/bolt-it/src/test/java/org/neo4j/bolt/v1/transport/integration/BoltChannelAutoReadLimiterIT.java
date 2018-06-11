@@ -30,10 +30,6 @@ import java.util.function.Consumer;
 
 import org.neo4j.bolt.runtime.BoltConnectionReadLimiter;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
-import org.neo4j.bolt.v1.messaging.message.DiscardAllMessage;
-import org.neo4j.bolt.v1.messaging.message.InitMessage;
-import org.neo4j.bolt.v1.messaging.message.RunMessage;
-import org.neo4j.bolt.v1.messaging.util.MessageMatchers;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.collection.RawIterator;
@@ -59,6 +55,10 @@ import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.anything;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
+import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
+import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 
 public class BoltChannelAutoReadLimiterIT
@@ -110,24 +110,23 @@ public class BoltChannelAutoReadLimiterIT
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
-                        InitMessage.init( "TestClient/1.1", emptyMap() ) ) );
+                        init( "TestClient/1.1", emptyMap() ) ) );
 
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        assertThat( connection, util.eventuallyReceives( MessageMatchers.msgSuccess() ) );
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         // when
         for ( int i = 0; i < numberOfRunDiscardPairs; i++ )
         {
             connection.send( util.chunk(
-                    RunMessage.run( "CALL boltissue.sleep( $data )", ValueUtils.asMapValue( singletonMap( "data", largeString ) ) ),
-                    DiscardAllMessage.discardAll()
-            ) );
+                    run( "CALL boltissue.sleep( $data )", ValueUtils.asMapValue( singletonMap( "data", largeString ) ) ),
+                    discardAll() ) );
         }
 
         // expect
         for ( int i = 0; i < numberOfRunDiscardPairs; i++ )
         {
-            assertThat( connection, util.eventuallyReceives( MessageMatchers.msgSuccess(), MessageMatchers.msgSuccess() ) );
+            assertThat( connection, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
         }
 
         logProvider.assertAtLeastOnce(

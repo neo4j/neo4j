@@ -71,7 +71,6 @@ import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
@@ -92,7 +91,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.mockito.matcher.CollectionMatcher;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -129,8 +127,10 @@ import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.test.mockito.matcher.CollectionMatcher.matchesCollection;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
@@ -915,7 +915,7 @@ public class BatchInsertTest
                 .thenReturn( populator );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
-                SchemaIndexTestHelper.singleInstanceIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
+                singleInstanceIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
 
         inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" ).create();
 
@@ -929,7 +929,7 @@ public class BatchInsertTest
         verify( provider ).start();
         verify( provider ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( argThat( CollectionMatcher.matchesCollection( add( nodeId, internalIndex.schema(),
+        verify( populator ).add( argThat( matchesCollection( add( nodeId, internalIndex.schema(),
                 Values.of( "Jakewins" ) ) ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
@@ -950,7 +950,7 @@ public class BatchInsertTest
                 .thenReturn( populator );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
-                SchemaIndexTestHelper.singleInstanceIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
+                singleInstanceIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
 
         inserter.createDeferredConstraint( label( "Hacker" ) ).assertPropertyIsUnique( "handle" ).create();
 
@@ -964,7 +964,7 @@ public class BatchInsertTest
         verify( provider ).start();
         verify( provider ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( argThat( CollectionMatcher.matchesCollection( add( nodeId, internalUniqueIndex.schema(), Values.of( "Jakewins" ) ) ) ) );
+        verify( populator ).add( argThat( matchesCollection( add( nodeId, internalUniqueIndex.schema(), Values.of( "Jakewins" ) ) ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
@@ -986,7 +986,7 @@ public class BatchInsertTest
                 .thenReturn( populator );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
-                SchemaIndexTestHelper.singleInstanceIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
+                singleInstanceIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
 
         long boggle = inserter.createNode( map( "handle", "b0ggl3" ), label( "Hacker" ) );
 
@@ -998,7 +998,7 @@ public class BatchInsertTest
         verify( provider ).start();
         verify( provider ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( argThat( CollectionMatcher.matchesCollection(
+        verify( populator ).add( argThat( matchesCollection(
                 add( jakewins, internalIndex.schema(), Values.of( "Jakewins" ) ),
                 add( boggle, internalIndex.schema(), Values.of( "b0ggl3" ) ) ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
@@ -1465,7 +1465,7 @@ public class BatchInsertTest
                 .thenReturn( populator );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
-                SchemaIndexTestHelper.singleInstanceIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
+                singleInstanceIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
 
         inserter.createDeferredSchemaIndex( label("Hacker") ).on( "handle" ).create();
         long nodeId = inserter.createNode( map( "handle", "Jakewins" ), label( "Hacker" ) );

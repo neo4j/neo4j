@@ -28,7 +28,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
@@ -37,6 +36,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterables.asArray;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
+import static org.neo4j.kernel.impl.MyRelTypes.TEST2;
+import static org.neo4j.kernel.impl.MyRelTypes.TEST_TRAVERSAL;
 
 /**
  * Traversing a relationship chain has no consistency guarantees that there will be no change between
@@ -67,7 +68,7 @@ public class RelationshipChainPointerChasingTest
             node = db.createNode();
             for ( int i = 0; i < numberOfRelationships; i++ )
             {
-                node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
+                node.createRelationshipTo( db.createNode(), TEST );
             }
             tx.success();
         }
@@ -111,10 +112,10 @@ public class RelationshipChainPointerChasingTest
             node = db.createNode();
             for ( int i = 0; i < THRESHOLD; i++ )
             {
-                node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
+                node.createRelationshipTo( db.createNode(), TEST );
             }
-            relationshipInTheMiddle = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST2 );
-            relationshipInTheEnd = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST_TRAVERSAL );
+            relationshipInTheMiddle = node.createRelationshipTo( db.createNode(), TEST2 );
+            relationshipInTheEnd = node.createRelationshipTo( db.createNode(), TEST_TRAVERSAL );
             tx.success();
         }
 
@@ -125,7 +126,7 @@ public class RelationshipChainPointerChasingTest
             Iterator<Relationship> relationships = node.getRelationships().iterator();
             for ( int i = 0; i < THRESHOLD / 2; i++ )
             {
-                assertTrue( relationships.next().isType( MyRelTypes.TEST ) );
+                assertTrue( relationships.next().isType( TEST ) );
             }
 
             // Here we're awfully certain that we're on this first group, so we go ahead and delete the
@@ -135,7 +136,7 @@ public class RelationshipChainPointerChasingTest
             // THEN we should be able to, first of all, iterate through the rest of the relationships of the first type
             for ( int i = 0; i < THRESHOLD / 2; i++ )
             {
-                assertTrue( relationships.next().isType( MyRelTypes.TEST ) );
+                assertTrue( relationships.next().isType( TEST ) );
             }
             // THEN we should be able to see the last relationship, after the deleted one
             // where the group for the deleted relationship also should've been deleted since it was the

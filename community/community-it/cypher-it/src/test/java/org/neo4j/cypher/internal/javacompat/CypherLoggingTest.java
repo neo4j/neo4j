@@ -55,7 +55,7 @@ public class CypherLoggingTest
         database.execute( "MATCH (n) RETURN n" );
 
         // then
-        AssertableLogProvider.inLog( org.neo4j.cypher.internal.ExecutionEngine.class );
+        inLog( org.neo4j.cypher.internal.ExecutionEngine.class );
         logProvider.assertNoLoggingOccurred();
     }
 }

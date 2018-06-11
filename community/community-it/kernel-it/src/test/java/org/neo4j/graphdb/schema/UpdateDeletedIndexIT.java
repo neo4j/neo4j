@@ -89,7 +89,7 @@ public class UpdateDeletedIndexIT
         for ( int i = 0; i < NODES; i++ )
         {
             final long nodeId = nodes[i];
-            race.addContestant( Race.throwing( () ->
+            race.addContestant( throwing( () ->
             {
                 try ( Transaction tx = db.beginTx() )
                 {

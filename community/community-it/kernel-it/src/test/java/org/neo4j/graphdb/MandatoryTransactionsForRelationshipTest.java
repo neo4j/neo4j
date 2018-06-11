@@ -29,13 +29,13 @@ public class MandatoryTransactionsForRelationshipTest extends AbstractMandatoryT
     @Test
     public void shouldRequireTransactionsWhenCallingMethodsOnRelationshipFacade()
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), RelationshipFacadeMethods.ALL_RELATIONSHIP_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_RELATIONSHIP_FACADE_METHODS );
     }
 
     @Test
     public void shouldTerminateWhenCallingMethodsOnRelationshipFacade()
     {
-        assertFacadeMethodsThrowAfterTerminate( RelationshipFacadeMethods.ALL_RELATIONSHIP_FACADE_METHODS );
+        assertFacadeMethodsThrowAfterTerminate( ALL_RELATIONSHIP_FACADE_METHODS );
     }
 
     @Override

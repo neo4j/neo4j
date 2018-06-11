@@ -79,6 +79,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
+import static org.neo4j.unsafe.impl.batchimport.GeneratingInputIterator.EMPTY_ITERABLE;
 import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
 
@@ -327,7 +328,7 @@ public class MultipleIndexPopulationStressIT
         @Override
         public InputIterable relationships()
         {
-            return GeneratingInputIterator.EMPTY_ITERABLE;
+            return EMPTY_ITERABLE;
         }
 
         @Override

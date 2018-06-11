@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.core;
 
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -247,8 +246,8 @@ public class TestRelationshipCount
             assertEquals( 1002, node1.getDegree( Direction.BOTH ) );
             assertEquals( 502, node1.getDegree( Direction.OUTGOING ) );
             assertEquals( 500, node1.getDegree( Direction.INCOMING ) );
-            Assert.assertEquals( 1, node1.getDegree( MyRelTypes.TEST2 ) );
-            Assert.assertEquals( 1001, node1.getDegree( MyRelTypes.TEST ) );
+            assertEquals( 1, node1.getDegree( MyRelTypes.TEST2 ) );
+            assertEquals( 1001, node1.getDegree( MyRelTypes.TEST ) );
 
             assertEquals( 1001, node1.getDegree( MyRelTypes.TEST, Direction.BOTH ) );
             assertEquals( 501, node1.getDegree( MyRelTypes.TEST, Direction.OUTGOING ) );

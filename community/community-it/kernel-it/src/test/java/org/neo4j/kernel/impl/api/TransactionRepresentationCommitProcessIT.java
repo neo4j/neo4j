@@ -30,7 +30,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.index.DummyIndexExtensionFactory;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -44,6 +43,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TransactionRepresentationCommitProcessIT
 {
@@ -60,7 +60,7 @@ public class TransactionRepresentationCommitProcessIT
         final Index<Node> index;
         try ( Transaction tx = db.beginTx() )
         {
-            index = db.index().forNodes( INDEX_NAME, MapUtil.stringMap(
+            index = db.index().forNodes( INDEX_NAME, stringMap(
                     IndexManager.PROVIDER, DummyIndexExtensionFactory.IDENTIFIER ) );
             tx.success();
         }

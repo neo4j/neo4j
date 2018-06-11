@@ -54,7 +54,7 @@ public class SchemaLoggingIT
         createIndex( db, labelName, property );
 
         // then
-        LogMatcherBuilder match = AssertableLogProvider.inLog( IndexPopulationJob.class );
+        LogMatcherBuilder match = inLog( IndexPopulationJob.class );
         logProvider.assertAtLeastOnce(
                 match.info( "Index population started: [%s]", ":User(name) [provider: {key=in-memory-index, version=1.0}]" ),
                 match.info( "Index creation finished. Index [%s] is %s.",

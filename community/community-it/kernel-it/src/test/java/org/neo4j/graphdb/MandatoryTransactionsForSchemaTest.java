@@ -30,13 +30,13 @@ public class MandatoryTransactionsForSchemaTest extends AbstractMandatoryTransac
     @Test
     public void shouldRequireTransactionsWhenCallingMethodsOnSchema()
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), SchemaFacadeMethods.ALL_SCHEMA_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_SCHEMA_FACADE_METHODS );
     }
 
     @Test
     public void shouldTerminateWhenCallingMethodsOnSchema()
     {
-        assertFacadeMethodsThrowAfterTerminate( SchemaFacadeMethods.ALL_SCHEMA_FACADE_METHODS );
+        assertFacadeMethodsThrowAfterTerminate( ALL_SCHEMA_FACADE_METHODS );
     }
 
     @Override

@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.v1.transport.integration;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,9 +30,11 @@ import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.packstream.PackStream;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.RUN;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 
 public class TransportErrorIT extends AbstractBoltTransportsTest
 {
@@ -59,8 +60,8 @@ public class TransportErrorIT extends AbstractBoltTransportsTest
                 .send( util.chunk( 32, truncated ) );
 
         // Then
-        MatcherAssert.assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        MatcherAssert.assertThat( connection, TransportTestUtil.eventuallyDisconnects() );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection, eventuallyDisconnects() );
     }
 
     @Test
@@ -83,8 +84,8 @@ public class TransportErrorIT extends AbstractBoltTransportsTest
                 .send( util.chunk( 32, invalidMessage ) );
 
         // Then
-        MatcherAssert.assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        MatcherAssert.assertThat( connection, TransportTestUtil.eventuallyDisconnects() );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection, eventuallyDisconnects() );
     }
 
     @Test
@@ -106,8 +107,8 @@ public class TransportErrorIT extends AbstractBoltTransportsTest
                 .send( util.chunk( 32, invalidMessage ) );
 
         // Then
-        MatcherAssert.assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        MatcherAssert.assertThat( connection, TransportTestUtil.eventuallyDisconnects() );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection, eventuallyDisconnects() );
     }
 
     @Test
@@ -130,7 +131,7 @@ public class TransportErrorIT extends AbstractBoltTransportsTest
                 .send( util.chunk( 32, invalidMessage ) );
 
         // Then
-        MatcherAssert.assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        MatcherAssert.assertThat( connection, TransportTestUtil.eventuallyDisconnects() );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection, eventuallyDisconnects() );
     }
 }

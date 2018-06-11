@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -39,6 +38,7 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.hamcrest.core.IsNull.nullValue;
@@ -95,8 +95,8 @@ public class ExecutionResultTest
         }
         catch ( QueryExecutionException ex )
         {
-            assertThat( ex.getCause(), Matchers.instanceOf( QueryExecutionKernelException.class ) );
-            assertThat( ex.getCause().getCause(), Matchers.instanceOf( ArithmeticException.class ) );
+            assertThat( ex.getCause(), instanceOf( QueryExecutionKernelException.class ) );
+            assertThat( ex.getCause().getCause(), instanceOf( ArithmeticException.class ) );
         }
     }
 

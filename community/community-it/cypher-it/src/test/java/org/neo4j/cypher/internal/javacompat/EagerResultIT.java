@@ -19,9 +19,7 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -66,7 +64,12 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class EagerResultIT
 {
@@ -148,7 +151,7 @@ public class EagerResultIT
     {
         Result result = database.execute( "MATCH (n) RETURN n.c" );
         assertEquals( 1, testCursorContext.getAdditionalAttempts() );
-        Assert.assertFalse( result.getQueryStatistics().containsUpdates() );
+        assertFalse( result.getQueryStatistics().containsUpdates() );
     }
 
     @Test
@@ -173,9 +176,9 @@ public class EagerResultIT
         Result result = database.execute( "MATCH (n) RETURN n.c, n.d" );
         assertEquals( 1, testCursorContext.getAdditionalAttempts() );
         String resultString = result.resultAsString();
-        Assert.assertTrue( resultString.contains( "n.c, n.d" ) );
-        Assert.assertTrue( resultString.contains( "d, a" ) );
-        Assert.assertTrue( resultString.contains( "y, k" ) );
+        assertTrue( resultString.contains( "n.c, n.d" ) );
+        assertTrue( resultString.contains( "d, a" ) );
+        assertTrue( resultString.contains( "y, k" ) );
     }
 
     @Test
@@ -196,8 +199,8 @@ public class EagerResultIT
             values.add( row.getString( "n.c" ) );
             return false;
         } );
-        Assert.assertThat( values, Matchers.hasSize( 2 ) );
-        Assert.assertThat( values, Matchers.containsInAnyOrder( "d", "y" ) );
+        assertThat( values, hasSize( 2 ) );
+        assertThat( values, containsInAnyOrder( "d", "y" ) );
     }
 
     @Test( expected = QueryExecutionException.class )

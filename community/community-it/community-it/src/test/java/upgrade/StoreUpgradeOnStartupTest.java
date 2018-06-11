@@ -39,7 +39,6 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
-import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -51,7 +50,9 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.removeCheckPointFromTxLog;
 
 @RunWith( Parameterized.class )
 public class StoreUpgradeOnStartupTest
@@ -99,7 +100,7 @@ public class StoreUpgradeOnStartupTest
 
         // then
         assertTrue( "Some store files did not have the correct version",
-                MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion( check, workingDirectory ) );
+                checkNeoStoreHasDefaultFormatVersion( check, workingDirectory ) );
         assertConsistentStore( workingDirectory );
     }
 
@@ -107,7 +108,7 @@ public class StoreUpgradeOnStartupTest
     public void shouldAbortOnNonCleanlyShutdown() throws Throwable
     {
         // given
-        MigrationTestUtils.removeCheckPointFromTxLog( fileSystem, workingDirectory );
+        removeCheckPointFromTxLog( fileSystem, workingDirectory );
         try
         {
             // when

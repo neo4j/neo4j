@@ -46,11 +46,8 @@ import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.index.DummyIndexExtensionFactory;
 import org.neo4j.test.TestLabels;
-import org.neo4j.test.mockito.matcher.Neo4jMatchers;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
@@ -68,6 +65,9 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.index.DummyIndexExtensionFactory.IDENTIFIER;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 public class TestTransactionEvents
@@ -675,7 +675,7 @@ public class TestTransactionEvents
             tx.success();
         }
         // Then
-        assertThat(node, inTx(db, Neo4jMatchers.hasProperty(key).withValue(value2)));
+        assertThat(node, inTx(db, hasProperty(key).withValue(value2)));
         db.unregisterTransactionEventHandler( handler );
     }
 
@@ -1060,7 +1060,7 @@ public class TestTransactionEvents
         // ... or even an explicit index
         try ( Transaction tx = dbRule.beginTx() )
         {
-            dbRule.index().forNodes( "some index", MapUtil.stringMap( PROVIDER, DummyIndexExtensionFactory.IDENTIFIER ) );
+            dbRule.index().forNodes( "some index", stringMap( PROVIDER, IDENTIFIER ) );
             tx.success();
         }
 

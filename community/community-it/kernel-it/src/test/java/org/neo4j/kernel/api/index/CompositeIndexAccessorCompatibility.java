@@ -56,9 +56,9 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                 add( 2L, descriptor.schema(), "b", "b" ),
                 add( 3L, descriptor.schema(), "a", "b" ) ) );
 
-        assertThat( query( IndexQueryHelper.exact( 0, "a" ), IndexQueryHelper.exact( 1, "a" ) ), equalTo( singletonList( 1L ) ) );
-        assertThat( query( IndexQueryHelper.exact( 0, "b" ), IndexQueryHelper.exact( 1, "b" ) ), equalTo( singletonList( 2L ) ) );
-        assertThat( query( IndexQueryHelper.exact( 0, "a" ), IndexQueryHelper.exact( 1, "b" ) ), equalTo( singletonList( 3L ) ) );
+        assertThat( query( exact( 0, "a" ), exact( 1, "a" ) ), equalTo( singletonList( 1L ) ) );
+        assertThat( query( exact( 0, "b" ), exact( 1, "b" ) ), equalTo( singletonList( 2L ) ) );
+        assertThat( query( exact( 0, "a" ), exact( 1, "b" ) ), equalTo( singletonList( 3L ) ) );
         assertThat( query( exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
     }
 
@@ -70,9 +70,9 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                 add( 2L, descriptor.schema(), 101, 101 ),
                 add( 3L, descriptor.schema(), 333, 101 ) ) );
 
-        assertThat( query( IndexQueryHelper.exact( 0, 333 ), IndexQueryHelper.exact( 1, 333 ) ), equalTo( singletonList( 1L ) ) );
-        assertThat( query( IndexQueryHelper.exact( 0, 101 ), IndexQueryHelper.exact( 1, 101 ) ), equalTo( singletonList( 2L ) ) );
-        assertThat( query( IndexQueryHelper.exact( 0, 333 ), IndexQueryHelper.exact( 1, 101 ) ), equalTo( singletonList( 3L ) ) );
+        assertThat( query( exact( 0, 333 ), exact( 1, 333 ) ), equalTo( singletonList( 1L ) ) );
+        assertThat( query( exact( 0, 101 ), exact( 1, 101 ) ), equalTo( singletonList( 2L ) ) );
+        assertThat( query( exact( 0, 333 ), exact( 1, 101 ) ), equalTo( singletonList( 3L ) ) );
         assertThat( query( exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
     }
 
@@ -93,12 +93,12 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                 add( 6L, descriptor.schema(), gps, car3d )
         ) );
 
-        assertThat( query( IndexQueryHelper.exact( 0, gps ), IndexQueryHelper.exact( 1, gps ) ), equalTo( singletonList( 1L ) ) );
-        assertThat( query( IndexQueryHelper.exact( 0, car ), IndexQueryHelper.exact( 1, car ) ), equalTo( singletonList( 2L ) ) );
-        assertThat( query( IndexQueryHelper.exact( 0, gps ), IndexQueryHelper.exact( 1, car ) ), equalTo( singletonList( 3L ) ) );
-        assertThat( query( IndexQueryHelper.exact( 0, gps3d ), IndexQueryHelper.exact( 1, gps3d ) ), equalTo( singletonList( 4L ) ) );
-        assertThat( query( IndexQueryHelper.exact( 0, car3d ), IndexQueryHelper.exact( 1, car3d ) ), equalTo( singletonList( 5L ) ) );
-        assertThat( query( IndexQueryHelper.exact( 0, gps ), IndexQueryHelper.exact( 1, car3d ) ), equalTo( singletonList( 6L ) ) );
+        assertThat( query( exact( 0, gps ), exact( 1, gps ) ), equalTo( singletonList( 1L ) ) );
+        assertThat( query( exact( 0, car ), exact( 1, car ) ), equalTo( singletonList( 2L ) ) );
+        assertThat( query( exact( 0, gps ), exact( 1, car ) ), equalTo( singletonList( 3L ) ) );
+        assertThat( query( exact( 0, gps3d ), exact( 1, gps3d ) ), equalTo( singletonList( 4L ) ) );
+        assertThat( query( exact( 0, car3d ), exact( 1, car3d ) ), equalTo( singletonList( 5L ) ) );
+        assertThat( query( exact( 0, gps ), exact( 1, car3d ) ), equalTo( singletonList( 6L ) ) );
         assertThat( query( exists( 1 ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L, 6L ) ) );
     }
 
@@ -119,7 +119,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                     add( 1L, descriptor.schema(), "a", "a" ),
                     add( 2L, descriptor.schema(), "a", "a" ) ) );
 
-            assertThat( query( IndexQueryHelper.exact( 0, "a" ), IndexQueryHelper.exact( 1, "a" ) ), equalTo( asList( 1L, 2L ) ) );
+            assertThat( query( exact( 0, "a" ), exact( 1, "a" ) ), equalTo( asList( 1L, 2L ) ) );
         }
 
         @Test
@@ -129,7 +129,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                     add( 1L, descriptor.schema(), 333, 333 ),
                     add( 2L, descriptor.schema(), 333, 333 ) ) );
 
-            assertThat( query( IndexQueryHelper.exact( 0, 333 ), IndexQueryHelper.exact( 1, 333 ) ), equalTo( asList( 1L, 2L ) ) );
+            assertThat( query( exact( 0, 333 ), exact( 1, 333 ) ), equalTo( asList( 1L, 2L ) ) );
         }
 
         @Test
@@ -140,7 +140,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                     add( 1L, descriptor.schema(), gps, gps ),
                     add( 2L, descriptor.schema(), gps, gps ) ) );
 
-            assertThat( query( IndexQueryHelper.exact( 0, gps ), IndexQueryHelper.exact( 1, gps ) ), equalTo( asList( 1L, 2L ) ) );
+            assertThat( query( exact( 0, gps ), exact( 1, gps ) ), equalTo( asList( 1L, 2L ) ) );
         }
     }
 
@@ -167,7 +167,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                     add( 1L, descriptor.schema(), "a", "a" ),
                     add( 2L, descriptor.schema(), "a", "a" ) ) );
 
-            assertThat( query( IndexQueryHelper.exact( 0, "a" ), IndexQueryHelper.exact( 1, "a" ) ), equalTo( asList( 1L, 2L ) ) );
+            assertThat( query( exact( 0, "a" ), exact( 1, "a" ) ), equalTo( asList( 1L, 2L ) ) );
         }
     }
 

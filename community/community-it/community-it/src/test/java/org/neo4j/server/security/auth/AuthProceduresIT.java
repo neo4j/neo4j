@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -136,7 +135,7 @@ public class AuthProceduresIT
         assertEmpty( admin, "CALL dbms.security.createUser('andres', '123', true)" );
         try
         {
-            MatcherAssert.assertThat( authManager.getUser( "andres" ).passwordChangeRequired(), equalTo( true ) );
+            assertThat( authManager.getUser( "andres" ).passwordChangeRequired(), equalTo( true ) );
         }
         catch ( Throwable t )
         {
@@ -150,7 +149,7 @@ public class AuthProceduresIT
         assertEmpty( admin, "CALL dbms.security.createUser('andres', '123', false)" );
         try
         {
-            MatcherAssert.assertThat( authManager.getUser( "andres" ).passwordChangeRequired(), equalTo( false ) );
+            assertThat( authManager.getUser( "andres" ).passwordChangeRequired(), equalTo( false ) );
         }
         catch ( Throwable t )
         {
@@ -164,7 +163,7 @@ public class AuthProceduresIT
         assertEmpty( admin, "CALL dbms.security.createUser('andres', '123')" );
         try
         {
-            MatcherAssert.assertThat( authManager.getUser( "andres" ).passwordChangeRequired(), equalTo( true ) );
+            assertThat( authManager.getUser( "andres" ).passwordChangeRequired(), equalTo( true ) );
         }
         catch ( Throwable t )
         {

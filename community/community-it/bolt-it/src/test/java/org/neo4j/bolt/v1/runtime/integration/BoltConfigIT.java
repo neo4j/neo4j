@@ -19,21 +19,21 @@
  */
 package org.neo4j.bolt.v1.runtime.integration;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.v1.messaging.message.InitMessage;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
-import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static java.util.Collections.emptyMap;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.REQUIRED;
 
 public class BoltConfigIT extends AbstractBoltTransportsTest
@@ -70,7 +70,7 @@ public class BoltConfigIT extends AbstractBoltTransportsTest
         client.connect( address )
                 .send( util.defaultAcceptedVersions() );
 
-        MatcherAssert.assertThat( client, TransportTestUtil.eventuallyDisconnects() );
+        assertThat( client, eventuallyDisconnects() );
     }
 
     private void assertConnectionAccepted( HostnamePort address, TransportConnection client ) throws Exception
@@ -78,6 +78,6 @@ public class BoltConfigIT extends AbstractBoltTransportsTest
         client.connect( address )
                 .send( util.defaultAcceptedVersions() )
                 .send( util.chunk( InitMessage.init( "TestClient/1.1", emptyMap() ) ) );
-        MatcherAssert.assertThat( client, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( client, util.eventuallyReceivesSelectedProtocolVersion() );
     }
 }

@@ -20,7 +20,6 @@
 package org.neo4j.tooling;
 
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -77,7 +76,12 @@ import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
 import static org.apache.commons.lang3.StringUtils.repeat;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.ArrayUtil.join;
@@ -199,13 +203,13 @@ public class ImportToolTest
         try ( Transaction tx = dbRule.beginTx() )
         {
             long nodeCount = Iterables.count( dbRule.getAllNodes() );
-            Assert.assertEquals( 4097, nodeCount );
+            assertEquals( 4097, nodeCount );
 
             tx.success();
             ResourceIterator<Node> nodes = dbRule.findNodes( label( "FIRST 4096" ) );
-            Assert.assertEquals( 1, Iterators.asList( nodes ).size() );
+            assertEquals( 1, Iterators.asList( nodes ).size() );
             nodes = dbRule.findNodes( label( "SECOND 4096" ) );
-            Assert.assertEquals( 1, Iterators.asList( nodes ).size() );
+            assertEquals( 1, Iterators.asList( nodes ).size() );
         }
     }
 
@@ -250,7 +254,7 @@ public class ImportToolTest
 
                 String expected = name.trim();
 
-                Assert.assertEquals( 7, node.getAllProperties().size() );
+                assertEquals( 7, node.getAllProperties().size() );
                 for ( String key : node.getPropertyKeys() )
                 {
                     if ( key.equals( "name" ) )
@@ -263,14 +267,14 @@ public class ImportToolTest
                         expected = String.valueOf( Double.parseDouble( expected ) );
                     }
 
-                    Assert.assertEquals( "Wrong value for " + key, expected, node.getProperty( key ).toString() );
+                    assertEquals( "Wrong value for " + key, expected, node.getProperty( key ).toString() );
                 }
             }
 
             tx.success();
         }
 
-        Assert.assertEquals( values.size(), nodeCount );
+        assertEquals( values.size(), nodeCount );
     }
 
     @Test
@@ -315,7 +319,7 @@ public class ImportToolTest
 
                 double expected = Double.parseDouble( name.trim() );
 
-                Assert.assertEquals( 3, node.getAllProperties().size() );
+                assertEquals( 3, node.getAllProperties().size() );
                 for ( String key : node.getPropertyKeys() )
                 {
                     if ( key.equals( "name" ) )
@@ -331,7 +335,7 @@ public class ImportToolTest
             tx.success();
         }
 
-        Assert.assertEquals( values.size(), nodeCount );
+        assertEquals( values.size(), nodeCount );
     }
 
     @Test
@@ -372,12 +376,12 @@ public class ImportToolTest
                 }
                 else
                 {
-                    Assert.assertFalse( "Wrong value on " + name, (boolean) node.getProperty( "adult" ) );
+                    assertFalse( "Wrong value on " + name, (boolean) node.getProperty( "adult" ) );
                 }
             }
 
             long nodeCount = Iterables.count( dbRule.getAllNodes() );
-            Assert.assertEquals( 10, nodeCount );
+            assertEquals( 10, nodeCount );
             tx.success();
         }
     }
@@ -412,7 +416,7 @@ public class ImportToolTest
             {
                 nodeCount++;
 
-                Assert.assertEquals( 6, node.getAllProperties().size() );
+                assertEquals( 6, node.getAllProperties().size() );
                 for ( String key : node.getPropertyKeys() )
                 {
                     Object things = node.getProperty( key );
@@ -444,14 +448,14 @@ public class ImportToolTest
                         break;
                     }
 
-                    Assert.assertEquals( expected, result );
+                    assertEquals( expected, result );
                 }
             }
 
             tx.success();
         }
 
-        Assert.assertEquals( 1, nodeCount );
+        assertEquals( 1, nodeCount );
     }
 
     @Test
@@ -478,7 +482,7 @@ public class ImportToolTest
             {
                 nodeCount++;
 
-                Assert.assertEquals( 2, node.getAllProperties().size() );
+                assertEquals( 2, node.getAllProperties().size() );
                 for ( String key : node.getPropertyKeys() )
                 {
                     Object things = node.getProperty( key );
@@ -495,14 +499,14 @@ public class ImportToolTest
                         break;
                     }
 
-                    Assert.assertEquals( expected, result );
+                    assertEquals( expected, result );
                 }
             }
 
             tx.success();
         }
 
-        Assert.assertEquals( 1, nodeCount );
+        assertEquals( 1, nodeCount );
     }
 
     @Test
@@ -528,20 +532,20 @@ public class ImportToolTest
             {
                 nodeCount++;
 
-                Assert.assertEquals( 1, node.getAllProperties().size() );
+                assertEquals( 1, node.getAllProperties().size() );
                 for ( String key : node.getPropertyKeys() )
                 {
                     Object things = node.getProperty( key );
                     String result = Arrays.toString( (boolean[]) things );
 
-                    Assert.assertEquals( expected, result );
+                    assertEquals( expected, result );
                 }
             }
 
             tx.success();
         }
 
-        Assert.assertEquals( 1, nodeCount );
+        assertEquals( 1, nodeCount );
     }
 
     @Test
@@ -565,12 +569,12 @@ public class ImportToolTest
                     "--relationships", relationshipHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
                             relationshipData( false, config, nodeIds, TRUE, true ).getAbsolutePath() );
 
-            Assert.fail( "Should have thrown exception" );
+            fail( "Should have thrown exception" );
         }
         catch ( InputException e )
         {
             // THEN
-            Assert.assertFalse( suppressOutput.getErrorVoice().containsMessage( e.getClass().getName() ) );
+            assertFalse( suppressOutput.getErrorVoice().containsMessage( e.getClass().getName() ) );
             assertTrue( e.getMessage().contains( "Extra column not present in header on line" ) );
         }
     }
@@ -670,7 +674,7 @@ public class ImportToolTest
                     }
                     else
                     {
-                        Assert.fail( node + " has neither set of labels, it has " + labelsOf( node ) );
+                        fail( node + " has neither set of labels, it has " + labelsOf( node ) );
                     }
                 },
                 relationship ->
@@ -685,13 +689,13 @@ public class ImportToolTest
                     }
                     else
                     {
-                        Assert.fail( relationship + " didn't have either type, it has " + relationship.getType().name() );
+                        fail( relationship + " didn't have either type, it has " + relationship.getType().name() );
                     }
                 } );
-        Assert.assertEquals( NODE_COUNT / 2, numberOfNodesWithFirstSetOfLabels.intValue() );
-        Assert.assertEquals( NODE_COUNT / 2, numberOfNodesWithSecondSetOfLabels.intValue() );
-        Assert.assertEquals( RELATIONSHIP_COUNT / 2, numberOfRelationshipsWithFirstType.intValue() );
-        Assert.assertEquals( RELATIONSHIP_COUNT / 2, numberOfRelationshipsWithSecondType.intValue() );
+        assertEquals( NODE_COUNT / 2, numberOfNodesWithFirstSetOfLabels.intValue() );
+        assertEquals( NODE_COUNT / 2, numberOfNodesWithSecondSetOfLabels.intValue() );
+        assertEquals( RELATIONSHIP_COUNT / 2, numberOfRelationshipsWithFirstType.intValue() );
+        assertEquals( RELATIONSHIP_COUNT / 2, numberOfRelationshipsWithSecondType.intValue() );
     }
 
     private static String labelsOf( Node node )
@@ -738,9 +742,9 @@ public class ImportToolTest
             {
                 assertTrue( node.hasProperty( "name" ) );
                 nodeCount++;
-                Assert.assertFalse( node.hasRelationship() );
+                assertFalse( node.hasRelationship() );
             }
-            Assert.assertEquals( NODE_COUNT, nodeCount );
+            assertEquals( NODE_COUNT, nodeCount );
             tx.success();
         }
     }
@@ -778,9 +782,9 @@ public class ImportToolTest
             {
                 assertTrue( node.hasProperty( "name" ) );
                 nodeCount++;
-                Assert.assertEquals( 1, Iterables.count( node.getRelationships() ) );
+                assertEquals( 1, Iterables.count( node.getRelationships() ) );
             }
-            Assert.assertEquals( 6, nodeCount );
+            assertEquals( 6, nodeCount );
             tx.success();
         }
     }
@@ -843,7 +847,7 @@ public class ImportToolTest
                     "--nodes", nodeHeaderFile.getAbsolutePath() + MULTI_FILE_DELIMITER +
                                nodeData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
                                nodeData2.getAbsolutePath() );
-            Assert.fail( "Should have failed with duplicate node IDs" );
+            fail( "Should have failed with duplicate node IDs" );
         }
         catch ( Exception e )
         {
@@ -882,7 +886,7 @@ public class ImportToolTest
                 assertTrue( id + ", " + foundNodesIds, foundNodesIds.add( id ) );
                 assertTrue( expectedNodeIds.contains( id ) );
             }
-            Assert.assertEquals( expectedNodeIds, foundNodesIds );
+            assertEquals( expectedNodeIds, foundNodesIds );
 
             // also all nodes in the label index should exist
             for ( int i = 0; i < MAX_LABEL_ID; i++ )
@@ -895,7 +899,7 @@ public class ImportToolTest
                         Node node = nodesByLabel.next();
                         if ( !node.hasLabel( label ) )
                         {
-                            Assert.fail( "Expected " + node + " to have label " + label.name() + ", but instead had " +
+                            fail( "Expected " + node + " to have label " + label.name() + ", but instead had " +
                                     asList( node.getLabels() ) );
                         }
                     }
@@ -970,7 +974,7 @@ public class ImportToolTest
                 "--relationships", relationshipData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
                         relationshipData2.getAbsolutePath() );
 
-        Assert.assertFalse( badFile().exists() );
+        assertFalse( badFile().exists() );
         verifyRelationships( relationships );
     }
 
@@ -1000,7 +1004,7 @@ public class ImportToolTest
                     "--bad", bad.getAbsolutePath(),
                     "--bad-tolerance", "1",
                     "--relationships", relationshipData.getAbsolutePath() );
-            Assert.fail();
+            fail();
         }
         catch ( Exception e )
         {
@@ -1037,7 +1041,7 @@ public class ImportToolTest
                     "--skip-bad-relationships", "false",
                     "--relationships", relationshipData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
                                        relationshipData2.getAbsolutePath() );
-            Assert.fail();
+            fail();
         }
         catch ( Exception e )
         {
@@ -1104,12 +1108,12 @@ public class ImportToolTest
                     "--into", dbRule.getStoreDirAbsolutePath(),
                     "--relationships",
                     relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
-            Assert.fail( "Should have failed" );
+            fail( "Should have failed" );
         }
         catch ( IllegalArgumentException e )
         {
             // THEN
-            Assert.assertThat( e.getMessage(), containsString( "No node input" ) );
+            assertThat( e.getMessage(), containsString( "No node input" ) );
         }
     }
 
@@ -1142,10 +1146,10 @@ public class ImportToolTest
                 }
                 else
                 {
-                    Assert.assertNotNull( Iterators.single( Iterators.filter( nodeFilter( id ), allNodes.iterator() ) ) );
+                    assertNotNull( Iterators.single( Iterators.filter( nodeFilter( id ), allNodes.iterator() ) ) );
                 }
             }
-            Assert.assertEquals( anonymousCount, count( Iterators.filter( nodeFilter( "" ), allNodes.iterator() ) ) );
+            assertEquals( anonymousCount, count( Iterators.filter( nodeFilter( "" ), allNodes.iterator() ) ) );
             tx.success();
         }
     }
@@ -1162,7 +1166,7 @@ public class ImportToolTest
             importTool(
                     "--into", dbRule.getStoreDirAbsolutePath(),
                     "--nodes", data.getAbsolutePath() );
-            Assert.fail();
+            fail();
         }
         catch ( Exception e )
         {
@@ -1191,7 +1195,7 @@ public class ImportToolTest
             Node node = Iterators.single( allNodes );
             allNodes.close();
 
-            Assert.assertEquals( name, node.getProperty( "name" ) );
+            assertEquals( name, node.getProperty( "name" ) );
 
             tx.success();
         }
@@ -1295,7 +1299,7 @@ public class ImportToolTest
                     "--skip-bad-relationships", "false",
                     "--relationships", relationshipData( true, config, relationshipDataLines,
                             TRUE, true ).getAbsolutePath() );
-            Assert.fail( " Should fail during import." );
+            fail( " Should fail during import." );
         }
         catch ( Exception e )
         {
@@ -1332,7 +1336,7 @@ public class ImportToolTest
             Node node = Iterators.single( allNodes );
             allNodes.close();
 
-            Assert.assertEquals( "This is a line with\nnewlines in", node.getProperty( "name" ) );
+            assertEquals( "This is a line with\nnewlines in", node.getProperty( "name" ) );
 
             tx.success();
         }
@@ -1353,7 +1357,7 @@ public class ImportToolTest
         try ( Transaction tx = graphDatabaseService.beginTx() )
         {
             ResourceIterator<Node> allNodes = graphDatabaseService.getAllNodes().iterator();
-            Assert.assertFalse( "Expected database to be empty", allNodes.hasNext() );
+            assertFalse( "Expected database to be empty", allNodes.hasNext() );
             tx.success();
         }
     }
@@ -1377,9 +1381,9 @@ public class ImportToolTest
         try ( Transaction tx = db.beginTx() )
         {
             Node node = Iterables.single( db.getAllNodes() );
-            Assert.assertFalse( node.hasProperty( "one" ) );
-            Assert.assertFalse( node.hasProperty( "two" ) );
-            Assert.assertEquals( "value", node.getProperty( "three" ) );
+            assertFalse( node.hasProperty( "one" ) );
+            assertFalse( node.hasProperty( "two" ) );
+            assertEquals( "value", node.getProperty( "three" ) );
             tx.success();
         }
     }
@@ -1399,7 +1403,7 @@ public class ImportToolTest
                     "--into", dbRule.getStoreDirAbsolutePath(),
                     "--nodes", data.getAbsolutePath(),
                     "--multiline-fields", "false" );
-            Assert.fail( "Should have failed" );
+            fail( "Should have failed" );
         }
         catch ( InputException e )
         {
@@ -1477,12 +1481,12 @@ public class ImportToolTest
                     "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
                     "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
                     "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
-            Assert.fail( "Should have failed" );
+            fail( "Should have failed" );
         }
         catch ( IllegalArgumentException e )
         {
             // THEN
-            Assert.assertThat( e.getMessage(), containsString( "bogus" ) );
+            assertThat( e.getMessage(), containsString( "bogus" ) );
         }
     }
 
@@ -1499,12 +1503,12 @@ public class ImportToolTest
                     "--into", dbRule.getStoreDirAbsolutePath(),
                     "--nodes", nodeDataWithMissingQuote( 2 * unbalancedStartLine, unbalancedStartLine )
                             .getAbsolutePath() );
-            Assert.fail( "Should have failed" );
+            fail( "Should have failed" );
         }
         catch ( InputException e )
         {
             // THEN
-            Assert.assertThat( e.getMessage(), containsString( String.format( "Multi-line fields are illegal", unbalancedStartLine ) ) );
+            assertThat( e.getMessage(), containsString( String.format( "Multi-line fields are illegal", unbalancedStartLine ) ) );
         }
     }
 
@@ -1553,12 +1557,12 @@ public class ImportToolTest
             importTool(
                     "--into", dbRule.getStoreDirAbsolutePath(),
                     "--nodes", nodeDataWithMissingQuote( unbalancedStartLine, unbalancedStartLine ).getAbsolutePath() );
-            Assert.fail( "Should have failed" );
+            fail( "Should have failed" );
         }
         catch ( InputException e )
         {
             // THEN
-            Assert.assertThat( e.getMessage(), containsString( String.format( "Multi-line fields" ) ) );
+            assertThat( e.getMessage(), containsString( String.format( "Multi-line fields" ) ) );
         }
     }
 
@@ -1582,8 +1586,8 @@ public class ImportToolTest
                 "--quote", weirdStringDelimiter );
 
         // THEN
-        Assert.assertEquals( "~", "" + weirdDelimiter );
-        Assert.assertEquals( "~".charAt( 0 ), weirdDelimiter );
+        assertEquals( "~", "" + weirdDelimiter );
+        assertEquals( "~".charAt( 0 ), weirdDelimiter );
 
         Set<String> names = asSet( "Weird", name2 );
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -1613,7 +1617,7 @@ public class ImportToolTest
                     "--multiline-fields", "true",
                     "--nodes",
                     nodeDataWithMissingQuote( 2 * unbalancedStartLine, unbalancedStartLine ).getAbsolutePath() );
-            Assert.fail( "Should have failed" );
+            fail( "Should have failed" );
         }
         catch ( InputException e )
         {   // THEN OK
@@ -1664,8 +1668,8 @@ public class ImportToolTest
                 "--quote", weirdStringDelimiter );
 
         // THEN
-        Assert.assertEquals( weirdStringDelimiter, "" + weirdDelimiter );
-        Assert.assertEquals( weirdStringDelimiter.charAt( 0 ), weirdDelimiter );
+        assertEquals( weirdStringDelimiter, "" + weirdDelimiter );
+        assertEquals( weirdStringDelimiter.charAt( 0 ), weirdDelimiter );
 
         Set<String> names = asSet( "Weird", name2 );
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -1703,8 +1707,8 @@ public class ImportToolTest
         NeoStores stores = dbRule.getGraphDatabaseAPI().getDependencyResolver()
                 .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         int headerSize = Standard.LATEST_RECORD_FORMATS.dynamic().getRecordHeaderSize();
-        Assert.assertEquals( arrayBlockSize + headerSize, stores.getPropertyStore().getArrayStore().getRecordSize() );
-        Assert.assertEquals( stringBlockSize + headerSize, stores.getPropertyStore().getStringStore().getRecordSize() );
+        assertEquals( arrayBlockSize + headerSize, stores.getPropertyStore().getArrayStore().getRecordSize() );
+        assertEquals( stringBlockSize + headerSize, stores.getPropertyStore().getStringStore().getRecordSize() );
     }
 
     @Test
@@ -1729,8 +1733,8 @@ public class ImportToolTest
         NeoStores stores = dbRule.getGraphDatabaseAPI().getDependencyResolver()
                 .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         int headerSize = Standard.LATEST_RECORD_FORMATS.dynamic().getRecordHeaderSize();
-        Assert.assertEquals( arrayBlockSize + headerSize, stores.getPropertyStore().getArrayStore().getRecordSize() );
-        Assert.assertEquals( stringBlockSize + headerSize, stores.getPropertyStore().getStringStore().getRecordSize() );
+        assertEquals( arrayBlockSize + headerSize, stores.getPropertyStore().getArrayStore().getRecordSize() );
+        assertEquals( stringBlockSize + headerSize, stores.getPropertyStore().getStringStore().getRecordSize() );
     }
 
     @Test
@@ -1758,8 +1762,8 @@ public class ImportToolTest
         NeoStores stores = dbRule.getGraphDatabaseAPI().getDependencyResolver()
                 .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         int headerSize = Standard.LATEST_RECORD_FORMATS.dynamic().getRecordHeaderSize();
-        Assert.assertEquals( arrayBlockSize + headerSize, stores.getPropertyStore().getArrayStore().getRecordSize() );
-        Assert.assertEquals( stringBlockSize + headerSize, stores.getPropertyStore().getStringStore().getRecordSize() );
+        assertEquals( arrayBlockSize + headerSize, stores.getPropertyStore().getArrayStore().getRecordSize() );
+        assertEquals( stringBlockSize + headerSize, stores.getPropertyStore().getStringStore().getRecordSize() );
     }
 
     @Test
@@ -1780,7 +1784,7 @@ public class ImportToolTest
                                     .getAbsolutePath(),
                     "--stacktrace" );
 
-            Assert.fail( "Should have thrown exception" );
+            fail( "Should have thrown exception" );
         }
         catch ( InputException e )
         {
@@ -1811,7 +1815,7 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            Assert.assertNotNull( db.findNode( label( labelName ), "name", "abc\"def\\\"ghi" ) );
+            assertNotNull( db.findNode( label( labelName ), "name", "abc\"def\\\"ghi" ) );
         }
     }
 
@@ -1831,12 +1835,12 @@ public class ImportToolTest
                     "--nodes", data( lines.toArray( new String[lines.size()] ) ).getAbsolutePath(),
                     "--read-buffer-size", "1k"
                     );
-            Assert.fail( "Should've failed" );
+            fail( "Should've failed" );
         }
         catch ( IllegalStateException e )
         {
             // THEN good
-            Assert.assertThat( e.getMessage(), containsString( "input data" ) );
+            assertThat( e.getMessage(), containsString( "input data" ) );
         }
     }
 
@@ -1864,12 +1868,12 @@ public class ImportToolTest
             // WHEN
             importTool( "--into", dbRule.getStoreDirAbsolutePath(), "--nodes",
                     nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(), "--max-memory", "110%" );
-            Assert.fail( "Should have failed" );
+            fail( "Should have failed" );
         }
         catch ( IllegalArgumentException e )
         {
             // THEN good
-            Assert.assertThat( e.getMessage(), containsString( "percent" ) );
+            assertThat( e.getMessage(), containsString( "percent" ) );
         }
     }
 
@@ -1911,7 +1915,7 @@ public class ImportToolTest
                 "--relationships", relationshipData.getAbsolutePath() );
 
         String badContents = FileUtils.readTextFile( bad, Charset.defaultCharset() );
-        Assert.assertEquals( badContents, 3, occurencesOf( badContents, "is missing data" ) );
+        assertEquals( badContents, 3, occurencesOf( badContents, "is missing data" ) );
     }
 
     @Test
@@ -1930,7 +1934,7 @@ public class ImportToolTest
                     "--into", storeDir,
                     "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
                             nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns ).getAbsolutePath() );
-            Assert.fail( "Should have thrown exception" );
+            fail( "Should have thrown exception" );
         }
         catch ( InputException e )
         {
@@ -1989,13 +1993,13 @@ public class ImportToolTest
         {
             // when
             importTool( "-f", argumentFile.getAbsolutePath(), "--into", dbRule.getStoreDirAbsolutePath() );
-            Assert.fail( "Should have failed" );
+            fail( "Should have failed" );
         }
         catch ( IllegalArgumentException e )
         {
             // then good
-            Assert.assertThat( e.getMessage(), containsString( "in addition to" ) );
-            Assert.assertThat( e.getMessage(), containsString( ImportTool.Options.FILE.argument() ) );
+            assertThat( e.getMessage(), containsString( "in addition to" ) );
+            assertThat( e.getMessage(), containsString( ImportTool.Options.FILE.argument() ) );
         }
     }
 
@@ -2008,7 +2012,7 @@ public class ImportToolTest
                 return;
             }
         }
-        Assert.fail( "Expected error lines " + join( errorLines.toArray( new String[errorLines.size()] ), format( "%n" ) ) +
+        fail( "Expected error lines " + join( errorLines.toArray( new String[errorLines.size()] ), format( "%n" ) ) +
                 " to have at least one line containing the string '" + string + "'" );
     }
 
@@ -2087,15 +2091,6 @@ public class ImportToolTest
         return node -> node.getProperty( "id", "" ).equals( id );
     }
 
-    private void assertNodeHasLabels( Node node, String[] names )
-    {
-        for ( String name : names )
-        {
-            assertTrue( node + " didn't have label " + name + ", it had labels " + node.getLabels(),
-                    node.hasLabel( label( name ) ) );
-        }
-    }
-
     private void verifyData()
     {
         verifyData( Validators.emptyValidator(), Validators.emptyValidator() );
@@ -2123,14 +2118,14 @@ public class ImportToolTest
                 nodeAdditionalValidation.validate( node );
                 nodeCount++;
             }
-            Assert.assertEquals( expectedNodeCount, nodeCount );
+            assertEquals( expectedNodeCount, nodeCount );
             for ( Relationship relationship : db.getAllRelationships() )
             {
                 assertTrue( relationship.hasProperty( "created" ) );
                 relationshipAdditionalValidation.validate( relationship );
                 relationshipCount++;
             }
-            Assert.assertEquals( expectedRelationshipCount, relationshipCount );
+            assertEquals( expectedRelationshipCount, relationshipCount );
             tx.success();
         }
     }
@@ -2150,7 +2145,7 @@ public class ImportToolTest
                     // OK this is a relationship refering to a missing node, skip it
                     continue;
                 }
-                Assert.assertNotNull( relationship.toString(), findRelationship( startNode, endNode, relationship ) );
+                assertNotNull( relationship.toString(), findRelationship( startNode, endNode, relationship ) );
             }
             tx.success();
         }

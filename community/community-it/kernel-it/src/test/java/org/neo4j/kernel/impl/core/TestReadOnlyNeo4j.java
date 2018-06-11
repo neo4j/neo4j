@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -62,7 +61,7 @@ public class TestReadOnlyNeo4j
                 .newImpermanentDatabaseBuilder( PATH )
                 .setConfig( GraphDatabaseSettings.read_only, Settings.TRUE )
                 .newGraphDatabase();
-        Assert.assertEquals( someData, DbRepresentation.of( readGraphDb ) );
+        assertEquals( someData, DbRepresentation.of( readGraphDb ) );
 
         try ( Transaction tx = readGraphDb.beginTx() )
         {

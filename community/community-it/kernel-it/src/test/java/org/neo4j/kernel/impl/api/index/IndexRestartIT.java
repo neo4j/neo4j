@@ -20,9 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.hamcrest.CoreMatchers;
-import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,11 +38,14 @@ import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexState;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexes;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasSize;
@@ -67,7 +68,7 @@ public class IndexRestartIT
         factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) );
         factory.setKernelExtensions( Collections.singletonList(
-            SchemaIndexTestHelper.singleInstanceIndexProviderFactory( "test", provider )
+            singleInstanceIndexProviderFactory( "test", provider )
         ) );
     }
 
@@ -123,8 +124,8 @@ public class IndexRestartIT
 
         // Then
         assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.ONLINE ) ) );
-        Assert.assertEquals( 1, provider.populatorCallCount.get() );
-        Assert.assertEquals( 2, provider.writerCallCount.get() );
+        assertEquals( 1, provider.populatorCallCount.get() );
+        assertEquals( 2, provider.writerCallCount.get() );
     }
 
     @Test
@@ -141,8 +142,8 @@ public class IndexRestartIT
         // When
         startDb();
 
-        assertThat( getIndexes( db, myLabel ), inTx( db, Matchers.not( haveState( db, Schema.IndexState.FAILED ) ) ) );
-        Assert.assertEquals( 2, provider.populatorCallCount.get() );
+        assertThat( getIndexes( db, myLabel ), inTx( db, not( haveState( db, Schema.IndexState.FAILED ) ) ) );
+        assertEquals( 2, provider.populatorCallCount.get() );
     }
 
     private IndexDefinition createIndex()

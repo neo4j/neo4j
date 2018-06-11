@@ -37,6 +37,8 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 
 import static org.junit.Assert.fail;
+import static org.neo4j.tooling.ImportToolTest.assertExceptionContains;
+import static org.neo4j.tooling.ImportToolTest.importTool;
 
 /**
  * Tests that we fail correctly when given strings which can't be interpreted as numbers when configured to interpret
@@ -113,13 +115,13 @@ public class ImportToolNumericalFailureTest
         try
         {
             // WHEN
-            ImportToolTest.importTool( "--into", dbRule.getStoreDirAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
+            importTool( "--into", dbRule.getStoreDirAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
             // THEN
             fail( "Expected import to fail" );
         }
         catch ( Exception e )
         {
-            ImportToolTest.assertExceptionContains( e, expectedError, InputException.class );
+            assertExceptionContains( e, expectedError, InputException.class );
         }
     }
 

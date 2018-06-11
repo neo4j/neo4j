@@ -42,7 +42,6 @@ import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.TestLabels;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
@@ -54,6 +53,9 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.io.fs.FileUtils.copyFile;
+import static org.neo4j.test.TestLabels.LABEL_ONE;
+import static org.neo4j.test.TestLabels.LABEL_THREE;
+import static org.neo4j.test.TestLabels.LABEL_TWO;
 
 public class AllNodesInStoreExistInLabelIndexTest
 {
@@ -64,7 +66,7 @@ public class AllNodesInStoreExistInLabelIndexTest
     public final RandomRule random = new RandomRule();
 
     private final AssertableLogProvider log = new AssertableLogProvider();
-    private static final Label[] LABEL_ALPHABET = new Label[]{TestLabels.LABEL_ONE, TestLabels.LABEL_TWO, TestLabels.LABEL_THREE};
+    private static final Label[] LABEL_ALPHABET = new Label[]{LABEL_ONE, LABEL_TWO, LABEL_THREE};
     private static final Label EXTRA_LABEL = Label.label( "extra" );
     private static final double DELETE_RATIO = 0.2;
     private static final double UPDATE_RATIO = 0.2;
@@ -95,7 +97,7 @@ public class AllNodesInStoreExistInLabelIndexTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( TestLabels.LABEL_ONE );
+            db.createNode( LABEL_ONE );
             tx.success();
         }
 
@@ -138,7 +140,7 @@ public class AllNodesInStoreExistInLabelIndexTest
         // when
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( TestLabels.LABEL_ONE );
+            db.createNode( LABEL_ONE );
             tx.success();
         }
 

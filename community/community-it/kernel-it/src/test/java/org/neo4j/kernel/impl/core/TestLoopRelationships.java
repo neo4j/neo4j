@@ -37,12 +37,12 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.kernel.impl.MyRelTypes;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
 public class TestLoopRelationships extends AbstractNeo4jTestCase
 {
@@ -54,9 +54,9 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
     {
         Node source = getGraphDb().createNode();
         Node target = getGraphDb().createNode();
-        source.createRelationshipTo( source, MyRelTypes.TEST );
-        target.createRelationshipTo( target, MyRelTypes.TEST );
-        source.createRelationshipTo( target, MyRelTypes.TEST );
+        source.createRelationshipTo( source, TEST );
+        target.createRelationshipTo( target, TEST );
+        source.createRelationshipTo( target, TEST );
 
         newTransaction();
 
@@ -87,13 +87,13 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
 
     private void txCreateRel( Node node )
     {
-        node.createRelationshipTo( getGraphDb().createNode(), MyRelTypes.TEST );
+        node.createRelationshipTo( getGraphDb().createNode(), TEST );
         newTransaction();
     }
 
     private void txCreateLoop( Node node )
     {
-        node.createRelationshipTo( node, MyRelTypes.TEST );
+        node.createRelationshipTo( node, TEST );
         newTransaction();
     }
 
@@ -101,7 +101,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
     public void canAddLoopRelationship()
     {
         Node node = getGraphDb().createNode();
-        node.createRelationshipTo( node, MyRelTypes.TEST );
+        node.createRelationshipTo( node, TEST );
 
         newTransaction();
 
@@ -137,11 +137,11 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
             {
                 if ( loop[i] )
                 {
-                    relationships[i] = root.createRelationshipTo( root, MyRelTypes.TEST );
+                    relationships[i] = root.createRelationshipTo( root, TEST );
                 }
                 else
                 {
-                    relationships[i] = root.createRelationshipTo( getGraphDb().createNode(), MyRelTypes.TEST );
+                    relationships[i] = root.createRelationshipTo( getGraphDb().createNode(), TEST );
                 }
             }
             newTransaction();
@@ -181,16 +181,16 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
     public void getSingleRelationshipOnNodeWithOneLoopOnly()
     {
         Node node = getGraphDb().createNode();
-        Relationship singleRelationship = node.createRelationshipTo( node, MyRelTypes.TEST );
-        assertEquals( singleRelationship, node.getSingleRelationship( MyRelTypes.TEST, Direction.OUTGOING ) );
-        assertEquals( singleRelationship, node.getSingleRelationship( MyRelTypes.TEST, Direction.INCOMING ) );
-        assertEquals( singleRelationship, node.getSingleRelationship( MyRelTypes.TEST, Direction.BOTH ) );
+        Relationship singleRelationship = node.createRelationshipTo( node, TEST );
+        assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.OUTGOING ) );
+        assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.INCOMING ) );
+        assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.BOTH ) );
         commit();
 
         newTransaction();
-        assertEquals( singleRelationship, node.getSingleRelationship( MyRelTypes.TEST, Direction.OUTGOING ) );
-        assertEquals( singleRelationship, node.getSingleRelationship( MyRelTypes.TEST, Direction.INCOMING ) );
-        assertEquals( singleRelationship, node.getSingleRelationship( MyRelTypes.TEST, Direction.BOTH ) );
+        assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.OUTGOING ) );
+        assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.INCOMING ) );
+        assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.BOTH ) );
         finish();
     }
 
@@ -225,7 +225,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
     public void getOtherNodeFunctionsCorrectly()
     {
         Node node = getGraphDb().createNode();
-        Relationship relationship = node.createRelationshipTo( node, MyRelTypes.TEST );
+        Relationship relationship = node.createRelationshipTo( node, TEST );
 
         // This loop messes up the readability of the test case, but avoids duplicated
         // assertion code. Same assertions withing the transaction as after it has committed.
@@ -249,11 +249,11 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
     public void getNewlyCreatedLoopRelationshipFromCache()
     {
         Node node = getGraphDb().createNode();
-        node.createRelationshipTo( getGraphDb().createNode(), MyRelTypes.TEST );
+        node.createRelationshipTo( getGraphDb().createNode(), TEST );
         newTransaction();
-        Relationship relationship = node.createRelationshipTo( node, MyRelTypes.TEST );
+        Relationship relationship = node.createRelationshipTo( node, TEST );
         newTransaction();
-        assertEquals( relationship, node.getSingleRelationship( MyRelTypes.TEST, Direction.INCOMING ) );
+        assertEquals( relationship, node.getSingleRelationship( TEST, Direction.INCOMING ) );
     }
 
     private void testAddAndRemoveLoopRelationshipAndOtherRelationships( int size )
@@ -328,7 +328,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         Relationship[] relationships = new Relationship[count];
         for ( int i = 0; i < count; i++ )
         {
-            relationships[i] = root.createRelationshipTo( nodes[i], MyRelTypes.TEST );
+            relationships[i] = root.createRelationshipTo( nodes[i], TEST );
             newTransaction();
         }
         return relationships;

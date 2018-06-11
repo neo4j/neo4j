@@ -19,20 +19,21 @@
  */
 package org.neo4j.bolt.v1.runtime.integration;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.testing.BoltMatchers;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.internal.Version;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
+import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
 import static org.neo4j.bolt.testing.BoltMatchers.succeededWithMetadata;
+import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.values.storable.Values.TRUE;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -62,8 +63,8 @@ public class BoltConnectionAuthIT
         machine.run( "CREATE ()", EMPTY_MAP, recorder );
 
         // Then
-        MatcherAssert.assertThat( recorder.nextResponse(), succeededWithMetadata( "credentials_expired", TRUE ) );
-        MatcherAssert.assertThat( recorder.nextResponse(), failedWithStatus( Status.Security.CredentialsExpired ) );
+        assertThat( recorder.nextResponse(), succeededWithMetadata( "credentials_expired", TRUE ) );
+        assertThat( recorder.nextResponse(), failedWithStatus( Status.Security.CredentialsExpired ) );
     }
 
     @Test
@@ -82,7 +83,7 @@ public class BoltConnectionAuthIT
         machine.run( "CREATE ()", EMPTY_MAP, recorder );
 
         // Then
-        MatcherAssert.assertThat( recorder.nextResponse(), succeededWithMetadata( "server", stringValue( version ) ) );
+        assertThat( recorder.nextResponse(), succeededWithMetadata( "server", stringValue( version ) ) );
     }
 
     @Test
@@ -93,14 +94,14 @@ public class BoltConnectionAuthIT
 
         // When... then
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        BoltMatchers.verifyKillsConnection( () -> machine.init( USER_AGENT, map(
+        verifyKillsConnection( () -> machine.init( USER_AGENT, map(
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "j4oen"
         ), recorder ) );
 
         // ...and
-        MatcherAssert.assertThat( recorder.nextResponse(), failedWithStatus( Status.Security.Unauthorized ) );
+        assertThat( recorder.nextResponse(), failedWithStatus( Status.Security.Unauthorized ) );
     }
 
     @Test
@@ -119,7 +120,7 @@ public class BoltConnectionAuthIT
         machine.run( "CREATE ()", EMPTY_MAP, recorder );
 
         // then
-        MatcherAssert.assertThat( recorder.nextResponse(), BoltMatchers.succeeded() );
-        MatcherAssert.assertThat( recorder.nextResponse(), BoltMatchers.succeeded() );
+        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse(), succeeded() );
     }
 }

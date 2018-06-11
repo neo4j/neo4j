@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.runtime.integration;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -35,12 +34,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.runtime.BoltConnection;
-import org.neo4j.bolt.v1.messaging.message.DiscardAllMessage;
-import org.neo4j.bolt.v1.messaging.message.InitMessage;
-import org.neo4j.bolt.v1.messaging.message.RunMessage;
-import org.neo4j.bolt.v1.messaging.util.MessageMatchers;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
-import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -54,8 +48,14 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.isA;
 import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
+import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
+import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 
 @RunWith( Parameterized.class )
 public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTransportsTest
@@ -119,8 +119,8 @@ public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTran
         {
             connection3 = connectAndPerformBoltHandshake( newConnection() );
 
-            connection3.send( util.chunk( InitMessage.init( "TestClient/1.1", emptyMap() ) ) );
-            MatcherAssert.assertThat( connection3, util.eventuallyReceives(
+            connection3.send( util.chunk( init( "TestClient/1.1", emptyMap() ) ) );
+            assertThat( connection3, util.eventuallyReceives(
                     msgFailure( Status.Request.NoThreadsAvailable, "There are no available threads to serve this request at the moment" ) ) );
 
             userLogProvider.assertContainsMessageContaining(
@@ -182,27 +182,27 @@ public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTran
     {
         connectAndPerformBoltHandshake( connection );
 
-        connection.send( util.chunk( InitMessage.init( "TestClient/1.1", emptyMap() ) ) );
-        MatcherAssert.assertThat( connection, util.eventuallyReceives( MessageMatchers.msgSuccess() ) );
+        connection.send( util.chunk( init( "TestClient/1.1", emptyMap() ) ) );
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         SECONDS.sleep( sleepSeconds ); // sleep a bit to allow worker thread return back to the pool
 
-        connection.send( util.chunk( RunMessage.run( "UNWIND RANGE (1, 100) AS x RETURN x" ) ) );
-        MatcherAssert.assertThat( connection, util.eventuallyReceives( MessageMatchers.msgSuccess() ) );
+        connection.send( util.chunk( run( "UNWIND RANGE (1, 100) AS x RETURN x" ) ) );
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
     }
 
     private TransportConnection connectAndPerformBoltHandshake( TransportConnection connection ) throws Exception
     {
         connection.connect( address ).send( util.acceptedVersions( 1, 0, 0, 0 ) );
-        MatcherAssert.assertThat( connection, TransportTestUtil.eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         return connection;
     }
 
     private void exitStreaming( TransportConnection connection ) throws Exception
     {
-        connection.send( util.chunk( DiscardAllMessage.discardAll() ) );
+        connection.send( util.chunk( discardAll() ) );
 
-        MatcherAssert.assertThat( connection, util.eventuallyReceives( MessageMatchers.msgSuccess() ) );
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
     }
 
     private void close( TransportConnection connection )

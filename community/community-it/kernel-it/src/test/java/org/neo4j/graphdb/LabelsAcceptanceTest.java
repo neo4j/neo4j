@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -63,12 +62,12 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactoryState;
 import org.neo4j.test.impl.EphemeralIdGenerator;
-import org.neo4j.test.mockito.matcher.Neo4jMatchers;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -79,6 +78,10 @@ import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasLabel;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasLabels;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasNoLabels;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasNoNodes;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasNodes;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 public class LabelsAcceptanceTest
@@ -238,7 +241,7 @@ public class LabelsAcceptanceTest
         }
 
         // Then
-        assertThat( myNode, Matchers.not( inTx( graphDatabase, hasLabel( label ) ) ) );
+        assertThat( myNode, not( inTx( graphDatabase, hasLabel( label ) ) ) );
     }
 
     @Test
@@ -258,7 +261,7 @@ public class LabelsAcceptanceTest
         // THEN
 
         Set<String> names = Stream.of( Labels.values() ).map( Labels::name ).collect( toSet() );
-        assertThat( node, inTx( db, Neo4jMatchers.hasLabels( names ) ) );
+        assertThat( node, inTx( db, hasLabels( names ) ) );
     }
 
     @Test
@@ -278,7 +281,7 @@ public class LabelsAcceptanceTest
         }
 
         // THEN
-        assertThat( myNode, Matchers.not( inTx( beansAPI, hasLabel( label ) ) ) );
+        assertThat( myNode, not( inTx( beansAPI, hasLabel( label ) ) ) );
     }
 
     @Test
@@ -298,7 +301,7 @@ public class LabelsAcceptanceTest
         }
 
         // THEN
-        assertThat( myNode, Matchers.not( inTx( beansAPI, hasLabel( label ) ) ) );
+        assertThat( myNode, not( inTx( beansAPI, hasLabel( label ) ) ) );
     }
 
     @Test
@@ -340,7 +343,7 @@ public class LabelsAcceptanceTest
             tx.success();
         }
 
-        assertThat( node, inTx( beansAPI, Neo4jMatchers.hasLabels( expected ) ) );
+        assertThat( node, inTx( beansAPI, hasLabels( expected ) ) );
     }
 
     @Test
@@ -351,7 +354,7 @@ public class LabelsAcceptanceTest
         Node node = createNode( beansAPI );
 
         // WHEN THEN
-        assertThat( node, inTx( beansAPI, Neo4jMatchers.hasNoLabels() ) );
+        assertThat( node, inTx( beansAPI, hasNoLabels() ) );
     }
 
     @Test
@@ -370,8 +373,8 @@ public class LabelsAcceptanceTest
         }
 
         // THEN
-        assertThat( beansAPI, inTx( beansAPI, Neo4jMatchers.hasNodes( Labels.MY_LABEL, node ) ) );
-        assertThat( beansAPI, inTx( beansAPI, Neo4jMatchers.hasNoNodes( Labels.MY_OTHER_LABEL ) ) );
+        assertThat( beansAPI, inTx( beansAPI, hasNodes( Labels.MY_LABEL, node ) ) );
+        assertThat( beansAPI, inTx( beansAPI, hasNoNodes( Labels.MY_OTHER_LABEL ) ) );
     }
 
     @Test
