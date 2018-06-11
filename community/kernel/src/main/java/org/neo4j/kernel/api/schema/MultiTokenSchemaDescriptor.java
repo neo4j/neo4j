@@ -36,7 +36,7 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 import static java.util.stream.Collectors.joining;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.isAnyEntityTokenSchema;
 
-public class MultiTokenSchemaDescriptor implements org.neo4j.internal.kernel.api.schema.MultiTokenSchemaDescriptor
+public class MultiTokenSchemaDescriptor implements SchemaDescriptor
 {
     private final int[] entityTokens;
     private final EntityType entityType;
