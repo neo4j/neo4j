@@ -82,5 +82,5 @@ Nested unwind with mixed types
 Pattern comprehension in unwind with empty db
 Pattern comprehension in unwind with hits
 
-// PatternPredicate.feature
+// PatternPredicates.feature
 Undirected NOOP path predicate 1

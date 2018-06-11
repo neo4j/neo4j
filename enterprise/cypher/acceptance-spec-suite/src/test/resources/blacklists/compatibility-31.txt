@@ -23,6 +23,6 @@ optional equality with boolean lists
 Pattern comprehension in unwind with empty db
 Pattern comprehension in unwind with hits
 
-// PatternPredicate.feature
+// PatternPredicates.feature
 // Fixed when we move from 3.1.8 to 3.1.9
 Undirected NOOP path predicate 1

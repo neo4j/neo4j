@@ -7,7 +7,3 @@ min() over list values
 //UnwindAcceptance.feature
 Pattern comprehension in unwind with empty db
 Pattern comprehension in unwind with hits
-
-// PatternPredicate.feature
-// Fixed when we move from 3.2.11 to 3.2.12
-Undirected NOOP path predicate 1
