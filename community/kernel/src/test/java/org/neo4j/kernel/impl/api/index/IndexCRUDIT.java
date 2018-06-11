@@ -45,7 +45,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -214,12 +214,12 @@ public class IndexCRUDIT
         }
 
         @Override
-        public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
+        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
         {
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor )
+        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor )
         {
             return newUpdater( IndexUpdateMode.ONLINE );
         }

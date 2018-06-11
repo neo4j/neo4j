@@ -658,6 +658,12 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
+    public IndexReference index( SchemaDescriptor schema )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
     public IndexReference indexReferenceUnchecked( int label, int... properties )
     {
         throw new UnsupportedOperationException( "not implemented" );

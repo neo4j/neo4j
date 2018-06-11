@@ -38,7 +38,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -154,7 +154,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
     }
 
     @Override
-    public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
+    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
     {
         // Not needed since uniqueness is verified automatically w/o cost for every update.
     }

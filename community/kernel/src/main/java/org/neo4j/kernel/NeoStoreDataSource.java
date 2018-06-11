@@ -43,7 +43,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.dependency.AllByPrioritySelectionStrategy;
@@ -452,7 +452,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             );
 
             // At the time of writing this comes from the storage engine (IndexStoreView)
-            PropertyAccessor propertyAccessor = dependencies.resolveDependency( PropertyAccessor.class );
+            NodePropertyAccessor nodePropertyAccessor = dependencies.resolveDependency( NodePropertyAccessor.class );
 
             final NeoStoreKernelModule kernelModule = buildKernel(
                     logFiles,
@@ -464,8 +464,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     indexConfigStore,
                     transactionIdStore,
                     availabilityGuard,
-                    clock,
-                    propertyAccessor );
+                    clock, nodePropertyAccessor );
 
             kernelModule.satisfyDependencies( dependencies );
 
@@ -643,7 +642,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private NeoStoreKernelModule buildKernel( LogFiles logFiles, TransactionAppender appender,
             IndexingService indexingService, DatabaseSchemaState databaseSchemaState, LabelScanStore labelScanStore,
             StorageEngine storageEngine, IndexConfigStore indexConfigStore, TransactionIdStore transactionIdStore,
-            AvailabilityGuard availabilityGuard, SystemNanoClock clock, PropertyAccessor propertyAccessor )
+            AvailabilityGuard availabilityGuard, SystemNanoClock clock, NodePropertyAccessor nodePropertyAccessor )
     {
         AtomicReference<CpuClock> cpuClockRef = setupCpuClockAtomicReference();
         AtomicReference<HeapAllocation> heapAllocationRef = setupHeapAllocationAtomicReference();
@@ -657,8 +656,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
          */
         Supplier<Kernel> kernelProvider = () -> kernelModule.kernelAPI();
 
-        ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( kernelProvider, indexingService,
-                propertyAccessor );
+        ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( kernelProvider, indexingService, nodePropertyAccessor );
 
         ExplicitIndexStore explicitIndexStore = new ExplicitIndexStore( config,
                 indexConfigStore, kernelProvider, explicitIndexProviderLookup );

@@ -46,7 +46,7 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -319,8 +319,8 @@ public class LuceneSchemaIndexUniquenessVerificationIT
 
     private void verifyUniqueness( Collection<Value> data ) throws IOException, IndexEntryConflictException
     {
-        PropertyAccessor propertyAccessor = new TestPropertyAccessor( new ArrayList<>( data ) );
-        index.verifyUniqueness( propertyAccessor, new int[]{PROPERTY_KEY_ID} );
+        NodePropertyAccessor nodePropertyAccessor = new TestPropertyAccessor( new ArrayList<>( data ) );
+        index.verifyUniqueness( nodePropertyAccessor, new int[]{PROPERTY_KEY_ID} );
     }
 
     private Set<Value> randomStrings()

@@ -204,7 +204,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     {
         ktx.assertOpen();
 
-        sharedRelationshipTypeLock( relationshipType );
+        sharedSchemaLock( ResourceTypes.RELATIONSHIP_TYPE, relationshipType );
         lockRelationshipNodes( sourceNode, targetNode );
 
         assertNodeExists( sourceNode );
@@ -226,7 +226,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     public boolean nodeAddLabel( long node, int nodeLabel )
             throws EntityNotFoundException, ConstraintValidationException
     {
-        acquireSharedLabelLock( nodeLabel );
+        sharedSchemaLock( ResourceTypes.LABEL, nodeLabel );
         acquireExclusiveNodeLock( node );
 
         ktx.assertOpen();
@@ -469,7 +469,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             return false;
         }
 
-        acquireSharedLabelLock( labelId );
+        sharedSchemaLock( ResourceTypes.LABEL, labelId );
         ktx.txState().nodeDoRemoveLabel( labelId, node );
         updater.onLabelChange( labelId, nodeCursor, propertyCursor, REMOVED_LABEL );
         return true;
@@ -886,7 +886,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
                                        Optional<String> provider,
                                        Optional<String> name ) throws SchemaKernelException
     {
-        acquireExclusiveLabelLock( descriptor.keyId() );
+        exclusiveSchemaLock( descriptor.keyType(), descriptor.keyId() );
         ktx.assertOpen();
         assertValidDescriptor( descriptor, SchemaKernelException.OperationContext.INDEX_CREATION );
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, descriptor );
@@ -914,29 +914,30 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     {
         IndexDescriptor index = (IndexDescriptor) indexReference;
         assertValidIndex( index );
+        SchemaDescriptor schema = index.schema();
 
-        acquireExclusiveLabelLock( indexReference.label() );
+        exclusiveSchemaLock( schema.keyType(), schema.keyId() );
         ktx.assertOpen();
         try
         {
-            IndexDescriptor existingIndex = allStoreHolder.indexGetForSchema( index.schema() );
+            IndexDescriptor existingIndex = allStoreHolder.indexGetForSchema( schema );
 
             if ( existingIndex == null )
             {
-                throw new NoSuchIndexException( index.schema() );
+                throw new NoSuchIndexException( schema );
             }
 
             if ( existingIndex.type() == UNIQUE )
             {
                 if ( allStoreHolder.indexGetOwningUniquenessConstraintId( existingIndex ) != null )
                 {
-                    throw new IndexBelongsToConstraintException( index.schema() );
+                    throw new IndexBelongsToConstraintException( schema );
                 }
             }
         }
         catch ( IndexBelongsToConstraintException | NoSuchIndexException e )
         {
-            throw new DropIndexFailureException( index.schema(), e );
+            throw new DropIndexFailureException( schema, e );
         }
         ktx.txState().indexDoDrop( index );
     }
@@ -953,7 +954,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             throws SchemaKernelException
     {
         //Lock
-        acquireExclusiveLabelLock( descriptor.keyId() );
+        exclusiveSchemaLock( descriptor.keyType(), descriptor.keyId() );
         ktx.assertOpen();
 
         //Check data integrity
@@ -978,7 +979,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor, Optional<String> provider ) throws SchemaKernelException
     {
         //Lock
-        acquireExclusiveLabelLock( descriptor.getLabelId() );
+        exclusiveSchemaLock( ResourceTypes.LABEL, descriptor.getLabelId() );
         ktx.assertOpen();
 
         //Check data integrity
@@ -1005,7 +1006,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             throws SchemaKernelException
     {
         //Lock
-        acquireExclusiveLabelLock( descriptor.getLabelId() );
+        exclusiveSchemaLock( ResourceTypes.LABEL, descriptor.getLabelId() );
         ktx.assertOpen();
 
         //verify data integrity
@@ -1031,7 +1032,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             throws SchemaKernelException
     {
         //Lock
-        exclusiveRelationshipTypeLock( descriptor.getRelTypeId() );
+        exclusiveSchemaLock( ResourceTypes.RELATIONSHIP_TYPE, descriptor.getRelTypeId() );
         ktx.assertOpen();
 
         //verify data integrity
@@ -1134,24 +1135,14 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
     }
 
-    private void acquireSharedLabelLock( int labelId )
+    private void sharedSchemaLock( ResourceType type, int tokenId )
     {
-        ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, labelId );
+        ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), type, tokenId );
     }
 
-    private void acquireExclusiveLabelLock( int labelId )
+    private void exclusiveSchemaLock( ResourceType type, int tokenId )
     {
-        ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.LABEL, labelId );
-    }
-
-    private void sharedRelationshipTypeLock( long typeId )
-    {
-        ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.RELATIONSHIP_TYPE, typeId );
-    }
-
-    private void exclusiveRelationshipTypeLock( long typeId )
-    {
-        ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.RELATIONSHIP_TYPE, typeId );
+        ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), type, tokenId );
     }
 
     private void lockRelationshipNodes( long startNodeId, long endNodeId )

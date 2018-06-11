@@ -32,7 +32,7 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.api.index.NodeUpdates;
+import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -50,7 +50,7 @@ public class LabelScanViewNodeStoreScanTest
     private LabelScanReader labelScanReader = mock( LabelScanReader.class );
     private IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
     private Visitor<NodeLabelUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
-    private Visitor<NodeUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
+    private Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
 
     @Before
     public void setUp()
@@ -69,7 +69,7 @@ public class LabelScanViewNodeStoreScanTest
         int[] labelIds = new int[]{1, 2};
 
         LabelScanViewNodeStoreScan<Exception> storeScan = getLabelScanViewStoreScan( labelIds );
-        PrimitiveLongResourceIterator idIterator = storeScan.getNodeIdIterator();
+        PrimitiveLongResourceIterator idIterator = storeScan.getEntityIdIterator();
         List<Long> visitedNodeIds = PrimitiveLongCollections.asList( idIterator );
 
         assertThat(visitedNodeIds, Matchers.hasSize( 4 ));

@@ -28,7 +28,7 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.UniquePropertyIndexUpdater;
@@ -86,7 +86,7 @@ class UniqueInMemoryIndex extends InMemoryIndex
     }
 
     @Override
-    public void verifyDeferredConstraints( final PropertyAccessor accessor )
+    public void verifyDeferredConstraints( final NodePropertyAccessor accessor )
             throws IndexEntryConflictException
     {
         try
@@ -112,9 +112,9 @@ class UniqueInMemoryIndex extends InMemoryIndex
 
     private class SinglePropertyValidator implements InMemoryIndexImplementation.IndexEntryIterator
     {
-        private final PropertyAccessor accessor;
+        private final NodePropertyAccessor accessor;
 
-        SinglePropertyValidator( PropertyAccessor accessor )
+        SinglePropertyValidator( NodePropertyAccessor accessor )
         {
             this.accessor = accessor;
         }
@@ -125,7 +125,7 @@ class UniqueInMemoryIndex extends InMemoryIndex
             Map<Object,Long> entries = new HashMap<>();
             for ( long nodeId : nodeIds )
             {
-                final Value value = accessor.getPropertyValue( nodeId, schema.getPropertyId() );
+                final Value value = accessor.getNodePropertyValue( nodeId, schema.getPropertyId() );
                 if ( entries.containsKey( value ) )
                 {
                     long existingNodeId = entries.get( value );
@@ -138,9 +138,9 @@ class UniqueInMemoryIndex extends InMemoryIndex
 
     private class MultiPropertyValidator implements InMemoryIndexImplementation.IndexEntryIterator
     {
-        private final PropertyAccessor accessor;
+        private final NodePropertyAccessor accessor;
 
-        MultiPropertyValidator( PropertyAccessor accessor )
+        MultiPropertyValidator( NodePropertyAccessor accessor )
         {
             this.accessor = accessor;
         }
@@ -167,7 +167,7 @@ class UniqueInMemoryIndex extends InMemoryIndex
             Value[] values = new Value[propertyIds.length];
             for ( int i = 0; i < values.length; i++ )
             {
-                values[i] = accessor.getPropertyValue( nodeId, propertyIds[i] );
+                values[i] = accessor.getNodePropertyValue( nodeId, propertyIds[i] );
             }
             return ValueTuple.of( values );
         }

@@ -19,9 +19,11 @@
  */
 package org.neo4j.internal.kernel.api.schema;
 
+import java.util.Arrays;
 import java.util.function.Predicate;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**
@@ -36,6 +38,33 @@ import org.neo4j.storageengine.api.lock.ResourceType;
  */
 public interface SchemaDescriptor extends SchemaDescriptorSupplier
 {
+    int[] ANY_ENTITY_TOKEN = new int[0];
+
+    static boolean isAnyEntityTokenSchema( SchemaDescriptor schema )
+    {
+        return Arrays.equals(schema.getEntityTokenIds(), ANY_ENTITY_TOKEN );
+    }
+
+    /**
+     * Returns true if any of the given entity token ids are part of this schema unit.
+     * @param entityTokenIds entity token ids to check against.
+     * @return true if the supplied ids are relevant to this schema unit.
+     */
+    boolean isAffected( long[] entityTokenIds );
+
+    /**
+     * This enum signifies how this schema should behave in regards to updates.
+     * {@link PropertySchemaType#COMPLETE_ALL_TOKENS} signifies that this schema unit only should be affected by updates that match the entire schema,
+     * i.e. when all properties are present. If you are unsure then this is probably what you want.
+     * {@link PropertySchemaType#PARTIAL_ANY_TOKEN} signifies that this schema unit should be affected by any update that is partial match of the schema,
+     *  i.e. at least one of the properties of this schema unit is present.
+     */
+    enum PropertySchemaType
+    {
+        COMPLETE_ALL_TOKENS,
+        PARTIAL_ANY_TOKEN
+    }
+
     /**
      * Computes some value by feeding this object into the given SchemaComputer.
      *
@@ -90,6 +119,12 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
     }
 
     /**
+     * This method returns the entity token ids handled by this descriptor.
+     * @return the entity token ids that this schema descriptor represents
+     */
+    int[] getEntityTokenIds();
+
+    /**
      * Id of underlying schema descriptor key.
      * Key is part of schema unit that determines which resources with specified properties are applicable.
      * @return id of underlying key
@@ -102,6 +137,18 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
      * @return type of underlying key
      */
     ResourceType keyType();
+
+    /**
+     * Type of entities this schema represents.
+     * @return entity type
+     */
+    EntityType entityType();
+
+    /**
+     * Returns the type of this schema. See {@link PropertySchemaType}.
+     * @return PropertySchemaType of this schema unit.
+     */
+    PropertySchemaType propertySchemaType();
 
     /**
      * Create a predicate that checks whether a schema descriptor Supplier supplies the given schema descriptor.

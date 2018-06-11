@@ -29,6 +29,7 @@ import java.util.List;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.storageengine.api.CommandsToApply;
@@ -37,13 +38,15 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldPointsToDynamicRe
 
 /**
  * Implements both BatchTransactionApplier and TransactionApplier in order to reduce garbage.
- * Gathers node/property commands by node id, preparing for extraction of {@link NodeUpdates updates}.
+ * Gathers node/property commands by node id, preparing for extraction of {@link EntityUpdates updates}.
  */
-public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
+public class PropertyCommandsExtractor extends TransactionApplier.Adapter
         implements BatchTransactionApplier
 {
     private final MutableLongObjectMap<NodeCommand> nodeCommandsById = new LongObjectHashMap<>();
+    private final MutableLongObjectMap<Command.RelationshipCommand> relationshipCommandsById = new LongObjectHashMap<>();
     private final MutableLongObjectMap<List<PropertyCommand>> propertyCommandsByNodeIds = new LongObjectHashMap<>();
+    private final MutableLongObjectMap<List<PropertyCommand>> propertyCommandsByRelationshipIds = new LongObjectHashMap<>();
     private boolean hasUpdates;
 
     @Override
@@ -62,7 +65,9 @@ public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
     public void close()
     {
         nodeCommandsById.clear();
+        relationshipCommandsById.clear();
         propertyCommandsByNodeIds.clear();
+        propertyCommandsByRelationshipIds.clear();
     }
 
     @Override
@@ -76,7 +81,15 @@ public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
         return false;
     }
 
-    public static boolean mayResultInIndexUpdates( NodeCommand command )
+    @Override
+    public boolean visitRelationshipCommand( Command.RelationshipCommand command )
+    {
+        relationshipCommandsById.put( command.getKey(), command );
+        hasUpdates = true;
+        return false;
+    }
+
+    private static boolean mayResultInIndexUpdates( NodeCommand command )
     {
         long before = command.getBefore().getLabelField();
         long after = command.getAfter().getLabelField();
@@ -84,18 +97,12 @@ public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
                 // Because we don't know here, there may have been changes to a dynamic label record
                 // even though it still points to the same one
                 fieldPointsToDynamicRecordOfLabels( before ) || fieldPointsToDynamicRecordOfLabels( after );
-
-    }
-
-    public static boolean mayResultInIndexUpdates( PropertyCommand command )
-    {
-        return command.getAfter().isNodeSet();
     }
 
     @Override
     public boolean visitPropertyCommand( PropertyCommand command )
     {
-        if ( mayResultInIndexUpdates( command ) )
+        if ( command.getAfter().isNodeSet() )
         {
             long nodeId = command.getAfter().getNodeId();
             List<PropertyCommand> group = propertyCommandsByNodeIds.get( nodeId );
@@ -106,10 +113,21 @@ public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
             group.add( command );
             hasUpdates = true;
         }
+        else if ( command.getAfter().isRelSet() )
+        {
+            long relId = command.getAfter().getRelId();
+            List<PropertyCommand> group = propertyCommandsByRelationshipIds.get( relId );
+            if ( group == null )
+            {
+                propertyCommandsByRelationshipIds.put( relId, group = new ArrayList<>() );
+            }
+            group.add( command );
+            hasUpdates = true;
+        }
         return false;
     }
 
-    public boolean containsAnyNodeOrPropertyUpdate()
+    public boolean containsAnyEntityOrPropertyUpdate()
     {
         return hasUpdates;
     }
@@ -119,8 +137,17 @@ public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
         return nodeCommandsById;
     }
 
+    public LongObjectMap<Command.RelationshipCommand> relationshipCommandsById()
+    {
+        return relationshipCommandsById;
+    }
+
     public LongObjectMap<List<PropertyCommand>> propertyCommandsByNodeIds()
     {
         return propertyCommandsByNodeIds;
+    }
+    public LongObjectMap<List<PropertyCommand>> propertyCommandsByRelationshipIds()
+    {
+        return propertyCommandsByRelationshipIds;
     }
 }

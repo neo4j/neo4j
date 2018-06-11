@@ -41,8 +41,8 @@ import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.impl.api.LookupFilter;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.impl.api.LookupFilter;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -59,10 +59,10 @@ import static java.lang.String.format;
 public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport>
 {
     private final IndexAccessors indexes;
-    private final PropertyReader propertyReader;
+    private final NodePropertyReader propertyReader;
     private final CacheAccess cacheAccess;
 
-    public PropertyAndNodeIndexedCheck( IndexAccessors indexes, PropertyReader propertyReader, CacheAccess cacheAccess )
+    public PropertyAndNodeIndexedCheck( IndexAccessors indexes, NodePropertyReader propertyReader, CacheAccess cacheAccess )
     {
         this.indexes = indexes;
         this.propertyReader = propertyReader;

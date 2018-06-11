@@ -36,6 +36,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.util.FeatureToggles;
 
 import static java.util.stream.Collectors.joining;
@@ -73,13 +74,13 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
 
     /**
      * Creates a new multi-threaded populator for the given store view.
-     *
-     * @param storeView the view of the store as a visitable of nodes
+     *  @param storeView the view of the store as a visitable of nodes
      * @param logProvider the log provider
+     * @param type entity type to populate
      */
-    BatchingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider )
+    BatchingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type )
     {
-        super( storeView, logProvider );
+        super( storeView, logProvider, type );
         this.executor = createThreadPool();
     }
 
@@ -94,14 +95,14 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      */
     BatchingMultipleIndexPopulator( IndexStoreView storeView, ExecutorService executor, LogProvider logProvider )
     {
-        super( storeView, logProvider );
+        super( storeView, logProvider, EntityType.NODE );
         this.executor = executor;
     }
 
     @Override
-    public StoreScan<IndexPopulationFailedKernelException> indexAllNodes()
+    public StoreScan<IndexPopulationFailedKernelException> indexAllEntities()
     {
-        StoreScan<IndexPopulationFailedKernelException> storeScan = super.indexAllNodes();
+        StoreScan<IndexPopulationFailedKernelException> storeScan = super.indexAllEntities();
         return new BatchingStoreScan<>( storeScan );
     }
 

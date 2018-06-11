@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.verification.UniquenessVerifier;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
@@ -49,9 +49,9 @@ public interface SchemaIndex extends DatabaseIndex
      * @param propertyKeyIds the ids of the properties to verify.
      * @throws IndexEntryConflictException if there are duplicates.
      * @throws IOException
-     * @see UniquenessVerifier#verify(PropertyAccessor, int[])
+     * @see UniquenessVerifier#verify(NodePropertyAccessor, int[])
      */
-    void verifyUniqueness( PropertyAccessor accessor, int[] propertyKeyIds )
+    void verifyUniqueness( NodePropertyAccessor accessor, int[] propertyKeyIds )
             throws IOException, IndexEntryConflictException;
 
     /**
@@ -62,9 +62,9 @@ public interface SchemaIndex extends DatabaseIndex
      * @param updatedValueTuples the values to check uniqueness for.
      * @throws IndexEntryConflictException if there are duplicates.
      * @throws IOException
-     * @see UniquenessVerifier#verify(PropertyAccessor, int[], List)
+     * @see UniquenessVerifier#verify(NodePropertyAccessor, int[], List)
      */
-    void verifyUniqueness( PropertyAccessor accessor, int[] propertyKeyIds, List<Value[]> updatedValueTuples )
+    void verifyUniqueness( NodePropertyAccessor accessor, int[] propertyKeyIds, List<Value[]> updatedValueTuples )
                     throws IOException, IndexEntryConflictException;
 
     /**

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,16 +45,19 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.util.FeatureToggles;
 
 import static java.lang.String.format;
 import static org.eclipse.collections.impl.utility.ArrayIterate.contains;
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.ANY_ENTITY_TOKEN;
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.isAnyEntityTokenSchema;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
@@ -62,12 +66,12 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  *
  * There are two ways data is fed to this multi-populator:
  * <ul>
- * <li>{@link #indexAllNodes()}, which is a blocking call and will scan the entire store and
+ * <li>{@link #indexAllEntities()}, which is a blocking call and will scan the entire store and
  * and generate updates that are fed into the {@link IndexPopulator populators}. Only a single call to this
  * method should be made during the life time of a {@link MultipleIndexPopulator} and should be called by the
  * same thread instantiating this instance.</li>
  * <li>{@link #queueUpdate(IndexEntryUpdate)} which queues updates which will be read by the thread currently executing
- * {@link #indexAllNodes()} and incorporated into that data stream. Calls to this method may come from any number
+ * {@link #indexAllEntities()} and incorporated into that data stream. Calls to this method may come from any number
  * of concurrent threads.</li>
  * </ul>
  *
@@ -76,7 +80,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * <li>Instantiation.</li>
  * <li>One or more calls to {@link #addPopulator(IndexPopulator, CapableIndexDescriptor, FlippableIndexProxy, FailedIndexProxyFactory, String)}.</li>
  * <li>Call to {@link #create()} to create data structures and files to start accepting updates.</li>
- * <li>Call to {@link #indexAllNodes()} (blocking call).</li>
+ * <li>Call to {@link #indexAllEntities()} (blocking call).</li>
  * <li>While all nodes are being indexed, calls to {@link #queueUpdate(IndexEntryUpdate)} are accepted.</li>
  * <li>Call to {@link #flipAfterPopulation()} after successful population, or {@link #fail(Throwable)} if not</li>
  * </ol>
@@ -93,7 +97,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     // to have fast #size() method since it might be drained in batches
     final Queue<IndexEntryUpdate<?>> updatesQueue = new LinkedBlockingQueue<>();
 
-    // Populators are added into this list. The same thread adding populators will later call #indexAllNodes.
+    // Populators are added into this list. The same thread adding populators will later call #indexAllEntities.
     // Multiple concurrent threads might fail individual populations.
     // Failed populations are removed from this list while iterating over it.
     final List<IndexPopulation> populations = new CopyOnWriteArrayList<>();
@@ -101,13 +105,15 @@ public class MultipleIndexPopulator implements IndexPopulator
     private final IndexStoreView storeView;
     private final LogProvider logProvider;
     protected final Log log;
+    private final EntityType type;
     private StoreScan<IndexPopulationFailedKernelException> storeScan;
 
-    public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider )
+    public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type )
     {
         this.storeView = storeView;
         this.logProvider = logProvider;
         this.log = logProvider.getLog( IndexPopulationJob.class );
+        this.type = type;
     }
 
     IndexPopulation addPopulator( IndexPopulator populator, CapableIndexDescriptor capableIndexDescriptor, FlippableIndexProxy flipper,
@@ -151,13 +157,20 @@ public class MultipleIndexPopulator implements IndexPopulator
         throw new UnsupportedOperationException( "Can't populate directly using this populator implementation. " );
     }
 
-    public StoreScan<IndexPopulationFailedKernelException> indexAllNodes()
+    public StoreScan<IndexPopulationFailedKernelException> indexAllEntities()
     {
-        int[] labelIds = labelIds();
+        int[] entityTokenIds = entityTokenIds();
         int[] propertyKeyIds = propertyKeyIds();
         IntPredicate propertyKeyIdFilter = propertyKeyId -> contains( propertyKeyIds, propertyKeyId );
 
-        storeScan = storeView.visitNodes( labelIds, propertyKeyIdFilter, new NodePopulationVisitor(), null, false );
+        if ( type == EntityType.RELATIONSHIP )
+        {
+            storeScan = storeView.visitRelationships( entityTokenIds, propertyKeyIdFilter, new EntityPopulationVisitor() );
+        }
+        else
+        {
+            storeScan = storeView.visitNodes( entityTokenIds, propertyKeyIdFilter, new EntityPopulationVisitor(), null, false );
+        }
         return new DelegatingStoreScan<IndexPopulationFailedKernelException>( storeScan )
         {
             @Override
@@ -238,13 +251,13 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void verifyDeferredConstraints( PropertyAccessor accessor )
+    public void verifyDeferredConstraints( NodePropertyAccessor accessor )
     {
         throw new UnsupportedOperationException( "Should not be called directly" );
     }
 
     @Override
-    public MultipleIndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
+    public MultipleIndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor )
     {
         Map<SchemaDescriptor,Pair<IndexPopulation,IndexUpdater>> updaters = new HashMap<>();
         forEachPopulation( population ->
@@ -314,9 +327,13 @@ public class MultipleIndexPopulator implements IndexPopulator
         return IntStream.of( population.schema().getPropertyIds() );
     }
 
-    private int[] labelIds()
+    private int[] entityTokenIds()
     {
-        return populations.stream().mapToInt( population -> population.schema().keyId() ).toArray();
+        if ( populations.stream().anyMatch( indexPopulation -> isAnyEntityTokenSchema( indexPopulation.schema() ) ) )
+        {
+            return ANY_ENTITY_TOKEN;
+        }
+        return populations.stream().flatMapToInt( population -> Arrays.stream( population.schema().getEntityTokenIds() ) ).toArray();
     }
 
     public void cancel()
@@ -603,21 +620,21 @@ public class MultipleIndexPopulator implements IndexPopulator
         }
     }
 
-    private class NodePopulationVisitor implements Visitor<NodeUpdates,
+    private class EntityPopulationVisitor implements Visitor<EntityUpdates,
             IndexPopulationFailedKernelException>
     {
         @Override
-        public boolean visit( NodeUpdates updates )
+        public boolean visit( EntityUpdates updates )
         {
             add( updates );
-            populateFromUpdateQueueBatched( updates.getNodeId() );
+            populateFromUpdateQueueBatched( updates.getEntityId() );
             return false;
         }
 
-        private void add( NodeUpdates updates )
+        private void add( EntityUpdates updates )
         {
             // This is called from a full store node scan, meaning that all node properties are included in the
-            // NodeUpdates object. Therefore no additional properties need to be loaded.
+            // EntityUpdates object. Therefore no additional properties need to be loaded.
             for ( IndexEntryUpdate<IndexPopulation> indexUpdate : updates.forIndexKeys( populations ) )
             {
                 indexUpdate.indexKey().onUpdate( indexUpdate );
