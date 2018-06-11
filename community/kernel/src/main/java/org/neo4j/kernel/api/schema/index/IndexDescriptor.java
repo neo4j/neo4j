@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.schema.index;
 
 import java.util.Optional;
-import java.util.function.Predicate;
 
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexReference;
@@ -201,38 +200,5 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
     {
         GENERAL,
         UNIQUE
-    }
-
-    public enum Filter implements Predicate<IndexDescriptor>
-    {
-        GENERAL
-                {
-                    @Override
-                    public boolean test( IndexDescriptor index )
-                    {
-                        return index.type == Type.GENERAL;
-                    }
-                },
-        UNIQUE
-                {
-                    @Override
-                    public boolean test( IndexDescriptor index )
-                    {
-                        return index.type == Type.UNIQUE;
-                    }
-                },
-        ANY
-                {
-                    @Override
-                    public boolean test( IndexDescriptor index )
-                    {
-                        return true;
-                    }
-                }
-    }
-
-    public interface Supplier
-    {
-        IndexDescriptor getIndexDescriptor();
     }
 }

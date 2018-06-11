@@ -42,6 +42,9 @@ import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FO
  */
 public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
 {
+    public static final String TYPE_DESCRIPTOR = "NodeStore";
+    private final DynamicArrayStore dynamicLabelStore;
+
     public static Long readOwnerFromDynamicLabelsRecord( DynamicRecord record )
     {
         byte[] data = record.getData();
@@ -62,15 +65,6 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
         return dynamicLabelStore.newRecordCursor( dynamicLabelStore.newRecord() ).acquire( getNumberOfReservedLowIds(),
                 RecordLoad.NORMAL );
     }
-
-    public abstract static class Configuration
-        extends CommonAbstractStore.Configuration
-    {
-    }
-
-    public static final String TYPE_DESCRIPTOR = "NodeStore";
-
-    private final DynamicArrayStore dynamicLabelStore;
 
     public NodeStore(
             File fileName,

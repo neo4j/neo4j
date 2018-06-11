@@ -32,7 +32,6 @@ import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.ha.TransactionChecksumLookup;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
@@ -74,7 +73,6 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     private final File storeDir;
     private final ResponsePacker responsePacker;
     private final Monitors monitors;
-    private final PageCache pageCache;
 
     private final TransactionCommitProcess transactionCommitProcess;
     private final CheckPointer checkPointer;
@@ -91,7 +89,6 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
                                  TransactionIdStore transactionIdStore,
                                  LogicalTransactionStore logicalTransactionStore,
                                  NeoStoreDataSource neoStoreDataSource,
-                                 PageCache pageCache,
                                  StoreCopyCheckPointMutex mutex,
                                  LogProvider logProvider )
     {
@@ -109,7 +106,6 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
         this.txChecksumLookup = new TransactionChecksumLookup( transactionIdStore, logicalTransactionStore );
         this.responsePacker = new ResponsePacker( logicalTransactionStore, transactionIdStore, graphDb::storeId );
         this.monitors = monitors;
-        this.pageCache = pageCache;
         monitors.addMonitorListener( new LoggingStoreCopyServerMonitor( logProvider.getLog( StoreCopyServer.class ) ),
                 StoreCopyServer.class.getName() );
     }

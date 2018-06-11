@@ -247,11 +247,6 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         long id( PropertyContainer entity );
     }
 
-    public interface Lookup
-    {
-        GraphDatabaseService getGraphDatabaseService();
-    }
-
     protected final String name;
     protected final Type<T> type;
     protected final Supplier<KernelTransaction> txBridge;

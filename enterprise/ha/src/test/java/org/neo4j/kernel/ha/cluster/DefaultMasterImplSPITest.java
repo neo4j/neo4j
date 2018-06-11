@@ -29,7 +29,6 @@ import java.io.IOException;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -67,7 +66,7 @@ public class DefaultMasterImplSPITest
                 mock( PropertyKeyTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ),
                 mock( IdGeneratorFactory.class ), mock( TransactionCommitProcess.class ), checkPointer,
                 mock( TransactionIdStore.class ), mock( LogicalTransactionStore.class ),
-                dataSource, mock( PageCache.class ), new StoreCopyCheckPointMutex(), NullLogProvider.getInstance() );
+                dataSource, new StoreCopyCheckPointMutex(), NullLogProvider.getInstance() );
 
         master.flushStoresAndStreamStoreFiles( mock( StoreWriter.class ) );
 

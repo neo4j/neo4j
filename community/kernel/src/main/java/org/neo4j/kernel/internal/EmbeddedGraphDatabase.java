@@ -56,16 +56,6 @@ public class EmbeddedGraphDatabase extends GraphDatabaseFacade
     /**
      * Internal constructor used by {@link org.neo4j.graphdb.factory.GraphDatabaseFactory}
      */
-    public EmbeddedGraphDatabase( String storeDir,
-                                  Map<String, String> params,
-                                  GraphDatabaseFacadeFactory.Dependencies dependencies )
-    {
-        this( new File( storeDir ), params, dependencies );
-    }
-
-    /**
-     * Internal constructor used by {@link org.neo4j.graphdb.factory.GraphDatabaseFactory}
-     */
     public EmbeddedGraphDatabase( File storeDir,
                                   Map<String, String> params,
                                   GraphDatabaseFacadeFactory.Dependencies dependencies )
