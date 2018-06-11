@@ -33,27 +33,28 @@ import org.neo4j.storageengine.api.WritableChannel;
 
 public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ByteBuf>
 {
-
     private static final int DEFAULT_CHUNK_SIZE = 8192;
-    private static final int MINIMUM_CHUNK_SIZE = 7;
+    private static final int MINIMUM_CHUNK_SIZE = 8;
+
     private final byte contentType;
     private final ByteBufAwareMarshal byteBufAwareMarshal;
     private final int chunkSize;
     private boolean endOfInput;
     private int progress;
 
-    public ChunkedReplicatedContent( byte contentType, ByteBufAwareMarshal byteBufAwareMarshal, int chunkSize )
+    private ChunkedReplicatedContent( byte contentType, ByteBufAwareMarshal byteBufAwareMarshal, int chunkSize )
     {
-        this.byteBufAwareMarshal = byteBufAwareMarshal;
-        this.chunkSize = chunkSize;
         if ( chunkSize < MINIMUM_CHUNK_SIZE )
         {
             throw new IllegalArgumentException( "Chunk size must be at least " + MINIMUM_CHUNK_SIZE + " bytes" );
         }
+
+        this.byteBufAwareMarshal = byteBufAwareMarshal;
+        this.chunkSize = chunkSize;
         this.contentType = contentType;
     }
 
-    public ChunkedReplicatedContent( byte contentType, ByteBufAwareMarshal byteBufAwareMarshal )
+    ChunkedReplicatedContent( byte contentType, ByteBufAwareMarshal byteBufAwareMarshal )
     {
         this( contentType, byteBufAwareMarshal, DEFAULT_CHUNK_SIZE );
     }
