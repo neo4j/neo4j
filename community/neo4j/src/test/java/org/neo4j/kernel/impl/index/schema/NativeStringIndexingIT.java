@@ -28,6 +28,7 @@ import java.util.Map;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -56,7 +57,8 @@ public class NativeStringIndexingIT
     private static final String KEY2 = "key2";
 
     @Rule
-    public final DatabaseRule db = new EmbeddedDatabaseRule();
+    public final DatabaseRule db = new EmbeddedDatabaseRule()
+            .withSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName() );
     @Rule
     public final RandomRule random = new RandomRule();
 

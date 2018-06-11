@@ -100,6 +100,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     private final int[] newOffset = new int[maxKeyCount];
     private final int totalSpace;
     private final int halfSpace;
+    private final KEY tmpKeyLeft;
+    private final KEY tmpKeyRight;
 
     TreeNodeDynamicSize( int pageSize, Layout<KEY,VALUE> layout )
     {
@@ -115,6 +117,9 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
                             "with current page size of %dB. We require this cap to be at least %dB.",
                     LEAST_NUMBER_OF_ENTRIES_PER_PAGE, keyValueSizeCap, pageSize, Long.SIZE );
         }
+
+        tmpKeyLeft = layout.newKey();
+        tmpKeyRight = layout.newKey();
     }
 
     @Override
@@ -633,14 +638,31 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         int keyCountAfterInsert = leftKeyCount + 1;
         int middlePos = middleLeaf( leftCursor, insertPos, newKey, newValue, keyCountAfterInsert );
 
+        KEY leftInSplit;
+        KEY rightInSplit;
         if ( middlePos == insertPos )
         {
-            layout.copyKey( newKey, newSplitter );
+            leftInSplit = keyAt( leftCursor, tmpKeyLeft, middlePos - 1, LEAF );
+            rightInSplit = newKey;
+
         }
         else
         {
-            keyAt( leftCursor, newSplitter, insertPos < middlePos ? middlePos - 1 : middlePos, LEAF );
+            int rightPos = insertPos < middlePos ? middlePos - 1 : middlePos;
+            rightInSplit = keyAt( leftCursor, tmpKeyRight, rightPos, LEAF );
+
+            if ( rightPos == insertPos )
+            {
+                leftInSplit = newKey;
+            }
+            else
+            {
+                int leftPos = rightPos - 1;
+                leftInSplit = keyAt( leftCursor, tmpKeyLeft, leftPos, LEAF );
+            }
         }
+        layout.minimalSplitter( leftInSplit, rightInSplit, newSplitter );
+
         int rightKeyCount = keyCountAfterInsert - middlePos;
 
         if ( insertPos < middlePos )
