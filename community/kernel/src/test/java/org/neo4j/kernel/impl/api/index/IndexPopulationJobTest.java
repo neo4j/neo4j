@@ -638,8 +638,8 @@ public class IndexPopulationJobTest
         long indexId = 0;
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
 
-        MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, logProvider );
-        IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, stateHolder );
+        MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, logProvider, stateHolder );
+        IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR );
         job.addPopulator( populator, indexId, new IndexMeta( indexId, descriptor, PROVIDER_DESCRIPTOR, NO_CAPABILITY ),
                 format( ":%s(%s)", FIRST.name(), name ), flipper, failureDelegateFactory );
         return job;

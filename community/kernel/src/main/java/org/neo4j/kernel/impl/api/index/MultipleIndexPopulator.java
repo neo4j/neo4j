@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -102,13 +103,15 @@ public class MultipleIndexPopulator implements IndexPopulator
     private final IndexStoreView storeView;
     private final LogProvider logProvider;
     protected final Log log;
+    private final SchemaState schemaState;
     private StoreScan<IndexPopulationFailedKernelException> storeScan;
 
-    public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider )
+    public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, SchemaState schemaState )
     {
         this.storeView = storeView;
         this.logProvider = logProvider;
         this.log = logProvider.getLog( IndexPopulationJob.class );
+        this.schemaState = schemaState;
     }
 
     IndexPopulation addPopulator(
@@ -576,6 +579,7 @@ public class MultipleIndexPopulator implements IndexPopulator
                             IndexSample sample = populator.sampleResult();
                             storeView.replaceIndexCounts( indexId, sample.uniqueValues(), sample.sampleSize(), sample.indexSize() );
                             populator.close( true );
+                            schemaState.clear();
                             return true;
                         }
                     }

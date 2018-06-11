@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.logging.LogProvider;
 
 /**
@@ -35,7 +36,8 @@ public abstract class MultiPopulatorFactory
     {
     }
 
-    public abstract MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider );
+    public abstract MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider,
+                                                   SchemaState schemaState );
 
     public static MultiPopulatorFactory forConfig( Config config )
     {
@@ -46,18 +48,20 @@ public abstract class MultiPopulatorFactory
     private static class SingleThreadedPopulatorFactory extends MultiPopulatorFactory
     {
         @Override
-        public MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider )
+        public MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider,
+                                              SchemaState schemaState )
         {
-            return new MultipleIndexPopulator( storeView, logProvider );
+            return new MultipleIndexPopulator( storeView, logProvider, schemaState );
         }
     }
 
     private static class MultiThreadedPopulatorFactory extends MultiPopulatorFactory
     {
         @Override
-        public MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider )
+        public MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider,
+                                              SchemaState schemaState )
         {
-            return new BatchingMultipleIndexPopulator( storeView, logProvider );
+            return new BatchingMultipleIndexPopulator( storeView, logProvider, schemaState );
         }
     }
 }

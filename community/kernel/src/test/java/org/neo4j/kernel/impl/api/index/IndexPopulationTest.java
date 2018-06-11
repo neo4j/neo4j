@@ -26,7 +26,6 @@ import java.util.function.IntPredicate;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.kernel.api.exceptions.index.ExceptionDuringFlipKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -37,12 +36,13 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 
 public class IndexPopulationTest
 {
@@ -57,7 +57,8 @@ public class IndexPopulationTest
         OnlineIndexProxy onlineProxy = onlineIndexProxy( storeView );
         FlippableIndexProxy flipper = new FlippableIndexProxy();
         flipper.setFlipTarget( () -> onlineProxy );
-        MultipleIndexPopulator multipleIndexPopulator = new MultipleIndexPopulator( storeView, logProvider );
+        MultipleIndexPopulator multipleIndexPopulator = new MultipleIndexPopulator( storeView, logProvider,
+                                                                                    mock( SchemaState.class ) );
         MultipleIndexPopulator.IndexPopulation indexPopulation =
                 multipleIndexPopulator.addPopulator( populator, 0, dummyMeta(), flipper, t -> failedProxy, "userDescription" );
         multipleIndexPopulator.queue( someUpdate() );
