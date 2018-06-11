@@ -136,7 +136,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         {
             return null; // no labels => no updates (it's not going to be in any index)
         }
-        EntityUpdates.Builder update = EntityUpdates.forEntity( nodeId, labels );
+        EntityUpdates.Builder update = EntityUpdates.forEntity( nodeId ).withTokensBefore( labels );
         for ( PropertyRecord propertyRecord : propertyStore.getPropertyRecordChain( firstPropertyId ) )
         {
             for ( PropertyBlock property : propertyRecord )

@@ -55,8 +55,8 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
     private static final long[] EMPTY_LONG_ARRAY = new long[0];
 
     // ASSUMPTION: these long arrays are actually sorted sets
-    private final long[] entityTokensBefore;
-    private final long[] entityTokensAfter;
+    private long[] entityTokensBefore;
+    private long[] entityTokensAfter;
 
     private final MutableIntObjectMap<PropertyValue> knownProperties;
     private boolean hasLoadedAdditionalProperties;
@@ -94,10 +94,23 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
             return this;
         }
 
+        public Builder withTokensBefore( long... entityTokensBefore )
+        {
+            this.updates.entityTokensBefore = entityTokensBefore;
+            return this;
+        }
+
+        public Builder withTokensAfter( long... entityTokensAfter )
+        {
+            this.updates.entityTokensAfter = entityTokensAfter;
+            return this;
+        }
+
         public EntityUpdates build()
         {
             return updates;
         }
+
     }
 
     private void put( int propertyKeyId, PropertyValue propertyValue )
@@ -108,16 +121,6 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
     public static Builder forEntity( long entityId )
     {
         return new Builder( new EntityUpdates( entityId, EMPTY_LONG_ARRAY, EMPTY_LONG_ARRAY ) );
-    }
-
-    public static Builder forEntity( long entityId, long[] entityTokenIds )
-    {
-        return new Builder( new EntityUpdates( entityId, entityTokenIds, entityTokenIds ) );
-    }
-
-    public static Builder forEntity( long entityId, long[] entityTokenIdsBefore, long[] entityTokenIdsAfter )
-    {
-        return new Builder( new EntityUpdates( entityId, entityTokenIdsBefore, entityTokenIdsAfter ) );
     }
 
     private EntityUpdates( long entityId, long[] entityTokensBefore, long[] entityTokensAfter )

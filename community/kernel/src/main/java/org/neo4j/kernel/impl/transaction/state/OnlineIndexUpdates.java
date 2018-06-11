@@ -148,8 +148,7 @@ public class OnlineIndexUpdates implements IndexUpdates
         }
 
         // First get possible Label changes
-        EntityUpdates.Builder nodePropertyUpdates =
-                EntityUpdates.forEntity( nodeId, nodeLabelsBefore, nodeLabelsAfter );
+        EntityUpdates.Builder nodePropertyUpdates = EntityUpdates.forEntity( nodeId ).withTokensBefore( nodeLabelsBefore ).withTokensAfter( nodeLabelsAfter );
 
         // Then look for property changes
         if ( propertyCommandsForNode != null )

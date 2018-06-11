@@ -249,7 +249,7 @@ public class PropertyPhysicalToLogicalConverterTest
     private EntityUpdates convert( long[] labelsBefore,
             long[] labelsAfter, PropertyRecordChange... changes )
     {
-        EntityUpdates.Builder updates = EntityUpdates.forEntity( 0, labelsBefore, labelsAfter );
+        EntityUpdates.Builder updates = EntityUpdates.forEntity( (long) 0 ).withTokensBefore( labelsBefore ).withTokensAfter( labelsAfter );
         converter.convertPropertyRecord( 0, Iterables.iterable( changes ), updates );
         return updates.build();
     }
