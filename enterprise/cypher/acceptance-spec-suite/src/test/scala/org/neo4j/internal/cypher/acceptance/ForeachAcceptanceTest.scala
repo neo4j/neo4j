@@ -201,4 +201,13 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
       TestConfiguration(Versions(Versions.V3_1, Versions.V3_3), Planners.Cost, Runtimes.Default)
     failWithError(config, query, List("Expected to find a node at"))
   }
+
+  test("should handle building FOREACH on pattern comprehension") {
+    graph.execute("CREATE (:X)-[:T]->(), (:X)")
+
+    val result = executeWith(
+      expectSucceed = Configs.Interpreted - Configs.BackwardsCompatibility - Configs.AllRulePlanners,
+      query = "FOREACH (x in  [ (p:X)-->() | p ] | SET x.prop = 12 )")
+    assertStats(result, propertiesWritten = 1)
+  }
 }

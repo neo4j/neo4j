@@ -65,43 +65,4 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
     result should have size 2
   }
 
-  test("should handle expressions with labels") {
-    // GIVEN
-    val a = createNode()
-    val b = createLabeledNode("Foo")
-
-    relate(a, b)
-
-    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, SemanticDirection.OUTGOING, Map.empty)
-    val expression = NonEmpty(PathExpression(Seq(pattern), True(), PathExtractorExpression(Seq(pattern))))
-    val m = ExecutionContext.from("a" -> a)
-
-    // WHEN
-    val result = withQueryState { state =>
-      expression(m, state)
-    }
-
-    // THEN
-    result should equal(TRUE)
-  }
-
-  test("should return false if labels are missing") {
-    // GIVEN
-    val a = createNode()
-    val b = createLabeledNode("Bar")
-
-    relate(a, b)
-
-    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, SemanticDirection.OUTGOING, Map.empty)
-    val expression = NonEmpty(PathExpression(Seq(pattern), True(), PathExtractorExpression(Seq(pattern))))
-    val m = ExecutionContext.from("a" -> a)
-
-    // WHEN
-    val result = withQueryState { state =>
-      expression(m, state)
-    }
-
-    // THEN
-    result should equal(FALSE)
-  }
 }

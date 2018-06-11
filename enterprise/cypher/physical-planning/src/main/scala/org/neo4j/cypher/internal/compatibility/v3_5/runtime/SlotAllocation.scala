@@ -652,7 +652,7 @@ object SlotAllocation {
       case ForeachApply(_, _, variableName, listExpression) =>
         // The slot for the iteration variable of foreach needs to be available as an argument on the rhs of the apply
         // so we allocate it on the lhs (even though its value will not be needed after the foreach is done)
-        val typeSpec = semanticTable.getActualTypeFor(listExpression)
+        val typeSpec = getTypeOf(semanticTable, listExpression)
         val listOfNodes = typeSpec.contains(ListType(CTNode))
         val listOfRels = typeSpec.contains(ListType(CTRelationship))
 
@@ -666,6 +666,14 @@ object SlotAllocation {
       case _ =>
         lhs
     }
+
+  // TODO: We might get a list expression that has not been properly typed (RollupApply). Instead if failing,
+  // we are forgiving and just act like we know nothing at compile time
+  private def getTypeOf(semanticTable: SemanticTable, listExpression: Expression) = try {
+    semanticTable.getActualTypeFor(listExpression)
+  } catch {
+    case e: InternalException => TypeSpec.all
+  }
 
   private def addGroupingMap(groupingExpressions: Map[String, Expression], incoming: SlotConfiguration, outgoing: SlotConfiguration) = {
     groupingExpressions foreach {

@@ -72,10 +72,8 @@ object CommunityExpressionConverter extends ExpressionConverter {
         case e: ast.Property => toCommandProperty(e, self)
         case e: ast.Parameter => toCommandParameter(e)
         case e: ast.CaseExpression => caseExpression(e, self)
-        case e: ast.PatternExpression =>
-          val legacyPatterns = e.pattern.asLegacyPatterns(self)
-          commands.PathExpression(legacyPatterns, predicates.True(), PathExtractorExpression(legacyPatterns), allowIntroducingNewIdentifiers = false)
-        case e: ast.PatternComprehension => commands.PathExpression(e.pattern.asLegacyPatterns(self), self.toCommandPredicate(e.predicate), self.toCommandExpression(e.projection), allowIntroducingNewIdentifiers = true)
+        case _: ast.PatternExpression|_:ast.PatternComprehension  =>
+          throw new InternalException("This should have been removed before building physical plan")
         case e: ast.ShortestPathExpression => commandexpressions.ShortestPathExpression(e.pattern.asLegacyPatterns(None, self).head)
         case e: ast.HasLabels => hasLabels(e, self)
         case e: ast.ListLiteral => commandexpressions.ListLiteral(toCommandExpression(e.expressions, self): _*)
