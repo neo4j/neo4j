@@ -40,8 +40,8 @@ public class GroupingRecoveryCleanupWorkCollectorTest
     public void mustNotScheduleAnyJobsBeforeStart() throws Throwable
     {
         // given
-        List<CleanupJob> allRuns = new ArrayList<>();
-        List<CleanupJob> expectedJobs = someJobs( allRuns );
+        List<DummyJob> allRuns = new ArrayList<>();
+        List<DummyJob> expectedJobs = someJobs( allRuns );
 
         // when
         collector.init();
@@ -55,8 +55,8 @@ public class GroupingRecoveryCleanupWorkCollectorTest
     public void mustScheduleAllJobs() throws Throwable
     {
         // given
-        List<CleanupJob> allRuns = new ArrayList<>();
-        List<CleanupJob> expectedJobs = someJobs( allRuns );
+        List<DummyJob> allRuns = new ArrayList<>();
+        List<DummyJob> expectedJobs = someJobs( allRuns );
 
         // when
         collector.init();
@@ -71,8 +71,8 @@ public class GroupingRecoveryCleanupWorkCollectorTest
     public void mustNotScheduleOldJobsAfterRestart() throws Throwable
     {
         // given
-        List<CleanupJob> allRuns = new ArrayList<>();
-        List<CleanupJob> someJobs = someJobs( allRuns );
+        List<DummyJob> allRuns = new ArrayList<>();
+        List<DummyJob> someJobs = someJobs( allRuns );
 
         // when
         collector.init();
@@ -85,11 +85,30 @@ public class GroupingRecoveryCleanupWorkCollectorTest
     }
 
     @Test
+    public void mustCloseOldJobsOnOnRestart() throws Throwable
+    {
+        // given
+        List<DummyJob> allRuns = new ArrayList<>();
+        List<DummyJob> someJobs = someJobs( allRuns );
+
+        // when
+        collector.init();
+        addAll( someJobs );
+        collector.init();
+
+        // then
+        for ( DummyJob job : someJobs )
+        {
+            assertTrue( "expect job to be closed", job.closed );
+        }
+    }
+
+    @Test
     public void mustNotScheduleOldJobsOnMultipleStart() throws Throwable
     {
         // given
-        List<CleanupJob> allRuns = new ArrayList<>();
-        List<CleanupJob> expectedJobs = someJobs( allRuns );
+        List<DummyJob> allRuns = new ArrayList<>();
+        List<DummyJob> expectedJobs = someJobs( allRuns );
 
         // when
         collector.init();
@@ -105,8 +124,8 @@ public class GroupingRecoveryCleanupWorkCollectorTest
     public void mustNotScheduleOldJobsOnStartStopStart() throws Throwable
     {
         // given
-        List<CleanupJob> allRuns = new ArrayList<>();
-        List<CleanupJob> expectedJobs = someJobs( allRuns );
+        List<DummyJob> allRuns = new ArrayList<>();
+        List<DummyJob> expectedJobs = someJobs( allRuns );
 
         // when
         collector.init();
@@ -119,18 +138,18 @@ public class GroupingRecoveryCleanupWorkCollectorTest
         assertSame( expectedJobs, allRuns );
     }
 
-    private void addAll( Collection<CleanupJob> jobs )
+    private void addAll( Collection<DummyJob> jobs )
     {
         jobs.forEach( collector::add );
     }
 
-    private void assertSame( List<CleanupJob> someJobs, List<CleanupJob> actual )
+    private void assertSame( List<DummyJob> someJobs, List<DummyJob> actual )
     {
         assertTrue( actual.containsAll( someJobs ) );
         assertTrue( someJobs.containsAll( actual ) );
     }
 
-    private List<CleanupJob> someJobs( List<CleanupJob> allRuns )
+    private List<DummyJob> someJobs( List<DummyJob> allRuns )
     {
         return new ArrayList<>( Arrays.asList(
                 new DummyJob( "A", allRuns ),
@@ -152,9 +171,10 @@ public class GroupingRecoveryCleanupWorkCollectorTest
     private class DummyJob implements CleanupJob
     {
         private final String name;
-        private final List<CleanupJob> allRuns;
+        private final List<DummyJob> allRuns;
+        private boolean closed;
 
-        DummyJob( String name, List<CleanupJob> allRuns )
+        DummyJob( String name, List<DummyJob> allRuns )
         {
             this.name = name;
             this.allRuns = allRuns;
@@ -186,7 +206,8 @@ public class GroupingRecoveryCleanupWorkCollectorTest
 
         @Override
         public void close()
-        {   // no-op
+        {
+            closed = true;
         }
 
         @Override
