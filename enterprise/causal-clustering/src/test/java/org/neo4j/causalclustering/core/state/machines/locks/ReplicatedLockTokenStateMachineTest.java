@@ -192,7 +192,7 @@ public class ReplicatedLockTokenStateMachineTest
         fsa.mkdir( testDir.directory() );
 
         StateMarshal<ReplicatedLockTokenState> marshal =
-                new ReplicatedLockTokenState.Marshal( new MemberId.Marshal() );
+                new ReplicatedLockTokenState.Marshal( MemberId.MARSHAL );
 
         MemberId memberA = member( 0 );
         MemberId memberB = member( 1 );
@@ -200,7 +200,7 @@ public class ReplicatedLockTokenStateMachineTest
 
         DurableStateStorage<ReplicatedLockTokenState> storage = new DurableStateStorage<>( fsa, testDir.directory(),
                 "state", marshal, 100, NullLogProvider.getInstance() );
-        try ( Lifespan lifespan = new Lifespan( storage ) )
+        try ( Lifespan ignored = new Lifespan( storage ) )
         {
             ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine( storage );
 
@@ -217,7 +217,7 @@ public class ReplicatedLockTokenStateMachineTest
         // then
         DurableStateStorage<ReplicatedLockTokenState> storage2 = new DurableStateStorage<>(
                 fsa, testDir.directory(), "state", marshal, 100, NullLogProvider.getInstance() );
-        try ( Lifespan lifespan = new Lifespan( storage2 ) )
+        try ( Lifespan ignored = new Lifespan( storage2 ) )
         {
             ReplicatedLockTokenState initialState = storage2.getInitialState();
 
@@ -234,12 +234,12 @@ public class ReplicatedLockTokenStateMachineTest
         fsa.mkdir( testDir.directory() );
 
         StateMarshal<ReplicatedLockTokenState> marshal =
-                new ReplicatedLockTokenState.Marshal( new MemberId.Marshal() );
+                new ReplicatedLockTokenState.Marshal( MemberId.MARSHAL );
 
         DurableStateStorage<ReplicatedLockTokenState> storage = new DurableStateStorage<>( fsa, testDir.directory(),
                 "state", marshal, 100, NullLogProvider.getInstance() );
 
-        try ( Lifespan lifespan = new Lifespan( storage ) )
+        try ( Lifespan ignored = new Lifespan( storage ) )
         {
             ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine( storage );
 

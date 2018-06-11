@@ -110,7 +110,7 @@ public class ConsensusModule
         termState = new MonitoredTermStateStorage( durableTermState, platformModule.monitors );
 
         voteState = life.add( new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_VOTE_NAME,
-                new VoteState.Marshal( new MemberId.Marshal() ), config.get( CausalClusteringSettings.vote_state_size ),
+                new VoteState.Marshal( MemberId.MARSHAL ), config.get( CausalClusteringSettings.vote_state_size ),
                 logProvider ) );
 
         raftMembershipStorage = life.add(

@@ -44,7 +44,7 @@ public class SimpleStorageTest
     {
         // given
         SimpleStorage<MemberId> storage = new SimpleFileStorage<>( fsa.get(), new File( "state-dir" ),
-                "member-id-a", new MemberId.Marshal(), NullLogProvider.getInstance() );
+                "member-id-a", MemberId.MARSHAL, NullLogProvider.getInstance() );
 
         // when
         MemberId idA = new MemberId( UUID.randomUUID() );

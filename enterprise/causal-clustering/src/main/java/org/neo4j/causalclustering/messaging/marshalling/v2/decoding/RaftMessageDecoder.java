@@ -183,8 +183,7 @@ public class RaftMessageDecoder extends ByteToMessageDecoder
 
     private MemberId retrieveMember( ReadableChannel buffer ) throws IOException, EndOfStreamException
     {
-        MemberId.Marshal memberIdMarshal = new MemberId.Marshal();
-        return memberIdMarshal.unmarshal( buffer );
+        return MemberId.MARSHAL.unmarshal( buffer );
     }
 
     interface LazyComposer

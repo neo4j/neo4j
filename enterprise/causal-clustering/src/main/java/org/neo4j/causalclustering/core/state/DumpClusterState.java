@@ -38,7 +38,6 @@ import org.neo4j.causalclustering.core.state.storage.SimpleFileStorage;
 import org.neo4j.causalclustering.core.state.storage.SimpleStorage;
 import org.neo4j.causalclustering.core.state.storage.StateMarshal;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.identity.MemberId.Marshal;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -91,7 +90,7 @@ public class DumpClusterState
     void dump() throws IOException
     {
         SimpleStorage<MemberId> memberIdStorage = new SimpleFileStorage<>( fs, clusterStateDirectory, CORE_MEMBER_ID_NAME,
-                new Marshal(), NullLogProvider.getInstance() );
+                MemberId.MARSHAL, NullLogProvider.getInstance() );
         if ( memberIdStorage.exists() )
         {
             MemberId memberId = memberIdStorage.readState();
@@ -99,14 +98,14 @@ public class DumpClusterState
         }
 
         dumpState( LAST_FLUSHED_NAME, new LongIndexMarshal() );
-        dumpState( LOCK_TOKEN_NAME, new ReplicatedLockTokenState.Marshal( new Marshal() ) );
+        dumpState( LOCK_TOKEN_NAME, new ReplicatedLockTokenState.Marshal( MemberId.MARSHAL ) );
         dumpState( ID_ALLOCATION_NAME, new IdAllocationState.Marshal() );
-        dumpState( SESSION_TRACKER_NAME, new GlobalSessionTrackerState.Marshal( new Marshal() ) );
+        dumpState( SESSION_TRACKER_NAME, new GlobalSessionTrackerState.Marshal( MemberId.MARSHAL ) );
 
         /* raft state */
         dumpState( RAFT_MEMBERSHIP_NAME, new RaftMembershipState.Marshal() );
         dumpState( RAFT_TERM_NAME, new TermState.Marshal() );
-        dumpState( RAFT_VOTE_NAME, new VoteState.Marshal( new Marshal() ) );
+        dumpState( RAFT_VOTE_NAME, new VoteState.Marshal( MemberId.MARSHAL ) );
     }
 
     private void dumpState( String name, StateMarshal<?> marshal )

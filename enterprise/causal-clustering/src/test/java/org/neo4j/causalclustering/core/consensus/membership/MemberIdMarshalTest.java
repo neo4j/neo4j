@@ -42,7 +42,7 @@ public class MemberIdMarshalTest
     public void shouldSerializeAndDeserialize() throws Exception
     {
         // given
-        MemberId.Marshal marshal = new MemberId.Marshal();
+        MemberId.Marshal marshal = MemberId.MARSHAL;
 
         final MemberId member = new MemberId( UUID.randomUUID() );
 
@@ -60,7 +60,7 @@ public class MemberIdMarshalTest
     {
         // given
         // a CoreMember and a ByteBuffer to write it to
-        MemberId.Marshal marshal = new MemberId.Marshal();
+        MemberId.Marshal marshal = MemberId.MARSHAL;
         final MemberId aRealMember = new MemberId( UUID.randomUUID() );
 
         ByteBuf buffer = Unpooled.buffer( 1000 );

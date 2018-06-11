@@ -50,7 +50,7 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
     {
         RaftMessages.RaftMessage message = decoratedMessage.message();
         ClusterId clusterId = decoratedMessage.clusterId();
-        MemberId.Marshal memberMarshal = new MemberId.Marshal();
+        MemberId.Marshal memberMarshal = MemberId.MARSHAL;
 
         NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( out );
         ClusterId.Marshal.INSTANCE.marshal( clusterId, channel );

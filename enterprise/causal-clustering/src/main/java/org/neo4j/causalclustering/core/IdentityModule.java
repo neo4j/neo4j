@@ -48,7 +48,7 @@ public class IdentityModule
         Log log = logProvider.getLog( getClass() );
 
         SimpleStorage<MemberId> memberIdStorage = new SimpleFileStorage<>( fileSystem, clusterStateDirectory,
-                CORE_MEMBER_ID_NAME, new MemberId.Marshal(), logProvider );
+                CORE_MEMBER_ID_NAME, MemberId.MARSHAL, logProvider );
 
         try
         {
