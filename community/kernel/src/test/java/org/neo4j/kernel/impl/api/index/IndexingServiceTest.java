@@ -471,7 +471,7 @@ public class IndexingServiceTest
         }
         catch ( LifecycleException e )
         {   // THEN starting up should fail
-            assertThat( e.getCause().getMessage(), containsString( "existing index" ) );
+            assertThat( e.getCause().getMessage(), containsString( PROVIDER_DESCRIPTOR.name() ) );
             assertThat( e.getCause().getMessage(), containsString( otherProviderKey ) );
         }
     }

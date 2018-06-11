@@ -100,6 +100,13 @@ public abstract class KernelIntegrationTest
         return transaction.procedures();
     }
 
+    protected Procedures procsSchema() throws TransactionFailureException
+    {
+        session = kernel.beginSession( AnonymousContext.full() );
+        transaction = session.beginTransaction( KernelTransaction.Type.implicit );
+        return transaction.procedures();
+    }
+
     protected Transaction newTransaction() throws TransactionFailureException
     {
         transaction = kernel.beginTransaction( implicit, AnonymousContext.read() );

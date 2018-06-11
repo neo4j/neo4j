@@ -74,7 +74,7 @@ public class IndexCreateIT extends KernelIntegrationTest
         // when
         try
         {
-            schemaWrite.indexCreate( forLabel( 0, 0 ), Optional.of( "something-completely-different" ), Optional.empty() );
+            creator.create( schemaWrite, forLabel( 0, 0 ), "something-completely-different" );
             fail( "Should have failed" );
         }
         catch ( IllegalArgumentException e )

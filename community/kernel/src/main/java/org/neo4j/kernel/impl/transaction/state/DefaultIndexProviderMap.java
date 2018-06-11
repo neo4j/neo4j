@@ -81,7 +81,7 @@ public class DefaultIndexProviderMap implements IndexProviderMap
             return provider;
         }
 
-        throw notFound( providerDescriptor );
+        throw notFound( providerDescriptor.name() );
     }
 
     @Override
@@ -96,10 +96,11 @@ public class DefaultIndexProviderMap implements IndexProviderMap
         throw notFound( providerDescriptorName );
     }
 
-    private IllegalArgumentException notFound( Object key )
+    private IllegalArgumentException notFound( String name )
     {
-        return new IllegalArgumentException( "Tried to get index provider for an existing index with provider " + key +
-                " whereas available providers in this session being " + indexProvidersByDescriptor + ", and default being " + defaultIndexProvider );
+        return new IllegalArgumentException( "Tried to get index provider with name " + name +
+                " whereas available providers in this session being " + indexProvidersByName.keySet() + ", and default being " +
+                defaultIndexProvider.getProviderDescriptor().name() );
     }
 
     @Override
