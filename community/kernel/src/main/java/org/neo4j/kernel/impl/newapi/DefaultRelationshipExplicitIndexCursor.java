@@ -156,7 +156,7 @@ class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexPr
         else
         {
             return "RelationshipExplicitIndexCursor[relationship=" + relationship + ", expectedSize=" + expectedSize + ", score=" + score +
-                    " ,underlying record=" + super.toString() + " ]";
+                    " ,underlying record=" + super.toString() + "]";
         }
     }
 

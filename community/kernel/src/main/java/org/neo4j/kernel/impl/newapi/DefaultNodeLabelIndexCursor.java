@@ -169,7 +169,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgres
         else
         {
             return "NodeLabelIndexCursor[node=" + node + ", labels= " + labels +
-                    ", underlying record=" + super.toString() + " ]";
+                    ", underlying record=" + super.toString() + "]";
         }
     }
 

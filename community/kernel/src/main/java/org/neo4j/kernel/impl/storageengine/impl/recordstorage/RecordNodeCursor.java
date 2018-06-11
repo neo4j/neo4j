@@ -230,7 +230,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
             return "RecordNodeCursor[id=" + getId() +
                     ", open state with: highMark=" + highMark +
                     ", next=" + next +
-                    ", underlying record=" + super.toString() + " ]";
+                    ", underlying record=" + super.toString() + "]";
         }
     }
 

@@ -362,9 +362,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         }
         else
         {
-            String dense = "denseNode=?";
             String mode = "mode=";
-
             if ( filterStore )
             {
                 mode = mode + "filterStore";
@@ -374,9 +372,8 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
                 mode = mode + "regular";
             }
             return "RelationshipTraversalCursor[id=" + storeCursor.relationshipReference() +
-                    ", open state with: " + dense +
                     ", " + mode +
-                    ", underlying record=" + super.toString() + " ]";
+                    ", " + storeCursor.toString() + "]";
         }
     }
 }

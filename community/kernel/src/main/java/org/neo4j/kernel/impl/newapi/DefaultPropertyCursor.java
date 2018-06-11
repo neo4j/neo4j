@@ -311,7 +311,7 @@ public class DefaultPropertyCursor implements PropertyCursor
         else
         {
             return "PropertyCursor[id=" + propertyKey() +
-                   ", underlying record=" + super.toString() + " ]";
+                   ", " + storeCursor.toString() + " ]";
         }
     }
 

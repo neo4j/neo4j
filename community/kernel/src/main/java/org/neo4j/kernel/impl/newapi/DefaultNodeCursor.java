@@ -259,7 +259,7 @@ class DefaultNodeCursor implements NodeCursor
         }
         else
         {
-            return "NodeCursor[id=" + nodeReference() + ", open state with: underlying record=" + storeCursor.toString() + " ]";
+            return "NodeCursor[id=" + nodeReference() + ", " + storeCursor.toString() + "]";
         }
     }
 

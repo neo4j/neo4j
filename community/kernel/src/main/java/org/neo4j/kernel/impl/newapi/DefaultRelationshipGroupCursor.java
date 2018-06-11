@@ -242,9 +242,7 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
         }
         else
         {
-            String mode = "mode=?";
-            return "RelationshipGroupCursor[id=" + storeCursor.groupReference() + ", open state with: " + mode + ", underlying record=" +
-                    super.toString() + " ]";
+            return "RelationshipGroupCursor[id=" + storeCursor.groupReference() + ", " + storeCursor.toString() + "]";
         }
     }
 

@@ -273,7 +273,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
             {
                 mode = mode + "direct";
             }
-            return "RelationshipGroupCursor[id=" + getId() + ", open state with: " + mode + ", underlying record=" + super.toString() + " ]";
+            return "RelationshipGroupCursor[id=" + getId() + ", open state with: " + mode + ", underlying record=" + super.toString() + "]";
         }
     }
 

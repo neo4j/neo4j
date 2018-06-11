@@ -153,8 +153,8 @@ class RecordRelationshipScanCursor extends RecordRelationshipCursor implements S
         }
         else
         {
-            return "RelationshipScanCursor[id=" + getId() + ", open state with: highMark=" + highMark + ", next=" + next + ", filterType=" + filterType +
-                    ", underlying record=" + super.toString() + " ]";
+            return "RelationshipScanCursor[id=" + getId() + ", open state with: highMark=" + highMark + ", next=" + next + ", type=" + filterType +
+                    ", underlying record=" + super.toString() + "]";
         }
     }
 

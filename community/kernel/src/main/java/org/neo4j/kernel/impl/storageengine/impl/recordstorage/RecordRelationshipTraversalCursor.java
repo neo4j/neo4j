@@ -330,7 +330,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
             return "RelationshipTraversalCursor[id=" + getId() +
                     ", open state with: " + dense +
                     ", next=" + next + ", " + mode +
-                    ", underlying record=" + super.toString() + " ]";
+                    ", underlying record=" + super.toString() + "]";
         }
     }
 
