@@ -26,20 +26,23 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
+import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.IndexReader;
 
 /**
  * Writable lucene index representation that wraps provided index implementation and
  * allow read only operations only on top of it.
  * @param <T> - particular index implementation
  */
-public class WritableAbstractDatabaseIndex<T extends AbstractLuceneIndex> implements DatabaseIndex
+public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, READER extends IndexReader> implements DatabaseIndex<READER>
 {
     // lock used to guard commits and close of lucene indexes from separate threads
     protected final ReentrantLock commitCloseLock = new ReentrantLock();
 
-    protected T luceneIndex;
+    protected INDEX luceneIndex;
 
-    public WritableAbstractDatabaseIndex( T luceneIndex )
+    public WritableAbstractDatabaseIndex( INDEX luceneIndex )
     {
         this.luceneIndex = luceneIndex;
     }
@@ -202,6 +205,59 @@ public class WritableAbstractDatabaseIndex<T extends AbstractLuceneIndex> implem
     public List<AbstractIndexPartition> getPartitions()
     {
         return luceneIndex.getPartitions();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void markAsOnline() throws IOException
+    {
+        commitCloseLock.lock();
+        try
+        {
+            luceneIndex.markAsOnline();
+        }
+        finally
+        {
+            commitCloseLock.unlock();
+        }
+    }
+
+    @Override
+    public LuceneIndexWriter getIndexWriter()
+    {
+        return luceneIndex.getIndexWriter( this );
+    }
+
+    @Override
+    public READER getIndexReader() throws IOException
+    {
+        return luceneIndex.getIndexReader();
+    }
+
+    @Override
+    public IndexDescriptor getDescriptor()
+    {
+        return luceneIndex.getDescriptor();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isOnline() throws IOException
+    {
+        return luceneIndex.isOnline();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void markAsFailed( String failure ) throws IOException
+    {
+        luceneIndex.markAsFailed( failure );
     }
 
     public boolean hasSinglePartition( List<AbstractIndexPartition> partitions )

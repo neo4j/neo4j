@@ -45,7 +45,7 @@ public class PropertyPhysicalToLogicalConverter
      * Converts physical changes to PropertyRecords for a node into logical updates
      */
     public void convertPropertyRecord( long nodeId, Iterable<PropertyRecordChange> changes,
-            NodeUpdates.Builder properties )
+            EntityUpdates.Builder properties )
     {
         MutableIntObjectMap<PropertyBlock> beforeMap = new IntObjectHashMap<>();
         MutableIntObjectMap<PropertyBlock> afterMap = new IntObjectHashMap<>();

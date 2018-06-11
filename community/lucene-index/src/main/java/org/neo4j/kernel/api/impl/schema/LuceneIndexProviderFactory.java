@@ -119,5 +119,4 @@ public class LuceneIndexProviderFactory extends
     {
         return NativeLuceneFusionIndexProviderFactory.subProviderDirectoryStructure( storeDir, PROVIDER_DESCRIPTOR );
     }
-
 }

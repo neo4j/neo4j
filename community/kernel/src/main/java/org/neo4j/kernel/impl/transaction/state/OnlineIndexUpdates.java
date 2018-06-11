@@ -32,14 +32,15 @@ import java.util.List;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
-import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
+import org.neo4j.storageengine.api.EntityType;
 
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
@@ -102,19 +103,19 @@ public class OnlineIndexUpdates implements IndexUpdates
 
     private void gatherUpdatesFor( long nodeId, NodeCommand nodeCommand, List<PropertyCommand> propertyCommands )
     {
-        NodeUpdates.Builder nodePropertyUpdate =
+        EntityUpdates.Builder nodePropertyUpdate =
                 gatherUpdatesFromCommandsForNode( nodeId, nodeCommand, propertyCommands );
 
-        NodeUpdates nodeUpdates = nodePropertyUpdate.build();
+        EntityUpdates entityUpdates = nodePropertyUpdate.build();
         // we need to materialize the IndexEntryUpdates here, because when we
         // consume (later in separate thread) the store might have changed.
-        for ( IndexEntryUpdate<SchemaDescriptor> update :  updateService.convertToIndexUpdates( nodeUpdates ) )
+        for ( IndexEntryUpdate<SchemaDescriptor> update :  updateService.convertToIndexUpdates( entityUpdates, EntityType.NODE ) )
         {
             updates.add( update );
         }
     }
 
-    private NodeUpdates.Builder gatherUpdatesFromCommandsForNode( long nodeId,
+    private EntityUpdates.Builder gatherUpdatesFromCommandsForNode( long nodeId,
             NodeCommand nodeChanges,
             List<PropertyCommand> propertyCommandsForNode )
     {
@@ -147,8 +148,8 @@ public class OnlineIndexUpdates implements IndexUpdates
         }
 
         // First get possible Label changes
-        NodeUpdates.Builder nodePropertyUpdates =
-                NodeUpdates.forNode( nodeId, nodeLabelsBefore, nodeLabelsAfter );
+        EntityUpdates.Builder nodePropertyUpdates =
+                EntityUpdates.forEntity( nodeId, nodeLabelsBefore, nodeLabelsAfter );
 
         // Then look for property changes
         if ( propertyCommandsForNode != null )

@@ -26,11 +26,11 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-public class NodePropertyAccessor implements PropertyAccessor
+public class TestNodePropertyAccessor implements NodePropertyAccessor
 {
     private final Map<Long, Map<Integer,Value>> nodePropertyMap;
 
-    NodePropertyAccessor( long nodeId, SchemaDescriptor schema, Value... values )
+    TestNodePropertyAccessor( long nodeId, SchemaDescriptor schema, Value... values )
     {
         nodePropertyMap = new HashMap<>();
         addNode( nodeId, schema, values );
@@ -48,7 +48,7 @@ public class NodePropertyAccessor implements PropertyAccessor
     }
 
     @Override
-    public Value getPropertyValue( long nodeId, int propertyKeyId )
+    public Value getNodePropertyValue( long nodeId, int propertyKeyId )
     {
         if ( nodePropertyMap.containsKey( nodeId ) )
         {

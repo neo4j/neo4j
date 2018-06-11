@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.eclipse.collections.impl.block.factory.primitive.IntPredicates;
 import org.junit.Test;
 
 import java.util.function.Supplier;
@@ -28,9 +29,10 @@ import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.transaction.state.storeview.NodeStoreScan;
+import org.neo4j.kernel.impl.transaction.state.storeview.PropertyAwareEntityStoreScan;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static org.junit.Assert.assertEquals;
@@ -41,10 +43,11 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class NodeStoreScanTest
+public class PropertyAwareEntityStoreScanTest
 {
     private final LockService locks = mock( LockService.class, RETURNS_MOCKS );
     private final NodeStore nodeStore = mock( NodeStore.class );
+    private final PropertyStore propertyStore = mock( PropertyStore.class );
 
     @Test
     public void shouldGiveBackCompletionPercentage()
@@ -56,33 +59,33 @@ public class NodeStoreScanTest
         NodeRecord inUseRecord = new NodeRecord( 42 );
         inUseRecord.setInUse( true );
         when( nodeStore.newRecord() ).thenReturn( emptyRecord );
-        when( nodeStore.getRecord( anyLong(), any( NodeRecord.class ), any( RecordLoad.class ) ) ).thenReturn(
-                inUseRecord, inUseRecord, inUseRecord, inUseRecord,
-                inUseRecord, inUseRecord, inUseRecord, inUseRecord, inUseRecord, inUseRecord );
+        when( nodeStore.getRecord( anyLong(), any( NodeRecord.class ), any( RecordLoad.class ) ) ).thenReturn( inUseRecord, inUseRecord, inUseRecord,
+                inUseRecord, inUseRecord, inUseRecord, inUseRecord, inUseRecord, inUseRecord, inUseRecord );
 
         final PercentageSupplier percentageSupplier = new PercentageSupplier();
 
-        final NodeStoreScan<RuntimeException> scan = new NodeStoreScan<RuntimeException>( nodeStore, locks, total )
-        {
-            private int read;
+        final PropertyAwareEntityStoreScan<NodeRecord,RuntimeException> scan =
+                new PropertyAwareEntityStoreScan<NodeRecord,RuntimeException>( nodeStore, propertyStore, IntPredicates.alwaysTrue(),
+                        id -> locks.acquireNodeLock( id, LockService.LockType.READ_LOCK ) )
+                {
+                    private int read;
 
-            @Override
-            public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update,
-                    long currentlyIndexedNodeId )
-            {
-                // no-op
-            }
+                    @Override
+                    public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update, long currentlyIndexedNodeId )
+                    {
+                        // no-op
+                    }
 
-            @Override
-            public void process( NodeRecord node )
-            {
-                // then
-                read++;
-                float expected = (float) read / total;
-                float actual = percentageSupplier.get();
-                assertEquals( String.format( "%f==%f",  expected, actual ), expected, actual, 0.0 );
-            }
-        };
+                    @Override
+                    public void process( NodeRecord node )
+                    {
+                        // then
+                        read++;
+                        float expected = (float) read / total;
+                        float actual = percentageSupplier.get();
+                        assertEquals( String.format( "%f==%f", expected, actual ), expected, actual, 0.0 );
+                    }
+                };
         percentageSupplier.setStoreScan( scan );
 
         // when

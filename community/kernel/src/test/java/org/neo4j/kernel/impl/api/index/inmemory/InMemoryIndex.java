@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -125,13 +125,13 @@ class InMemoryIndex
         }
 
         @Override
-        public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException
+        public void verifyDeferredConstraints( NodePropertyAccessor accessor ) throws IndexEntryConflictException
         {
             InMemoryIndex.this.verifyDeferredConstraints( accessor );
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor )
+        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor )
         {
             return InMemoryIndex.this.newUpdater( IndexUpdateMode.ONLINE, true );
         }
@@ -177,7 +177,7 @@ class InMemoryIndex
         }
     }
 
-    public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException
+    public void verifyDeferredConstraints( NodePropertyAccessor accessor ) throws IndexEntryConflictException
     {
     }
 
@@ -229,10 +229,10 @@ class InMemoryIndex
         }
 
         @Override
-        public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
+        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
                 throws IndexEntryConflictException
         {
-            InMemoryIndex.this.verifyDeferredConstraints( propertyAccessor );
+            InMemoryIndex.this.verifyDeferredConstraints( nodePropertyAccessor );
         }
 
         @Override

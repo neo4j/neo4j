@@ -64,7 +64,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
@@ -931,7 +931,7 @@ public class BatchInsertTest
         verify( populator ).create();
         verify( populator ).add( argThat( matchesCollection( add( nodeId, internalIndex.schema(),
                 Values.of( "Jakewins" ) ) ) ) );
-        verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
+        verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
         verify( provider ).shutdown();
@@ -965,7 +965,7 @@ public class BatchInsertTest
         verify( provider ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
         verify( populator ).add( argThat( matchesCollection( add( nodeId, internalUniqueIndex.schema(), Values.of( "Jakewins" ) ) ) ) );
-        verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
+        verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
         verify( provider ).shutdown();
@@ -1001,7 +1001,7 @@ public class BatchInsertTest
         verify( populator ).add( argThat( matchesCollection(
                 add( jakewins, internalIndex.schema(), Values.of( "Jakewins" ) ),
                 add( boggle, internalIndex.schema(), Values.of( "b0ggl3" ) ) ) ) );
-        verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
+        verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
         verify( provider ).shutdown();

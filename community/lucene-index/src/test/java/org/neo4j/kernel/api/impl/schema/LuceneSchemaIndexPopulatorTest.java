@@ -43,7 +43,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
@@ -307,7 +307,7 @@ public class LuceneSchemaIndexPopulatorTest
     private static void updatePopulator(
             IndexPopulator populator,
             Iterable<IndexEntryUpdate<?>> updates,
-            PropertyAccessor accessor )
+            NodePropertyAccessor accessor )
             throws IOException, IndexEntryConflictException
     {
         try ( IndexUpdater updater = populator.newPopulatingUpdater( accessor ) )

@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -153,31 +154,53 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
     @Override
     public void visitNodeCount( int labelId, long count )
     {
-        out.printf( "\tNode[(%s)]:\t%d%n", label( labelId ), count );
+        out.printf( "\tNode[(%s)]:\t%d%n", labels( new int[]{labelId} ), count );
     }
 
     @Override
     public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
     {
         out.printf( "\tRelationship[(%s)-%s->(%s)]:\t%d%n",
-                    label( startLabelId ), relationshipType( typeId ), label( endLabelId ),
+                    labels( new int[]{startLabelId} ), relationshipType( typeId ), labels( new int[]{endLabelId} ),
                     count );
     }
 
     @Override
     public void visitIndexStatistics( long indexId, long updates, long size )
     {
-        IndexDescriptor index = indexes.get( indexId );
-        out.printf( "\tIndexStatistics[(%s {%s})]:\tupdates=%d, size=%d%n",
-                label( index.schema().keyId() ), propertyKeys( index.schema().getPropertyIds() ), updates, size );
+        SchemaDescriptor schema = indexes.get( indexId ).schema();
+        String tokenIds;
+        switch ( schema.entityType() )
+        {
+        case NODE:
+            tokenIds = labels( schema.getEntityTokenIds() );
+            break;
+        case RELATIONSHIP:
+            tokenIds = relationshipTypes( schema.getEntityTokenIds() );
+            break;
+        default:
+            throw new IllegalStateException( "Indexing is not supported for EntityType: " + schema.entityType() );
+        }
+        out.printf( "\tIndexStatistics[(%s {%s})]:\tupdates=%d, size=%d%n", tokenIds, propertyKeys( schema.getPropertyIds() ), updates, size );
     }
 
     @Override
     public void visitIndexSample( long indexId, long unique, long size )
     {
-        IndexDescriptor index = indexes.get( indexId );
-        out.printf( "\tIndexSample[(%s {%s})]:\tunique=%d, size=%d%n",
-                label( index.schema().keyId() ), propertyKeys( index.schema().getPropertyIds() ), unique, size );
+        SchemaDescriptor schema = indexes.get( indexId ).schema();
+        String tokenIds;
+        switch ( schema.entityType() )
+        {
+        case NODE:
+            tokenIds = labels( schema.getEntityTokenIds() );
+            break;
+        case RELATIONSHIP:
+            tokenIds = relationshipTypes( schema.getEntityTokenIds() );
+            break;
+        default:
+            throw new IllegalStateException( "Indexing is not supported for EntityType: " + schema.entityType() );
+        }
+        out.printf( "\tIndexSample[(%s {%s})]:\tunique=%d, size=%d%n", tokenIds, propertyKeys( schema.getPropertyIds() ), unique, size );
     }
 
     @Override
@@ -187,13 +210,25 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         return true;
     }
 
-    private String label( int id )
+    private String labels( int[] ids )
     {
-        if ( id == StatementConstants.ANY_LABEL )
+        if ( ids.length == 1 )
         {
-            return "";
+            if ( ids[0] == StatementConstants.ANY_LABEL )
+            {
+                return "";
+            }
         }
-        return token( new StringBuilder(), labels, ":", "label", id ).toString();
+        StringBuilder builder = new StringBuilder();
+        for ( int i = 0; i < ids.length; i++ )
+        {
+            if ( i > 0 )
+            {
+                builder.append( "," );
+            }
+            token( builder, labels, ":", "label", ids[i] ).toString();
+        }
+        return builder.toString();
     }
 
     private String propertyKeys( int[] ids )
@@ -209,6 +244,28 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         }
         return builder.toString();
     }
+
+    private String relationshipTypes( int[] ids )
+    {
+        if ( ids.length == 1 )
+        {
+            if ( ids[0] == StatementConstants.ANY_LABEL )
+            {
+                return "";
+            }
+        }
+        StringBuilder builder = new StringBuilder();
+        for ( int i = 0; i < ids.length; i++ )
+        {
+            if ( i > 0 )
+            {
+                builder.append( "," );
+            }
+            return token( new StringBuilder().append( '[' ), relationshipTypes, ":", "type", i ).append( ']' ).toString();
+        }
+        return builder.toString();
+    }
+
 
     private String relationshipType( int id )
     {

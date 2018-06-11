@@ -52,13 +52,13 @@ import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.StoreViewNodeStoreScan;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.values.storable.Values;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 @RunWith( MockitoJUnitRunner.class )
 public class MultipleIndexPopulatorUpdatesTest
@@ -85,7 +85,7 @@ public class MultipleIndexPopulatorUpdatesTest
 
         ProcessListenableNeoStoreIndexView
                 storeView = new ProcessListenableNeoStoreIndexView( LockService.NO_LOCK_SERVICE, neoStores );
-        MultipleIndexPopulator indexPopulator = new MultipleIndexPopulator( storeView, logProvider );
+        MultipleIndexPopulator indexPopulator = new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE );
 
         storeView.setProcessListener( new NodeUpdateProcessListener( indexPopulator ) );
 
@@ -95,7 +95,7 @@ public class MultipleIndexPopulatorUpdatesTest
         addPopulator( indexPopulator, populator, 1, TestIndexDescriptorFactory.forLabel( 1, 1 ) );
 
         indexPopulator.create();
-        StoreScan<IndexPopulationFailedKernelException> storeScan = indexPopulator.indexAllNodes();
+        StoreScan<IndexPopulationFailedKernelException> storeScan = indexPopulator.indexAllEntities();
         storeScan.run();
 
         Mockito.verify( indexUpdater, never() ).process( any(IndexEntryUpdate.class) );
@@ -161,7 +161,7 @@ public class MultipleIndexPopulatorUpdatesTest
         @Override
         public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
                 IntPredicate propertyKeyIdFilter,
-                Visitor<NodeUpdates,FAILURE> propertyUpdatesVisitor,
+                Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
                 Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
                 boolean forceStoreScan )
         {
@@ -182,7 +182,7 @@ public class MultipleIndexPopulatorUpdatesTest
 
         ListenableNodeScanViewNodeStoreScan( NodeStore nodeStore, LockService locks,
                 PropertyStore propertyStore, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
-                Visitor<NodeUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds,
+                Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds,
                 IntPredicate propertyKeyIdFilter, Listener<NodeRecord> processListener )
         {
             super( nodeStore, locks, propertyStore, labelUpdateVisitor, propertyUpdatesVisitor,

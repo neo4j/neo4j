@@ -597,6 +597,12 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
+    public ReadableDiffSets<IndexDescriptor> indexDiffSetsBySchema( SchemaDescriptor schema )
+    {
+        return indexChangesDiffSets().filterAdded( indexDescriptor -> indexDescriptor.schema().equals( schema ) );
+    }
+
+    @Override
     public ReadableDiffSets<IndexDescriptor> indexChanges()
     {
         return ReadableDiffSets.Empty.ifNull( indexChanges );

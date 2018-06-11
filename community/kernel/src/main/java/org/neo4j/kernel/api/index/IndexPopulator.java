@@ -51,14 +51,14 @@ public interface IndexPopulator
      * called by the same thread every time. All data coming in here is guaranteed to not
      * have been added to this index previously, so no checks needs to be performed before applying it.
      * Implementations may verify constraints at this time, or defer them until the first verification
-     * of {@link #verifyDeferredConstraints(PropertyAccessor)}.
+     * of {@link #verifyDeferredConstraints(NodePropertyAccessor)}.
      *
      * @param updates batch of node property updates that needs to be inserted. Node ids will be retrieved using
      * {@link IndexEntryUpdate#getEntityId()} method and property values will be retrieved using
      * {@link IndexEntryUpdate#values()} method.
      * @throws IndexEntryConflictException if this is a uniqueness index and any of the updates are detected
      * to violate that constraint. Implementations may choose to not detect in this call, but instead do one efficient
-     * pass over the index in {@link #verifyDeferredConstraints(PropertyAccessor)}.
+     * pass over the index in {@link #verifyDeferredConstraints(NodePropertyAccessor)}.
      * @throws IOException on I/O error.
      */
     void add( Collection<? extends IndexEntryUpdate<?>> updates )
@@ -69,12 +69,12 @@ public interface IndexPopulator
      * This method is called after the index has been fully populated and is guaranteed to not have
      * concurrent changes while executing.
      *
-     * @param propertyAccessor {@link PropertyAccessor} for accessing properties from database storage
+     * @param nodePropertyAccessor {@link NodePropertyAccessor} for accessing properties from database storage
      * in the event of conflicting values.
      * @throws IndexEntryConflictException for first detected uniqueness conflict, if any.
      * @throws IOException on error reading from source files.
      */
-    void verifyDeferredConstraints( PropertyAccessor propertyAccessor ) throws IndexEntryConflictException, IOException;
+    void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException, IOException;
 
     /**
      * Return an updater for applying a set of changes to this index, generally this will be a set of changes from a
@@ -101,7 +101,7 @@ public interface IndexPopulator
      * @return an {@link IndexUpdater} which will funnel changes that happen concurrently with index population
      * into the population and incorporating them as part of the index population.
      */
-    IndexUpdater newPopulatingUpdater( PropertyAccessor accessor );
+    IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor );
 
     /**
      * Close this populator and releases any resources related to it.
@@ -159,7 +159,7 @@ public interface IndexPopulator
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
+        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor )
         {
             return SwallowingIndexUpdater.INSTANCE;
         }
@@ -186,7 +186,7 @@ public interface IndexPopulator
         }
 
         @Override
-        public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
+        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
                 throws IndexEntryConflictException, IOException
         {
         }
