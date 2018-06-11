@@ -33,13 +33,15 @@ import org.neo4j.causalclustering.catchup.RequestDecoderDispatcher;
 import org.neo4j.causalclustering.messaging.marshalling.v2.ContentType;
 import org.neo4j.logging.LogProvider;
 
-public class DecodingDispatcher extends RequestDecoderDispatcher<ContentType> implements AutoCloseable
+public class DecodingDispatcher extends RequestDecoderDispatcher<ContentType>
 {
     private final ReplicatedContentChunkDecoder decoder;
 
     public DecodingDispatcher( Protocol<ContentType> protocol, LogProvider logProvider )
     {
         super( protocol, logProvider );
+        decoder = new ReplicatedContentChunkDecoder();
+
         register( ContentType.ContentType, new ByteToMessageDecoder()
         {
             @Override
@@ -52,13 +54,12 @@ public class DecodingDispatcher extends RequestDecoderDispatcher<ContentType> im
             }
         } );
         register( ContentType.RaftLogEntryTerms, new RaftLogEntryTermsDecoder( protocol ) );
-        decoder = new ReplicatedContentChunkDecoder();
         register( ContentType.ReplicatedContent, decoder );
         register( ContentType.Message, new RaftMessageDecoder( protocol ) );
     }
 
     @Override
-    public void close()
+    public void channelInactive( ChannelHandlerContext ctx )
     {
         decoder.close();
     }

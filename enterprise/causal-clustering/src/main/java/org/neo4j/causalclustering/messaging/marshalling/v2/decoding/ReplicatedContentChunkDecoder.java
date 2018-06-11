@@ -34,20 +34,15 @@ import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentMar
 
 public class ReplicatedContentChunkDecoder extends ByteToMessageDecoder implements AutoCloseable
 {
+    private final CoreReplicatedContentMarshal contentMarshal = new CoreReplicatedContentMarshal();
+
     private UnfinishedChunk unfinishedChunk;
-    private final CoreReplicatedContentMarshal coreReplicatedContentMarshal = new CoreReplicatedContentMarshal();
-    private boolean closed;
 
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out ) throws Exception
     {
-        if ( closed )
-        {
-            return;
-        }
         try
         {
-
             boolean isLast = in.readBoolean();
             if ( unfinishedChunk == null )
             {
@@ -55,7 +50,8 @@ public class ReplicatedContentChunkDecoder extends ByteToMessageDecoder implemen
                 int allocationSize = in.readInt();
                 if ( isLast )
                 {
-                    out.add( coreReplicatedContentMarshal.read( contentType,
+
+                    out.add( contentMarshal.read( contentType,
                             new NetworkReadableClosableChannelNetty4( in.readSlice( in.readableBytes() ) ) ) );
                 }
                 else
@@ -79,14 +75,14 @@ public class ReplicatedContentChunkDecoder extends ByteToMessageDecoder implemen
 
                 if ( isLast )
                 {
-                    out.add( coreReplicatedContentMarshal.read( unfinishedChunk.contentType,
+                    out.add( contentMarshal.read( unfinishedChunk.contentType,
                             new NetworkReadableClosableChannelNetty4( unfinishedChunk.content() ) ) );
                     unfinishedChunk.release();
                     unfinishedChunk = null;
                 }
             }
         }
-        catch ( Exception e )
+        catch ( Throwable e )
         {
             release();
             throw e;
@@ -98,12 +94,13 @@ public class ReplicatedContentChunkDecoder extends ByteToMessageDecoder implemen
         if ( unfinishedChunk != null )
         {
             unfinishedChunk.release();
+            unfinishedChunk = null;
         }
     }
 
+    @Override
     public void close()
     {
-        closed = true;
         release();
     }
 

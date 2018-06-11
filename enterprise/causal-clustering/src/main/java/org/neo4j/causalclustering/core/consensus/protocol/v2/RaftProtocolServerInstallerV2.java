@@ -81,7 +81,6 @@ public class RaftProtocolServerInstallerV2 implements ProtocolInstaller<Orientat
                 .server( channel, log )
                 .modify( modifiers )
                 .addFraming()
-                .onClose( decodingDispatcher::close )
                 .add( "raft_content_type_dispatcher", new ContentTypeDispatcher( contentTypeProtocol ) )
                 .add( "raft_component_decoder", decodingDispatcher )
                 .add( "raft_content_decoder", new ReplicatedContentDecoder( contentTypeProtocol ) )
