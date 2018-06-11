@@ -20,14 +20,19 @@
 package org.neo4j.cypher.operations;
 
 import org.opencypher.v9_0.util.CypherTypeException;
+import org.opencypher.v9_0.util.InvalidArgumentException;
 
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.storable.IntegralValue;
+import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.doubleValue;
@@ -44,13 +49,9 @@ public final class CypherFunctions
         throw new UnsupportedOperationException( "Do not instantiate" );
     }
 
-    public static Value sin( AnyValue in )
+    public static DoubleValue sin( AnyValue in )
     {
-        if ( in == NO_VALUE )
-        {
-            return NO_VALUE;
-        }
-        else if ( in instanceof NumberValue )
+        if ( in instanceof NumberValue )
         {
             return doubleValue( Math.sin( ((NumberValue) in).doubleValue() ) );
         }
@@ -60,13 +61,9 @@ public final class CypherFunctions
         }
     }
 
-    public static Value asin( AnyValue in )
+    public static DoubleValue asin( AnyValue in )
     {
-        if ( in == NO_VALUE )
-        {
-            return NO_VALUE;
-        }
-        else if ( in instanceof NumberValue )
+        if ( in instanceof NumberValue )
         {
             return doubleValue( Math.asin( ((NumberValue) in).doubleValue() ) );
         }
@@ -76,13 +73,9 @@ public final class CypherFunctions
         }
     }
 
-    public static Value haversin( AnyValue in )
+    public static DoubleValue haversin( AnyValue in )
     {
-        if ( in == NO_VALUE )
-        {
-            return NO_VALUE;
-        }
-        else if ( in instanceof NumberValue )
+        if ( in instanceof NumberValue )
         {
             return doubleValue( (1.0 - Math.cos( ((NumberValue) in).doubleValue() )) / 2 );
         }
@@ -92,13 +85,9 @@ public final class CypherFunctions
         }
     }
 
-    public static Value cos( AnyValue in )
+    public static DoubleValue cos( AnyValue in )
     {
-        if ( in == NO_VALUE )
-        {
-            return NO_VALUE;
-        }
-        else if ( in instanceof NumberValue )
+        if ( in instanceof NumberValue )
         {
             return doubleValue( Math.cos( ((NumberValue) in).doubleValue() ) );
         }
@@ -108,13 +97,9 @@ public final class CypherFunctions
         }
     }
 
-    public static Value cot( AnyValue in )
+    public static DoubleValue cot( AnyValue in )
     {
-        if ( in == NO_VALUE )
-        {
-            return NO_VALUE;
-        }
-        else if ( in instanceof NumberValue )
+        if ( in instanceof NumberValue )
         {
             return doubleValue( 1.0 / Math.tan( ((NumberValue) in).doubleValue() ) );
         }
@@ -124,13 +109,9 @@ public final class CypherFunctions
         }
     }
 
-    public static Value acos( AnyValue in )
+    public static DoubleValue acos( AnyValue in )
     {
-        if ( in == NO_VALUE )
-        {
-            return NO_VALUE;
-        }
-        else if ( in instanceof NumberValue )
+        if ( in instanceof NumberValue )
         {
             return doubleValue( Math.acos( ((NumberValue) in).doubleValue() ) );
         }
@@ -140,13 +121,9 @@ public final class CypherFunctions
         }
     }
 
-    public static Value tan( AnyValue in )
+    public static DoubleValue tan( AnyValue in )
     {
-        if ( in == NO_VALUE )
-        {
-            return NO_VALUE;
-        }
-        else if ( in instanceof NumberValue )
+        if ( in instanceof NumberValue )
         {
             return doubleValue( Math.tan( ((NumberValue) in).doubleValue() ) );
         }
@@ -156,13 +133,9 @@ public final class CypherFunctions
         }
     }
 
-    public static Value atan( AnyValue in )
+    public static DoubleValue atan( AnyValue in )
     {
-        if ( in == NO_VALUE )
-        {
-            return NO_VALUE;
-        }
-        else if ( in instanceof NumberValue )
+        if ( in instanceof NumberValue )
         {
             return doubleValue( Math.atan( ((NumberValue) in).doubleValue() ) );
         }
@@ -172,13 +145,21 @@ public final class CypherFunctions
         }
     }
 
-    public static Value ceil( AnyValue in )
+    public static DoubleValue atan2( AnyValue y, AnyValue x )
     {
-        if ( in == NO_VALUE )
+        if ( y instanceof NumberValue && x instanceof NumberValue)
         {
-            return NO_VALUE;
+            return doubleValue( Math.atan2( ((NumberValue) y).doubleValue() , ((NumberValue) x).doubleValue() ) );
         }
-        else if ( in instanceof NumberValue )
+        else
+        {
+            throw needsNumbers( "atan2()" );
+        }
+    }
+
+    public static DoubleValue ceil( AnyValue in )
+    {
+        if ( in instanceof NumberValue )
         {
             return doubleValue( Math.ceil( ((NumberValue) in).doubleValue() ) );
         }
@@ -188,13 +169,9 @@ public final class CypherFunctions
         }
     }
 
-    public static Value floor( AnyValue in )
+    public static DoubleValue floor( AnyValue in )
     {
-        if ( in == NO_VALUE )
-        {
-            return NO_VALUE;
-        }
-        else if ( in instanceof NumberValue )
+        if ( in instanceof NumberValue )
         {
             return doubleValue( Math.floor( ((NumberValue) in).doubleValue() ) );
         }
@@ -204,13 +181,9 @@ public final class CypherFunctions
         }
     }
 
-    public static Value round( AnyValue in )
+    public static DoubleValue round( AnyValue in )
     {
-        if ( in == NO_VALUE )
-        {
-            return NO_VALUE;
-        }
-        else if ( in instanceof NumberValue )
+       if ( in instanceof NumberValue )
         {
             return doubleValue( Math.round( ((NumberValue) in).doubleValue() ) );
         }
@@ -220,13 +193,9 @@ public final class CypherFunctions
         }
     }
 
-    public static Value abs( AnyValue in )
+    public static NumberValue abs( AnyValue in )
     {
-        if ( in == NO_VALUE )
-        {
-            return NO_VALUE;
-        }
-        else if ( in instanceof NumberValue )
+        if ( in instanceof NumberValue )
         {
             if ( in instanceof IntegralValue )
             {
@@ -243,9 +212,117 @@ public final class CypherFunctions
         }
     }
 
+    public static DoubleValue toDegrees( AnyValue in )
+    {
+        if ( in instanceof NumberValue )
+        {
+            return doubleValue( Math.toDegrees( ((NumberValue) in).doubleValue() ) );
+        }
+        else
+        {
+            throw needsNumbers( "toDegrees()" );
+        }
+    }
+
+    public static DoubleValue exp( AnyValue in )
+    {
+        if ( in instanceof NumberValue )
+        {
+            return doubleValue( Math.exp( ((NumberValue) in).doubleValue() ) );
+        }
+        else
+        {
+            throw needsNumbers( "exp()" );
+        }
+    }
+
+    public static DoubleValue log( AnyValue in )
+    {
+        if ( in instanceof NumberValue )
+        {
+            return doubleValue( Math.log( ((NumberValue) in).doubleValue() ) );
+        }
+        else
+        {
+            throw needsNumbers( "log()" );
+        }
+    }
+
+    public static DoubleValue log10( AnyValue in )
+    {
+        if ( in instanceof NumberValue )
+        {
+            return doubleValue( Math.log10( ((NumberValue) in).doubleValue() ) );
+        }
+        else
+        {
+            throw needsNumbers( "log10()" );
+        }
+    }
+
+    public static DoubleValue toRadians( AnyValue in )
+    {
+        if ( in instanceof NumberValue )
+        {
+            return doubleValue( Math.toRadians( ((NumberValue) in).doubleValue() ) );
+        }
+        else
+        {
+            throw needsNumbers( "toRadians()" );
+        }
+    }
+
+    public static ListValue range( AnyValue startValue, AnyValue endValue, AnyValue stepValue )
+    {
+        long step = asLong( stepValue );
+        if ( step == 0L )
+        {
+            throw new InvalidArgumentException( "step argument to range() cannot be zero", null );
+        }
+
+        return VirtualValues.range( asLong( startValue ), asLong( endValue ), step );
+    }
+
+    public static LongValue signum( AnyValue in )
+    {
+        if ( in instanceof NumberValue )
+        {
+            return longValue( (long) Math.signum( ((NumberValue) in).doubleValue() ) );
+        }
+        else
+        {
+            throw needsNumbers( "signum()" );
+        }
+    }
+
+    public static DoubleValue sqrt( AnyValue in )
+    {
+        if ( in instanceof NumberValue )
+        {
+            return doubleValue( Math.sqrt( ((NumberValue) in).doubleValue() ) );
+        }
+        else
+        {
+            throw needsNumbers( "sqrt()" );
+        }
+    }
+
     public static DoubleValue rand()
     {
         return doubleValue( ThreadLocalRandom.current().nextDouble() );
+    }
+
+    private static long asLong( AnyValue value )
+    {
+        if ( value instanceof NumberValue )
+        {
+            return ((NumberValue) value).longValue();
+        }
+        else
+        {
+            throw new CypherTypeException( "Expected a numeric value but got: " + value.toString(), null );
+        }
+
     }
 
     private static CypherTypeException needsNumbers( String method )

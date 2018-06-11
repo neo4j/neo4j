@@ -36,6 +36,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.LocalTimeValue.localTime
 import org.neo4j.values.storable.Values._
 import org.neo4j.values.storable.{DoubleValue, Values}
+import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.virtual.VirtualValues.{EMPTY_MAP, list, map}
 import org.opencypher.v9_0.ast.AstConstructionTestSupport
 import org.opencypher.v9_0.expressions._
@@ -107,6 +108,15 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(function("atan", noValue)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(NO_VALUE)
   }
 
+  test("atan2 function") {
+    val arg1 = random.nextDouble()
+    val arg2 = random.nextDouble()
+    compile(function("atan2", literalFloat(arg1), literalFloat(arg2))).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(doubleValue(Math.atan2(arg1, arg2)))
+    compile(function("atan2", noValue,literalFloat(arg1))).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(NO_VALUE)
+    compile(function("atan2", literalFloat(arg1), noValue)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(NO_VALUE)
+    compile(function("atan2", noValue, noValue)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
   test("tan function") {
     val arg = random.nextDouble()
     compile(function("tan", literalFloat(arg))).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(doubleValue(Math.tan(arg)))
@@ -131,6 +141,61 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(function("abs", literalInt(3))).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(longValue(3))
     compile(function("abs", literalInt(-3))).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(longValue(3))
     compile(function("abs", noValue)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.NO_VALUE)
+  }
+
+  test("radians function") {
+    val arg = random.nextDouble()
+    compile(function("radians", literalFloat(arg))).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(doubleValue(Math.toRadians(arg)))
+    compile(function("radians", noValue)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
+  test("degrees function") {
+    val arg = random.nextDouble()
+    compile(function("degrees", literalFloat(arg))).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(doubleValue(Math.toDegrees(arg)))
+    compile(function("degrees", noValue)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
+  test("exp function") {
+    val arg = random.nextDouble()
+    compile(function("exp", literalFloat(arg))).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(doubleValue(Math.exp(arg)))
+    compile(function("exp", noValue)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
+  test("log function") {
+    val arg = random.nextDouble()
+    compile(function("log", literalFloat(arg))).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(doubleValue(Math.log(arg)))
+    compile(function("log", noValue)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
+  test("log10 function") {
+    val arg = random.nextDouble()
+    compile(function("log10", literalFloat(arg))).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(doubleValue(Math.log10(arg)))
+    compile(function("log10", noValue)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
+  test("sign function") {
+    val arg = random.nextInt()
+    compile(function("sign", literalFloat(arg))).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(doubleValue(Math.signum(arg)))
+    compile(function("sign", noValue)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
+  test("sqrt function") {
+    val arg = random.nextDouble()
+    compile(function("sqrt", literalFloat(arg))).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(doubleValue(Math.sqrt(arg)))
+    compile(function("sqrt", noValue)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
+  test("pi function") {
+    compile(function("pi")).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.PI)
+  }
+
+  test("e function") {
+    compile(function("e")).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.E)
+  }
+
+  test("range function") {
+    val range = function("range", literalInt(5), literalInt(9), literalInt(2))
+    compile(range).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(list(longValue(5), longValue(7), longValue(9)))
   }
 
   test("add numbers") {
@@ -530,8 +595,9 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   private def compile(e: Expression) =
     CodeGeneration.compile(new IntermediateCodeGeneration(SlotConfiguration.empty).compile(e).map(_.ir).getOrElse(fail()))
 
-  private def function(name: String, e: Expression) =
-    FunctionInvocation(FunctionName(name)(pos), e)(pos)
+  private def function(name: String, es: Expression*) =
+    FunctionInvocation(FunctionName(name)(pos), distinct = false, es.toIndexedSeq)(pos)
+
 
   private def function(name: String) =
     FunctionInvocation(Namespace()(pos), FunctionName(name)(pos), distinct = false, IndexedSeq.empty)(pos)

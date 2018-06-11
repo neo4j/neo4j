@@ -49,10 +49,6 @@ public final class CypherMath
     //TODO this is horrible spaghetti code, we should push most of this down to AnyValue
     public static AnyValue add( AnyValue lhs, AnyValue rhs )
     {
-        if ( lhs == NO_VALUE || rhs == NO_VALUE )
-        {
-            return NO_VALUE;
-        }
         if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
         {
             return ((NumberValue) lhs).plus( (NumberValue) rhs );
@@ -146,10 +142,6 @@ public final class CypherMath
 
     public static AnyValue subtract( AnyValue lhs, AnyValue rhs )
     {
-        if ( lhs == NO_VALUE || rhs == NO_VALUE )
-        {
-            return NO_VALUE;
-        }
         //numbers
         if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
         {
@@ -177,10 +169,6 @@ public final class CypherMath
 
     public static AnyValue multiply( AnyValue lhs, AnyValue rhs )
     {
-        if ( lhs == NO_VALUE || rhs == NO_VALUE )
-        {
-            return NO_VALUE;
-        }
         if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
         {
             return ((NumberValue) lhs).times( (NumberValue) rhs );
