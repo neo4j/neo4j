@@ -249,7 +249,7 @@ public final class Iterables
         return concat( Arrays.asList( (Iterable<T>[]) iterables ) );
     }
 
-    public static <T> Iterable<T> concat( final Iterable<Iterable<T>> iterables )
+    public static <T> Iterable<T> concat( final Iterable<? extends Iterable<T>> iterables )
     {
         return new CombiningIterable<>( iterables );
     }

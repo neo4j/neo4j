@@ -25,6 +25,7 @@ import org.mockito.Mockito;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -43,6 +44,11 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.STRING;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
 
 class FusionIndexTestHelp
 {
@@ -119,23 +125,22 @@ class FusionIndexTestHelp
     static Value[] allValues()
     {
         List<Value> values = new ArrayList<>();
-        for ( Value[] group : valuesByGroup() )
+        for ( Value[] group : valuesByGroup().values() )
         {
             values.addAll( Arrays.asList( group ) );
         }
         return values.toArray( new Value[values.size()] );
     }
 
-    static Value[][] valuesByGroup()
+    static EnumMap<IndexSlot,Value[]> valuesByGroup()
     {
-        return new Value[][]
-                {
-                        FusionIndexTestHelp.valuesSupportedByString(),
-                        FusionIndexTestHelp.valuesSupportedByNumber(),
-                        FusionIndexTestHelp.valuesSupportedBySpatial(),
-                        FusionIndexTestHelp.valuesSupportedByTemporal(),
-                        FusionIndexTestHelp.valuesNotSupportedBySpecificIndex()
-                };
+        EnumMap<IndexSlot,Value[]> values = new EnumMap<>( IndexSlot.class );
+        values.put( STRING, FusionIndexTestHelp.valuesSupportedByString() );
+        values.put( NUMBER, FusionIndexTestHelp.valuesSupportedByNumber() );
+        values.put( SPATIAL, FusionIndexTestHelp.valuesSupportedBySpatial() );
+        values.put( TEMPORAL, FusionIndexTestHelp.valuesSupportedByTemporal() );
+        values.put( LUCENE, FusionIndexTestHelp.valuesNotSupportedBySpecificIndex() );
+        return values;
     }
 
     static void verifyCallFail( Exception expectedFailure, Callable failingCall )
@@ -251,6 +256,14 @@ class FusionIndexTestHelp
                 matchers.add( sameInstance( failure ) );
             }
             assertThat( e, anyOf( matchers ) );
+        }
+    }
+
+    static <T> void fill( EnumMap<IndexSlot,T> map, T instance )
+    {
+        for ( IndexSlot slot : IndexSlot.values() )
+        {
+            map.put( slot, instance );
         }
     }
 }

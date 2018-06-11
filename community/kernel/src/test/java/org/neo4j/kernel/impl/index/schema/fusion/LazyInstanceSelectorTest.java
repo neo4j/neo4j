@@ -21,19 +21,22 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 
 import org.junit.Test;
 
-import java.util.function.IntFunction;
+import java.util.function.Function;
 
 import org.neo4j.function.ThrowingConsumer;
 
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.INSTANCE_COUNT;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.STRING;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.values;
 
 public class LazyInstanceSelectorTest
 {
@@ -41,17 +44,16 @@ public class LazyInstanceSelectorTest
     public void shouldInstantiateLazilyOnFirstSelect()
     {
         // given
-        IntFunction<String> factory = mock( IntFunction.class );
-        when( factory.apply( anyInt() ) ).then( invocationOnMock -> String.valueOf( (Integer) invocationOnMock.getArgument( 0 ) ) );
-        LazyInstanceSelector<String> selector = new LazyInstanceSelector<>( new String[INSTANCE_COUNT], factory );
+        Function<IndexSlot,String> factory = slotToStringFunction();
+        LazyInstanceSelector<String> selector = new LazyInstanceSelector<>( factory );
 
         // when
-        for ( int slot = 0; slot < INSTANCE_COUNT; slot++ )
+        for ( IndexSlot slot : values() )
         {
-            for ( int candidate = 0; candidate < INSTANCE_COUNT; candidate++ )
+            for ( IndexSlot candidate : values() )
             {
                 // then
-                if ( candidate < slot )
+                if ( candidate.ordinal() < slot.ordinal() )
                 {
                     verify( factory, times( 1 ) ).apply( candidate );
                     selector.select( candidate );
@@ -75,17 +77,16 @@ public class LazyInstanceSelectorTest
     public void shouldPerformActionOnAll()
     {
         // given
-        IntFunction<String> factory = mock( IntFunction.class );
-        when( factory.apply( anyInt() ) ).then( invocationOnMock -> String.valueOf( (Integer) invocationOnMock.getArgument( 0 ) ) );
-        LazyInstanceSelector<String> selector = new LazyInstanceSelector<>( new String[INSTANCE_COUNT], factory );
-        selector.select( 1 );
+        Function<IndexSlot,String> factory = slotToStringFunction();
+        LazyInstanceSelector<String> selector = new LazyInstanceSelector<>( factory );
+        selector.select( STRING );
 
         // when
         ThrowingConsumer<String,RuntimeException> consumer = mock( ThrowingConsumer.class );
         selector.forAll( consumer );
 
         // then
-        for ( int slot = 0; slot < INSTANCE_COUNT; slot++ )
+        for ( IndexSlot slot : IndexSlot.values() )
         {
             verify( consumer, times( 1 ) ).accept( String.valueOf( slot ) );
         }
@@ -96,19 +97,18 @@ public class LazyInstanceSelectorTest
     public void shouldCloseAllInstantiated()
     {
         // given
-        IntFunction<String> factory = mock( IntFunction.class );
-        when( factory.apply( anyInt() ) ).then( invocationOnMock -> String.valueOf( (Integer) invocationOnMock.getArgument( 0 ) ) );
-        LazyInstanceSelector<String> selector = new LazyInstanceSelector<>( new String[INSTANCE_COUNT], factory );
-        selector.select( 1 );
-        selector.select( 3 );
+        Function<IndexSlot,String> factory = slotToStringFunction();
+        LazyInstanceSelector<String> selector = new LazyInstanceSelector<>( factory );
+        selector.select( NUMBER );
+        selector.select( STRING );
 
         // when
         ThrowingConsumer<String,RuntimeException> consumer = mock( ThrowingConsumer.class );
         selector.close( consumer );
 
         // then
-        verify( consumer, times( 1 ) ).accept( "1" );
-        verify( consumer, times( 1 ) ).accept( "3" );
+        verify( consumer, times( 1 ) ).accept( String.valueOf( NUMBER ) );
+        verify( consumer, times( 1 ) ).accept( String.valueOf( STRING ) );
         verifyNoMoreInteractions( consumer );
     }
 
@@ -116,11 +116,10 @@ public class LazyInstanceSelectorTest
     public void shouldPreventInstantiationAfterClose()
     {
         // given
-        IntFunction<String> factory = mock( IntFunction.class );
-        when( factory.apply( anyInt() ) ).then( invocationOnMock -> String.valueOf( (Integer) invocationOnMock.getArgument( 0 ) ) );
-        LazyInstanceSelector<String> selector = new LazyInstanceSelector<>( new String[INSTANCE_COUNT], factory );
-        selector.select( 1 );
-        selector.select( 3 );
+        Function<IndexSlot,String> factory = slotToStringFunction();
+        LazyInstanceSelector<String> selector = new LazyInstanceSelector<>( factory );
+        selector.select( NUMBER );
+        selector.select( STRING );
 
         // when
         selector.close( mock( ThrowingConsumer.class ) );
@@ -128,12 +127,19 @@ public class LazyInstanceSelectorTest
         // then
         try
         {
-            selector.select( 0 );
+            selector.select( TEMPORAL );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
         {
             // then good
         }
+    }
+
+    private Function<IndexSlot,String> slotToStringFunction()
+    {
+        Function<IndexSlot,String> factory = mock( Function.class );
+        when( factory.apply( any( IndexSlot.class ) ) ).then( invocationOnMock -> String.valueOf( (IndexSlot) invocationOnMock.getArgument( 0 ) ) );
+        return factory;
     }
 }
