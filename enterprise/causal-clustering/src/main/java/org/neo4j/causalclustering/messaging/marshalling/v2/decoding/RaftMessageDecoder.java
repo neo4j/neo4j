@@ -244,12 +244,9 @@ public class RaftMessageDecoder extends ByteToMessageDecoder
             RaftLogEntry[] entries = new RaftLogEntry[entryCount];
             for ( int i = 0; i < entryCount; i++ )
             {
-                Long term = terms.poll();
-                if ( term == null )
-                {
-                    throw new IllegalArgumentException( "Term cannot be null" );
-                }
-                entries[i] = new RaftLogEntry( term, contents.poll() );
+                long term = terms.remove();
+                ReplicatedContent content = contents.remove();
+                entries[i] = new RaftLogEntry( term, content );
             }
             return Optional.of( new RaftMessages.AppendEntries.Request( from, term, prevLogIndex, prevLogTerm, entries, leaderCommit ) );
         }
@@ -273,7 +270,7 @@ public class RaftMessageDecoder extends ByteToMessageDecoder
             }
             else
             {
-                return Optional.of( new RaftMessages.NewEntry.Request( from, contents.poll() ) );
+                return Optional.of( new RaftMessages.NewEntry.Request( from, contents.remove() ) );
             }
         }
     }
