@@ -62,5 +62,6 @@ public class DecodingDispatcher extends RequestDecoderDispatcher<ContentType>
     public void channelInactive( ChannelHandlerContext ctx )
     {
         decoder.close();
+        ctx.fireChannelInactive();
     }
 }
