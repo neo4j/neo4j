@@ -31,7 +31,7 @@ import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 
-abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberSchemaKey,NativeSchemaValue>
+abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberIndexKey,NativeIndexValue>
 {
     private static final Number[] ALL_EXTREME_VALUES = new Number[]
             {
@@ -67,7 +67,7 @@ abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberSchemaKey,Nativ
     }
 
     @Override
-    int compareIndexedPropertyValue( NumberSchemaKey key1, NumberSchemaKey key2 )
+    int compareIndexedPropertyValue( NumberIndexKey key1, NumberIndexKey key2 )
     {
         int typeCompare = Byte.compare( key1.type, key2.type );
         if ( typeCompare == 0 )

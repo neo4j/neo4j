@@ -56,7 +56,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     @Override
     public synchronized void create() throws IOException
     {
-        forAll( NativeSchemaIndexPopulator::clear, this );
+        forAll( NativeIndexPopulator::clear, this );
 
         // We must make sure to have at least one subindex:
         // to be able to persist failure and to have the right state in the beginning
@@ -69,7 +69,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     @Override
     public synchronized void drop()
     {
-        forAll( NativeSchemaIndexPopulator::drop, this );
+        forAll( NativeIndexPopulator::drop, this );
     }
 
     @Override
@@ -105,7 +105,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     public synchronized void close( boolean populationCompletedSuccessfully ) throws IOException
     {
         closeInstantiateCloseLock();
-        for ( NativeSchemaIndexPopulator part : this )
+        for ( NativeIndexPopulator part : this )
         {
             part.close( populationCompletedSuccessfully );
         }
@@ -114,7 +114,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     @Override
     public synchronized void markAsFailed( String failure )
     {
-        for ( NativeSchemaIndexPopulator part : this )
+        for ( NativeIndexPopulator part : this )
         {
             part.markAsFailed( failure );
         }
@@ -137,7 +137,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         return combineSamples( indexSamples );
     }
 
-    static class PartPopulator<KEY extends NativeSchemaKey<KEY>> extends NativeSchemaIndexPopulator<KEY, NativeSchemaValue>
+    static class PartPopulator<KEY extends NativeIndexKey<KEY>> extends NativeIndexPopulator<KEY,NativeIndexValue>
     {
         PartPopulator( PageCache pageCache, FileSystemAbstraction fs, TemporalIndexFiles.FileLayout<KEY> fileLayout, IndexProvider.Monitor monitor,
                        StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
@@ -208,7 +208,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
             return create( temporalIndexFiles.duration() );
         }
 
-        private <KEY extends NativeSchemaKey<KEY>> PartPopulator<KEY> create( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
+        private <KEY extends NativeIndexKey<KEY>> PartPopulator<KEY> create( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
         {
             PartPopulator<KEY> populator = new PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor, samplingConfig );
             populator.create();

@@ -36,7 +36,7 @@ import static java.util.Arrays.copyOf;
 import static org.neo4j.values.storable.StringsLibrary.STRINGS;
 import static org.neo4j.values.storable.UTF8StringValue.byteArrayCompare;
 
-abstract class StringLayoutTestUtil extends LayoutTestUtil<StringSchemaKey,NativeSchemaValue>
+abstract class StringLayoutTestUtil extends LayoutTestUtil<StringIndexKey,NativeIndexValue>
 {
     StringLayoutTestUtil( IndexDescriptor schemaIndexDescriptor )
     {
@@ -50,7 +50,7 @@ abstract class StringLayoutTestUtil extends LayoutTestUtil<StringSchemaKey,Nativ
     }
 
     @Override
-    int compareIndexedPropertyValue( StringSchemaKey key1, StringSchemaKey key2 )
+    int compareIndexedPropertyValue( StringIndexKey key1, StringIndexKey key2 )
     {
         return byteArrayCompare(
                 copyOf( key1.bytes, key1.bytesLength ),

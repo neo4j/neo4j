@@ -55,7 +55,7 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>>
     @Override
     public long countIndexedNodes( long nodeId, Value... propertyValues )
     {
-        NativeSchemaIndexReader<?,NativeSchemaValue> partReader = uncheckedSelect( propertyValues[0].valueGroup() );
+        NativeIndexReader<?,NativeIndexValue> partReader = uncheckedSelect( propertyValues[0].valueGroup() );
         return partReader == null ? 0L : partReader.countIndexedNodes( nodeId, propertyValues );
     }
 
@@ -86,7 +86,7 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>>
             loadAll();
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
             cursor.initialize( descriptor, multiProgressor, predicates );
-            for ( NativeSchemaIndexReader<?,NativeSchemaValue> reader : this )
+            for ( NativeIndexReader<?,NativeIndexValue> reader : this )
             {
                 reader.query( multiProgressor, indexOrder, predicates );
             }
@@ -95,7 +95,7 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>>
         {
             if ( validPredicate( predicate ) )
             {
-                NativeSchemaIndexReader<?,NativeSchemaValue> part = uncheckedSelect( predicate.valueGroup() );
+                NativeIndexReader<?,NativeIndexValue> part = uncheckedSelect( predicate.valueGroup() );
                 if ( part != null )
                 {
                     part.query( cursor, indexOrder, predicates );

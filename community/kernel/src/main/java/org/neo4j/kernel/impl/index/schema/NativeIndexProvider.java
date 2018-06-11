@@ -40,10 +40,10 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 /**
  * Base class for native indexes on top of {@link GBPTree}.
  *
- * @param <KEY> type of {@link NativeSchemaKey}
- * @param <VALUE> type of {@link NativeSchemaValue}
+ * @param <KEY> type of {@link NativeIndexKey}
+ * @param <VALUE> type of {@link NativeIndexValue}
  */
-abstract class NativeIndexProvider<KEY extends NativeSchemaKey<KEY>,VALUE extends NativeSchemaValue> extends IndexProvider
+abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue> extends IndexProvider
 {
     protected final PageCache pageCache;
     protected final FileSystemAbstraction fs;
@@ -94,7 +94,7 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey<KEY>,VALUE extend
     {
         try
         {
-            String failureMessage = NativeSchemaIndexes.readFailureMessage( pageCache, nativeIndexFileFromIndexId( descriptor.getId() ) );
+            String failureMessage = NativeIndexes.readFailureMessage( pageCache, nativeIndexFileFromIndexId( descriptor.getId() ) );
             if ( failureMessage == null )
             {
                 throw new IllegalStateException( "Index " + descriptor.getId() + " isn't failed" );
@@ -112,7 +112,7 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey<KEY>,VALUE extend
     {
         try
         {
-            return NativeSchemaIndexes.readState( pageCache, nativeIndexFileFromIndexId( descriptor.getId() ) );
+            return NativeIndexes.readState( pageCache, nativeIndexFileFromIndexId( descriptor.getId() ) );
         }
         catch ( MetadataMismatchException | IOException e )
         {

@@ -29,6 +29,6 @@ class NumberLayoutNonUnique extends NumberLayout
 
     NumberLayoutNonUnique()
     {
-        super( Layout.namedIdentifier( IDENTIFIER_NAME, NativeSchemaValue.SIZE ), MAJOR_VERSION, MINOR_VERSION );
+        super( Layout.namedIdentifier( IDENTIFIER_NAME, NativeIndexValue.SIZE ), MAJOR_VERSION, MINOR_VERSION );
     }
 }

@@ -32,7 +32,7 @@ import static org.neo4j.helpers.ArrayUtil.array;
 
 public class ConflictDetectingValueMergerTest
 {
-    private final ConflictDetectingValueMerger<NumberSchemaKey,NativeSchemaValue> detector = new ConflictDetectingValueMerger<>( true );
+    private final ConflictDetectingValueMerger<NumberIndexKey,NativeIndexValue> detector = new ConflictDetectingValueMerger<>( true );
 
     @Test
     public void shouldReportConflictOnSameValueAndDifferentEntityIds()
@@ -43,11 +43,11 @@ public class ConflictDetectingValueMergerTest
         long entityId2 = 20;
 
         // when
-        NativeSchemaValue merged = detector.merge(
+        NativeIndexValue merged = detector.merge(
                 key( entityId1, value ),
                 key( entityId2, value ),
-                NativeSchemaValue.INSTANCE,
-                NativeSchemaValue.INSTANCE );
+                NativeIndexValue.INSTANCE,
+                NativeIndexValue.INSTANCE );
 
         // then
         assertNull( merged );
@@ -72,20 +72,20 @@ public class ConflictDetectingValueMergerTest
         long entityId = 10;
 
         // when
-        NativeSchemaValue merged = detector.merge(
+        NativeIndexValue merged = detector.merge(
                 key( entityId, value ),
                 key( entityId, value ),
-                NativeSchemaValue.INSTANCE,
-                NativeSchemaValue.INSTANCE );
+                NativeIndexValue.INSTANCE,
+                NativeIndexValue.INSTANCE );
 
         // then
         assertNull( merged );
         detector.checkConflict( array() ); // <-- should not throw conflict exception
     }
 
-    private static NumberSchemaKey key( long entityId, Value... value )
+    private static NumberIndexKey key( long entityId, Value... value )
     {
-        NumberSchemaKey key = new NumberSchemaKey();
+        NumberIndexKey key = new NumberIndexKey();
         key.from( entityId, value );
         return key;
     }

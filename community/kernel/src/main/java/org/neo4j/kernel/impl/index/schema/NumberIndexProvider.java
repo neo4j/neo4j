@@ -40,7 +40,7 @@ import org.neo4j.values.storable.ValueCategory;
 /**
  * Schema index provider for native indexes backed by e.g. {@link GBPTree}.
  */
-public class NumberIndexProvider extends NativeIndexProvider<NumberSchemaKey,NativeSchemaValue>
+public class NumberIndexProvider extends NativeIndexProvider<NumberIndexKey,NativeIndexValue>
 {
     public static final String KEY = "native";
     public static final Descriptor NATIVE_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
@@ -54,7 +54,7 @@ public class NumberIndexProvider extends NativeIndexProvider<NumberSchemaKey,Nat
     }
 
     @Override
-    Layout<NumberSchemaKey,NativeSchemaValue> layout( StoreIndexDescriptor descriptor )
+    Layout<NumberIndexKey,NativeIndexValue> layout( StoreIndexDescriptor descriptor )
     {
         // split like this due to legacy reasons, there are old stores out there with these different identifiers
         switch ( descriptor.type() )
@@ -69,17 +69,17 @@ public class NumberIndexProvider extends NativeIndexProvider<NumberSchemaKey,Nat
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( File storeFile, Layout<NumberSchemaKey,NativeSchemaValue> layout, StoreIndexDescriptor descriptor,
+    protected IndexPopulator newIndexPopulator( File storeFile, Layout<NumberIndexKey,NativeIndexValue> layout, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig )
     {
-        return new NumberSchemaIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig );
+        return new NumberIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( File storeFile, Layout<NumberSchemaKey,NativeSchemaValue> layout, StoreIndexDescriptor descriptor,
+    protected IndexAccessor newIndexAccessor( File storeFile, Layout<NumberIndexKey,NativeIndexValue> layout, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new NumberSchemaIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,
+        return new NumberIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,
                 samplingConfig );
     }
 

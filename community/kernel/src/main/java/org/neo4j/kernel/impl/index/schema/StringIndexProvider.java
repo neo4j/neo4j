@@ -41,7 +41,7 @@ import org.neo4j.values.storable.ValueCategory;
 /**
  * Schema index provider for native indexes backed by e.g. {@link GBPTree}.
  */
-public class StringIndexProvider extends NativeIndexProvider<StringSchemaKey,NativeSchemaValue>
+public class StringIndexProvider extends NativeIndexProvider<StringIndexKey,NativeIndexValue>
 {
     public static final String KEY = "string";
     static final IndexCapability CAPABILITY = new StringIndexCapability();
@@ -55,23 +55,23 @@ public class StringIndexProvider extends NativeIndexProvider<StringSchemaKey,Nat
     }
 
     @Override
-    Layout<StringSchemaKey,NativeSchemaValue> layout( StoreIndexDescriptor descriptor )
+    Layout<StringIndexKey,NativeIndexValue> layout( StoreIndexDescriptor descriptor )
     {
         return new StringLayout();
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( File storeFile, Layout<StringSchemaKey,NativeSchemaValue> layout, StoreIndexDescriptor descriptor,
+    protected IndexPopulator newIndexPopulator( File storeFile, Layout<StringIndexKey,NativeIndexValue> layout, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig )
     {
-        return new StringSchemaIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig );
+        return new StringIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( File storeFile, Layout<StringSchemaKey,NativeSchemaValue> layout, StoreIndexDescriptor descriptor,
+    protected IndexAccessor newIndexAccessor( File storeFile, Layout<StringIndexKey,NativeIndexValue> layout, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new StringSchemaIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );
+        return new StringIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );
     }
 
     @Override

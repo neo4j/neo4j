@@ -50,8 +50,8 @@ public class ZonedDateTimeLayoutTest
 
         ZonedDateTimeLayout layout = new ZonedDateTimeLayout();
         PageCursor cursor = new StubPageCursor( 0, 8 * 1024 );
-        ZonedDateTimeSchemaKey writeKey = layout.newKey();
-        ZonedDateTimeSchemaKey readKey = layout.newKey();
+        ZonedDateTimeIndexKey writeKey = layout.newKey();
+        ZonedDateTimeIndexKey readKey = layout.newKey();
 
         // Write all
         for ( Value value : values )
@@ -64,7 +64,7 @@ public class ZonedDateTimeLayoutTest
         cursor.setOffset( 0 );
         for ( Value value : values )
         {
-            layout.readKey( cursor, readKey, ZonedDateTimeSchemaKey.SIZE );
+            layout.readKey( cursor, readKey, ZonedDateTimeIndexKey.SIZE );
             assertEquals( value, readKey.asValue() );
         }
     }
