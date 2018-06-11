@@ -194,6 +194,8 @@ _read_config() {
         else
           export ${key}="${value}"
         fi
+      else
+        echo >&2 "WARNING: Ignoring key ${key}, environment variables cannot start with a number."
       fi
     fi
   }
