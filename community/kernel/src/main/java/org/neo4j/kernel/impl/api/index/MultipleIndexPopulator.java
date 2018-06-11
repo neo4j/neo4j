@@ -36,6 +36,7 @@ import java.util.stream.IntStream;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
@@ -587,7 +588,21 @@ public class MultipleIndexPopulator implements IndexPopulator
                 }
             }, failedIndexProxyFactory );
             removeFromOngoingPopulations( this );
-            log.info( "Index population completed. Index [%s] is %s.", indexUserDescription, flipper.getState().name() );
+            logCompletionMessage();
+        }
+
+        private void logCompletionMessage()
+        {
+            InternalIndexState postPopulationState = flipper.getState();
+            String messageTemplate = isIndexPopulationOngoing( postPopulationState )
+                                     ? "Index created. Starting data checks. Index [%s] is %s."
+                                     : "Index creation finished. Index [%s] is %s.";
+            log.info( messageTemplate, indexUserDescription, postPopulationState.name() );
+        }
+
+        private boolean isIndexPopulationOngoing( InternalIndexState postPopulationState )
+        {
+            return InternalIndexState.POPULATING == postPopulationState;
         }
 
         @Override

@@ -55,10 +55,10 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -91,6 +91,7 @@ public class ConstraintIndexCreatorTest
                     new IndexProvider.Descriptor( "foo", "1.872" ), LABEL_ID, PROPERTY_KEY_ID );
     private final SchemaRead schemaRead = schemaRead();
     private final TokenRead tokenRead = mock( TokenRead.class );
+    private AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Test
     public void shouldCreateIndexInAnotherTransaction() throws Exception
@@ -104,7 +105,7 @@ public class ConstraintIndexCreatorTest
         when( indexingService.getIndexProxy( descriptor ) ).thenReturn( indexProxy );
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
         ConstraintIndexCreator creator =
-                new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
+                new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, logProvider );
 
         // when
         long indexId = creator.createUniquenessConstraintIndex( createTransaction(), descriptor, null );
@@ -139,7 +140,7 @@ public class ConstraintIndexCreatorTest
                 // that it gets created
                 .thenReturn( indexReference ); // then after it failed claim it does exist
         ConstraintIndexCreator creator =
-                new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
+                new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, logProvider );
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
@@ -177,7 +178,7 @@ public class ConstraintIndexCreatorTest
 
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
         ConstraintIndexCreator creator =
-                new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
+                new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, logProvider );
 
         // when
         creator.dropUniquenessConstraintIndex( index );
@@ -205,7 +206,7 @@ public class ConstraintIndexCreatorTest
         when( schemaRead.index( LABEL_ID, PROPERTY_KEY_ID ) ).thenReturn( CapableIndexReference.NO_INDEX );
 
         ConstraintIndexCreator creator =
-                new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
+                new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, logProvider );
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
@@ -235,7 +236,7 @@ public class ConstraintIndexCreatorTest
         when( schemaRead.indexGetOwningUniquenessConstraintId( indexReference ) )
                 .thenReturn( null ); // which means it has no owner
         ConstraintIndexCreator creator =
-                new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
+                new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, logProvider );
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
@@ -273,7 +274,7 @@ public class ConstraintIndexCreatorTest
         when( tokenRead.nodeLabelName( LABEL_ID ) ).thenReturn( "MyLabel" );
         when( tokenRead.propertyKeyName( PROPERTY_KEY_ID ) ).thenReturn( "MyKey" );
         ConstraintIndexCreator creator =
-                new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
+                new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, logProvider );
 
         // when
         try
@@ -308,7 +309,7 @@ public class ConstraintIndexCreatorTest
         when( indexingService.getIndexProxy( constraintIndexId ) ).thenReturn( indexProxy );
         when( indexingService.getIndexProxy( descriptor ) ).thenReturn( indexProxy );
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, logProvider );
         IndexProvider.Descriptor providerDescriptor = new IndexProvider.Descriptor( "Groovy", "1.2" );
 
         // when

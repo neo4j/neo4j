@@ -21,15 +21,12 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 
@@ -57,7 +54,6 @@ import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.SchemaState;
-import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexOperations;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
@@ -578,6 +574,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 IndexProxy index = getIndexProxy( indexId );
                 index.awaitStoreScanCompleted();
                 index.activate();
+                log.info( "Constraint %s is %s.", index.getDescriptor(), ONLINE.name() );
             }
         }
         catch ( InterruptedException e )

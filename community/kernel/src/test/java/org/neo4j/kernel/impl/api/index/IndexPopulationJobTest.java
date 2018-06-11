@@ -347,7 +347,29 @@ public class IndexPopulationJobTest
         LogMatcherBuilder match = inLog( IndexPopulationJob.class );
         logProvider.assertExactly(
                 match.info( "Index population started: [%s]", ":FIRST(name)" ),
-                match.info( "Index population completed. Index [%s] is %s.", ":FIRST(name)", "ONLINE" )
+                match.info( "Index creation finished. Index [%s] is %s.", ":FIRST(name)", "ONLINE" )
+        );
+    }
+
+    @Test
+    public void logConstraintJobProgress() throws Exception
+    {
+        // Given
+        createNode( map( name, "irrelephant" ), FIRST );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        FlippableIndexProxy index = mock( FlippableIndexProxy.class );
+        when( index.getState() ).thenReturn( InternalIndexState.POPULATING );
+        IndexPopulator populator = spy( inMemoryPopulator( false ) );
+        IndexPopulationJob job = newIndexPopulationJob( populator, index, indexStoreView, logProvider, false );
+
+        // When
+        job.run();
+
+        // Then
+        LogMatcherBuilder match = inLog( IndexPopulationJob.class );
+        logProvider.assertExactly(
+                match.info( "Index population started: [%s]", ":FIRST(name)" ),
+                match.info( "Index created. Starting data checks. Index [%s] is %s.", ":FIRST(name)", "POPULATING" )
         );
     }
 
