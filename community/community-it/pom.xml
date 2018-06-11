@@ -17,7 +17,7 @@
     <description>Neo4j community edition integration tests modules.</description>
 
     <properties>
-        <license-text.header>../../build/GPL-3-header.txt</license-text.header>
+        <license-text.header>headers/GPL-3-header.txt</license-text.header>
     </properties>
 
     <licenses>
