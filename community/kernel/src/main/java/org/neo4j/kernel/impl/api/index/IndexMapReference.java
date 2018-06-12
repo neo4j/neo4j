@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import org.eclipse.collections.api.set.primitive.IntSet;
 
 import java.util.Set;
+import java.util.function.Function;
 
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -50,7 +51,7 @@ public class IndexMapReference implements IndexMapSnapshotProvider
      * @param modifier the function modifying the snapshot.
      * @throws E exception thrown by the function.
      */
-    public synchronized <E extends Exception> void modify( ThrowingFunction<IndexMap,IndexMap,E> modifier ) throws E
+    public synchronized <E extends Exception> void modify( Function<IndexMap,IndexMap> modifier ) throws E
     {
         IndexMap snapshot = indexMapSnapshot();
         indexMap = modifier.apply( snapshot );

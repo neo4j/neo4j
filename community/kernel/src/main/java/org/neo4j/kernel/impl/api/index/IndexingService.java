@@ -37,9 +37,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -747,7 +747,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         log.info( format( "IndexingService.%s: indexes not specifically mentioned above are %s", method, mostPopularState ) );
     }
 
-    private final class IndexPopulationStarter implements ThrowingFunction<IndexMap,IndexMap,IOException>
+    private final class IndexPopulationStarter implements Function<IndexMap,IndexMap>
     {
         private final StoreIndexDescriptor[] descriptors;
         private IndexPopulationJob nodePopulationJob;

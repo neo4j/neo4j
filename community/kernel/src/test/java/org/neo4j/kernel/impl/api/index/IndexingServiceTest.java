@@ -1063,16 +1063,16 @@ public class IndexingServiceTest
     public void failForceAllWhenOneOfTheIndexesFailToForce() throws IOException
     {
         IndexMapReference indexMapReference = new IndexMapReference();
+        IndexProxy strangeIndexProxy = createIndexProxyMock( 1 );
+        doThrow( new UncheckedIOException( new IOException( "Can't force" ) ) ).when( strangeIndexProxy ).force( any( IOLimiter.class ) );
         indexMapReference.modify( indexMap ->
         {
             IndexProxy validIndex = createIndexProxyMock( 0 );
             indexMap.putIndexProxy( validIndex );
             indexMap.putIndexProxy( validIndex );
-            IndexProxy strangeIndexProxy = createIndexProxyMock( 1 );
             indexMap.putIndexProxy( strangeIndexProxy );
             indexMap.putIndexProxy( validIndex );
             indexMap.putIndexProxy( validIndex );
-            doThrow( new UncheckedIOException( new IOException( "Can't force" ) ) ).when( strangeIndexProxy ).force( any( IOLimiter.class ) );
             return indexMap;
         } );
 

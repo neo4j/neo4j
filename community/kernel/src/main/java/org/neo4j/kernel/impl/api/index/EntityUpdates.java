@@ -410,44 +410,29 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
     }
 
     @Override
-    public int hashCode()
+    public boolean equals( Object o )
     {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + Arrays.hashCode( entityTokensBefore );
-        result = prime * result + Arrays.hashCode( entityTokensAfter );
-        result = prime * result + (int) (entityId ^ (entityId >>> 32));
-
-        final IntIterator propertyKeyIds = knownProperties.keySet().intIterator();
-        while ( propertyKeyIds.hasNext() )
-        {
-            int propertyKeyId = propertyKeyIds.next();
-            result = result * 31 + propertyKeyId;
-            result = result * 31 + knownProperties.get( propertyKeyId ).hashCode();
-        }
-        return result;
-    }
-
-    @Override
-    public boolean equals( Object obj )
-    {
-        if ( this == obj )
+        if ( this == o )
         {
             return true;
         }
-        if ( obj == null )
+        if ( o == null || getClass() != o.getClass() )
         {
             return false;
         }
-        if ( getClass() != obj.getClass() )
-        {
-            return false;
-        }
-        EntityUpdates other = (EntityUpdates) obj;
-        return Arrays.equals( entityTokensBefore, other.entityTokensBefore ) &&
-                Arrays.equals( entityTokensAfter, other.entityTokensAfter ) &&
-                entityId == other.entityId &&
-                Objects.equals( knownProperties, other.knownProperties );
+        EntityUpdates that = (EntityUpdates) o;
+        return entityId == that.entityId && Arrays.equals( entityTokensBefore, that.entityTokensBefore ) &&
+                Arrays.equals( entityTokensAfter, that.entityTokensAfter );
+    }
+
+    @Override
+    public int hashCode()
+    {
+
+        int result = Objects.hash( entityId );
+        result = 31 * result + Arrays.hashCode( entityTokensBefore );
+        result = 31 * result + Arrays.hashCode( entityTokensAfter );
+        return result;
     }
 
     enum PropertyValueType
