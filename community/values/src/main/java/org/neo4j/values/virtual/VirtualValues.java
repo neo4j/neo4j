@@ -164,6 +164,11 @@ public final class VirtualValues
         return new MapValue( map );
     }
 
+    public static ErrorValue error( Exception e )
+    {
+        return new ErrorValue( e );
+    }
+
     @SafeVarargs
     public static MapValue copy( MapValue map, Pair<String,AnyValue>... moreEntries )
     {

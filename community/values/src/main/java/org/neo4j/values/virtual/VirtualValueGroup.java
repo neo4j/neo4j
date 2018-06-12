@@ -31,4 +31,5 @@ public enum VirtualValueGroup
     LIST,
     PATH,
     NO_VALUE,
+    ERROR
 }

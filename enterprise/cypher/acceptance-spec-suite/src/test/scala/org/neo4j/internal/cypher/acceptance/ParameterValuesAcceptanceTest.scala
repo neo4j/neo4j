@@ -38,7 +38,7 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with CypherC
 
   // Not TCK material below; sending graph types or characters as parameters is not supported
 
-  test("ANY should be able to use varibels from the horizon") {
+  test("ANY should be able to use variables from the horizon") {
 
     val query =
       """ WITH 1 AS node, [] AS nodes1
@@ -168,5 +168,4 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     val config = Configs.Interpreted - Configs.Cost2_3
     executeWith(config, "EXPLAIN CREATE (n:Person) WITH n MATCH (n:Person {name:{name}}) RETURN n")
   }
-
 }

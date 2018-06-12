@@ -233,18 +233,31 @@ public final class ValueUtils
 
     public static MapValue asMapValue( Map<String,Object> map )
     {
-        return map( mapValues( map ) );
-    }
-
-    private static Map<String,AnyValue> mapValues( Map<String,Object> map )
-    {
         HashMap<String,AnyValue> newMap = new HashMap<>( map.size() );
         for ( Map.Entry<String,Object> entry : map.entrySet() )
         {
             newMap.put( entry.getKey(), of( entry.getValue() ) );
         }
 
-        return newMap;
+        return map( newMap );
+    }
+
+    public static MapValue asParameterMapValue( Map<String,Object> map )
+    {
+        HashMap<String,AnyValue> newMap = new HashMap<>( map.size() );
+        for ( Map.Entry<String,Object> entry : map.entrySet() )
+        {
+            try
+            {
+                newMap.put( entry.getKey(), of( entry.getValue() ) );
+            }
+            catch ( IllegalArgumentException e )
+            {
+                newMap.put( entry.getKey(), VirtualValues.error( e ) );
+            }
+        }
+
+        return map( newMap );
     }
 
     public static NodeValue fromNodeProxy( Node node )
