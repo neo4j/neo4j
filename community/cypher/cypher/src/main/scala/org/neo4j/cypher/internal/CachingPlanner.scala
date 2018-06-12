@@ -23,12 +23,11 @@ import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compatibility.LFUCache
 
 /**
-  * Cypher compiler which has the ability to cache parsing and planning results.
+  * Cypher planner which has the ability to cache parsing and planning results.
   */
-trait CachingCompiler[PARSED_QUERY <: AnyRef] extends Compiler {
+trait CachingPlanner[PARSED_QUERY <: AnyRef] {
 
   def parserCacheSize: Int
-  def plannerCacheSize: Int
 
   private val parsedQueries = new LFUCache[String, PARSED_QUERY](parserCacheSize)
 

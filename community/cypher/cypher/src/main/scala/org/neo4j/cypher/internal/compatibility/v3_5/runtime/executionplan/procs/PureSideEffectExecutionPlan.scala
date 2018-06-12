@@ -39,7 +39,7 @@ import org.neo4j.values.virtual.MapValue
   * @param queryType  The type of the query
   * @param sideEffect The actual side-effect to be performed
   */
-case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryType, sideEffect: (QueryContext => Unit))
+case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryType, sideEffect: QueryContext => Unit)
   extends ExecutionPlan {
 
   override def run(ctx: QueryContext, planType: ExecutionMode,
@@ -69,8 +69,6 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
                                                 , Set.empty)
 
   override def runtimeUsed: RuntimeName = ProcedureRuntimeName
-
-  override def reusability: ReusabilityState = FineToReuse // TODO: Should this really always be reused?
 
   override def plannerUsed: PlannerName = ProcedurePlannerName
 

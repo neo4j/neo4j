@@ -143,8 +143,6 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
 
   override def runtimeUsed = ProcedureRuntimeName
 
-  override def reusability: ReusabilityState = FineToReuse
-
   override def plannerUsed = ProcedurePlannerName
 }
 
