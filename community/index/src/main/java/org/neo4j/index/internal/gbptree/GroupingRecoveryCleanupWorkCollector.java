@@ -20,7 +20,9 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.util.Queue;
+import java.util.StringJoiner;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Consumer;
 
 import org.neo4j.scheduler.JobScheduler;
 
@@ -48,7 +50,12 @@ public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWork
     @Override
     public void init() throws Throwable
     {
-        jobs.clear();
+        if ( !jobs.isEmpty() )
+        {
+            StringJoiner joiner = new StringJoiner( "\n  ", "Did not expect there to be any cleanup jobs still here. Jobs[", "]" );
+            consumeAndCloseJobs( cj -> joiner.add( jobs.toString() ) );
+            throw new IllegalStateException( joiner.toString() );
+        }
     }
 
     @Override
@@ -70,7 +77,8 @@ public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWork
 
     @Override
     public void shutdown() throws Throwable
-    {   // no-op
+    {
+        consumeAndCloseJobs( cj -> {} );
     }
 
     private Runnable allJobs()
@@ -90,5 +98,15 @@ public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWork
                 }
             }
         };
+    }
+
+    private void consumeAndCloseJobs( Consumer<CleanupJob> consumer )
+    {
+        CleanupJob job;
+        while ( (job = jobs.poll()) != null )
+        {
+            consumer.accept( job );
+            job.close();
+        }
     }
 }
