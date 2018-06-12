@@ -66,6 +66,7 @@ public interface Protocol<IMPL extends Comparable<IMPL>>
     enum ApplicationProtocols implements ApplicationProtocol
     {
         RAFT_1( ApplicationProtocolCategory.RAFT, 1 ),
+        RAFT_2( ApplicationProtocolCategory.RAFT, 2 ),
         CATCHUP_1( ApplicationProtocolCategory.CATCHUP, 1 );
 
         private final Integer version;

@@ -30,6 +30,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
+import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
@@ -87,7 +88,7 @@ public class InstalledProtocolsProcedureIT
         ProtocolInfo[] expectedProtocolInfos = cluster.coreMembers()
                 .stream()
                 .filter( member -> !member.equals( leader ) )
-                .map( member -> new ProtocolInfo( OUTBOUND, localhost( member.raftListenAddress() ), RAFT.canonicalName(), 1, modifiers ) )
+                .map( member -> new ProtocolInfo( OUTBOUND, localhost( member.raftListenAddress() ), RAFT.canonicalName(), 2, modifiers ) )
                 .toArray( ProtocolInfo[]::new );
 
         assertEventually( "should see outbound installed protocols on core " + leader.serverId(),
