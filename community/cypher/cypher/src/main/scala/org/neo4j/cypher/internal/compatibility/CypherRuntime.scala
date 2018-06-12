@@ -19,20 +19,23 @@
  */
 package org.neo4j.cypher.internal.compatibility
 
-import org.neo4j.cypher.{CypherRuntimeOption, InvalidArgumentException, exceptionHandler}
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
+import java.time.Clock
+
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_5.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
+import org.neo4j.cypher.{CypherRuntimeOption, InvalidArgumentException, exceptionHandler}
+import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 
-import scala.util.{Failure, Try}
+import scala.util.Try
 
 /**
   * A cypher runtime. Compiles logical plans into a executable form, which can
   * be used directly to serve the query.
   */
-trait CypherRuntime[-CONTEXT <: CommunityRuntimeContext] {
+trait CypherRuntime[-CONTEXT <: RuntimeContext] {
 
   /**
     * Compile a logical plan to an executable plan.
@@ -47,10 +50,31 @@ trait CypherRuntime[-CONTEXT <: CommunityRuntimeContext] {
 }
 
 /**
+  * Context in which the Runtime performs physical planning
+  */
+abstract class RuntimeContext {
+  def notificationLogger: InternalNotificationLogger
+  def tokenContext: TokenContext
+}
+
+/**
+  * Creator of runtime contexts.
+  *
+  * @tparam CONTEXT type of runtime context created
+  */
+trait RuntimeContextCreator[CONTEXT <: RuntimeContext] {
+  def create(notificationLogger: InternalNotificationLogger,
+             tokenContext: TokenContext,
+             clock: Clock,
+             debugOptions: Set[String]
+            ): CONTEXT
+}
+
+/**
   * Cypher runtime representing a user-selected runtime which is not supported.
   */
-object UnknownRuntime extends CypherRuntime[CommunityRuntimeContext] {
-  def compileToExecutable(logicalPlan: LogicalPlanState, context: CommunityRuntimeContext): ExecutionPlan =
+object UnknownRuntime extends CypherRuntime[RuntimeContext] {
+  def compileToExecutable(logicalPlan: LogicalPlanState, context: RuntimeContext): ExecutionPlan =
     throw new CantCompileQueryException()
 }
 
@@ -64,8 +88,8 @@ object UnknownRuntime extends CypherRuntime[CommunityRuntimeContext] {
   * @param runtimes the runtimes to attempt to compile with, in order of priority
   * @param requestedRuntime the requested runtime, used to provide error messages
   */
-class FallbackRuntime[CONTEXT <: CommunityRuntimeContext](runtimes: Seq[CypherRuntime[CONTEXT]],
-                                                          requestedRuntime: CypherRuntimeOption) extends CypherRuntime[CONTEXT] {
+class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CONTEXT]],
+                                                 requestedRuntime: CypherRuntimeOption) extends CypherRuntime[CONTEXT] {
 
   private val PublicCannotCompile =
     {

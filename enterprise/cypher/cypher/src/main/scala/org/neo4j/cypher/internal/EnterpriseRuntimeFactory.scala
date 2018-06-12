@@ -24,7 +24,6 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.CypherRuntimeOption
 import org.neo4j.cypher.internal.compatibility.{FallbackRuntime, InterpretedRuntime, CypherRuntime}
-import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContext
 
 object EnterpriseRuntimeFactory {
 

@@ -23,7 +23,7 @@ import java.time.Clock
 
 import org.opencypher.v9_0.util.{CypherException, InputPosition}
 import org.neo4j.cypher.internal.compiler.v3_5._
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{Metrics, QueryGraphSolver}
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{ExpressionEvaluator, Metrics, MetricsFactory, QueryGraphSolver}
 import org.opencypher.v9_0.frontend.phases.{BaseContext, InternalNotificationLogger, Monitors}
 import org.opencypher.v9_0.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
@@ -46,4 +46,32 @@ class PlannerContext(val exceptionCreator: (String, InputPosition) => CypherExce
   override def errorHandler =
     (errors: Seq[SemanticErrorDef]) => errors.foreach(e => throw exceptionCreator(e.msg, e.position))
 
+}
+
+object PlannerContextCreator extends ContextCreator[PlannerContext] {
+  override def create(tracer: CompilationPhaseTracer,
+                      notificationLogger: InternalNotificationLogger,
+                      planContext: PlanContext,
+                      queryText: String,
+                      debugOptions: Set[String],
+                      offset: Option[InputPosition],
+                      monitors: Monitors,
+                      metricsFactory: MetricsFactory,
+                      queryGraphSolver: QueryGraphSolver,
+                      config: CypherPlannerConfiguration,
+                      updateStrategy: UpdateStrategy,
+                      clock: Clock,
+                      logicalPlanIdGen: IdGen,
+                      evaluator: ExpressionEvaluator
+                     ): PlannerContext = {
+    val exceptionCreator = new SyntaxExceptionCreator(queryText, offset)
+
+    val metrics: Metrics = if (planContext == null)
+      null
+    else
+      metricsFactory.newMetrics(planContext.statistics, evaluator, config)
+
+    new PlannerContext(exceptionCreator, tracer, notificationLogger, planContext,
+      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen)
+  }
 }

@@ -50,10 +50,12 @@ class CompilerLibrary(factory: CompilerFactory) {
   def clearCaches(): Long = {
     val numClearedEntries =
       compilers.values().collect {
-        case c: CachingCompiler[_] => c.clearCaches()
+        case c: CachingPlanner[_] => c.clearCaches()
       }
 
-    numClearedEntries.max
+    if (numClearedEntries.nonEmpty)
+      numClearedEntries.max
+    else 0
   }
 
   case class CompilerKey(cypherVersion: CypherVersion,
