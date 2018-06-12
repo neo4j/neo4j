@@ -39,6 +39,7 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
@@ -325,18 +326,41 @@ public class ConstraintIndexCreatorTest
         verifyNoMoreInteractions( schemaRead );
     }
 
+    @Test
+    public void logMessagesAboutConstraintCreation()
+            throws SchemaKernelException, UniquePropertyValueValidationException, TransactionFailureException, IndexNotFoundKernelException
+    {
+        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+        IndexingService indexingService = mock( IndexingService.class );
+        StubKernel kernel = new StubKernel();
+        long constraintIndexId = 111;
+        when( schemaRead.indexGetCommittedId( indexReference ) ).thenReturn( constraintIndexId );
+        IndexProxy indexProxy = mock( IndexProxy.class );
+        when( indexingService.getIndexProxy( constraintIndexId ) ).thenReturn( indexProxy );
+        when( indexingService.getIndexProxy( descriptor ) ).thenReturn( indexProxy );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, logProvider );
+        IndexProvider.Descriptor providerDescriptor = new IndexProvider.Descriptor( "indexProvider", "1.0" );
+        KernelTransactionImplementation transaction = createTransaction();
+
+        creator.createUniquenessConstraintIndex( transaction, descriptor, providerDescriptor );
+
+        logProvider.assertContainsLogCallContaining( "Starting constraint creation: %s." );
+        logProvider.assertContainsLogCallContaining( "Constraint %s populated, starting verification." );
+        logProvider.assertContainsLogCallContaining( "Constraint %s verified." );
+    }
+
     private class StubKernel implements Kernel, Session
     {
         private final List<KernelTransactionImplementation> transactions = new ArrayList<>();
 
         @Override
-        public Transaction beginTransaction() throws TransactionFailureException
+        public Transaction beginTransaction()
         {
             return remember( createTransaction() );
         }
 
         @Override
-        public Transaction beginTransaction( Transaction.Type type ) throws TransactionFailureException
+        public Transaction beginTransaction( Transaction.Type type )
         {
             return remember( createTransaction() );
         }
