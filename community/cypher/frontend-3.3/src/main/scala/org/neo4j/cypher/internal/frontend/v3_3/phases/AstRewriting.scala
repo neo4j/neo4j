@@ -49,7 +49,6 @@ case class AstRewriting(sequencer: String => RewriterStepSequencer,
       noUnnamedPatternElementsInMatch,
       containsNoNodesOfType[NotEquals],
       normalizedEqualsArguments,
-      aggregationsAreIsolated,
       noUnnamedPatternElementsInPatternComprehension
     )
 

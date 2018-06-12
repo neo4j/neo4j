@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.phases
 import org.neo4j.cypher.internal.compiler.v3_3.ast.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.conditions.{StatementCondition, containsNoNodesOfType}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.conditions.{StatementCondition, aggregationsAreIsolated, containsNoNodesOfType}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.isolateAggregation
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseState, Condition, Phase}
 import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
@@ -62,7 +63,7 @@ case object RewriteProcedureCalls extends Phase[CompilerContext, BaseState, Base
 
   // rewriter that amends unresolved procedure calls with procedure signature information
   def rewriter(context: PlanContext): AnyRef => AnyRef =
-    resolverProcedureCall(context) andThen fakeStandaloneCallDeclarations
+    resolverProcedureCall(context) andThen fakeStandaloneCallDeclarations andThen isolateAggregation
 
   override def phase = AST_REWRITE
 
@@ -73,5 +74,6 @@ case object RewriteProcedureCalls extends Phase[CompilerContext, BaseState, Base
     LogicalPlanState(from).copy(maybeStatement = Some(rewrittenStatement))
   }
 
-  override def postConditions: Set[Condition] = Set(StatementCondition(containsNoNodesOfType[UnresolvedCall]))
+  override def postConditions: Set[Condition] = Set(StatementCondition(containsNoNodesOfType[UnresolvedCall]),
+                                                    StatementCondition(aggregationsAreIsolated))
 }
