@@ -91,7 +91,7 @@ public class QueryInvalidationIT
     public void shouldRePlanAfterDataChangesFromAPopulatedDatabase() throws Exception
     {
         // GIVEN
-        Config config = db.getConfigCopy();
+        Config config = db.getDependencyResolver().resolveDependency( Config.class );
         double divergenceThreshold = config.get( GraphDatabaseSettings.query_statistics_divergence_threshold );
         long replanInterval = config.get( GraphDatabaseSettings.cypher_min_replan_interval ).toMillis();
 

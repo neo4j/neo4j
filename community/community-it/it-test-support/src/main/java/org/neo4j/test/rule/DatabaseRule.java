@@ -55,7 +55,6 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -314,11 +313,6 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     public GraphDatabaseBuilder setConfig( Setting<?> setting, String value )
     {
         return databaseBuilder.setConfig( setting, value );
-    }
-
-    public Config getConfigCopy()
-    {
-        return  Config.defaults( databaseBuilder.getRawConfig() );
     }
 
     /**

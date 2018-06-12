@@ -207,11 +207,6 @@ public class GraphDatabaseBuilder
         return creator.newDatabase( Config.defaults( config ) );
     }
 
-    public Map<String,String> getRawConfig()
-    {
-        return config;
-    }
-
     /**
      * @deprecated This will be removed in the future.
      */
