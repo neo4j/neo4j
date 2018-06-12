@@ -67,7 +67,6 @@ class PageList
     @SuppressWarnings( "unused" )
     private static final int OFFSET_USAGE_COUNTER = 31; // 1 byte, but only the 3 low bits.
     private static final int MASK_USAGE_COUNT = 0x07;
-    private static final long MASK_NOT_USAGE_COUNT = 0xFFFFFFFF_FFFFFFF8L;
     private static final int SHIFT_FILE_PAGE_ID = 24;
     private static final int MASK_NOT_FILE_PAGE_ID = 0xFFFFFF;
     private static final int SHIFT_SWAPPER_ID = 3;
@@ -333,13 +332,13 @@ class PageList
         long usage = v & MASK_USAGE_COUNT;
         if ( usage < 4 ) // avoid cache sloshing by not doing a write if counter is already maxed out
         {
-            usage++;
+            long u = v + 1;
             // Use compareAndSwapLong to only actually store the updated count if nothing else changed
             // in this word-line. The word-line is shared with the file page id, and the swapper id.
             // Those fields are updated under guard of the exclusive lock, but we *might* race with
             // that here, and in that case we would never want a usage counter update to clobber a page
             // binding update.
-            UnsafeUtil.compareAndSwapLong( null, address, v, (v & MASK_NOT_USAGE_COUNT) + usage );
+            UnsafeUtil.compareAndSwapLong( null, address, v, u );
         }
     }
 
@@ -354,11 +353,11 @@ class PageList
         long usage = v & MASK_USAGE_COUNT;
         if ( usage > 0 )
         {
-            usage--;
+            long u = v - 1;
             // See `incrementUsage` about why we use `compareAndSwapLong`.
-            UnsafeUtil.compareAndSwapLong( null, address, v, (v & MASK_NOT_USAGE_COUNT) + usage );
+            UnsafeUtil.compareAndSwapLong( null, address, v, u );
         }
-        return usage == 0;
+        return usage <= 1;
     }
 
     public long getFilePageId( long pageRef )
