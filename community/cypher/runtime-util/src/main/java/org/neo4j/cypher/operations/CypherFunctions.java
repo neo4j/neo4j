@@ -147,9 +147,9 @@ public final class CypherFunctions
 
     public static DoubleValue atan2( AnyValue y, AnyValue x )
     {
-        if ( y instanceof NumberValue && x instanceof NumberValue)
+        if ( y instanceof NumberValue && x instanceof NumberValue )
         {
-            return doubleValue( Math.atan2( ((NumberValue) y).doubleValue() , ((NumberValue) x).doubleValue() ) );
+            return doubleValue( Math.atan2( ((NumberValue) y).doubleValue(), ((NumberValue) x).doubleValue() ) );
         }
         else
         {
