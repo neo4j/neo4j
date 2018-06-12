@@ -33,7 +33,6 @@ import org.neo4j.cypher.internal.compiler.v3_5.ExperimentalFeatureNotification
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, LogicalPlan2PlanDescription}
@@ -81,7 +80,7 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
 
   private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan, semanticTable: SemanticTable) = {
     val physicalPlan: PhysicalPlan = SlotAllocation.allocateSlots(beforeRewrite, semanticTable)
-    val slottedRewriter = new SlottedRewriter(context.planContext)
+    val slottedRewriter = new SlottedRewriter(context.tokenContext)
     val logicalPlan = slottedRewriter(beforeRewrite, physicalPlan.slotConfigurations)
     (logicalPlan, physicalPlan)
   }
@@ -115,8 +114,6 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
 
 
     override def isPeriodicCommit: Boolean = false
-
-    override def reusability: ReusabilityState = FineToReuse // TODO: This is a lie.
 
     override def runtimeUsed: RuntimeName = MorselRuntimeName
   }

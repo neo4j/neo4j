@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compatibility
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{ExecutionPlan, ExecutionResultBuilderFactory, InterpretedExecutionResultBuilderFactory, PeriodicCommitInfo}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.profiler.Profiler
-import org.neo4j.cypher.internal.compiler.v3_5.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
@@ -30,14 +29,13 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{Community
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, ProfileMode, QueryContext}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexUsage, LogicalPlan}
-import org.neo4j.cypher.internal.{MaybeReusable, PlanFingerprint, PlanFingerprintReference, ReusabilityState}
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.frontend.PlannerName
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 import org.opencypher.v9_0.util.PeriodicCommitInOpenTransactionException
 
-object InterpretedRuntime extends CypherRuntime[CommunityRuntimeContext] {
-  override def compileToExecutable(state: LogicalPlanState, context: CommunityRuntimeContext): ExecutionPlan = {
+object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
+  override def compileToExecutable(state: LogicalPlanState, context: RuntimeContext): ExecutionPlan = {
     val readOnly = state.solveds(state.logicalPlan.id).readOnly
     val cardinalities = state.cardinalities
     val logicalPlan = state.logicalPlan
@@ -46,7 +44,7 @@ object InterpretedRuntime extends CypherRuntime[CommunityRuntimeContext] {
       expressionConverters = converters,
       pipeBuilderFactory = InterpretedPipeBuilderFactory)
     val pipeBuildContext = PipeExecutionBuilderContext(state.semanticTable(), readOnly, cardinalities)
-    val pipe = executionPlanBuilder.build(logicalPlan)(pipeBuildContext, context.planContext)
+    val pipe = executionPlanBuilder.build(logicalPlan)(pipeBuildContext, context.tokenContext)
     val periodicCommitInfo = state.periodicCommit.map(x => PeriodicCommitInfo(x.batchSize))
     val columns = state.statement().returnColumns
     val resultBuilderFactory = InterpretedExecutionResultBuilderFactory(pipe, readOnly, columns, logicalPlan)
@@ -58,12 +56,7 @@ object InterpretedRuntime extends CypherRuntime[CommunityRuntimeContext] {
       readOnly,
       cardinalities)
 
-    val fingerprint = PlanFingerprint.take(context.clock, context.planContext.txIdProvider, context.planContext.statistics)
-    new InterpretedExecutionPlan(func,
-      logicalPlan,
-      periodicCommitInfo.isDefined,
-      state.plannerName,
-      new PlanFingerprintReference(fingerprint))
+    new InterpretedExecutionPlan(func, logicalPlan, periodicCommitInfo.isDefined, state.plannerName)
   }
 
   /**
@@ -73,13 +66,10 @@ object InterpretedRuntime extends CypherRuntime[CommunityRuntimeContext] {
   class InterpretedExecutionPlan(val executionPlanFunc: (QueryContext, ExecutionMode, MapValue) => InternalExecutionResult,
                                  val logicalPlan: LogicalPlan,
                                  override val isPeriodicCommit: Boolean,
-                                 override val plannerUsed: PlannerName,
-                                 val fingerprint: PlanFingerprintReference) extends ExecutionPlan {
+                                 override val plannerUsed: PlannerName) extends ExecutionPlan {
 
     override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult =
       executionPlanFunc(queryContext, planType, params)
-
-    override def reusability: ReusabilityState = MaybeReusable(fingerprint)
 
     override def runtimeUsed: RuntimeName = InterpretedRuntimeName
 

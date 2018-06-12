@@ -23,10 +23,8 @@ import java.time.{Clock, Instant, ZoneOffset}
 
 import org.neo4j.cypher
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{CommunityRuntimeContext, CommunityRuntimeContextCreator}
-import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.{CypherPlannerConfiguration, StatsDivergenceCalculator}
+import org.neo4j.cypher.internal.compatibility.{CommunityRuntimeContextCreator, CypherCurrentCompiler, RuntimeContext}
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal.{CacheTracer, CommunityRuntimeFactory, PreParsedQuery}
 import org.neo4j.graphdb.config.Setting
@@ -34,7 +32,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.logging.AssertableLogProvider.inLog
 import org.neo4j.logging.{AssertableLogProvider, Log, NullLog}
 import org.opencypher.v9_0.ast.Statement
-import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, Transformer}
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
 import org.opencypher.v9_0.util.DummyPosition
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
@@ -44,7 +42,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   def createCompiler(queryCacheSize: Int = 128, statsDivergenceThreshold: Double = 0.5, queryPlanTTL: Long = 1000,
                      clock: Clock = Clock.systemUTC(), log: Log = NullLog.getInstance):
-  Cypher35Compiler[CommunityRuntimeContext, Transformer[CommunityRuntimeContext, LogicalPlanState, CompilationState]] = {
+  CypherCurrentCompiler[RuntimeContext] = {
 
     val config = CypherPlannerConfiguration(
       queryCacheSize,
@@ -59,15 +57,18 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       nonIndexedLabelWarningThreshold = 10000L,
       planWithMinimumCardinalityEstimates = true
     )
-    Cypher35Compiler(config,
-                     clock,
-                     kernelMonitors,
-                     log,
-                     cypher.CypherPlannerOption.default,
-                     CypherUpdateStrategy.default,
-                     CommunityRuntimeFactory.getRuntime(CypherRuntimeOption.default, disallowFallback = true),
-                     CommunityRuntimeContextCreator,
-                     () => 1)
+    CypherCurrentCompiler(
+      Cypher35Planner(config,
+                      clock,
+                      kernelMonitors,
+                      log,
+                      cypher.CypherPlannerOption.default,
+                      CypherUpdateStrategy.default,
+                      () => 1),
+      CommunityRuntimeFactory.getRuntime(CypherRuntimeOption.default, disallowFallback = true),
+      CommunityRuntimeContextCreator,
+      kernelMonitors)
+
   }
 
   case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0) {
@@ -95,13 +96,13 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_min_replan_interval -> "0")
 
   var counter: CacheCounter = _
-  var compiler: Cypher35Compiler[CommunityRuntimeContext, Transformer[CommunityRuntimeContext, LogicalPlanState, CompilationState]] = _
+  var compiler: CypherCurrentCompiler[RuntimeContext] = _
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
     counter = new CacheCounter()
     compiler = createCompiler()
-    compiler.monitors.addMonitorListener(counter)
+    compiler.kernelMonitors.addMonitorListener(counter)
   }
 
   private def runQuery(query: String, debugOptions: Set[String] = Set.empty): Unit = {
@@ -194,7 +195,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
     counter = new CacheCounter()
     compiler = createCompiler(queryPlanTTL = 0, clock = clock)
-    compiler.monitors.addMonitorListener(counter)
+    compiler.kernelMonitors.addMonitorListener(counter)
     val query: String = "match (n:Person:Dog) return n"
 
     createLabeledNode("Dog")
@@ -214,7 +215,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
     counter = new CacheCounter()
     compiler = createCompiler(queryPlanTTL = 0, clock = clock)
-    compiler.monitors.addMonitorListener(counter)
+    compiler.kernelMonitors.addMonitorListener(counter)
     val query: String = "match (n:Person) return n"
 
     // when

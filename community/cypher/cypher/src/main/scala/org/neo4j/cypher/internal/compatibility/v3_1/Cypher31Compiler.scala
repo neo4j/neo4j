@@ -47,14 +47,13 @@ import org.opencypher.v9_0.{frontend => v3_5}
 
 import scala.collection.mutable
 
-trait Cypher31Compiler extends CachingCompiler[PreparedQuerySyntax] {
+trait Cypher31Compiler extends CachingPlanner[PreparedQuerySyntax] with Compiler {
 
   val graph: GraphDatabaseQueryService
   val queryCacheSize: Int
   val kernelMonitors: KernelMonitors
 
   override def parserCacheSize: Int = queryCacheSize
-  override def plannerCacheSize: Int = 0
 
   protected val rewriterSequencer: (String) => RewriterStepSequencer = {
     import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer._

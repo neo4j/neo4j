@@ -24,17 +24,14 @@ import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.logging.{Log, LogProvider}
 import org.opencypher.v9_0.util.InvalidArgumentException
-import org.neo4j.cypher.internal.compatibility.v2_3
+import org.neo4j.cypher.internal.compatibility.{CommunityRuntimeContextCreator, CypherCurrentCompiler, v2_3, v3_1}
 import org.neo4j.cypher.internal.compatibility.v2_3.helpers._
-import org.neo4j.cypher.internal.compatibility.v3_1
 import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
-import org.neo4j.cypher.internal.compatibility.{v3_3 => v3_3compat}
+import org.neo4j.cypher.internal.compatibility.v3_3.Cypher33Planner
 import org.neo4j.cypher.internal.runtime.interpreted.LastCommittedTxIdProvider
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
-import org.neo4j.cypher.internal.compatibility.v3_3.{CommunityRuntimeContextCreator => CommunityRuntimeContextCreatorV3_3}
-import org.neo4j.cypher.internal.compatibility.v3_5.Cypher35Compiler
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{CommunityRuntimeContextCreator => CommunityRuntimeContextCreatorV3_5}
+import org.neo4j.cypher.internal.compatibility.v3_5.Cypher35Planner
 
 /**
   * Factory which creates cypher compilers.
@@ -73,15 +70,23 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
 
         // 3.3
       case (CypherVersion.v3_3, _) =>
-        v3_3compat.Cypher33Compiler(config, MasterCompiler.CLOCK, kernelMonitors, log,
-          cypherPlanner, cypherUpdateStrategy, CommunityRuntimeFactory.getRuntime(cypherRuntime, config.useErrorsOverWarnings),
-          CommunityRuntimeContextCreatorV3_3, CommunityRuntimeContextCreatorV3_5, LastCommittedTxIdProvider(graph))
+        CypherCurrentCompiler(
+          Cypher33Planner(config, MasterCompiler.CLOCK, kernelMonitors, log,
+            cypherPlanner, cypherUpdateStrategy, LastCommittedTxIdProvider(graph)),
+          CommunityRuntimeFactory.getRuntime(cypherRuntime, config.useErrorsOverWarnings),
+          CommunityRuntimeContextCreator,
+          kernelMonitors
+        )
 
         // 3.5
       case (CypherVersion.v3_5, _) =>
-        Cypher35Compiler(config, MasterCompiler.CLOCK, kernelMonitors, log,
-          cypherPlanner, cypherUpdateStrategy, CommunityRuntimeFactory.getRuntime(cypherRuntime, config.useErrorsOverWarnings),
-                          CommunityRuntimeContextCreatorV3_5, LastCommittedTxIdProvider(graph))
+        CypherCurrentCompiler(
+          Cypher35Planner(config, MasterCompiler.CLOCK, kernelMonitors, log,
+                          cypherPlanner, cypherUpdateStrategy, LastCommittedTxIdProvider(graph)),
+          CommunityRuntimeFactory.getRuntime(cypherRuntime, config.useErrorsOverWarnings),
+          CommunityRuntimeContextCreator,
+          kernelMonitors
+        )
     }
   }
 }
