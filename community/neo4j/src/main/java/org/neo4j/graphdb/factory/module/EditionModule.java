@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.function.Predicate;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -70,7 +71,7 @@ import org.neo4j.util.FeatureToggles;
 import static org.neo4j.kernel.impl.proc.temporal.TemporalFunction.registerTemporalFunctions;
 
 /**
- * Edition module for {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory}. Implementations of this class
+ * Edition module for {@link GraphDatabaseFacadeFactory}. Implementations of this class
  * need to create all the services that would be specific for a particular edition of the database.
  */
 public abstract class EditionModule
@@ -78,19 +79,6 @@ public abstract class EditionModule
     // This resided in RecordStorageEngine prior to 3.3
     private static final boolean safeIdBuffering = FeatureToggles.flag(
             EditionModule.class, "safeIdBuffering", true );
-
-    void registerProcedures( Procedures procedures, ProcedureConfig procedureConfig ) throws KernelException
-    {
-        procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInProcedures.class );
-        procedures.registerProcedure( org.neo4j.kernel.builtinprocs.TokenProcedures.class );
-        procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInDbmsProcedures.class );
-        procedures.registerBuiltInFunctions( org.neo4j.kernel.builtinprocs.BuiltInFunctions.class );
-        registerTemporalFunctions( procedures, procedureConfig );
-
-        registerEditionSpecificProcedures( procedures );
-    }
-
-    protected abstract void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException;
 
     public IdGeneratorFactory idGeneratorFactory;
 
@@ -144,6 +132,19 @@ public abstract class EditionModule
             return FileSystemWatcherService.EMPTY_WATCHER;
         }
     }
+
+    public void registerProcedures( Procedures procedures, ProcedureConfig procedureConfig ) throws KernelException
+    {
+        procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInProcedures.class );
+        procedures.registerProcedure( org.neo4j.kernel.builtinprocs.TokenProcedures.class );
+        procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInDbmsProcedures.class );
+        procedures.registerBuiltInFunctions( org.neo4j.kernel.builtinprocs.BuiltInFunctions.class );
+        registerTemporalFunctions( procedures, procedureConfig );
+
+        registerEditionSpecificProcedures( procedures );
+    }
+
+    protected abstract void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException;
 
     protected void doAfterRecoveryAndStartup( DatabaseInfo databaseInfo, DependencyResolver dependencyResolver )
     {

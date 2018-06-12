@@ -26,29 +26,56 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.facade.spi.ClassicCoreSPI;
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.DataSourceModule;
 import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.security.URLAccessRule;
+import org.neo4j.graphdb.spatial.Geometry;
+import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.StartupWaiter;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.api.dbms.NonTransactionalDbmsOperations;
 import org.neo4j.kernel.impl.cache.VmPauseMonitorComponent;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.pagecache.PublishPageCacheTracerMetricsAfterStart;
+import org.neo4j.kernel.impl.proc.ProcedureConfig;
+import org.neo4j.kernel.impl.proc.ProcedureTransactionProvider;
+import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.TerminationGuardProvider;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
+import org.neo4j.procedure.ProcedureTransaction;
 
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTGeometry;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNode;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPoint;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
+import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
+import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 import static org.neo4j.kernel.impl.query.QueryEngineProvider.noEngine;
 
 /**
@@ -144,7 +171,11 @@ public class GraphDatabaseFacadeFactory
 
         AtomicReference<QueryExecutionEngine> queryEngine = new AtomicReference<>( noEngine() );
 
-        final DataSourceModule dataSource = createDataSource( platform, edition, queryEngine::get );
+        Procedures procedures = setupProcedures( platform, edition );
+        platform.dependencies.satisfyDependency( new NonTransactionalDbmsOperations( procedures ) );
+        edition.setupSecurityModule( platform, procedures );
+
+        final DataSourceModule dataSource = createDataSource( platform, edition, queryEngine::get, procedures );
 
         platform.life.add( new VmPauseMonitorComponent( config, platform.logging.getInternalLog( VmPauseMonitorComponent.class ), platform.jobScheduler ) );
         platform.life.add( new PublishPageCacheTracerMetricsAfterStart( platform.tracers.pageCursorTracerSupplier ) );
@@ -239,12 +270,10 @@ public class GraphDatabaseFacadeFactory
     /**
      * Create the datasource module. Override to replace with custom module.
      */
-    protected DataSourceModule createDataSource(
-            PlatformModule platformModule,
-            EditionModule editionModule,
-            Supplier<QueryExecutionEngine> queryEngine )
+    protected DataSourceModule createDataSource( PlatformModule platformModule, EditionModule editionModule, Supplier<QueryExecutionEngine> queryEngine,
+            Procedures procedures )
     {
-        return new DataSourceModule( platformModule, editionModule, queryEngine );
+        return new DataSourceModule( platformModule, editionModule, queryEngine, procedures );
     }
 
     private void enableAvailabilityLogging( AvailabilityGuard availabilityGuard, final Logger msgLog )
@@ -263,5 +292,58 @@ public class GraphDatabaseFacadeFactory
                 msgLog.log( "Database is now unavailable" );
             }
         } );
+    }
+
+    private static Procedures setupProcedures( PlatformModule platform, EditionModule editionModule )
+    {
+        File pluginDir = platform.config.get( GraphDatabaseSettings.plugin_dir );
+        Log internalLog = platform.logging.getInternalLog( Procedures.class );
+        EmbeddedProxySPI proxySPI = platform.dependencies.resolveDependency( EmbeddedProxySPI.class );
+
+        ProcedureConfig procedureConfig = new ProcedureConfig( platform.config );
+        Procedures procedures =
+                new Procedures( proxySPI, new SpecialBuiltInProcedures( Version.getNeo4jVersion(), platform.databaseInfo.edition.toString() ), pluginDir,
+                        internalLog, procedureConfig );
+        platform.life.add( procedures );
+        platform.dependencies.satisfyDependency( procedures );
+
+        procedures.registerType( Node.class, NTNode );
+        procedures.registerType( Relationship.class, NTRelationship );
+        procedures.registerType( Path.class, NTPath );
+        procedures.registerType( Geometry.class, NTGeometry );
+        procedures.registerType( Point.class, NTPoint );
+
+        // Register injected public API components
+        Log proceduresLog = platform.logging.getUserLog( Procedures.class );
+        procedures.registerComponent( Log.class, ctx -> proceduresLog, true );
+
+        procedures.registerComponent( ProcedureTransaction.class, new ProcedureTransactionProvider(), true );
+        procedures.registerComponent( org.neo4j.procedure.TerminationGuard.class, new TerminationGuardProvider(), true );
+
+        // Below components are not public API, but are made available for internal
+        // procedures to call, and to provide temporary workarounds for the following
+        // patterns:
+        //  - Batch-transaction imports (GDAPI, needs to be real and passed to background processing threads)
+        //  - Group-transaction writes (same pattern as above, but rather than splitting large transactions,
+        //                              combine lots of small ones)
+        //  - Bleeding-edge performance (KernelTransaction, to bypass overhead of working with Core API)
+        procedures.registerComponent( DependencyResolver.class, ctx -> platform.dependencies, false );
+        procedures.registerComponent( KernelTransaction.class, ctx -> ctx.get( KERNEL_TRANSACTION ), false );
+        procedures.registerComponent( GraphDatabaseAPI.class, ctx -> platform.graphDatabaseFacade, false );
+
+        // Security procedures
+        procedures.registerComponent( SecurityContext.class, ctx -> ctx.get( SECURITY_CONTEXT ), true );
+
+        // Edition procedures
+        try
+        {
+            editionModule.registerProcedures( procedures, procedureConfig );
+        }
+        catch ( KernelException e )
+        {
+            internalLog.error( "Failed to register built-in edition procedures at start up: " + e.getMessage() );
+        }
+
+        return procedures;
     }
 }

@@ -36,6 +36,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -141,7 +142,7 @@ public class GraphDatabaseFacadeFactoryTest
 
             @Override
             protected DataSourceModule createDataSource( PlatformModule platformModule, EditionModule editionModule,
-                    Supplier<QueryExecutionEngine> queryExecutionEngineSupplier )
+                    Supplier<QueryExecutionEngine> queryExecutionEngineSupplier, Procedures procedures )
             {
                 return mock( DataSourceModule.class );
             }

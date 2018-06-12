@@ -43,6 +43,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
@@ -91,12 +92,10 @@ public class DatabaseShutdownTest
             return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
             {
                 @Override
-                protected DataSourceModule createDataSource(
-                        PlatformModule platformModule,
-                        EditionModule editionModule,
-                        Supplier<QueryExecutionEngine> queryEngine )
+                protected DataSourceModule createDataSource( PlatformModule platformModule, EditionModule editionModule,
+                        Supplier<QueryExecutionEngine> queryEngine, Procedures procedures )
                 {
-                    DataSourceModule dataSource = new DataSourceModule( platformModule, editionModule, queryEngine );
+                    DataSourceModule dataSource = new DataSourceModule( platformModule, editionModule, queryEngine, procedures );
                     neoStoreDataSource = dataSource.neoStoreDataSource;
                     return dataSource;
                 }
