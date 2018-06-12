@@ -64,11 +64,12 @@ public class PrepareStoreCopyRequestHandlerTest
     public void setup()
     {
         StoreCopyCheckPointMutex storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
-        PrepareStoreCopyRequestHandler subject = createHandler( storeCopyCheckPointMutex );
+        when( neoStoreDataSource.getStoreCopyCheckPointMutex() ).thenReturn( storeCopyCheckPointMutex );
+        PrepareStoreCopyRequestHandler subject = createHandler();
         embeddedChannel = new EmbeddedChannel( subject );
     }
 
-    private PrepareStoreCopyRequestHandler createHandler( StoreCopyCheckPointMutex storeCopyCheckPointMutex )
+    private PrepareStoreCopyRequestHandler createHandler()
     {
         catchupServerProtocol = new CatchupServerProtocol();
         catchupServerProtocol.expect( CatchupServerProtocol.State.PREPARE_STORE_COPY );
@@ -79,7 +80,7 @@ public class PrepareStoreCopyRequestHandlerTest
         PrepareStoreCopyFilesProvider prepareStoreCopyFilesProvider = mock( PrepareStoreCopyFilesProvider.class );
         when( prepareStoreCopyFilesProvider.prepareStoreCopyFiles( any() ) ).thenReturn( prepareStoreCopyFiles );
 
-        return new PrepareStoreCopyRequestHandler( catchupServerProtocol, checkPointerSupplier, storeCopyCheckPointMutex, dataSourceSupplier,
+        return new PrepareStoreCopyRequestHandler( catchupServerProtocol, checkPointerSupplier, dataSourceSupplier,
                 prepareStoreCopyFilesProvider );
     }
 
@@ -131,7 +132,8 @@ public class PrepareStoreCopyRequestHandlerTest
         when( channelHandlerContext.writeAndFlush( any( PrepareStoreCopyResponse.class ) ) ).thenReturn( channelPromise );
 
         ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-        PrepareStoreCopyRequestHandler subjectHandler = createHandler( new StoreCopyCheckPointMutex( lock ) );
+        when( neoStoreDataSource.getStoreCopyCheckPointMutex() ).thenReturn( new StoreCopyCheckPointMutex( lock ) );
+        PrepareStoreCopyRequestHandler subjectHandler = createHandler();
 
         // and
         LongSet indexIds = LongSets.immutable.of( 42 );

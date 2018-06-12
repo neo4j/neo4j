@@ -883,6 +883,11 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         clearTransactions();
     }
 
+    public StoreCopyCheckPointMutex getStoreCopyCheckPointMutex()
+    {
+        return storeCopyCheckPointMutex;
+    }
+
     // For test purposes only, not thread safe
     public LifeSupport getLife()
     {

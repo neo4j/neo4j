@@ -121,15 +121,13 @@ public class StoreCopyServer
     private final FileSystemAbstraction fileSystem;
     private final File storeDirectory;
     private final Monitor monitor;
-    private final StoreCopyCheckPointMutex mutex;
 
     public StoreCopyServer( NeoStoreDataSource dataSource, CheckPointer checkPointer, FileSystemAbstraction fileSystem,
-            File storeDirectory, Monitor monitor, StoreCopyCheckPointMutex mutex )
+            File storeDirectory, Monitor monitor )
     {
         this.dataSource = dataSource;
         this.checkPointer = checkPointer;
         this.fileSystem = fileSystem;
-        this.mutex = mutex;
         this.storeDirectory = getMostCanonicalFile( storeDirectory );
         this.monitor = monitor;
     }
@@ -162,7 +160,9 @@ public class StoreCopyServer
 
             // Copy the store files
             long lastAppliedTransaction;
-            try ( Resource lock = mutex.storeCopy( checkPointAction ); ResourceIterator<StoreFileMetadata> files = dataSource.listStoreFiles( includeLogs ) )
+            StoreCopyCheckPointMutex mutex = dataSource.getStoreCopyCheckPointMutex();
+            try ( Resource lock = mutex.storeCopy( checkPointAction );
+                  ResourceIterator<StoreFileMetadata> files = dataSource.listStoreFiles( includeLogs ) )
             {
                 lastAppliedTransaction = checkPointer.lastCheckPointedTransactionId();
                 monitor.startStreamingStoreFiles( storeCopyIdentifier );

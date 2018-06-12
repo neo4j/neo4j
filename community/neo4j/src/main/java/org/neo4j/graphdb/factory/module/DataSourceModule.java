@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -65,6 +66,8 @@ public class DataSourceModule
     public final Supplier<InwardKernel> kernelAPI;
 
     public final Supplier<QueryExecutionEngine> queryExecutor;
+
+    public final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
 
     public final TransactionEventHandlers transactionEventHandlers;
 
@@ -110,6 +113,9 @@ public class DataSourceModule
 
         NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( editionModule.tokenHolders );
 
+        storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
+        deps.satisfyDependency( storeCopyCheckPointMutex );
+
         neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource(
                 storeDir,
                 config,
@@ -139,7 +145,7 @@ public class DataSourceModule
                 platformModule.availabilityGuard,
                 platformModule.clock,
                 editionModule.accessCapability,
-                platformModule.storeCopyCheckPointMutex,
+                storeCopyCheckPointMutex,
                 platformModule.recoveryCleanupWorkCollector,
                 editionModule.idController,
                 platformModule.databaseInfo.operationalMode,

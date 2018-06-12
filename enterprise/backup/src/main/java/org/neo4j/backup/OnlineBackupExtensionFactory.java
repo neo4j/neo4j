@@ -100,7 +100,7 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
             return new OnlineBackupKernelExtension( dependencies.getConfig(), dependencies.getGraphDatabaseAPI(),
                     dependencies.logService().getInternalLogProvider(), dependencies.monitors(), dependencies.neoStoreDataSource(), dependencies.checkPointer(),
                     dependencies.transactionIdStoreSupplier(), dependencies.logicalTransactionStoreSupplier(), dependencies.logFileInformationSupplier(),
-                    dependencies.fileSystemAbstraction(), dependencies.pageCache(), dependencies.storeCopyCheckPointMutex() );
+                    dependencies.fileSystemAbstraction() );
         }
         return new LifecycleAdapter();
     }
