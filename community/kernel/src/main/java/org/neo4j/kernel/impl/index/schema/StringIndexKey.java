@@ -192,7 +192,7 @@ class StringIndexKey extends NativeIndexKey<StringIndexKey>
         copyFrom( key, key.bytesLength );
     }
 
-    void copyFrom( StringSchemaKey key, int targetLength )
+    void copyFrom( StringIndexKey key, int targetLength )
     {
         setBytesLength( targetLength );
         System.arraycopy( key.bytes, 0, bytes, 0, targetLength );

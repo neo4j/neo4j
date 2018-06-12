@@ -67,7 +67,7 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Native
     public IndexSampler createSampler()
     {
         List<IndexSampler> samplers = new ArrayList<>();
-        for ( SpatialIndexPartReader<NativeSchemaValue> partReader : this )
+        for ( SpatialIndexPartReader<NativeIndexValue> partReader : this )
         {
             samplers.add( partReader.createSampler() );
         }

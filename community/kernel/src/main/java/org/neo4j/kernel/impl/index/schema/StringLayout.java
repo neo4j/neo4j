@@ -83,7 +83,7 @@ class StringLayout extends IndexLayout<StringIndexKey>
     }
 
     @Override
-    public void minimalSplitter( StringSchemaKey left, StringSchemaKey right, StringSchemaKey into )
+    public void minimalSplitter( StringIndexKey left, StringIndexKey right, StringIndexKey into )
     {
         int maxLength = Math.min( left.bytesLength, right.bytesLength );
         int targetLength = 0;
