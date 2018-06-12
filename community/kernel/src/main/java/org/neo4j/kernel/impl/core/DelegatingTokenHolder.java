@@ -29,10 +29,9 @@ import java.util.List;
 import java.util.function.IntPredicate;
 
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
-import org.neo4j.storageengine.api.Token;
-import org.neo4j.storageengine.api.TokenFactory;
 
 import static org.neo4j.function.Predicates.ALWAYS_FALSE_INT;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
@@ -42,30 +41,31 @@ import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
  * When asked for a token that isn't in the cache, delegates to a TokenCreator to create the token,
  * then stores it in the cache.
  */
-public abstract class DelegatingTokenHolder<TOKEN extends Token> implements TokenHolder<TOKEN>
+public class DelegatingTokenHolder implements TokenHolder
 {
-    protected InMemoryTokenCache<TOKEN> tokenCache = new InMemoryTokenCache<>( tokenType() );
+    public static final String TYPE_PROPERTY_KEY = "PropertyKey";
+    public static final String TYPE_RELATIONSHIP_TYPE = "RelationshipType";
+    public static final String TYPE_LABEL = "Label";
 
-    protected abstract String tokenType();
+    protected InMemoryTokenCache tokenCache;
 
     private final TokenCreator tokenCreator;
-    private final TokenFactory<TOKEN> tokenFactory;
 
-    DelegatingTokenHolder( TokenCreator tokenCreator, TokenFactory<TOKEN> tokenFactory )
+    public DelegatingTokenHolder( TokenCreator tokenCreator, String tokenType )
     {
         this.tokenCreator = tokenCreator;
-        this.tokenFactory = tokenFactory;
+        this.tokenCache = new InMemoryTokenCache( tokenType );
     }
 
     @Override
-    public void setInitialTokens( List<TOKEN> tokens ) throws NonUniqueTokenException
+    public void setInitialTokens( List<NamedToken> tokens ) throws NonUniqueTokenException
     {
         tokenCache.clear();
         tokenCache.putAll( tokens );
     }
 
     @Override
-    public void addToken( TOKEN token ) throws NonUniqueTokenException
+    public void addToken( NamedToken token ) throws NonUniqueTokenException
     {
         tokenCache.put( token );
     }
@@ -113,7 +113,7 @@ public abstract class DelegatingTokenHolder<TOKEN extends Token> implements Toke
         id = tokenCreator.createToken( name );
         try
         {
-            tokenCache.put( tokenFactory.newToken( name, id ) );
+            tokenCache.put( new NamedToken( name, id ) );
         }
         catch ( NonUniqueTokenException e )
         {
@@ -172,7 +172,7 @@ public abstract class DelegatingTokenHolder<TOKEN extends Token> implements Toke
             // We still have unresolved ids to create.
             ObjectIntHashMap<String> createdTokens = createUnresolvedTokens( unresolvedIndexes, names, ids );
             createdTokens.forEachKeyValue( ( name, index ) ->
-                    tokenCache.put( tokenFactory.newToken( name, ids[index] ) ) );
+                    tokenCache.put( new NamedToken( name, ids[index] ) ) );
         }
     }
 
@@ -236,9 +236,9 @@ public abstract class DelegatingTokenHolder<TOKEN extends Token> implements Toke
     }
 
     @Override
-    public TOKEN getTokenById( int id ) throws TokenNotFoundException
+    public NamedToken getTokenById( int id ) throws TokenNotFoundException
     {
-        TOKEN result = getTokenByIdOrNull( id );
+        NamedToken result = getTokenByIdOrNull( id );
         if ( result == null )
         {
             throw new TokenNotFoundException( "Token for id " + id );
@@ -247,7 +247,7 @@ public abstract class DelegatingTokenHolder<TOKEN extends Token> implements Toke
     }
 
     @Override
-    public TOKEN getTokenByIdOrNull( int id )
+    public NamedToken getTokenByIdOrNull( int id )
     {
         return tokenCache.getToken( id );
     }
@@ -270,7 +270,7 @@ public abstract class DelegatingTokenHolder<TOKEN extends Token> implements Toke
     }
 
     @Override
-    public Iterable<TOKEN> getAllTokens()
+    public Iterable<NamedToken> getAllTokens()
     {
         return tokenCache.allTokens();
     }

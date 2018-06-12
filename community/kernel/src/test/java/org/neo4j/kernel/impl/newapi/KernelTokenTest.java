@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.TokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.storageengine.api.StorageReader;
 
 import static org.hamcrest.Matchers.is;
@@ -33,21 +34,23 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 import static org.neo4j.test.assertion.Assert.assertException;
 
 public class KernelTokenTest
 {
     private final StorageReader storeReadLayer = mock( StorageReader.class );
     private final KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
-    private KernelToken token = new KernelToken( storeReadLayer, ktx );
+    private final TokenHolders tokenHolders = mockedTokenHolders();
+    private KernelToken token = new KernelToken( storeReadLayer, ktx, tokenHolders );
 
     @Test
     public void labelGetOrCreateForName() throws Exception
     {
         assertIllegalToken( () -> token.labelGetOrCreateForName( null ) );
         assertIllegalToken( () -> token.labelGetOrCreateForName( "" ) );
-        when( storeReadLayer.labelGetForName( "label" ) ).thenReturn( TokenHolder.NO_ID );
-        when( storeReadLayer.labelGetOrCreateForName( "label" ) ).thenReturn( 42 );
+        when( tokenHolders.labelTokens().getIdByName( "label" ) ).thenReturn( TokenHolder.NO_ID );
+        when( tokenHolders.labelTokens().getOrCreateId( "label" ) ).thenReturn( 42 );
         assertThat( token.labelGetOrCreateForName( "label" ), is( 42 ) );
     }
 
@@ -58,9 +61,9 @@ public class KernelTokenTest
         assertIllegalToken( () -> token.labelGetOrCreateForNames( new String[]{""}, new int[1] ) );
         String[] names = {"a", "b"};
         int[] ids = new int[2];
-        when( storeReadLayer.labelGetForName( "a" ) ).thenReturn( TokenHolder.NO_ID );
+        when( tokenHolders.labelTokens().getIdByName( "a" ) ).thenReturn( TokenHolder.NO_ID );
         token.labelGetOrCreateForNames( names, ids );
-        verify( storeReadLayer ).labelGetOrCreateForNames( names, ids );
+        verify( tokenHolders.labelTokens() ).getOrCreateIds( names, ids );
     }
 
     @Test
@@ -68,8 +71,8 @@ public class KernelTokenTest
     {
         assertIllegalToken( () -> token.propertyKeyGetOrCreateForName( null ) );
         assertIllegalToken( () -> token.propertyKeyGetOrCreateForName( "" ) );
-        when( storeReadLayer.propertyKeyGetForName( "prop" ) ).thenReturn( TokenHolder.NO_ID );
-        when( storeReadLayer.propertyKeyGetOrCreateForName( "prop" ) ).thenReturn( 42 );
+        when( tokenHolders.propertyKeyTokens().getIdByName( "prop" ) ).thenReturn( TokenHolder.NO_ID );
+        when( tokenHolders.propertyKeyTokens().getOrCreateId( "prop" ) ).thenReturn( 42 );
         assertThat( token.propertyKeyGetOrCreateForName( "prop" ), is( 42 ) );
     }
 
@@ -80,9 +83,9 @@ public class KernelTokenTest
         assertIllegalToken( () -> token.propertyKeyGetOrCreateForNames( new String[]{""}, new int[1] ) );
         String[] names = {"a", "b"};
         int[] ids = new int[2];
-        when( storeReadLayer.propertyKeyGetForName( "a" ) ).thenReturn( TokenHolder.NO_ID );
+        when( tokenHolders.propertyKeyTokens().getIdByName( "a" ) ).thenReturn( TokenHolder.NO_ID );
         token.propertyKeyGetOrCreateForNames( names, ids );
-        verify( storeReadLayer ).propertyKeyGetOrCreateForNames( names, ids );
+        verify( tokenHolders.propertyKeyTokens() ).getOrCreateIds( names, ids );
     }
 
     @Test
@@ -90,8 +93,8 @@ public class KernelTokenTest
     {
         assertIllegalToken( () -> token.relationshipTypeGetOrCreateForName( null ) );
         assertIllegalToken( () -> token.relationshipTypeGetOrCreateForName( "" ) );
-        when( storeReadLayer.relationshipTypeGetForName( "rel" ) ).thenReturn( TokenHolder.NO_ID );
-        when( storeReadLayer.relationshipTypeGetOrCreateForName( "rel" ) ).thenReturn( 42 );
+        when( tokenHolders.relationshipTypeTokens().getIdByName( "rel" ) ).thenReturn( TokenHolder.NO_ID );
+        when( tokenHolders.relationshipTypeTokens().getOrCreateId( "rel" ) ).thenReturn( 42 );
         assertThat( token.relationshipTypeGetOrCreateForName( "rel" ), is( 42 ) );
     }
 
@@ -102,9 +105,9 @@ public class KernelTokenTest
         assertIllegalToken( () -> token.relationshipTypeGetOrCreateForNames( new String[]{""}, new int[1] ) );
         String[] names = {"a", "b"};
         int[] ids = new int[2];
-        when( storeReadLayer.relationshipTypeGetForName( "a" ) ).thenReturn( TokenHolder.NO_ID );
+        when( tokenHolders.relationshipTypeTokens().getIdByName( "a" ) ).thenReturn( TokenHolder.NO_ID );
         token.relationshipTypeGetOrCreateForNames( names, ids );
-        verify( storeReadLayer ).relationshipTypeGetOrCreateForNames( names, ids );
+        verify( tokenHolders.relationshipTypeTokens() ).getOrCreateIds( names, ids );
     }
 
     private void assertIllegalToken( ThrowingAction<KernelException> f )

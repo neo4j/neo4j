@@ -56,6 +56,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.tracing.TransactionTracer.NULL;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
+import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 
 public class KernelTransactionFactory
 {
@@ -96,7 +97,7 @@ public class KernelTransactionFactory
                 PageCursorTracerSupplier.NULL,
                 storageEngine, new CanWrite(), AutoIndexing.UNSUPPORTED,
                 mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(),
-                mock( SchemaState.class), mock( IndexingService.class ) );
+                mock( SchemaState.class), mock( IndexingService.class ), mockedTokenHolders() );
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 

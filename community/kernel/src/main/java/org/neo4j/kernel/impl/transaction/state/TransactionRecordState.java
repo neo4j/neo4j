@@ -25,7 +25,7 @@ import java.util.Comparator;
 
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.core.RelationshipTypeToken;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -35,7 +35,6 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -53,7 +52,6 @@ import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.values.storable.Value;
@@ -429,7 +427,7 @@ public class TransactionRecordState implements RecordState
      */
     public void createPropertyKeyToken( String key, long id )
     {
-        TokenCreator<PropertyKeyTokenRecord, Token> creator =
+        TokenCreator<PropertyKeyTokenRecord> creator =
                 new TokenCreator<>( neoStores.getPropertyKeyTokenStore() );
         creator.createToken( key, id, recordChangeSet.getPropertyKeyTokenChanges() );
     }
@@ -442,7 +440,7 @@ public class TransactionRecordState implements RecordState
      */
     public void createLabelToken( String name, long id )
     {
-        TokenCreator<LabelTokenRecord, Token> creator =
+        TokenCreator<LabelTokenRecord> creator =
                 new TokenCreator<>( neoStores.getLabelTokenStore() );
         creator.createToken( name, id, recordChangeSet.getLabelTokenChanges() );
     }
@@ -456,7 +454,7 @@ public class TransactionRecordState implements RecordState
      */
     public void createRelationshipTypeToken( String name, long id )
     {
-        TokenCreator<RelationshipTypeTokenRecord, RelationshipTypeToken> creator =
+        TokenCreator<RelationshipTypeTokenRecord> creator =
                 new TokenCreator<>( neoStores.getRelationshipTypeTokenStore() );
         creator.createToken( name, id, recordChangeSet.getRelationshipTypeTokenChanges() );
     }

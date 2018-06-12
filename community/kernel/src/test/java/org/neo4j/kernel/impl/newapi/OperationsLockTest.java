@@ -84,6 +84,7 @@ import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForLabel;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForSchema;
 import static org.neo4j.kernel.impl.newapi.TwoPhaseNodeForRelationshipLockingTest.returnRelationships;
+import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public class OperationsLockTest
@@ -135,7 +136,7 @@ public class OperationsLockTest
                 ExplicitIndexStore.class ), mock( Procedures.class ), mock( SchemaState.class ) );
         constraintIndexCreator = mock( ConstraintIndexCreator.class );
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),storageReader,
-                 transaction, new KernelToken( storageReader, transaction ), cursors, autoindexing,
+                 transaction, new KernelToken( storageReader, transaction, mockedTokenHolders() ), cursors, autoindexing,
                 constraintIndexCreator, mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ) );
         operations.initialize();
 

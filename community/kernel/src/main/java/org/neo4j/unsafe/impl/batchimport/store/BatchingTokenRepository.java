@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.ToIntFunction;
 
-import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -36,7 +35,6 @@ import org.neo4j.kernel.impl.transaction.state.Loaders;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.Loader;
 import org.neo4j.kernel.impl.transaction.state.TokenCreator;
-import org.neo4j.storageengine.api.Token;
 import org.neo4j.unsafe.batchinsert.internal.DirectRecordAccess;
 
 import static java.lang.Math.max;
@@ -47,16 +45,16 @@ import static java.lang.Math.toIntExact;
  * to storage as part of {@link #close() closing}. Instances of this class are thread safe
  * to call {@link #getOrCreateId(String)} methods on.
  */
-public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN extends Token>
+public abstract class BatchingTokenRepository<RECORD extends TokenRecord>
         implements ToIntFunction<Object>, Closeable
 {
     private final Map<String,Integer> tokens = new HashMap<>();
-    private final TokenStore<RECORD, TOKEN> store;
+    private final TokenStore<RECORD> store;
     private final Loader<RECORD,Void> loader;
     private int highId;
     private int highestCreatedId;
 
-    public BatchingTokenRepository( TokenStore<RECORD,TOKEN> store, Loader<RECORD,Void> loader )
+    public BatchingTokenRepository( TokenStore<RECORD> store, Loader<RECORD,Void> loader )
     {
         this.store = store;
         this.loader = loader;
@@ -180,7 +178,7 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
         RecordAccess<RECORD,Void> recordAccess = new DirectRecordAccess<>( store, loader );
 
         // Create the tokens
-        TokenCreator<RECORD, TOKEN> creator = new TokenCreator<>( store );
+        TokenCreator<RECORD> creator = new TokenCreator<>( store );
         int highest = highestCreatedId;
         for ( Map.Entry<Integer,String> tokenToCreate : sortCreatedTokensById() )
         {
@@ -208,27 +206,26 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
     }
 
     public static class BatchingPropertyKeyTokenRepository
-            extends BatchingTokenRepository<PropertyKeyTokenRecord, Token>
+            extends BatchingTokenRepository<PropertyKeyTokenRecord>
     {
-        public BatchingPropertyKeyTokenRepository( TokenStore<PropertyKeyTokenRecord, Token> store )
+        public BatchingPropertyKeyTokenRepository( TokenStore<PropertyKeyTokenRecord> store )
         {
             super( store, Loaders.propertyKeyTokenLoader( store ) );
         }
     }
 
-    public static class BatchingLabelTokenRepository extends BatchingTokenRepository<LabelTokenRecord, Token>
+    public static class BatchingLabelTokenRepository extends BatchingTokenRepository<LabelTokenRecord>
     {
-        public BatchingLabelTokenRepository( TokenStore<LabelTokenRecord, Token> store )
+        public BatchingLabelTokenRepository( TokenStore<LabelTokenRecord> store )
         {
             super( store, Loaders.labelTokenLoader( store ) );
         }
     }
 
     public static class BatchingRelationshipTypeTokenRepository
-            extends BatchingTokenRepository<RelationshipTypeTokenRecord,RelationshipTypeToken>
+            extends BatchingTokenRepository<RelationshipTypeTokenRecord>
     {
-        public BatchingRelationshipTypeTokenRepository( TokenStore<RelationshipTypeTokenRecord,
-                RelationshipTypeToken> store )
+        public BatchingRelationshipTypeTokenRepository( TokenStore<RelationshipTypeTokenRecord> store )
         {
             super( store, Loaders.relationshipTypeTokenLoader( store ) );
         }

@@ -19,34 +19,24 @@
  */
 package org.neo4j.kernel.impl.cache;
 
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.RelationshipTypeToken;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
-import org.neo4j.storageengine.api.Token;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 public class BridgingCacheAccess implements CacheAccessBackDoor
 {
     private final SchemaCache schemaCache;
     private final SchemaState schemaState;
-    private final PropertyKeyTokenHolder propertyKeyTokenHolder;
-    private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
-    private final LabelTokenHolder labelTokenHolder;
+    private final TokenHolders tokenHolders;
 
-    public BridgingCacheAccess( SchemaCache schemaCache, SchemaState schemaState,
-            PropertyKeyTokenHolder propertyKeyTokenHolder,
-            RelationshipTypeTokenHolder relationshipTypeTokenHolder,
-            LabelTokenHolder labelTokenHolder )
+    public BridgingCacheAccess( SchemaCache schemaCache, SchemaState schemaState, TokenHolders tokenHolders )
     {
         this.schemaCache = schemaCache;
         this.schemaState = schemaState;
-        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
-        this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
-        this.labelTokenHolder = labelTokenHolder;
+        this.tokenHolders = tokenHolders;
     }
 
     @Override
@@ -63,20 +53,20 @@ public class BridgingCacheAccess implements CacheAccessBackDoor
     }
 
     @Override
-    public void addRelationshipTypeToken( RelationshipTypeToken type )
+    public void addRelationshipTypeToken( NamedToken type )
     {
-        relationshipTypeTokenHolder.addToken( type );
+        tokenHolders.relationshipTypeTokens().addToken( type );
     }
 
     @Override
-    public void addLabelToken( Token label )
+    public void addLabelToken( NamedToken label )
     {
-        labelTokenHolder.addToken( label );
+        tokenHolders.labelTokens().addToken( label );
     }
 
     @Override
-    public void addPropertyKeyToken( Token propertyKey )
+    public void addPropertyKeyToken( NamedToken propertyKey )
     {
-        propertyKeyTokenHolder.addToken( propertyKey );
+        tokenHolders.propertyKeyTokens().addToken( propertyKey );
     }
 }

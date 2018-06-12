@@ -23,8 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
-import org.neo4j.storageengine.api.Token;
 
 /**
  * Token cache that provide id -> TOKEN and name -> id mappings.
@@ -34,13 +34,11 @@ import org.neo4j.storageengine.api.Token;
  * Implementation does not provide any atomicity guarantees. Mapping updates will be visible independently from each
  * other.
  * Implementation is not thread safe.
- *
- * @param <TOKEN> token type
  */
-public class InMemoryTokenCache<TOKEN extends Token>
+public class InMemoryTokenCache
 {
     private final Map<String, Integer> nameToId = new CopyOnWriteHashMap<>();
-    private final Map<Integer, TOKEN> idToToken = new CopyOnWriteHashMap<>();
+    private final Map<Integer,NamedToken> idToToken = new CopyOnWriteHashMap<>();
     private final String tokenType;
 
     public InMemoryTokenCache( String tokenType )
@@ -54,7 +52,7 @@ public class InMemoryTokenCache<TOKEN extends Token>
         idToToken.clear();
     }
 
-    private void putAndEnsureUnique( Map<String,Integer> nameToId, TOKEN token, String tokenType )
+    private void putAndEnsureUnique( Map<String,Integer> nameToId, NamedToken token, String tokenType )
     {
         Integer previous = nameToId.putIfAbsent( token.name(), token.id() );
         if ( previous != null && previous != token.id() )
@@ -65,12 +63,12 @@ public class InMemoryTokenCache<TOKEN extends Token>
         }
     }
 
-    public void putAll( List<TOKEN> tokens ) throws NonUniqueTokenException
+    public void putAll( List<NamedToken> tokens ) throws NonUniqueTokenException
     {
         Map<String, Integer> newNameToId = new HashMap<>();
-        Map<Integer, TOKEN> newIdToToken = new HashMap<>();
+        Map<Integer, NamedToken> newIdToToken = new HashMap<>();
 
-        for ( TOKEN token : tokens )
+        for ( NamedToken token : tokens )
         {
             newIdToToken.put( token.id(), token );
             putAndEnsureUnique( newNameToId, token, tokenType );
@@ -80,7 +78,7 @@ public class InMemoryTokenCache<TOKEN extends Token>
         nameToId.putAll( newNameToId );
     }
 
-    public void put( TOKEN token ) throws NonUniqueTokenException
+    public void put( NamedToken token ) throws NonUniqueTokenException
     {
         idToToken.put( token.id(), token );
         putAndEnsureUnique( nameToId, token, tokenType );
@@ -91,12 +89,12 @@ public class InMemoryTokenCache<TOKEN extends Token>
         return nameToId.get( name );
     }
 
-    public TOKEN getToken( int id )
+    public NamedToken getToken( int id )
     {
         return idToToken.get( id );
     }
 
-    public Iterable<TOKEN> allTokens()
+    public Iterable<NamedToken> allTokens()
     {
         return idToToken.values();
     }

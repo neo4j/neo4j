@@ -35,7 +35,6 @@ import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
@@ -72,7 +71,7 @@ public class GraphDatabaseFacadeTest
         Config config = Config.defaults();
         when( resolver.resolveDependency( Config.class ) ).thenReturn( config );
 
-        graphDatabaseFacade.init( spi, contextBridge, config, mock( RelationshipTypeTokenHolder.class ) );
+        graphDatabaseFacade.init( spi, contextBridge, config );
     }
 
     @Test

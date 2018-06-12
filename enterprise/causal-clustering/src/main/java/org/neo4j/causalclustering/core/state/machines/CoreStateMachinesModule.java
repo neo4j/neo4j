@@ -61,10 +61,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.RelationshipTypeToken;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -75,7 +72,6 @@ import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.Token;
 
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.array_block_id_allocation_size;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.id_alloc_state_size;
@@ -103,9 +99,7 @@ public class CoreStateMachinesModule
 
     public final IdGeneratorFactory idGeneratorFactory;
     public final IdTypeConfigurationProvider idTypeConfigurationProvider;
-    public final LabelTokenHolder labelTokenHolder;
-    public final PropertyKeyTokenHolder propertyKeyTokenHolder;
-    public final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
+    public final TokenHolders tokenHolders;
     public final Locks lockManager;
     public final CommitProcessFactory commitProcessFactory;
 
@@ -150,17 +144,17 @@ public class CoreStateMachinesModule
 
         dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
-        TokenRegistry<RelationshipTypeToken> relationshipTypeTokenRegistry = new TokenRegistry<>( "RelationshipType" );
+        TokenRegistry relationshipTypeTokenRegistry = new TokenRegistry( "RelationshipType" );
         ReplicatedRelationshipTypeTokenHolder relationshipTypeTokenHolder =
                 new ReplicatedRelationshipTypeTokenHolder( relationshipTypeTokenRegistry, replicator,
                         this.idGeneratorFactory, dependencies );
 
-        TokenRegistry<Token> propertyKeyTokenRegistry = new TokenRegistry<>( "PropertyKey" );
+        TokenRegistry propertyKeyTokenRegistry = new TokenRegistry( "PropertyKey" );
         ReplicatedPropertyKeyTokenHolder propertyKeyTokenHolder =
                 new ReplicatedPropertyKeyTokenHolder( propertyKeyTokenRegistry, replicator, this.idGeneratorFactory,
                         dependencies );
 
-        TokenRegistry<Token> labelTokenRegistry = new TokenRegistry<>( "Label" );
+        TokenRegistry labelTokenRegistry = new TokenRegistry( "Label" );
         ReplicatedLabelTokenHolder labelTokenHolder =
                 new ReplicatedLabelTokenHolder( labelTokenRegistry, replicator, this.idGeneratorFactory, dependencies );
 
@@ -168,17 +162,14 @@ public class CoreStateMachinesModule
                 new ReplicatedLockTokenStateMachine( lockTokenState );
 
         VersionContextSupplier versionContextSupplier = platformModule.versionContextSupplier;
-        ReplicatedTokenStateMachine<Token> labelTokenStateMachine =
-                new ReplicatedTokenStateMachine<>( labelTokenRegistry, new Token.Factory(), logProvider,
-                        versionContextSupplier );
+        ReplicatedTokenStateMachine labelTokenStateMachine =
+                new ReplicatedTokenStateMachine( labelTokenRegistry, logProvider, versionContextSupplier );
 
-        ReplicatedTokenStateMachine<Token> propertyKeyTokenStateMachine =
-                new ReplicatedTokenStateMachine<>( propertyKeyTokenRegistry, new Token.Factory(), logProvider,
-                        versionContextSupplier );
+        ReplicatedTokenStateMachine propertyKeyTokenStateMachine =
+                new ReplicatedTokenStateMachine( propertyKeyTokenRegistry, logProvider, versionContextSupplier );
 
-        ReplicatedTokenStateMachine<RelationshipTypeToken> relationshipTypeTokenStateMachine =
-                new ReplicatedTokenStateMachine<>( relationshipTypeTokenRegistry, new RelationshipTypeToken.Factory(),
-                        logProvider, versionContextSupplier );
+        ReplicatedTokenStateMachine relationshipTypeTokenStateMachine =
+                new ReplicatedTokenStateMachine( relationshipTypeTokenRegistry, logProvider, versionContextSupplier );
 
         PageCursorTracerSupplier cursorTracerSupplier = platformModule.tracers.pageCursorTracerSupplier;
         ReplicatedTransactionStateMachine replicatedTxStateMachine =
@@ -203,9 +194,7 @@ public class CoreStateMachinesModule
             return new ReplicatedTransactionCommitProcess( replicator );
         };
 
-        this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
-        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
-        this.labelTokenHolder = labelTokenHolder;
+        this.tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
     }
 
     private Map<IdType,Integer> getIdTypeAllocationSizeFromConfig( Config config )

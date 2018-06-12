@@ -75,6 +75,7 @@ import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.ActiveLock;
@@ -195,7 +196,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             StorageEngine storageEngine, AccessCapability accessCapability, AutoIndexing autoIndexing,
             ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier,
             CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics,
-            SchemaState schemaState, IndexingProvidersService indexProviders )
+            SchemaState schemaState, IndexingProvidersService indexProviders,
+            TokenHolders tokenHolders )
     {
         this.schemaWriteGuard = schemaWriteGuard;
         this.hooks = hooks;
@@ -227,7 +229,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         allStoreHolder,
                         new IndexTxStateUpdater( storageReader, allStoreHolder, indexProviders ), storageReader,
                         this,
-                        new KernelToken( storageReader, this ),
+                        new KernelToken( storageReader, this, tokenHolders ),
                         cursors,
                         autoIndexing,
                         constraintIndexCreator,

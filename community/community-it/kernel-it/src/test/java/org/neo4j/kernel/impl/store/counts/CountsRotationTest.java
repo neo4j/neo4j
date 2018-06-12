@@ -51,10 +51,11 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
-import org.neo4j.kernel.impl.core.LabelTokenHolder;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -310,8 +311,13 @@ public class CountsRotationTest
                 .testAccessNeoStores().getCounts();
         assertEquals( 1 + 1, tracker.nodeCount( -1, newDoubleLongRegister() ).readSecond() );
 
-        final LabelTokenHolder holder = db.getDependencyResolver().resolveDependency( LabelTokenHolder.class );
-        int labelId = holder.getIdByName( C.name() );
+        int labelId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            KernelTransaction transaction =
+                    db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
+            labelId = transaction.tokenRead().nodeLabel( C.name() );
+        }
         assertEquals( 1, tracker.nodeCount( labelId, newDoubleLongRegister() ).readSecond() );
 
         db.shutdown();

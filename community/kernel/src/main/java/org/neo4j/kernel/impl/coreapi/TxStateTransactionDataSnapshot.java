@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -200,6 +201,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
               StoragePropertyCursor properties = store.allocatePropertyCursor();
               StorageRelationshipScanCursor relationship = store.allocateRelationshipScanCursor() )
         {
+            TokenRead tokenRead = transaction.tokenRead();
             state.addedAndRemovedNodes().getRemoved().each( nodeId ->
             {
                 node.single( nodeId );
@@ -210,8 +212,8 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                     {
                         try
                         {
-                            removedNodeProperties.add( new NodePropertyEntryView( nodeId, store.propertyKeyGetName( properties.propertyKey() ), null,
-                                    properties.propertyValue() ) );
+                            removedNodeProperties.add( new NodePropertyEntryView( nodeId, tokenRead.propertyKeyName( properties.propertyKey() ),
+                                    null, properties.propertyValue() ) );
                         }
                         catch ( PropertyKeyIdNotFoundKernelException e )
                         {
@@ -223,7 +225,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                     {
                         try
                         {
-                            removedLabels.add( new LabelEntryView( nodeId, store.labelGetName( labelId ) ) );
+                            removedLabels.add( new LabelEntryView( nodeId, tokenRead.nodeLabelName( toIntExact( labelId ) ) ) );
                         }
                         catch ( LabelNotFoundKernelException e )
                         {
@@ -244,7 +246,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                         try
                         {
                             removedRelationshipProperties.add(
-                                    new RelationshipPropertyEntryView( relationshipProxy, store.propertyKeyGetName( properties.propertyKey() ), null,
+                                    new RelationshipPropertyEntryView( relationshipProxy, tokenRead.propertyKeyName( properties.propertyKey() ), null,
                                             properties.propertyValue() ) );
                         }
                         catch ( PropertyKeyIdNotFoundKernelException e )
@@ -262,14 +264,14 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                 {
                     StorageProperty property = added.next();
                     assignedNodeProperties.add( new NodePropertyEntryView( nodeId,
-                            store.propertyKeyGetName( property.propertyKeyId() ), property.value(),
+                            tokenRead.propertyKeyName( property.propertyKeyId() ), property.value(),
                             committedValue( nodeState, property.propertyKeyId(), node, properties ) ) );
                 }
                 nodeState.removedProperties().each( id ->
                 {
                     try
                     {
-                        final NodePropertyEntryView entryView = new NodePropertyEntryView( nodeId, store.propertyKeyGetName( id ), null,
+                        final NodePropertyEntryView entryView = new NodePropertyEntryView( nodeId, tokenRead.propertyKeyName( id ), null,
                                 committedValue( nodeState, id, node, properties ) );
                         removedNodeProperties.add( entryView );
                     }
@@ -291,14 +293,14 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                 {
                     StorageProperty property = added.next();
                     assignedRelationshipProperties.add( new RelationshipPropertyEntryView( relationshipProxy,
-                            store.propertyKeyGetName( property.propertyKeyId() ), property.value(),
+                            tokenRead.propertyKeyName( property.propertyKeyId() ), property.value(),
                             committedValue( relState, property.propertyKeyId(), relationship, properties ) ) );
                 }
                 relState.removedProperties().each( id ->
                 {
                     try
                     {
-                        final RelationshipPropertyEntryView entryView = new RelationshipPropertyEntryView( relationshipProxy, store.propertyKeyGetName( id ),
+                        final RelationshipPropertyEntryView entryView = new RelationshipPropertyEntryView( relationshipProxy, tokenRead.propertyKeyName( id ),
                                 null, committedValue( relState, id, relationship, properties ) );
                         removedRelationshipProperties.add( entryView );
                     }
@@ -321,7 +323,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         {
             try
             {
-                final LabelEntry labelEntryView = new LabelEntryView( nodeId, store.labelGetName( toIntExact( labelId ) ) );
+                final LabelEntry labelEntryView = new LabelEntryView( nodeId, transaction.tokenRead().nodeLabelName( toIntExact( labelId ) ) );
                 target.add( labelEntryView );
             }
             catch ( LabelNotFoundKernelException e )

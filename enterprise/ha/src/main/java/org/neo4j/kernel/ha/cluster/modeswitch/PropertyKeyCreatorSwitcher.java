@@ -31,30 +31,27 @@ import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 
 public class PropertyKeyCreatorSwitcher extends AbstractComponentSwitcher<TokenCreator>
 {
     private final DelegateInvocationHandler<Master> master;
     private final RequestContextFactory requestContextFactory;
     private final Supplier<Kernel> kernelSupplier;
-    private final IdGeneratorFactory idGeneratorFactory;
 
     public PropertyKeyCreatorSwitcher( DelegateInvocationHandler<TokenCreator> delegate,
             DelegateInvocationHandler<Master> master, RequestContextFactory requestContextFactory,
-            Supplier<Kernel> kernelSupplier, IdGeneratorFactory idGeneratorFactory )
+            Supplier<Kernel> kernelSupplier )
     {
         super( delegate );
         this.master = master;
         this.requestContextFactory = requestContextFactory;
         this.kernelSupplier = kernelSupplier;
-        this.idGeneratorFactory = idGeneratorFactory;
     }
 
     @Override
     protected TokenCreator getMasterImpl()
     {
-        return new DefaultPropertyTokenCreator( kernelSupplier, idGeneratorFactory );
+        return new DefaultPropertyTokenCreator( kernelSupplier );
     }
 
     @Override

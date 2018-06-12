@@ -27,9 +27,10 @@ import java.util.function.Consumer;
 
 import org.neo4j.causalclustering.core.state.Result;
 import org.neo4j.causalclustering.core.state.machines.StateMachine;
+import org.neo4j.internal.kernel.api.NamedToken;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.locking.LockGroup;
@@ -41,29 +42,25 @@ import org.neo4j.kernel.impl.util.collection.NoSuchEntryException;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.Token;
-import org.neo4j.storageengine.api.TokenFactory;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static java.lang.String.format;
 import static org.neo4j.causalclustering.core.state.machines.tx.LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader;
 
-public class ReplicatedTokenStateMachine<TOKEN extends Token> implements StateMachine<ReplicatedTokenRequest>
+public class ReplicatedTokenStateMachine implements StateMachine<ReplicatedTokenRequest>
 {
     private TransactionCommitProcess commitProcess;
 
-    private final TokenRegistry<TOKEN> tokenRegistry;
-    private final TokenFactory<TOKEN> tokenFactory;
+    private final TokenRegistry tokenRegistry;
     private final VersionContext versionContext;
 
     private final Log log;
     private long lastCommittedIndex = -1;
 
-    public ReplicatedTokenStateMachine( TokenRegistry<TOKEN> tokenRegistry, TokenFactory<TOKEN> tokenFactory,
+    public ReplicatedTokenStateMachine( TokenRegistry tokenRegistry,
             LogProvider logProvider, VersionContextSupplier versionContextSupplier )
     {
         this.tokenRegistry = tokenRegistry;
-        this.tokenFactory = tokenFactory;
         this.versionContext = versionContextSupplier.getVersionContext();
         this.log = logProvider.getLog( getClass() );
     }
@@ -99,7 +96,7 @@ public class ReplicatedTokenStateMachine<TOKEN extends Token> implements StateMa
                 throw new IllegalStateException( "Commands did not contain token command" );
             }
 
-            tokenRegistry.addToken( tokenFactory.newToken( tokenRequest.tokenName(), tokenId ) );
+            tokenRegistry.addToken( new NamedToken( tokenRequest.tokenName(), tokenId ) );
         }
 
         callback.accept( Result.of( tokenId ) );

@@ -67,6 +67,7 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
+import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 
 public class KernelTransactionTerminationTest
 {
@@ -350,7 +351,7 @@ public class KernelTransactionTerminationTest
                     mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(),
                     AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ),
                     EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class),
-                    mock( IndexingService.class ) );
+                    mock( IndexingService.class ), mockedTokenHolders() );
 
             this.monitor = monitor;
         }

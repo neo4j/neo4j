@@ -42,11 +42,11 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
 import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
-import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
-import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
+import org.neo4j.kernel.impl.core.TokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
@@ -116,14 +116,15 @@ public class CommunityEditionModule extends EditionModule
         dependencies.satisfyDependency( idGeneratorFactory );
         dependencies.satisfyDependency( idController );
 
-        propertyKeyTokenHolder = new DelegatingPropertyKeyTokenHolder( createPropertyKeyCreator( config, dataSourceManager, idGeneratorFactory ) );
-        labelTokenHolder = new DelegatingLabelTokenHolder( createLabelIdCreator( config, dataSourceManager, idGeneratorFactory ) );
-        relationshipTypeTokenHolder =
-                new DelegatingRelationshipTypeTokenHolder( createRelationshipTypeCreator( config, dataSourceManager, idGeneratorFactory ) );
+        TokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder(
+                createPropertyKeyCreator( config, dataSourceManager ), DelegatingTokenHolder.TYPE_PROPERTY_KEY );
+        DelegatingTokenHolder labelTokenHolder = new DelegatingTokenHolder(
+                createLabelIdCreator( config, dataSourceManager ), DelegatingTokenHolder.TYPE_LABEL );
+        DelegatingTokenHolder relationshipTypeTokenHolder = new DelegatingTokenHolder(
+                createRelationshipTypeCreator( config, dataSourceManager ), DelegatingTokenHolder.TYPE_RELATIONSHIP_TYPE );
+        tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
 
-        dependencies.satisfyDependency( propertyKeyTokenHolder );
-        dependencies.satisfyDependency( labelTokenHolder );
-        dependencies.satisfyDependency( relationshipTypeTokenHolder );
+        dependencies.satisfyDependency( tokenHolders );
 
         dependencies.satisfyDependency(
                 createKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade, life ) );
@@ -182,8 +183,7 @@ public class CommunityEditionModule extends EditionModule
         return SchemaWriteGuard.ALLOW_ALL_WRITES;
     }
 
-    private TokenCreator createRelationshipTypeCreator( Config config, DataSourceManager dataSourceManager,
-            IdGeneratorFactory idGeneratorFactory )
+    private TokenCreator createRelationshipTypeCreator( Config config, DataSourceManager dataSourceManager )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -191,12 +191,11 @@ public class CommunityEditionModule extends EditionModule
         }
         else
         {
-            return new DefaultRelationshipTypeCreator( dataSourceManager, idGeneratorFactory );
+            return new DefaultRelationshipTypeCreator( dataSourceManager );
         }
     }
 
-    private TokenCreator createPropertyKeyCreator( Config config, DataSourceManager dataSourceManager,
-            IdGeneratorFactory idGeneratorFactory )
+    private TokenCreator createPropertyKeyCreator( Config config, DataSourceManager dataSourceManager )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -204,12 +203,11 @@ public class CommunityEditionModule extends EditionModule
         }
         else
         {
-            return new DefaultPropertyTokenCreator( dataSourceManager, idGeneratorFactory );
+            return new DefaultPropertyTokenCreator( dataSourceManager );
         }
     }
 
-    private TokenCreator createLabelIdCreator( Config config, DataSourceManager dataSourceManager,
-            IdGeneratorFactory idGeneratorFactory )
+    private TokenCreator createLabelIdCreator( Config config, DataSourceManager dataSourceManager )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -217,7 +215,7 @@ public class CommunityEditionModule extends EditionModule
         }
         else
         {
-            return new DefaultLabelIdCreator( dataSourceManager, idGeneratorFactory );
+            return new DefaultLabelIdCreator( dataSourceManager );
         }
     }
 

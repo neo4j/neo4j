@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,7 +44,6 @@ import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupComman
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.TokenCommand;
-import org.neo4j.storageengine.api.Token;
 
 import static java.lang.Math.max;
 
@@ -175,8 +173,7 @@ public class HighIdTransactionApplier extends TransactionApplier.Adapter
         }
     }
 
-    private <RECORD extends TokenRecord, TOKEN extends Token>
-    void trackToken( TokenStore<RECORD, TOKEN> tokenStore, TokenCommand<RECORD> tokenCommand )
+    private <RECORD extends TokenRecord> void trackToken( TokenStore<RECORD> tokenStore, TokenCommand<RECORD> tokenCommand )
     {
         track( tokenStore, tokenCommand.getAfter() );
         track( tokenStore.getNameStore(), tokenCommand.getAfter().getNameRecords() );

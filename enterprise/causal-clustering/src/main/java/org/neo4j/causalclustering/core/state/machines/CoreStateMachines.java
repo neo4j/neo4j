@@ -26,24 +26,22 @@ import java.io.IOException;
 import java.util.function.Consumer;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
+import org.neo4j.causalclustering.core.state.CommandDispatcher;
+import org.neo4j.causalclustering.core.state.Result;
 import org.neo4j.causalclustering.core.state.machines.dummy.DummyMachine;
 import org.neo4j.causalclustering.core.state.machines.dummy.DummyRequest;
-import org.neo4j.causalclustering.core.state.machines.tx.RecoverConsensusLogIndex;
-import org.neo4j.causalclustering.core.state.snapshot.CoreStateType;
-import org.neo4j.causalclustering.core.state.CommandDispatcher;
-import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
-import org.neo4j.causalclustering.core.state.Result;
 import org.neo4j.causalclustering.core.state.machines.id.ReplicatedIdAllocationRequest;
 import org.neo4j.causalclustering.core.state.machines.id.ReplicatedIdAllocationStateMachine;
-import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenRequest;
-import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenStateMachine;
-import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransaction;
-import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionStateMachine;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenRequest;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenStateMachine;
+import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenRequest;
+import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenStateMachine;
+import org.neo4j.causalclustering.core.state.machines.tx.RecoverConsensusLogIndex;
+import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransaction;
+import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionStateMachine;
+import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
+import org.neo4j.causalclustering.core.state.snapshot.CoreStateType;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.core.RelationshipTypeToken;
-import org.neo4j.storageengine.api.Token;
 
 import static java.lang.Math.max;
 
@@ -51,9 +49,9 @@ public class CoreStateMachines
 {
     private final ReplicatedTransactionStateMachine replicatedTxStateMachine;
 
-    private final ReplicatedTokenStateMachine<Token> labelTokenStateMachine;
-    private final ReplicatedTokenStateMachine<RelationshipTypeToken> relationshipTypeTokenStateMachine;
-    private final ReplicatedTokenStateMachine<Token> propertyKeyTokenStateMachine;
+    private final ReplicatedTokenStateMachine labelTokenStateMachine;
+    private final ReplicatedTokenStateMachine relationshipTypeTokenStateMachine;
+    private final ReplicatedTokenStateMachine propertyKeyTokenStateMachine;
 
     private final ReplicatedLockTokenStateMachine replicatedLockTokenStateMachine;
     private final ReplicatedIdAllocationStateMachine idAllocationStateMachine;
@@ -68,9 +66,9 @@ public class CoreStateMachines
 
     CoreStateMachines(
             ReplicatedTransactionStateMachine replicatedTxStateMachine,
-            ReplicatedTokenStateMachine<Token> labelTokenStateMachine,
-            ReplicatedTokenStateMachine<RelationshipTypeToken> relationshipTypeTokenStateMachine,
-            ReplicatedTokenStateMachine<Token> propertyKeyTokenStateMachine,
+            ReplicatedTokenStateMachine labelTokenStateMachine,
+            ReplicatedTokenStateMachine relationshipTypeTokenStateMachine,
+            ReplicatedTokenStateMachine propertyKeyTokenStateMachine,
             ReplicatedLockTokenStateMachine replicatedLockTokenStateMachine,
             ReplicatedIdAllocationStateMachine idAllocationStateMachine,
             DummyMachine benchmarkMachine,

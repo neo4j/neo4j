@@ -24,16 +24,14 @@ package org.neo4j.causalclustering.core.state.machines.token;
 
 import org.neo4j.causalclustering.core.replication.RaftReplicator;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.storageengine.api.Token;
 
-public class ReplicatedPropertyKeyTokenHolder extends ReplicatedTokenHolder<Token> implements
-        PropertyKeyTokenHolder
+public class ReplicatedPropertyKeyTokenHolder extends ReplicatedTokenHolder implements TokenHolder
 {
-    public ReplicatedPropertyKeyTokenHolder( TokenRegistry<Token> registry, RaftReplicator replicator,
+    public ReplicatedPropertyKeyTokenHolder( TokenRegistry registry, RaftReplicator replicator,
             IdGeneratorFactory idGeneratorFactory, Dependencies dependencies )
     {
         super( registry, replicator, idGeneratorFactory, IdType.PROPERTY_KEY_TOKEN, dependencies, TokenType.PROPERTY );

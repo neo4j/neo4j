@@ -311,9 +311,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         dependencies.satisfyDependency( idGeneratorFactory );
         dependencies.satisfyDependency( idController );
 
-        this.labelTokenHolder = coreStateMachinesModule.labelTokenHolder;
-        this.propertyKeyTokenHolder = coreStateMachinesModule.propertyKeyTokenHolder;
-        this.relationshipTypeTokenHolder = coreStateMachinesModule.relationshipTypeTokenHolder;
+        this.tokenHolders = coreStateMachinesModule.tokenHolders;
         this.lockManager = coreStateMachinesModule.lockManager;
         this.commitProcessFactory = coreStateMachinesModule.commitProcessFactory;
         this.accessCapability = new LeaderCanWrite( consensusModule.raftMachine() );

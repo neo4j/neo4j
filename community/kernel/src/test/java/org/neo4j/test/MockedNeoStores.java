@@ -19,6 +19,8 @@
  */
 package org.neo4j.test;
 
+import org.neo4j.kernel.impl.core.TokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -93,5 +95,13 @@ public class MockedNeoStores
         RecordCursor<R> cursor = mock( RecordCursor.class );
         when( cursor.acquire( anyLong(), any( RecordLoad.class ) ) ).thenReturn( cursor );
         return cursor;
+    }
+
+    public static TokenHolders mockedTokenHolders()
+    {
+        return new TokenHolders(
+                mock( TokenHolder.class ),
+                mock( TokenHolder.class ),
+                mock( TokenHolder.class ) );
     }
 }

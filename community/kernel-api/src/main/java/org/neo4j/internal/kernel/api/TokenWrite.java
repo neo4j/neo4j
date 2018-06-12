@@ -45,25 +45,27 @@ public interface TokenWrite
             throws IllegalTokenNameException, TooManyLabelsException;
 
     /**
-     * Creates a label with the given id
-     * @param labelName the name of the label
-     * @param id the id of the label
+     * Creates a label with the given name.
+     *
+     * @param labelName the name of the label.
+     * @return id of the created label.
      */
-    void labelCreateForName( String labelName, int id ) throws IllegalTokenNameException, TooManyLabelsException;
+    int labelCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException;
 
     /**
-     * Creates a property token with the given id
-     * @param propertyKeyName the name of the property
-     * @param id the id of the property
+     * Creates a property token with the given name.
+     *
+     * @param propertyKeyName the name of the property.
+     * @return id of the created property key.
      */
-    void propertyKeyCreateForName( String propertyKeyName, int id ) throws IllegalTokenNameException;
+    int propertyKeyCreateForName( String propertyKeyName ) throws IllegalTokenNameException;
 
     /**
-     * Creates a relationship type with the given id
-     * @param relationshipTypeName the name of the relationship
-     * @param id the relationship type
+     * Creates a relationship type with the given name.
+     * @param relationshipTypeName the name of the relationship.
+     * @return id of the created relationship type.
      */
-    void relationshipTypeCreateForName( String relationshipTypeName, int id ) throws IllegalTokenNameException;
+    int relationshipTypeCreateForName( String relationshipTypeName ) throws IllegalTokenNameException;
 
     /**
      * Returns a property key id for a property key. If the key doesn't exist prior to

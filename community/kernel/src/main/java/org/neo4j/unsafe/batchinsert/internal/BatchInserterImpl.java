@@ -51,6 +51,7 @@ import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -88,7 +89,9 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
-import org.neo4j.kernel.impl.core.RelationshipTypeToken;
+import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.coreapi.schema.BaseNodeConstraintCreator;
 import org.neo4j.kernel.impl.coreapi.schema.IndexCreatorImpl;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
@@ -159,7 +162,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
-import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchRelationship;
@@ -183,9 +185,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private final NeoStores neoStores;
     private final IndexConfigStore indexStore;
     private final File storeDir;
-    private final BatchTokenHolder propertyKeyTokens;
-    private final BatchTokenHolder relationshipTypeTokens;
-    private final BatchTokenHolder labelTokens;
+    private final TokenHolders tokenHolders;
     private final IdGeneratorFactory idGeneratorFactory;
     private final IndexProviderMap indexProviderMap;
     private final LabelScanStore labelScanStore;
@@ -204,7 +204,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         @Override
         public Label apply( long from )
         {
-            return label( labelTokens.byId( safeCastLongToInt( from ) ).name() );
+            return label( tokenHolders.labelTokens().getTokenByIdOrNull( safeCastLongToInt( from ) ).name() );
         }
     };
 
@@ -221,7 +221,6 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private final RelationshipTypeTokenStore relationshipTypeTokenStore;
     private final PropertyKeyTokenStore propertyKeyTokenStore;
     private final PropertyStore propertyStore;
-    private final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
     private final SchemaStore schemaStore;
     private final NeoStoreIndexStoreView indexStoreView;
 
@@ -279,7 +278,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         relationshipTypeTokenStore = neoStores.getRelationshipTypeTokenStore();
         propertyKeyTokenStore = neoStores.getPropertyKeyTokenStore();
         propertyStore = neoStores.getPropertyStore();
-        relationshipGroupStore = neoStores.getRelationshipGroupStore();
+        RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
         schemaStore = neoStores.getSchemaStore();
         labelTokenStore = neoStores.getLabelTokenStore();
 
@@ -295,11 +294,14 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         IndexProvider provider = extensions.resolveDependency( IndexProvider.class, HighestSelectionStrategy.INSTANCE );
         indexProviderMap = new DefaultIndexProviderMap( provider );
 
-        List<Token> indexes = propertyKeyTokenStore.getTokens( 10000 );
-        propertyKeyTokens = new BatchTokenHolder( indexes );
-        labelTokens = new BatchTokenHolder( labelTokenStore.getTokens( Integer.MAX_VALUE ) );
-        List<RelationshipTypeToken> types = relationshipTypeTokenStore.getTokens( Integer.MAX_VALUE );
-        relationshipTypeTokens = new BatchTokenHolder( types );
+        TokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder( this::createNewPropertyKeyId, DelegatingTokenHolder.TYPE_PROPERTY_KEY );
+        propertyKeyTokenHolder.setInitialTokens( propertyKeyTokenStore.getTokens() );
+        TokenHolder relationshipTypeTokenHolder = new DelegatingTokenHolder( this::createNewRelationshipType, DelegatingTokenHolder.TYPE_RELATIONSHIP_TYPE );
+        relationshipTypeTokenHolder.setInitialTokens( relationshipTypeTokenStore.getTokens() );
+        TokenHolder labelTokenHolder = new DelegatingTokenHolder( this::createNewLabelId, DelegatingTokenHolder.TYPE_LABEL );
+        labelTokenHolder.setInitialTokens( labelTokenStore.getTokens() );
+        this.tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
+
         indexStore = life.add( new IndexConfigStore( this.storeDir, fileSystem ) );
         schemaCache = new SchemaCache( new StandardConstraintSemantics(), schemaStore, indexProviderMap );
 
@@ -680,53 +682,22 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
     private int getOrCreatePropertyKeyId( String name )
     {
-        int propertyKeyId = tokenIdByName( propertyKeyTokens, name );
-        if ( propertyKeyId == -1 )
-        {
-            propertyKeyId = createNewPropertyKeyId( name );
-        }
-        return propertyKeyId;
-    }
-
-    private int getOrCreateRelationshipTypeToken( RelationshipType type )
-    {
-        int typeId = tokenIdByName( relationshipTypeTokens, type.name() );
-        if ( typeId == -1 )
-        {
-            typeId = createNewRelationshipType( type.name() );
-        }
-        return typeId;
-    }
-
-    private int getOrCreateLabelId( String name )
-    {
-        int labelId = tokenIdByName( labelTokens, name );
-        if ( labelId == -1 )
-        {
-            labelId = createNewLabelId( name );
-        }
-        return labelId;
+        return tokenHolders.propertyKeyTokens().getOrCreateId( name );
     }
 
     private int getOrCreateRelationshipTypeId( String name )
     {
-        int relationshipTypeId = tokenIdByName( relationshipTypeTokens, name );
-        if ( relationshipTypeId == -1 )
-        {
-            relationshipTypeId = createNewRelationshipType( name );
-        }
-        return relationshipTypeId;
+        return tokenHolders.relationshipTypeTokens().getOrCreateId( name );
     }
 
-    private int tokenIdByName( BatchTokenHolder tokens, String name )
+    private int getOrCreateLabelId( String name )
     {
-        Token token = tokens.byName( name );
-        return token != null ? token.id() : -1;
+        return tokenHolders.labelTokens().getOrCreateId( name );
     }
 
     private boolean primitiveHasProperty( PrimitiveRecord record, String propertyName )
     {
-        int propertyKeyId = tokenIdByName( propertyKeyTokens, propertyName );
+        int propertyKeyId = tokenHolders.propertyKeyTokens().getIdByName( propertyName );
         return propertyKeyId != -1 && propertyTraverser.findPropertyRecordContaining( record, propertyKeyId,
                 recordAccess.getPropertyRecords(), false ) != Record.NO_NEXT_PROPERTY.intValue();
     }
@@ -855,7 +826,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     @Override
     public boolean nodeHasLabel( long node, Label label )
     {
-        int labelId = tokenIdByName( labelTokens, label.name() );
+        int labelId = tokenHolders.labelTokens().getIdByName( label.name() );
         return labelId != -1 && nodeHasLabel( node, labelId );
     }
 
@@ -877,7 +848,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             Map<String, Object> properties )
     {
         long id = relationshipStore.nextId();
-        int typeId = getOrCreateRelationshipTypeToken( type );
+        int typeId = getOrCreateRelationshipTypeId( type.name() );
         relationshipCreator.relationshipCreate( id, typeId, node1, node2, recordAccess, noopLockClient );
         if ( properties != null && !properties.isEmpty() )
         {
@@ -956,18 +927,22 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             @Override
             protected BatchRelationship nextFrom( long relId, int type, long startNode, long endNode )
             {
-                return new BatchRelationship( relId, startNode, endNode,
-                        (RelationshipType) relationshipTypeTokens.byId( type ) );
+                return batchRelationshipOf( relId, type, startNode, endNode );
             }
         };
+    }
+
+    private BatchRelationship batchRelationshipOf( long id, int type, long startNode, long endNode )
+    {
+        return new BatchRelationship( id, startNode, endNode,
+                RelationshipType.withName( tokenHolders.relationshipTypeTokens().getTokenByIdOrNull( type ).name() ) );
     }
 
     @Override
     public BatchRelationship getRelationshipById( long relId )
     {
         RelationshipRecord record = getRelationshipRecord( relId ).forReadingData();
-        RelationshipType type = (RelationshipType) relationshipTypeTokens.byId( record.getType() );
-        return new BatchRelationship( record.getId(), record.getFirstNode(), record.getSecondNode(), type );
+        return batchRelationshipOf( relId, record.getType(), record.getFirstNode(), record.getSecondNode() );
     }
 
     @Override
@@ -1033,7 +1008,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         final Map<String, Object> map = new HashMap<>();
         propertyTraverser.getPropertyChain( nextProp, recordAccess.getPropertyRecords(), propBlock ->
         {
-            String key = propertyKeyTokens.byId( propBlock.getKeyIndexId() ).name();
+            String key = tokenHolders.propertyKeyTokens().getTokenByIdOrNull( propBlock.getKeyIndexId() ).name();
             Value propertyValue = propBlock.newPropertyValue( propertyStore );
             map.put( key, propertyValue.asObject() );
         } );
@@ -1051,7 +1026,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         record.setNameId( (int) Iterables.first( keyRecords ).getId() );
         record.addNameRecords( keyRecords );
         propertyKeyTokenStore.updateRecord( record );
-        propertyKeyTokens.addToken( new Token( stringKey, keyId ) );
+        tokenHolders.propertyKeyTokens().addToken( new NamedToken( stringKey, keyId ) );
         return keyId;
     }
 
@@ -1066,7 +1041,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         record.setNameId( (int) Iterables.first( keyRecords ).getId() );
         record.addNameRecords( keyRecords );
         labelTokenStore.updateRecord( record );
-        labelTokens.addToken( new Token( stringKey, keyId ) );
+        tokenHolders.labelTokens().addToken( new NamedToken( stringKey, keyId ) );
         return keyId;
     }
 
@@ -1080,7 +1055,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         record.setNameId( (int) Iterables.first( nameRecords ).getId() );
         record.addNameRecords( nameRecords );
         relationshipTypeTokenStore.updateRecord( record );
-        relationshipTypeTokens.addToken( new RelationshipTypeToken( name, id ) );
+        tokenHolders.relationshipTypeTokens().addToken( new NamedToken( name, id ) );
         return id;
     }
 

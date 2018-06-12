@@ -103,10 +103,9 @@ import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
-import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
@@ -186,14 +185,14 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         dependencies.satisfyDependency( idController );
         dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
-        propertyKeyTokenHolder = new DelegatingPropertyKeyTokenHolder( new ReadOnlyTokenCreator() );
-        labelTokenHolder = new DelegatingLabelTokenHolder( new ReadOnlyTokenCreator() );
-        relationshipTypeTokenHolder = new DelegatingRelationshipTypeTokenHolder( new ReadOnlyTokenCreator() );
+        DelegatingTokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder( new ReadOnlyTokenCreator(), DelegatingTokenHolder.TYPE_PROPERTY_KEY );
+        DelegatingTokenHolder labelTokenHolder = new DelegatingTokenHolder( new ReadOnlyTokenCreator(), DelegatingTokenHolder.TYPE_LABEL );
+        DelegatingTokenHolder relationshipTypeTokenHolder =
+                new DelegatingTokenHolder( new ReadOnlyTokenCreator(), DelegatingTokenHolder.TYPE_RELATIONSHIP_TYPE );
 
-        dependencies.satisfyDependency( propertyKeyTokenHolder );
-        dependencies.satisfyDependency( labelTokenHolder );
-        dependencies.satisfyDependency( relationshipTypeTokenHolder );
+        tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
 
+        dependencies.satisfyDependency( tokenHolders );
         life.add( dependencies.satisfyDependency( new KernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade ) ) );
 
         headerInformationFactory = TransactionHeaderInformationFactory.DEFAULT;

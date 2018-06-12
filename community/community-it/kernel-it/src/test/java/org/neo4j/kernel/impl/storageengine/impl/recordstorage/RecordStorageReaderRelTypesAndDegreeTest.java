@@ -31,8 +31,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
-import org.neo4j.kernel.impl.core.TokenNotFoundException;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -381,23 +380,6 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
                 asSet( IN, OUT, LOOP ) );
     }
 
-    @Test
-    public void shouldBeAbleToCreateMultipleRelationshipTypes() throws Exception
-    {
-        // GIVEN
-        String[] typeNames = {relType1.name(), relType2.name()};
-        int[] typeIds = new int[typeNames.length];
-        storageReader.relationshipTypeGetOrCreateForNames( typeNames, typeIds );
-
-        // WHEN
-        String firstLabelName = storageReader.relationshipTypeGetName( typeIds[0] );
-        String secondLabelName = storageReader.relationshipTypeGetName( typeIds[1] );
-
-        // THEN
-        assertEquals( typeNames[0], firstLabelName );
-        assertEquals( typeNames[1], secondLabelName );
-    }
-
     private void testRelationshipTypesForDenseNode( LongConsumer nodeChanger, Set<TestRelType> expectedTypes )
     {
         int inRelCount = randomRelCount();
@@ -612,9 +594,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
 
     private int relTypeId( TestRelType type )
     {
-        DependencyResolver resolver = db.getDependencyResolver();
-        RelationshipTypeTokenHolder relTypeHolder = resolver.resolveDependency( RelationshipTypeTokenHolder.class );
-        int id = relTypeHolder.getIdByName( type.name() );
+        int id = relationshipTypeId( type );
         assertNotEquals( NO_ID, id );
         return id;
     }
@@ -646,14 +626,11 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
 
     private TestRelType relTypeForId( int id )
     {
-        DependencyResolver resolver = db.getDependencyResolver();
-        RelationshipTypeTokenHolder relTypeHolder = resolver.resolveDependency( RelationshipTypeTokenHolder.class );
         try
         {
-            String typeName = relTypeHolder.getTokenById( id ).name();
-            return TestRelType.valueOf( typeName );
+            return TestRelType.valueOf( relationshipType( id ) );
         }
-        catch ( TokenNotFoundException e )
+        catch ( KernelException e )
         {
             throw new RuntimeException( e );
         }

@@ -136,12 +136,11 @@ import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
-import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
-import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.LastTxIdGetter;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
@@ -427,7 +426,7 @@ public class HighlyAvailableEditionModule
         final Factory<MasterImpl.SPI> masterSPIFactory =
                 () -> new DefaultMasterImplSPI( platformModule.graphDatabaseFacade, platformModule.fileSystem,
                         platformModule.monitors,
-                        labelTokenHolder, propertyKeyTokenHolder, relationshipTypeTokenHolder, this.idGeneratorFactory,
+                        tokenHolders, this.idGeneratorFactory,
                         platformModule.dependencies.resolveDependency( TransactionCommitProcess.class ),
                         platformModule.dependencies.resolveDependency( CheckPointer.class ),
                         platformModule.dependencies.resolveDependency( TransactionIdStore.class ),
@@ -500,15 +499,17 @@ public class HighlyAvailableEditionModule
 
         statementLocksFactory = createStatementLocksFactory( componentSwitcherContainer, config, logging );
 
-        propertyKeyTokenHolder = dependencies.satisfyDependency( new DelegatingPropertyKeyTokenHolder(
-                createPropertyKeyCreator( config, componentSwitcherContainer,
-                        masterDelegateInvocationHandler, requestContextFactory, kernelProvider ) ) );
-        labelTokenHolder = dependencies.satisfyDependency( new DelegatingLabelTokenHolder( createLabelIdCreator( config,
-                componentSwitcherContainer, masterDelegateInvocationHandler, requestContextFactory,
-                kernelProvider ) ) );
-        relationshipTypeTokenHolder = dependencies.satisfyDependency( new DelegatingRelationshipTypeTokenHolder(
-                createRelationshipTypeCreator( config, componentSwitcherContainer,
-                        masterDelegateInvocationHandler, requestContextFactory, kernelProvider ) ) );
+        DelegatingTokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder(
+                createPropertyKeyCreator( config, componentSwitcherContainer, masterDelegateInvocationHandler, requestContextFactory, kernelProvider ),
+                DelegatingTokenHolder.TYPE_PROPERTY_KEY );
+        DelegatingTokenHolder labelTokenHolder = new DelegatingTokenHolder(
+                createLabelIdCreator( config, componentSwitcherContainer, masterDelegateInvocationHandler, requestContextFactory, kernelProvider ),
+                DelegatingTokenHolder.TYPE_LABEL );
+        DelegatingTokenHolder relationshipTypeTokenHolder = new DelegatingTokenHolder(
+                createRelationshipTypeCreator( config, componentSwitcherContainer, masterDelegateInvocationHandler, requestContextFactory, kernelProvider ),
+                DelegatingTokenHolder.TYPE_RELATIONSHIP_TYPE );
+        tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
+        dependencies.satisfyDependency( tokenHolders );
 
         dependencies.satisfyDependency(
                 createKernelData( config, platformModule.graphDatabaseFacade, members, fs, platformModule.pageCache,
@@ -722,7 +723,7 @@ public class HighlyAvailableEditionModule
 
         RelationshipTypeCreatorSwitcher typeCreatorModeSwitcher = new RelationshipTypeCreatorSwitcher(
                 relationshipTypeCreatorDelegate, masterInvocationHandler, requestContextFactory,
-                kernelProvider, idGeneratorFactory );
+                kernelProvider );
 
         componentSwitcherContainer.add( typeCreatorModeSwitcher );
         return relationshipTypeCreator;
@@ -744,7 +745,7 @@ public class HighlyAvailableEditionModule
 
         PropertyKeyCreatorSwitcher propertyKeyCreatorModeSwitcher = new PropertyKeyCreatorSwitcher(
                 propertyKeyCreatorDelegate, masterDelegateInvocationHandler,
-                requestContextFactory, kernelProvider, idGeneratorFactory );
+                requestContextFactory, kernelProvider );
 
         componentSwitcherContainer.add( propertyKeyCreatorModeSwitcher );
         return propertyTokenCreator;
@@ -765,8 +766,7 @@ public class HighlyAvailableEditionModule
                 new Class[]{TokenCreator.class}, labelIdCreatorDelegate );
 
         LabelTokenCreatorSwitcher modeSwitcher = new LabelTokenCreatorSwitcher(
-                labelIdCreatorDelegate, masterDelegateInvocationHandler, requestContextFactory, kernelProvider,
-                idGeneratorFactory );
+                labelIdCreatorDelegate, masterDelegateInvocationHandler, requestContextFactory, kernelProvider );
 
         componentSwitcherContainer.add( modeSwitcher );
         return labelIdCreator;

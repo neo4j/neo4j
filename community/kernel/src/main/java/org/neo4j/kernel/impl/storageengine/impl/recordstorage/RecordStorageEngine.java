@@ -65,9 +65,7 @@ import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
@@ -123,9 +121,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 {
     private final IndexingService indexingService;
     private final NeoStores neoStores;
-    private final PropertyKeyTokenHolder propertyKeyTokenHolder;
-    private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
-    private final LabelTokenHolder labelTokenHolder;
+    private final TokenHolders tokenHolders;
     private final DatabaseHealth databaseHealth;
     private final IndexConfigStore indexConfigStore;
     private final SchemaCache schemaCache;
@@ -155,9 +151,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             PageCache pageCache,
             FileSystemAbstraction fs,
             LogProvider logProvider,
-            PropertyKeyTokenHolder propertyKeyTokenHolder,
-            LabelTokenHolder labelTokens,
-            RelationshipTypeTokenHolder relationshipTypeTokens,
+            TokenHolders tokenHolders,
             SchemaState schemaState,
             ConstraintSemantics constraintSemantics,
             JobScheduler scheduler,
@@ -176,9 +170,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             OperationalMode operationalMode,
             VersionContextSupplier versionContextSupplier )
     {
-        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
-        this.relationshipTypeTokenHolder = relationshipTypeTokens;
-        this.labelTokenHolder = labelTokens;
+        this.tokenHolders = tokenHolders;
         this.schemaState = schemaState;
         this.lockService = lockService;
         this.databaseHealth = databaseHealth;
@@ -212,8 +204,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     indexingServiceMonitor, schemaState );
 
             integrityValidator = new IntegrityValidator( neoStores, indexingService );
-            cacheAccess = new BridgingCacheAccess( schemaCache, schemaState,
-                    propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
+            cacheAccess = new BridgingCacheAccess( schemaCache, schemaState, tokenHolders );
 
             explicitIndexApplierLookup = new ExplicitIndexApplierLookup.Direct( explicitIndexProviderLookup );
 
@@ -236,7 +227,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public StorageReader newReader()
     {
         Supplier<IndexReaderFactory> indexReaderFactory = () -> new IndexReaderFactory.Caching( indexingService );
-        return new RecordStorageReader( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder, schemaStorage, neoStores, indexingService,
+        return new RecordStorageReader( tokenHolders, schemaStorage, neoStores, indexingService,
                 schemaCache, indexReaderFactory, labelScanStore::newReader, allocateCommandCreationContext() );
     }
 
@@ -386,12 +377,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         neoStores.makeStoreOk();
 
-        propertyKeyTokenHolder.setInitialTokens(
-                neoStores.getPropertyKeyTokenStore().getTokens( Integer.MAX_VALUE ) );
-        relationshipTypeTokenHolder.setInitialTokens(
-                neoStores.getRelationshipTypeTokenStore().getTokens( Integer.MAX_VALUE ) );
-        labelTokenHolder.setInitialTokens(
-                neoStores.getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
+        tokenHolders.propertyKeyTokens().setInitialTokens(
+                neoStores.getPropertyKeyTokenStore().getTokens() );
+        tokenHolders.relationshipTypeTokens().setInitialTokens(
+                neoStores.getRelationshipTypeTokenStore().getTokens() );
+        tokenHolders.labelTokens().setInitialTokens(
+                neoStores.getLabelTokenStore().getTokens() );
 
         neoStores.startCountStore(); // TODO: move this to counts store lifecycle
         loadSchemaCache();

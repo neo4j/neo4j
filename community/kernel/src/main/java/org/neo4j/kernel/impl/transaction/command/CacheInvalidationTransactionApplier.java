@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
-import java.io.IOException;
-
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
@@ -31,7 +29,6 @@ import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyKeyTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
-import org.neo4j.storageengine.api.Token;
 
 public class CacheInvalidationTransactionApplier extends TransactionApplier.Adapter
 {
@@ -52,7 +49,7 @@ public class CacheInvalidationTransactionApplier extends TransactionApplier.Adap
     @Override
     public boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command )
     {
-        RelationshipTypeToken type = relationshipTypeTokenStore.getToken( (int) command.getKey() );
+        NamedToken type = relationshipTypeTokenStore.getToken( (int) command.getKey() );
         cacheAccess.addRelationshipTypeToken( type );
 
         return false;
@@ -61,7 +58,7 @@ public class CacheInvalidationTransactionApplier extends TransactionApplier.Adap
     @Override
     public boolean visitLabelTokenCommand( LabelTokenCommand command )
     {
-        Token labelId = labelTokenStore.getToken( (int) command.getKey() );
+        NamedToken labelId = labelTokenStore.getToken( (int) command.getKey() );
         cacheAccess.addLabelToken( labelId );
 
         return false;
@@ -70,7 +67,7 @@ public class CacheInvalidationTransactionApplier extends TransactionApplier.Adap
     @Override
     public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command )
     {
-        Token index = propertyKeyTokenStore.getToken( (int) command.getKey() );
+        NamedToken index = propertyKeyTokenStore.getToken( (int) command.getKey() );
         cacheAccess.addPropertyKeyToken( index );
 
         return false;

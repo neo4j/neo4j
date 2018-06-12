@@ -29,6 +29,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.NamedToken;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -63,7 +64,7 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
         when( actions.newNodeProxy( anyLong() ) ).then(
                 invocation -> nodeWithId( invocation.getArgument( 0 ) ) );
         when( actions.getRelationshipTypeById( anyInt() ) ).then(
-                invocation -> new RelationshipTypeToken( "whatever", invocation.getArgument( 0 ) ) );
+                invocation -> new NamedToken( "whatever", invocation.getArgument( 0 ) ) );
 
         long[] ids = new long[]{
                 1437589437,
@@ -228,7 +229,6 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
         RelationshipProxy proxy = new RelationshipProxy( actions, relationshipId, nodeId1, typeId, nodeId2 );
         assertEquals( relationshipId, proxy.getId() );
         // our mock above is known to return RelationshipTypeToken
-        assertEquals( typeId, ((RelationshipTypeToken) proxy.getType()).id() );
         assertEquals( nodeId1, proxy.getStartNode().getId() );
         assertEquals( nodeId1, proxy.getStartNodeId() );
         assertEquals( nodeId2, proxy.getEndNode().getId() );

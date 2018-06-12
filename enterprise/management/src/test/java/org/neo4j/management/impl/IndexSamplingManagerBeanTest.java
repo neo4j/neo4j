@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 
@@ -38,6 +39,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.core.TokenHolder.NO_ID;
+import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 
 public class IndexSamplingManagerBeanTest
 {
@@ -59,13 +62,15 @@ public class IndexSamplingManagerBeanTest
         StorageReader storageReader = mock( StorageReader.class );
         when( storageEngine.newReader() ).thenReturn( storageReader );
         indexingService = mock( IndexingService.class );
-        when( storageReader.labelGetForName( EXISTING_LABEL ) ).thenReturn( LABEL_ID );
-        when( storageReader.propertyKeyGetForName( EXISTING_PROPERTY ) ).thenReturn( PROPERTY_ID );
-        when( storageReader.propertyKeyGetForName( NON_EXISTING_PROPERTY ) ).thenReturn( -1 );
-        when( storageReader.labelGetForName( NON_EXISTING_LABEL ) ).thenReturn( -1 );
+        TokenHolders tokenHolders = mockedTokenHolders();
+        when( tokenHolders.labelTokens().getIdByName( EXISTING_LABEL ) ).thenReturn( LABEL_ID );
+        when( tokenHolders.propertyKeyTokens().getIdByName( EXISTING_PROPERTY ) ).thenReturn( PROPERTY_ID );
+        when( tokenHolders.propertyKeyTokens().getIdByName( NON_EXISTING_PROPERTY ) ).thenReturn( -1 );
+        when( tokenHolders.labelTokens().getIdByName( NON_EXISTING_LABEL ) ).thenReturn( NO_ID );
         DependencyResolver resolver = mock( DependencyResolver.class );
         when( resolver.resolveDependency( IndexingService.class ) ).thenReturn( indexingService );
         when( resolver.resolveDependency( StorageEngine.class ) ).thenReturn( storageEngine );
+        when( resolver.resolveDependency( TokenHolders.class ) ).thenReturn( tokenHolders );
         when( dataSource.getDependencyResolver() ).thenReturn( resolver );
     }
 

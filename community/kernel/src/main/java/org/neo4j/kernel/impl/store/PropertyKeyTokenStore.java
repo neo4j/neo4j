@@ -29,12 +29,11 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.Token;
 
 /**
  * Implementation of the property store.
  */
-public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord, Token>
+public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
 {
     // Historical type descriptor, should be called PropertyKeyTokenStore
     public static final String TYPE_DESCRIPTOR = "PropertyIndexStore";
@@ -50,7 +49,7 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord, To
             OpenOption... openOptions )
     {
         super( fileName, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore,
-                TYPE_DESCRIPTOR, new Token.Factory(), recordFormats.propertyKeyToken(), recordFormats.storeVersion(),
+                TYPE_DESCRIPTOR, recordFormats.propertyKeyToken(), recordFormats.storeVersion(),
                 openOptions );
     }
 

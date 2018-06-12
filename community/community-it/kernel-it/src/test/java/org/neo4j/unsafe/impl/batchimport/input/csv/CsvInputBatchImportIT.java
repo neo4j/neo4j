@@ -59,6 +59,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -69,7 +70,6 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogTimeZone;
-import org.neo4j.storageengine.api.Token;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -476,10 +476,10 @@ public class CsvInputBatchImportIT
         return result;
     }
 
-    private Function<String, Integer> translationTable( TokenStore<?, ?> tokenStore, final int anyValue )
+    private Function<String, Integer> translationTable( TokenStore<?> tokenStore, final int anyValue )
     {
         final Map<String, Integer> translationTable = new HashMap<>();
-        for ( Token token : tokenStore.getTokens( Integer.MAX_VALUE ) )
+        for ( NamedToken token : tokenStore.getTokens() )
         {
             translationTable.put( token.name(), token.id() );
         }

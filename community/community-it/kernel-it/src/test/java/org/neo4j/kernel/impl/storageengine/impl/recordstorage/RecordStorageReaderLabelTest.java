@@ -23,6 +23,7 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.Test;
 
 import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.storageengine.api.StorageNodeCursor;
@@ -53,8 +54,8 @@ public class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
             nodeId = db.createNode( label1, label2 ).getId();
             String labelName1 = label1.name();
             String labelName2 = label2.name();
-            labelId1 = storageReader.labelGetForName( labelName1 );
-            labelId2 = storageReader.labelGetOrCreateForName( labelName2 );
+            labelId1 = labelId( Label.label( labelName1 ) );
+            labelId2 = labelId( Label.label( labelName2 ) );
             tx.success();
         }
 
@@ -63,37 +64,6 @@ public class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
         nodeCursor.single( nodeId );
         assertTrue( nodeCursor.next() );
         assertEquals( newSetWith( labelId1, labelId2 ), newSetWith( nodeCursor.labels() ) );
-    }
-
-    @Test
-    public void shouldBeAbleToGetLabelNameForLabel() throws Exception
-    {
-        // GIVEN
-        String labelName = label1.name();
-        int labelId = storageReader.labelGetOrCreateForName( labelName );
-
-        // WHEN
-        String readLabelName = storageReader.labelGetName( labelId );
-
-        // THEN
-        assertEquals( labelName, readLabelName );
-    }
-
-    @Test
-    public void shouldBeAbleToCreateMultipleLabels() throws Exception
-    {
-        // GIVEN
-        String[] labelNames = {label1.name(), label2.name()};
-        int[] labelIds = new int[labelNames.length];
-        storageReader.labelGetOrCreateForNames( labelNames, labelIds );
-
-        // WHEN
-        String firstLabelName = storageReader.labelGetName( labelIds[0] );
-        String secondLabelName = storageReader.labelGetName( labelIds[1] );
-
-        // THEN
-        assertEquals( labelNames[0], firstLabelName );
-        assertEquals( labelNames[1], secondLabelName );
     }
 
     @Test
@@ -112,8 +82,8 @@ public class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
         // GIVEN
         Node node1 = createLabeledNode( db, map( "name", "First", "age", 1L ), label1 );
         Node node2 = createLabeledNode( db, map( "type", "Node", "count", 10 ), label1, label2 );
-        int labelId1 = storageReader.labelGetForName( label1.name() );
-        int labelId2 = storageReader.labelGetForName( label2.name() );
+        int labelId1 = labelId( label1 );
+        int labelId2 = labelId( label2 );
 
         // WHEN
         LongIterator nodesForLabel1 = storageReader.nodesGetForLabel( labelId1 );

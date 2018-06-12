@@ -22,20 +22,13 @@ package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 import org.junit.Test;
 
 import java.lang.reflect.Array;
-import java.util.Arrays;
 
-import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singletonMap;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -90,8 +83,6 @@ public class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
                 array( 256, double.class ),
         };
 
-        int propKey = storageReader.propertyKeyGetOrCreateForName( "prop" );
-
         for ( Object value : properties )
         {
             // given
@@ -122,70 +113,6 @@ public class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
             }
 
         }
-    }
-
-    @Test
-    public void shouldCreatePropertyKeyIfNotExists()
-    {
-        // WHEN
-        long id = storageReader.propertyKeyGetOrCreateForName( propertyKey );
-
-        // THEN
-        assertTrue( "Should have created a non-negative id", id >= 0 );
-    }
-
-    @Test
-    public void shouldBeAbleToGetOrCreateMultiplePropertyKeys() throws Exception
-    {
-        int idB = storageReader.propertyKeyGetOrCreateForName( "b" );
-
-        String[] names = {"a", "b", "c"};
-        int[] ids = new int[3];
-        Arrays.fill( ids, TokenHolder.NO_ID );
-
-        storageReader.propertyKeyGetOrCreateForNames( names, ids );
-        assertThat( ids[0], is( storageReader.propertyKeyGetForName( "a" ) ) );
-        assertThat( ids[1], is( idB ) );
-        assertThat( ids[2], is( storageReader.propertyKeyGetForName( "c" ) ) );
-        assertThat( ids[0], greaterThanOrEqualTo( 0 ) );
-        assertThat( ids[1], greaterThanOrEqualTo( 0 ) );
-        assertThat( ids[2], greaterThanOrEqualTo( 0 ) );
-    }
-
-    @Test
-    public void shouldGetPreviouslyCreatedPropertyKey()
-    {
-        // GIVEN
-        long id = storageReader.propertyKeyGetOrCreateForName( propertyKey );
-
-        // WHEN
-        long secondId = storageReader.propertyKeyGetForName( propertyKey );
-
-        // THEN
-        assertEquals( id, secondId );
-    }
-
-    @Test
-    public void shouldBeAbleToGetOrCreatePreviouslyCreatedPropertyKey()
-    {
-        // GIVEN
-        long id = storageReader.propertyKeyGetOrCreateForName( propertyKey );
-
-        // WHEN
-        long secondId = storageReader.propertyKeyGetOrCreateForName( propertyKey );
-
-        // THEN
-        assertEquals( id, secondId );
-    }
-
-    @Test
-    public void shouldFailIfGetNonExistentPropertyKey()
-    {
-        // WHEN
-        int propertyKey = storageReader.propertyKeyGetForName( "non-existent-property-key" );
-
-        // THEN
-        assertEquals( TokenRead.NO_TOKEN, propertyKey );
     }
 
     private Object array( int length, Class<?> componentType )

@@ -38,9 +38,6 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
-import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
@@ -78,6 +75,7 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
+import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 
 public class NeoStoreDataSourceRule extends ExternalResource
 {
@@ -123,8 +121,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
 
         dataSource = new NeoStoreDataSource( storeDir, config, idGeneratorFactory,
                 logService, mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ),
-                dependencyResolverForNoIndexProvider(), mock( PropertyKeyTokenHolder.class ),
-                mock( LabelTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ), locksFactory,
+                dependencyResolverForNoIndexProvider(),
+                mockedTokenHolders(), locksFactory,
                 mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR,
                 fs, transactionMonitor, databaseHealth,
                 mock( LogFileCreationMonitor.class ), TransactionHeaderInformationFactory.DEFAULT,

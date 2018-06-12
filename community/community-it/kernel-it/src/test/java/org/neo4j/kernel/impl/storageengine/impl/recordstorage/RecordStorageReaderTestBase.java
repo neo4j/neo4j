@@ -30,6 +30,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.ClockContext;
@@ -99,7 +100,9 @@ public abstract class RecordStorageReaderTestBase
     {
         try ( Transaction ignored = db.beginTx() )
         {
-            return ktx().tokenRead().nodeLabel( label.name() );
+            int id = ktx().tokenRead().nodeLabel( label.name() );
+            ignored.success();
+            return id;
         }
     }
 
@@ -107,7 +110,19 @@ public abstract class RecordStorageReaderTestBase
     {
         try ( Transaction ignored = db.beginTx() )
         {
-            return ktx().tokenRead().relationshipType( type.name() );
+            int id = ktx().tokenRead().relationshipType( type.name() );
+            ignored.success();
+            return id;
+        }
+    }
+
+    protected String relationshipType( int id ) throws KernelException
+    {
+        try ( Transaction ignored = db.beginTx() )
+        {
+            String name = ktx().tokenRead().relationshipTypeName( id );
+            ignored.success();
+            return name;
         }
     }
 
@@ -115,7 +130,9 @@ public abstract class RecordStorageReaderTestBase
     {
         try ( Transaction ignored = db.beginTx() )
         {
-            return ktx().tokenRead().propertyKey( propertyKey );
+            int id = ktx().tokenRead().propertyKey( propertyKey );
+            ignored.success();
+            return id;
         }
     }
 

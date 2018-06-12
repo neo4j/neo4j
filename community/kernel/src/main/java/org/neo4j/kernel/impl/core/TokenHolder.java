@@ -21,15 +21,15 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.List;
 
-import org.neo4j.storageengine.api.Token;
+import org.neo4j.internal.kernel.api.NamedToken;
 
-public interface TokenHolder<TOKEN extends Token>
+public interface TokenHolder
 {
     int NO_ID = -1;
 
-    void setInitialTokens( List<TOKEN> tokens ) throws NonUniqueTokenException;
+    void setInitialTokens( List<NamedToken> tokens ) throws NonUniqueTokenException;
 
-    void addToken( TOKEN token ) throws NonUniqueTokenException;
+    void addToken( NamedToken token ) throws NonUniqueTokenException;
 
     /**
      * Get the id of the token by the given name, or create a new id for the token if it does not have one already,
@@ -49,9 +49,9 @@ public interface TokenHolder<TOKEN extends Token>
      */
     void getOrCreateIds( String[] names, int[] ids );
 
-    TOKEN getTokenById( int id ) throws TokenNotFoundException;
+    NamedToken getTokenById( int id ) throws TokenNotFoundException;
 
-    TOKEN getTokenByIdOrNull( int id );
+    NamedToken getTokenByIdOrNull( int id );
 
     /**
      * Returns the id, or {@link #NO_ID} if no token with this name exists.
@@ -69,7 +69,7 @@ public interface TokenHolder<TOKEN extends Token>
      */
     boolean getIdsByNames( String[] names, int[] ids );
 
-    Iterable<TOKEN> getAllTokens();
+    Iterable<NamedToken> getAllTokens();
 
     int size();
 }

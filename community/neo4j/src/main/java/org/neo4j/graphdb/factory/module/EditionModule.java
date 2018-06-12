@@ -36,9 +36,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -95,11 +93,10 @@ public abstract class EditionModule
     protected abstract void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException;
 
     public IdGeneratorFactory idGeneratorFactory;
+
     public IdTypeConfigurationProvider idTypeConfigurationProvider;
 
-    public LabelTokenHolder labelTokenHolder;
-
-    public PropertyKeyTokenHolder propertyKeyTokenHolder;
+    public TokenHolders tokenHolders;
 
     public Locks lockManager;
 
@@ -108,8 +105,6 @@ public abstract class EditionModule
     public CommitProcessFactory commitProcessFactory;
 
     public long transactionStartTimeout;
-
-    public RelationshipTypeTokenHolder relationshipTypeTokenHolder;
 
     public TransactionHeaderInformationFactory headerInformationFactory;
 

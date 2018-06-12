@@ -19,12 +19,10 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolder;
-import org.neo4j.storageengine.api.Token;
+import org.neo4j.kernel.impl.core.TokenHolders;
 
 import static java.lang.String.format;
 
@@ -34,42 +32,36 @@ import static java.lang.String.format;
  */
 public class NonTransactionalTokenNameLookup implements TokenNameLookup
 {
-    private final LabelTokenHolder labelTokenHolder;
-    private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
-    private final PropertyKeyTokenHolder propertyKeyTokenHolder;
+    private final TokenHolders tokenHolders;
 
-    public NonTransactionalTokenNameLookup( LabelTokenHolder labelTokenHolder,
-            RelationshipTypeTokenHolder relationshipTypeTokenHolder,
-            PropertyKeyTokenHolder propertyKeyTokenHolder )
+    public NonTransactionalTokenNameLookup( TokenHolders tokenHolders )
     {
-        this.labelTokenHolder = labelTokenHolder;
-        this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
-        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
+        this.tokenHolders = tokenHolders;
     }
 
     @Override
     public String labelGetName( int labelId )
     {
-        return tokenById( labelTokenHolder, labelId, "label" );
+        return tokenById( tokenHolders.labelTokens(), labelId, "label" );
     }
 
     @Override
     public String relationshipTypeGetName( int relTypeId )
     {
-        return tokenById( relationshipTypeTokenHolder, relTypeId, "relationshipType" );
+        return tokenById( tokenHolders.relationshipTypeTokens(), relTypeId, "relationshipType" );
     }
 
     @Override
     public String propertyKeyGetName( int propertyKeyId )
     {
-        return tokenById( propertyKeyTokenHolder, propertyKeyId, "property" );
+        return tokenById( tokenHolders.propertyKeyTokens(), propertyKeyId, "property" );
     }
 
     private static String tokenById( TokenHolder tokenHolder, int tokenId, String tokenName )
     {
         try
         {
-            Token token = tokenHolder.getTokenByIdOrNull( tokenId );
+            NamedToken token = tokenHolder.getTokenByIdOrNull( tokenId );
             if ( token != null )
             {
                 return token.name();

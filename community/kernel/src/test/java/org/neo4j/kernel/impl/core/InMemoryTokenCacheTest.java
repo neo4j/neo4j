@@ -23,6 +23,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.neo4j.internal.kernel.api.NamedToken;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
@@ -36,22 +38,22 @@ public class InMemoryTokenCacheTest
     @Test
     public void addTokenWithDuplicatedNotAllowed()
     {
-        InMemoryTokenCache<RelationshipTypeToken> tokenCache = createTokenCache();
-        tokenCache.put( new RelationshipTypeToken( INBOUND1_TYPE, 1 ) );
-        tokenCache.put( new RelationshipTypeToken( INBOUND2_TYPE, 2 ) );
+        InMemoryTokenCache tokenCache = createTokenCache();
+        tokenCache.put( new NamedToken( INBOUND1_TYPE, 1 ) );
+        tokenCache.put( new NamedToken( INBOUND2_TYPE, 2 ) );
 
         expectedEcxeption.expect( NonUniqueTokenException.class );
         expectedEcxeption.expectMessage( "The testType \"inbound1\" is not unique" );
 
-        tokenCache.put( new RelationshipTypeToken( INBOUND1_TYPE, 3 ) );
+        tokenCache.put( new NamedToken( INBOUND1_TYPE, 3 ) );
     }
 
     @Test
     public void keepOriginalTokenWhenAddDuplicate()
     {
-        InMemoryTokenCache<RelationshipTypeToken> tokenCache = createTokenCache();
-        tokenCache.put( new RelationshipTypeToken( INBOUND1_TYPE, 1 ) );
-        tokenCache.put( new RelationshipTypeToken( INBOUND2_TYPE, 2 ) );
+        InMemoryTokenCache tokenCache = createTokenCache();
+        tokenCache.put( new NamedToken( INBOUND1_TYPE, 1 ) );
+        tokenCache.put( new NamedToken( INBOUND2_TYPE, 2 ) );
 
         tryToAddDuplicate( tokenCache );
 
@@ -60,16 +62,16 @@ public class InMemoryTokenCacheTest
         assertNull( tokenCache.getToken( 3 ) );
     }
 
-    private InMemoryTokenCache<RelationshipTypeToken> createTokenCache()
+    private InMemoryTokenCache createTokenCache()
     {
-        return new InMemoryTokenCache<>( "testType" );
+        return new InMemoryTokenCache( "testType" );
     }
 
-    private void tryToAddDuplicate( InMemoryTokenCache<RelationshipTypeToken> tokenCache )
+    private void tryToAddDuplicate( InMemoryTokenCache tokenCache )
     {
         try
         {
-            tokenCache.put( new RelationshipTypeToken( INBOUND1_TYPE, 3 ) );
+            tokenCache.put( new NamedToken( INBOUND1_TYPE, 3 ) );
         }
         catch ( NonUniqueTokenException ignored )
         {

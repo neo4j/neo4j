@@ -34,10 +34,12 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.management.IndexSamplingManager;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageReader;
+
+import static org.neo4j.kernel.impl.core.TokenHolder.NO_ID;
 
 @Service.Implementation( ManagementBeanProvider.class )
 public final class IndexSamplingManagerBean extends ManagementBeanProvider
@@ -96,11 +98,13 @@ public final class IndexSamplingManagerBean extends ManagementBeanProvider
         {
             final StorageEngine storageEngine;
             final IndexingService indexingService;
+            final TokenHolders tokenHolders;
 
-            State( StorageEngine storageEngine, IndexingService indexingService )
+            State( StorageEngine storageEngine, IndexingService indexingService, TokenHolders tokenHolders )
             {
                 this.storageEngine = storageEngine;
                 this.indexingService = indexingService;
+                this.tokenHolders = tokenHolders;
             }
         }
         private volatile State state;
@@ -111,7 +115,8 @@ public final class IndexSamplingManagerBean extends ManagementBeanProvider
             DependencyResolver dependencyResolver = dataSource.getDependencyResolver();
             state = new State(
                     dependencyResolver.resolveDependency( StorageEngine.class ),
-                    dependencyResolver.resolveDependency( IndexingService.class ) );
+                    dependencyResolver.resolveDependency( IndexingService.class ),
+                    dependencyResolver.resolveDependency( TokenHolders.class ) );
         }
 
         @Override
@@ -127,13 +132,10 @@ public final class IndexSamplingManagerBean extends ManagementBeanProvider
             State state = this.state;
             if ( state != null )
             {
-                try ( StorageReader read = state.storageEngine.newReader() )
-                {
-                    labelKeyId = read.labelGetForName( labelKey );
-                    propertyKeyId = read.propertyKeyGetForName( propertyKey );
-                }
+                labelKeyId = state.tokenHolders.labelTokens().getIdByName( labelKey );
+                propertyKeyId = state.tokenHolders.propertyKeyTokens().getIdByName( propertyKey );
             }
-            if ( state == null || labelKeyId == -1 || propertyKeyId == -1 )
+            if ( state == null || labelKeyId == NO_ID || propertyKeyId == NO_ID )
             {
                 throw new IllegalArgumentException( "No property or label key was found associated with " +
                         propertyKey + " and " + labelKey );

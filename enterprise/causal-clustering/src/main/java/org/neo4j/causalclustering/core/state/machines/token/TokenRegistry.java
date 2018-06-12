@@ -24,21 +24,21 @@ package org.neo4j.causalclustering.core.state.machines.token;
 
 import java.util.List;
 
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.kernel.impl.core.InMemoryTokenCache;
-import org.neo4j.storageengine.api.Token;
 
-public class TokenRegistry<TOKEN extends Token>
+public class TokenRegistry
 {
-    private final InMemoryTokenCache<TOKEN> tokenCache;
+    private final InMemoryTokenCache tokenCache;
     private final String tokenType;
 
     public TokenRegistry( String tokenType )
     {
         this.tokenType = tokenType;
-        this.tokenCache = new InMemoryTokenCache<>( tokenType );
+        this.tokenCache = new InMemoryTokenCache( tokenType );
     }
 
-    void setInitialTokens( List<TOKEN> tokens )
+    void setInitialTokens( List<NamedToken> tokens )
     {
         tokenCache.clear();
         tokenCache.putAll( tokens );
@@ -54,7 +54,7 @@ public class TokenRegistry<TOKEN extends Token>
         return tokenCache.size();
     }
 
-    Iterable<TOKEN> allTokens()
+    Iterable<NamedToken> allTokens()
     {
         return tokenCache.allTokens();
     }
@@ -64,12 +64,12 @@ public class TokenRegistry<TOKEN extends Token>
         return tokenCache.getId( name );
     }
 
-    TOKEN getToken( int id )
+    NamedToken getToken( int id )
     {
         return tokenCache.getToken( id );
     }
 
-    void addToken( TOKEN token )
+    void addToken( NamedToken token )
     {
         tokenCache.put( token );
     }

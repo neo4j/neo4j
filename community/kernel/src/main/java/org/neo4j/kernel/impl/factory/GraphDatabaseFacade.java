@@ -88,9 +88,7 @@ import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.GraphPropertiesProxy;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.coreapi.AutoIndexerFacade;
 import org.neo4j.kernel.impl.coreapi.IndexManagerImpl;
 import org.neo4j.kernel.impl.coreapi.IndexProviderImpl;
@@ -137,7 +135,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     private SPI spi;
     private TransactionalContextFactory contextFactory;
     private Config config;
-    private RelationshipTypeTokenHolder relationshipTypeTokenHolder;
 
     /**
      * This is what you need to implement to get your very own {@link GraphDatabaseFacade}. This SPI exists as a thin
@@ -199,12 +196,10 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     /**
      * Create a new Core API facade, backed by the given SPI and using pre-resolved dependencies
      */
-    public void init( SPI spi, ThreadToStatementContextBridge txBridge, Config config,
-            RelationshipTypeTokenHolder relationshipTypeTokenHolder )
+    public void init( SPI spi, ThreadToStatementContextBridge txBridge, Config config )
     {
         this.spi = spi;
         this.config = config;
-        this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
         this.schema = new SchemaImpl( () -> txBridge.getKernelTransactionBoundToThisThread( true ) );
         this.statementContext = txBridge;
         this.indexManager = Suppliers.lazySingleton( () ->
@@ -991,18 +986,12 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     {
         try
         {
-            return relationshipTypeTokenHolder.getTokenById( type );
+            return RelationshipType.withName( statementContext.getKernelTransactionBoundToThisThread( true ).tokenRead().relationshipTypeName( type ) );
         }
-        catch ( TokenNotFoundException e )
+        catch ( KernelException e )
         {
             throw new IllegalStateException( "Kernel API returned non-existent relationship type: " + type );
         }
-    }
-
-    @Override
-    public int getRelationshipTypeIdByName( String typeName )
-    {
-        return relationshipTypeTokenHolder.getIdByName( typeName );
     }
 
     @Override
