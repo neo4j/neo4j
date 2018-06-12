@@ -41,6 +41,7 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.KernelImpl;
@@ -102,8 +103,7 @@ public abstract class KernelIntegrationTest
 
     protected Procedures procsSchema() throws TransactionFailureException
     {
-        session = kernel.beginSession( AnonymousContext.full() );
-        transaction = session.beginTransaction( KernelTransaction.Type.implicit );
+        transaction = kernel.beginTransaction( KernelTransaction.Type.implicit, AnonymousContext.full() );
         return transaction.procedures();
     }
 
@@ -203,7 +203,7 @@ public abstract class KernelIntegrationTest
         db.shutdown();
     }
 
-    protected void restartDb() throws TransactionFailureException
+    void restartDb() throws TransactionFailureException
     {
         stopDb();
         startDb();
