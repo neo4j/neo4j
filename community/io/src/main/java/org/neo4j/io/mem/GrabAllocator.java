@@ -21,8 +21,9 @@ package org.neo4j.io.mem;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.util.Objects;
 
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
@@ -35,6 +36,8 @@ import static org.neo4j.util.FeatureToggles.getInteger;
  */
 public final class GrabAllocator implements MemoryAllocator
 {
+    private static final Object globalCleanerInstance = globalCleaner();
+
     private final Grabs grabs;
     @SuppressWarnings( {"unused", "FieldCanBeLocal"} )
     private final Object cleaner;
@@ -297,9 +300,46 @@ public final class GrabAllocator implements MemoryAllocator
         }
     }
 
+    private static Object globalCleaner()
+    {
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        try
+        {
+            Class<?> newCleaner = Class.forName( "java.lang.ref.Cleaner" );
+            MethodHandle createInstance = lookup.findStatic( newCleaner, "create", MethodType.methodType( newCleaner ) );
+            return createInstance.invoke();
+        }
+        catch ( Throwable throwable )
+        {
+            return null;
+        }
+    }
+
     private static CleanerHandles findCleanerHandles()
     {
         MethodHandles.Lookup lookup = MethodHandles.lookup();
+        return globalCleanerInstance == null ? findHandlesForOldCleaner( lookup ) : findHandlesForNewCleaner( lookup );
+    }
+
+    private static CleanerHandles findHandlesForNewCleaner( MethodHandles.Lookup lookup )
+    {
+        try
+        {
+            Objects.requireNonNull( globalCleanerInstance );
+            Class<?> newCleaner = globalCleanerInstance.getClass();
+            Class<?> newCleanable = Class.forName( "java.lang.ref.Cleaner$Cleanable" );
+            MethodHandle registerHandle = findCreationMethod( "register", lookup, newCleaner );
+            registerHandle = registerHandle.bindTo( globalCleanerInstance );
+            return CleanerHandles.of( registerHandle, findCleanMethod( lookup, newCleanable ) );
+        }
+        catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException newCleanerException )
+        {
+            throw new LinkageError( "Unable to find cleaner methods.", newCleanerException );
+        }
+    }
+
+    private static CleanerHandles findHandlesForOldCleaner( MethodHandles.Lookup lookup )
+    {
         try
         {
             Class<?> oldCleaner = Class.forName( "sun.misc.Cleaner" );
@@ -307,16 +347,7 @@ public final class GrabAllocator implements MemoryAllocator
         }
         catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException oldCleanerException )
         {
-            try
-            {
-                Class<?> newCleaner = Class.forName( "java.lang.ref.Cleaner" );
-                Class<?> newCleanable = Class.forName( "java.lang.ref.Cleaner$Cleanable" );
-                return CleanerHandles.of( findCreationMethod( "register", lookup, newCleaner ), findCleanMethod( lookup, newCleanable ) );
-            }
-            catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException newCleanerException )
-            {
-                throw new LinkageError( "Unable to find cleaner methods.", Exceptions.chain( newCleanerException, oldCleanerException ) );
-            }
+            throw new LinkageError( "Unable to find cleaner methods.", oldCleanerException );
         }
     }
 
