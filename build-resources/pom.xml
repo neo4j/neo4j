@@ -11,6 +11,10 @@
     <description>Build resources for community build.</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
     <scm>
         <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
         <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
