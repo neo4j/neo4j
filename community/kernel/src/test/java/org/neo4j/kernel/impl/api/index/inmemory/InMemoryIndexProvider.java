@@ -38,11 +38,13 @@ import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 public class InMemoryIndexProvider extends IndexProvider
 {
+    public static final String IN_MEMORY_INDEX_PROVIDER_PRIORITY = InMemoryIndexProvider.class.getSimpleName() + ".priority";
+
     private final Map<Long, InMemoryIndex> indexes;
 
     public InMemoryIndexProvider()
     {
-        this( 0 );
+        this( Integer.getInteger( IN_MEMORY_INDEX_PROVIDER_PRIORITY, 0 ) );
     }
 
     public InMemoryIndexProvider( int prio )

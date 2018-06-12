@@ -30,13 +30,13 @@ public class NodeValueIndexCursorInMemoryTest extends AbstractNodeValueIndexCurs
     @Override
     protected String providerKey()
     {
-        return "in-memory-index";
+        return "lucene+native";
     }
 
     @Override
     protected String providerVersion()
     {
-        return "1.0";
+        return "2.0";
     }
 
     @Override

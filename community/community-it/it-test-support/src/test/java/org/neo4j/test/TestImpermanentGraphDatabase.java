@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
@@ -86,7 +87,19 @@ public class TestImpermanentGraphDatabase
             tx.success();
         }
 
+        cleanDatabaseContent( db );
+
         assertThat( nodeCount(), is( 0L ) );
+    }
+
+    private void cleanDatabaseContent( GraphDatabaseService db )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.getAllRelationships().forEach( Relationship::delete );
+            db.getAllNodes().forEach( Node::delete );
+            tx.success();
+        }
     }
 
     private long nodeCount()

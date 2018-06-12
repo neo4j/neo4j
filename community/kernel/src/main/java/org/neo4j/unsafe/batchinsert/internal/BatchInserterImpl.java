@@ -45,6 +45,7 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Visitor;
@@ -539,10 +540,23 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
                     propertyUpdateVisitor, labelUpdateVisitor, true );
             storeScan.run();
 
+            IndexEntryConflictException conflictException = null;
             for ( IndexPopulatorWithSchema populator : populators )
             {
-                populator.verifyDeferredConstraints( indexStoreView );
-                populator.close( true );
+                try
+                {
+                    populator.verifyDeferredConstraints( indexStoreView );
+                    populator.close( true );
+                }
+                catch ( IndexEntryConflictException e )
+                {
+                    populator.close( false );
+                    conflictException = Exceptions.chain( conflictException, e );
+                }
+            }
+            if ( conflictException != null )
+            {
+                throw conflictException;
             }
         }
     }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -74,6 +75,7 @@ import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider.IN_MEMORY_INDEX_PROVIDER_PRIORITY;
 
 /**
  * This test validates that we count the correct amount of index updates.
@@ -121,7 +123,8 @@ public class IndexStatisticsTest
     public DatabaseRule dbRule = new EmbeddedDatabaseRule()
             .withSetting( GraphDatabaseSettings.index_background_sampling_enabled, "false" )
             .withSetting( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled,
-                    multiThreadedPopulationEnabled + "" );
+                    multiThreadedPopulationEnabled + "" )
+            .startLazily();
 
     private GraphDatabaseService db;
     private ThreadToStatementContextBridge bridge;
@@ -136,6 +139,7 @@ public class IndexStatisticsTest
     @Before
     public void before()
     {
+        System.setProperty( IN_MEMORY_INDEX_PROVIDER_PRIORITY, String.valueOf( Integer.MAX_VALUE ) );
         GraphDatabaseAPI graphDatabaseAPI = dbRule.getGraphDatabaseAPI();
         this.db = graphDatabaseAPI;
         DependencyResolver dependencyResolver = graphDatabaseAPI.getDependencyResolver();
@@ -143,6 +147,12 @@ public class IndexStatisticsTest
         graphDatabaseAPI.getDependencyResolver()
                 .resolveDependency( Monitors.class )
                 .addMonitorListener( indexOnlineMonitor );
+    }
+
+    @After
+    public void tearDown()
+    {
+        System.clearProperty( IN_MEMORY_INDEX_PROVIDER_PRIORITY );
     }
 
     @Test

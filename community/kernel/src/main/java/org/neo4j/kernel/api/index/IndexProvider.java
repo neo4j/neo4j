@@ -229,7 +229,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
     @Override
     public int compareTo( IndexProvider o )
     {
-        return this.priority - o.priority;
+        return Integer.compare( this.priority, o.priority );
     }
 
     @Override

@@ -36,7 +36,6 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.internal.Version;
 
 import static java.util.Collections.singletonList;
@@ -346,8 +345,8 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
 
         // Then
         Map<String,String> providerDescriptionMap = MapUtil.stringMap(
-                "key", InMemoryIndexProviderFactory.KEY,
-                "version", InMemoryIndexProviderFactory.VERSION );
+                "key", "lucene+native",
+                "version", "2.0" );
         assertThat( result, containsInAnyOrder(
                 new Object[]{"INDEX ON :Age(foo)", "Age", singletonList("foo" ), "ONLINE", "node_unique_property", providerDescriptionMap},
                 new Object[]{"INDEX ON :Person(foo)", "Person", singletonList( "foo" ), "ONLINE", "node_label_property", providerDescriptionMap},

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import java.util.concurrent.TimeUnit.SECONDS
 
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.v3_5.spi.{IndexDescriptor, IndexLimitation, SlowContains}
 import org.neo4j.graphdb.{GraphDatabaseService, Label, RelationshipType}
 import org.neo4j.internal.kernel.api.Transaction.Type._
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
@@ -136,8 +136,8 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     val prop1id = planContext.getPropertyKeyId("prop")
     val prop2id = planContext.getPropertyKeyId("prop2")
     planContext.indexesGetForLabel(l1id).toSet should equal(Set(
-      IndexDescriptor(l1id, prop1id),
-      IndexDescriptor(l1id, prop2id)
+      IndexDescriptor(l1id, prop1id, Set[IndexLimitation](SlowContains)),
+      IndexDescriptor(l1id, prop2id, Set[IndexLimitation](SlowContains))
     ))
   }
 
@@ -161,7 +161,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     val l1id = planContext.getLabelId("L1")
     val prop2id = planContext.getPropertyKeyId("prop2")
     planContext.uniqueIndexesGetForLabel(l1id).toSet should equal(Set(
-      IndexDescriptor(l1id, prop2id)
+      IndexDescriptor(l1id, prop2id, Set[IndexLimitation](SlowContains))
     ))
   }
 
