@@ -243,15 +243,15 @@ public class SpatialIndexSettingsTest
 
     private static Config configWithRange( double minX, double minY, double maxX, double maxY )
     {
-        Setting<Double> wgs84_x_min = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.WGS84, 0, "min" );
-        Setting<Double> wgs84_y_min = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.WGS84, 1, "min" );
-        Setting<Double> wgs84_x_max = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.WGS84, 0, "max" );
-        Setting<Double> wgs84_y_max = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.WGS84, 1, "max" );
+        Setting<Double> wgs84MinX = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.WGS84, 0, "min" );
+        Setting<Double> wgs84MinY = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.WGS84, 1, "min" );
+        Setting<Double> wgs84MaxX = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.WGS84, 0, "max" );
+        Setting<Double> wgs84MaxY = SpatialIndexSettings.makeCRSRangeSetting( CoordinateReferenceSystem.WGS84, 1, "max" );
         Config config = Config.defaults();
-        config.augment( wgs84_x_min, Double.toString( minX ) );
-        config.augment( wgs84_y_min, Double.toString( minY ) );
-        config.augment( wgs84_x_max, Double.toString( maxX ) );
-        config.augment( wgs84_y_max, Double.toString( maxY ) );
+        config.augment( wgs84MinX, Double.toString( minX ) );
+        config.augment( wgs84MinY, Double.toString( minY ) );
+        config.augment( wgs84MaxX, Double.toString( maxX ) );
+        config.augment( wgs84MaxY, Double.toString( maxY ) );
         return config;
     }
 }
