@@ -491,4 +491,22 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val result = executeWith(Configs.Interpreted - Configs.Before3_3AndRule, query)
     result.toList should equal(List(Map("c" -> node2), Map("c" -> node3)))
   }
+
+  test("nested pattern comprehension") {
+    // given
+    graph.execute(
+      """CREATE (a:Label)-[:T1]->(b)-[:T2]->(c {prop: 42})
+         CREATE (b)-[:T2]->({prop: 43})
+      """.stripMargin)
+
+    val query =
+      """
+      MATCH (a:Label)
+      RETURN [(a)-[:T1]->(b) | [(b)-[:T2]->(c) | c.prop ] ] as result
+      """
+
+    val result = executeWith(Configs.Interpreted - Configs.Cost3_3 - Configs.Cost3_4 - Configs.Version2_3 - Configs.AllRulePlanners, query)
+    result.toList should equal(List(Map("result" -> List(List(43, 42)))))
+  }
+
 }

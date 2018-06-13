@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predica
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedRelType
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{PathExtractorExpression, predicates, expressions => commandexpressions, values => commandvalues}
-import org.opencypher.v9_0.util.{InternalException, NonEmptyList}
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.expressions.functions._
 import org.opencypher.v9_0.expressions.{DesugaredMapProjection, functions}
+import org.opencypher.v9_0.util.{InternalException, NonEmptyList}
 import org.opencypher.v9_0.{expressions => ast}
-import org.neo4j.cypher.internal.v3_5.logical.plans._
 
 object CommunityExpressionConverter extends ExpressionConverter {
 

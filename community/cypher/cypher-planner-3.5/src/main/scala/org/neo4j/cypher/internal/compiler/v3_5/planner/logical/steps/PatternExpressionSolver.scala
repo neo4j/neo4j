@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
-import org.opencypher.v9_0.util.{FreshIdNameGenerator, Rewriter, UnNamedNameGenerator, topDown}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, patternExpressionRewriter}
-import org.opencypher.v9_0.rewriting.rewriters.{PatternExpressionPatternElementNamer, projectNamedPaths}
 import org.neo4j.cypher.internal.ir.v3_5.QueryGraph
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.expressions.functions.Exists
+import org.opencypher.v9_0.rewriting.rewriters.{PatternExpressionPatternElementNamer, projectNamedPaths}
+import org.opencypher.v9_0.util.{FreshIdNameGenerator, Rewriter, UnNamedNameGenerator, topDown}
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
@@ -95,6 +95,7 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
         newProjections += (key -> newExpression)
         newPlan
 
+      // RETURN [(a)-->() | a.foo] - the top-level expression is a pattern comprehension
       case (planAcc, (key, expression: PatternComprehension)) =>
         val (newPlan, newExpression) = patternComprehensionSolver.solveUsingRollUpApply(planAcc, expression, None, context)
         newProjections += (key -> newExpression)
@@ -236,7 +237,7 @@ case class ListSubQueryExpressionSolver[T <: Expression](
     val innerPlan = innerContext.strategy.plan(qg, innerContext, solveds, cardinalities)
     val collectionName = FreshIdNameGenerator.name(expr.position)
     val projectedPath = projectionCreator(namedExpr)
-    val projectedInner = context.logicalPlanProducer.planRegularProjection(innerPlan, Map(collectionName -> projectedPath), Map.empty, innerContext)
+    val projectedInner = projection(innerPlan, Map(collectionName -> projectedPath), innerContext, solveds, cardinalities)
     PlannedSubQuery(columnName = collectionName, innerPlan = projectedInner, nullableIdentifiers = qg.argumentIds)
   }
 

@@ -31,8 +31,10 @@ import org.neo4j.cypher.internal.v3_5.logical.plans.{DeleteExpression => DeleteE
 import org.opencypher.v9_0.ast
 import org.opencypher.v9_0.ast._
 import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.util.AssertionRunner.Thunk
+import org.opencypher.v9_0.util.Foldable.FoldableAny
 import org.opencypher.v9_0.util.attribution.{Attributes, IdGen}
-import org.opencypher.v9_0.util.{ExhaustiveShortestPathForbiddenException, InternalException}
+import org.opencypher.v9_0.util.{AssertionRunner, ExhaustiveShortestPathForbiddenException, InternalException}
 
 /*
  * The responsibility of this class is to produce the correct solved PlannerQuery when creating logical plans.
@@ -365,7 +367,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
   def planLetSemiApply(left: LogicalPlan, right: LogicalPlan, id: String, context: LogicalPlanningContext): LogicalPlan =
     annotate(LetSemiApply(left, right, id), solveds.get(left.id), context)
 
-  def planAntiSemiApply(left: LogicalPlan, right: LogicalPlan, predicate: PatternExpression, expr: Expression, context: LogicalPlanningContext): LogicalPlan = {
+  def planAntiSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expression, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(left.id).updateTailOrSelf(_.amendQueryGraph(_.addPredicates(expr)))
     annotate(AntiSemiApply(left, right), solved, context)
   }
@@ -693,10 +695,25 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
   }
 
   private def annotate(plan: LogicalPlan, solved: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
+    assertNoBadExpressionsExists(plan)
     val cardinality = cardinalityModel(solved, context.input, context.semanticTable)
     solveds.set(plan.id, solved)
     cardinalities.set(plan.id, cardinality)
     plan
+  }
+
+  /**
+    * There probably exists some type level way of achieving this with type safety instead of manually searching through the expression tree like this
+    */
+  private def assertNoBadExpressionsExists(root: Any): Unit = {
+    AssertionRunner.runUnderAssertion(new Thunk {
+      override def apply(): Unit = new FoldableAny(root).treeExists {
+        case _: PatternComprehension | _: PatternExpression | _: MapProjection =>
+          throw new InternalException(s"This expression should not be added to a logical plan:\n$root")
+        case _ =>
+          false
+      }
+    })
   }
 
   private def projectedDirection(pattern: PatternRelationship, from: String, dir: SemanticDirection): SemanticDirection = {

@@ -45,6 +45,19 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     result.toList.head("p").asInstanceOf[Seq[_]] should have size 2
   }
 
+  test("pattern expression without any bound nodes") {
+
+    val start = createLabeledNode("A")
+    relate(start, createNode())
+    relate(start, createNode())
+
+    val query = "return case when true then (:A)-->() else 42 end as p"
+    val result = executeWith(Configs.Interpreted - Configs.Version2_3 - Configs.AllRulePlanners, query,
+      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot useOperators("Expand(All)")))
+
+    result.toList.head("p").asInstanceOf[Seq[_]] should have size 2
+  }
+
   test("match (n) return case when id(n) < 0 then (n)-->() otherwise 42 as p") {
     val start = createNode()
     relate(start, createNode())
