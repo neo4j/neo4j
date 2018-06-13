@@ -25,6 +25,7 @@ package org.neo4j.internal.cypher.acceptance
 import java.util
 
 import org.neo4j.collection.RawIterator
+import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.helpers.collection.MapUtil.map
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs.{FieldSignature, Neo4jTypes}
@@ -128,6 +129,6 @@ class ProcedureCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
     val value = new Arbitrary
 
     // When & then
-    intercept[IllegalArgumentException](graph.execute("CALL my.first.proc({p})", map("p", value)))
+    intercept[QueryExecutionException](graph.execute("CALL my.first.proc({p})", map("p", value)))
   }
 }
