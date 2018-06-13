@@ -94,9 +94,10 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
             return this;
         }
 
-        public Builder withTokensBefore( long... entityTokensBefore )
+        public Builder withTokens( long... entityTokens )
         {
-            this.updates.entityTokensBefore = entityTokensBefore;
+            this.updates.entityTokensBefore = entityTokens;
+            this.updates.entityTokensAfter = entityTokens;
             return this;
         }
 
@@ -110,7 +111,6 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
         {
             return updates;
         }
-
     }
 
     private void put( int propertyKeyId, PropertyValue propertyValue )

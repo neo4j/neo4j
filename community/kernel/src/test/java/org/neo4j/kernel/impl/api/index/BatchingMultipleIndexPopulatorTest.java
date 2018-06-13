@@ -332,7 +332,7 @@ public class BatchingMultipleIndexPopulatorTest
     private EntityUpdates nodeUpdates( int nodeId, int propertyId, String propertyValue, long...
             labelIds )
     {
-        return EntityUpdates.forEntity( (long) nodeId ).withTokensBefore( labelIds ).withTokensAfter( labelIds )
+        return EntityUpdates.forEntity( (long) nodeId ).withTokens( labelIds ).withTokensAfter( labelIds )
                 .added( propertyId, Values.of( propertyValue ) )
                 .build();
     }

@@ -312,7 +312,7 @@ public class NeoStoreIndexStoreViewTest
 
     EntityUpdates add( long nodeId, int propertyKeyId, Object value, long[] labels )
     {
-        return EntityUpdates.forEntity( nodeId ).withTokensBefore( labels ).added( propertyKeyId, Values.of( value ) ).build();
+        return EntityUpdates.forEntity( nodeId ).withTokens( labels ).added( propertyKeyId, Values.of( value ) ).build();
     }
 
     private void createAlistairAndStefanNodes()

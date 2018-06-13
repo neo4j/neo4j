@@ -1209,7 +1209,7 @@ public class IndexingServiceTest
 
     private EntityUpdates addNodeUpdate( long nodeId, Object propertyValue, int labelId )
     {
-        return EntityUpdates.forEntity( nodeId ).withTokensBefore( labelId )
+        return EntityUpdates.forEntity( nodeId ).withTokens( labelId )
                 .added( index.schema().getPropertyId(), Values.of( propertyValue ) ).build();
     }
 

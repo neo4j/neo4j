@@ -56,6 +56,7 @@ import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
