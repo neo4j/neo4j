@@ -243,9 +243,9 @@ public class RaftReplicatorTest
             replicator.replicate( content, true );
             fail( "should have thrown" );
         }
-        catch ( ReplicationFailureException e )
+        catch ( ReplicationFailureException ignored )
         {
-            System.out.println( "Replication aborted since no leader was available" );
+            // expected
         }
     }
 
@@ -276,7 +276,7 @@ public class RaftReplicatorTest
     private RaftReplicator getReplicator( CapturingOutbound<RaftMessages.RaftMessage> outbound, CapturingProgressTracker capturedProgress, Monitors monitors )
     {
         return new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy,
-                DEFAULT_TIMEOUT_MS, availabilityGuard, NullLogProvider.getInstance(), REPLICATION_LIMIT, monitors );
+                10, availabilityGuard, NullLogProvider.getInstance(), REPLICATION_LIMIT, monitors );
     }
 
     private ReplicatingThread replicatingThread( RaftReplicator replicator, ReplicatedInteger content, boolean trackResult )
