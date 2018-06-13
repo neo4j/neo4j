@@ -53,15 +53,18 @@ public class SchemaCalculator
 
     private Map<LabelSet,Set<Integer>> labelSetToPropertyKeysMapping;
     // TODO: make those different Set<whatever> etc. into more useful/understandable classes?!
-    private Map<Pair<LabelSet,Integer>,Object> labelSetAndNodePropertyKeyIdToValueTypeMapping;  // Dislike object here... see deriveValueType() for Info about ValueType
+    private Map<Pair<LabelSet,Integer>,Object> labelSetAndNodePropertyKeyIdToValueTypeMapping;
+            // Dislike object here... see deriveValueType() for Info about ValueType
     private Map<Integer,String> labelIdToLabelNameMapping;
     private Map<Integer,String> propertyIdToPropertylNameMapping;
+    private Map<Integer,String> relationshipTypIdToRelationshipNameMapping;
 
     private final Set<Integer> emptyPropertyIdSet = Collections.unmodifiableSet( Collections.emptySet() );
-
     private final String ANYVALUE = "ANYVALUE";
     private final String NODE = "Node";
     private final String RELATIONSHIP = "Relationship";
+
+    //TODO: Extend this to support showing how relationships types connect to nodes
 
     SchemaCalculator( GraphDatabaseAPI db, KernelTransaction ktx )
     {
@@ -98,12 +101,14 @@ public class SchemaCalculator
                 {
                     // lookup propId name and valueGroup
                     String propName = propertyIdToPropertylNameMapping.get( propId );
-                    Object valueType = labelSetAndNodePropertyKeyIdToValueTypeMapping.get( Pair.of( labelSet,propId ) );
+                    Object valueType = labelSetAndNodePropertyKeyIdToValueTypeMapping.get( Pair.of( labelSet, propId ) );
                     String cypherType = getCypherTypeString( valueType );
                     results.add( new BuiltInSchemaProcedures.SchemaInfoResult( NODE, labelNames, propName, cypherType ) );
                 }
             }
         }
+
+        //TODO: Relationships
         return results.stream();
     }
 
@@ -117,7 +122,6 @@ public class SchemaCalculator
     private void calculateSchema() //TODO: Parallelize this: (Nodes | Rels) and/or more
     {
         // this one does most of the work
-        //TODO: implement this for rels
         try ( Statement ignore = ktx.acquireStatement() )
         {
             Read dataRead = ktx.dataRead();
@@ -130,10 +134,11 @@ public class SchemaCalculator
             labelSetToPropertyKeysMapping = new HashMap<>( labelCount );
             labelIdToLabelNameMapping = new HashMap<>( labelCount );
             propertyIdToPropertylNameMapping = new HashMap<>( tokenRead.propertyKeyCount() );
+            relationshipTypIdToRelationshipNameMapping = new HashMap<>( tokenRead.relationshipTypeCount() );
 
+            // NODES
             NodeCursor nodeCursor = cursors.allocateNodeCursor();
             dataRead.allNodesScan( nodeCursor );
-
             while ( nodeCursor.next() )
             {
                 // each node
@@ -161,15 +166,23 @@ public class SchemaCalculator
                 labelSetToPropertyKeysMapping.put( labels, propertyIds );
             }
 
+            // RELS
+            //TODO: implement this for rels
+
+            // OTHER:
+
             // go through all labels
             addNamesToCollection( tokenRead.labelsGetAllTokens(), labelIdToLabelNameMapping );
 
             // go through all propertyKeys
             addNamesToCollection( tokenRead.propertyKeyGetAllTokens(), propertyIdToPropertylNameMapping );
+
+            // go through all relationshipTypes
+            addNamesToCollection( tokenRead.relationshipTypesGetAllTokens(), relationshipTypIdToRelationshipNameMapping );
         }
     }
 
-    private void addNamesToCollection( Iterator<NamedToken> labelIterator, Map<Integer, String> collection )
+    private void addNamesToCollection( Iterator<NamedToken> labelIterator, Map<Integer,String> collection )
     {
         while ( labelIterator.hasNext() )
         {
