@@ -93,6 +93,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
 
             // WHEN
             p.markAsFailed( failure );
+            p.close( false );
 
             // THEN
             assertEquals( FAILED, indexProvider.getInitialState( descriptor ) );
@@ -266,7 +267,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                     {
                         NodeValueIterator nodes = new NodeValueIterator();
                         reader.query( nodes, IndexOrder.NONE, IndexQuery.exact( propertyKeyId, entry.value ) );
-                        assertEquals( asSet( entry.nodeId, entry.nodeId + offset ), PrimitiveLongCollections.toSet( nodes ) );
+                        assertEquals( entry.value.toString(), asSet( entry.nodeId, entry.nodeId + offset ), PrimitiveLongCollections.toSet( nodes ) );
                     }
                 }
             }

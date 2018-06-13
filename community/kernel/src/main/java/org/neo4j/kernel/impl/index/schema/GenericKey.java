@@ -20,6 +20,8 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.impl.index.schema.DurationIndexKey.AVG_DAY_SECONDS;
 import static org.neo4j.kernel.impl.index.schema.DurationIndexKey.AVG_MONTH_SECONDS;
+import static org.neo4j.kernel.impl.index.schema.GenericLayout.HIGHEST_TYPE_BY_VALUE_GROUP;
+import static org.neo4j.kernel.impl.index.schema.GenericLayout.LOWEST_TYPE_BY_VALUE_GROUP;
 import static org.neo4j.kernel.impl.index.schema.StringIndexKey.unsignedByteArrayCompare;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
@@ -100,7 +102,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     @Override
     void initValueAsLowest( ValueGroup valueGroup )
     {
-        type = GenericLayout.TYPE_BY_GROUP[valueGroup.ordinal()];
+        type = valueGroup == ValueGroup.UNKNOWN ? LOWEST_TYPE_BY_VALUE_GROUP : GenericLayout.TYPE_BY_GROUP[valueGroup.ordinal()];
         long0 = Long.MIN_VALUE;
         long1 = Long.MIN_VALUE;
         long2 = Long.MIN_VALUE;
@@ -111,7 +113,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     @Override
     void initValueAsHighest( ValueGroup valueGroup )
     {
-        type = GenericLayout.TYPE_BY_GROUP[valueGroup.ordinal()];
+        type = valueGroup == ValueGroup.UNKNOWN ? HIGHEST_TYPE_BY_VALUE_GROUP : GenericLayout.TYPE_BY_GROUP[valueGroup.ordinal()];
         long0 = Long.MAX_VALUE;
         long1 = Long.MAX_VALUE;
         long2 = Long.MAX_VALUE;
@@ -122,7 +124,12 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     @Override
     int compareValueTo( GenericKey other )
     {
-        // TODO compare type
+        int typeComparison = GenericLayout.TYPE_COMPARATOR.compare( type, other.type );
+        if ( typeComparison != 0 )
+        {
+            return typeComparison;
+        }
+
         switch ( type )
         {
         case ZONED_DATE_TIME:
@@ -148,10 +155,17 @@ public class GenericKey extends NativeIndexKey<GenericKey>
         }
     }
 
-    void copyByteArray( GenericKey key, int targetLength )
+    void copyByteArrayFromIfExists( GenericKey key, int targetLength )
     {
-        setBytesLength( targetLength );
-        System.arraycopy( key.byteArray, 0, byteArray, 0, targetLength );
+        if ( key.type == Type.TEXT )
+        {
+            setBytesLength( targetLength );
+            System.arraycopy( key.byteArray, 0, byteArray, 0, targetLength );
+        }
+        else
+        {
+            byteArray = null;
+        }
     }
 
     void setBytesLength( int length )
@@ -179,18 +193,21 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     @Override
     protected void writeDate( long epochDay ) throws RuntimeException
     {
+        type = Type.DATE;
         long0 = epochDay;
     }
 
     @Override
     protected void writeLocalTime( long nanoOfDay ) throws RuntimeException
     {
+        type = Type.LOCAL_TIME;
         long0 = nanoOfDay;
     }
 
     @Override
     protected void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws RuntimeException
     {
+        type = Type.ZONED_TIME;
         long0 = nanosOfDayUTC;
         long1 = offsetSeconds;
     }
@@ -198,6 +215,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     @Override
     protected void writeLocalDateTime( long epochSecond, int nano ) throws RuntimeException
     {
+        type = Type.LOCAL_DATE_TIME;
         long0 = nano;
         long1 = epochSecond;
     }
@@ -205,6 +223,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     @Override
     protected void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws RuntimeException
     {
+        type = Type.ZONED_DATE_TIME;
         long0 = epochSecondUTC;
         long1 = nano;
         long2 = -1;
@@ -214,6 +233,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     @Override
     protected void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws RuntimeException
     {
+        type = Type.ZONED_DATE_TIME;
         long0 = epochSecondUTC;
         long1 = nano;
         long2 = TimeZones.map( zoneId );
@@ -223,12 +243,14 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     @Override
     public void writeBoolean( boolean value ) throws RuntimeException
     {
+        type = Type.BOOLEAN;
         long0 = value ? TRUE : FALSE;
     }
 
     @Override
     public void writeInteger( byte value )
     {
+        type = Type.NUMBER;
         long0 = value;
         long1 = RawBits.BYTE;
     }
@@ -236,6 +258,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     @Override
     public void writeInteger( short value )
     {
+        type = Type.NUMBER;
         long0 = value;
         long1 = RawBits.SHORT;
     }
@@ -243,6 +266,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     @Override
     public void writeInteger( int value )
     {
+        type = Type.NUMBER;
         long0 = value;
         long1 = RawBits.INT;
     }
@@ -250,6 +274,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     @Override
     public void writeInteger( long value )
     {
+        type = Type.NUMBER;
         long0 = value;
         long1 = RawBits.LONG;
     }
@@ -257,6 +282,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     @Override
     public void writeFloatingPoint( float value )
     {
+        type = Type.NUMBER;
         long0 = Float.floatToIntBits( value );
         long1 = RawBits.FLOAT;
     }
@@ -264,6 +290,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     @Override
     public void writeFloatingPoint( double value )
     {
+        type = Type.NUMBER;
         long0 = Double.doubleToLongBits( value );
         long1 = RawBits.DOUBLE;
     }
@@ -271,6 +298,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     @Override
     public void writeString( String value ) throws RuntimeException
     {
+        type = Type.TEXT;
         byteArray = UTF8.encode( value );
         long0 = byteArray.length;
         long1 = FALSE;
@@ -285,6 +313,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     @Override
     public void writeDuration( long months, long days, long seconds, int nanos )
     {
+        type = Type.DURATION;
         long0 = months * AVG_MONTH_SECONDS + days * AVG_DAY_SECONDS + seconds;
         long1 = nanos;
         long2 = months;

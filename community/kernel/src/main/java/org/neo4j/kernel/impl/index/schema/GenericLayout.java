@@ -1,8 +1,13 @@
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.ValueGroup;
 
+import static java.util.Comparator.comparing;
 import static org.neo4j.kernel.impl.index.schema.StringIndexKey.ENTITY_ID_SIZE;
 import static org.neo4j.kernel.impl.index.schema.ZonedDateTimeLayout.ZONE_ID_FLAG;
 import static org.neo4j.kernel.impl.index.schema.ZonedDateTimeLayout.ZONE_ID_MASK;
@@ -13,6 +18,7 @@ import static org.neo4j.kernel.impl.index.schema.ZonedDateTimeLayout.isZoneId;
 public class GenericLayout extends IndexLayout<GenericKey>
 {
     private static final int KEY_HEADER_SIZE = Byte.BYTES;
+    static final Comparator<Type> TYPE_COMPARATOR = comparing( t -> t.valueGroup );
 
     enum Type
     {
@@ -34,10 +40,17 @@ public class GenericLayout extends IndexLayout<GenericKey>
             this.valueGroup = valueGroup;
             this.typeId = typeId;
         }
+
+        ValueGroup valueGroup()
+        {
+            return valueGroup;
+        }
     }
 
     private static final Type[] TYPES = Type.values();
     private static final Type[] TYPE_BY_ID = new Type[TYPES.length];
+    static final Type LOWEST_TYPE_BY_VALUE_GROUP = Collections.min( Arrays.asList( TYPES ), TYPE_COMPARATOR );
+    static final Type HIGHEST_TYPE_BY_VALUE_GROUP = Collections.max( Arrays.asList( TYPES ), TYPE_COMPARATOR );
     static final Type[] TYPE_BY_GROUP = new Type[ValueGroup.values().length];
     static
     {
@@ -72,7 +85,7 @@ public class GenericLayout extends IndexLayout<GenericKey>
         into.long1 = key.long1;
         into.long2 = key.long2;
         into.long3 = key.long3;
-        into.copyByteArray( key, (int) key.long0 );
+        into.copyByteArrayFromIfExists( key, (int) key.long0 );
         return into;
     }
 
@@ -223,6 +236,7 @@ public class GenericLayout extends IndexLayout<GenericKey>
             return;
         }
 
+        into.type = TYPE_BY_ID[typeId];
         switch ( into.type )
         {
         case ZONED_DATE_TIME:
