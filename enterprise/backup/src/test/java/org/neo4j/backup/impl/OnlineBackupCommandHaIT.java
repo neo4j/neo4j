@@ -304,8 +304,8 @@ public class OnlineBackupCommandHaIT
                 "--name=" + backupName ) );
 
         // and the database contains a few more transactions
-        transactions1M( db ); // first rotation
-        transactions1M( db ); // second rotation, prune happens at recovery but only in common protocol
+        transactions1M( db );
+        transactions1M( db ); // rotation, second tx log file
 
         // when we perform an incremental backup
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupDir,

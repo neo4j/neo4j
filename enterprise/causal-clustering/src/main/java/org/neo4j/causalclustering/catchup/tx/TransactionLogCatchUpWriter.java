@@ -79,7 +79,7 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
         this.log = logProvider.getLog( getClass() );
         this.asPartOfStoreCopy = asPartOfStoreCopy;
         this.rotateTransactionsManually = forceTransactionRotations;
-        RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( Config.defaults(), storeDir, pageCache, logProvider );
+        RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( Config.defaults(), storeDir, fs, pageCache, logProvider );
         this.stores = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs, recordFormats, logProvider, EMPTY )
                 .openNeoStores( META_DATA );
         Dependencies dependencies = new Dependencies();

@@ -288,8 +288,8 @@ public class OnlineBackupCommandCcIT
                 "--name=" + backupName ) );
 
         // and the database contains a few more transactions
-        transactions1M( clusterLeader( cluster ).database() ); // first rotation
-        transactions1M( clusterLeader( cluster ).database() ); // second rotation and prune
+        transactions1M( clusterLeader( cluster ).database() );
+        transactions1M( clusterLeader( cluster ).database() ); // rotation, second tx log file
 
         // when we perform an incremental backup
         assertEquals( 0, runBackupToolFromSameJvm(
