@@ -160,7 +160,6 @@ public class CatchUpClient extends LifecycleAdapter
             ChannelFuture channelFuture = bootstrap.connect( destination.socketAddress() );
             nettyChannel = channelFuture.sync().channel();
             nettyChannel.closeFuture().addListener( (ChannelFutureListener) future -> handler.onClose() );
-
         }
 
         @Override

@@ -67,10 +67,10 @@ public class SslPlatformTest
         SslResource sslServerResource = selfSignedKeyId( 0 ).trustKeyId( 1 ).install( testDir.directory( "server" ) );
         SslResource sslClientResource = selfSignedKeyId( 1 ).trustKeyId( 0 ).install( testDir.directory( "client" ) );
 
-        server = new SecureServer( makeSslContext( sslServerResource, true, SslProvider.OPENSSL.name() ) );
+        server = new SecureServer( makeSslContext( sslServerResource, true, SslProvider.OPENSSL.name() ), false );
 
         server.start();
-        client = new SecureClient( makeSslContext( sslClientResource, false, SslProvider.OPENSSL.name() ) );
+        client = new SecureClient( makeSslContext( sslClientResource, false, SslProvider.OPENSSL.name() ), false );
         client.connect( server.port() );
 
         // when

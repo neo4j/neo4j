@@ -37,24 +37,42 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 
 import java.net.InetSocketAddress;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Stream;
 import javax.net.ssl.SSLEngine;
 
+import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
+
+import static java.lang.Enum.valueOf;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-class SecureServer
+public class SecureServer
 {
-    static final byte[] RESPONSE = {5, 6, 7, 8};
+    public static final byte[] RESPONSE = {5, 6, 7, 8};
 
     private SslContext sslContext;
     private Channel channel;
     private NioEventLoopGroup eventLoopGroup;
+    private final LogProvider logProvider;
+    private final boolean verifyHostname;
 
-    SecureServer( SslContext sslContext )
+    public SecureServer( SslContext sslContext, boolean verifyHostname )
     {
-        this.sslContext = sslContext;
+        this( sslContext, verifyHostname, NullLogProvider.getInstance() );
     }
 
-    void start()
+    public SecureServer( SslContext sslContext, boolean verifyHostname, LogProvider logProvider )
+    {
+        this.sslContext = sslContext;
+        this.logProvider = logProvider;
+        this.verifyHostname = verifyHostname;
+    }
+
+    public void start()
     {
         eventLoopGroup = new NioEventLoopGroup();
         ServerBootstrap bootstrap = new ServerBootstrap()
@@ -69,11 +87,9 @@ class SecureServer
                     {
                         ChannelPipeline pipeline = ch.pipeline();
 
-                        SSLEngine sslEngine = sslContext.newEngine( ch.alloc() );
-                        sslEngine.setNeedClientAuth( true );
-                        SslHandler sslHandler = new SslHandler( sslEngine );
+                        OnConnectSslHandlerInjectorHandler sslHandler =
+                                new OnConnectSslHandlerInjectorHandler( ch, sslContext, false, verifyHostname, logProvider );
                         pipeline.addLast( sslHandler );
-                        //sslHandler.handshakeFuture().addListener( f -> f.cause().printStackTrace() ); // for debugging
 
                         pipeline.addLast( new Responder() );
                     }
@@ -82,14 +98,14 @@ class SecureServer
         channel = bootstrap.bind().syncUninterruptibly().channel();
     }
 
-    void stop()
+    public void stop()
     {
         channel.close().awaitUninterruptibly();
         channel = null;
         eventLoopGroup.shutdownGracefully( 0, 0, SECONDS );
     }
 
-    int port()
+    public int port()
     {
         return ((InetSocketAddress) channel.localAddress()).getPort();
     }

@@ -75,6 +75,7 @@ import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
+import org.neo4j.kernel.configuration.ssl.TrustManagerFactoryProvider;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInProcedures;
 import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
@@ -491,7 +492,8 @@ public class HighlyAvailableEditionModule
         platformModule.diagnosticsManager.appendProvider( new HighAvailabilityDiagnostics( memberStateMachine,
                 clusterClient ) );
 
-        dependencies.satisfyDependency( SslPolicyLoader.create( config, logging.getInternalLogProvider() ) ); // for bolt and web server
+        dependencies.satisfyDependency(
+                SslPolicyLoader.create( config, new TrustManagerFactoryProvider(), logging.getInternalLogProvider() ) ); // for bolt and web server
 
         // Create HA services
         lockManager = dependencies.satisfyDependency(

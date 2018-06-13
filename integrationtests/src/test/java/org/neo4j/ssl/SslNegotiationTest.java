@@ -175,10 +175,10 @@ public class SslNegotiationTest
         SslResource sslServerResource = selfSignedKeyId( 0 ).trustKeyId( 1 ).install( testDir.directory( "server" ) );
         SslResource sslClientResource = selfSignedKeyId( 1 ).trustKeyId( 0 ).install( testDir.directory( "client" ) );
 
-        server = new SecureServer( makeSslContext( sslServerResource, true, setup.serverParams ) );
+        server = new SecureServer( makeSslContext( sslServerResource, true, setup.serverParams ), false );
 
         server.start();
-        client = new SecureClient( makeSslContext( sslClientResource, false, setup.clientParams ) );
+        client = new SecureClient( makeSslContext( sslClientResource, false, setup.clientParams ), false );
         client.connect( server.port() );
 
         assertTrue( client.sslHandshakeFuture().await( 1, MINUTES ) );

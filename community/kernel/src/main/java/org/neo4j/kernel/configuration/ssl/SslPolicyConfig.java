@@ -86,6 +86,10 @@ public class SslPolicyConfig implements LoadableConfig
     @Description( "Restrict allowed ciphers." )
     public final Setting<List<String>> ciphers;
 
+    @Description( "When true, this node will verify the hostname of every other instance it connects to by comparing the address it used to connect with it " +
+            "and the patterns described in the remote hosts public certificate Subject Alternative Names" )
+    public final Setting<Boolean> verify_hostname;
+
     public SslPolicyConfig()
     {
         this( "<policyname>" );
@@ -108,6 +112,7 @@ public class SslPolicyConfig implements LoadableConfig
         this.client_auth = group.scope( setting( "client_auth", options( ClientAuth.class, true ), ClientAuth.REQUIRE.name() ) );
         this.tls_versions = group.scope( setting( "tls_versions", STRING_LIST, joinList( TLS_VERSION_DEFAULTS ) ) );
         this.ciphers = group.scope( setting( "ciphers", STRING_LIST, joinList( CIPHER_SUITES_DEFAULTS ) ) );
+        this.verify_hostname = group.scope( setting( "verify_hostname", BOOLEAN, FALSE ) );
     }
 
     // TODO: can we make this handle relative paths?

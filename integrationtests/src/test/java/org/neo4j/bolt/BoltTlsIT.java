@@ -32,6 +32,7 @@ import org.junit.runners.Parameterized.Parameter;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.BoltConnector;
@@ -131,6 +132,7 @@ public class BoltTlsIT
                 .setConfig( sslPolicy.base_directory, "certificates" )
                 .setConfig( sslPolicy.tls_versions, setup.boltTlsVersions )
                 .setConfig( sslPolicy.client_auth, "none" )
+                .setConfig( sslPolicy.verify_hostname, "false" )
                 .newGraphDatabase();
     }
 
@@ -150,7 +152,7 @@ public class BoltTlsIT
         Config config = db.getDependencyResolver().resolveDependency( Config.class );
         int boltPort = config.get( bolt.advertised_address ).getPort();
         SslContextFactory.SslParameters params = protocols( setup.clientTlsVersions ).ciphers();
-        SecureClient client = new SecureClient( makeSslContext( sslResource, false, params ) );
+        SecureClient client = new SecureClient( makeSslContext( sslResource, false, params ), false );
 
         // when
         client.connect( boltPort );
@@ -160,6 +162,7 @@ public class BoltTlsIT
 
         if ( setup.shouldSucceed )
         {
+            Optional.ofNullable( client.sslHandshakeFuture().cause() ).ifPresent( t -> t.printStackTrace( System.err ) );
             assertNull( client.sslHandshakeFuture().cause() );
         }
         else

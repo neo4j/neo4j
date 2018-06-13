@@ -35,6 +35,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ssl.SslPolicyConfig;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.configuration.ssl.SslSystemSettings;
+import org.neo4j.kernel.configuration.ssl.TrustManagerFactoryProvider;
 import org.neo4j.logging.NullLogProvider;
 
 public class SslContextFactory
@@ -113,6 +114,7 @@ public class SslContextFactory
         config.put( policyConfig.public_certificate.name(), sslResource.publicCertificate().getPath() );
         config.put( policyConfig.trusted_dir.name(), sslResource.trustedDirectory().getPath() );
         config.put( policyConfig.revoked_dir.name(), sslResource.revokedDirectory().getPath() );
+        config.put( policyConfig.verify_hostname.name(), "false" );
 
         if ( protocols != null )
         {
@@ -124,7 +126,8 @@ public class SslContextFactory
             config.put( policyConfig.ciphers.name(), ciphers );
         }
 
-        SslPolicyLoader sslPolicyFactory = SslPolicyLoader.create( Config.fromSettings( config ).build(), NullLogProvider.getInstance() );
+        SslPolicyLoader sslPolicyFactory =
+                SslPolicyLoader.create( Config.fromSettings( config ).build(), new TrustManagerFactoryProvider(), NullLogProvider.getInstance() );
 
         SslPolicy sslPolicy = sslPolicyFactory.getPolicy( "default" );
         return forServer ? sslPolicy.nettyServerContext() : sslPolicy.nettyClientContext();

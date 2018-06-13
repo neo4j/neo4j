@@ -95,6 +95,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
+import org.neo4j.kernel.configuration.ssl.TrustManagerFactoryProvider;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInProcedures;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -226,7 +227,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         life.add( dependencies.satisfyDependency( topologyService ) );
 
         // We need to satisfy the dependency here to keep users of it, such as BoltKernelExtension, happy.
-        dependencies.satisfyDependency( SslPolicyLoader.create( config, logProvider ) );
+        dependencies.satisfyDependency( SslPolicyLoader.create( config, new TrustManagerFactoryProvider(), logProvider ) );
 
         DuplexPipelineWrapperFactory pipelineWrapperFactory = pipelineWrapperFactory();
         PipelineWrapper serverPipelineWrapper = pipelineWrapperFactory.forServer( config, dependencies, logProvider, CausalClusteringSettings.ssl_policy );
