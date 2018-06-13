@@ -21,6 +21,16 @@
         <url>https://github.com/neo4j/neo4j</url>
     </scm>
 
+    <developers>
+        <developer>
+            <id>neo4j</id>
+            <name>The Neo4j Team</name>
+            <url>https://neo4j.com/</url>
+            <organization>Neo4j Inc.</organization>
+            <organizationUrl>https://neo4j.com/</organizationUrl>
+        </developer>
+    </developers>
+
     <licenses>
         <license>
             <name>GNU General Public License, Version 3</name>
