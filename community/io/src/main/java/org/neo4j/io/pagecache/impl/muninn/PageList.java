@@ -328,17 +328,17 @@ class PageList
     {
         // This is intentionally left benignly racy for performance.
         long address = offFilePageId( pageRef );
-        long v = UnsafeUtil.getLongVolatile( address );
-        long usage = v & MASK_USAGE_COUNT;
+        long value = UnsafeUtil.getLongVolatile( address );
+        long usage = value & MASK_USAGE_COUNT;
         if ( usage < 4 ) // avoid cache sloshing by not doing a write if counter is already maxed out
         {
-            long u = v + 1;
+            long update = value + 1;
             // Use compareAndSwapLong to only actually store the updated count if nothing else changed
             // in this word-line. The word-line is shared with the file page id, and the swapper id.
             // Those fields are updated under guard of the exclusive lock, but we *might* race with
             // that here, and in that case we would never want a usage counter update to clobber a page
             // binding update.
-            UnsafeUtil.compareAndSwapLong( null, address, v, u );
+            UnsafeUtil.compareAndSwapLong( null, address, value, update );
         }
     }
 
@@ -349,13 +349,13 @@ class PageList
     {
         // This is intentionally left benignly racy for performance.
         long address = offFilePageId( pageRef );
-        long v = UnsafeUtil.getLongVolatile( address );
-        long usage = v & MASK_USAGE_COUNT;
+        long value = UnsafeUtil.getLongVolatile( address );
+        long usage = value & MASK_USAGE_COUNT;
         if ( usage > 0 )
         {
-            long u = v - 1;
+            long update = value - 1;
             // See `incrementUsage` about why we use `compareAndSwapLong`.
-            UnsafeUtil.compareAndSwapLong( null, address, v, u );
+            UnsafeUtil.compareAndSwapLong( null, address, value, update );
         }
         return usage <= 1;
     }
