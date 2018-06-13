@@ -24,6 +24,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import java.util.Arrays;
 import java.util.Objects;
 
+import org.neo4j.hashing.HashFunction;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.SchemaComputer;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -38,9 +39,11 @@ import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.isAnyEntityT
 
 public class MultiTokenSchemaDescriptor implements SchemaDescriptor
 {
+    private static final HashFunction HASH_FUNCTION = HashFunction.incrementalXXH64();
     private final int[] entityTokens;
     private final EntityType entityType;
     private final int[] propertyIds;
+    private final int key;
 
     MultiTokenSchemaDescriptor( int[] entityTokens, EntityType entityType, int[] propertyIds )
     {
@@ -48,6 +51,20 @@ public class MultiTokenSchemaDescriptor implements SchemaDescriptor
         Arrays.sort( this.entityTokens );
         this.entityType = entityType;
         this.propertyIds = propertyIds;
+        Arrays.sort( this.propertyIds );
+
+        long hash = HASH_FUNCTION.initialise( 0x0123456789abcdefL + entityType.ordinal() );
+        for ( int entityToken : this.entityTokens )
+        {
+            hash = HASH_FUNCTION.update( hash, entityToken );
+        }
+        for ( int propertyId : this.propertyIds )
+        {
+            hash = HASH_FUNCTION.update( hash, propertyId );
+        }
+
+        hash = HASH_FUNCTION.finalise( hash );
+        key = HASH_FUNCTION.toInt( hash );
     }
 
     @Override
@@ -109,7 +126,7 @@ public class MultiTokenSchemaDescriptor implements SchemaDescriptor
     @Override
     public int keyId()
     {
-        return hashCode();
+        return key;
     }
 
     @Override
