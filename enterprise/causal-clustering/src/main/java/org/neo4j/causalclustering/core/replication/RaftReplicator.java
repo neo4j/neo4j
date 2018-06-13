@@ -37,9 +37,7 @@ import org.neo4j.causalclustering.core.replication.session.OperationContext;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Outbound;
-import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -60,10 +58,11 @@ public class RaftReplicator implements Replicator, LeaderListener
     private final Log log;
     private final Throttler throttler;
     private final ReplicationMonitor replicationMonitor;
+    private final long availabilityTimeoutMillis;
 
     public RaftReplicator( LeaderLocator leaderLocator, MemberId me, Outbound<MemberId,RaftMessages.RaftMessage> outbound, LocalSessionPool sessionPool,
             ProgressTracker progressTracker, TimeoutStrategy progressTimeoutStrategy, TimeoutStrategy leaderTimeoutStrategy,
-            AvailabilityGuard availabilityGuard, LogProvider logProvider, long replicationLimit, Monitors monitors )
+            long availabilityTimeoutMillis, AvailabilityGuard availabilityGuard, LogProvider logProvider, long replicationLimit, Monitors monitors )
     {
         this.me = me;
         this.outbound = outbound;
@@ -71,6 +70,7 @@ public class RaftReplicator implements Replicator, LeaderListener
         this.sessionPool = sessionPool;
         this.progressTimeoutStrategy = progressTimeoutStrategy;
         this.leaderTimeoutStrategy = leaderTimeoutStrategy;
+        this.availabilityTimeoutMillis = availabilityTimeoutMillis;
         this.availabilityGuard = availabilityGuard;
         this.throttler = new Throttler( replicationLimit );
         this.leaderLocator = leaderLocator;
@@ -129,7 +129,7 @@ public class RaftReplicator implements Replicator, LeaderListener
                 do
                 {
                     replicationMonitor.replicationAttempt();
-                    assertDatabaseNotShutdown();
+                    assertDatabaseAvailable();
                     try
                     {
                         // blocking at least until the send has succeeded or failed before retrying
@@ -201,11 +201,15 @@ public class RaftReplicator implements Replicator, LeaderListener
         progressTracker.triggerReplicationEvent();
     }
 
-    private void assertDatabaseNotShutdown()
+    private void assertDatabaseAvailable() throws ReplicationFailureException
     {
-        if ( availabilityGuard.isShutdown() )
+        try
         {
-            throw new DatabaseShutdownException( "Database has been shutdown, transaction cannot be replicated." );
+            availabilityGuard.await( availabilityTimeoutMillis );
+        }
+        catch ( AvailabilityGuard.UnavailableException e )
+        {
+            throw new ReplicationFailureException( "Database is not available, transaction cannot be replicated.", e );
         }
     }
 }
