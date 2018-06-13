@@ -24,6 +24,7 @@ import java.util.Arrays;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -82,13 +83,13 @@ class StringIndexKey extends NativeIndexKey<StringIndexKey>
     }
 
     @Override
-    void initValueAsLowest()
+    void initValueAsLowest( ValueGroup valueGroup )
     {
         bytes = null;
     }
 
     @Override
-    void initValueAsHighest()
+    void initValueAsHighest( ValueGroup valueGroup )
     {
         bytes = null;
     }
@@ -142,7 +143,7 @@ class StringIndexKey extends NativeIndexKey<StringIndexKey>
         return unsignedByteArrayCompare( bytes, bytesLength, other.bytes, other.bytesLength, ignoreLength | other.ignoreLength );
     }
 
-    private static int unsignedByteArrayCompare( byte[] a, int aLength, byte[] b, int bLength, boolean ignoreLength )
+    public static int unsignedByteArrayCompare( byte[] a, int aLength, byte[] b, int bLength, boolean ignoreLength )
     {
         assert a != null && b != null : "Null arrays not supported.";
 

@@ -26,6 +26,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -61,7 +62,7 @@ class SpatialIndexKey extends NativeIndexKey<SpatialIndexKey>
     }
 
     @Override
-    void initValueAsLowest()
+    void initValueAsLowest( ValueGroup valueGroup )
     {
         double[] limit = new double[crs.getDimension()];
         Arrays.fill(limit, Double.NEGATIVE_INFINITY);
@@ -69,7 +70,7 @@ class SpatialIndexKey extends NativeIndexKey<SpatialIndexKey>
     }
 
     @Override
-    void initValueAsHighest()
+    void initValueAsHighest( ValueGroup valueGroup )
     {
         // These coordinates will generate the largest value on the spacial curve
         double[] limit = new double[crs.getDimension()];

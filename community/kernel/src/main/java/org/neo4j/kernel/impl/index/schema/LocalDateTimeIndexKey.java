@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 
 import static java.lang.String.format;
 
@@ -44,14 +45,14 @@ class LocalDateTimeIndexKey extends NativeIndexKey<LocalDateTimeIndexKey>
     }
 
     @Override
-    public void initValueAsLowest()
+    public void initValueAsLowest( ValueGroup valueGroup )
     {
         epochSecond = Long.MIN_VALUE;
         nanoOfSecond = Integer.MIN_VALUE;
     }
 
     @Override
-    public void initValueAsHighest()
+    public void initValueAsHighest( ValueGroup valueGroup )
     {
         epochSecond = Long.MAX_VALUE;
         nanoOfSecond = Integer.MAX_VALUE;

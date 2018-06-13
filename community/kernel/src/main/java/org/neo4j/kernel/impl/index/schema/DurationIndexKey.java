@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 
 import static java.lang.String.format;
 
@@ -36,8 +37,8 @@ class DurationIndexKey extends NativeIndexKey<DurationIndexKey>
      * An average month is 30 days, 10 hours and 30 minutes.
      * In seconds this is (((30 * 24) + 10) * 60 + 30) * 60 = 2629800
      */
-    private static final long AVG_MONTH_SECONDS = 2_629_800;
-    private static final long AVG_DAY_SECONDS = 86_400;
+    static final long AVG_MONTH_SECONDS = 2_629_800;
+    static final long AVG_DAY_SECONDS = 86_400;
 
     static final int SIZE =
             Long.BYTES +    /* totalAvgSeconds */
@@ -59,7 +60,7 @@ class DurationIndexKey extends NativeIndexKey<DurationIndexKey>
     }
 
     @Override
-    public void initValueAsLowest()
+    public void initValueAsLowest( ValueGroup valueGroup )
     {
         totalAvgSeconds = Long.MIN_VALUE;
         nanosOfSecond = Integer.MIN_VALUE;
@@ -68,7 +69,7 @@ class DurationIndexKey extends NativeIndexKey<DurationIndexKey>
     }
 
     @Override
-    public void initValueAsHighest()
+    public void initValueAsHighest( ValueGroup valueGroup )
     {
         totalAvgSeconds = Long.MAX_VALUE;
         nanosOfSecond = Integer.MAX_VALUE;

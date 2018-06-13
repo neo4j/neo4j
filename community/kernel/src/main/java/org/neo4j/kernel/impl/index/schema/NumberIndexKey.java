@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -63,13 +64,13 @@ class NumberIndexKey extends NativeIndexKey<NumberIndexKey>
     }
 
     @Override
-    void initValueAsLowest()
+    void initValueAsLowest( ValueGroup valueGroup )
     {
         writeFloatingPoint( Double.NEGATIVE_INFINITY );
     }
 
     @Override
-    void initValueAsHighest()
+    void initValueAsHighest( ValueGroup valueGroup )
     {
         writeFloatingPoint( Double.POSITIVE_INFINITY );
     }

@@ -22,9 +22,10 @@ package org.neo4j.kernel.impl.index.schema;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 
-import org.neo4j.values.storable.TimeZones;
 import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.TimeZones;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -60,7 +61,7 @@ class ZonedDateTimeIndexKey extends NativeIndexKey<ZonedDateTimeIndexKey>
     }
 
     @Override
-    public void initValueAsLowest()
+    public void initValueAsLowest( ValueGroup valueGroup )
     {
         epochSecondUTC = Long.MIN_VALUE;
         nanoOfSecond = Integer.MIN_VALUE;
@@ -69,7 +70,7 @@ class ZonedDateTimeIndexKey extends NativeIndexKey<ZonedDateTimeIndexKey>
     }
 
     @Override
-    public void initValueAsHighest()
+    public void initValueAsHighest( ValueGroup valueGroup )
     {
         epochSecondUTC = Long.MAX_VALUE;
         nanoOfSecond = Integer.MAX_VALUE;

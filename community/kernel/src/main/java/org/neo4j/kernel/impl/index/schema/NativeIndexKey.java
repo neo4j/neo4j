@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.kernel.impl.store.TemporalValueWriterAdapter;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 
 /**
  * Includes value and entity id (to be able to handle non-unique values).
@@ -109,7 +110,7 @@ abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends Tempora
         initValueAsLowest();
     }
 
-    abstract void initValueAsLowest();
+    abstract void initValueAsLowest( ValueGroup valueGroup );
 
     final void initAsHighest()
     {
@@ -117,7 +118,7 @@ abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends Tempora
         initValueAsHighest();
     }
 
-    abstract void initValueAsHighest();
+    abstract void initValueAsHighest( ValueGroup valueGroup );
 
     /**
      * Compares the value of this key to that of another key.

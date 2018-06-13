@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 
 import static java.lang.String.format;
 
@@ -42,13 +43,13 @@ class DateIndexKey extends NativeIndexKey<DateIndexKey>
     }
 
     @Override
-    void initValueAsLowest()
+    void initValueAsLowest( ValueGroup valueGroup )
     {
         epochDay = Long.MIN_VALUE;
     }
 
     @Override
-    void initValueAsHighest()
+    void initValueAsHighest( ValueGroup valueGroup )
     {
         epochDay = Long.MAX_VALUE;
     }
