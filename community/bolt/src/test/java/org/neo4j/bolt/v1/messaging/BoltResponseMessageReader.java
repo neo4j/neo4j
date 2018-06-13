@@ -21,13 +21,13 @@ package org.neo4j.bolt.v1.messaging;
 
 import java.io.IOException;
 
+import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.v1.packstream.PackStream;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.bolt.v1.runtime.Neo4jError.codeFromString;
 import static org.neo4j.bolt.v1.runtime.spi.Records.record;
 
 public class BoltResponseMessageReader
@@ -74,7 +74,7 @@ public class BoltResponseMessageReader
                     String msg = failureMetadata.containsKey( "message" ) ?
                                  ((StringValue) failureMetadata.get( "message" )).stringValue() :
                             "<No message supplied>";
-                    handler.onFailure( codeFromString( code ), msg );
+                    handler.onFailure( Neo4jError.codeFromString( code ), msg );
                     break;
                 default:
                     throw new BoltIOException( Status.Request.InvalidFormat,

@@ -32,6 +32,9 @@ import java.util.List;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.logging.NullBoltMessageLogger;
+import org.neo4j.bolt.runtime.BoltResponseHandler;
+import org.neo4j.bolt.runtime.BoltStateMachine;
+import org.neo4j.bolt.runtime.StateMachineMessage;
 import org.neo4j.bolt.runtime.SynchronousBoltConnection;
 import org.neo4j.bolt.transport.DefaultBoltProtocolPipelineInstaller;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
@@ -39,15 +42,13 @@ import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
+import org.neo4j.bolt.v1.messaging.Run;
 import org.neo4j.bolt.v1.messaging.message.RequestMessage;
 import org.neo4j.bolt.v1.messaging.message.RunMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
-import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
-import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.HexPrinter;
-import org.neo4j.values.virtual.MapValue;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.junit.runners.Parameterized.Parameter;
@@ -57,6 +58,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 /**
  * This tests network fragmentation of messages. Given a set of messages, it will serialize and chunk the message up
@@ -152,7 +154,8 @@ public class FragmentedMessageDeliveryTest
         // Then the session should've received the specified messages, and the protocol should be in a nice clean state
         try
         {
-            verify( machine ).run( eq( "Mjölnir" ), any(MapValue.class), any( BoltResponseHandler.class ) );
+            StateMachineMessage run = new Run( "Mjölnir", EMPTY_MAP );
+            verify( machine ).process( eq( run ), any( BoltResponseHandler.class ) );
         }
         catch ( AssertionError e )
         {

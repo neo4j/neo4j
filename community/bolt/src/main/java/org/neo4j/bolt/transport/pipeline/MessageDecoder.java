@@ -23,12 +23,12 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
+import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.v1.messaging.BoltIOException;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageHandler;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.packstream.ByteBufInput;
-import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 

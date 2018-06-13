@@ -19,6 +19,9 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
+import org.neo4j.bolt.runtime.BoltConnectionFatality;
+import org.neo4j.bolt.runtime.BoltStateMachine;
+
 public interface Job
 {
     void perform( BoltStateMachine machine ) throws BoltConnectionFatality;

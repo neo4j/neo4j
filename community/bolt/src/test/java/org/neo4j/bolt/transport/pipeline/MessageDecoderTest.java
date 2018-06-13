@@ -37,12 +37,12 @@ import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.Map;
 
+import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.v1.messaging.BoltIOException;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageHandler;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
-import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;

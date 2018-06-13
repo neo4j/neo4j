@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime.spi;
+package org.neo4j.bolt.runtime;
 
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.values.AnyValue;
@@ -28,17 +28,17 @@ import org.neo4j.values.AnyValue;
  * Streams contains nominally uniform records meaning each record has the same set of named fields.
  * However, the contents of these fields may vary by both type and value and may be null.
  */
-public abstract class BoltResult implements AutoCloseable
+public interface BoltResult extends AutoCloseable
 {
     /** Positional names for all fields in every record of this stream. */
-    public abstract String[] fieldNames();
+    String[] fieldNames();
 
-    public abstract void accept( Visitor visitor ) throws Exception;
+    void accept( Visitor visitor ) throws Exception;
 
     @Override
-    public abstract void close();
+    void close();
 
-    public interface Visitor
+    interface Visitor
     {
         void visit( QueryResult.Record record ) throws Exception;
 
@@ -48,14 +48,13 @@ public abstract class BoltResult implements AutoCloseable
         void addMetadata( String key, AnyValue value );
     }
 
-    public static final BoltResult EMPTY = new BoltResult()
+    BoltResult EMPTY = new BoltResult()
     {
         private final String[] nothing = new String[0];
 
         @Override
         public void close()
         {
-
         }
 
         @Override
@@ -67,7 +66,6 @@ public abstract class BoltResult implements AutoCloseable
         @Override
         public void accept( Visitor visitor )
         {
-
         }
     };
 }

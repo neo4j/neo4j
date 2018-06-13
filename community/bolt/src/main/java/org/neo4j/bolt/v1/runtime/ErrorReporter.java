@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
+import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.logging.DuplicatingLogProvider;

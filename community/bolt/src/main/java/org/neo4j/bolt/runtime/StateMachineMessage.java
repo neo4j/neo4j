@@ -17,10 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime.spi;
+package org.neo4j.bolt.runtime;
 
-public interface Record
+public interface StateMachineMessage
 {
-    /* Implementation note: This should use Neo4jValue, or some such interface that denotes Neo4j-specific types */
-    Object[] fields();
+    boolean safeToProcessInAnyState();
 }

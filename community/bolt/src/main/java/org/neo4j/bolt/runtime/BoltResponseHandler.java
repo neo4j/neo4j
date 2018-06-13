@@ -17,9 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime;
+package org.neo4j.bolt.runtime;
 
-import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.values.AnyValue;
 
 /**
@@ -29,9 +28,6 @@ import org.neo4j.values.AnyValue;
  */
 public interface BoltResponseHandler
 {
-    /** Called exactly once, before the request is processed by the Session State Machine */
-    void onStart();
-
     void onRecords( BoltResult result, boolean pull ) throws Exception;
 
     void onMetadata( String key, AnyValue value );

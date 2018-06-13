@@ -25,7 +25,8 @@ import org.junit.Test;
 import java.util.Collections;
 import java.util.Optional;
 
-import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.bolt.runtime.BoltResult;
+import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -424,7 +425,7 @@ public class TransactionStateMachineTest
     public void shouldCloseResultAndTransactionHandlesWhenExecutionFails() throws Exception
     {
         KernelTransaction transaction = newTransaction();
-        TransactionStateMachine.BoltResultHandle resultHandle = newResultHandle( new RuntimeException( "some error" ) );
+        BoltResultHandle resultHandle = newResultHandle( new RuntimeException( "some error" ) );
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction, resultHandle );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
@@ -479,7 +480,7 @@ public class TransactionStateMachineTest
     public void shouldCloseResultHandlesWhenExecutionFailsInExplicitTransaction() throws Exception
     {
         KernelTransaction transaction = newTransaction();
-        TransactionStateMachine.BoltResultHandle resultHandle = newResultHandle( new RuntimeException( "some error" ) );
+        BoltResultHandle resultHandle = newResultHandle( new RuntimeException( "some error" ) );
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction, resultHandle );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
@@ -570,7 +571,7 @@ public class TransactionStateMachineTest
 
     private static TransactionStateMachineSPI newTransactionStateMachineSPI( KernelTransaction transaction ) throws KernelException
     {
-        TransactionStateMachine.BoltResultHandle resultHandle = newResultHandle();
+        BoltResultHandle resultHandle = newResultHandle();
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
 
         when( stateMachineSPI.beginTransaction( any() ) ).thenReturn( transaction );
@@ -580,7 +581,7 @@ public class TransactionStateMachineTest
     }
 
     private static TransactionStateMachineSPI newTransactionStateMachineSPI( KernelTransaction transaction,
-            TransactionStateMachine.BoltResultHandle resultHandle ) throws KernelException
+            BoltResultHandle resultHandle ) throws KernelException
     {
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
 
@@ -590,18 +591,18 @@ public class TransactionStateMachineTest
         return stateMachineSPI;
     }
 
-    private static TransactionStateMachine.BoltResultHandle newResultHandle() throws KernelException
+    private static BoltResultHandle newResultHandle() throws KernelException
     {
-        TransactionStateMachine.BoltResultHandle resultHandle = mock( TransactionStateMachine.BoltResultHandle.class );
+        BoltResultHandle resultHandle = mock( BoltResultHandle.class );
 
         when( resultHandle.start() ).thenReturn( BoltResult.EMPTY );
 
         return resultHandle;
     }
 
-    private static TransactionStateMachine.BoltResultHandle newResultHandle( Throwable t ) throws KernelException
+    private static BoltResultHandle newResultHandle( Throwable t ) throws KernelException
     {
-        TransactionStateMachine.BoltResultHandle resultHandle = mock( TransactionStateMachine.BoltResultHandle.class );
+        BoltResultHandle resultHandle = mock( BoltResultHandle.class );
 
         when( resultHandle.start() ).thenThrow( t );
 

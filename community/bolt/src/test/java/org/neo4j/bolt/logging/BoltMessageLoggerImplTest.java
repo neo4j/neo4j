@@ -30,7 +30,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.net.InetSocketAddress;
 
-import org.neo4j.bolt.v1.runtime.Neo4jError;
+import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.kernel.DeadlockDetectedException;
 
 import static org.mockito.ArgumentMatchers.anyString;

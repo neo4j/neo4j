@@ -17,29 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime;
+package org.neo4j.bolt.runtime;
 
-import org.neo4j.bolt.v1.runtime.spi.BoltResult;
-import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.values.virtual.MapValue;
 
-public interface StatementProcessor
+public interface BoltResultHandle
 {
-    StatementMetadata run( String statement, MapValue params ) throws KernelException;
+    BoltResult start() throws KernelException;
 
-    void streamResult( ThrowingConsumer<BoltResult, Exception> resultConsumer ) throws Exception;
+    void close( boolean success );
 
-    void reset() throws TransactionFailureException;
-
-    void markCurrentTransactionForTermination();
-
-    boolean hasTransaction();
-
-    boolean hasOpenStatement();
-
-    void validateTransaction() throws KernelException;
-
-    void setQuerySource( BoltQuerySource querySource );
+    void terminate();
 }

@@ -28,13 +28,20 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.runtime.BoltResponseHandler;
+import org.neo4j.bolt.runtime.BoltResult;
+import org.neo4j.bolt.runtime.BoltStateMachine;
+import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.testing.RecordedBoltResponse;
+import org.neo4j.bolt.v1.messaging.AckFailure;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessage;
-import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
-import org.neo4j.bolt.v1.runtime.BoltStateMachine;
-import org.neo4j.bolt.v1.runtime.Neo4jError;
-import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.bolt.v1.messaging.DiscardAll;
+import org.neo4j.bolt.v1.messaging.Init;
+import org.neo4j.bolt.v1.messaging.PullAll;
+import org.neo4j.bolt.v1.messaging.Reset;
+import org.neo4j.bolt.v1.messaging.Run;
+import org.neo4j.bolt.v1.runtime.BoltStateMachineV1;
 import org.neo4j.cypher.result.QueryResult.Record;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -77,7 +84,7 @@ public class BoltConnectionIT
 
         // when
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        verifyKillsConnection( () -> machine.ackFailure( recorder ) );
+        verifyKillsConnection( () -> machine.process( AckFailure.INSTANCE, recorder ) );
 
         // then
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.Invalid ) );
@@ -91,7 +98,7 @@ public class BoltConnectionIT
 
         // when
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        verifyKillsConnection( () -> machine.reset( recorder ) );
+        verifyKillsConnection( () -> machine.process( Reset.INSTANCE, recorder ) );
 
         // then
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.Invalid ) );
@@ -105,7 +112,7 @@ public class BoltConnectionIT
 
         // when
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        verifyKillsConnection( () -> machine.run( "RETURN 1", map(), recorder ) );
+        verifyKillsConnection( () -> machine.process( new Run( "RETURN 1", map() ), recorder ) );
 
         // then
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.Invalid ) );
@@ -119,7 +126,7 @@ public class BoltConnectionIT
 
         // when
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        verifyKillsConnection( () -> machine.discardAll( recorder ) );
+        verifyKillsConnection( () -> machine.process( DiscardAll.INSTANCE, recorder ) );
 
         // then
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.Invalid ) );
@@ -133,7 +140,7 @@ public class BoltConnectionIT
 
         // when
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        verifyKillsConnection( () -> machine.pullAll( recorder ) );
+        verifyKillsConnection( () -> machine.process( PullAll.INSTANCE, recorder ) );
 
         // then
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.Invalid ) );
@@ -144,18 +151,18 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.run( "CREATE (n {k:'k'}) RETURN n.k", EMPTY_PARAMS, recorder );
+        machine.process( new Run( "CREATE (n {k:'k'}) RETURN n.k", EMPTY_PARAMS ), recorder );
 
         // Then
         assertThat( recorder.nextResponse(), succeeded() );
 
         // When
         recorder.reset();
-        machine.pullAll( recorder );
+        machine.process( PullAll.INSTANCE, recorder );
 
         // Then
         recorder.nextResponse().assertRecord( 0, stringValue( "k" ) );
@@ -167,15 +174,15 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         // And Given that I've ran and pulled one stream
-        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
-        machine.pullAll( nullResponseHandler() );
+        machine.process( new Run( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( PullAll.INSTANCE, nullResponseHandler() );
 
         // When I run a new statement
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.run( "RETURN 1", EMPTY_PARAMS, recorder );
+        machine.process( new Run( "RETURN 2", EMPTY_PARAMS ), recorder );
 
         // Then
         assertThat( recorder.nextResponse(), succeeded() );
@@ -186,15 +193,15 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         // And Given that I've ran and pulled one stream
-        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
-        machine.discardAll( nullResponseHandler() );
+        machine.process( new Run( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( DiscardAll.INSTANCE, nullResponseHandler() );
 
         // When I run a new statement
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.run( "RETURN 1", EMPTY_PARAMS, recorder );
+        machine.process( new Run( "RETURN 2", EMPTY_PARAMS ), recorder );
 
         // Then
         assertThat( recorder.nextResponse(), succeeded() );
@@ -205,14 +212,14 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         // And Given that I've ran and pulled one stream
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.run( "BEGIN", EMPTY_PARAMS, recorder );
-        machine.pullAll( recorder );
-        machine.run( "COMMIT", EMPTY_PARAMS, recorder );
-        machine.pullAll( recorder );
+        machine.process( new Run( "BEGIN", EMPTY_PARAMS ), recorder );
+        machine.process( PullAll.INSTANCE, recorder );
+        machine.process( new Run( "COMMIT", EMPTY_PARAMS ), recorder );
+        machine.process( PullAll.INSTANCE, recorder );
         assertThat( recorder.nextResponse(), succeeded() );
         assertThat( recorder.nextResponse(), succeeded() );
         assertThat( recorder.nextResponse(), succeeded() );
@@ -220,7 +227,7 @@ public class BoltConnectionIT
 
         // When I run a new statement
         recorder.reset();
-        machine.run( "BEGIN", EMPTY_PARAMS, recorder );
+        machine.process( new Run( "BEGIN", EMPTY_PARAMS ), recorder );
 
         // Then
         assertThat( recorder.nextResponse(), succeeded() );
@@ -231,14 +238,14 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         // And Given that I've ran one statement
-        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
+        machine.process( new Run( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() );
 
         // When I run a new statement, before consuming the stream
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        verifyKillsConnection( () -> machine.run( "RETURN 1", EMPTY_PARAMS, recorder ) );
+        verifyKillsConnection( () -> machine.process( new Run( "RETURN 1", EMPTY_PARAMS ), recorder ) );
 
         // Then
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.Invalid ) );
@@ -249,15 +256,15 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         // And Given that I've ran and pulled one stream
-        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
-        machine.pullAll( nullResponseHandler() );
+        machine.process( new Run( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( PullAll.INSTANCE, nullResponseHandler() );
 
         // Then further attempts to PULL should be treated as protocol violations
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        verifyKillsConnection( () -> machine.pullAll( recorder ) );
+        verifyKillsConnection( () -> machine.process( PullAll.INSTANCE, recorder ) );
 
         // Then
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.Invalid ) );
@@ -268,15 +275,15 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         // And Given that I've ran and pulled one stream
-        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
-        machine.pullAll( nullResponseHandler() );
+        machine.process( new Run( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( PullAll.INSTANCE, nullResponseHandler() );
 
         // When I attempt to pull more items from the stream
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        verifyKillsConnection( () -> machine.discardAll( recorder ) );
+        verifyKillsConnection( () -> machine.process( DiscardAll.INSTANCE, recorder ) );
 
         // Then
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.Invalid ) );
@@ -287,15 +294,15 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         // And Given that I've ran and pulled one stream
-        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
-        machine.discardAll( nullResponseHandler() );
+        machine.process( new Run( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( DiscardAll.INSTANCE, nullResponseHandler() );
 
         // When I attempt to pull more items from the stream
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        verifyKillsConnection( () -> machine.discardAll( recorder ) );
+        verifyKillsConnection( () -> machine.process( DiscardAll.INSTANCE, recorder ) );
 
         // Then
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.Invalid ) );
@@ -306,15 +313,15 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         // And Given that I've ran and pulled one stream
-        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
-        machine.discardAll( nullResponseHandler() );
+        machine.process( new Run( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( DiscardAll.INSTANCE, nullResponseHandler() );
 
         // When I attempt to pull more items from the stream
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        verifyKillsConnection( () -> machine.pullAll( recorder ) );
+        verifyKillsConnection( () -> machine.process( PullAll.INSTANCE, recorder ) );
 
         // Then
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.Invalid ) );
@@ -325,18 +332,18 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.init( USER_AGENT, emptyMap(), null );
-        machine.run( "CREATE (n:Victim)-[:REL]->()", EMPTY_PARAMS, nullResponseHandler() );
-        machine.discardAll( nullResponseHandler() );
+        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
+        machine.process( new Run( "CREATE (n:Victim)-[:REL]->()", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( DiscardAll.INSTANCE, nullResponseHandler() );
 
         // When I perform an action that will fail on commit
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.run( "MATCH (n:Victim) DELETE n", EMPTY_PARAMS, recorder );
+        machine.process( new Run( "MATCH (n:Victim) DELETE n", EMPTY_PARAMS ), recorder );
         // Then the statement running should have succeeded
         assertThat( recorder.nextResponse(), succeeded() );
 
         recorder.reset();
-        machine.discardAll( recorder );
+        machine.process( DiscardAll.INSTANCE, recorder );
 
         // But the stop should have failed, since it implicitly triggers commit and thus triggers a failure
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Schema.ConstraintValidationFailed ) );
@@ -352,24 +359,24 @@ public class BoltConnectionIT
         // transaction, be they client-local or inside neo, can be handled the
         // same way by a driver.
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
-        machine.run( "BEGIN", EMPTY_PARAMS, nullResponseHandler() );
-        machine.discardAll( nullResponseHandler() );
-        machine.run( "CREATE (n:Victim)-[:REL]->()", EMPTY_PARAMS, nullResponseHandler() );
-        machine.discardAll( nullResponseHandler() );
+        machine.process( new Run( "BEGIN", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( DiscardAll.INSTANCE, nullResponseHandler() );
+        machine.process( new Run( "CREATE (n:Victim)-[:REL]->()", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( DiscardAll.INSTANCE, nullResponseHandler() );
 
         // When I perform an action that will fail
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.run( "this is not valid syntax", EMPTY_PARAMS, recorder );
+        machine.process( new Run( "this is not valid syntax", EMPTY_PARAMS ), recorder );
 
         // Then I should see a failure
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Statement.SyntaxError ) );
 
         // And when I acknowledge that failure, and roll back the transaction
         recorder.reset();
-        machine.ackFailure( recorder );
-        machine.run( "ROLLBACK", EMPTY_PARAMS, recorder );
+        machine.process( AckFailure.INSTANCE, recorder );
+        machine.process( new Run( "ROLLBACK", EMPTY_PARAMS ), recorder );
 
         // Then both operations should succeed
         assertThat( recorder.nextResponse(), succeeded() );
@@ -381,20 +388,15 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         final CountDownLatch pullAllCallbackCalled = new CountDownLatch( 1 );
         final AtomicReference<Neo4jError> error = new AtomicReference<>();
 
         // When something fails while publishing the result stream
-        machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
-        machine.pullAll( new BoltResponseHandler()
+        machine.process( new Run( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( PullAll.INSTANCE, new BoltResponseHandler()
         {
-            @Override
-            public void onStart()
-            {
-            }
-
             @Override
             public void onRecords( BoltResult result, boolean pull )
             {
@@ -436,9 +438,9 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine firstMachine = env.newMachine( boltChannel );
-        firstMachine.init( USER_AGENT, emptyMap(), null );
+        firstMachine.process( new Init( USER_AGENT, emptyMap() ), null );
         BoltStateMachine secondMachine = env.newMachine( boltChannel );
-        secondMachine.init( USER_AGENT, emptyMap(), null );
+        secondMachine.process( new Init( USER_AGENT, emptyMap() ), null );
 
         // And given I've started a transaction in one session
         runAndPull( firstMachine, "BEGIN" );
@@ -460,7 +462,7 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
         MapValue params = map( "csvFileUrl", createLocalIrisData( machine ) );
         long txIdBeforeQuery = env.lastClosedTxId();
         long batch = 40;
@@ -506,13 +508,13 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
         MapValue params = map( "csvFileUrl", createLocalIrisData( machine ) );
         runAndPull( machine, "BEGIN" );
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.run(
+        machine.process( new Run(
                 "USING PERIODIC COMMIT 40\n" +
                         "LOAD CSV WITH HEADERS FROM {csvFileUrl} AS l\n" +
                         "MATCH (c:Class {name: l.class_name})\n" +
@@ -520,7 +522,7 @@ public class BoltConnectionIT
                         ".petal_length, petal_width: l.petal_width})\n" +
                         "CREATE (c)<-[:HAS_CLASS]-(s)\n" +
                         "RETURN count(*) AS c",
-                params,
+                        params ),
                 recorder
         );
 
@@ -534,13 +536,13 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         runAndPull( machine, "BEGIN" );
         runAndPull( machine, "RETURN 1" );
         runAndPull( machine, "COMMIT" );
 
-        assertFalse( machine.statementProcessor().hasTransaction() );
+        assertFalse( hasTransaction( machine ) );
     }
 
     @Test
@@ -548,15 +550,15 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         runAndPull( machine, "BEGIN" );
         runAndPull( machine, "X", map(), IGNORED );
-        machine.ackFailure( nullResponseHandler() );
+        machine.process( AckFailure.INSTANCE, nullResponseHandler() );
         runAndPull( machine, "COMMIT", map(), IGNORED );
-        machine.ackFailure( nullResponseHandler() );
+        machine.process( AckFailure.INSTANCE, nullResponseHandler() );
 
-        assertFalse( machine.statementProcessor().hasTransaction() );
+        assertFalse( hasTransaction( machine ) );
     }
 
     @Test
@@ -564,13 +566,13 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         runAndPull( machine, "BEGIN" );
         runAndPull( machine, "RETURN 1" );
         runAndPull( machine, "ROLLBACK" );
 
-        assertFalse( machine.statementProcessor().hasTransaction() );
+        assertFalse( hasTransaction( machine ) );
     }
 
     @Test
@@ -578,14 +580,14 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         runAndPull( machine, "BEGIN" );
         runAndPull( machine, "X", map(), IGNORED );
-        machine.ackFailure( nullResponseHandler() );
+        machine.process( AckFailure.INSTANCE, nullResponseHandler() );
         runAndPull( machine, "ROLLBACK" );
 
-        assertFalse( machine.statementProcessor().hasTransaction() );
+        assertFalse( hasTransaction( machine ) );
     }
 
     @Test
@@ -593,12 +595,12 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         // And given I've started a transaction that failed
         runAndPull( machine, "BEGIN" );
-        machine.run( "invalid", EMPTY_PARAMS, nullResponseHandler() );
-        machine.reset( nullResponseHandler() );
+        machine.process( new Run( "invalid", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( Reset.INSTANCE, nullResponseHandler() );
 
         // When
         runAndPull( machine, "BEGIN" );
@@ -606,6 +608,11 @@ public class BoltConnectionIT
 
         // Then
         assertThat( ((Record) stream[0]).fields()[0], equalTo( longValue( 1L )) );
+    }
+
+    private static boolean hasTransaction( BoltStateMachine machine )
+    {
+        return ((BoltStateMachineV1) machine).statementProcessor().hasTransaction();
     }
 
     private String createLocalIrisData( BoltStateMachine machine ) throws Exception
@@ -633,8 +640,8 @@ public class BoltConnectionIT
             BoltResponseMessage expectedResponse ) throws Exception
     {
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.run( statement, params, nullResponseHandler() );
-        machine.pullAll( recorder );
+        machine.process( new Run( statement, params ), nullResponseHandler() );
+        machine.process( PullAll.INSTANCE, recorder );
         RecordedBoltResponse response = recorder.nextResponse();
         assertEquals( expectedResponse, response.message() );
         return response.records();

@@ -23,23 +23,25 @@ import java.time.Clock;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
+import org.neo4j.bolt.runtime.BoltQuerySource;
+import org.neo4j.bolt.runtime.BoltResult;
+import org.neo4j.bolt.runtime.BoltResultHandle;
+import org.neo4j.bolt.runtime.StatementMetadata;
+import org.neo4j.bolt.runtime.StatementProcessor;
+import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
-import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.bolt.v1.runtime.spi.BookmarkResult;
 import org.neo4j.cypher.InvalidSemanticsException;
-import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.values.virtual.MapValue;
-
-import static org.neo4j.function.ThrowingAction.noop;
 
 public class TransactionStateMachine implements StatementProcessor
 {
@@ -47,11 +49,11 @@ public class TransactionStateMachine implements StatementProcessor
     private static final Pattern COMMIT = Pattern.compile("(?i)^\\s*COMMIT\\s*;?\\s*$");
     private static final Pattern ROLLBACK = Pattern.compile("(?i)^\\s*ROLLBACK\\s*;?\\s*$");
 
-    final SPI spi;
+    final TransactionStateMachineSPI spi;
     final MutableTransactionState ctx;
     State state = State.AUTO_COMMIT;
 
-    TransactionStateMachine( SPI spi, AuthenticationResult authenticationResult, Clock clock )
+    TransactionStateMachine( TransactionStateMachineSPI spi, AuthenticationResult authenticationResult, Clock clock )
     {
         this.spi = spi;
         ctx = new MutableTransactionState( authenticationResult, clock );
@@ -195,7 +197,7 @@ public class TransactionStateMachine implements StatementProcessor
         AUTO_COMMIT
                 {
                     @Override
-                    State run( MutableTransactionState ctx, SPI spi, String statement,
+                    State run( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement,
                                MapValue params ) throws KernelException
 
                     {
@@ -243,7 +245,7 @@ public class TransactionStateMachine implements StatementProcessor
                         }
                     }
 
-                    void execute( MutableTransactionState ctx, SPI spi, String statement, MapValue params, boolean isPeriodicCommit )
+                    void execute( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params, boolean isPeriodicCommit )
                             throws KernelException
                     {
                         // only acquire a new transaction when the statement does not contain periodic commit
@@ -296,7 +298,7 @@ public class TransactionStateMachine implements StatementProcessor
         EXPLICIT_TRANSACTION
                 {
                     @Override
-                    State run( MutableTransactionState ctx, SPI spi, String statement, MapValue params )
+                    State run( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params )
                             throws KernelException
                     {
                         if ( BEGIN.matcher( statement ).matches() )
@@ -344,7 +346,7 @@ public class TransactionStateMachine implements StatementProcessor
                         }
                     }
 
-                    private BoltResultHandle execute( MutableTransactionState ctx, SPI spi, String statement, MapValue params )
+                    private BoltResultHandle execute( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params )
                     {
                         return executeQuery( ctx, spi, statement, params );
                     }
@@ -358,10 +360,7 @@ public class TransactionStateMachine implements StatementProcessor
                     }
                 };
 
-        abstract State run( MutableTransactionState ctx,
-                            SPI spi,
-                            String statement,
-                            MapValue params ) throws KernelException;
+        abstract State run( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params ) throws KernelException;
 
         abstract void streamResult( MutableTransactionState ctx,
                                     ThrowingConsumer<BoltResult, Exception> resultConsumer ) throws Exception;
@@ -453,22 +452,10 @@ public class TransactionStateMachine implements StatementProcessor
 
     }
 
-    private static BoltResultHandle executeQuery( MutableTransactionState ctx, SPI spi, String statement,
+    private static BoltResultHandle executeQuery( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement,
                                                   MapValue params )
     {
         return spi.executeQuery( ctx.querySource, ctx.loginContext, statement, params );
-    }
-
-    /**
-     * This interface makes it possible to abort queries even before they have returned a Result object.
-     * In some cases, creating the Result object will take as long as running the query takes. This way, we can
-     * terminate the underlying transaction while the Result object is created.
-     */
-    interface BoltResultHandle
-    {
-        BoltResult start() throws KernelException;
-        void close( boolean success );
-        void terminate();
     }
 
     static class MutableTransactionState
@@ -507,23 +494,5 @@ public class TransactionStateMachine implements StatementProcessor
             this.clock = clock;
             this.loginContext = authenticationResult.getLoginContext();
         }
-    }
-
-    interface SPI
-    {
-        void awaitUpToDate( long oldestAcceptableTxId ) throws TransactionFailureException;
-
-        long newestEncounteredTxId();
-
-        KernelTransaction beginTransaction( LoginContext loginContext );
-
-        void bindTransactionToCurrentThread( KernelTransaction tx );
-
-        void unbindTransactionFromCurrentThread();
-
-        boolean isPeriodicCommit( String query );
-
-        BoltResultHandle executeQuery( BoltQuerySource querySource,
-                LoginContext loginContext, String statement, MapValue params );
     }
 }

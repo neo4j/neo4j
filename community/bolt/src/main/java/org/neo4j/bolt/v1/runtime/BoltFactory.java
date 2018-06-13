@@ -19,9 +19,10 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
-import org.neo4j.bolt.BoltChannel;
-
 import java.time.Clock;
+
+import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.runtime.BoltStateMachine;
 
 /**
  * Factory class for Bolt runtime environments.

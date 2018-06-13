@@ -24,8 +24,8 @@ import java.util.Map;
 
 import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.runtime.BoltConnection;
-import org.neo4j.bolt.v1.runtime.Neo4jError;
-import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.bolt.runtime.BoltResult;
+import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.logging.Log;
 import org.neo4j.values.AnyValue;
@@ -46,8 +46,7 @@ public class BoltMessageRouter implements BoltRequestMessageHandler
     private final MessageProcessingHandler resultHandler;
     private final MessageProcessingHandler defaultHandler;
 
-    private BoltResponseMessageHandler<IOException> output;
-    private BoltConnection connection;
+    private final BoltConnection connection;
 
     public BoltMessageRouter( Log internalLog, BoltMessageLogger messageLogger,
                               BoltConnection connection, BoltResponseMessageHandler<IOException> output )
@@ -60,21 +59,21 @@ public class BoltMessageRouter implements BoltRequestMessageHandler
         this.defaultHandler = new MessageProcessingHandler( output, connection, internalLog );
 
         this.connection = connection;
-        this.output = output;
     }
 
     @Override
     public void onInit( String userAgent, Map<String,Object> authToken )
     {
         messageLogger.logInit(userAgent );
-        connection.enqueue( session -> session.init( userAgent, authToken, initHandler ) );
+        Init message = new Init( userAgent, authToken );
+        connection.enqueue( stateMachine -> stateMachine.process( message, initHandler ) );
     }
 
     @Override
     public void onAckFailure()
     {
         messageLogger.logAckFailure();
-        connection.enqueue( session -> session.ackFailure( defaultHandler ) );
+        connection.enqueue( stateMachine -> stateMachine.process( AckFailure.INSTANCE, defaultHandler ) );
     }
 
     @Override
@@ -83,35 +82,36 @@ public class BoltMessageRouter implements BoltRequestMessageHandler
         messageLogger.clientEvent("INTERRUPT");
         messageLogger.logReset();
         connection.interrupt();
-        connection.enqueue( session -> session.reset( defaultHandler ) );
+        connection.enqueue( stateMachine -> stateMachine.process( Reset.INSTANCE, defaultHandler ) );
     }
 
     @Override
     public void onRun( String statement, MapValue params )
     {
         messageLogger.logRun();
-        connection.enqueue( session -> session.run( statement, params, runHandler ) );
+        Run message = new Run( statement, params );
+        connection.enqueue( stateMachine -> stateMachine.process( message, runHandler ) );
     }
 
     @Override
     public void onExternalError( Neo4jError error )
     {
         messageLogger.clientEvent( "ERROR", error::message );
-        connection.enqueue( session -> session.externalError( error, defaultHandler ) );
+        connection.enqueue( stateMachine -> stateMachine.handleExternalFailure( error, defaultHandler ) );
     }
 
     @Override
     public void onDiscardAll()
     {
         messageLogger.logDiscardAll();
-        connection.enqueue( session -> session.discardAll( resultHandler ) );
+        connection.enqueue( stateMachine -> stateMachine.process( DiscardAll.INSTANCE, resultHandler ) );
     }
 
     @Override
     public void onPullAll()
     {
         messageLogger.logPullAll();
-        connection.enqueue( session -> session.pullAll( resultHandler ) );
+        connection.enqueue( stateMachine -> stateMachine.process( PullAll.INSTANCE, resultHandler ) );
     }
 
     private static class InitHandler extends MessageProcessingHandler

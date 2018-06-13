@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.UUID;
 
+import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;

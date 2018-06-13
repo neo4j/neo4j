@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime;
+package org.neo4j.bolt.runtime;
 
 /**
  * Indicates that bolt connection has been fatally misused and therefore the server should close the connection.
  */
-public class BoltProtocolBreachFatality extends BoltConnectionFatality
+public class BoltConnectionAuthFatality extends BoltConnectionFatality
 {
-    public BoltProtocolBreachFatality( String message )
+    public BoltConnectionAuthFatality( String message )
     {
         super( message );
     }

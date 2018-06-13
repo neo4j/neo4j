@@ -23,8 +23,10 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
-import org.neo4j.bolt.v1.runtime.BoltStateMachine;
+import org.neo4j.bolt.v1.messaging.Init;
+import org.neo4j.bolt.v1.messaging.Run;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.internal.Version;
 
@@ -56,11 +58,13 @@ public class BoltConnectionAuthIT
         BoltResponseRecorder recorder = new BoltResponseRecorder();
 
         // When
-        machine.init( USER_AGENT, map(
+        Init init = new Init( USER_AGENT, map(
                 "scheme", "basic",
                 "principal", "neo4j",
-                "credentials", "neo4j" ), recorder );
-        machine.run( "CREATE ()", EMPTY_MAP, recorder );
+                "credentials", "neo4j" ) );
+
+        machine.process( init, recorder );
+        machine.process( new Run( "CREATE ()", EMPTY_MAP ), recorder );
 
         // Then
         assertThat( recorder.nextResponse(), succeededWithMetadata( "credentials_expired", TRUE ) );
@@ -75,12 +79,15 @@ public class BoltConnectionAuthIT
         BoltStateMachine machine = env.newMachine( boltChannel );
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         String version = "Neo4j/" + Version.getNeo4jVersion();
+
         // When
-        machine.init( USER_AGENT, map(
+        Init init = new Init( USER_AGENT, map(
                 "scheme", "basic",
                 "principal", "neo4j",
-                "credentials", "neo4j" ), recorder );
-        machine.run( "CREATE ()", EMPTY_MAP, recorder );
+                "credentials", "neo4j" ) );
+
+        machine.process( init, recorder );
+        machine.process( new Run( "CREATE ()", EMPTY_MAP ), recorder );
 
         // Then
         assertThat( recorder.nextResponse(), succeededWithMetadata( "server", stringValue( version ) ) );
@@ -93,12 +100,12 @@ public class BoltConnectionAuthIT
         BoltStateMachine machine = env.newMachine( boltChannel );
 
         // When... then
-        BoltResponseRecorder recorder = new BoltResponseRecorder();
-        verifyKillsConnection( () -> machine.init( USER_AGENT, map(
+        Init init = new Init( USER_AGENT, map(
                 "scheme", "basic",
                 "principal", "neo4j",
-                "credentials", "j4oen"
-        ), recorder ) );
+                "credentials", "j4oen" ) );
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
+        verifyKillsConnection( () -> machine.process( init, recorder ) );
 
         // ...and
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Security.Unauthorized ) );
@@ -111,13 +118,13 @@ public class BoltConnectionAuthIT
         BoltResponseRecorder recorder = new BoltResponseRecorder();
 
         // when
-        machine.init( USER_AGENT, map(
+        Init message = new Init( USER_AGENT, map(
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "neo4j",
-                "new_credentials", "secret"
-        ), recorder );
-        machine.run( "CREATE ()", EMPTY_MAP, recorder );
+                "new_credentials", "secret" ) );
+        machine.process( message, recorder );
+        machine.process( new Run( "CREATE ()", EMPTY_MAP ), recorder );
 
         // then
         assertThat( recorder.nextResponse(), succeeded() );

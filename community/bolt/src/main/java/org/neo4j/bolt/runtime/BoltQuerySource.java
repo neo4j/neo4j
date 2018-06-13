@@ -17,20 +17,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime;
+package org.neo4j.bolt.runtime;
 
 import org.neo4j.bolt.BoltConnectionDescriptor;
 
-class BoltQuerySource
+public class BoltQuerySource
 {
-    final String principalName;
-    final String clientName;
-    final BoltConnectionDescriptor connectionDescriptor;
+    private final String principalName;
+    private final String clientName;
+    private final BoltConnectionDescriptor connectionDescriptor;
 
-    BoltQuerySource( String principalName, String clientName, BoltConnectionDescriptor connectionDescriptor )
+    public BoltQuerySource( String principalName, String clientName, BoltConnectionDescriptor connectionDescriptor )
     {
         this.principalName = principalName;
         this.clientName = clientName;
         this.connectionDescriptor = connectionDescriptor;
+    }
+
+    public String principalName()
+    {
+        return principalName;
+    }
+
+    public String clientName()
+    {
+        return clientName;
+    }
+
+    public BoltConnectionDescriptor connectionDescriptor()
+    {
+        return connectionDescriptor;
     }
 }
