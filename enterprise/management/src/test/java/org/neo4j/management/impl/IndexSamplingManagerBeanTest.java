@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
+import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
@@ -40,7 +41,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.core.TokenHolder.NO_ID;
-import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 
 public class IndexSamplingManagerBeanTest
 {
@@ -136,5 +136,13 @@ public class IndexSamplingManagerBeanTest
 
         // When
         storeAccess.triggerIndexSampling( EXISTING_LABEL, EXISTING_PROPERTY, false );
+    }
+
+    private static TokenHolders mockedTokenHolders()
+    {
+        return new TokenHolders(
+                mock( TokenHolder.class ),
+                mock( TokenHolder.class ),
+                mock( TokenHolder.class ) );
     }
 }

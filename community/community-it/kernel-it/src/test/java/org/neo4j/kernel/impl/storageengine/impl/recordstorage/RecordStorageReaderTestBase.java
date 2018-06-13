@@ -98,40 +98,40 @@ public abstract class RecordStorageReaderTestBase
 
     protected int labelId( Label label )
     {
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             int id = ktx().tokenRead().nodeLabel( label.name() );
-            ignored.success();
+            tx.success();
             return id;
         }
     }
 
     protected int relationshipTypeId( RelationshipType type )
     {
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             int id = ktx().tokenRead().relationshipType( type.name() );
-            ignored.success();
+            tx.success();
             return id;
         }
     }
 
     protected String relationshipType( int id ) throws KernelException
     {
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             String name = ktx().tokenRead().relationshipTypeName( id );
-            ignored.success();
+            tx.success();
             return name;
         }
     }
 
     protected int propertyKeyId( String propertyKey )
     {
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             int id = ktx().tokenRead().propertyKey( propertyKey );
-            ignored.success();
+            tx.success();
             return id;
         }
     }

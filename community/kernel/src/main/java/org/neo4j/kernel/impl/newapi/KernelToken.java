@@ -92,30 +92,6 @@ public class KernelToken implements Token
         }
     }
 
-    private void getOrCreateForNames( TokenHolder tokenHolder, String[] names, int[] ids ) throws IllegalTokenNameException
-    {
-        ktx.assertOpen();
-        assertSameLength( names, ids );
-        for ( int i = 0; i < names.length; i++ )
-        {
-            ids[i] = tokenHolder.getIdByName( checkValidTokenName( names[i] ) );
-            if ( ids[i] == TokenHolder.NO_ID )
-            {
-                ktx.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
-                tokenHolder.getOrCreateIds( names, ids );
-                return;
-            }
-        }
-    }
-
-    private void assertSameLength( String[] names, int[] ids )
-    {
-        if ( names.length != ids.length )
-        {
-            throw new IllegalArgumentException( "Name and id arrays have different length." );
-        }
-    }
-
     @Override
     public int labelCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException
     {
@@ -295,5 +271,29 @@ public class KernelToken implements Token
         }
         ktx.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         return tokens.getOrCreateId( name );
+    }
+
+    private void getOrCreateForNames( TokenHolder tokenHolder, String[] names, int[] ids ) throws IllegalTokenNameException
+    {
+        ktx.assertOpen();
+        assertSameLength( names, ids );
+        for ( int i = 0; i < names.length; i++ )
+        {
+            ids[i] = tokenHolder.getIdByName( checkValidTokenName( names[i] ) );
+            if ( ids[i] == TokenHolder.NO_ID )
+            {
+                ktx.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
+                tokenHolder.getOrCreateIds( names, ids );
+                return;
+            }
+        }
+    }
+
+    private void assertSameLength( String[] names, int[] ids )
+    {
+        if ( names.length != ids.length )
+        {
+            throw new IllegalArgumentException( "Name and id arrays have different length." );
+        }
     }
 }

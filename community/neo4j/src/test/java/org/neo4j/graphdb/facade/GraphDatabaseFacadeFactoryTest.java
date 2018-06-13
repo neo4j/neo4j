@@ -87,7 +87,6 @@ public class GraphDatabaseFacadeFactoryTest
         }
         catch ( RuntimeException exception )
         {
-            exception.printStackTrace();
             // Then
             assertEquals( startupError, Exceptions.rootCause( exception ) );
         }
