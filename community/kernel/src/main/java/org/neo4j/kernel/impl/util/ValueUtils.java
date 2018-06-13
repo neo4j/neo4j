@@ -128,7 +128,7 @@ public final class ValueUtils
                 AnyValue[] anyValues = new AnyValue[array.length];
                 for ( int i = 0; i < array.length; i++ )
                 {
-                    anyValues[i] = of( array[i] );
+                    anyValues[i] = ValueUtils.of( array[i] );
                 }
                 return VirtualValues.list( anyValues );
             }
@@ -183,7 +183,7 @@ public final class ValueUtils
         ArrayList<AnyValue> values = new ArrayList<>( collection.size() );
         for ( Object o : collection )
         {
-            values.add( of( o ) );
+            values.add( ValueUtils.of( o ) );
         }
         return VirtualValues.fromList( values );
     }
@@ -193,7 +193,7 @@ public final class ValueUtils
         ArrayList<AnyValue> values = new ArrayList<>();
         for ( Object o : collection )
         {
-            values.add( of( o ) );
+            values.add( ValueUtils.of( o ) );
         }
         return VirtualValues.fromList( values );
     }
@@ -236,7 +236,7 @@ public final class ValueUtils
         HashMap<String,AnyValue> newMap = new HashMap<>( map.size() );
         for ( Map.Entry<String,Object> entry : map.entrySet() )
         {
-            newMap.put( entry.getKey(), of( entry.getValue() ) );
+            newMap.put( entry.getKey(), ValueUtils.of( entry.getValue() ) );
         }
 
         return map( newMap );
@@ -249,7 +249,7 @@ public final class ValueUtils
         {
             try
             {
-                newMap.put( entry.getKey(), of( entry.getValue() ) );
+                newMap.put( entry.getKey(), ValueUtils.of( entry.getValue() ) );
             }
             catch ( IllegalArgumentException e )
             {
@@ -302,7 +302,7 @@ public final class ValueUtils
         {
             return (AnyValue) value;
         }
-        return of( value );
+        return ValueUtils.of( value );
     }
 
     public static NodeValue asNodeValue( Object object )
