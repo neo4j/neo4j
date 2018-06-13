@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3
 import java.lang.reflect.Constructor
 
 import org.neo4j.cypher.internal.compatibility.v3_3.SemanticTableConverter.ExpressionMapping3To4
+import org.neo4j.cypher.internal.compiler.v3_5.helpers.PredicateHelper
 import org.neo4j.cypher.internal.compiler.{v3_3 => compilerV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression => ExpressionV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3, SemanticDirection => SemanticDirectionV3_3, ast => astV3_3, symbols => symbolsV3_3}
@@ -30,17 +31,16 @@ import org.neo4j.cypher.internal.ir.v3_5.{CSVFormat, CreateNode, CreateRelations
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_5 => irv3_5}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
+import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan => LogicalPlanV3_3}
+import org.neo4j.cypher.internal.v3_3.logical.{plans => plansV3_3}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{FieldSignature, ProcedureAccessMode, QualifiedName, LogicalPlan => LogicalPlanv3_5}
+import org.neo4j.cypher.internal.v3_5.logical.{plans => plansv3_5}
+import org.opencypher.v9_0.expressions.{Expression => Expressionv3_5, LabelName => LabelNamev3_5, RelTypeName => RelTypeNamev3_5, SemanticDirection => SemanticDirectionv3_5}
 import org.opencypher.v9_0.util.Rewritable.RewritableAny
 import org.opencypher.v9_0.util.attribution.{IdGen, SequentialIdGen}
 import org.opencypher.v9_0.util.symbols.CypherType
 import org.opencypher.v9_0.util.{symbols => symbolsv3_5, _}
-import org.opencypher.v9_0.{util => utilv3_5}
-import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan => LogicalPlanV3_3}
-import org.neo4j.cypher.internal.v3_3.logical.{plans => plansV3_3}
-import org.opencypher.v9_0.expressions.{Expression => Expressionv3_5, LabelName => LabelNamev3_5, RelTypeName => RelTypeNamev3_5, SemanticDirection => SemanticDirectionv3_5}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{FieldSignature, ProcedureAccessMode, QualifiedName, LogicalPlan => LogicalPlanv3_5}
-import org.neo4j.cypher.internal.v3_5.logical.{plans => plansv3_5}
-import org.opencypher.v9_0.{expressions => expressionsv3_5}
+import org.opencypher.v9_0.{expressions => expressionsv3_5, util => utilv3_5}
 
 import scala.collection.mutable
 import scala.collection.mutable.{HashMap => MutableHashMap}
@@ -66,6 +66,11 @@ object LogicalPlanConverter {
 
     private val rewriter: RewriterWithArgs = bottomUpWithArgs { before =>
       val rewritten = RewriterWithArgs.lift {
+        case ( plan:plansV3_3.Selection, children: Seq[AnyRef]) =>
+          plansv3_5.Selection(PredicateHelper.coercePredicates(children(0).asInstanceOf[Seq[Expressionv3_5]]),
+                              children(1).asInstanceOf[LogicalPlanv3_5]
+                              )(ids.convertId(plan))
+
         case ( plan:plansV3_3.LoadCSV, children: Seq[AnyRef]) =>
           plansv3_5.LoadCSV(children(0).asInstanceOf[LogicalPlanv3_5],
                             children(1).asInstanceOf[Expressionv3_5],

@@ -118,8 +118,10 @@ case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
       case DropResult(_) =>
         DropResultPipe(source)(id = id)
 
-      case Selection(predicates, _) =>
-        FilterPipe(source, predicates.map(buildPredicate).reduce(_ andWith _))(id = id)
+      case Selection(predicate, _) =>
+        val predicateExpression =
+          if (predicate.exprs.size == 1) buildExpression(predicate.exprs.head) else buildExpression(predicate)
+        FilterPipe(source, predicateExpression)(id = id)
 
       case Expand(_, fromName, dir, types: Seq[RelTypeName], toName, relName, ExpandAll) =>
         ExpandAllPipe(source, fromName, relName, toName, dir, LazyTypes(types.toArray))(id = id)

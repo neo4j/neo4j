@@ -67,15 +67,15 @@ case class unnestApply(solveds: Solveds, attributes: Attributes) extends Rewrite
       original.copy(lhs, rhs)(SameId(original.id))
 
     // L Ax (σ R) => σ(L Ax R)
-    case o@Apply(lhs, sel@Selection(predicates, rhs)) =>
-      val res = Selection(predicates, Apply(lhs, rhs)(SameId(o.id)))(attributes.copy(sel.id))
+    case o@Apply(lhs, sel@Selection(predicate, rhs)) =>
+      val res = Selection(predicate, Apply(lhs, rhs)(SameId(o.id)))(attributes.copy(sel.id))
       solveds.copy(o.id, res.id)
       res
 
     // L Ax ((σ L2) Ax R) => (σ L) Ax (L2 Ax R) iff σ does not have dependencies on L
-    case original@Apply(lhs, Apply(sel@Selection(predicates, lhs2), rhs))
-      if predicates.forall(lhs.satisfiesExpressionDependencies)=>
-      val selectionLHS = Selection(predicates, lhs)(attributes.copy(sel.id))
+    case original@Apply(lhs, Apply(sel@Selection(predicate, lhs2), rhs))
+      if predicate.exprs.forall(lhs.satisfiesExpressionDependencies)=>
+      val selectionLHS = Selection(predicate, lhs)(attributes.copy(sel.id))
       solveds.copy(original.id, selectionLHS.id)
       val apply2 = Apply(lhs2, rhs)(attributes.copy(lhs.id))
       solveds.copy(original.id, apply2.id)

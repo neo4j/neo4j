@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.v3_5.logical.plans._
+import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.attribution.SameId
 import org.opencypher.v9_0.util.{Rewriter, bottomUp}
-import org.opencypher.v9_0.expressions._
-import org.neo4j.cypher.internal.v3_5.logical.plans._
 
 /**
   * Removes impossible predicates from the plan. Note that this rewriter assumes
@@ -33,8 +33,19 @@ case object simplifySelections extends Rewriter {
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
-    case s@Selection(Seq(False()), source) => DropResult(source)(SameId(s.id))
+    case s@Selection(Ands(preds), source) if isFalse(preds) =>
+      DropResult(source)(SameId(s.id))
 
-    case Selection(Seq(True()), source) => source
+    case Selection(Ands(preds), source) if isTrue(preds) => source
   })
+
+  private def isTrue(predicates: Set[Expression]): Boolean = predicates.forall {
+    case _:True => true
+    case _ => false
+  }
+
+  private def isFalse(predicates: Set[Expression]): Boolean = predicates.forall {
+    case _:False => true
+    case _ => false
+  }
 }

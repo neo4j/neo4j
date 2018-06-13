@@ -80,7 +80,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
       }
 
     } getLogicalPlanFor "MATCH (a)-[r1]->(b)<-[r2]-(a) RETURN r1, r2")._2 should equal(
-      Selection(Seq(Not(Equals(Variable("r1")_,Variable("r2")_)_)_),
+      Selection(Ands(Set(Not(Equals(Variable("r1")_,Variable("r2")_)_)_))_,
         Expand(
           Expand(
             AllNodesScan("a",Set.empty),
@@ -102,7 +102,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
     } getLogicalPlanFor "MATCH (start)-[rel:x]-(a) WHERE a.name = 'Andres' return a")._2 should equal(
         Expand(
           Selection(
-            Seq(In(Property(Variable("a")_, PropertyKeyName("name")_)_, ListLiteral(Seq(StringLiteral("Andres")_))_)_),
+            Ands(Set(In(Property(Variable("a")_, PropertyKeyName("name")_)_, ListLiteral(Seq(StringLiteral("Andres")_))_)_))_,
             AllNodesScan("a", Set.empty)
           ),
           "a", SemanticDirection.BOTH, Seq(RelTypeName("x")_), "start", "rel"

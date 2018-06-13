@@ -20,14 +20,15 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.values.storable.Values
 import org.opencypher.v9_0.util.attribution.Id
 
-case class FilterPipe(source: Pipe, predicate: Predicate)
+case class FilterPipe(source: Pipe, predicate: Expression)
                      (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
   predicate.registerOwningPipe(this)
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
-    input.filter(ctx => predicate.isTrue(ctx, state))
+    input.filter(ctx => predicate(ctx, state) eq Values.TRUE)
 }

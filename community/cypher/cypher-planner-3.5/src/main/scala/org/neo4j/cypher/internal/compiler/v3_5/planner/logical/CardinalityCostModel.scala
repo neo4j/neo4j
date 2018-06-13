@@ -47,8 +47,8 @@ case class CardinalityCostModel(config: CypherPlannerConfiguration) extends Cost
     => 1.0
 
     // Filtering on labels and properties
-    case Selection(predicates, _) =>
-      val noOfStoreAccesses = predicates.treeCount {
+    case Selection(predicate, _) =>
+      val noOfStoreAccesses = predicate.treeCount {
         case _: Property | _: HasLabels => true
         case _ => false
       }

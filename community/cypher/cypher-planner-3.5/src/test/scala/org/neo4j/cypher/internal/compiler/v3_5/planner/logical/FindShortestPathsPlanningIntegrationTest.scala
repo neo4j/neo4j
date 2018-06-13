@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSuppor
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.v3_5.logical.plans._
-import org.opencypher.v9_0.expressions.{Equals, Not, SemanticDirection, Variable}
+import org.opencypher.v9_0.expressions._
 
 class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -75,7 +75,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
     val expected =
       FindShortestPaths(
         Selection(
-          Seq(Not(Equals(Variable("r1") _, Variable("r2") _) _) _),
+          Ands(Set(Not(Equals(Variable("r1") _, Variable("r2") _) _) _))_,
           NodeHashJoin(
             Set("b"),
             Expand(

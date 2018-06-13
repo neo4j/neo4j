@@ -19,21 +19,28 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.opencypher.v9_0.expressions.Expression
+import org.opencypher.v9_0.expressions.{Ands, Expression}
 import org.opencypher.v9_0.util.attribution.IdGen
 
 /**
   * For each source row, produce it if all predicates are true.
   */
-case class Selection(predicates: Seq[Expression],
+case class Selection(predicate: Ands,
                      source: LogicalPlan
                     )(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
-  assert(predicates.nonEmpty, "A selection plan should never be created without predicates")
+  assert(predicate.exprs.nonEmpty, "A selection plan should never be created without predicates")
 
   val lhs = Some(source)
   def rhs = None
 
-  def numPredicates: Int = predicates.size
+  def numPredicates: Int = predicate.exprs.size
 
   val availableSymbols: Set[String] = source.availableSymbols
+}
+
+object Selection {
+  def apply(predicates: Seq[Expression], source: LogicalPlan)(implicit idGen: IdGen): Selection =  {
+    assert(predicates.nonEmpty, "A selection plan should never be created without predicates")
+    Selection(Ands(predicates.toSet)(predicates.head.position), source)
+  }
 }

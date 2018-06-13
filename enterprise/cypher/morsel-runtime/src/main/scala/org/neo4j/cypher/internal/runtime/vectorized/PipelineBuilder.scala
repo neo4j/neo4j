@@ -111,9 +111,8 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
         case plans.ProduceResult(_, columns) =>
           new ProduceResultOperator(slots, columns.toArray)
 
-        case plans.Selection(predicates, _) =>
-          val predicate = predicates.map(converters.toCommandPredicate).reduce(_ andWith _)
-          new FilterOperator(predicate)
+        case plans.Selection(predicate, _) =>
+          new FilterOperator(converters.toCommandExpression(predicate))
 
         case plans.Expand(lhs, fromName, dir, types, to, relName, ExpandAll) =>
           val fromOffset = slots.getLongOffsetFor(fromName)

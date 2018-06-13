@@ -111,6 +111,7 @@ object CommunityExpressionConverter extends ExpressionConverter {
           }
         case e: ast.MapProjection => throw new InternalException("should have been rewritten away")
         case e: NestedPlanExpression => commandexpressions.NestedPlanExpression(e.plan)
+        case CoerceToPredicate(inner) =>  predicates.CoercedPredicate(self.toCommandExpression(inner))
         case _ => null
       }
 

@@ -23,13 +23,15 @@
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.vectorized._
+import org.neo4j.values.storable.Values
 /*
 Takes an input morsel and compacts all rows to the beginning of it, only keeping the rows that match a predicate
  */
-class FilterOperator(predicate: Predicate) extends MiddleOperator {
+class FilterOperator(predicate: Expression) extends MiddleOperator {
   override def operate(iterationState: Iteration,
                        readingRow: MorselExecutionContext,
                        context: QueryContext,
@@ -39,7 +41,7 @@ class FilterOperator(predicate: Predicate) extends MiddleOperator {
     val queryState = new OldQueryState(context, resources = null, params = state.params)
 
     while (readingRow.hasMoreRows) {
-      val matches = predicate.isTrue(readingRow, queryState)
+      val matches = predicate(readingRow, queryState) eq Values.TRUE
       if (matches) {
         writingRow.copyFrom(readingRow)
         writingRow.moveToNextRow()

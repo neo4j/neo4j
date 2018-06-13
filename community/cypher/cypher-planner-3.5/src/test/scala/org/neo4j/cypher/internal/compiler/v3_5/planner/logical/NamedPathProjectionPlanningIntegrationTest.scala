@@ -44,10 +44,10 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
 
     result should equal(
       Selection(
-        Seq(Equals(
+        Ands(Set(Equals(
           FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, pathExpr) _) _,
           varFor("a")
-        ) _),
+        ) _))_,
           Expand(NodeByLabelScan("a", lblName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
       )
     )
@@ -60,7 +60,7 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
 
     result should equal(
       Selection(
-        Seq(
+        Ands(Set(
           Equals(
             FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, pathExpr) _) _,
             Variable("a") _
@@ -69,7 +69,7 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
             FunctionInvocation(FunctionName("length") _, pathExpr) _,
             SignedDecimalIntegerLiteral("10") _
           ) _
-        ),
+        ))_,
           Expand(NodeByLabelScan("a", lblName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
       )
     )

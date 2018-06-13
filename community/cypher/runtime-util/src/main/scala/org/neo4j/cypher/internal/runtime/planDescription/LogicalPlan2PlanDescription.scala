@@ -203,8 +203,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val expressions = Expressions(expr)
         PlanDescriptionImpl(id, "Projection", children, Seq(expressions), variables)
 
-      case Selection(predicates, _) =>
-        PlanDescriptionImpl(id, "Filter", children, predicates.map(Expression), variables)
+      case Selection(predicate, _) =>
+        PlanDescriptionImpl(id, "Filter", children, predicate.exprs.map(Expression).toSeq, variables)
 
       case Skip(_, count) =>
         PlanDescriptionImpl(id, name = "Skip", children, Seq(Expression(count)), variables)

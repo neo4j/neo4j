@@ -405,9 +405,9 @@ object LogicalPlanConverter {
 
     override def consume(context: CodeGenContext, child: CodeGenPlan, cardinalities: Cardinalities): (Option[JoinTableMethod], List[Instruction]) = {
       val opName = context.registerOperator(selection)
-      val predicates = selection.predicates.map(
+      val predicates = selection.predicate.exprs.map(
         ExpressionConverter.createPredicate(_)(context)
-      )
+      ).toSeq
 
       val (methodHandle, innerBlock :: tl) = context.popParent().consume(context, this, cardinalities)
 

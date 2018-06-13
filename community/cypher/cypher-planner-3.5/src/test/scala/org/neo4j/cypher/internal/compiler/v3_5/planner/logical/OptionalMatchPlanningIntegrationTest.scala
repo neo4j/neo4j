@@ -183,7 +183,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       ) =>
         args should equal(Set("r", "a1"))
         val predicate: Expression = Equals(Variable("a1") _, Variable("a2") _) _
-        predicates should equal(Seq(predicate))
+        predicates.exprs should equal(Set(predicate))
     }
   }
 

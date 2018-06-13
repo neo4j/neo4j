@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.ir.v3_5.LazyMode
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.opencypher.v9_0.util.Cost
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.expressions.{HasLabels, LabelName, SemanticDirection}
+import org.opencypher.v9_0.expressions.{Ands, HasLabels, LabelName, SemanticDirection}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 
 class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -33,10 +33,10 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
   test("expand should only be counted once") {
     val cardinalities = new Cardinalities
     val plan =
-      setC(Selection(List(HasLabels(varFor("a"), Seq(LabelName("Awesome") _)) _),
+      setC(Selection(Ands(Set(HasLabels(varFor("a"), Seq(LabelName("Awesome") _)) _))_,
         setC(Expand(
-          setC(Selection(List(HasLabels(varFor("a"), Seq(LabelName("Awesome") _)) _),
-            setC(Expand(
+          setC(Selection(Ands(Set(HasLabels(varFor("a"), Seq(LabelName("Awesome") _)) _))_,
+                         setC(Expand(
               setC(Argument(Set("a")), cardinalities, 10.0),
               "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1"), cardinalities, 100.0)
           ), cardinalities, 10.0), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1"), cardinalities, 100.0)

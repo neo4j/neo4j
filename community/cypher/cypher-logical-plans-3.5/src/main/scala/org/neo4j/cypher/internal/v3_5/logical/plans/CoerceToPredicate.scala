@@ -17,19 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans.rewriter
+package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.opencypher.v9_0.util.attribution.SameId
-import org.neo4j.cypher.internal.v3_5.logical.plans.Selection
-import org.opencypher.v9_0.expressions.Ands
-import org.opencypher.v9_0.util.{Rewriter, bottomUp}
+import org.opencypher.v9_0.ast.semantics.{SemanticCheck, SemanticCheckResult, SemanticCheckableExpression}
+import org.opencypher.v9_0.expressions.Expression
+import org.opencypher.v9_0.expressions.Expression.SemanticContext
+import org.opencypher.v9_0.util.InputPosition
 
-case object fuseSelections extends Rewriter {
+//TODO move into frontend?
+case class CoerceToPredicate(inner: Expression) extends Expression with SemanticCheckableExpression {
 
-  override def apply(input: AnyRef) = instance.apply(input)
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 
-  private val instance: Rewriter = bottomUp(Rewriter.lift {
-    case topSelection@Selection(Ands(predicates1), Selection(Ands(predicates2), lhs)) =>
-      Selection(Ands(predicates1 ++ predicates2)(predicates1.head.position), lhs)(SameId(topSelection.id))
-  })
+  override def asCanonicalStringVal: String = {
+    s"CoerceToPredicate($inner)"
+  }
+
+ override def position: InputPosition = InputPosition.NONE
 }
+
+
