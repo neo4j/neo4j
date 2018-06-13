@@ -136,8 +136,7 @@ public class PlatformModule
     {
         this.databaseInfo = databaseInfo;
         this.dataSourceManager = new DataSourceManager();
-        dependencies = new org.neo4j.kernel.impl.util.Dependencies(
-                new DataSourceManager.DependencyResolverSupplier( dataSourceManager ) );
+        dependencies = new org.neo4j.kernel.impl.util.Dependencies();
         dependencies.satisfyDependency( databaseInfo );
 
         clock = dependencies.satisfyDependency( createClock() );
@@ -192,8 +191,7 @@ public class PlatformModule
         versionContextSupplier = createCursorContextSupplier( config );
         collectionsFactorySupplier = createCollectionsFactorySupplier( config );
         dependencies.satisfyDependency( versionContextSupplier );
-        pageCache = dependencies.satisfyDependency( createPageCache( fileSystem, config, logging, tracers,
-                versionContextSupplier ) );
+        pageCache = dependencies.satisfyDependency( createPageCache( fileSystem, config, logging, tracers, versionContextSupplier ) );
 
         life.add( new PageCacheLifecycle( pageCache ) );
 

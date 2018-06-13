@@ -154,6 +154,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.FeatureToggles;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 
@@ -255,7 +256,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
 
-    private Dependencies dependencies;
+    private Dependencies dataSourceDependencies;
     private LifeSupport life;
     private IndexProviderMap indexProviderMap;
     private File storeDir;
@@ -362,7 +363,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     @Override
     public void start() throws IOException
     {
-        dependencies = new Dependencies();
+        dataSourceDependencies = new Dependencies( dependencyResolver );
         life = new LifeSupport();
 
         life.add( recoveryCleanupWorkCollector );
@@ -375,11 +376,11 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         indexProviderMap =
                 new DefaultIndexProviderMap( defaultIndexProvider,
                         indexProviderSelection.lowerPrioritizedCandidates() );
-        dependencies.satisfyDependency( indexProviderMap );
+        dataSourceDependencies.satisfyDependency( indexProviderMap );
 
         IndexConfigStore indexConfigStore = new IndexConfigStore( storeDir, fs );
-        dependencies.satisfyDependency( lockService );
-        dependencies.satisfyDependency( indexConfigStore );
+        dataSourceDependencies.satisfyDependency( lockService );
+        dataSourceDependencies.satisfyDependency( indexConfigStore );
         life.add( indexConfigStore );
 
         life.add( Lifecycles.multiple( indexProviders.values() ) );
@@ -391,7 +392,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 .withLogEntryReader( logEntryReader )
                 .withLogFileMonitor( physicalLogMonitor )
                 .withConfig( config )
-                .withDependencies( dependencies ).build();
+                .withDependencies( dataSourceDependencies ).build();
 
         LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, monitors, failOnCorruptedLogFiles );
         monitors.addMonitorListener(
@@ -410,11 +411,9 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         {
             DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( logProvider );
 
-            SynchronizedArrayIdOrderingQueue explicitIndexTransactionOrdering =
-                    new SynchronizedArrayIdOrderingQueue( 20 );
+            SynchronizedArrayIdOrderingQueue explicitIndexTransactionOrdering = new SynchronizedArrayIdOrderingQueue( 20 );
 
-            Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier =
-                    () -> kernelModule.kernelTransactions().get();
+            Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
             idController.initialize( transactionsSnapshotSupplier );
 
             storageEngine = buildStorageEngine(
@@ -423,14 +422,14 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     versionContextSupplier );
             life.add( logFiles );
 
-            TransactionIdStore transactionIdStore = dependencies.resolveDependency( TransactionIdStore.class );
+            TransactionIdStore transactionIdStore = dataSourceDependencies.resolveDependency( TransactionIdStore.class );
 
             versionContextSupplier.init( transactionIdStore::getLastClosedTransactionId );
 
-            LogVersionRepository logVersionRepository = dependencies.resolveDependency( LogVersionRepository.class );
+            LogVersionRepository logVersionRepository = dataSourceDependencies.resolveDependency( LogVersionRepository.class );
             NeoStoreTransactionLogModule transactionLogModule = buildTransactionLogs( logFiles, config, logProvider,
                     scheduler, storageEngine, logEntryReader, explicitIndexTransactionOrdering, transactionIdStore );
-            transactionLogModule.satisfyDependencies( dependencies );
+            transactionLogModule.satisfyDependencies( dataSourceDependencies );
 
             buildRecovery( fs,
                     transactionIdStore,
@@ -442,32 +441,32 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             );
 
             // At the time of writing this comes from the storage engine (IndexStoreView)
-            NodePropertyAccessor nodePropertyAccessor = dependencies.resolveDependency( NodePropertyAccessor.class );
+            NodePropertyAccessor nodePropertyAccessor = dataSourceDependencies.resolveDependency( NodePropertyAccessor.class );
 
             final NeoStoreKernelModule kernelModule = buildKernel(
                     logFiles,
                     transactionLogModule.transactionAppender(),
-                    dependencies.resolveDependency( IndexingService.class ),
+                    dataSourceDependencies.resolveDependency( IndexingService.class ),
                     databaseSchemaState,
-                    dependencies.resolveDependency( LabelScanStore.class ),
+                    dataSourceDependencies.resolveDependency( LabelScanStore.class ),
                     storageEngine,
                     indexConfigStore,
                     transactionIdStore,
                     availabilityGuard,
                     clock, nodePropertyAccessor );
 
-            kernelModule.satisfyDependencies( dependencies );
+            kernelModule.satisfyDependencies( dataSourceDependencies );
 
             // Do these assignments last so that we can ensure no cyclical dependencies exist
             this.storageEngine = storageEngine;
             this.transactionLogModule = transactionLogModule;
             this.kernelModule = kernelModule;
 
-            dependencies.satisfyDependency( this );
-            dependencies.satisfyDependency( databaseSchemaState );
-            dependencies.satisfyDependency( logEntryReader );
-            dependencies.satisfyDependency( storageEngine );
-            dependencies.satisfyDependency( explicitIndexProviderLookup );
+            dataSourceDependencies.satisfyDependency( this );
+            dataSourceDependencies.satisfyDependency( databaseSchemaState );
+            dataSourceDependencies.satisfyDependency( logEntryReader );
+            dataSourceDependencies.satisfyDependency( storageEngine );
+            dataSourceDependencies.satisfyDependency( explicitIndexProviderLookup );
         }
         catch ( Throwable e )
         {
@@ -562,7 +561,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         // We pretend that the storage engine abstract hides all details within it. Whereas that's mostly
         // true it's not entirely true for the time being. As long as we need this call below, which
         // makes available one or more internal things to the outside world, there are leaks to plug.
-        storageEngine.satisfyDependencies( dependencies );
+        storageEngine.satisfyDependencies( dataSourceDependencies );
 
         return life.add( storageEngine );
     }
@@ -649,10 +648,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         ExplicitIndexStore explicitIndexStore = new ExplicitIndexStore( config,
                 indexConfigStore, kernelProvider, explicitIndexProviderLookup );
 
-        StatementOperationParts statementOperationParts = dependencies.satisfyDependency(
-                buildStatementOperations(
-                        cpuClockRef,
-                        heapAllocationRef ) );
+        StatementOperationParts statementOperationParts = dataSourceDependencies.satisfyDependency(
+                buildStatementOperations( cpuClockRef, heapAllocationRef ) );
 
         TransactionHooks hooks = new TransactionHooks();
 
@@ -674,7 +671,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         final NeoStoreFileListing fileListing = new NeoStoreFileListing( storeDir, logFiles, labelScanStore,
                 indexingService, explicitIndexProviderLookup, storageEngine );
-        dependencies.satisfyDependency( fileListing );
+        dataSourceDependencies.satisfyDependency( fileListing );
 
         return new NeoStoreKernelModule( transactionCommitProcess, kernel, kernelTransactions, fileListing );
     }
@@ -721,7 +718,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     {
         KernelTransactionTimeoutMonitor kernelTransactionTimeoutMonitor =
                 new KernelTransactionTimeoutMonitor( kernelTransactions, clock, logService );
-        dependencies.satisfyDependency( kernelTransactionTimeoutMonitor );
+        dataSourceDependencies.satisfyDependency( kernelTransactionTimeoutMonitor );
         KernelTransactionMonitorScheduler transactionMonitorScheduler =
                 new KernelTransactionMonitorScheduler( kernelTransactionTimeoutMonitor, scheduler,
                         config.get( GraphDatabaseSettings.transaction_monitor_check_interval ).toMillis() );
@@ -803,14 +800,12 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
     public ResourceIterator<StoreFileMetadata> listStoreFiles( boolean includeLogs ) throws IOException
     {
-        if ( includeLogs )
+        NeoStoreFileListing.StoreFileListingBuilder fileListingBuilder = getNeoStoreFileListing().builder();
+        if ( !includeLogs )
         {
-            return getNeoStoreFileListing().builder().build();
+            fileListingBuilder.excludeLogFiles();
         }
-        else
-        {
-            return getNeoStoreFileListing().builder().excludeLogFiles().build();
-        }
+        return fileListingBuilder.build();
     }
 
     public NeoStoreFileListing getNeoStoreFileListing()
@@ -826,7 +821,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
     public DependencyResolver getDependencyResolver()
     {
-        return dependencies;
+        return dataSourceDependencies;
     }
 
     private StatementOperationParts buildStatementOperations( AtomicReference<CpuClock> cpuClockRef,
@@ -888,6 +883,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     }
 
     // For test purposes only, not thread safe
+    @VisibleForTesting
     public LifeSupport getLife()
     {
         return life;

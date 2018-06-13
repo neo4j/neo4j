@@ -19,41 +19,28 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Objects;
+
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
+
+import static org.apache.commons.lang3.ObjectUtils.firstNonNull;
 
 public class StatementOperationParts
 {
     private final QueryRegistrationOperations queryRegistrationOperations;
 
-    public StatementOperationParts(
-            QueryRegistrationOperations queryRegistrationOperations )
+    public StatementOperationParts( QueryRegistrationOperations queryRegistrationOperations )
     {
         this.queryRegistrationOperations = queryRegistrationOperations;
     }
 
-    public QueryRegistrationOperations queryRegistrationOperations()
+    QueryRegistrationOperations queryRegistrationOperations()
     {
-        return checkNotNull( queryRegistrationOperations, QueryRegistrationOperations.class );
+        return Objects.requireNonNull( queryRegistrationOperations, "No part of type " + QueryRegistrationOperations.class.getSimpleName() + " assigned" );
     }
 
     public StatementOperationParts override( QueryRegistrationOperations queryRegistrationOperations )
     {
-        return new StatementOperationParts(
-                eitherOr( queryRegistrationOperations, this.queryRegistrationOperations, QueryRegistrationOperations.class ) );
-    }
-
-    private <T> T checkNotNull( T object, Class<T> cls )
-    {
-        if ( object == null )
-        {
-            throw new IllegalStateException( "No part of type " + cls.getSimpleName() + " assigned" );
-        }
-        return object;
-    }
-
-    private <T> T eitherOr( T first, T other,
-            @SuppressWarnings( "UnusedParameters"/*used as type flag*/ ) Class<T> cls )
-    {
-        return first != null ? first : other;
+        return new StatementOperationParts( firstNonNull( queryRegistrationOperations, this.queryRegistrationOperations ) );
     }
 }

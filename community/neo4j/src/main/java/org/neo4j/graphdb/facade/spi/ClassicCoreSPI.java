@@ -95,7 +95,7 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     @Override
     public DependencyResolver resolver()
     {
-        return platform.dependencies;
+        return dataSource.neoStoreDataSource.getDependencyResolver();
     }
 
     @Override

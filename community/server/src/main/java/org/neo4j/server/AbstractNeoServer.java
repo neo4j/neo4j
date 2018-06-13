@@ -128,6 +128,7 @@ public abstract class AbstractNeoServer implements NeoServer
     private Optional<AdvertisedSocketAddress> httpsAdvertisedAddress;
 
     protected Database database;
+    private Dependencies dependencyResolver;
     protected CypherExecutor cypherExecutor;
     protected WebServer webServer;
     protected Supplier<AuthManager> authManagerSupplier;
@@ -182,8 +183,9 @@ public abstract class AbstractNeoServer implements NeoServer
             return;
         }
 
-        this.database =
-                life.add( dependencyResolver.satisfyDependency( dbFactory.newDatabase( config, dependencies ) ) );
+        this.database = dbFactory.newDatabase( config, dependencies );
+        this.dependencyResolver = new Dependencies( database.getGraph().getDependencyResolver() );
+        life.add( database );
 
         this.authManagerSupplier = dependencyResolver.provideDependency( AuthManager.class );
         this.userManagerSupplier = dependencyResolver.provideDependency( UserManagerSupplier.class );
@@ -489,16 +491,6 @@ public abstract class AbstractNeoServer implements NeoServer
     {
         return dependencyResolver.resolveDependency( type );
     }
-
-    private final Dependencies dependencyResolver = new Dependencies( new Supplier<DependencyResolver>()
-    {
-        @Override
-        public DependencyResolver get()
-        {
-            Database db = dependencyResolver.resolveDependency( Database.class );
-            return db.getGraph().getDependencyResolver();
-        }
-    } );
 
     private class ServerComponentsLifecycleAdapter extends LifecycleAdapter
     {
