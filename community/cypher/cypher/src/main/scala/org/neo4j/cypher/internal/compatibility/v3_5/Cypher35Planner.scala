@@ -105,7 +105,7 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
                             tracer: CompilationPhaseTracer,
                             preParsingNotifications: Set[Notification],
                             transactionalContext: TransactionalContext
-                           ): (LogicalPlanResult, PlannerContext) = {
+                           ): LogicalPlanResult = {
 
     val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
 
@@ -160,12 +160,12 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
         else
           createPlan()
 
-      (LogicalPlanResult(
+      LogicalPlanResult(
         cacheableLogicalPlan.logicalPlanState,
         queryParamNames,
         ValueConversion.asValues(preparedQuery.extractedParams()),
-        cacheableLogicalPlan.reusability
-      ), context)
+        cacheableLogicalPlan.reusability,
+        context)
     }
   }
 }

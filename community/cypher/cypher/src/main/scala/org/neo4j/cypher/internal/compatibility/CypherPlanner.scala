@@ -46,11 +46,12 @@ trait CypherPlanner {
                    tracer: CompilationPhaseTracer,
                    preParsingNotifications: Set[org.neo4j.graphdb.Notification],
                    transactionalContext: TransactionalContext
-                  ): (LogicalPlanResult, PlannerContext)
+                  ): LogicalPlanResult
 }
 
 case class LogicalPlanResult(logicalPlanState: LogicalPlanState,
                              paramNames: Seq[String],
                              extractedParams: MapValue,
-                             reusability: ReusabilityState)
+                             reusability: ReusabilityState,
+                             plannerContext: PlannerContext)
 

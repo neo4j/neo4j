@@ -112,7 +112,7 @@ case class Cypher33Planner(configv3_5: CypherPlannerConfiguration,
                             tracer: CompilationPhaseTracer,
                             preParsingNotifications: Set[Notification],
                             transactionalContext: TransactionalContext
-                           ): (LogicalPlanResult, PlannerContext) = {
+                           ): LogicalPlanResult = {
 
     val inputPositionV3_3 = as3_3(preParsedQuery.offset)
     val inputPositionv3_5 = preParsedQuery.offset
@@ -210,12 +210,12 @@ case class Cypher33Planner(configv3_5: CypherPlannerConfiguration,
       // Log notifications/warnings from planning
       notificationLoggerV3_3.notifications.map(helpers.as3_5).foreach(notificationLoggerv3_5.log)
 
-      (LogicalPlanResult(
+      LogicalPlanResult(
         cacheableLogicalPlan.logicalPlanState,
         queryParamNames,
         ValueConversion.asValues(preparedQuery.extractedParams()),
-        cacheableLogicalPlan.reusability
-      ), contextv3_5)
+        cacheableLogicalPlan.reusability,
+        contextv3_5)
     }
   }
 }
