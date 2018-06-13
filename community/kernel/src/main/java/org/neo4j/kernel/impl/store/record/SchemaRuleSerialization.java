@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.util.Optional;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaComputer;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -64,7 +63,7 @@ public class SchemaRuleSerialization
     // Schema type
     private static final byte SIMPLE_LABEL = 91;
     private static final byte SIMPLE_REL_TYPE = 92;
-    private static final byte MULTI_TOKEN_TYPE = 93;
+    private static final byte GENERIC_MULTI_TOKEN_TYPE = 93;
 
     private static final long NO_OWNING_CONSTRAINT_YET = -1;
     private static final int LEGACY_LABEL_OR_REL_TYPE_ID = -1;
@@ -277,17 +276,6 @@ public class SchemaRuleSerialization
 
     }
 
-    private static MultiTokenSchemaDescriptor readMultiTokenSchema( ByteBuffer source ) throws MalformedSchemaRuleException
-    {
-        SchemaDescriptor schemaDescriptor = readMultitokenSchema( source );
-        if ( !(schemaDescriptor instanceof MultiTokenSchemaDescriptor) )
-        {
-            throw new MalformedSchemaRuleException(
-                    "Non schema StoreIndexDescriptors must have MultiTokenSchemaDescriptor, got " + schemaDescriptor.getClass().getSimpleName() );
-        }
-        return (MultiTokenSchemaDescriptor) schemaDescriptor;
-    }
-
     private static IndexProvider.Descriptor readIndexProviderDescriptor( ByteBuffer source )
     {
         String providerKey = getDecodedStringFrom( source );
@@ -354,7 +342,7 @@ public class SchemaRuleSerialization
             int relTypeId = source.getInt();
             propertyIds = readTokenIdList( source );
             return SchemaDescriptorFactory.forRelType( relTypeId, propertyIds );
-        case MULTI_TOKEN_TYPE:
+        case GENERIC_MULTI_TOKEN_TYPE:
             return readMultiTokenSchema( source );
         default:
             throw new MalformedSchemaRuleException( format( "Got unknown schema descriptor type '%d'.",
@@ -362,7 +350,7 @@ public class SchemaRuleSerialization
         }
     }
 
-    private static SchemaDescriptor readMultitokenSchema( ByteBuffer source ) throws MalformedSchemaRuleException
+    private static SchemaDescriptor readMultiTokenSchema( ByteBuffer source ) throws MalformedSchemaRuleException
     {
         byte schemaDescriptorType = source.get();
         EntityType type;
@@ -409,13 +397,7 @@ public class SchemaRuleSerialization
         {
             target.put( SIMPLE_LABEL );
             target.putInt( schema.getLabelId() );
-
-            int[] propertyIds = schema.getPropertyIds();
-            target.putShort( (short)propertyIds.length );
-            for ( int propertyId : propertyIds )
-            {
-                target.putInt( propertyId );
-            }
+            putIds( schema.getPropertyIds() );
         }
 
         @Override
@@ -423,19 +405,13 @@ public class SchemaRuleSerialization
         {
             target.put( SIMPLE_REL_TYPE );
             target.putInt( schema.getRelTypeId() );
-
-            int[] propertyIds = schema.getPropertyIds();
-            target.putShort( (short)propertyIds.length );
-            for ( int propertyId : propertyIds )
-            {
-                target.putInt( propertyId );
-            }
+            putIds( schema.getPropertyIds() );
         }
 
         @Override
-        public void processSpecific( MultiTokenSchemaDescriptor schema )
+        public void processSpecific( SchemaDescriptor schema )
         {
-            target.put( MULTI_TOKEN_TYPE );
+            target.put( GENERIC_MULTI_TOKEN_TYPE );
             if ( schema.entityType() == EntityType.NODE )
             {
                 target.put( SIMPLE_LABEL );
@@ -445,18 +421,16 @@ public class SchemaRuleSerialization
                 target.put( SIMPLE_REL_TYPE );
             }
 
-            int[] entityTokenIds = schema.getEntityTokenIds();
-            target.putShort( (short) entityTokenIds.length );
-            for ( int entityTokenId : entityTokenIds )
+            putIds( schema.getEntityTokenIds() );
+            putIds( schema.getPropertyIds() );
+        }
+
+        private void putIds( int[] ids )
+        {
+            target.putShort( (short) ids.length );
+            for ( int entityTokenId : ids )
             {
                 target.putInt( entityTokenId );
-            }
-
-            int[] propertyIds = schema.getPropertyIds();
-            target.putShort( (short)propertyIds.length );
-            for ( int propertyId : propertyIds )
-            {
-                target.putInt( propertyId );
             }
         }
     }
@@ -484,7 +458,7 @@ public class SchemaRuleSerialization
         }
 
         @Override
-        public Integer computeSpecific( MultiTokenSchemaDescriptor schema )
+        public Integer computeSpecific( SchemaDescriptor schema )
         {
             return    1 // schema descriptor type
                     + 1 // entity token type

@@ -20,9 +20,9 @@
 package org.neo4j.storageengine.api.schema;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaComputer;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
@@ -173,9 +173,9 @@ public interface SchemaRule extends SchemaDescriptorSupplier
             }
 
             @Override
-            public Kind computeSpecific( MultiTokenSchemaDescriptor schema )
+            public Kind computeSpecific( SchemaDescriptor schema )
             {
-                throw new IllegalStateException( "MultiToken schema rules cannot support constraints" );
+                throw new IllegalStateException( "General schema rules cannot support constraints" );
             }
         };
     }

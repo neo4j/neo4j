@@ -45,8 +45,8 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.NodePropertyExistenceException;
@@ -145,9 +145,9 @@ class PropertyExistenceEnforcer
                     }
 
                     @Override
-                    public void processSpecific( MultiTokenSchemaDescriptor multiTokenSchemaDescriptor )
+                    public void processSpecific( SchemaDescriptor schema )
                     {
-                        throw new IllegalStateException( "MultiTokenSchemaDescriptor cannot support constraints" );
+                        throw new UnsupportedOperationException( "General SchemaDescriptor cannot support constraints" );
                     }
                 } );
             }

@@ -39,5 +39,5 @@ public interface SchemaComputer<R>
      */
     R computeSpecific( LabelSchemaDescriptor schema );
     R computeSpecific( RelationTypeSchemaDescriptor schema );
-    R computeSpecific( MultiTokenSchemaDescriptor schema );
+    R computeSpecific( SchemaDescriptor schema );
 }

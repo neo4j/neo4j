@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.schema.constaints;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaComputer;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -96,10 +95,13 @@ public class ConstraintDescriptorFactory
                 }
 
                 @Override
-                public ConstraintDescriptor computeSpecific( MultiTokenSchemaDescriptor schema )
+                public ConstraintDescriptor computeSpecific( SchemaDescriptor schema )
                 {
-                    throw new IllegalStateException( "MultiToken schema rules cannot support constraints" );
-                }
+                    throw new UnsupportedOperationException(
+                            format( "Cannot create existence constraint for schema '%s' of type %s",
+                                    schema.userDescription( SchemaUtil.idTokenNameLookup ),
+                                    schema.getClass().getSimpleName()
+                            ) );                }
             };
 
     private static SchemaComputer<UniquenessConstraintDescriptor> convertToUniquenessConstraint =
@@ -122,10 +124,13 @@ public class ConstraintDescriptorFactory
                 }
 
                 @Override
-                public UniquenessConstraintDescriptor computeSpecific( MultiTokenSchemaDescriptor schema )
+                public UniquenessConstraintDescriptor computeSpecific( SchemaDescriptor schema )
                 {
-                    throw new IllegalStateException( "MultiToken schema rules cannot support constraints" );
-                }
+                    throw new UnsupportedOperationException(
+                            format( "Cannot create uniqueness constraint for schema '%s' of type %s",
+                                    schema.userDescription( SchemaUtil.idTokenNameLookup ),
+                                    schema.getClass().getSimpleName()
+                            ) );                }
             };
 
     private static SchemaComputer<NodeKeyConstraintDescriptor> convertToNodeKeyConstraint =
@@ -148,9 +153,12 @@ public class ConstraintDescriptorFactory
                 }
 
                 @Override
-                public NodeKeyConstraintDescriptor computeSpecific( MultiTokenSchemaDescriptor schema )
+                public NodeKeyConstraintDescriptor computeSpecific( SchemaDescriptor schema )
                 {
-                    throw new IllegalStateException( "MultiToken schema rules cannot support constraints" );
-                }
+                    throw new UnsupportedOperationException(
+                            format( "Cannot create node key constraint for schema '%s' of type %s",
+                                    schema.userDescription( SchemaUtil.idTokenNameLookup ),
+                                    schema.getClass().getSimpleName()
+                            ) );                }
             };
 }

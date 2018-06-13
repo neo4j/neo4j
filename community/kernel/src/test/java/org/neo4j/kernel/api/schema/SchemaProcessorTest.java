@@ -54,9 +54,9 @@ public class SchemaProcessorTest
             }
 
             @Override
-            public void processSpecific( org.neo4j.internal.kernel.api.schema.MultiTokenSchemaDescriptor multiTokenSchemaDescriptor )
+            public void processSpecific( org.neo4j.internal.kernel.api.schema.SchemaDescriptor schemaDescriptor )
             {
-                callHistory.add( "MultiTokenSchemaDescriptor" );
+                callHistory.add( "SchemaDescriptor" );
             }
         };
 

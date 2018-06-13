@@ -26,8 +26,8 @@ import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
@@ -250,24 +250,18 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         public void processSpecific( LabelSchemaDescriptor schema )
         {
             engine.comparativeCheck( records.label( schema.getLabelId() ), VALID_LABEL );
-            for ( int propertyId : schema.getPropertyIds() )
-            {
-                engine.comparativeCheck( records.propertyKey( propertyId ), VALID_PROPERTY_KEY );
-            }
+            checkProperties( schema.getPropertyIds() );
         }
 
         @Override
         public void processSpecific( RelationTypeSchemaDescriptor schema )
         {
             engine.comparativeCheck( records.relationshipType( schema.getRelTypeId() ), VALID_RELATIONSHIP_TYPE );
-            for ( int propertyId : schema.getPropertyIds() )
-            {
-                engine.comparativeCheck( records.propertyKey( propertyId ), VALID_PROPERTY_KEY );
-            }
+            checkProperties( schema.getPropertyIds() );
         }
 
         @Override
-        public void processSpecific( MultiTokenSchemaDescriptor schema )
+        public void processSpecific( SchemaDescriptor schema )
         {
             switch ( schema.entityType() )
             {
@@ -287,7 +281,12 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
                 throw new IllegalArgumentException( "Schema with given entity type is not supported: " + schema.entityType() );
             }
 
-            for ( int propertyId : schema.getPropertyIds() )
+            checkProperties( schema.getPropertyIds() );
+        }
+
+        private void checkProperties( int[] propertyIds )
+        {
+            for ( int propertyId : propertyIds )
             {
                 engine.comparativeCheck( records.propertyKey( propertyId ), VALID_PROPERTY_KEY );
             }
