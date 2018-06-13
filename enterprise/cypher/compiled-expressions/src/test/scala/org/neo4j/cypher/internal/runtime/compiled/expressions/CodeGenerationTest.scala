@@ -32,12 +32,11 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast._
 import org.neo4j.cypher.internal.runtime.DbAccess
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.values.AnyValue
+import org.neo4j.cypher.internal.v3_5.logical.plans.CoerceToPredicate
 import org.neo4j.values.storable.LocalTimeValue.localTime
 import org.neo4j.values.storable.Values._
 import org.neo4j.values.storable.{DoubleValue, Values}
-import org.neo4j.values.virtual.VirtualValues
-import org.neo4j.values.virtual.VirtualValues.{EMPTY_MAP, list, map}
+import org.neo4j.values.virtual.VirtualValues.{EMPTY_LIST, EMPTY_MAP, list, map}
 import org.opencypher.v9_0.ast.AstConstructionTestSupport
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.symbols
@@ -521,6 +520,16 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(notEquals(noValue, literalInt(43))).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.NO_VALUE)
     compile(notEquals(literalInt(42), noValue)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.NO_VALUE)
     compile(notEquals(noValue, noValue)).evaluate(ctx, dbAccess, EMPTY_MAP) should equal(Values.NO_VALUE)
+  }
+
+  test("CoerceToPredicate") {
+    val coerced = CoerceToPredicate(parameter("a"))
+
+    compile(coerced).evaluate(ctx, dbAccess, map(Array("a"), Array(Values.FALSE))) should equal(Values.FALSE)
+    compile(coerced).evaluate(ctx, dbAccess, map(Array("a"), Array(Values.TRUE))) should equal(Values.TRUE)
+    compile(coerced).evaluate(ctx, dbAccess, map(Array("a"), Array(Values.NO_VALUE))) should equal(Values.FALSE)
+    compile(coerced).evaluate(ctx, dbAccess, map(Array("a"), Array(list(stringValue("A"))))) should equal(Values.TRUE)
+    compile(coerced).evaluate(ctx, dbAccess, map(Array("a"), Array(list(EMPTY_LIST)))) should equal(Values.TRUE)
   }
 
   test("ReferenceFromSlot") {
