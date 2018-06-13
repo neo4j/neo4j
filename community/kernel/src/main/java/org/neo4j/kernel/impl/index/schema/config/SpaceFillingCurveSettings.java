@@ -70,11 +70,27 @@ public class SpaceFillingCurveSettings
 
     public SpaceFillingCurveSettings( int dimensions, int maxBits, Envelope extents )
     {
+        this( dimensions, extents, calcMaxLevels( dimensions, maxBits ) );
+    }
+
+    private SpaceFillingCurveSettings( int dimensions, Envelope extents, int maxLevels )
+    {
         this.dimensions = dimensions;
         this.extents = extents;
+        this.maxLevels = maxLevels;
+    }
+
+    @Override
+    public SpaceFillingCurveSettings clone()
+    {
+        return new SpaceFillingCurveSettings( this.dimensions, this.extents, this.maxLevels );
+    }
+
+    private static int calcMaxLevels( int dimensions, int maxBits )
+    {
         int maxConfigured = maxBits / dimensions;
         int maxSupported = (dimensions == 2) ? HilbertSpaceFillingCurve2D.MAX_LEVEL : HilbertSpaceFillingCurve3D.MAX_LEVEL;
-        this.maxLevels = Math.min( maxConfigured, maxSupported );
+        return Math.min( maxConfigured, maxSupported );
     }
 
     /**
@@ -156,6 +172,24 @@ public class SpaceFillingCurveSettings
         else
         {
             throw new IllegalArgumentException( "Cannot create spatial index with other than 2D or 3D coordinate reference system: " + dimensions + "D" );
+        }
+    }
+
+    public boolean equals( SpaceFillingCurveSettings other )
+    {
+        return this.dimensions == other.dimensions && this.maxLevels == other.maxLevels && this.extents.equals( other.extents );
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        if ( obj instanceof SpaceFillingCurveSettings )
+        {
+            return equals( (SpaceFillingCurveSettings) obj );
+        }
+        else
+        {
+            return false;
         }
     }
 

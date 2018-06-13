@@ -66,7 +66,7 @@ class SpatialIndexFiles
 
     SpatialFileLayout forCrs( CoordinateReferenceSystem crs )
     {
-        return new SpatialFileLayout( crs, settingsFactory.settingsFor( crs ), indexDirectory );
+        return new SpatialFileLayout( crs, settingsFactory.settingsFor( crs ).clone(), indexDirectory );
     }
 
     private void addExistingFiles( List<SpatialFileLayout> existing )
