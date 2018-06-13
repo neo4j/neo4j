@@ -42,8 +42,6 @@ abstract class SpatialSchemaIndexAccessorTest extends NativeSchemaIndexAccessorT
     NativeSchemaIndexAccessor<SpatialSchemaKey,NativeSchemaValue> makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
     {
         fileLayout = new SpatialIndexFiles.SpatialFileLayout( CoordinateReferenceSystem.WGS84, settings, super.getIndexFile() );
-        SpatialIndexFiles.SpatialFileLayout fileLayout =
-                new SpatialIndexFiles.SpatialFileLayout( CoordinateReferenceSystem.WGS84, settings, super.getIndexFile() );
         return new SpatialIndexAccessor.PartAccessor( pageCache, fs, fileLayout, IMMEDIATE, monitor, schemaIndexDescriptor, indexId, samplingConfig,
                 new StandardConfiguration() );
     }
