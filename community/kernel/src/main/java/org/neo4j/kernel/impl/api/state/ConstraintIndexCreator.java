@@ -50,6 +50,8 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.locking.Locks.Client;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
@@ -62,13 +64,15 @@ public class ConstraintIndexCreator
     private final IndexingService indexingService;
     private final Supplier<Kernel> kernelSupplier;
     private final PropertyAccessor propertyAccessor;
+    private final Log log;
 
-    public ConstraintIndexCreator( Supplier<Kernel> kernelSupplier, IndexingService indexingService,
-            PropertyAccessor propertyAccessor )
+    public ConstraintIndexCreator( Supplier<Kernel> kernelSupplier, IndexingService indexingService, PropertyAccessor propertyAccessor,
+            LogProvider logProvider )
     {
         this.kernelSupplier = kernelSupplier;
         this.indexingService = indexingService;
         this.propertyAccessor = propertyAccessor;
+        this.log = logProvider.getLog( ConstraintIndexCreator.class );
     }
 
     /**
@@ -95,6 +99,7 @@ public class ConstraintIndexCreator
             UniquePropertyValueValidationException, AlreadyConstrainedException
     {
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
+        log.info( "Starting constraint creation: %s.", constraint.ownedIndexDescriptor() );
 
         IndexReference index;
         SchemaRead schemaRead = transaction.schemaRead();
@@ -126,6 +131,7 @@ public class ConstraintIndexCreator
             releaseLabelLock( locks, descriptor.keyId() );
 
             awaitConstrainIndexPopulation( constraint, proxy );
+            log.info( "Constraint %s populated, starting verification.", constraint.ownedIndexDescriptor() );
 
             // Index population was successful, but at this point we don't know if the uniqueness constraint holds.
             // Acquire LABEL WRITE lock and verify the constraints here in this user transaction
@@ -135,6 +141,8 @@ public class ConstraintIndexCreator
             reacquiredLabelLock = true;
 
             indexingService.getIndexProxy( indexId ).verifyDeferredConstraints( propertyAccessor );
+            log.info( "Constraint %s verified.", constraint.ownedIndexDescriptor() );
+
             success = true;
             return indexId;
         }

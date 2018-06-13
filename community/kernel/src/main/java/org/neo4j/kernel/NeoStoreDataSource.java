@@ -655,8 +655,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
          */
         Supplier<Kernel> kernelProvider = () -> kernelModule.kernelAPI();
 
-        ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( kernelProvider, indexingService,
-                propertyAccessor );
+        ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( kernelProvider, indexingService, propertyAccessor, logProvider );
 
         ExplicitIndexStore explicitIndexStore = new ExplicitIndexStore( config,
                 indexConfigStore, kernelProvider, explicitIndexProviderLookup );

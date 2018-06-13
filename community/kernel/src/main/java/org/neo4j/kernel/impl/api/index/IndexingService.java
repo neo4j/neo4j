@@ -582,6 +582,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 IndexProxy index = getIndexProxy( indexId );
                 index.awaitStoreScanCompleted();
                 index.activate();
+                log.info( "Constraint %s is %s.", index.getDescriptor(), ONLINE.name() );
             }
         }
         catch ( InterruptedException e )
