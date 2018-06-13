@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Table;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.ArrayList;
@@ -33,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NamedToken;
@@ -54,7 +53,7 @@ public class SchemaCalculator
 
     private Map<LabelSet,Set<Integer>> labelSetToPropertyKeysMapping;
     // TODO: make those different Set<whatever> etc. into more useful/understandable classes?!
-    private Table<LabelSet,Integer,Object> labelSetAndNodePropertyKeyIdToValueTypeMapping;  // Dislike object here...
+    private Map<Pair<LabelSet,Integer>,Object> labelSetAndNodePropertyKeyIdToValueTypeMapping;  // Dislike object here... see deriveValueType() for Info about ValueType
     private Map<Integer,String> labelIdToLabelNameMapping;
     private Map<Integer,String> propertyIdToPropertylNameMapping;
 
@@ -64,14 +63,11 @@ public class SchemaCalculator
     private final String NODE = "Node";
     private final String RELATIONSHIP = "Relationship";
 
-    //TODO: Change Table to Pair!
-    //TODO: Remove Guava from pom
-
-    public SchemaCalculator( GraphDatabaseAPI db, KernelTransaction ktx )
+    SchemaCalculator( GraphDatabaseAPI db, KernelTransaction ktx )
     {
         this.db = db;
         this.ktx = ktx;
-        labelSetAndNodePropertyKeyIdToValueTypeMapping = HashBasedTable.create();
+        labelSetAndNodePropertyKeyIdToValueTypeMapping = new HashMap<>(); //HashBasedTable.create();
     }
 
     public Stream<BuiltInSchemaProcedures.SchemaInfoResult> calculateTabularResultStream()
@@ -90,8 +86,8 @@ public class SchemaCalculator
                 labelNames.add( name );
             }
 
+            // lookup property value types
             Set<Integer> propertyIds = labelSetToPropertyKeysMapping.get( labelSet );
-
             if ( propertyIds.size() == 0 )
             {
                 results.add( new BuiltInSchemaProcedures.SchemaInfoResult( NODE, labelNames, null, null ) );
@@ -102,27 +98,12 @@ public class SchemaCalculator
                 {
                     // lookup propId name and valueGroup
                     String propName = propertyIdToPropertylNameMapping.get( propId );
-                    Object valueType = labelSetAndNodePropertyKeyIdToValueTypeMapping.get( labelSet, propId );
-
-                    String cypherType;
-                    if ( valueType instanceof Value )
-                    {
-                        cypherType = ((Value) valueType).getTypeName().toUpperCase();
-                    }
-                    else if ( valueType instanceof ValueGroup )
-                    {
-                        cypherType = ((ValueGroup) valueType).name();
-                    }
-                    else
-                    {
-                        cypherType = valueType.toString();
-                    }
-
+                    Object valueType = labelSetAndNodePropertyKeyIdToValueTypeMapping.get( Pair.of( labelSet,propId ) );
+                    String cypherType = getCypherTypeString( valueType );
                     results.add( new BuiltInSchemaProcedures.SchemaInfoResult( NODE, labelNames, propName, cypherType ) );
                 }
             }
         }
-
         return results.stream();
     }
 
@@ -164,54 +145,14 @@ public class SchemaCalculator
                 while ( propertyCursor.next() )
                 {
                     // each property
-                    Value currentValue = propertyCursor.propertyValue(); //1st check
+                    Value currentValue = propertyCursor.propertyValue();
                     int propertyKeyId = propertyCursor.propertyKey();
 
-                    Object typeExampleValue = labelSetAndNodePropertyKeyIdToValueTypeMapping.get( labels, propertyKeyId );
-                    if ( typeExampleValue == null )
-                    {
-                        typeExampleValue = currentValue;
-                    }
-                    else
-                    {
-                        // Object value in labelSetAndNodePropertyKeyIdToValueTypeMapping can be either:
-                        // A) Value, if the Values match on class level
-                        // B) ValueGroup, if the ValueGroups of the Values match
-                        // C) String, if nothing matches
+                    Pair<LabelSet,Integer> key = Pair.of( labels, propertyKeyId );
+                    Object typeExampleValue = labelSetAndNodePropertyKeyIdToValueTypeMapping.get( key );
+                    typeExampleValue = deriveValueType( currentValue, typeExampleValue );
 
-                        // Are they the same value typ? -[no]-> Are they the same ValueGroup? -[no]-> AnyValue
-
-                        // TODO: We could check for String first and could skip the other instanceof checks (has Pro/Cons)
-
-                        if ( typeExampleValue instanceof Value )
-                        {
-                            // check if classes match
-                            if ( !currentValue.getClass().equals( typeExampleValue.getClass() ) )
-                            {
-                                // Clases don't match -> update needed
-                                if ( currentValue.valueGroup().equals( ((Value) typeExampleValue).valueGroup() ) )
-                                {
-                                    // same valueGroup -> set that
-                                    typeExampleValue = currentValue.valueGroup();
-                                }
-                                else
-                                {
-                                    // Not same valuegroup -> set to AnyValue
-                                    typeExampleValue = ANYVALUE;
-                                }
-                            }
-                        }
-                        else if ( typeExampleValue instanceof ValueGroup )
-                        {
-                            if ( !currentValue.valueGroup().equals( typeExampleValue ) )
-                            {
-                                // not same valueGroup -> update to AnyValue
-                                typeExampleValue = ANYVALUE;
-                            }
-                        }
-                    }
-
-                    labelSetAndNodePropertyKeyIdToValueTypeMapping.put( labels, propertyKeyId, typeExampleValue );
+                    labelSetAndNodePropertyKeyIdToValueTypeMapping.put( key, typeExampleValue );
                     propertyIds.add( propertyKeyId );
                 }
 
@@ -221,20 +162,87 @@ public class SchemaCalculator
             }
 
             // go through all labels
-            Iterator<NamedToken> labelIterator = tokenRead.labelsGetAllTokens();
-            while ( labelIterator.hasNext() )
-            {
-                NamedToken label = labelIterator.next();
-                labelIdToLabelNameMapping.put( label.id(), label.name() );
-            }
+            addNamesToCollection( tokenRead.labelsGetAllTokens(), labelIdToLabelNameMapping );
 
             // go through all propertyKeys
-            Iterator<NamedToken> propIterator = tokenRead.propertyKeyGetAllTokens();
-            while ( propIterator.hasNext() )
+            addNamesToCollection( tokenRead.propertyKeyGetAllTokens(), propertyIdToPropertylNameMapping );
+        }
+    }
+
+    private void addNamesToCollection( Iterator<NamedToken> labelIterator, Map<Integer, String> collection )
+    {
+        while ( labelIterator.hasNext() )
+        {
+            NamedToken label = labelIterator.next();
+            collection.put( label.id(), label.name() );
+        }
+    }
+
+    /*
+      This method is needed to handle conflicting property values. It returns one of the following:
+        A) Some concrete value, if all previous values matched on class level
+        B) A ValueGroup, if at least the ValueGroups of the previous values match
+        C) A String, if nothing matched
+     */
+    private Object deriveValueType( Value currentValue, Object typeExampleValue )
+    {
+        if ( typeExampleValue == null )
+        {
+            typeExampleValue = currentValue;
+        }
+        else
+        {
+            // Are they the same value typ? -[no]-> Are they the same ValueGroup? -[no]-> AnyValue
+            // TODO: We could check for String first and could skip the other instanceof checks (has Pro/Cons)
+
+            if ( typeExampleValue instanceof Value )
             {
-                NamedToken prop = propIterator.next();
-                propertyIdToPropertylNameMapping.put( prop.id(), prop.name() );
+                // check if classes match
+                if ( !currentValue.getClass().equals( typeExampleValue.getClass() ) )
+                {
+                    // Clases don't match -> update needed
+                    if ( currentValue.valueGroup().equals( ((Value) typeExampleValue).valueGroup() ) )
+                    {
+                        // same valueGroup -> set that
+                        typeExampleValue = currentValue.valueGroup();
+                    }
+                    else
+                    {
+                        // Not same valuegroup -> set to AnyValue
+                        typeExampleValue = ANYVALUE;
+                    }
+                }
+            }
+            else if ( typeExampleValue instanceof ValueGroup )
+            {
+                if ( !currentValue.valueGroup().equals( typeExampleValue ) )
+                {
+                    // not same valueGroup -> update to AnyValue
+                    typeExampleValue = ANYVALUE;
+                }
             }
         }
+        return typeExampleValue;
+    }
+
+    /*
+      This method translates an Object from deriveValueType() into a String
+     */
+    private String getCypherTypeString( Object valueType )
+    {
+        String cypherType;
+        if ( valueType instanceof Value )
+        {
+            cypherType = ((Value) valueType).getTypeName().toUpperCase();
+        }
+        else if ( valueType instanceof ValueGroup )
+        {
+            cypherType = ((ValueGroup) valueType).name();
+        }
+        else
+        {
+            cypherType = valueType.toString();
+        }
+        return cypherType;
     }
 }
