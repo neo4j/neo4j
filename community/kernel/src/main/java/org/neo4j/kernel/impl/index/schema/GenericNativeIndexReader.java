@@ -25,18 +25,26 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
+import org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-class NumberIndexReader<VALUE extends NativeIndexValue> extends NativeIndexReader<NumberIndexKey,VALUE>
+class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexValue>
 {
-    NumberIndexReader( GBPTree<NumberIndexKey,VALUE> tree, Layout<NumberIndexKey,VALUE> layout,
-            IndexSamplingConfig samplingConfig, IndexDescriptor descriptor )
+    GenericNativeIndexReader( GBPTree<GenericKey,NativeIndexValue> tree, Layout<GenericKey,NativeIndexValue> layout, IndexSamplingConfig samplingConfig,
+            IndexDescriptor descriptor )
     {
         super( tree, layout, samplingConfig, descriptor );
+    }
+
+    @Override
+    public boolean hasFullValuePrecision( IndexQuery... predicates )
+    {
+        // TODO except spatial tho
+        return true;
     }
 
     @Override
@@ -47,55 +55,50 @@ class NumberIndexReader<VALUE extends NativeIndexValue> extends NativeIndexReade
             throw new UnsupportedOperationException();
         }
 
-        CapabilityValidator.validateQuery( NumberIndexProvider.CAPABILITY, indexOrder, predicates );
+        CapabilityValidator.validateQuery( GenericNativeIndexProvider.CAPABILITY, indexOrder, predicates );
     }
 
     @Override
-    boolean initializeRangeForQuery( NumberIndexKey treeKeyFrom, NumberIndexKey treeKeyTo, IndexQuery[] predicates )
+    boolean initializeRangeForQuery( GenericKey treeKeyFrom, GenericKey treeKeyTo, IndexQuery[] predicates )
     {
         IndexQuery predicate = predicates[0];
         switch ( predicate.type() )
         {
         case exists:
-            treeKeyFrom.initAsLowest( ValueGroup.NUMBER );
-            treeKeyTo.initAsHighest( ValueGroup.NUMBER );
-            break;
+            treeKeyFrom.initAsLowest( ValueGroup.UNKNOWN );
+            treeKeyTo.initAsHighest( ValueGroup.UNKNOWN );
+            return false;
         case exact:
             ExactPredicate exactPredicate = (ExactPredicate) predicate;
             treeKeyFrom.from( Long.MIN_VALUE, exactPredicate.value() );
             treeKeyTo.from( Long.MAX_VALUE, exactPredicate.value() );
-            break;
+            return false;
         case range:
-            RangePredicate<?> rangePredicate = (RangePredicate<?>) predicate;
+            RangePredicate<?> rangePredicate = (RangePredicate<?>)predicate;
             initFromForRange( rangePredicate, treeKeyFrom );
             initToForRange( rangePredicate, treeKeyTo );
-            break;
+            return false;
+        case stringPrefix:
+            StringPrefixPredicate prefixPredicate = (StringPrefixPredicate) predicate;
+            treeKeyFrom.initAsPrefixLow( prefixPredicate.prefix() );
+            treeKeyTo.initAsPrefixHigh( prefixPredicate.prefix() );
+            return false;
+        case stringSuffix:
+        case stringContains:
+            treeKeyFrom.initAsLowest( ValueGroup.TEXT );
+            treeKeyTo.initAsHighest( ValueGroup.TEXT );
+            return true;
         default:
             throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
         }
-        return false;
     }
 
-    private void initToForRange( RangePredicate<?> rangePredicate, NumberIndexKey treeKeyTo )
-    {
-        Value toValue = rangePredicate.toValue();
-        if ( toValue == Values.NO_VALUE )
-        {
-            treeKeyTo.initAsHighest( ValueGroup.NUMBER );
-        }
-        else
-        {
-            treeKeyTo.from( rangePredicate.toInclusive() ? Long.MAX_VALUE : Long.MIN_VALUE, toValue );
-            treeKeyTo.setCompareId( true );
-        }
-    }
-
-    private void initFromForRange( RangePredicate<?> rangePredicate, NumberIndexKey treeKeyFrom )
+    private void initFromForRange( RangePredicate<?> rangePredicate, GenericKey treeKeyFrom )
     {
         Value fromValue = rangePredicate.fromValue();
         if ( fromValue == Values.NO_VALUE )
         {
-            treeKeyFrom.initAsLowest( ValueGroup.NUMBER );
+            treeKeyFrom.initAsLowest( ValueGroup.UNKNOWN );
         }
         else
         {
@@ -104,9 +107,17 @@ class NumberIndexReader<VALUE extends NativeIndexValue> extends NativeIndexReade
         }
     }
 
-    @Override
-    public boolean hasFullValuePrecision( IndexQuery... predicates )
+    private void initToForRange( RangePredicate<?> rangePredicate, GenericKey treeKeyTo )
     {
-        return true;
+        Value toValue = rangePredicate.toValue();
+        if ( toValue == Values.NO_VALUE )
+        {
+            treeKeyTo.initAsHighest( ValueGroup.UNKNOWN );
+        }
+        else
+        {
+            treeKeyTo.from( rangePredicate.toInclusive() ? Long.MAX_VALUE : Long.MIN_VALUE, toValue );
+            treeKeyTo.setCompareId( true );
+        }
     }
 }

@@ -39,8 +39,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.fusion.BridgingIndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.Value;
-
-import static java.lang.String.format;
+import org.neo4j.values.storable.ValueGroup;
 
 public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends NativeIndexReader<SpatialIndexKey,VALUE>
 {
@@ -112,8 +111,8 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
     {
         SpatialIndexKey treeKeyFrom = layout.newKey();
         SpatialIndexKey treeKeyTo = layout.newKey();
-        treeKeyFrom.initAsLowest();
-        treeKeyTo.initAsHighest();
+        treeKeyFrom.initAsLowest( ValueGroup.GEOMETRY );
+        treeKeyTo.initAsHighest( ValueGroup.GEOMETRY );
         startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, predicates, false );
     }
 

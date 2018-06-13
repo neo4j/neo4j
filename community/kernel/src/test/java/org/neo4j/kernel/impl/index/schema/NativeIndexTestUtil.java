@@ -38,12 +38,13 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.values.storable.ValueGroup;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
@@ -133,9 +134,9 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
     private RawCursor<Hit<KEY,VALUE>, IOException> scan( GBPTree<KEY,VALUE> tree ) throws IOException
     {
         KEY lowest = layout.newKey();
-        lowest.initAsLowest();
+        lowest.initAsLowest( ValueGroup.UNKNOWN );
         KEY highest = layout.newKey();
-        highest.initAsHighest();
+        highest.initAsHighest( ValueGroup.UNKNOWN );
         return tree.seek( lowest, highest );
     }
 

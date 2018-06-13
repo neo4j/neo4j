@@ -104,18 +104,18 @@ abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends Tempora
 
     abstract Value asValue();
 
-    final void initAsLowest()
+    final void initAsLowest( ValueGroup valueGroup )
     {
         initialize( Long.MIN_VALUE );
-        initValueAsLowest();
+        initValueAsLowest( valueGroup );
     }
 
     abstract void initValueAsLowest( ValueGroup valueGroup );
 
-    final void initAsHighest()
+    final void initAsHighest( ValueGroup valueGroup )
     {
         initialize( Long.MAX_VALUE );
-        initValueAsHighest();
+        initValueAsHighest( valueGroup );
     }
 
     abstract void initValueAsHighest( ValueGroup valueGroup );

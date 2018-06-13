@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.values.storable.ValueGroup;
 
 /**
  * {@link NonUniqueIndexSampler} which performs a full scans of a {@link GBPTree} in {@link #result()}.
@@ -56,9 +57,9 @@ class FullScanNonUniqueIndexSampler<KEY extends NativeIndexKey<KEY>, VALUE exten
     public IndexSample result()
     {
         KEY lowest = layout.newKey();
-        lowest.initAsLowest();
+        lowest.initAsLowest( ValueGroup.UNKNOWN );
         KEY highest = layout.newKey();
-        highest.initAsHighest();
+        highest.initAsHighest( ValueGroup.UNKNOWN );
         try ( RawCursor<Hit<KEY,VALUE>,IOException> seek = gbpTree.seek( lowest, highest ) )
         {
             NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );

@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 class TemporalIndexPartReader<KEY extends NativeIndexKey<KEY>> extends NativeIndexReader<KEY,NativeIndexValue>
@@ -56,8 +57,8 @@ class TemporalIndexPartReader<KEY extends NativeIndexKey<KEY>> extends NativeInd
         switch ( predicate.type() )
         {
         case exists:
-            treeKeyFrom.initAsLowest();
-            treeKeyTo.initAsHighest();
+            treeKeyFrom.initAsLowest( ValueGroup.UNKNOWN );
+            treeKeyTo.initAsHighest( ValueGroup.UNKNOWN );
             break;
 
         case exact:
@@ -83,7 +84,7 @@ class TemporalIndexPartReader<KEY extends NativeIndexKey<KEY>> extends NativeInd
         Value fromValue = rangePredicate.fromValue();
         if ( fromValue == Values.NO_VALUE )
         {
-            treeKeyFrom.initAsLowest();
+            treeKeyFrom.initAsLowest( ValueGroup.UNKNOWN );
         }
         else
         {
@@ -97,7 +98,7 @@ class TemporalIndexPartReader<KEY extends NativeIndexKey<KEY>> extends NativeInd
         Value toValue = rangePredicate.toValue();
         if ( toValue == Values.NO_VALUE )
         {
-            treeKeyTo.initAsHighest();
+            treeKeyTo.initAsHighest( ValueGroup.UNKNOWN );
         }
         else
         {

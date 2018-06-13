@@ -4,6 +4,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 
 import org.neo4j.kernel.impl.index.schema.GenericLayout.Type;
+import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
@@ -46,6 +47,17 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     long long2;
     long long3;
     byte[] byteArray;
+
+    @Override
+    void initialize( long entityId )
+    {
+        super.initialize( entityId );
+        type = null;
+        long0 = 0;
+        long1 = 0;
+        long2 = 0;
+        long3 = 0;
+    }
 
     @Override
     protected Value assertCorrectType( Value value )
@@ -153,6 +165,137 @@ public class GenericKey extends NativeIndexKey<GenericKey>
             byteArray = new byte[length + length / 2];
         }
         long0 = length;
+    }
+
+    void initAsPrefixLow( String prefix )
+    {
+        initialize( Long.MIN_VALUE );
+        writeString( prefix );
+        long2 = FALSE;
+        // Don't set ignoreLength = true here since the "low" a.k.a. left side of the range should care about length.
+        // This will make the prefix lower than those that matches the prefix (their length is >= that of the prefix)
+    }
+
+    @Override
+    protected void writeDate( long epochDay ) throws RuntimeException
+    {
+        long0 = epochDay;
+    }
+
+    @Override
+    protected void writeLocalTime( long nanoOfDay ) throws RuntimeException
+    {
+        long0 = nanoOfDay;
+    }
+
+    @Override
+    protected void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws RuntimeException
+    {
+        long0 = nanosOfDayUTC;
+        long1 = offsetSeconds;
+    }
+
+    @Override
+    protected void writeLocalDateTime( long epochSecond, int nano ) throws RuntimeException
+    {
+        long0 = nano;
+        long1 = epochSecond;
+    }
+
+    @Override
+    protected void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws RuntimeException
+    {
+        long0 = epochSecondUTC;
+        long1 = nano;
+        long2 = -1;
+        long3 = offsetSeconds;
+    }
+
+    @Override
+    protected void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws RuntimeException
+    {
+        long0 = epochSecondUTC;
+        long1 = nano;
+        long2 = TimeZones.map( zoneId );
+        long3 = 0;
+    }
+
+    @Override
+    public void writeBoolean( boolean value ) throws RuntimeException
+    {
+        long0 = value ? TRUE : FALSE;
+    }
+
+    @Override
+    public void writeInteger( byte value )
+    {
+        long0 = value;
+        long1 = RawBits.BYTE;
+    }
+
+    @Override
+    public void writeInteger( short value )
+    {
+        long0 = value;
+        long1 = RawBits.SHORT;
+    }
+
+    @Override
+    public void writeInteger( int value )
+    {
+        long0 = value;
+        long1 = RawBits.INT;
+    }
+
+    @Override
+    public void writeInteger( long value )
+    {
+        long0 = value;
+        long1 = RawBits.LONG;
+    }
+
+    @Override
+    public void writeFloatingPoint( float value )
+    {
+        long0 = Float.floatToIntBits( value );
+        long1 = RawBits.FLOAT;
+    }
+
+    @Override
+    public void writeFloatingPoint( double value )
+    {
+        long0 = Double.doubleToLongBits( value );
+        long1 = RawBits.DOUBLE;
+    }
+
+    @Override
+    public void writeString( String value ) throws RuntimeException
+    {
+        byteArray = UTF8.encode( value );
+        long0 = byteArray.length;
+        long1 = FALSE;
+    }
+
+    @Override
+    public void writeString( char value ) throws RuntimeException
+    {
+        writeString( String.valueOf( value ) );
+    }
+
+    @Override
+    public void writeDuration( long months, long days, long seconds, int nanos )
+    {
+        long0 = months * AVG_MONTH_SECONDS + days * AVG_DAY_SECONDS + seconds;
+        long1 = nanos;
+        long2 = months;
+        long3 = days;
+    }
+
+    void initAsPrefixHigh( String prefix )
+    {
+        initialize( Long.MAX_VALUE );
+        writeString( prefix );
+        long2 = TRUE;
     }
 
     private NumberValue numberAsValue()

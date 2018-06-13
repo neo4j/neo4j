@@ -28,6 +28,7 @@ import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
@@ -58,8 +59,8 @@ class StringIndexReader extends NativeIndexReader<StringIndexKey,NativeIndexValu
         switch ( predicate.type() )
         {
         case exists:
-            treeKeyFrom.initAsLowest();
-            treeKeyTo.initAsHighest();
+            treeKeyFrom.initAsLowest( ValueGroup.TEXT );
+            treeKeyTo.initAsHighest( ValueGroup.TEXT );
             return false;
         case exact:
             ExactPredicate exactPredicate = (ExactPredicate) predicate;
@@ -78,8 +79,8 @@ class StringIndexReader extends NativeIndexReader<StringIndexKey,NativeIndexValu
             return false;
         case stringSuffix:
         case stringContains:
-            treeKeyFrom.initAsLowest();
-            treeKeyTo.initAsHighest();
+            treeKeyFrom.initAsLowest( ValueGroup.TEXT );
+            treeKeyTo.initAsHighest( ValueGroup.TEXT );
             return true;
         default:
             throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
@@ -91,7 +92,7 @@ class StringIndexReader extends NativeIndexReader<StringIndexKey,NativeIndexValu
         Value fromValue = rangePredicate.fromValue();
         if ( fromValue == Values.NO_VALUE )
         {
-            treeKeyFrom.initAsLowest();
+            treeKeyFrom.initAsLowest( ValueGroup.TEXT );
         }
         else
         {
@@ -105,7 +106,7 @@ class StringIndexReader extends NativeIndexReader<StringIndexKey,NativeIndexValu
         Value toValue = rangePredicate.toValue();
         if ( toValue == Values.NO_VALUE )
         {
-            treeKeyTo.initAsHighest();
+            treeKeyTo.initAsHighest( ValueGroup.TEXT );
         }
         else
         {
