@@ -519,11 +519,14 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       val loadValue = tryCatch[RuntimeException](exceptionName)(assign(returnValue, invokeStatic(ASSERT_PREDICATE, e.ir)))(
         assign(error, load(exceptionName)))
 
-        if (nullable) Seq(loadValue, assign(seenNull,
-                                      ternary(equal(load(returnValue), breakValue), constant(false),
-                                              ternary(load(seenNull),
-                                                      constant(true),
-                                                      equal(load(returnValue), noValue))))) else Seq(loadValue)
+        if (nullable) {
+          Seq(loadValue,
+              assign(seenNull,
+                     //returnValue == breakValue ? false :
+                     ternary(equal(load(returnValue), breakValue), constant(false),
+                             //seenNull ? true : (returnValue == NO_VALUE)
+                             ternary(load(seenNull), constant(true), equal(load(returnValue), noValue)))))
+        } else Seq(loadValue)
       }
 
 
