@@ -27,7 +27,6 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +40,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -48,14 +48,11 @@ import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -64,9 +61,10 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forRelType;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
 
 @RunWith( Parameterized.class )
 public class IndexingServiceIntegrationTest
@@ -123,17 +121,19 @@ public class IndexingServiceIntegrationTest
     }
 
     @Test
-    public void testManualIndexPopulation() throws IOException, IndexNotFoundKernelException, InterruptedException
+    public void testManualIndexPopulation() throws InterruptedException, IndexNotFoundKernelException
     {
+        try ( Transaction tx = database.beginTx() )
+        {
+            database.schema().indexFor( Label.label( FOOD_LABEL ) ).on( PROPERTY_NAME ).create();
+            tx.success();
+        }
+
+        int labelId = getLabelId( FOOD_LABEL );
+        int propertyKeyId = getPropertyKeyId( PROPERTY_NAME );
+
         IndexingService indexingService = getIndexingService( database );
-        SchemaStore schemaStore = getSchemaStore( database );
-
-        int foodId = getLabelId( FOOD_LABEL );
-        int propertyId = getPropertyKeyId( PROPERTY_NAME );
-
-        StoreIndexDescriptor rule = forSchema( forLabel( foodId, propertyId ), indexDescriptor ).withId( schemaStore.nextId() );
-        indexingService.createIndexes( rule );
-        IndexProxy indexProxy = indexingService.getIndexProxy( rule.getId() );
+        IndexProxy indexProxy = indexingService.getIndexProxy( forLabel( labelId, propertyKeyId ) );
 
         waitIndexOnline( indexProxy );
         assertEquals( InternalIndexState.ONLINE, indexProxy.getState() );
@@ -142,17 +142,21 @@ public class IndexingServiceIntegrationTest
     }
 
     @Test
-    public void testManualRelationshipIndexPopulation() throws IOException, IndexNotFoundKernelException, InterruptedException
+    public void testManualRelationshipIndexPopulation() throws Exception
     {
+        RelationTypeSchemaDescriptor descriptor;
+        try ( org.neo4j.internal.kernel.api.Transaction tx =
+                ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency( Kernel.class ).beginTransaction( explicit, AUTH_DISABLED ) )
+        {
+            int foodId = tx.tokenWrite().relationshipTypeGetOrCreateForName( FOOD_LABEL );
+            int propertyId = tx.tokenWrite().propertyKeyGetOrCreateForName( PROPERTY_NAME );
+            descriptor = forRelType( foodId, propertyId );
+            tx.schemaWrite().indexCreate( descriptor );
+            tx.success();
+        }
+
         IndexingService indexingService = getIndexingService( database );
-        SchemaStore schemaStore = getSchemaStore( database );
-
-        int foodId = getRelationshipTypeId( FOOD_LABEL );
-        int propertyId = getPropertyKeyId( PROPERTY_NAME );
-
-        StoreIndexDescriptor rule = forSchema( forRelType( foodId, propertyId ), indexDescriptor ).withId( schemaStore.nextId() );
-        indexingService.createIndexes( rule );
-        IndexProxy indexProxy = indexingService.getIndexProxy( rule.getId() );
+        IndexProxy indexProxy = indexingService.getIndexProxy( descriptor );
 
         waitIndexOnline( indexProxy );
         assertEquals( InternalIndexState.ONLINE, indexProxy.getState() );
@@ -232,13 +236,6 @@ public class IndexingServiceIntegrationTest
         }
     }
 
-    private SchemaStore getSchemaStore( GraphDatabaseService database )
-    {
-        NeoStores neoStores = getDependencyResolver( database )
-                .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
-        return neoStores.getSchemaStore();
-    }
-
     private IndexingService getIndexingService( GraphDatabaseService database )
     {
         return getDependencyResolver(database).resolveDependency( IndexingService.class );
@@ -284,16 +281,6 @@ public class IndexingServiceIntegrationTest
             KernelTransaction transaction = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency(
                     ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
             return transaction.tokenRead().nodeLabel( name );
-        }
-    }
-
-    private int getRelationshipTypeId( String name )
-    {
-        try ( Transaction tx = database.beginTx() )
-        {
-            KernelTransaction transaction = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency(
-                    ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
-            return transaction.tokenRead().relationshipType( name );
         }
     }
 }
