@@ -234,14 +234,14 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
             public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
             {
                 log.error( format( "Exception in inbound for channel: %s", ctx.channel() ), cause );
-                ctx.channel().close();
+                ctx.close();
             }
 
             @Override
             public void channelRead( ChannelHandlerContext ctx, Object msg )
             {
                 log.error( "Unhandled inbound message: %s for channel: %s", msg, ctx.channel() );
-                ctx.channel().close();
+                ctx.close();
             }
 
             // this is the first handler for an outbound message, and attaches a listener to its promise if possible
@@ -257,7 +257,7 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
                         if ( !future.isSuccess() )
                         {
                             log.error( format( "Exception in outbound for channel: %s", future.channel() ), future.cause() );
-                            ctx.channel().close();
+                            ctx.close();
                         }
                     } );
                 }
@@ -282,7 +282,7 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
             public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
             {
                 log.error( format( "Exception in outbound for channel: %s", ctx.channel() ), cause );
-                ctx.channel().close();
+                ctx.close();
             }
 
             // netty can only handle bytes in the form of ByteBuf, so if you reach this then you are
@@ -293,7 +293,7 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
                 if ( !(msg instanceof ByteBuf) )
                 {
                     log.error( "Unhandled outbound message: %s for channel: %s", msg, ctx.channel() );
-                    ctx.channel().close();
+                    ctx.close();
                 }
                 else
                 {
