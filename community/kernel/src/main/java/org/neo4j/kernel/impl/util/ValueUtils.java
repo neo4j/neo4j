@@ -126,7 +126,7 @@ public final class ValueUtils
                 AnyValue[] anyValues = new AnyValue[array.length];
                 for ( int i = 0; i < array.length; i++ )
                 {
-                    anyValues[i] = of( array[i] );
+                    anyValues[i] = ValueUtils.of( array[i] );
                 }
                 return VirtualValues.list( anyValues );
             }
@@ -181,7 +181,7 @@ public final class ValueUtils
         ArrayList<AnyValue> values = new ArrayList<>( collection.size() );
         for ( Object o : collection )
         {
-            values.add( of( o ) );
+            values.add( ValueUtils.of( o ) );
         }
         return VirtualValues.fromList( values );
     }
@@ -191,7 +191,7 @@ public final class ValueUtils
         ArrayList<AnyValue> values = new ArrayList<>();
         for ( Object o : collection )
         {
-            values.add( of( o ) );
+            values.add( ValueUtils.of( o ) );
         }
         return VirtualValues.fromList( values );
     }
@@ -234,8 +234,26 @@ public final class ValueUtils
         MapValueBuilder builder = new MapValueBuilder( map.size() );
         for ( Map.Entry<String,Object> entry : map.entrySet() )
         {
-            builder.add( entry.getKey(), of( entry.getValue() ) );
+            builder.add( entry.getKey(), ValueUtils.of( entry.getValue() ) );
         }
+        return builder.build();
+    }
+
+    public static MapValue asParameterMapValue( Map<String,Object> map )
+    {
+        MapValueBuilder builder = new MapValueBuilder( map.size() );
+        for ( Map.Entry<String,Object> entry : map.entrySet() )
+        {
+            try
+            {
+                builder.add( entry.getKey(), ValueUtils.of( entry.getValue() ) );
+            }
+            catch ( IllegalArgumentException e )
+            {
+                builder.add( entry.getKey(), VirtualValues.error( e ) );
+            }
+        }
+
         return builder.build();
     }
 
@@ -281,7 +299,7 @@ public final class ValueUtils
         {
             return (AnyValue) value;
         }
-        return of( value );
+        return ValueUtils.of( value );
     }
 
     public static NodeValue asNodeValue( Object object )

@@ -409,7 +409,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         InternalTransaction transaction =
                 beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
 
-        return execute( transaction, query, ValueUtils.asMapValue( parameters ) );
+        return execute( transaction, query, ValueUtils.asParameterMapValue( parameters ) );
     }
 
     @Override
@@ -418,7 +418,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     {
         InternalTransaction transaction =
                 beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, timeout, unit );
-        return execute( transaction, query, ValueUtils.asMapValue( parameters ) );
+        return execute( transaction, query, ValueUtils.asParameterMapValue( parameters ) );
     }
 
     public Result execute( InternalTransaction transaction, String query, MapValue parameters )

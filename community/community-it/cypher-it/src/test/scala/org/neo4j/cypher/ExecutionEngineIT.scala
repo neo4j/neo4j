@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.v3_5.spi.CostBasedPlannerName
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.graphdb.{ExecutionPlanDescription, GraphDatabaseService}
+import org.neo4j.graphdb.{ExecutionPlanDescription, GraphDatabaseService, QueryExecutionException, Result}
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
@@ -192,6 +192,37 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     db.execute("EXPLAIN    MERGE (a:A) ON MATCH SET a.prop = 42 RETURN *").close()
   }
 
+  test("should crash of erroneous parameters values if they are used") {
+    // given
+    db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+
+    // when
+    val params = new java.util.HashMap[String, AnyRef]()
+    params.put("erroneous", ErroneousParameterValue())
+
+    val result = db.execute("RETURN $erroneous AS x", params)
+
+    // then
+    intercept[QueryExecutionException] {
+      result.columnAs[Int]("x").next()
+    }
+  }
+
+  test("should ignore erroneous parameters values if they are not used") {
+    // given
+    db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+
+    // when
+    val params = new java.util.HashMap[String, AnyRef]()
+    params.put("valid", Integer.valueOf(42))
+    params.put("erroneous", ErroneousParameterValue())
+
+    val result = db.execute("RETURN $valid AS x", params)
+
+    // then
+    result.columnAs[Int]("x").next() should equal(42)
+  }
+
   private implicit class RichDb(db: GraphDatabaseCypherService) {
     def planDescriptionForQuery(query: String): ExecutionPlanDescription = {
       val res = db.execute(query)
@@ -199,4 +230,6 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
       res.getExecutionPlanDescription
     }
   }
+
+  private case class ErroneousParameterValue()
 }
