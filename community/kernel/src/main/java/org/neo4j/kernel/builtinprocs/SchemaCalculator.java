@@ -38,6 +38,7 @@ import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -53,11 +54,13 @@ public class SchemaCalculator
 
     private Map<LabelSet,Set<Integer>> labelSetToPropertyKeysMapping;
     // TODO: make those different Set<whatever> etc. into more useful/understandable classes?!
-    private Map<Pair<LabelSet,Integer>,Object> labelSetAndNodePropertyKeyIdToValueTypeMapping;
-            // Dislike object here... see deriveValueType() for Info about ValueType
+    private Map<Pair<LabelSet,Integer>,Object> labelSetANDNodePropertyKeyIdToValueTypeMapping;
+    // Dislike object here... see deriveValueType() for Info about ValueType
     private Map<Integer,String> labelIdToLabelNameMapping;
     private Map<Integer,String> propertyIdToPropertylNameMapping;
     private Map<Integer,String> relationshipTypIdToRelationshipNameMapping;
+    private Map<Integer,Set<Integer>> relationshipTypeIdToPropertyKeysMapping;
+    private Map<Pair<Integer,Integer>,Object> relationshipTypeIdANDPropertyTypeIdToValueTypeMapping;
 
     private final Set<Integer> emptyPropertyIdSet = Collections.unmodifiableSet( Collections.emptySet() );
     private final String ANYVALUE = "ANYVALUE";
@@ -70,14 +73,50 @@ public class SchemaCalculator
     {
         this.db = db;
         this.ktx = ktx;
-        labelSetAndNodePropertyKeyIdToValueTypeMapping = new HashMap<>(); //HashBasedTable.create();
     }
 
     public Stream<BuiltInSchemaProcedures.SchemaInfoResult> calculateTabularResultStream()
     {
         calculateSchema();
 
-        // Build up a stream of SchemaInfoResult objects from calculated mappings
+        List<BuiltInSchemaProcedures.SchemaInfoResult> results = new ArrayList<>();
+        results.addAll( produceResultsForNodes() );
+        results.addAll( produceResultsForRelationships() );
+
+        return results.stream();
+    }
+
+    private List<BuiltInSchemaProcedures.SchemaInfoResult> produceResultsForRelationships()
+    {
+        List<BuiltInSchemaProcedures.SchemaInfoResult> results = new ArrayList<>();
+        for ( Integer typeId : relationshipTypeIdToPropertyKeysMapping.keySet() )
+        {
+            // lookup typ name
+            String name = relationshipTypIdToRelationshipNameMapping.get( typeId );
+
+            // lookup property value types
+            Set<Integer> propertyIds = relationshipTypeIdToPropertyKeysMapping.get( typeId );
+            if ( propertyIds.size() == 0 )
+            {
+                results.add( new BuiltInSchemaProcedures.SchemaInfoResult( RELATIONSHIP, Collections.singletonList( name ), null, null ) );
+            }
+            else
+            {
+                for ( Integer propId : propertyIds )
+                {
+                    // lookup propId name and valueGroup
+                    String propName = propertyIdToPropertylNameMapping.get( propId );
+                    Object valueType = relationshipTypeIdANDPropertyTypeIdToValueTypeMapping.get( Pair.of( typeId, propId ) );
+                    String cypherType = getCypherTypeString( valueType );
+                    results.add( new BuiltInSchemaProcedures.SchemaInfoResult( RELATIONSHIP, Collections.singletonList( name ), propName, cypherType ) );
+                }
+            }
+        }
+        return results;
+    }
+
+    private List<BuiltInSchemaProcedures.SchemaInfoResult> produceResultsForNodes()
+    {
         List<BuiltInSchemaProcedures.SchemaInfoResult> results = new ArrayList<>();
         for ( LabelSet labelSet : labelSetToPropertyKeysMapping.keySet() )
         {
@@ -101,15 +140,13 @@ public class SchemaCalculator
                 {
                     // lookup propId name and valueGroup
                     String propName = propertyIdToPropertylNameMapping.get( propId );
-                    Object valueType = labelSetAndNodePropertyKeyIdToValueTypeMapping.get( Pair.of( labelSet, propId ) );
+                    Object valueType = labelSetANDNodePropertyKeyIdToValueTypeMapping.get( Pair.of( labelSet, propId ) );
                     String cypherType = getCypherTypeString( valueType );
                     results.add( new BuiltInSchemaProcedures.SchemaInfoResult( NODE, labelNames, propName, cypherType ) );
                 }
             }
         }
-
-        //TODO: Relationships
-        return results.stream();
+        return results;
     }
 
     public Stream<SchemaProcedure.GraphResult> calculateGraphResultStream()
@@ -131,55 +168,91 @@ public class SchemaCalculator
 
             // setup mappings
             int labelCount = tokenRead.labelCount();
+            int relationshipTypeCount = tokenRead.relationshipTypeCount();
             labelSetToPropertyKeysMapping = new HashMap<>( labelCount );
             labelIdToLabelNameMapping = new HashMap<>( labelCount );
             propertyIdToPropertylNameMapping = new HashMap<>( tokenRead.propertyKeyCount() );
-            relationshipTypIdToRelationshipNameMapping = new HashMap<>( tokenRead.relationshipTypeCount() );
+            relationshipTypIdToRelationshipNameMapping = new HashMap<>( relationshipTypeCount );
+            relationshipTypeIdToPropertyKeysMapping = new HashMap<>( relationshipTypeCount );
+            labelSetANDNodePropertyKeyIdToValueTypeMapping = new HashMap<>();
+            relationshipTypeIdANDPropertyTypeIdToValueTypeMapping = new HashMap<>();
 
-            // NODES
-            NodeCursor nodeCursor = cursors.allocateNodeCursor();
-            dataRead.allNodesScan( nodeCursor );
-            while ( nodeCursor.next() )
-            {
-                // each node
-                LabelSet labels = nodeCursor.labels();
-                PropertyCursor propertyCursor = cursors.allocatePropertyCursor();
-                nodeCursor.properties( propertyCursor );
-                Set<Integer> propertyIds = new HashSet<>();  // is Set really the best fit here?
-
-                while ( propertyCursor.next() )
-                {
-                    // each property
-                    Value currentValue = propertyCursor.propertyValue();
-                    int propertyKeyId = propertyCursor.propertyKey();
-
-                    Pair<LabelSet,Integer> key = Pair.of( labels, propertyKeyId );
-                    Object typeExampleValue = labelSetAndNodePropertyKeyIdToValueTypeMapping.get( key );
-                    typeExampleValue = deriveValueType( currentValue, typeExampleValue );
-
-                    labelSetAndNodePropertyKeyIdToValueTypeMapping.put( key, typeExampleValue );
-                    propertyIds.add( propertyKeyId );
-                }
-
-                Set<Integer> oldPropertyKeySet = labelSetToPropertyKeysMapping.getOrDefault( labels, emptyPropertyIdSet );
-                propertyIds.addAll( oldPropertyKeySet );
-                labelSetToPropertyKeysMapping.put( labels, propertyIds );
-            }
-
-            // RELS
-            //TODO: implement this for rels
+            scanEverythingBelongingToNodes( dataRead, cursors );
+            scanEverythingBelongingToRelationships( dataRead, cursors );
 
             // OTHER:
-
             // go through all labels
             addNamesToCollection( tokenRead.labelsGetAllTokens(), labelIdToLabelNameMapping );
-
             // go through all propertyKeys
             addNamesToCollection( tokenRead.propertyKeyGetAllTokens(), propertyIdToPropertylNameMapping );
-
             // go through all relationshipTypes
             addNamesToCollection( tokenRead.relationshipTypesGetAllTokens(), relationshipTypIdToRelationshipNameMapping );
         }
+    }
+
+    private void scanEverythingBelongingToRelationships( Read dataRead, CursorFactory cursors )
+    {
+        RelationshipScanCursor relationshipScanCursor = cursors.allocateRelationshipScanCursor();
+        PropertyCursor propertyCursor = cursors.allocatePropertyCursor();
+        dataRead.allRelationshipsScan( relationshipScanCursor );
+        while ( relationshipScanCursor.next() )
+        {
+            int typeId = relationshipScanCursor.type();
+            relationshipScanCursor.properties( propertyCursor );
+            Set<Integer> propertyIds = new HashSet<>();  // is Set really the best fit here?
+
+            while ( propertyCursor.next() )
+            {
+                int propertyKey = propertyCursor.propertyKey();
+                Value currentValue = propertyCursor.propertyValue();
+
+                Pair<Integer,Integer> key = Pair.of( typeId, propertyKey );
+                Object typeExampleValue = relationshipTypeIdANDPropertyTypeIdToValueTypeMapping.get( key );
+                typeExampleValue = deriveValueType( currentValue, typeExampleValue );
+                relationshipTypeIdANDPropertyTypeIdToValueTypeMapping.put( key, typeExampleValue );
+                propertyIds.add( propertyKey );
+            }
+            propertyCursor.close();
+
+            Set<Integer> oldPropertyKeySet = relationshipTypeIdToPropertyKeysMapping.getOrDefault( typeId, emptyPropertyIdSet );
+            propertyIds.addAll( oldPropertyKeySet );
+            relationshipTypeIdToPropertyKeysMapping.put( typeId, propertyIds );
+        }
+        relationshipScanCursor.close();
+    }
+
+    private void scanEverythingBelongingToNodes( Read dataRead, CursorFactory cursors )
+    {
+        NodeCursor nodeCursor = cursors.allocateNodeCursor();
+        PropertyCursor propertyCursor = cursors.allocatePropertyCursor();
+        dataRead.allNodesScan( nodeCursor );
+        while ( nodeCursor.next() )
+        {
+            // each node
+            LabelSet labels = nodeCursor.labels();
+            nodeCursor.properties( propertyCursor );
+            Set<Integer> propertyIds = new HashSet<>();  // is Set really the best fit here?
+
+            while ( propertyCursor.next() )
+            {
+                // each property
+                Value currentValue = propertyCursor.propertyValue();
+                int propertyKeyId = propertyCursor.propertyKey();
+
+                Pair<LabelSet,Integer> key = Pair.of( labels, propertyKeyId );
+                Object typeExampleValue = labelSetANDNodePropertyKeyIdToValueTypeMapping.get( key );
+                typeExampleValue = deriveValueType( currentValue, typeExampleValue );
+
+                labelSetANDNodePropertyKeyIdToValueTypeMapping.put( key, typeExampleValue );
+                propertyIds.add( propertyKeyId );
+            }
+            propertyCursor.close();
+
+            Set<Integer> oldPropertyKeySet = labelSetToPropertyKeysMapping.getOrDefault( labels, emptyPropertyIdSet );
+            propertyIds.addAll( oldPropertyKeySet );
+            labelSetToPropertyKeysMapping.put( labels, propertyIds );
+        }
+        nodeCursor.close();
     }
 
     private void addNamesToCollection( Iterator<NamedToken> labelIterator, Map<Integer,String> collection )

@@ -156,6 +156,46 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
         //printStream( stream );
     }
 
+    @Test
+    public void testSchemaTableWithRelationships() throws Throwable
+    {
+        // Given
+
+        // Node1: ()
+        // Rel1: (Node1)-[:R{prop1:"Test", prop2:12}]->(Node1)
+        // Rel2: (Node1)-[:X{prop1:true}]->(Node1)
+        // Rel3: (Node1)-[:Z{}]->(Node1)
+
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        long nodeId1 = transaction.dataWrite().nodeCreate();
+        int typeR = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+        int typeX = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "X" );
+        int typeZ = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "Z" );
+        long relId1 = transaction.dataWrite().relationshipCreate( nodeId1,typeR,nodeId1 );
+        long relId2 = transaction.dataWrite().relationshipCreate( nodeId1,typeX,nodeId1 );
+        transaction.dataWrite().relationshipCreate( nodeId1,typeZ,nodeId1 );  // Rel3
+        int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
+        int prop2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop2" );
+        transaction.dataWrite().relationshipSetProperty( relId1, prop1, Values.stringValue("Test") );
+        transaction.dataWrite().relationshipSetProperty( relId1, prop2, Values.intValue(12) );
+        transaction.dataWrite().relationshipSetProperty( relId2, prop1, Values.booleanValue( true ) );
+        commit();
+
+        // When
+        RawIterator<Object[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "schemaAsTable" ) ).id(), new Object[0] );
+
+        // Then
+        assertThat( asList( stream ), containsInAnyOrder( equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop1", "STRING"} ),
+                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop2", "INTEGER"} ),
+                equalTo( new Object[]{"Relationship", Arrays.asList( "X" ), "prop1", "BOOLEAN"} ),
+                equalTo( new Object[]{"Relationship", Arrays.asList( "Z" ), null, null} ),
+                equalTo( new Object[]{"Node", Arrays.asList(), null, null} ) ) );
+
+        // Just for printing out the result if needed
+//        printStream( stream );
+    }
+
     private void printStream( RawIterator<Object[],ProcedureException> stream ) throws Throwable
     {
         Iterator<Object[]> iterator = asList( stream ).iterator();
