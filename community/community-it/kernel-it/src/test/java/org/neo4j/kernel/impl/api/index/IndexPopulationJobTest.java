@@ -413,7 +413,8 @@ public class IndexPopulationJobTest
 
         // Then
         LogMatcherBuilder match = inLog( IndexPopulationJob.class );
-        logProvider.assertExactly( match.info( "Index population started: [%s]", "Index( GENERAL, :label[0](property[0]) )" ),
+        logProvider.assertExactly(
+                match.info( "Index population started: [%s]", ":FIRST(name)" ),
                 match.info( "Index creation finished. Index [%s] is %s.", ":FIRST(name)", "ONLINE" )
         );
     }
@@ -436,7 +437,7 @@ public class IndexPopulationJobTest
         LogMatcherBuilder match = inLog( IndexPopulationJob.class );
         logProvider.assertExactly(
                 match.info( "Index population started: [%s]", ":FIRST(name)" ),
-                match.info( "Index created. Starting data checks. Index [%s] is %s.", "Index( UNIQUE, :label[0](property[0]) )", "POPULATING" )
+                match.info( "Index created. Starting data checks. Index [%s] is %s.", ":FIRST(name)", "POPULATING" )
         );
     }
 
@@ -458,7 +459,8 @@ public class IndexPopulationJobTest
 
         // Then
         LogMatcherBuilder match = inLog( IndexPopulationJob.class );
-        logProvider.assertAtLeastOnce( match.error( is( "Failed to populate index: [Index( GENERAL, :label[0](property[0]) )]" ), sameInstance( failure ) )
+        logProvider.assertAtLeastOnce(
+                match.error( is( "Failed to populate index: [:FIRST(name)]" ), sameInstance( failure ) )
         );
     }
 
