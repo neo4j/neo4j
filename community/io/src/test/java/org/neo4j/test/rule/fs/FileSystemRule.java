@@ -35,6 +35,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import org.neo4j.io.fs.AccessPolicy;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
@@ -117,6 +118,12 @@ public abstract class FileSystemRule<FS extends FileSystemAbstraction> extends E
     public StoreChannel create( File fileName ) throws IOException
     {
         return fs.create( fileName );
+    }
+
+    @Override
+    public void setAccessPolicy( File fileName, AccessPolicy policy ) throws IOException
+    {
+        fs.setAccessPolicy( fileName, policy );
     }
 
     @Override

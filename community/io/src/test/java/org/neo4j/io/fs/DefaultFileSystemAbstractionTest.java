@@ -20,6 +20,9 @@
 package org.neo4j.io.fs;
 
 import org.junit.jupiter.api.Test;
+import org.apache.commons.lang3.SystemUtils;
+import org.junit.Rule;
+import org.junit.rules.ExpectedException;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,6 +33,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.neo4j.io.fs.DefaultFileSystemAbstraction.UNABLE_TO_CREATE_DIRECTORY_FORMAT;
 
 public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
@@ -39,6 +44,9 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
     {
         return new DefaultFileSystemAbstraction();
     }
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @Test
     void shouldFailGracefullyWhenPathCannotBeCreated()

@@ -38,7 +38,6 @@ import org.neo4j.io.fs.watcher.FileWatcher;
 
 public interface FileSystemAbstraction extends Closeable
 {
-
     /**
      * Create file watcher that provides possibilities to monitor directories on underlying file system
      * abstraction
@@ -59,6 +58,11 @@ public interface FileSystemAbstraction extends Closeable
     Writer openAsWriter( File fileName, Charset charset, boolean append ) throws IOException;
 
     StoreChannel create( File fileName ) throws IOException;
+
+    /**
+     * File access controls. See {@link AccessPolicy}.
+     */
+    void setAccessPolicy( File fileName, AccessPolicy policy ) throws IOException;
 
     boolean fileExists( File fileName );
 

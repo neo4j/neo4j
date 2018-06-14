@@ -68,6 +68,7 @@ import java.util.zip.ZipOutputStream;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileHandle;
+import org.neo4j.io.fs.AccessPolicy;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
@@ -315,6 +316,13 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     {
         EphemeralFileData file = files.get( canonicalFile( fileName ) );
         return file == null ? 0 : file.size();
+    }
+
+    @Override
+    public void setAccessPolicy( File fileName, AccessPolicy policy )
+    {
+        // Only in-process code can access this, so files by default are as protected as any
+        // policy would make them.
     }
 
     @Override

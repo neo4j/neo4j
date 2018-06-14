@@ -32,6 +32,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.fs.AccessPolicy;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
@@ -105,6 +106,12 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
     public boolean fileExists( File fileName )
     {
         return chooseFileSystem( fileName ).fileExists( fileName );
+    }
+
+    @Override
+    public void setAccessPolicy( File fileName, AccessPolicy policy ) throws IOException
+    {
+        chooseFileSystem( fileName ).setAccessPolicy( fileName, policy );
     }
 
     @Override

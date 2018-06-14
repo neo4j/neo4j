@@ -31,6 +31,7 @@ import java.nio.file.CopyOption;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.neo4j.io.fs.AccessPolicy;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
@@ -88,6 +89,12 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
             Function<Class<K>,K> creator )
     {
         return delegate.getOrCreateThirdPartyFileSystem( clazz, creator );
+    }
+
+    @Override
+    public void setAccessPolicy( File fileName, AccessPolicy policy ) throws IOException
+    {
+        delegate.setAccessPolicy( fileName, policy );
     }
 
     @Override

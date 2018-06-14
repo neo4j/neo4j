@@ -131,6 +131,30 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
+    public void setAccessPolicy( File fileName, AccessPolicy policy ) throws IOException
+    {
+        switch ( policy )
+        {
+        case CRITICAL:
+            if ( !( // Make unreadable for everyone
+                    fileName.setReadable( false, false ) &&
+                    // .. except us
+                    fileName.setReadable( true, true ) &&
+                    // Make unwritable for everyone
+                    fileName.setWritable( false, false ) &&
+                    // .. except us
+                    fileName.setWritable( true, true )) )
+            {
+                throw new IOException(
+                        String.format( "Failed to set permissions on '%s'", fileName.getAbsolutePath() ) );
+            }
+            break;
+        default:
+            throw new IOException( String.format( "Unknown file policy: %s", policy ) );
+        }
+    }
+
+    @Override
     public long getFileSize( File fileName )
     {
         return fileName.length();

@@ -40,6 +40,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.watcher.AdversarialFileWatcher;
+import org.neo4j.io.fs.AccessPolicy;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -206,6 +207,13 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     {
         adversary.injectFailure( SecurityException.class );
         return delegate.fileExists( fileName );
+    }
+
+    @Override
+    public void setAccessPolicy( File fileName, AccessPolicy policy ) throws IOException
+    {
+        adversary.injectFailure( SecurityException.class, IOException.class );
+        delegate.setAccessPolicy( fileName, policy );
     }
 
     @Override

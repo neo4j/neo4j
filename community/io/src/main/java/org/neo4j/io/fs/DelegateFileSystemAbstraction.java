@@ -116,6 +116,12 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
+    public void setAccessPolicy( File fileName, AccessPolicy policy ) throws IOException
+    {
+//        Files.setPosixFilePermissions( path( fileName ), Collections. )
+    }
+
+    @Override
     public boolean fileExists( File fileName )
     {
         return Files.exists( path( fileName ) );

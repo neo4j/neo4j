@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
+import org.neo4j.io.fs.AccessPolicy;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.server.security.auth.exception.FormatException;
 import org.neo4j.string.UTF8;
@@ -70,13 +71,15 @@ public abstract class FileRepositorySerializer<S>
         return lines;
     }
 
-    public void saveRecordsToFile( FileSystemAbstraction fileSystem, File recordsFile, Collection<S> records ) throws
-            IOException
+    public void saveRecordsToFile( FileSystemAbstraction fileSystem, File recordsFile, Collection<S> records )
+            throws IOException
     {
         File tempFile = getTempFile( fileSystem, recordsFile );
 
         try
         {
+            fileSystem.create( tempFile ).close();
+            fileSystem.setAccessPolicy( tempFile, AccessPolicy.CRITICAL );
             writeToFile( fileSystem, tempFile, serialize( records ) );
             fileSystem.renameFile( tempFile, recordsFile, ATOMIC_MOVE, REPLACE_EXISTING );
         }
@@ -87,7 +90,7 @@ public abstract class FileRepositorySerializer<S>
         }
     }
 
-    protected File getTempFile( FileSystemAbstraction fileSystem, File recordsFile ) throws IOException
+    private File getTempFile( FileSystemAbstraction fileSystem, File recordsFile ) throws IOException
     {
         File directory = recordsFile.getParentFile();
         if ( !fileSystem.fileExists( directory ) )
