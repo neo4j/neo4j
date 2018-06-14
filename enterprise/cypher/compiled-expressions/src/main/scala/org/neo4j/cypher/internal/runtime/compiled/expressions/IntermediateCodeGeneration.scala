@@ -24,6 +24,7 @@ package org.neo4j.cypher.internal.runtime.compiled.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast._
+import org.neo4j.cypher.internal.compiler.v3_5.helpers.PredicateHelper.isPredicate
 import org.neo4j.cypher.internal.runtime.DbAccess
 import org.neo4j.cypher.internal.runtime.compiled.expressions.IntermediateRepresentation.method
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
@@ -178,66 +179,88 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
     case Or(lhs, rhs) =>
       for {l <- compile(lhs)
            r <- compile(rhs)
-      } yield generateOrs(List(l, r))
+      } yield {
+        val left = if (isPredicate(lhs)) l else coerceToPredicate(l)
+        val right = if (isPredicate(rhs)) r else coerceToPredicate(r)
+        generateOrs(List(left, right))
+      }
 
     case Ors(expressions) =>
-      val compiled = expressions.foldLeft[Option[List[IntermediateExpression]]](Some(List.empty)) { (acc, current) =>
+      val compiled = expressions.foldLeft[Option[List[(IntermediateExpression, Boolean)]]](Some(List.empty)) { (acc, current) =>
         for {l <- acc
-             e <- compile(current)} yield l :+ e
+             e <- compile(current)} yield l :+ (e -> isPredicate(current))
       }
 
       for (e <- compiled) yield e match {
         case Nil => IntermediateExpression(truthValue, nullable = false) //this will not really happen because of rewriters etc
-        case a :: Nil  => a
-        case list => generateOrs(list)
+        case (a, isPredicate) :: Nil  => if (isPredicate) a else coerceToPredicate(a)
+        case list =>
+          val coerced = list.map {
+            case (p, true) => p
+            case (p, false) => coerceToPredicate(p)
+          }
+          generateOrs(coerced)
       }
 
     case Xor(lhs, rhs) =>
       for {l <- compile(lhs)
            r <- compile(rhs)
-      } yield IntermediateExpression(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("xor"), l.ir, r.ir),
-                                     l.nullable | l.nullable)
+      } yield {
+        val left = if (isPredicate(lhs)) l else coerceToPredicate(l)
+        val right = if (isPredicate(rhs)) r else coerceToPredicate(r)
+        IntermediateExpression(
+          noValueCheck(left, right)(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("xor"), left.ir, right.ir)),
+                               left.nullable | right.nullable)
+      }
 
     case And(lhs, rhs) =>
       for {l <- compile(lhs)
            r <- compile(rhs)
-      } yield generateAnds(List(l, r))
+      } yield {
+        val left = if (isPredicate(lhs)) l else coerceToPredicate(l)
+        val right = if (isPredicate(rhs)) r else coerceToPredicate(r)
+        generateAnds(List(left, right))
+      }
 
     case Ands(expressions) =>
-      val compiled = expressions.foldLeft[Option[List[IntermediateExpression]]](Some(List.empty)) { (acc, current) =>
-        for {l <- acc
-             e <- compile(current)} yield l :+ e
+      val compiled = expressions.foldLeft[Option[List[(IntermediateExpression, Boolean)]]](Some(List.empty)) { (acc, current) =>
+          for {l <- acc
+               e <- compile(current)} yield l :+ (e -> isPredicate(current))
         }
 
       for (e <- compiled) yield e match {
         case Nil => IntermediateExpression(truthValue, nullable = false) //this will not really happen because of rewriters etc
-        case a :: Nil  => a
-        case list => generateAnds(list)
+        case (a, isPredicate) :: Nil  => if (isPredicate) a else coerceToPredicate(a)
+        case list =>
+          val coerced = list.map {
+            case (p, true) => p
+            case (p, false) => coerceToPredicate(p)
+          }
+          generateAnds(coerced)
       }
 
     case Not(arg) =>
-      compile(arg).map(a =>
+      compile(arg).map(a => {
+        val in = if (isPredicate(arg)) a else coerceToPredicate(a)
         IntermediateExpression(
-          invokeStatic(method[CypherBoolean, Value, AnyValue]("not"), a.ir), a.nullable))
+          noValueCheck(in)(invokeStatic(method[CypherBoolean, Value, AnyValue]("not"), in.ir)), in.nullable)
+      })
 
     case Equals(lhs, rhs) =>
       for {l <- compile(lhs)
            r <- compile(rhs)
-      } yield IntermediateExpression(
-                invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("equals"), l.ir, r.ir), l.nullable | r.nullable)
+      } yield IntermediateExpression(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("equals"), l.ir, r.ir),
+                l.nullable | r.nullable)
 
 
     case NotEquals(lhs, rhs) =>
       for {l <- compile(lhs)
            r <- compile(rhs)
-      } yield IntermediateExpression(
-        invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("notEquals"), l.ir, r.ir), l.nullable | r.nullable)
+      } yield IntermediateExpression(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("notEquals"), l.ir, r.ir),
+        l.nullable | r.nullable)
 
-    case CoerceToPredicate(inner) =>
-      compile(inner).map(e =>
-                           IntermediateExpression(
-                             invokeStatic(method[CypherBoolean, BooleanValue, AnyValue]("coerceToBoolean"), e.ir),
-                             nullable = false))
+    case CoerceToPredicate(inner) => compile(inner).map(coerceToPredicate)
+
     //data access
     case Parameter(name, _) => //TODO parameters that are autogenerated from literals should have nullable = false
       Some(IntermediateExpression(invoke(load("params"), method[MapValue, AnyValue, String]("get"),
@@ -374,6 +397,10 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
     counter += 1
     nextName
   }
+
+  private def coerceToPredicate(e: IntermediateExpression) = IntermediateExpression(
+    invokeStatic(method[CypherBoolean, Value, AnyValue]("coerceToBoolean"), e.ir),
+    nullable = e.nullable)
 
   /**
     * Ok AND and ANDS are complicated.  At the core we try to find a single `FALSE` if we find one there is no need to look
