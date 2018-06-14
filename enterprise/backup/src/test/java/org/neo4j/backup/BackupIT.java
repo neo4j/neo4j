@@ -20,7 +20,6 @@
 package org.neo4j.backup;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,6 +38,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 import org.neo4j.com.ports.allocation.PortAuthority;
@@ -435,7 +435,7 @@ public class BackupIT
     {
         // given
         ExecutorService executorService = Executors.newSingleThreadExecutor();
-        MutableBoolean end = new MutableBoolean();
+        AtomicBoolean end = new AtomicBoolean();
         int backupPort = PortAuthority.allocatePort();
         GraphDatabaseService db = getEmbeddedTestDataBaseService( backupPort );
         int numberOfIndexedLabels = 100;
@@ -444,7 +444,7 @@ public class BackupIT
         // start thread that continuously writes to indexes
         executorService.submit( () ->
         {
-            while ( !end.booleanValue() )
+            while ( !end.get() )
             {
                 try ( Transaction tx = db.beginTx() )
                 {
@@ -458,7 +458,7 @@ public class BackupIT
         // create backup
         OnlineBackup backup = OnlineBackup.from( "127.0.0.1", backupPort ).full( backupPath.getPath() );
         assertTrue( "Should be consistent", backup.isConsistent() );
-        end.setValue( true );
+        end.set( true );
         executorService.awaitTermination( 1, TimeUnit.MINUTES );
         db.shutdown();
     }
