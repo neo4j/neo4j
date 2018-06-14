@@ -1,1 +1,1 @@
-org.neo4j.bolt.BoltKernelExtension$Settings
+org.neo4j.bolt.BoltServer$Settings

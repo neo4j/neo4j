@@ -74,7 +74,7 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
 import static org.neo4j.scheduler.JobScheduler.Groups.boltNetworkIO;
 
-public class BoltKernelExtension extends LifecycleAdapter
+public class BoltServer extends LifecycleAdapter
 {
     // platform dependencies
     private final GraphDatabaseAPI db;
@@ -99,7 +99,7 @@ public class BoltKernelExtension extends LifecycleAdapter
         public static final Setting<String> ssl_policy = setting( "bolt.ssl_policy", STRING, LEGACY_POLICY_NAME );
     }
 
-    public BoltKernelExtension( GraphDatabaseAPI db, FileSystemAbstraction fs, JobScheduler jobScheduler, AvailabilityGuard availabilityGuard,
+    public BoltServer( GraphDatabaseAPI db, FileSystemAbstraction fs, JobScheduler jobScheduler, AvailabilityGuard availabilityGuard,
             ConnectorPortRegister connectorPortRegister, UsageData usageData, Config config, Clock clock, Monitors monitors,
             LogService logService, DependencyResolver dependencyResolver )
     {
@@ -119,8 +119,8 @@ public class BoltKernelExtension extends LifecycleAdapter
     @Override
     public void start() throws Throwable
     {
-        Log log = logService.getInternalLog( BoltKernelExtension.class );
-        Log userLog = logService.getUserLog( BoltKernelExtension.class );
+        Log log = logService.getInternalLog( BoltServer.class );
+        Log userLog = logService.getUserLog( BoltServer.class );
 
         InternalLoggerFactory.setDefaultFactory( new Netty4LoggerFactory( logService.getInternalLogProvider() ) );
         BoltMessageLogging boltLogging = BoltMessageLogging.create( fs, jobScheduler, config, log );

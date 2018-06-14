@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.neo4j.bolt.BoltKernelExtension;
+import org.neo4j.bolt.BoltServer;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -349,9 +349,9 @@ public class GraphDatabaseFacadeFactory
         return procedures;
     }
 
-    private static BoltKernelExtension createBoltServer( PlatformModule platform )
+    private static BoltServer createBoltServer( PlatformModule platform )
     {
-        return new BoltKernelExtension( platform.graphDatabaseFacade, platform.fileSystem, platform.jobScheduler, platform.availabilityGuard,
+        return new BoltServer( platform.graphDatabaseFacade, platform.fileSystem, platform.jobScheduler, platform.availabilityGuard,
                 platform.connectorPortRegister, platform.usageData, platform.config, platform.clock, platform.monitors, platform.logging,
                 platform.dependencies );
     }

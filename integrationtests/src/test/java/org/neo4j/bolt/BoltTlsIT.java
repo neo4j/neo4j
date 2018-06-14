@@ -125,7 +125,7 @@ public class BoltTlsIT
                 .newImpermanentDatabaseBuilder( testDirectory.graphDbDir() )
                 .setConfig( bolt.enabled, "true" )
                 .setConfig( bolt.listen_address, ":" + PortAuthority.allocatePort() )
-                .setConfig( BoltKernelExtension.Settings.ssl_policy, "bolt" )
+                .setConfig( BoltServer.Settings.ssl_policy, "bolt" )
                 .setConfig( sslPolicy.allow_key_generation, "true" )
                 .setConfig( sslPolicy.base_directory, "certificates" )
                 .setConfig( sslPolicy.tls_versions, setup.boltTlsVersions )

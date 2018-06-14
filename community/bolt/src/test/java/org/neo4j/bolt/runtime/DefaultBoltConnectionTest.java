@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.concurrent.Future;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.BoltKernelExtension;
+import org.neo4j.bolt.BoltServer;
 import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.testing.Jobs;
@@ -278,7 +278,7 @@ public class DefaultBoltConnectionTest
         connection.processNextBatch();
 
         verify( stateMachine ).close();
-        logProvider.assertNone( AssertableLogProvider.inLog( containsString( BoltKernelExtension.class.getPackage().getName() ) ).error( any( String.class ),
+        logProvider.assertNone( AssertableLogProvider.inLog( containsString( BoltServer.class.getPackage().getName() ) ).error( any( String.class ),
                 any( Throwable.class ) ) );
     }
 
@@ -296,7 +296,7 @@ public class DefaultBoltConnectionTest
         connection.processNextBatch();
 
         verify( stateMachine ).close();
-        logProvider.assertExactly( AssertableLogProvider.inLog( containsString( BoltKernelExtension.class.getPackage().getName() ) ).error(
+        logProvider.assertExactly( AssertableLogProvider.inLog( containsString( BoltServer.class.getPackage().getName() ) ).error(
                 containsString( "Protocol breach detected in bolt session" ), is( exception ) ) );
     }
 
@@ -314,7 +314,7 @@ public class DefaultBoltConnectionTest
         connection.processNextBatch();
 
         verify( stateMachine ).close();
-        logProvider.assertExactly( AssertableLogProvider.inLog( containsString( BoltKernelExtension.class.getPackage().getName() ) ).error(
+        logProvider.assertExactly( AssertableLogProvider.inLog( containsString( BoltServer.class.getPackage().getName() ) ).error(
                 containsString( "Unexpected error detected in bolt session" ), is( exception ) ) );
     }
 
