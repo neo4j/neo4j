@@ -312,8 +312,13 @@ public final class IndexMap implements Cloneable
         indexesByUnchangedEntityTokens.addAll( descriptorsForAllEntityTokens );
         indexesByProperties.retainAll( indexesByUnchangedEntityTokens );
 
-        // Add the indexes relevant for the changed entity tokens, and off you go.
+        // Add the indexes relevant for the changed entity tokens.
         Set<SchemaDescriptor> descriptors = extractIndexesByEntityTokens( changedEntityTokens, descriptorsByEntityToken );
+        // If we changed any entity token, we need to look at all any token indexes.
+        if ( changedEntityTokens.length > 0 )
+        {
+            descriptors.addAll( descriptorsForAllEntityTokens );
+        }
         descriptors.addAll( indexesByProperties );
         return descriptors;
     }
