@@ -129,6 +129,10 @@ public class PlatformModule
 
     public final CollectionsFactorySupplier collectionsFactorySupplier;
 
+    public final UsageData usageData;
+
+    public final ConnectorPortRegister connectorPortRegister;
+
     public PlatformModule( File providedStoreDir, Config config, DatabaseInfo databaseInfo,
             GraphDatabaseFacadeFactory.Dependencies externalDependencies, GraphDatabaseFacade graphDatabaseFacade )
     {
@@ -163,7 +167,8 @@ public class PlatformModule
         dependencies.satisfyDependency( recoveryCleanupWorkCollector );
 
         // Database system information, used by UDC
-        dependencies.satisfyDependency( life.add( new UsageData( jobScheduler ) ) );
+        usageData = new UsageData( jobScheduler );
+        dependencies.satisfyDependency( life.add( usageData ) );
 
         // If no logging was passed in from the outside then create logging and register
         // with this life
@@ -212,7 +217,8 @@ public class PlatformModule
         storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
         dependencies.satisfyDependency( storeCopyCheckPointMutex );
 
-        dependencies.satisfyDependency( new ConnectorPortRegister() );
+        connectorPortRegister = new ConnectorPortRegister();
+        dependencies.satisfyDependency( connectorPortRegister );
 
         eventHandlers = new KernelEventHandlers( logging.getInternalLog( KernelEventHandlers.class ) );
 

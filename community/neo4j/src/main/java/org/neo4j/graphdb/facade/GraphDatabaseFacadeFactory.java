@@ -25,11 +25,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.neo4j.graphdb.facade.spi.ClassicCoreSPI;
+import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.facade.spi.ClassicCoreSPI;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.DataSourceModule;
 import org.neo4j.graphdb.factory.module.EditionModule;
@@ -177,6 +178,7 @@ public class GraphDatabaseFacadeFactory
 
         final DataSourceModule dataSource = createDataSource( platform, edition, queryEngine::get, procedures );
 
+        platform.life.add( createBoltServer( platform ) );
         platform.life.add( new VmPauseMonitorComponent( config, platform.logging.getInternalLog( VmPauseMonitorComponent.class ), platform.jobScheduler ) );
         platform.life.add( new PublishPageCacheTracerMetricsAfterStart( platform.tracers.pageCursorTracerSupplier ) );
         platform.life.add( new DatabaseAvailability( platform.availabilityGuard, platform.transactionMonitor,
@@ -345,5 +347,12 @@ public class GraphDatabaseFacadeFactory
         }
 
         return procedures;
+    }
+
+    private static BoltKernelExtension createBoltServer( PlatformModule platform )
+    {
+        return new BoltKernelExtension( platform.graphDatabaseFacade, platform.fileSystem, platform.jobScheduler, platform.availabilityGuard,
+                platform.connectorPortRegister, platform.usageData, platform.config, platform.clock, platform.monitors, platform.logging,
+                platform.dependencies );
     }
 }
