@@ -24,7 +24,6 @@ package org.neo4j.causalclustering.identity;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.nio.charset.Charset;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -34,9 +33,9 @@ import org.neo4j.storageengine.api.WritableChannel;
 
 import static java.lang.String.format;
 
-// TODO: basics for Serializable
 public class MemberId implements Serializable
 {
+    private static final long serialVersionUID = -984540169345015775L;
     private final UUID uuid;
     private final String shortName;
 
@@ -89,8 +88,6 @@ public class MemberId implements Serializable
      */
     public static class Marshal extends SafeStateMarshal<MemberId>
     {
-        private static final Charset UTF8 = Charset.forName("UTF-8");
-
         @Override
         public void marshal( MemberId memberId, WritableChannel channel ) throws IOException
         {
