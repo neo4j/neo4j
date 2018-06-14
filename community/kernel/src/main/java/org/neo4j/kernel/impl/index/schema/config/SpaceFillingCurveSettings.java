@@ -175,6 +175,13 @@ public class SpaceFillingCurveSettings
         }
     }
 
+    @Override
+    public int hashCode()
+    {
+        // dimension is also represented in the extents and so not explicitly included here
+        return 31 * extents.hashCode() + maxLevels;
+    }
+
     public boolean equals( SpaceFillingCurveSettings other )
     {
         return this.dimensions == other.dimensions && this.maxLevels == other.maxLevels && this.extents.equals( other.extents );
