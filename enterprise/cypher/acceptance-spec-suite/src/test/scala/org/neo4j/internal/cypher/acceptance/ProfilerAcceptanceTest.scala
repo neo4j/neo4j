@@ -319,9 +319,15 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
       test("LIMIT should influence cardinality estimation by default value when expression contains timestamp()") {
         (0 until 100).map(i => createLabeledNode("Person"))
-        val wrongResultsConfig = Configs.Version3_1 + Configs.Version2_3 + Configs.AllRulePlanners
-        val result = executeWith(Configs.Interpreted, s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT timestamp()", wrongResultsConfig)
-        assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(result)("Limit")
+        //TODO this cannot be run with executeWith since it will occasionally succeed on 2.3 and we have decided not
+        //to fix this on 2.3. So if we fix the issue on 2.3 or if we no longer need to depend on 2.3 we should update test
+        //to run with `executeWith`
+        assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(
+          innerExecuteDeprecated(s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT timestamp()", Map.empty))("Limit")
+        assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(
+          innerExecuteDeprecated(s"PROFILE CYPHER runtime=slotted MATCH (p:Person) with 10 as x, p RETURN p LIMIT timestamp()", Map.empty))("Limit")
+        assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(
+          innerExecuteDeprecated(s"PROFILE CYPHER runtime=interpreted MATCH (p:Person) with 10 as x, p RETURN p LIMIT timestamp()", Map.empty))("Limit")
       }
 
       test ("should support profiling union queries") {
