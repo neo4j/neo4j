@@ -7,3 +7,7 @@ min() over list values
 //UnwindAcceptance.feature
 Pattern comprehension in unwind with empty db
 Pattern comprehension in unwind with hits
+
+//ReturnAcceptance.feature
+RETURN true AND list
+RETURN false OR list

@@ -31,8 +31,6 @@ object Ands {
     val size = exprs.size
     if(size == 0)
       True()(InputPosition.NONE)
-    else if (size == 1)
-      exprs.head
     else
       Ands(exprs)(exprs.head.position)
   }

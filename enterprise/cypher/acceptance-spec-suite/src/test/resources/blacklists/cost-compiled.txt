@@ -131,6 +131,8 @@ Find all shortest paths
 Find a combination of a shortest path and a pattern expression
 Filter with AND/OR
 LIMIT 0 should stop side effects
+RETURN true AND list
+RETURN false OR list
 Id on null
 type on null
 Shorthand case with filter should work as expected

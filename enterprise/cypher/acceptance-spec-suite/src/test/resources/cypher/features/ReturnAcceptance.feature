@@ -127,3 +127,29 @@ Feature: ReturnAcceptance
       | result |
       | null   |
     And no side effects
+
+  Scenario: RETURN true AND list
+    Given an empty graph
+    And parameters are:
+      | list | [] |
+    When executing query:
+      """
+      RETURN true AND $list AS result
+      """
+    Then the result should be:
+      | result |
+      | false  |
+    And no side effects
+
+  Scenario: RETURN false OR list
+    Given an empty graph
+    And parameters are:
+      | list | [] |
+    When executing query:
+      """
+      RETURN true AND $list AS result
+      """
+    Then the result should be:
+      | result |
+      | false   |
+    And no side effects

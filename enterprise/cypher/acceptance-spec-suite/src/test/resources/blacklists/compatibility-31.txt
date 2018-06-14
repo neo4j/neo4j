@@ -9,6 +9,8 @@ ORDER BY node problem
 
 // ReturnAcceptance.feature
 LIMIT 0 should stop side effects
+RETURN true AND list
+RETURN false OR list
 
 //AggregationAcceptance.feature
 max() over mixed values
