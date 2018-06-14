@@ -23,9 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,70 +31,28 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class TestMigration
 {
-
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-
-    @Test
-    public void canReadAndUpgradeOldIndexStoreFormat() throws Exception
-    {
-        File path = new File( "target/var/old-index-store" );
-        Neo4jTestCase.deleteFileOrDirectory( path );
-        startDatabase( path ).shutdown();
-        InputStream stream = getClass().getClassLoader().getResourceAsStream( "old-index.db" );
-        writeFile( stream, new File( path, "index.db" ) );
-        GraphDatabaseService db = startDatabase( path );
-        try ( Transaction ignore = db.beginTx() )
-        {
-            assertTrue( db.index().existsForNodes( "indexOne" ) );
-            Index<Node> indexOne = db.index().forNodes( "indexOne" );
-            verifyConfiguration( db, indexOne, LuceneIndexImplementation.EXACT_CONFIG );
-            assertTrue( db.index().existsForNodes( "indexTwo" ) );
-            Index<Node> indexTwo = db.index().forNodes( "indexTwo" );
-            verifyConfiguration( db, indexTwo, LuceneIndexImplementation.FULLTEXT_CONFIG );
-            assertTrue( db.index().existsForRelationships( "indexThree" ) );
-            Index<Relationship> indexThree = db.index().forRelationships( "indexThree" );
-            verifyConfiguration( db, indexThree, LuceneIndexImplementation.EXACT_CONFIG );
-        }
-        db.shutdown();
-    }
-
-    private void verifyConfiguration( GraphDatabaseService db, Index<? extends PropertyContainer> index, Map<String, String> config )
-    {
-        assertEquals( config, db.index().getConfiguration( index ) );
-    }
-
-    private void writeFile( InputStream stream, File file ) throws Exception
-    {
-        file.delete();
-        OutputStream out = new FileOutputStream( file );
-        byte[] bytes = new byte[1024];
-        int bytesRead = 0;
-        while ( (bytesRead = stream.read( bytes )) >= 0 )
-        {
-            out.write( bytes, 0, bytesRead );
-        }
-        out.close();
-    }
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
     public void providerGetsFilledInAutomatically()
     {
         Map<String, String> correctConfig = MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" );
-        File storeDir = new File( "target/var/index" );
+        File storeDir = testDirectory.graphDbDir();
         Neo4jTestCase.deleteFileOrDirectory( storeDir );
         GraphDatabaseService graphDb = startDatabase( storeDir );
         try ( Transaction transaction = graphDb.beginTx() )
@@ -122,7 +77,7 @@ public class TestMigration
         removeProvidersFromIndexDbFile( storeDir );
         graphDb = startDatabase( storeDir );
 
-        try ( Transaction transaction = graphDb.beginTx() )
+        try ( Transaction ignored = graphDb.beginTx() )
         {
             // Getting the index w/o exception means that the provider has been reinstated
             assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "default" ) ) );
@@ -144,7 +99,7 @@ public class TestMigration
         removeProvidersFromIndexDbFile( storeDir );
         graphDb = startDatabase( storeDir );
 
-        try ( Transaction transaction = graphDb.beginTx() )
+        try ( Transaction ignored = graphDb.beginTx() )
         {
             // Getting the index w/o exception means that the provider has been reinstated
             assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "default" ) ) );
