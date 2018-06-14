@@ -63,7 +63,7 @@ case object RewriteProcedureCalls extends Phase[CompilerContext, BaseState, Base
 
   // rewriter that amends unresolved procedure calls with procedure signature information
   def rewriter(context: PlanContext): AnyRef => AnyRef =
-    resolverProcedureCall(context) andThen fakeStandaloneCallDeclarations andThen isolateAggregation
+    resolverProcedureCall(context) andThen fakeStandaloneCallDeclarations
 
   override def phase = AST_REWRITE
 
@@ -74,6 +74,5 @@ case object RewriteProcedureCalls extends Phase[CompilerContext, BaseState, Base
     LogicalPlanState(from).copy(maybeStatement = Some(rewrittenStatement))
   }
 
-  override def postConditions: Set[Condition] = Set(StatementCondition(containsNoNodesOfType[UnresolvedCall]),
-                                                    StatementCondition(aggregationsAreIsolated))
+  override def postConditions: Set[Condition] = Set(StatementCondition(containsNoNodesOfType[UnresolvedCall]))
 }

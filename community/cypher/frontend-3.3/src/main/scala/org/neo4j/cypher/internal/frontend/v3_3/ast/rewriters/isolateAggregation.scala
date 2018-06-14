@@ -17,7 +17,9 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
+import org.neo4j.cypher.internal.frontend.v3_3.ast.conditions.{StatementCondition, aggregationsAreIsolated}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.{AggregationNameGenerator, fixedPoint}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseContext, Condition}
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, Rewriter, bottomUp}
 
 /**
@@ -36,8 +38,13 @@ import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, Rewriter, bot
   * WITH n.name AS x1, count(*) AS x2, n.foo as X3
   * RETURN { name: x1, count: x2 }
   */
-case object isolateAggregation extends Rewriter {
-  def apply(that: AnyRef): AnyRef = instance(that)
+case object isolateAggregation extends StatementRewriter {
+
+  override def instance(context: BaseContext): Rewriter = bottomUp(rewriter, _.isInstanceOf[Expression])
+
+  override def description: String = "Makes sure that aggregations are on their own in RETURN/WITH clauses"
+
+  override def postConditions: Set[Condition] = Set(StatementCondition(aggregationsAreIsolated))
 
   private val rewriter = Rewriter.lift {
     case q@SingleQuery(clauses) =>
@@ -113,7 +120,6 @@ case object isolateAggregation extends Rewriter {
     expressionsToGoToWith
   }
 
-  private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
 
   private def getExpressions(c: Clause): Set[Expression] = c match {
     case clause: Return => clause.returnItems.items.map(_.expression).toSet
