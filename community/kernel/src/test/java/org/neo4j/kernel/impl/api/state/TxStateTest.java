@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.state;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -80,11 +79,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Pair.of;
 import static org.neo4j.values.storable.ValueGroup.TEXT;
@@ -1490,22 +1484,6 @@ public class TxStateTest
                 visitLate();
             }
         } );
-    }
-
-    @Test
-    public void useCollectionFactory()
-    {
-        final CollectionsFactory collectionsFactory = mock( CollectionsFactory.class );
-        doAnswer( invocation -> new LongObjectHashMap<>() ).when( collectionsFactory ).newLongObjectMap();
-
-        state = new TxState( collectionsFactory );
-
-        state.labelDoCreateForName( "foo", 1 );
-        state.propertyKeyDoCreateForName( "bar", 2 );
-        state.relationshipTypeDoCreateForName( "baz", 3 );
-
-        verify( collectionsFactory, times( 3 ) ).newLongObjectMap();
-        verifyNoMoreInteractions( collectionsFactory );
     }
 
     //endregion

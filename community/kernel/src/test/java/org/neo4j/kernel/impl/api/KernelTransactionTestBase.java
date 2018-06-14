@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.junit.Before;
 import org.mockito.Mockito;
@@ -194,18 +192,6 @@ public class KernelTransactionTestBase
         public MutableLongSet newLongSet()
         {
             return OnHeapCollectionsFactory.INSTANCE.newLongSet();
-        }
-
-        @Override
-        public <V> MutableLongObjectMap<V> newLongObjectMap()
-        {
-            return OnHeapCollectionsFactory.INSTANCE.newLongObjectMap();
-        }
-
-        @Override
-        public <V> MutableIntObjectMap<V> newIntObjectMap()
-        {
-            return OnHeapCollectionsFactory.INSTANCE.newIntObjectMap();
         }
 
         @Override

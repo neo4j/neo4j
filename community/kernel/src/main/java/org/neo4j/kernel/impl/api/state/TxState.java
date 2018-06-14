@@ -23,6 +23,7 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 
 import java.util.Collection;
@@ -207,7 +208,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     {
         if ( labelStatesMap == null )
         {
-            labelStatesMap = collectionsFactory.newLongObjectMap();
+            labelStatesMap = new LongObjectHashMap<>();
         }
         return labelStatesMap.getIfAbsentPut( labelId, () -> new MutableLongDiffSetsImpl( collectionsFactory ) );
     }
@@ -433,7 +434,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     {
         if ( createdLabelTokens == null )
         {
-            createdLabelTokens = collectionsFactory.newLongObjectMap();
+            createdLabelTokens = new LongObjectHashMap<>();
         }
         createdLabelTokens.put( id, labelName );
         changed();
@@ -444,7 +445,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     {
         if ( createdPropertyKeyTokens == null )
         {
-            createdPropertyKeyTokens = collectionsFactory.newLongObjectMap();
+            createdPropertyKeyTokens = new LongObjectHashMap<>();
         }
         createdPropertyKeyTokens.put( id, propertyKeyName );
         changed();
@@ -455,7 +456,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     {
         if ( createdRelationshipTypeTokens == null )
         {
-            createdRelationshipTypeTokens = collectionsFactory.newLongObjectMap();
+            createdRelationshipTypeTokens = new LongObjectHashMap<>();
         }
         createdRelationshipTypeTokens.put( id, labelName );
         changed();
@@ -598,7 +599,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     {
         if ( nodeStatesMap == null )
         {
-            nodeStatesMap = collectionsFactory.newLongObjectMap();
+            nodeStatesMap = new LongObjectHashMap<>();
         }
         return nodeStatesMap.getIfAbsentPut( nodeId, () -> new NodeStateImpl( nodeId, collectionsFactory ) );
     }
@@ -607,7 +608,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     {
         if ( relationshipStatesMap == null )
         {
-            relationshipStatesMap = collectionsFactory.newLongObjectMap();
+            relationshipStatesMap = new LongObjectHashMap<>();
         }
         return relationshipStatesMap.getIfAbsentPut( relationshipId, () -> new RelationshipStateImpl( relationshipId, collectionsFactory ) );
     }
