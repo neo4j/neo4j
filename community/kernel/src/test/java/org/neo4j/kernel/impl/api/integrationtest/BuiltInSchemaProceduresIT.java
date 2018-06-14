@@ -93,7 +93,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
         // Given
 
         // Node1: (:A {prop1:"Test"})
-        // Node2: (:A {prop1:"Test"})
+        // Node2: (:A {prop1:"Test2"})
 
         Transaction transaction = newTransaction( AnonymousContext.writeToken() );
         long nodeId1 = transaction.dataWrite().nodeCreate();
@@ -101,7 +101,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
         int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "A" );
         int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
         transaction.dataWrite().nodeSetProperty( nodeId1, prop1, Values.stringValue("Test") );
-        transaction.dataWrite().nodeSetProperty( nodeId2, prop1, Values.stringValue("Test") );
+        transaction.dataWrite().nodeSetProperty( nodeId2, prop1, Values.stringValue("Test2") );
         transaction.dataWrite().nodeAddLabel( nodeId1, labelId1 );
         transaction.dataWrite().nodeAddLabel( nodeId2, labelId1 );
         commit();
@@ -194,6 +194,80 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Just for printing out the result if needed
 //        printStream( stream );
+    }
+
+    @Test
+    public void testSchemaTableWithSimilarRelationships() throws Throwable
+    {
+        // Given
+
+        // Node1: ()
+        // Rel1: (node1)-[:R{prop1:"Test"}]->(node1)
+        // Rel2: (node1)-[:R{prop1:"Test"}]->(node1)
+
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        long nodeId1 = transaction.dataWrite().nodeCreate();
+        int typeId = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+        long relId1 = transaction.dataWrite().relationshipCreate( nodeId1, typeId, nodeId1 );
+        long relId2 = transaction.dataWrite().relationshipCreate( nodeId1, typeId, nodeId1 );
+        int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
+        transaction.dataWrite().relationshipSetProperty( relId1, prop1, Values.stringValue("Test") );
+        transaction.dataWrite().relationshipSetProperty( relId2, prop1, Values.stringValue("Test2") );
+        commit();
+
+        // When
+        RawIterator<Object[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "schemaAsTable" ) ).id(), new Object[0] );
+
+        // Then
+        assertThat( asList( stream ), containsInAnyOrder(
+                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop1", "STRING"} ),
+                equalTo( new Object[]{"Node", Arrays.asList(), null, null} ) ) );
+
+        // Just for printing out the result if needed
+        //printStream( stream );
+    }
+
+    @Test
+    public void testSchemaTableWithSimilarRelationshipsHavingDifferentPropertyValueTypes() throws Throwable
+    {
+        // Given
+
+        // Node1: ()
+        // Rel1: (node1)-[:R{prop1:"Test", prop2: 12, prop3: true}]->(node1)
+        // Rel2: (node1)-[:R{prop1:"Test", prop2: 1.5, prop3: "Test"}]->(node1)
+        // Rel3: (node1)-[:R]->(node1)
+
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        long nodeId1 = transaction.dataWrite().nodeCreate();
+        int typeId = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+        long relId1 = transaction.dataWrite().relationshipCreate( nodeId1, typeId, nodeId1 );
+        long relId2 = transaction.dataWrite().relationshipCreate( nodeId1, typeId, nodeId1 );
+        transaction.dataWrite().relationshipCreate( nodeId1, typeId, nodeId1 ); // Rel3
+        int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
+        int prop2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop2" );
+        int prop3 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop3" );
+        transaction.dataWrite().relationshipSetProperty( relId1, prop1, Values.stringValue("Test") );
+        transaction.dataWrite().relationshipSetProperty( relId2, prop1, Values.stringValue("Test") );
+        transaction.dataWrite().relationshipSetProperty( relId1, prop2, Values.intValue( 12 ) );
+        transaction.dataWrite().relationshipSetProperty( relId2, prop2, Values.floatValue( 1.5f ) );
+        transaction.dataWrite().relationshipSetProperty( relId1, prop3, Values.booleanValue( true ) );
+        transaction.dataWrite().relationshipSetProperty( relId2, prop3, Values.stringValue("Test") );
+        commit();
+
+        // When
+        RawIterator<Object[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "schemaAsTable" ) ).id(), new Object[0] );
+
+        // Then
+        assertThat( asList( stream ), containsInAnyOrder(
+                equalTo( new Object[]{"Node", Arrays.asList(), null, null} ),
+                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop1", "STRING"} ),
+                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop2", "NUMBER"} ),
+                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop3", "ANYVALUE"} ) ) );
+
+        // Just for printing out the result if needed
+        //printStream( stream );
     }
 
     private void printStream( RawIterator<Object[],ProcedureException> stream ) throws Throwable
