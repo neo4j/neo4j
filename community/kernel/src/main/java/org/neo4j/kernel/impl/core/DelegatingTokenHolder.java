@@ -25,6 +25,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntIntHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntPredicate;
 
@@ -171,8 +172,11 @@ public class DelegatingTokenHolder implements TokenHolder
         {
             // We still have unresolved ids to create.
             ObjectIntHashMap<String> createdTokens = createUnresolvedTokens( unresolvedIndexes, names, ids );
+            List<NamedToken> createdTokensList = new ArrayList<>( createdTokens.size() );
             createdTokens.forEachKeyValue( ( name, index ) ->
-                    tokenCache.put( new NamedToken( name, ids[index] ) ) );
+                    createdTokensList.add( new NamedToken( name, ids[index] ) ) );
+
+            tokenCache.putAll( createdTokensList );
         }
     }
 

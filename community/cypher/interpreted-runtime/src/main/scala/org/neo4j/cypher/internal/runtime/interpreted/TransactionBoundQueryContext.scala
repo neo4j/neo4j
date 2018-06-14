@@ -641,6 +641,12 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def getOrCreatePropertyKeyId(propertyKey: String): Int =
     tokenWrite.propertyKeyGetOrCreateForName(propertyKey)
 
+  override def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int] = {
+    val ids = new Array[Int](propertyKeys.length)
+    tokenWrite.propertyKeyGetOrCreateForNames(propertyKeys, ids)
+    ids
+  }
+
   abstract class BaseOperations[T] extends Operations[T] {
 
     def primitiveLongIteratorToScalaIterator(primitiveIterator: LongIterator): Iterator[Long] =

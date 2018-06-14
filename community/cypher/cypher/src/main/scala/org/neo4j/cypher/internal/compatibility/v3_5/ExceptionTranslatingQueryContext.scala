@@ -94,6 +94,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getOrCreatePropertyKeyId(propertyKey: String): Int =
     translateException(inner.getOrCreatePropertyKeyId(propertyKey))
 
+  override def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int] =
+    translateException(inner.getOrCreatePropertyKeyIds(propertyKeys))
+
   override def addIndexRule(descriptor: IndexDescriptor) =
     translateException(inner.addIndexRule(descriptor))
 
