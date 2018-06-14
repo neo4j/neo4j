@@ -62,7 +62,7 @@ public class ReplicationModule
 
         DurableStateStorage<GlobalSessionTrackerState> sessionTrackerStorage;
         sessionTrackerStorage = life.add( new DurableStateStorage<>( fileSystem, clusterStateDirectory,
-                SESSION_TRACKER_NAME, new GlobalSessionTrackerState.Marshal( MemberId.MARSHAL ),
+                SESSION_TRACKER_NAME, new GlobalSessionTrackerState.Marshal( new MemberId.Marshal() ),
                 config.get( CausalClusteringSettings.global_session_tracker_state_size ), logProvider ) );
 
         sessionTracker = new SessionTracker( sessionTrackerStorage );

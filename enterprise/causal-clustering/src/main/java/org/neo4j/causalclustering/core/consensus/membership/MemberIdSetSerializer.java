@@ -57,7 +57,7 @@ public class MemberIdSetSerializer
         Set<MemberId> members = memberSet.getMembers();
         channel.putInt( members.size() );
 
-        MemberId.Marshal memberIdMarshal = MemberId.MARSHAL;
+        MemberId.Marshal memberIdMarshal = new MemberId.Marshal();
 
         for ( MemberId member : members )
         {
@@ -70,7 +70,7 @@ public class MemberIdSetSerializer
         HashSet<MemberId> members = new HashSet<>();
         int memberCount = channel.getInt();
 
-        MemberId.Marshal memberIdMarshal = MemberId.MARSHAL;
+        MemberId.Marshal memberIdMarshal = new MemberId.Marshal();
 
         for ( int i = 0; i < memberCount; i++ )
         {

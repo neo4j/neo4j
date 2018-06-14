@@ -89,7 +89,7 @@ public class MembershipEntry
 
     public static class Marshal extends SafeStateMarshal<MembershipEntry>
     {
-        MemberId.Marshal memberMarshal = MemberId.MARSHAL;
+        MemberId.Marshal memberMarshal = new MemberId.Marshal();
 
         @Override
         public MembershipEntry startState()
