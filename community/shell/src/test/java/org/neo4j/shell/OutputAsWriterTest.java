@@ -19,60 +19,56 @@
  */
 package org.neo4j.shell;
 
-import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 import org.neo4j.shell.impl.SystemOutput;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.rule.SuppressOutput;
 
-public class OutputAsWriterTest
+import static java.lang.String.format;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.isEmptyString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+@ExtendWith( SuppressOutputExtension.class )
+class OutputAsWriterTest
 {
 
-    private PrintStream out;
-    private ByteArrayOutputStream buffer;
-    private SystemOutput output;
+    @Inject
+    private SuppressOutput suppressOutput;
     private OutputAsWriter writer;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
-        out = System.out;
-        buffer = new ByteArrayOutputStream();
-        System.setOut( new PrintStream( buffer ) );
-        output = new SystemOutput();
-        writer = new OutputAsWriter( output );
-    }
-
-    @After
-    public void tearDown()
-    {
-        System.setOut( out );
+        writer = new OutputAsWriter( new SystemOutput() );
     }
 
     @Test
-    public void shouldNotFlushWithoutNewline() throws Exception
+    void shouldNotFlushWithoutNewline() throws Exception
     {
         writer.write( "foo".toCharArray() );
-        assertEquals( 0, buffer.size() );
+        assertThat( suppressOutput.getOutputVoice().toString(), isEmptyString() );
     }
 
     @Test
-    public void shouldFlushWithNewline() throws Exception
+    void shouldFlushWithNewline() throws Exception
     {
+        SuppressOutput.Voice outputVoice = suppressOutput.getOutputVoice();
         String s = format( "foobar%n" );
         writer.write( s.toCharArray() );
-        assertEquals( s.length(), buffer.size() );
-        assertEquals( s, buffer.toString() );
+        assertEquals( s.length(), outpuLengthInBytes( outputVoice ) );
+        assertEquals( s, outputVoice.toString() );
     }
 
     @Test
-    public void shouldFlushPartiallyWithNewlineInMiddle() throws Exception
+    void shouldFlushPartiallyWithNewlineInMiddle() throws Exception
     {
+        SuppressOutput.Voice outputVoice = suppressOutput.getOutputVoice();
         String firstPart = format( "foo%n" );
         String secondPart = "bar";
         String string = firstPart + secondPart;
@@ -80,12 +76,21 @@ public class OutputAsWriterTest
         String fullString = string + newLine;
 
         writer.write( string.toCharArray() );
-        assertEquals( firstPart.length(), buffer.size() );
-        assertEquals( firstPart, buffer.toString() );
+        String firstLine = outputVoice.lines().get( 0 );
+        assertNotNull( firstLine );
+        assertEquals( firstPart.length(), outpuLengthInBytes( outputVoice ) );
+        assertEquals( "foo", firstLine );
 
         writer.write( newLine.toCharArray() );
-        assertEquals( fullString.length(), buffer.size() );
-        assertEquals( fullString, buffer.toString() );
+        String secondLine = outputVoice.lines().get( 1 );
+        assertNotNull( secondLine );
+        assertEquals( fullString.length(), outpuLengthInBytes( outputVoice ) );
+        assertEquals( fullString, outputVoice.toString() );
 
+    }
+
+    private static int outpuLengthInBytes( SuppressOutput.Voice outputVoice )
+    {
+        return outputVoice.toString().getBytes().length;
     }
 }
