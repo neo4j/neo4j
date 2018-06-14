@@ -33,7 +33,7 @@ import org.opencypher.v9_0.util.TaskCloser
 
 class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) extends Dispatcher {
 
-  val spatula: Spatula = new ASpatula(workers)
+  val spatula: Spatula = new ASpatula(executor)
 
   def execute[E <: Exception](operators: Pipeline,
                               queryContext: QueryContext,
@@ -45,13 +45,21 @@ class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) exte
     val state = QueryState(params, visitor, morselSize)
     val initialTask = leaf.init(null, queryContext, state)
     val queryExecution = spatula.execute(initialTask)
-    queryExecution.await()
+    val maybeError = queryExecution.await()
+    maybeError match {
+      case Some(error) =>
+        taskCloser.close(false)
+        throw error
+
+      case None =>
+        taskCloser.close(true)
+    }
   }
 
   private def getLeaf(pipeline: Pipeline): RegularPipeline = {
     var leafOp = pipeline
-    while (leafOp.dependency != NoDependencies) {
-      leafOp = leafOp.dependency.pipeline
+    while (leafOp.upstream.nonEmpty) {
+      leafOp = leafOp.upstream.get
     }
 
     leafOp.asInstanceOf[RegularPipeline]

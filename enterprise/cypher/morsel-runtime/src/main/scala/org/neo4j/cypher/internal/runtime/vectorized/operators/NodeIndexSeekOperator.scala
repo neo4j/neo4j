@@ -77,6 +77,4 @@ class NodeIndexSeekOperator(offset: Int,
 
     override def canContinue: Boolean = nodeIterator.hasNext
   }
-
-  override def addDependency(pipeline: Pipeline): Dependency = NoDependencies
 }

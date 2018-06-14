@@ -74,6 +74,4 @@ class AggregationReduceOperatorNoGrouping(aggregations: Array[AggregationOffsets
 
     override def canContinue: Boolean = false
   }
-
-  override def addDependency(pipeline: Pipeline): Dependency = Eager(pipeline)
 }

@@ -1,6 +1,28 @@
+/*
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
+ */
 package org.neo4j.cypher.internal.runtime.parallel
 
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.{ConcurrentHashMap, Executors}
 import java.util.concurrent.atomic.AtomicLong
 
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
@@ -13,7 +35,7 @@ class SpatulaTest extends CypherFunSuite {
 
   test("execute a bunch of things") {
 
-    val s = new ASpatula( 1 )
+    val s = new ASpatula( Executors.newFixedThreadPool( 1 ) )
 
     val testThread = Thread.currentThread().getId
     val taskThreadId = new AtomicLong(testThread)
@@ -32,7 +54,7 @@ class SpatulaTest extends CypherFunSuite {
 
   test("execute more things") {
     val concurrency = 4
-    val s = new ASpatula( concurrency )
+    val s = new ASpatula( Executors.newFixedThreadPool( concurrency ) )
 
     val map = new ConcurrentHashMap[Int, Long]()
     val futures =
@@ -51,7 +73,7 @@ class SpatulaTest extends CypherFunSuite {
 
   test("execute a subtask thing") {
 
-    val s = new ASpatula( 2 )
+    val s = new ASpatula( Executors.newFixedThreadPool( 2 ) )
 
     val result: mutable.Set[String] =
       java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap[String, java.lang.Boolean])
@@ -70,7 +92,7 @@ class SpatulaTest extends CypherFunSuite {
 
   test("execute more relish") {
 
-    val s = new ASpatula( 64 )
+    val s = new ASpatula( Executors.newFixedThreadPool( 64 ) )
 
     var output: List[Int] = List()
     val method :ArrayBuffer[Int] => Unit = (arrayBuffer) => output ++= arrayBuffer
@@ -96,7 +118,7 @@ class SpatulaTest extends CypherFunSuite {
       Nil
     }
 
-    override def canContinue(): Boolean = buffer.nonEmpty
+    override def canContinue: Boolean = buffer.nonEmpty
   }
 
   case class PushToEager(subResults: Seq[Int], eager: Aggregator) extends Task {
@@ -107,11 +129,11 @@ class SpatulaTest extends CypherFunSuite {
       if (resultSequence.hasNext)
         eager.buffer.append(resultSequence.next())
 
-      if (canContinue()) Nil
+      if (canContinue) Nil
       else List(eager)
     }
 
-    override def canContinue(): Boolean = resultSequence.hasNext
+    override def canContinue: Boolean = resultSequence.hasNext
   }
 
   case class SubTasker(subtasks: Seq[Task]) extends Task {
@@ -122,7 +144,7 @@ class SpatulaTest extends CypherFunSuite {
       if (taskSequence.hasNext) List(taskSequence.next())
       else Nil
 
-    override def canContinue(): Boolean = taskSequence.nonEmpty
+    override def canContinue: Boolean = taskSequence.nonEmpty
   }
 
   case class Row(nodeId:Long)
@@ -170,7 +192,7 @@ class SpatulaTest extends CypherFunSuite {
   case class Argument(argument: Array[Row]) extends Task {
     override def executeWorkUnit(): Seq[Task] = ???
 
-    override def canContinue(): Boolean = ???
+    override def canContinue: Boolean = ???
   }
 
 
@@ -183,7 +205,7 @@ class SpatulaTest extends CypherFunSuite {
       else Nil
     }
 
-    override def canContinue(): Boolean = ???
+    override def canContinue: Boolean = ???
   }
 
 
@@ -195,13 +217,13 @@ class SpatulaTest extends CypherFunSuite {
       Nil
     }
 
-    override def canContinue(): Boolean = false
+    override def canContinue: Boolean = false
   }
 
   case class SingleThreadedAllNodeScan(start:Int, end:Int) extends Task {
     override def executeWorkUnit(): Seq[Task] = ???
 
-    override def canContinue(): Boolean = ???
+    override def canContinue: Boolean = ???
   }
 
   case class ParallelAllNodeScan() extends Task {
@@ -211,6 +233,6 @@ class SpatulaTest extends CypherFunSuite {
       }
     }
 
-    override def canContinue(): Boolean = ???
+    override def canContinue: Boolean = ???
   }
 }

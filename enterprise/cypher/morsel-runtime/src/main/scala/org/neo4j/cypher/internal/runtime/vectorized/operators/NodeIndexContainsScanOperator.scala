@@ -77,6 +77,4 @@ class NodeIndexContainsScanOperator(offset: Int, label: Int, propertyKey: Int, v
 
     override def canContinue: Boolean = hasMore
   }
-
-  override def addDependency(pipeline: Pipeline): Dependency = NoDependencies
 }

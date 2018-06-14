@@ -43,6 +43,4 @@ class ArgumentOperator(argumentSize: SlotConfiguration.Size) extends Operator {
 
     override def canContinue: Boolean = false
   }
-
-  override def addDependency(pipeline: Pipeline): Dependency = Lazy(pipeline)
 }

@@ -84,10 +84,7 @@ class MergeSortOperator(orderBy: Seq[ColumnOrder],
       outputRow.finishedWriting()
     }
 
-    override def canContinue: Boolean = sortedInputs.isEmpty && totalPos < limit
+    override def canContinue: Boolean = !sortedInputs.isEmpty && totalPos < limit
   }
-
-  override def addDependency(pipeline: Pipeline) = Eager(pipeline)
-
 }
 

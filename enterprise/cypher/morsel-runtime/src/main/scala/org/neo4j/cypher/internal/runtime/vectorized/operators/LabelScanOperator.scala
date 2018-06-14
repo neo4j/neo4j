@@ -50,6 +50,4 @@ class LabelScanOperator(offset: Int, label: LazyLabel, argumentSize: SlotConfigu
 
     override def canContinue: Boolean = hasMore
   }
-
-  override def addDependency(pipeline: Pipeline): Dependency = NoDependencies
 }

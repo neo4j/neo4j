@@ -30,18 +30,14 @@ import org.neo4j.values.AnyValue
 import org.opencypher.v9_0.util.symbols
 
 
-class ProduceResultOperator(slots: SlotConfiguration, fieldNames: Array[String]) extends MiddleOperator {
+class ProduceResultOperator(slots: SlotConfiguration, fieldNames: Array[String]) extends StatelessOperator {
 
-  override def init(queryContext: QueryContext): OperatorTask = new OTask()
+  override def operate(currentRow: MorselExecutionContext, context: QueryContext, state: QueryState): Unit = {
+    val resultRow = new MorselResultRow(currentRow, slots, fieldNames, context)
 
-  class OTask() extends OperatorTask {
-    override def operate(currentRow: MorselExecutionContext, context: QueryContext, state: QueryState): Unit = {
-      val resultRow = new MorselResultRow(currentRow, slots, fieldNames, context)
-
-      while(currentRow.hasMoreRows) {
-        state.visitor.visit(resultRow)
-        currentRow.moveToNextRow()
-      }
+    while (currentRow.hasMoreRows) {
+      state.visitor.visit(resultRow)
+      currentRow.moveToNextRow()
     }
   }
 }

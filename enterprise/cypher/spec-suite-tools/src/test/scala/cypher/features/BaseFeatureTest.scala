@@ -60,11 +60,10 @@ abstract class BaseFeatureTest {
     createTests(scenarios, CostSlottedTestConfig)
   }
 
-// TODO tests are failing on windows, investigate
-//  @TestFactory
-//  def runCostMorsel(): Collection[DynamicTest] = {
-//     createTests(scenarios, CostMorselTestConfig)
-//  }
+  @TestFactory
+  def runCostMorsel(): Collection[DynamicTest] = {
+     createTests(scenarios, CostMorselTestConfig)
+  }
 
   @TestFactory
   def runCostCompiled(): Collection[DynamicTest] = {

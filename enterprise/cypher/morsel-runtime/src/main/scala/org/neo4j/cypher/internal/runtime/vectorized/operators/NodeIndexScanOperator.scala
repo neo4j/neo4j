@@ -51,11 +51,9 @@ class NodeIndexScanOperator(offset: Int, label: Int, propertyKey: Int, argumentS
         read.nodeIndexScan(index, valueIndexCursor, IndexOrder.NONE)
       }
 
-      iterate(currentRow, valueIndexCursor, argumentSize)
+      hasMore = iterate(currentRow, valueIndexCursor, argumentSize)
     }
 
     override def canContinue: Boolean = hasMore
   }
-
-  override def addDependency(pipeline: Pipeline): Dependency = NoDependencies
 }

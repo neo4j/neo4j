@@ -68,6 +68,4 @@ class AllNodeScanOperator(offset: Int, argumentSize: SlotConfiguration.Size) ext
 
     override def canContinue: Boolean = hasMore
   }
-
-  override def addDependency(pipeline: Pipeline): Dependency = NoDependencies
 }

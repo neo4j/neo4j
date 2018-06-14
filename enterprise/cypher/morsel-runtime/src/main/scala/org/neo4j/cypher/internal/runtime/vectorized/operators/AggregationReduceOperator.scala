@@ -92,6 +92,4 @@ class AggregationReduceOperator(aggregations: Array[AggregationOffsets],
     }
     result.iterator
   }
-
-  override def addDependency(pipeline: Pipeline): Dependency = Eager(pipeline)
 }

@@ -36,46 +36,43 @@ Responsible for aggregating the data coming from a single morsel. This is equiva
 step of map-reduce. Each thread performs it its local aggregation on the data local to it. In
 the subsequent reduce steps these local aggregations are merged into a single global aggregate.
  */
-class AggregationMapperOperator(aggregations: Array[AggregationOffsets], groupings: Array[GroupingOffsets]) extends MiddleOperator {
+class AggregationMapperOperator(aggregations: Array[AggregationOffsets],
+                                groupings: Array[GroupingOffsets]) extends StatelessOperator {
 
   //These are assigned at compile time to save some time at runtime
   private val groupingFunction = AggregationHelper.groupingFunction(groupings)
   private val addGroupingValuesToResult = AggregationHelper.computeGroupingSetter(groupings)(_.mapperOutputSlot)
 
-  override def init(queryContext: QueryContext): OperatorTask = new OTask()
+  override def operate(currentRow: MorselExecutionContext,
+                       context: QueryContext,
+                       state: QueryState): Unit = {
 
-  class OTask() extends OperatorTask {
-    override def operate(currentRow: MorselExecutionContext,
-                         context: QueryContext,
-                         state: QueryState): Unit = {
+    val result = MutableMap[AnyValue, Array[(Int,AggregationMapper)]]()
 
-      val result = MutableMap[AnyValue, Array[(Int,AggregationMapper)]]()
+    val queryState = new OldQueryState(context, resources = null, params = state.params)
 
-      val queryState = new OldQueryState(context, resources = null, params = state.params)
-
-      //loop over the entire morsel and apply the aggregation
-      while (currentRow.hasMoreRows) {
-        val groupingValue: AnyValue = groupingFunction(currentRow, queryState)
-        val functions = result
-          .getOrElseUpdate(groupingValue, aggregations.map(a => a.mapperOutputSlot -> a.aggregation.createAggregationMapper))
-        functions.foreach(f => f._2.map(currentRow, queryState))
-        currentRow.moveToNextRow()
-      }
-
-      //reuse and reset morsel context
-      currentRow.resetToFirstRow()
-      result.foreach {
-        case (key, aggregator) =>
-          addGroupingValuesToResult(currentRow, key)
-          var i = 0
-          while (i < aggregations.length) {
-            val (offset, mapper) = aggregator(i)
-            currentRow.setRefAt(offset, mapper.result)
-            i += 1
-          }
-          currentRow.moveToNextRow()
-      }
-      currentRow.finishedWriting()
+    //loop over the entire morsel and apply the aggregation
+    while (currentRow.hasMoreRows) {
+      val groupingValue: AnyValue = groupingFunction(currentRow, queryState)
+      val functions = result
+        .getOrElseUpdate(groupingValue, aggregations.map(a => a.mapperOutputSlot -> a.aggregation.createAggregationMapper))
+      functions.foreach(f => f._2.map(currentRow, queryState))
+      currentRow.moveToNextRow()
     }
+
+    //reuse and reset morsel context
+    currentRow.resetToFirstRow()
+    result.foreach {
+      case (key, aggregator) =>
+        addGroupingValuesToResult(currentRow, key)
+        var i = 0
+        while (i < aggregations.length) {
+          val (offset, mapper) = aggregator(i)
+          currentRow.setRefAt(offset, mapper.result)
+          i += 1
+        }
+        currentRow.moveToNextRow()
+    }
+    currentRow.finishedWriting()
   }
 }

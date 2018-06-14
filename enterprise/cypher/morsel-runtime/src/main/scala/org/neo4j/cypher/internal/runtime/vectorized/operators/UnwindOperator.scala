@@ -75,8 +75,5 @@ class UnwindOperator(collection: Expression,
     override def canContinue: Boolean = unwoundValues != null || inputRow.hasMoreRows
   }
 
-  override def addDependency(pipeline: Pipeline): Dependency = Lazy(pipeline)
-
   private case class CurrentState(unwoundValues: java.util.Iterator[AnyValue])
-
 }

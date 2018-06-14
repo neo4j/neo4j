@@ -46,7 +46,6 @@ class ExpandAllOperator(fromOffset: Int,
     The mutable state is an unfortunate cost for this feature.
      */
     var readPos = 0
-    var writePos = 0
     var relationships: RelationshipSelectionCursor = _
 
     override def operate(outputRow: MorselExecutionContext,
@@ -86,6 +85,4 @@ class ExpandAllOperator(fromOffset: Int,
 
     override def canContinue: Boolean = inputRow.hasMoreRows || relationships != null
   }
-
-  override def addDependency(pipeline: Pipeline): Dependency = Lazy(pipeline)
 }

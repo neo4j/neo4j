@@ -47,7 +47,7 @@ class AggregationMapperOperatorTest extends CypherFunSuite {
     val data = new Morsel(longs, refs, longs.length)
 
     // When
-    aggregation.init(null).operate(MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
+    aggregation.operate(MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
 
     // Then we expect {A -> [0,2, 4, 6, 8], B -> []}
     data.refs(0) should equal(stringValue("B"))
@@ -75,7 +75,7 @@ class AggregationMapperOperatorTest extends CypherFunSuite {
     val data = new Morsel(longs, refs, longs.length)
 
     // When
-    aggregation.init(null).operate(MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
+    aggregation.operate(MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
 
     // Then we expect {AC -> [0,2, 4, 6, 8], BD -> []}
     data.refs(0) should equal(stringValue("B"))
@@ -109,7 +109,7 @@ class AggregationMapperOperatorTest extends CypherFunSuite {
     val data = new Morsel(longs, refs, longs.length)
 
     // When
-    aggregation.init(null).operate(MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
+    aggregation.operate(MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
 
     // Then we expect {AC -> [0,2, 4, 6, 8], BD -> []}
     data.refs(0) should equal(stringValue("B"))
@@ -152,7 +152,7 @@ class AggregationMapperOperatorTest extends CypherFunSuite {
     val data = new Morsel(longs, refs, longs.length)
 
     // When
-    aggregation.init(null).operate(MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
+    aggregation.operate(MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
 
     // Then we expect {AC -> [0,2, 4, 6, 8], BD -> []}
     data.refs(0) should equal(stringValue("B"))

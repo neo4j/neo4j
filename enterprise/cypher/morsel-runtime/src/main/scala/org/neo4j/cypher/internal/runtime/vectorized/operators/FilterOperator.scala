@@ -31,11 +31,8 @@ import org.neo4j.values.storable.Values
 /**
  * Takes an input morsel and compacts all rows to the beginning of it, only keeping the rows that match a predicate
  */
-class FilterOperator(predicate: Predicate) extends MiddleOperator {
+class FilterOperator(predicate: Predicate) extends StatelessOperator {
 
-  override def init(queryContext: QueryContext): OperatorTask = new OTask()
-
-  class OTask() extends OperatorTask {
     override def operate(readingRow: MorselExecutionContext,
                          context: QueryContext,
                          state: QueryState): Unit = {
@@ -53,6 +50,5 @@ class FilterOperator(predicate: Predicate) extends MiddleOperator {
       }
 
       writingRow.finishedWriting()
-    }
   }
 }

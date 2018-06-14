@@ -23,6 +23,7 @@
 package org.neo4j.cypher.internal.runtime.vectorized
 
 import java.util
+import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -31,18 +32,17 @@ import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.values.virtual.MapValue
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
 
 trait Operator {
   def init(context: QueryContext, state: QueryState, inputMorsel: MorselExecutionContext): ContinuableOperatorTask
-
-  def addDependency(pipeline: Pipeline): Dependency
 }
 
 trait ReduceOperator {
   def init(context: QueryContext, state: QueryState, inputMorsels: Seq[MorselExecutionContext]): ContinuableOperatorTask
-
-  def addDependency(pipeline: Pipeline): Dependency
 }
+
+trait StatelessOperator extends OperatorTask
 
 trait OperatorTask {
   def operate(data: MorselExecutionContext,
@@ -51,82 +51,87 @@ trait OperatorTask {
 }
 
 trait ContinuableOperatorTask extends OperatorTask {
-
   def canContinue: Boolean
 }
 
-trait MiddleOperator {
-  def init(context: QueryContext): OperatorTask
+trait ReduceCollector {
+
+  def acceptMorsel(inputMorsel: MorselExecutionContext): Unit
+
+  def produceTaskScheduled(task: String): Unit
+
+  def produceTaskCompleted(task: String, context: QueryContext, state: QueryState): Option[Task]
 }
 
-sealed trait Dependency {
-  def foreach(f: Pipeline => Unit): Unit
+class ReducePipeline(start: ReduceOperator,
+                     override val slots: SlotConfiguration,
+                     override val upstream: Option[Pipeline]) extends Pipeline {
 
-  def pipeline: Pipeline
-}
-
-case class Lazy(pipeline: Pipeline) extends Dependency {
-  override def foreach(f: Pipeline => Unit): Unit = f(pipeline)
-}
-
-case class Eager(pipeline: Pipeline) extends Dependency {
-  override def foreach(f: Pipeline => Unit): Unit = f(pipeline)
-  lazy val eagerData = new java.util.concurrent.ConcurrentLinkedQueue[MorselExecutionContext]()
-}
-
-case object NoDependencies extends Dependency {
-  override def foreach(f: Pipeline => Unit): Unit = {}
-
-  override def pipeline = throw new IllegalArgumentException("No dependencies here!")
-}
-
-case class QueryState(params: MapValue, visitor: QueryResultVisitor[_], morselSize: Int = 10000)
-
-case class ReducePipeline(start: ReduceOperator,
-                          operators: IndexedSeq[MiddleOperator],
-                          slots: SlotConfiguration,
-                          dependency: Dependency) extends Pipeline {
-
-  val eagerData = new java.util.concurrent.ConcurrentLinkedQueue[MorselExecutionContext]()
-
-  override def addOperator(operator: MiddleOperator): ReducePipeline = copy(operators = operators :+ operator)
-
-  override def acceptMorsel(inputMorsel: MorselExecutionContext,
-                            isFinalMorsel: Boolean,
-                            context: QueryContext,
-                            state: QueryState): Seq[Task] = {
-    eagerData.add(inputMorsel)
-    if (isFinalMorsel) {
-      val inputMorsels: Array[MorselExecutionContext] = eagerData.asScala.toArray
-      List(PipelineTask(start.init(context, state, inputMorsels),
-        operators.map(_.init(context)),
-        context,
-        state,
-        parent))
-    }
-    else
-      Nil
-  }
+  override def reduceForUpstream(downstreamReduce: Option[ReducePipeline]): Option[ReducePipeline] = Some(this)
 
   override def toString: String = {
     val x = (start +: operators).map(x => x.getClass.getSimpleName)
     s"ReducePipeline(${x.mkString(",")})"
   }
-}
 
-case class RegularPipeline(start: Operator,
-                           operators: IndexedSeq[MiddleOperator],
-                           slots: SlotConfiguration,
-                           dependency: Dependency) extends Pipeline {
+  override def acceptMorsel(inputMorsel: MorselExecutionContext, context: QueryContext, state: QueryState): Seq[Task] = {
 
-  override def addOperator(operator: MiddleOperator): RegularPipeline = copy(operators = operators :+ operator)
-
-  def init(inputMorsel: MorselExecutionContext, context: QueryContext, state: QueryState): PipelineTask = {
-    PipelineTask(start.init(context, state, inputMorsel), operators.map(_.init(context)), context, state, parent)
+    state.reduceCollector.get.acceptMorsel(inputMorsel)
+    Nil
   }
 
-  override def acceptMorsel(inputMorsel: MorselExecutionContext, isFinalMorsel: Boolean, context: QueryContext, state: QueryState): Seq[Task] =
-    List(init(inputMorsel, context, state))
+  def init() = new Collector
+
+  class Collector() extends ReduceCollector {
+
+    private val eagerData = new java.util.concurrent.ConcurrentLinkedQueue[MorselExecutionContext]()
+    private val taskCount = new AtomicInteger(0)
+
+    def acceptMorsel(inputMorsel: MorselExecutionContext): Unit = {
+      eagerData.add(inputMorsel)
+    }
+
+    def produceTaskScheduled(task: String): Unit = {
+      val tasks = taskCount.incrementAndGet()
+      if (Pipeline.DEBUG)
+        println("taskCount [%3d]: scheduled %s".format(tasks, task))
+    }
+
+    def produceTaskCompleted(task: String, context: QueryContext, state: QueryState): Option[Task] = {
+      val tasksLeft = taskCount.decrementAndGet()
+      if (Pipeline.DEBUG)
+        println("taskCount [%3d]: completed %s".format(tasksLeft, task))
+
+      if (tasksLeft == 0) {
+        val inputMorsels: Array[MorselExecutionContext] = eagerData.asScala.toArray
+        Some(initTask(start.init(context, state, inputMorsels), context, state))
+      }
+      else if (tasksLeft < 0) {
+        throw new IllegalStateException("Reference counting of tasks has failed: now at task count " + tasksLeft)
+      }
+      else
+        None
+    }
+  }
+}
+
+case class QueryState(params: MapValue,
+                      visitor: QueryResultVisitor[_],
+                      morselSize: Int = 10000,
+                      reduceCollector: Option[ReduceCollector] = None)
+
+class RegularPipeline(start: Operator,
+                      override val slots: SlotConfiguration,
+                      override val upstream: Option[Pipeline]) extends Pipeline {
+
+  def init(inputMorsel: MorselExecutionContext, context: QueryContext, state: QueryState): PipelineTask = {
+    initTask(start.init(context, state, inputMorsel), context, state)
+  }
+
+  override def acceptMorsel(inputMorsel: MorselExecutionContext, context: QueryContext, state: QueryState): Seq[Task] =
+    List(pipelineTask(start.init(context, state, inputMorsel), context, state))
+
+  override def reduceForUpstream(downstreamReduce: Option[ReducePipeline]): Option[ReducePipeline] = downstreamReduce
 
   override def toString: String = {
     val x = (start +: operators).map(x => x.getClass.getSimpleName)
@@ -135,48 +140,72 @@ case class RegularPipeline(start: Operator,
 }
 
 object Pipeline {
-  private val DEBUG = true
+  private[vectorized] val DEBUG = true
 }
 
 abstract class Pipeline() {
 
   self =>
 
-  def dependency: Dependency
-  def acceptMorsel(inputMorsel: MorselExecutionContext, isFinalMorsel: Boolean, context: QueryContext, state: QueryState): Seq[Task]
+  // abstract
+  def upstream: Option[Pipeline]
+  def acceptMorsel(inputMorsel: MorselExecutionContext, context: QueryContext, state: QueryState): Seq[Task]
   def slots: SlotConfiguration
-  def addOperator(operator: MiddleOperator): Pipeline
+  def reduceForUpstream(downstreamReduce: Option[ReducePipeline]): Option[ReducePipeline]
 
-  var parent: Option[Pipeline] = None
-  def endPipeline: Boolean = parent.isEmpty
+  // operators
+  protected val operators: ArrayBuffer[StatelessOperator] = new ArrayBuffer[StatelessOperator]
+  def addOperator(operator: StatelessOperator): Unit =
+    operators += operator
 
-  /*
-  Walks the tree, setting parent information everywhere so we can push up the tree
-   */
+  // downstream
+  var downstream: Option[Pipeline] = None
+  var downstreamReduce: Option[ReducePipeline] = None
+  def endPipeline: Boolean = downstream.isEmpty
+
+  /**
+    * Walks the tree, setting parent information everywhere so we can push up the tree
+    */
   def construct: Pipeline = {
-    dependency.foreach(_.noIamYourFather(this))
+    setDownstream(None, None)
     this
   }
 
-  protected def noIamYourFather(daddy: Pipeline): Unit = {
-    dependency.foreach(_.noIamYourFather(this))
-    parent = Some(daddy)
+  protected def setDownstream(downstream: Option[Pipeline], downstreamReduce: Option[ReducePipeline]): Unit = {
+    this.downstream = downstream
+    this.downstreamReduce = downstreamReduce
+    this.upstream.foreach(_.setDownstream(Some(this), reduceForUpstream(downstreamReduce)))
+  }
+
+  def initTask(startOperatorTask: ContinuableOperatorTask, context: QueryContext, state: QueryState): PipelineTask = {
+    val stateWithReduceCollector = state.copy(reduceCollector = downstreamReduce.map(_.init()))
+    pipelineTask(startOperatorTask, context, stateWithReduceCollector)
+  }
+
+  def pipelineTask(startOperatorTask: ContinuableOperatorTask, context: QueryContext, state: QueryState): PipelineTask = {
+    state.reduceCollector.foreach(_.produceTaskScheduled(this.toString))
+    PipelineTask(startOperatorTask,
+                 operators,
+                 context,
+                 state,
+                 downstream)
   }
 
   case class PipelineTask(start: ContinuableOperatorTask,
                           operators: IndexedSeq[OperatorTask],
-                          context: QueryContext,
+                          doNotUseContext: QueryContext,
                           state: QueryState,
                           downstream: Option[Pipeline]) extends Task {
 
     override def executeWorkUnit(): Seq[Task] = {
       val outputMorsel = Morsel.create(slots, state.morselSize)
       val currentRow = new MorselExecutionContext(outputMorsel, slots.numberOfLongs, slots.numberOfReferences, 0)
-      start.operate(currentRow, context, state)
+      val queryContext = doNotUseContext.createNewQueryContext()
+      start.operate(currentRow, queryContext, state)
 
       for (op <- operators) {
         currentRow.resetToFirstRow()
-        op.operate(currentRow, context, state)
+        op.operate(currentRow, queryContext, state)
       }
 
       if (org.neo4j.cypher.internal.runtime.vectorized.Pipeline.DEBUG) {
@@ -196,9 +225,17 @@ abstract class Pipeline() {
         println("-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/")
       }
 
-      downstream.map(_.acceptMorsel(currentRow, !start.canContinue, context, state)).getOrElse(Nil)
+      val downstreamTasks = downstream.map(_.acceptMorsel(currentRow, queryContext, state)).getOrElse(Nil)
+
+      state.reduceCollector match {
+        case Some(x) if !start.canContinue =>
+          downstreamTasks ++ x.produceTaskCompleted(self.toString, queryContext, state)
+
+        case _ =>
+          downstreamTasks
+      }
     }
 
-    override def canContinue(): Boolean = start.canContinue
+    override def canContinue: Boolean = start.canContinue
   }
 }

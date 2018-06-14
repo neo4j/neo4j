@@ -30,7 +30,7 @@ import org.opencypher.v9_0.util.SyntaxException
 import org.opencypher.v9_0.util.symbols.CypherType
 import org.neo4j.values.AnyValue
 
-abstract class AggregationExpressionOperator  extends Expression {
+abstract class AggregationExpressionOperator extends Expression {
 
   def apply(ctx: ExecutionContext, state: OldQueryState) =
     throw new UnsupportedOperationException("Aggregations should not be used like this.")

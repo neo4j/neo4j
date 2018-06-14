@@ -100,7 +100,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
       case p => throw new CantCompileQueryException(s"$p not supported in morsel runtime")
     }
 
-    RegularPipeline(thisOp, IndexedSeq.empty, slots, NoDependencies)
+    new RegularPipeline(thisOp, slots, None)
   }
 
   override protected def build(plan: LogicalPlan, from: Pipeline): Pipeline = {
@@ -130,14 +130,14 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
         case plans.Sort(_, sortItems) =>
           val ordering = sortItems.map(translateColumnOrder(slots, _))
           val preSorting = new PreSortOperator(ordering)
-          source = source.addOperator(preSorting)
+          source.addOperator(preSorting)
           new MergeSortOperator(ordering)
 
         case Top(_, sortItems, limit) =>
           val ordering = sortItems.map(translateColumnOrder(slots, _))
           val countExpression = converters.toCommandExpression(limit)
           val preTop = new PreSortOperator(ordering, Some(countExpression))
-          source = source.addOperator(preTop)
+          source.addOperator(preTop)
           new MergeSortOperator(ordering, Some(countExpression))
 
         case plans.Aggregation(_, groupingExpressions, aggregationExpression) if groupingExpressions.isEmpty =>
@@ -152,7 +152,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
           }.toArray
 
           //add mapper to source
-          source = source.addOperator(new AggregationMapperOperatorNoGrouping(aggregations))
+          source.addOperator(new AggregationMapperOperatorNoGrouping(aggregations))
           new AggregationReduceOperatorNoGrouping(aggregations)
 
         case plans.Aggregation(_, groupingExpressions, aggregationExpression) =>
@@ -178,7 +178,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
           }.toArray
 
           //add mapper to source
-          source = source.addOperator(new AggregationMapperOperator(aggregations, groupings))
+          source.addOperator(new AggregationMapperOperator(aggregations, groupings))
           new AggregationReduceOperator(aggregations, groupings)
 
         case plans.UnwindCollection(src, variable, collection) =>
@@ -195,11 +195,12 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
 
     thisOp match {
       case o: Operator =>
-        RegularPipeline(o, IndexedSeq.empty, slots, o.addDependency(source))
-      case mo: MiddleOperator =>
+        new RegularPipeline(o, slots, Some(source))
+      case mo: StatelessOperator =>
         source.addOperator(mo)
+        source
       case ro: ReduceOperator =>
-        ReducePipeline(ro, IndexedSeq.empty, slots, ro.addDependency(source))
+        new ReducePipeline(ro, slots, Some(source))
     }
   }
 

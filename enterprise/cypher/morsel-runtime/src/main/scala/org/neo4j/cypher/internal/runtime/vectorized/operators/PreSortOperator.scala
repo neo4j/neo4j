@@ -40,11 +40,7 @@ import scala.collection.JavaConverters._
  * If countExpression != None, this sorts the first N rows of the morsel in place. If N > morselSize, this is equivalent to sorting everything.
  */
 class PreSortOperator(orderBy: Seq[ColumnOrder],
-                      countExpression: Option[Expression] = None) extends MiddleOperator {
-
-  override def init(queryContext: QueryContext): OperatorTask = new OTask()
-
-  class OTask() extends OperatorTask {
+                      countExpression: Option[Expression] = None) extends StatelessOperator {
 
     override def operate(currentRow: MorselExecutionContext,
                          context: QueryContext,
@@ -88,6 +84,5 @@ class PreSortOperator(orderBy: Seq[ColumnOrder],
       // Now that we have a sorted array, we need to shuffle the morsel rows around until they follow the same order
       // as the sorted array
       MorselSorting.createSortedMorselData(currentRow, outputToInputIndexes)
-    }
   }
 }

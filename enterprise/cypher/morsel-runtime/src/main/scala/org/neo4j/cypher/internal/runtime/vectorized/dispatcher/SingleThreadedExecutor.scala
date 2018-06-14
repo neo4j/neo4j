@@ -39,8 +39,8 @@ class SingleThreadedExecutor(morselSize: Int = 100000) extends Dispatcher {
                                        taskCloser: TaskCloser)
                                       (visitor: QueryResultVisitor[E]): Unit = {
     var leafOp = operators
-    while (leafOp.dependency != NoDependencies) {
-      leafOp = leafOp.dependency.pipeline
+    while (leafOp.upstream.nonEmpty) {
+      leafOp = leafOp.upstream.get
     }
 
     val state = QueryState(params, visitor, morselSize)
@@ -49,17 +49,23 @@ class SingleThreadedExecutor(morselSize: Int = 100000) extends Dispatcher {
     val jobStack: mutable.Stack[Task] = new mutable.Stack()
     jobStack.push(initialTask)
 
-    while (jobStack.nonEmpty) {
-      val nextTask = jobStack.pop()
+    try {
+      while (jobStack.nonEmpty) {
+        val nextTask = jobStack.pop()
 
-      val downstreamTasks = nextTask.executeWorkUnit()
-      for (newTask <- downstreamTasks)
-        jobStack.push(newTask)
+        val downstreamTasks = nextTask.executeWorkUnit()
+        for (newTask <- downstreamTasks)
+          jobStack.push(newTask)
 
-      if (nextTask.canContinue())
-        jobStack.push(nextTask)
+        if (nextTask.canContinue)
+          jobStack.push(nextTask)
+      }
+
+      taskCloser.close(success = true)
+    } catch {
+      case t: Throwable =>
+        taskCloser.close(success = false)
+        throw t
     }
-
-    taskCloser.close(success = true)
   }
 }
