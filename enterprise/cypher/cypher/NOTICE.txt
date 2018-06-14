@@ -38,8 +38,8 @@ BSD - Scala License
   Scala Library
 
 BSD License
-  ASM Core
-  ASM Tree
+  asm
+  asm-tree
   JLine
   Scala Compiler
 

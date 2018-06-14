@@ -213,10 +213,10 @@ Apache Software License, Version 2.0
 
 ------------------------------------------------------------------------------
 BSD License
-  ASM Analysis
-  ASM Core
-  ASM Tree
-  ASM Util
+  asm
+  asm-analysis
+  asm-tree
+  asm-util
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>

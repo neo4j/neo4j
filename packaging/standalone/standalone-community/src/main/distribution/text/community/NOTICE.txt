@@ -70,10 +70,10 @@ BSD - Scala License
 
 BSD License
   antlr4.js
-  ASM Analysis
-  ASM Core
-  ASM Tree
-  ASM Util
+  asm
+  asm-analysis
+  asm-tree
+  asm-util
   buffer-equal-constant-time.js
   D3.js
   dnd-core.js
