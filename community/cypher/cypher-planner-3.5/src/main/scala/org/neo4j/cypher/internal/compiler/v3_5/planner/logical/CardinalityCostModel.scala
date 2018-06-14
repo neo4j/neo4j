@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics._
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
-import org.opencypher.v9_0.util.{Cardinality, Cost, CostPerRow, Multiplier}
-import org.opencypher.v9_0.expressions.{HasLabels, Property}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
+import org.opencypher.v9_0.expressions.{HasLabels, Property}
+import org.opencypher.v9_0.util.{Cardinality, Cost, CostPerRow, Multiplier}
 
 case class CardinalityCostModel(config: CypherPlannerConfiguration) extends CostModel {
   def VERBOSE = java.lang.Boolean.getBoolean("CardinalityCostModel.VERBOSE")
@@ -48,7 +48,7 @@ case class CardinalityCostModel(config: CypherPlannerConfiguration) extends Cost
 
     // Filtering on labels and properties
     case Selection(predicate, _) =>
-      val noOfStoreAccesses = predicate.treeCount {
+      val noOfStoreAccesses = predicate.exprs.treeCount {
         case _: Property | _: HasLabels => true
         case _ => false
       }
