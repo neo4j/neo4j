@@ -20,21 +20,24 @@
 package org.neo4j.io.pagecache.randomharness;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 class PlanRunner implements Callable<Void>
 {
     private final Plan plan;
+    private final AtomicBoolean stopSignal;
 
-    PlanRunner( Plan plan )
+    PlanRunner( Plan plan, AtomicBoolean stopSignal )
     {
         this.plan = plan;
+        this.stopSignal = stopSignal;
     }
 
     @Override
     public Void call() throws Exception
     {
         Action action = plan.next();
-        while ( action != null )
+        while ( action != null && !stopSignal.get() )
         {
             try
             {
