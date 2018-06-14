@@ -265,7 +265,6 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         return builder.toString();
     }
 
-
     private String relationshipType( int id )
     {
         if ( id == StatementConstants.ANY_RELATIONSHIP_TYPE )
