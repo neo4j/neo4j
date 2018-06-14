@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Litera
 import org.neo4j.cypher.internal.runtime.slotted.pipes.Ascending
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.VirtualValues
 import org.opencypher.v9_0.util.symbols.CTNode
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
@@ -63,7 +62,7 @@ class MergeSortOperatorTest extends CypherFunSuite {
 
     val operator = new MergeSortOperator(columnOrdering, Some(Literal(3)))
     val continuation = operator.init(null, null, Array(MorselExecutionContext(in, numberOfLongs, numberOfReferences)))
-      .operate(MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null) )
+      .operate(MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, QueryState.EMPTY )
 
     continuation shouldBe an[EndOfLoop]
     out.longs.take(3) should equal(Array[Long](1, 2, 3))
@@ -210,12 +209,12 @@ class MergeSortOperatorTest extends CypherFunSuite {
     val operator = new MergeSortOperator(columnOrdering, Some(Literal(9)))
 
     val task = operator.init(null, null, Array(MorselExecutionContext(in1, numberOfLongs, numberOfReferences), MorselExecutionContext(in2, numberOfLongs, numberOfReferences)))
-    task.operate(MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null) )
+    task.operate(MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, QueryState.EMPTY )
     task.canContinue should be(true)
     out.longs should equal(Array(1, 2, 3, 4, 5))
     out.validRows shouldBe 5
 
-    task.operate(MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null) )
+    task.operate(MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, QueryState.EMPTY )
     task.canContinue should be(false)
     out.longs.take(4) should equal(Array(6, 7, 7, 8))
     out.validRows shouldBe 4

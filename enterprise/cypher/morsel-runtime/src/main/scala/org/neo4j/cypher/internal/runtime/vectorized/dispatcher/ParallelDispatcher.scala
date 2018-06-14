@@ -42,7 +42,7 @@ class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) exte
                              (visitor: QueryResultVisitor[E]): Unit = {
     val leaf = getLeaf(operators)
 
-    val state = QueryState(params, visitor, morselSize)
+    val state = QueryState(params, visitor, morselSize, false)
     val initialTask = leaf.init(null, queryContext, state)
     val queryExecution = spatula.execute(initialTask)
     val maybeError = queryExecution.await()

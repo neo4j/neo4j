@@ -73,7 +73,7 @@ class AllNodeScanOperatorTest extends CypherFunSuite {
     when(context.transactionalContext.cursors.allocateNodeCursor()).thenReturn(cursor1, cursor2)
 
     // When
-    operator.init(context, null, inputRow).operate(outputRow, context, QueryState(VirtualValues.EMPTY_MAP, null))
+    operator.init(context, null, inputRow).operate(outputRow, context, QueryState.EMPTY)
 
     // Then
     outputMorsel.longs should equal(Array(
@@ -93,7 +93,7 @@ class AllNodeScanOperatorTest extends CypherFunSuite {
     // And when
     inputRow.moveToNextRow()
     outputRow.resetToFirstRow()
-    operator.init(context, null, inputRow).operate(outputRow, context, QueryState(VirtualValues.EMPTY_MAP, null))
+    operator.init(context, null, inputRow).operate(outputRow, context, QueryState.EMPTY)
 
     // Then
     outputMorsel.longs should equal(Array(

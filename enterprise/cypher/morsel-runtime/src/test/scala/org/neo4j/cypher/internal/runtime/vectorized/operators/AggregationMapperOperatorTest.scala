@@ -23,11 +23,10 @@
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RefSlot
-import org.neo4j.cypher.internal.runtime.vectorized.{Iteration, Morsel, MorselExecutionContext, QueryState}
+import org.neo4j.cypher.internal.runtime.vectorized.{Morsel, MorselExecutionContext, QueryState}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.stringValue
-import org.neo4j.values.virtual.VirtualValues
 import org.opencypher.v9_0.util.symbols.CTAny
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
@@ -47,7 +46,7 @@ class AggregationMapperOperatorTest extends CypherFunSuite {
     val data = new Morsel(longs, refs, longs.length)
 
     // When
-    aggregation.operate(MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
+    aggregation.operate(MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState.EMPTY)
 
     // Then we expect {A -> [0,2, 4, 6, 8], B -> []}
     data.refs(0) should equal(stringValue("B"))
@@ -75,7 +74,7 @@ class AggregationMapperOperatorTest extends CypherFunSuite {
     val data = new Morsel(longs, refs, longs.length)
 
     // When
-    aggregation.operate(MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
+    aggregation.operate(MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState.EMPTY)
 
     // Then we expect {AC -> [0,2, 4, 6, 8], BD -> []}
     data.refs(0) should equal(stringValue("B"))
@@ -109,7 +108,7 @@ class AggregationMapperOperatorTest extends CypherFunSuite {
     val data = new Morsel(longs, refs, longs.length)
 
     // When
-    aggregation.operate(MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
+    aggregation.operate(MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState.EMPTY)
 
     // Then we expect {AC -> [0,2, 4, 6, 8], BD -> []}
     data.refs(0) should equal(stringValue("B"))
@@ -152,7 +151,7 @@ class AggregationMapperOperatorTest extends CypherFunSuite {
     val data = new Morsel(longs, refs, longs.length)
 
     // When
-    aggregation.operate(MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
+    aggregation.operate(MorselExecutionContext(data, numberOfLongs, numberOfReferences), null, QueryState.EMPTY)
 
     // Then we expect {AC -> [0,2, 4, 6, 8], BD -> []}
     data.refs(0) should equal(stringValue("B"))

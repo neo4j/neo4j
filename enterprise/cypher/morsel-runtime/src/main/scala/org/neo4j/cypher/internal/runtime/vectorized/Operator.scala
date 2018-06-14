@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.parallel.Task
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
-import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.{MapValue, VirtualValues}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
@@ -115,9 +115,14 @@ class ReducePipeline(start: ReduceOperator,
   }
 }
 
+object QueryState {
+  val EMPTY = QueryState(VirtualValues.EMPTY_MAP, null, 10000, singeThreaded = true)
+}
+
 case class QueryState(params: MapValue,
                       visitor: QueryResultVisitor[_],
-                      morselSize: Int = 10000,
+                      morselSize: Int,
+                      singeThreaded: Boolean, // hack until we solve [Transaction 1 - * Threads] problem
                       reduceCollector: Option[ReduceCollector] = None)
 
 class RegularPipeline(start: Operator,
@@ -140,7 +145,7 @@ class RegularPipeline(start: Operator,
 }
 
 object Pipeline {
-  private[vectorized] val DEBUG = true
+  private[vectorized] val DEBUG = false
 }
 
 abstract class Pipeline() {
@@ -193,14 +198,16 @@ abstract class Pipeline() {
 
   case class PipelineTask(start: ContinuableOperatorTask,
                           operators: IndexedSeq[OperatorTask],
-                          doNotUseContext: QueryContext,
+                          originalQueryContext: QueryContext,
                           state: QueryState,
                           downstream: Option[Pipeline]) extends Task {
 
     override def executeWorkUnit(): Seq[Task] = {
       val outputMorsel = Morsel.create(slots, state.morselSize)
       val currentRow = new MorselExecutionContext(outputMorsel, slots.numberOfLongs, slots.numberOfReferences, 0)
-      val queryContext = doNotUseContext.createNewQueryContext()
+      val queryContext =
+        if (state.singeThreaded) originalQueryContext
+        else originalQueryContext.createNewQueryContext()
       start.operate(currentRow, queryContext, state)
 
       for (op <- operators) {

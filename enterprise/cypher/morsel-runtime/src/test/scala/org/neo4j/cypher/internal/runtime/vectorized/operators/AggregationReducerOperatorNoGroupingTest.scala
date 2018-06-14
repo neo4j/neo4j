@@ -22,10 +22,9 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.runtime.vectorized._
+import org.neo4j.cypher.internal.runtime.vectorized.{Morsel, MorselExecutionContext, QueryState}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.VirtualValues
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class AggregationReducerOperatorNoGroupingTest extends CypherFunSuite {
@@ -41,7 +40,7 @@ class AggregationReducerOperatorNoGroupingTest extends CypherFunSuite {
     val out = new Morsel(new Array[Long](10), new Array[AnyValue](10), refs.length)
     // When
     aggregation.init(null, null, Array(MorselExecutionContext(in, numberOfLongs, numberOfReferences)))
-      .operate(MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, QueryState(VirtualValues.EMPTY_MAP, null))
+      .operate(MorselExecutionContext(out, numberOfLongs, numberOfReferences), null, QueryState.EMPTY)
 
     // Then
     out.refs(0) should equal(Values.longArray(Array(2,4,42)))
@@ -63,7 +62,7 @@ class AggregationReducerOperatorNoGroupingTest extends CypherFunSuite {
 
     // When
     aggregation.init(null, null, in).operate(MorselExecutionContext(out, numberOfLongs, numberOfReferences),
-                                             null, QueryState(VirtualValues.EMPTY_MAP, null))
+                                             null, QueryState.EMPTY)
 
     // Then
     out.refs(0) should equal(Values.longArray(Array(2,4,6,8,10,12,14,16,18,20)))

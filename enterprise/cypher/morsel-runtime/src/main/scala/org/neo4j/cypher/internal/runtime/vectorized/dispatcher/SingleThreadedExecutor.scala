@@ -43,7 +43,7 @@ class SingleThreadedExecutor(morselSize: Int = 100000) extends Dispatcher {
       leafOp = leafOp.upstream.get
     }
 
-    val state = QueryState(params, visitor, morselSize)
+    val state = QueryState(params, visitor, morselSize, true)
     val initialTask = leafOp.asInstanceOf[RegularPipeline].init(null, queryContext, state)
 
     val jobStack: mutable.Stack[Task] = new mutable.Stack()
