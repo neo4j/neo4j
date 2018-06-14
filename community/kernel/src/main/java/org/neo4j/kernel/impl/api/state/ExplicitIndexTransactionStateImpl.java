@@ -150,7 +150,7 @@ public class ExplicitIndexTransactionStateImpl implements ExplicitIndexTransacti
 
     private void addCommand( String indexName, IndexCommand command, boolean clearFirst )
     {
-        List<IndexCommand> commands = null;
+        List<IndexCommand> commands;
         if ( command.getEntityType() == IndexEntityType.Node.id() )
         {
             commands = nodeCommands.computeIfAbsent( indexName, k -> new ArrayList<>() );

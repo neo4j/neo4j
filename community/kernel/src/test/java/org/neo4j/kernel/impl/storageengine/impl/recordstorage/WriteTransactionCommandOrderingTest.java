@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.state;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.junit.Test;
 
@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommandVisitor;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.TransactionRecordState;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -51,7 +50,10 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
+import org.neo4j.kernel.impl.transaction.state.RecordChangeSet;
+import org.neo4j.kernel.impl.transaction.state.RecordChanges;
 import org.neo4j.kernel.impl.transaction.state.RecordChanges.RecordChange;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -63,16 +65,15 @@ import static org.mockito.Mockito.when;
 
 public class WriteTransactionCommandOrderingTest
 {
-    private final AtomicReference<List<String>> currentRecording = new AtomicReference<>();
-    private final RecordingRelationshipStore relationshipStore = new RecordingRelationshipStore( currentRecording );
-    private final RecordingNodeStore nodeStore = new RecordingNodeStore( currentRecording );
-    private final RecordingPropertyStore propertyStore = new RecordingPropertyStore( currentRecording );
-    private final NeoStores store = mock( NeoStores.class );
-
     public WriteTransactionCommandOrderingTest()
     {
+        AtomicReference<List<String>> currentRecording = new AtomicReference<>();
+        RecordingPropertyStore propertyStore = new RecordingPropertyStore( currentRecording );
+        NeoStores store = mock( NeoStores.class );
         when( store.getPropertyStore() ).thenReturn( propertyStore );
+        RecordingNodeStore nodeStore = new RecordingNodeStore( currentRecording );
         when( store.getNodeStore() ).thenReturn( nodeStore );
+        RecordingRelationshipStore relationshipStore = new RecordingRelationshipStore( currentRecording );
         when( store.getRelationshipStore() ).thenReturn( relationshipStore );
     }
 
@@ -136,8 +137,7 @@ public class WriteTransactionCommandOrderingTest
         RecordChangeSet recordChangeSet = mock( RecordChangeSet.class );
 
         RecordChanges<LabelTokenRecord,Void> labelTokenChanges = mock( RecordChanges.class );
-        RecordChanges<RelationshipTypeTokenRecord,Void> relationshipTypeTokenChanges =
-                mock( RecordChanges.class );
+        RecordChanges<RelationshipTypeTokenRecord,Void> relationshipTypeTokenChanges = mock( RecordChanges.class );
         RecordChanges<PropertyKeyTokenRecord,Void> propertyKeyTokenChanges = mock( RecordChanges.class );
         RecordChanges<NodeRecord,Void> nodeRecordChanges = mock( RecordChanges.class );
         RecordChanges<RelationshipRecord,Void> relationshipRecordChanges = mock( RecordChanges.class );

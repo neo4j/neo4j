@@ -261,7 +261,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             // Visit transaction state and populate these record state objects
             TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState, schemaState,
-                    schemaStorage, constraintSemantics, indexProviderMap );
+                    schemaStorage, constraintSemantics );
             CountsRecordState countsRecordState = new CountsRecordState();
             txStateVisitor = additionalTxStateVisitor.apply( txStateVisitor );
             txStateVisitor = new TransactionCountingStateVisitor(

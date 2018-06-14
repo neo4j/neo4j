@@ -99,7 +99,7 @@ public class TransactionRecordState implements RecordState
     private RecordChanges<NeoStoreRecord, Void> neoStoreRecord;
     private boolean prepared;
 
-    public TransactionRecordState( NeoStores neoStores, IntegrityValidator integrityValidator,
+    TransactionRecordState( NeoStores neoStores, IntegrityValidator integrityValidator,
             RecordChangeSet recordChangeSet, long lastCommittedTxWhenTransactionStarted,
             ResourceLocker locks,
             RelationshipCreator relationshipCreator,
