@@ -1,9 +1,30 @@
+/*
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.kernel.impl.index.schema;
 
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.index.schema.GenericLayout.Type;
+import org.neo4j.kernel.impl.store.TemporalValueWriterAdapter;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.DateTimeValue;
@@ -22,13 +43,20 @@ import static org.neo4j.kernel.impl.index.schema.DurationIndexKey.AVG_DAY_SECOND
 import static org.neo4j.kernel.impl.index.schema.DurationIndexKey.AVG_MONTH_SECONDS;
 import static org.neo4j.kernel.impl.index.schema.GenericLayout.HIGHEST_TYPE_BY_VALUE_GROUP;
 import static org.neo4j.kernel.impl.index.schema.GenericLayout.LOWEST_TYPE_BY_VALUE_GROUP;
+import static org.neo4j.kernel.impl.index.schema.StringIndexKey.ENTITY_ID_SIZE;
 import static org.neo4j.kernel.impl.index.schema.StringIndexKey.unsignedByteArrayCompare;
+import static org.neo4j.kernel.impl.index.schema.ZonedDateTimeLayout.ZONE_ID_FLAG;
+import static org.neo4j.kernel.impl.index.schema.ZonedDateTimeLayout.ZONE_ID_MASK;
+import static org.neo4j.kernel.impl.index.schema.ZonedDateTimeLayout.asZoneId;
+import static org.neo4j.kernel.impl.index.schema.ZonedDateTimeLayout.asZoneOffset;
+import static org.neo4j.kernel.impl.index.schema.ZonedDateTimeLayout.isZoneId;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
-public class GenericKey extends NativeIndexKey<GenericKey>
+class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 {
     private static final long TRUE = 1;
     private static final long FALSE = 0;
+    private static final int TYPE_ID_SIZE = Byte.BYTES;
 
     Type type;
 
@@ -38,7 +66,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     // zoned time:            long0 (nanosOfDayUTC), long1 (zoneOffsetSeconds)
     // local time:            long0 (nanoOfDay)
     // duration:              long0 (totalAvgSeconds), long1 (nanosOfSecond), long2 (months), long3 (days)
-    // text:                  long0 (length), long1 (bytesDereferenced), long2 (ignoreLength), byteArray
+    // text:                  long0 (length), long1 (bytesDereferenced), long2 (ignoreLength), long3 (isHighest), byteArray
     // boolean:               long0
     // number:                long0 (value), long1 (number type)
     // TODO spatial
@@ -50,10 +78,8 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     long long3;
     byte[] byteArray;
 
-    @Override
-    void initialize( long entityId )
+    void clear()
     {
-        super.initialize( entityId );
         type = null;
         long0 = 0;
         long1 = 0;
@@ -61,8 +87,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
         long3 = 0;
     }
 
-    @Override
-    protected Value assertCorrectType( Value value )
+    Value assertCorrectType( Value value )
     {
         if ( Values.isGeometryValue( value ) || Values.isArrayValue( value ) )
         {
@@ -71,7 +96,6 @@ public class GenericKey extends NativeIndexKey<GenericKey>
         return value;
     }
 
-    @Override
     Value asValue()
     {
         switch ( type )
@@ -99,7 +123,6 @@ public class GenericKey extends NativeIndexKey<GenericKey>
         }
     }
 
-    @Override
     void initValueAsLowest( ValueGroup valueGroup )
     {
         type = valueGroup == ValueGroup.UNKNOWN ? LOWEST_TYPE_BY_VALUE_GROUP : GenericLayout.TYPE_BY_GROUP[valueGroup.ordinal()];
@@ -108,9 +131,12 @@ public class GenericKey extends NativeIndexKey<GenericKey>
         long2 = Long.MIN_VALUE;
         long3 = Long.MIN_VALUE;
         byteArray = null;
+        if ( type == Type.TEXT )
+        {
+            long3 = FALSE;
+        }
     }
 
-    @Override
     void initValueAsHighest( ValueGroup valueGroup )
     {
         type = valueGroup == ValueGroup.UNKNOWN ? HIGHEST_TYPE_BY_VALUE_GROUP : GenericLayout.TYPE_BY_GROUP[valueGroup.ordinal()];
@@ -119,10 +145,13 @@ public class GenericKey extends NativeIndexKey<GenericKey>
         long2 = Long.MAX_VALUE;
         long3 = Long.MAX_VALUE;
         byteArray = null;
+        if ( type == Type.TEXT )
+        {
+            long3 = TRUE;
+        }
     }
 
-    @Override
-    int compareValueTo( GenericKey other )
+    int compareValueTo( GenericKeyState other )
     {
         int typeComparison = GenericLayout.TYPE_COMPARATOR.compare( type, other.type );
         if ( typeComparison != 0 )
@@ -155,7 +184,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
         }
     }
 
-    void copyByteArrayFromIfExists( GenericKey key, int targetLength )
+    void copyByteArrayFromIfExists( GenericKeyState key, int targetLength )
     {
         if ( key.type == Type.TEXT )
         {
@@ -183,11 +212,18 @@ public class GenericKey extends NativeIndexKey<GenericKey>
 
     void initAsPrefixLow( String prefix )
     {
-        initialize( Long.MIN_VALUE );
+        clear();
         writeString( prefix );
         long2 = FALSE;
         // Don't set ignoreLength = true here since the "low" a.k.a. left side of the range should care about length.
         // This will make the prefix lower than those that matches the prefix (their length is >= that of the prefix)
+    }
+
+    void initAsPrefixHigh( String prefix )
+    {
+        clear();
+        writeString( prefix );
+        long2 = TRUE;
     }
 
     @Override
@@ -320,13 +356,6 @@ public class GenericKey extends NativeIndexKey<GenericKey>
         long3 = days;
     }
 
-    void initAsPrefixHigh( String prefix )
-    {
-        initialize( Long.MAX_VALUE );
-        writeString( prefix );
-        long2 = TRUE;
-    }
-
     private NumberValue numberAsValue()
     {
         return RawBits.asNumberValue( long0, (byte) long1 );
@@ -386,17 +415,17 @@ public class GenericKey extends NativeIndexKey<GenericKey>
                DateTimeValue.datetime( long0, long1, ZoneOffset.ofTotalSeconds( (int) long3 ) );
     }
 
-    private int compareNumber( GenericKey other )
+    private int compareNumber( GenericKeyState other )
     {
         return RawBits.compare( long0, (byte) long1, other.long0, (byte) other.long1 );
     }
 
-    private int compareBoolean( GenericKey other )
+    private int compareBoolean( GenericKeyState other )
     {
         return Long.compare( long0, other.long0 );
     }
 
-    private int compareText( GenericKey other )
+    private int compareText( GenericKeyState other )
     {
         if ( byteArray != other.byteArray )
         {
@@ -419,7 +448,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
 
     private boolean isHighestText()
     {
-        return getCompareId() && getEntityId() == Long.MAX_VALUE && byteArray == null;
+        return long3 == TRUE;
     }
 
     private boolean booleanOf( long longValue )
@@ -427,7 +456,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
         return longValue == TRUE;
     }
 
-    private int compareZonedDateTime( GenericKey other )
+    private int compareZonedDateTime( GenericKeyState other )
     {
         int compare = Long.compare( long0, other.long0 );
         if ( compare == 0 )
@@ -446,7 +475,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
         return compare;
     }
 
-    private int compareLocalDateTime( GenericKey other )
+    private int compareLocalDateTime( GenericKeyState other )
     {
         int compare = Long.compare( long1, other.long1 );
         if ( compare == 0 )
@@ -456,12 +485,12 @@ public class GenericKey extends NativeIndexKey<GenericKey>
         return compare;
     }
 
-    private int compareDate( GenericKey other )
+    private int compareDate( GenericKeyState other )
     {
         return Long.compare( long0, other.long0 );
     }
 
-    private int compareZonedTime( GenericKey other )
+    private int compareZonedTime( GenericKeyState other )
     {
         int compare = Long.compare( long0, other.long0 );
         if ( compare == 0 )
@@ -471,12 +500,12 @@ public class GenericKey extends NativeIndexKey<GenericKey>
         return compare;
     }
 
-    private int compareLocalTime( GenericKey other )
+    private int compareLocalTime( GenericKeyState other )
     {
         return Long.compare( long0, other.long0 );
     }
 
-    private int compareDuration( GenericKey other )
+    private int compareDuration( GenericKeyState other )
     {
         int comparison = Long.compare( long0, other.long0 );
         if ( comparison == 0 )
@@ -492,5 +521,272 @@ public class GenericKey extends NativeIndexKey<GenericKey>
             }
         }
         return comparison;
+    }
+
+    void copyFrom( GenericKeyState key )
+    {
+        this.type = key.type;
+        this.long0 = key.long0;
+        this.long1 = key.long1;
+        this.long2 = key.long2;
+        this.long3 = key.long3;
+        this.copyByteArrayFromIfExists( key, (int) key.long0 );
+    }
+
+    int size()
+    {
+        // TODO copy-pasted from individual keys
+        // TODO also put this in Type enum
+        switch ( type )
+        {
+        case ZONED_DATE_TIME:
+            return Long.BYTES +    /* epochSecond */
+                   Integer.BYTES + /* nanoOfSecond */
+                   Integer.BYTES;  /* timeZone */
+        case LOCAL_DATE_TIME:
+            return Long.BYTES +    /* epochSecond */
+                   Integer.BYTES;  /* nanoOfSecond */
+        case DATE:
+            return Long.BYTES;     /* epochDay */
+        case ZONED_TIME:
+            return Long.BYTES +    /* nanosOfDayUTC */
+                   Integer.BYTES;  /* zoneOffsetSeconds */
+        case LOCAL_TIME:
+            return Long.BYTES;     /* nanoOfDay */
+        case DURATION:
+            return Long.BYTES +    /* totalAvgSeconds */
+                   Integer.BYTES + /* nanosOfSecond */
+                   Long.BYTES +    /* months */
+                   Long.BYTES;     /* days */
+        case TEXT:
+            return (int) long0;    /* bytesLength */
+        case BOOLEAN:
+            return Byte.BYTES;     /* byte for this boolean value */
+        case NUMBER:
+            return Byte.BYTES +    /* type of value */
+                   Long.BYTES;     /* raw value bits */
+        default:
+            throw new IllegalArgumentException( "Unknown type " + type );
+        }
+    }
+
+    void write( PageCursor cursor )
+    {
+        cursor.putByte( type.typeId );
+        switch ( type )
+        {
+        case ZONED_DATE_TIME:
+            writeZonedDateTime( cursor );
+            break;
+        case LOCAL_DATE_TIME:
+            writeLocalDateTime( cursor );
+            break;
+        case DATE:
+            writeDate( cursor );
+            break;
+        case ZONED_TIME:
+            writeZonedTime( cursor );
+            break;
+        case LOCAL_TIME:
+            writeLocalTime( cursor );
+            break;
+        case DURATION:
+            writeDuration( cursor );
+            break;
+        case TEXT:
+            writeText( cursor );
+            break;
+        case BOOLEAN:
+            writeBoolean( cursor );
+            break;
+        case NUMBER:
+            writeNumber( cursor );
+            break;
+        default:
+            throw new IllegalArgumentException( "Unknown type " + type );
+        }
+    }
+
+    private void writeNumber( PageCursor cursor )
+    {
+        cursor.putByte( (byte) long1 );
+        cursor.putLong( long0 );
+    }
+
+    private void writeBoolean( PageCursor cursor )
+    {
+        cursor.putByte( (byte) long0 );
+    }
+
+    private void writeText( PageCursor cursor )
+    {
+        cursor.putBytes( byteArray, 0, (int) long0 );
+    }
+
+    private void writeDuration( PageCursor cursor )
+    {
+        cursor.putLong( long0 );
+        cursor.putInt( (int) long1 );
+        cursor.putLong( long2 );
+        cursor.putLong( long3 );
+    }
+
+    private void writeLocalTime( PageCursor cursor )
+    {
+        cursor.putLong( long0 );
+    }
+
+    private void writeZonedTime( PageCursor cursor )
+    {
+        cursor.putLong( long0 );
+        cursor.putInt( (int) long1 );
+    }
+
+    private void writeDate( PageCursor cursor )
+    {
+        cursor.putLong( long0 );
+    }
+
+    private void writeLocalDateTime( PageCursor cursor )
+    {
+        cursor.putLong( long1 );
+        cursor.putInt( (int) long0 );
+    }
+
+    private void writeZonedDateTime( PageCursor cursor )
+    {
+        cursor.putLong( long0 );
+        cursor.putInt( (int) long1 );
+        if ( long2 >= 0 )
+        {
+            cursor.putInt( (int) long2 | ZONE_ID_FLAG );
+        }
+        else
+        {
+            cursor.putInt( (int) long3 & ZONE_ID_MASK );
+        }
+    }
+
+    void read( PageCursor cursor, int size )
+    {
+        if ( size < TYPE_ID_SIZE )
+        {
+            initializeToDummyValue();
+            return;
+        }
+
+        byte typeId = cursor.getByte();
+        if ( typeId < 0 || typeId >= GenericLayout.TYPES.length )
+        {
+            initializeToDummyValue();
+            return;
+        }
+
+        size -= TYPE_ID_SIZE;
+        type = GenericLayout.TYPE_BY_ID[typeId];
+        switch ( type )
+        {
+        case ZONED_DATE_TIME:
+            readZonedDateTime( cursor );
+            break;
+        case LOCAL_DATE_TIME:
+            readLocalDateTime( cursor );
+            break;
+        case DATE:
+            readDate( cursor );
+            break;
+        case ZONED_TIME:
+            readZonedTime( cursor );
+            break;
+        case LOCAL_TIME:
+            readLocalTime( cursor );
+            break;
+        case DURATION:
+            readDuration( cursor );
+            break;
+        case TEXT:
+            readText( cursor, size );
+            break;
+        case BOOLEAN:
+            readBoolean( cursor );
+            break;
+        case NUMBER:
+            readNumber( cursor );
+            break;
+        default:
+            throw new IllegalArgumentException( "Unknown type " + type );
+        }
+    }
+
+    void initializeToDummyValue()
+    {
+        type = Type.NUMBER;
+        long0 = 0;
+        long1 = 0;
+    }
+
+    private void readNumber( PageCursor cursor )
+    {
+        long1 = cursor.getByte();
+        long0 = cursor.getLong();
+    }
+
+    private void readBoolean( PageCursor cursor )
+    {
+        long0 = cursor.getByte();
+    }
+
+    private void readText( PageCursor cursor, int keySize )
+    {
+        int bytesLength = keySize - ENTITY_ID_SIZE;
+        setBytesLength( bytesLength );
+        cursor.getBytes( byteArray, 0, bytesLength );
+    }
+
+    private void readDuration( PageCursor cursor )
+    {
+        long0 = cursor.getLong();
+        long1 = cursor.getInt();
+        long2 = cursor.getLong();
+        long3 = cursor.getLong();
+    }
+
+    private void readLocalTime( PageCursor cursor )
+    {
+        long0 = cursor.getLong();
+    }
+
+    private void readZonedTime( PageCursor cursor )
+    {
+        long0 = cursor.getLong();
+        long1 = cursor.getInt();
+    }
+
+    private void readDate( PageCursor cursor )
+    {
+        long0 = cursor.getLong();
+    }
+
+    private void readLocalDateTime( PageCursor cursor )
+    {
+        long1 = cursor.getLong();
+        long0 = cursor.getInt();
+    }
+
+    private void readZonedDateTime( PageCursor cursor )
+    {
+        long0 = cursor.getLong();
+        long1 = cursor.getInt();
+        int encodedZone = cursor.getInt();
+        if ( isZoneId( encodedZone ) )
+        {
+            long2 = asZoneId( encodedZone );
+            long3 = 0;
+        }
+        else
+        {
+            long2 = -1;
+            long3 = asZoneOffset( encodedZone );
+        }
     }
 }

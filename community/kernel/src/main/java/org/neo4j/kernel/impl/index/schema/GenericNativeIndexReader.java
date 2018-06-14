@@ -32,9 +32,9 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexValue>
+class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,NativeIndexValue>
 {
-    GenericNativeIndexReader( GBPTree<GenericKey,NativeIndexValue> tree, Layout<GenericKey,NativeIndexValue> layout, IndexSamplingConfig samplingConfig,
+    GenericNativeIndexReader( GBPTree<CompositeGenericKey,NativeIndexValue> tree, Layout<CompositeGenericKey,NativeIndexValue> layout, IndexSamplingConfig samplingConfig,
             IndexDescriptor descriptor )
     {
         super( tree, layout, samplingConfig, descriptor );
@@ -59,7 +59,7 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
     }
 
     @Override
-    boolean initializeRangeForQuery( GenericKey treeKeyFrom, GenericKey treeKeyTo, IndexQuery[] predicates )
+    boolean initializeRangeForQuery( CompositeGenericKey treeKeyFrom, CompositeGenericKey treeKeyTo, IndexQuery[] predicates )
     {
         IndexQuery predicate = predicates[0];
         switch ( predicate.type() )
@@ -93,7 +93,7 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
         }
     }
 
-    private void initFromForRange( RangePredicate<?> rangePredicate, GenericKey treeKeyFrom )
+    private void initFromForRange( RangePredicate<?> rangePredicate, CompositeGenericKey treeKeyFrom )
     {
         Value fromValue = rangePredicate.fromValue();
         if ( fromValue == Values.NO_VALUE )
@@ -107,7 +107,7 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
         }
     }
 
-    private void initToForRange( RangePredicate<?> rangePredicate, GenericKey treeKeyTo )
+    private void initToForRange( RangePredicate<?> rangePredicate, CompositeGenericKey treeKeyTo )
     {
         Value toValue = rangePredicate.toValue();
         if ( toValue == Values.NO_VALUE )

@@ -28,7 +28,7 @@ import static java.lang.String.format;
 /**
  * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link DateValue}.
  */
-class DateIndexKey extends NativeIndexKey<DateIndexKey>
+class DateIndexKey extends NativeIndexSingleValueKey<DateIndexKey>
 {
     static final int SIZE =
             Long.BYTES + /* epochDay */
@@ -43,13 +43,13 @@ class DateIndexKey extends NativeIndexKey<DateIndexKey>
     }
 
     @Override
-    void initValueAsLowest( ValueGroup valueGroup )
+    void initValueAsLowest( ValueGroup... valueGroups )
     {
         epochDay = Long.MIN_VALUE;
     }
 
     @Override
-    void initValueAsHighest( ValueGroup valueGroup )
+    void initValueAsHighest( ValueGroup... valueGroups )
     {
         epochDay = Long.MAX_VALUE;
     }

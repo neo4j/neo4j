@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 /**
  * Base class for native indexes on top of {@link GBPTree}.
  *
- * @param <KEY> type of {@link NativeIndexKey}
+ * @param <KEY> type of {@link NativeIndexSingleValueKey}
  * @param <VALUE> type of {@link NativeIndexValue}
  */
 abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue> extends IndexProvider

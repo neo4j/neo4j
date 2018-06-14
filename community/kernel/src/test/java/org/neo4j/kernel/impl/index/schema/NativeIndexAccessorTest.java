@@ -82,7 +82,7 @@ import static org.neo4j.values.storable.Values.of;
  * <li>{@link NumberIndexReader}</li>
  * </ul>
  */
-public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
+public abstract class NativeIndexAccessorTest<KEY extends NativeIndexSingleValueKey<KEY>, VALUE extends NativeIndexValue>
         extends NativeIndexTestUtil<KEY,VALUE>
 {
     NativeIndexAccessor<KEY,VALUE> accessor;

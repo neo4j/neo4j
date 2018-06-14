@@ -29,7 +29,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-class TemporalIndexPartReader<KEY extends NativeIndexKey<KEY>> extends NativeIndexReader<KEY,NativeIndexValue>
+class TemporalIndexPartReader<KEY extends NativeIndexSingleValueKey<KEY>> extends NativeIndexReader<KEY,NativeIndexValue>
 {
     TemporalIndexPartReader( GBPTree<KEY,NativeIndexValue> tree,
                              Layout<KEY,NativeIndexValue> layout,

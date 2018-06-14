@@ -62,7 +62,7 @@ import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 /**
  * {@link IndexPopulator} backed by a {@link GBPTree}.
  *
- * @param <KEY> type of {@link NativeIndexKey}.
+ * @param <KEY> type of {@link NativeIndexSingleValueKey}.
  * @param <VALUE> type of {@link NativeIndexValue}.
  */
 public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>

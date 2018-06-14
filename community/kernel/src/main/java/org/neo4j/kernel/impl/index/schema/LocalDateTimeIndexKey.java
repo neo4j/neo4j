@@ -28,7 +28,7 @@ import static java.lang.String.format;
 /**
  * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link LocalDateTimeValue}.
  */
-class LocalDateTimeIndexKey extends NativeIndexKey<LocalDateTimeIndexKey>
+class LocalDateTimeIndexKey extends NativeIndexSingleValueKey<LocalDateTimeIndexKey>
 {
     static final int SIZE =
             Long.BYTES +    /* epochSecond */
@@ -45,14 +45,14 @@ class LocalDateTimeIndexKey extends NativeIndexKey<LocalDateTimeIndexKey>
     }
 
     @Override
-    public void initValueAsLowest( ValueGroup valueGroup )
+    public void initValueAsLowest( ValueGroup... valueGroups )
     {
         epochSecond = Long.MIN_VALUE;
         nanoOfSecond = Integer.MIN_VALUE;
     }
 
     @Override
-    public void initValueAsHighest( ValueGroup valueGroup )
+    public void initValueAsHighest( ValueGroup... valueGroups )
     {
         epochSecond = Long.MAX_VALUE;
         nanoOfSecond = Integer.MAX_VALUE;

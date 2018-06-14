@@ -34,7 +34,7 @@ import static java.lang.String.format;
  * Distinction between double and float exists because coercions between each other and long may differ.
  * TODO this should be figured out and potentially reduced to long, double types only.
  */
-class NumberIndexKey extends NativeIndexKey<NumberIndexKey>
+class NumberIndexKey extends NativeIndexSingleValueKey<NumberIndexKey>
 {
     static final int SIZE =
             Byte.BYTES + /* type of value */
@@ -64,13 +64,13 @@ class NumberIndexKey extends NativeIndexKey<NumberIndexKey>
     }
 
     @Override
-    void initValueAsLowest( ValueGroup valueGroup )
+    void initValueAsLowest( ValueGroup... valueGroups )
     {
         writeFloatingPoint( Double.NEGATIVE_INFINITY );
     }
 
     @Override
-    void initValueAsHighest( ValueGroup valueGroup )
+    void initValueAsHighest( ValueGroup... valueGroups )
     {
         writeFloatingPoint( Double.POSITIVE_INFINITY );
     }

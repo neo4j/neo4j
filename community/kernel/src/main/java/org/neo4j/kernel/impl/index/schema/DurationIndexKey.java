@@ -31,7 +31,7 @@ import static java.lang.String.format;
  * Durations are tricky, because exactly how long a duration is depends on the start date. We therefore sort them by
  * average total time in seconds, but keep the original months and days so we can reconstruct the value.
  */
-class DurationIndexKey extends NativeIndexKey<DurationIndexKey>
+class DurationIndexKey extends NativeIndexSingleValueKey<DurationIndexKey>
 {
     /**
      * An average month is 30 days, 10 hours and 30 minutes.
@@ -60,7 +60,7 @@ class DurationIndexKey extends NativeIndexKey<DurationIndexKey>
     }
 
     @Override
-    public void initValueAsLowest( ValueGroup valueGroup )
+    public void initValueAsLowest( ValueGroup... valueGroups )
     {
         totalAvgSeconds = Long.MIN_VALUE;
         nanosOfSecond = Integer.MIN_VALUE;
@@ -69,7 +69,7 @@ class DurationIndexKey extends NativeIndexKey<DurationIndexKey>
     }
 
     @Override
-    public void initValueAsHighest( ValueGroup valueGroup )
+    public void initValueAsHighest( ValueGroup... valueGroups )
     {
         totalAvgSeconds = Long.MAX_VALUE;
         nanosOfSecond = Integer.MAX_VALUE;

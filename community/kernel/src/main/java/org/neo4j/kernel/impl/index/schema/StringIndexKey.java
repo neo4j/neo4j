@@ -33,7 +33,7 @@ import static java.lang.String.format;
  * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link String},
  * or rather any string that {@link GBPTree} can handle.
  */
-class StringIndexKey extends NativeIndexKey<StringIndexKey>
+class StringIndexKey extends NativeIndexSingleValueKey<StringIndexKey>
 {
     static final int ENTITY_ID_SIZE = Long.BYTES;
 
@@ -83,13 +83,13 @@ class StringIndexKey extends NativeIndexKey<StringIndexKey>
     }
 
     @Override
-    void initValueAsLowest( ValueGroup valueGroup )
+    void initValueAsLowest( ValueGroup... valueGroups )
     {
         bytes = null;
     }
 
     @Override
-    void initValueAsHighest( ValueGroup valueGroup )
+    void initValueAsHighest( ValueGroup... valueGroups )
     {
         bytes = null;
     }

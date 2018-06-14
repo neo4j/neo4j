@@ -34,7 +34,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
  *
  * With these keys the TimeValues are sorted by UTC time of day, and then by time zone.
  */
-class ZonedTimeIndexKey extends NativeIndexKey<ZonedTimeIndexKey>
+class ZonedTimeIndexKey extends NativeIndexSingleValueKey<ZonedTimeIndexKey>
 {
     static final int SIZE =
             Long.BYTES +    /* nanosOfDayUTC */
@@ -56,14 +56,14 @@ class ZonedTimeIndexKey extends NativeIndexKey<ZonedTimeIndexKey>
     }
 
     @Override
-    public void initValueAsLowest( ValueGroup valueGroup )
+    public void initValueAsLowest( ValueGroup... valueGroups )
     {
         nanosOfDayUTC = Long.MIN_VALUE;
         zoneOffsetSeconds = Integer.MIN_VALUE;
     }
 
     @Override
-    public void initValueAsHighest( ValueGroup valueGroup )
+    public void initValueAsHighest( ValueGroup... valueGroups )
     {
         nanosOfDayUTC = Long.MAX_VALUE;
         zoneOffsetSeconds = Integer.MAX_VALUE;

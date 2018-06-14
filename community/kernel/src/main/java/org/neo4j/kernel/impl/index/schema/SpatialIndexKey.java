@@ -35,7 +35,7 @@ import static java.lang.String.format;
  * Includes value and entity id (to be able to handle non-unique values).
  * A value can be any {@link PointValue} and is represented as a {@code long} to store the 1D mapped version
  */
-class SpatialIndexKey extends NativeIndexKey<SpatialIndexKey>
+class SpatialIndexKey extends NativeIndexSingleValueKey<SpatialIndexKey>
 {
     static final int SIZE =
             Long.BYTES + /* raw value bits */
@@ -62,7 +62,7 @@ class SpatialIndexKey extends NativeIndexKey<SpatialIndexKey>
     }
 
     @Override
-    void initValueAsLowest( ValueGroup valueGroup )
+    void initValueAsLowest( ValueGroup... valueGroups )
     {
         double[] limit = new double[crs.getDimension()];
         Arrays.fill(limit, Double.NEGATIVE_INFINITY);
@@ -70,7 +70,7 @@ class SpatialIndexKey extends NativeIndexKey<SpatialIndexKey>
     }
 
     @Override
-    void initValueAsHighest( ValueGroup valueGroup )
+    void initValueAsHighest( ValueGroup... valueGroups )
     {
         // These coordinates will generate the largest value on the spacial curve
         double[] limit = new double[crs.getDimension()];

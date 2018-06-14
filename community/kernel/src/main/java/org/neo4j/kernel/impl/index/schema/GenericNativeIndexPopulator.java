@@ -29,9 +29,9 @@ import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
-class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey,NativeIndexValue>
+class GenericNativeIndexPopulator extends NativeIndexPopulator<CompositeGenericKey,NativeIndexValue>
 {
-    GenericNativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<GenericKey,NativeIndexValue> layout,
+    GenericNativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<CompositeGenericKey,NativeIndexValue> layout,
             IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig );

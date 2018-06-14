@@ -136,7 +136,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         return combineSamples( samples );
     }
 
-    static class PartPopulator<KEY extends NativeIndexKey<KEY>> extends NativeIndexPopulator<KEY,NativeIndexValue>
+    static class PartPopulator<KEY extends NativeIndexSingleValueKey<KEY>> extends NativeIndexPopulator<KEY,NativeIndexValue>
     {
         PartPopulator( PageCache pageCache, FileSystemAbstraction fs, TemporalIndexFiles.FileLayout<KEY> fileLayout, IndexProvider.Monitor monitor,
                        StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
@@ -207,7 +207,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
             return create( temporalIndexFiles.duration() );
         }
 
-        private <KEY extends NativeIndexKey<KEY>> PartPopulator<KEY> create( TemporalIndexFiles.FileLayout<KEY> fileLayout )
+        private <KEY extends NativeIndexSingleValueKey<KEY>> PartPopulator<KEY> create( TemporalIndexFiles.FileLayout<KEY> fileLayout )
         {
             PartPopulator<KEY> populator = new PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor, samplingConfig );
             populator.create();

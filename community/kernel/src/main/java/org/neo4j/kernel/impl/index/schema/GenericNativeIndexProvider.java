@@ -39,7 +39,7 @@ import org.neo4j.values.storable.ValueCategory;
 /**
  * Single-value all-in-one native index
  */
-public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,NativeIndexValue>
+public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGenericKey,NativeIndexValue>
 {
     public static final String KEY = "native-all"; // TODO should be native, but can't because number index is called that.
     public static final Descriptor DESCRIPTOR = new Descriptor( KEY, "1.0" );
@@ -66,20 +66,20 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     }
 
     @Override
-    Layout<GenericKey,NativeIndexValue> layout( StoreIndexDescriptor descriptor )
+    Layout<CompositeGenericKey,NativeIndexValue> layout( StoreIndexDescriptor descriptor )
     {
         return new GenericLayout();
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( File storeFile, Layout<GenericKey,NativeIndexValue> layout, StoreIndexDescriptor descriptor,
+    protected IndexPopulator newIndexPopulator( File storeFile, Layout<CompositeGenericKey,NativeIndexValue> layout, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig )
     {
         return new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( File storeFile, Layout<GenericKey,NativeIndexValue> layout, StoreIndexDescriptor descriptor,
+    protected IndexAccessor newIndexAccessor( File storeFile, Layout<CompositeGenericKey,NativeIndexValue> layout, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
         return new GenericNativeIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );

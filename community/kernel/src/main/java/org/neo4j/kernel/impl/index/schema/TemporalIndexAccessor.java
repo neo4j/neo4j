@@ -165,7 +165,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         return Iterators.stream( iterator() ).anyMatch( NativeIndexAccessor::isDirty );
     }
 
-    static class PartAccessor<KEY extends NativeIndexKey<KEY>> extends NativeIndexAccessor<KEY,NativeIndexValue>
+    static class PartAccessor<KEY extends NativeIndexSingleValueKey<KEY>> extends NativeIndexAccessor<KEY,NativeIndexValue>
     {
         private final Layout<KEY,NativeIndexValue> layout;
         private final IndexDescriptor descriptor;
@@ -247,7 +247,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
             return createPartAccessor( temporalIndexFiles.duration() );
         }
 
-        private <KEY extends NativeIndexKey<KEY>> PartAccessor<KEY> createPartAccessor( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
+        private <KEY extends NativeIndexSingleValueKey<KEY>> PartAccessor<KEY> createPartAccessor( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
         {
             if ( !fs.fileExists( fileLayout.indexFile ) )
             {
@@ -256,7 +256,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
             return new PartAccessor<>( pageCache, fs, fileLayout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );
         }
 
-        private <KEY extends NativeIndexKey<KEY>> void createEmptyIndex( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
+        private <KEY extends NativeIndexSingleValueKey<KEY>> void createEmptyIndex( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
         {
             IndexPopulator populator = new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor, samplingConfig );
             populator.create();

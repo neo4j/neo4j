@@ -35,7 +35,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue>
+public abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexSingleValueKey<KEY>,VALUE extends NativeIndexValue>
         extends NativeIndexPopulatorTest<KEY,VALUE>
 {
     @Test

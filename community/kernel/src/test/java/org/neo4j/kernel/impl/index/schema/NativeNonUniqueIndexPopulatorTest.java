@@ -33,7 +33,7 @@ import org.neo4j.values.storable.Values;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
 
-public abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue>
+public abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexSingleValueKey<KEY>,VALUE extends NativeIndexValue>
         extends NativeIndexPopulatorTest<KEY,VALUE>
 {
     @Test

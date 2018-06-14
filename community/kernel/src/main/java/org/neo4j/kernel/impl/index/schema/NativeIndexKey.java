@@ -24,11 +24,6 @@ import org.neo4j.kernel.impl.store.TemporalValueWriterAdapter;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-/**
- * Includes value and entity id (to be able to handle non-unique values).
- * This is the abstraction of what NativeSchemaIndex with friends need from a schema key.
- * Note that it says nothing about how keys are compared, serialized, read, written, etc. That is the job of Layout.
- */
 abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends TemporalValueWriterAdapter<RuntimeException>
 {
     private static final boolean DEFAULT_COMPARE_ID = true;
@@ -67,8 +62,13 @@ abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends Tempora
     {
         initialize( entityId );
         // copy value state and store in this key instance
-        assertValidValue( values ).writeTo( this );
+        assertValidValues( values );
+        writeValues( values );
     }
+
+    protected abstract void writeValues( Value[] values );
+
+    protected abstract void assertValidValues( Value[] values );
 
     /**
      * Initializes this key with entity id and resets other flags to default values.
@@ -82,43 +82,23 @@ abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends Tempora
         this.entityId = entityId;
     }
 
-    private Value assertValidValue( Value... values )
-    {
-        if ( values.length > 1 )
-        {
-            throw new IllegalArgumentException( "Tried to create composite key with non-composite schema key layout" );
-        }
-        if ( values.length < 1 )
-        {
-            throw new IllegalArgumentException( "Tried to create key without value" );
-        }
-        return assertCorrectType( values[0] );
-    }
+    protected abstract String propertiesAsString();
 
-    protected abstract Value assertCorrectType( Value value );
-
-    String propertiesAsString()
-    {
-        return asValue().toString();
-    }
-
-    abstract Value asValue();
-
-    final void initAsLowest( ValueGroup valueGroup )
+    final void initAsLowest( ValueGroup... valueGroups )
     {
         initialize( Long.MIN_VALUE );
-        initValueAsLowest( valueGroup );
+        initValueAsLowest( valueGroups );
     }
 
-    abstract void initValueAsLowest( ValueGroup valueGroup );
+    abstract void initValueAsLowest( ValueGroup... valueGroups );
 
-    final void initAsHighest( ValueGroup valueGroup )
+    final void initAsHighest( ValueGroup... valueGroups )
     {
         initialize( Long.MAX_VALUE );
-        initValueAsHighest( valueGroup );
+        initValueAsHighest( valueGroups );
     }
 
-    abstract void initValueAsHighest( ValueGroup valueGroup );
+    abstract void initValueAsHighest( ValueGroup... valueGroups );
 
     /**
      * Compares the value of this key to that of another key.

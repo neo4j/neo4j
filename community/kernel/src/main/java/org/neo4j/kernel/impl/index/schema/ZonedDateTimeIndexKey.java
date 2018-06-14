@@ -39,7 +39,7 @@ import static java.lang.String.format;
  * 3. by effective Offset west-to-east
  * 4. non-named TimeZones before named TimeZones. Named Timezones alphabetically.
  */
-class ZonedDateTimeIndexKey extends NativeIndexKey<ZonedDateTimeIndexKey>
+class ZonedDateTimeIndexKey extends NativeIndexSingleValueKey<ZonedDateTimeIndexKey>
 {
     static final int SIZE =
             Long.BYTES +    /* epochSecond */
@@ -61,7 +61,7 @@ class ZonedDateTimeIndexKey extends NativeIndexKey<ZonedDateTimeIndexKey>
     }
 
     @Override
-    public void initValueAsLowest( ValueGroup valueGroup )
+    public void initValueAsLowest( ValueGroup... valueGroups )
     {
         epochSecondUTC = Long.MIN_VALUE;
         nanoOfSecond = Integer.MIN_VALUE;
@@ -70,7 +70,7 @@ class ZonedDateTimeIndexKey extends NativeIndexKey<ZonedDateTimeIndexKey>
     }
 
     @Override
-    public void initValueAsHighest( ValueGroup valueGroup )
+    public void initValueAsHighest( ValueGroup... valueGroups )
     {
         epochSecondUTC = Long.MAX_VALUE;
         nanoOfSecond = Integer.MAX_VALUE;

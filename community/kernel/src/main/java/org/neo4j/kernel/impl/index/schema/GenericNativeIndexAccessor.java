@@ -32,9 +32,9 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 
-class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIndexValue>
+class GenericNativeIndexAccessor extends NativeIndexAccessor<CompositeGenericKey,NativeIndexValue>
 {
-    GenericNativeIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<GenericKey,NativeIndexValue> layout,
+    GenericNativeIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<CompositeGenericKey,NativeIndexValue> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
