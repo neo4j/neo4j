@@ -63,8 +63,6 @@ import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import scala.util.Try
 
 object CypherReductionSupport {
-  private val rewriterSequencer = RewriterStepSequencer.newValidating _
-  private val astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true)
   private val stepSequencer = RewriterStepSequencer.newPlain _
   private val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
   private val config = CypherCompilerConfiguration(
@@ -80,7 +78,7 @@ object CypherReductionSupport {
     nonIndexedLabelWarningThreshold = 0,
     planWithMinimumCardinalityEstimates = true)
   private val kernelMonitors = new Monitors
-  private val compiler = CypherCompiler(astRewriter, WrappedMonitors(kernelMonitors), stepSequencer, metricsFactory, config, defaultUpdateStrategy,
+  private val compiler = CypherCompiler(WrappedMonitors(kernelMonitors), stepSequencer, metricsFactory, config, defaultUpdateStrategy,
     CompilerEngineDelegator.CLOCK, CommunityRuntimeContextCreator)
 
   private val monitor = kernelMonitors.newMonitor(classOf[IDPQueryGraphSolverMonitor])

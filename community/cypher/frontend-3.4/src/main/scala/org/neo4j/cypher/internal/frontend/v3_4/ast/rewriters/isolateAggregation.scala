@@ -19,7 +19,9 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 import org.neo4j.cypher.internal.util.v3_4.{AggregationNameGenerator, InternalException, Rewriter, bottomUp}
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.ast.conditions.{StatementCondition, aggregationsAreIsolated}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.fixedPoint
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseContext, Condition}
 
 /**
   * This rewriter makes sure that aggregations are on their own in RETURN/WITH clauses, so
@@ -37,8 +39,13 @@ import org.neo4j.cypher.internal.frontend.v3_4.helpers.fixedPoint
   * WITH n.name AS x1, count(*) AS x2, n.foo as X3
   * RETURN { name: x1, count: x2 }
   */
-case object isolateAggregation extends Rewriter {
-  def apply(that: AnyRef): AnyRef = instance(that)
+case object isolateAggregation extends StatementRewriter {
+
+  override def instance(context: BaseContext): Rewriter = bottomUp(rewriter, _.isInstanceOf[Expression])
+
+  override def description: String = "Makes sure that aggregations are on their own in RETURN/WITH clauses"
+
+  override def postConditions: Set[Condition] = Set(StatementCondition(aggregationsAreIsolated))
 
   private val rewriter = Rewriter.lift {
     case q@SingleQuery(clauses) =>
@@ -51,7 +58,7 @@ case object isolateAggregation extends Rewriter {
           val expressionsToIncludeInWith: Set[Expression] = others ++ extractExpressionsToInclude(withAggregations)
 
           val withReturnItems: Set[ReturnItem] = expressionsToIncludeInWith.map {
-            case e => AliasedReturnItem(e, Variable(AggregationNameGenerator.name(e.position))(e.position))(e.position)
+             e => AliasedReturnItem(e, Variable(AggregationNameGenerator.name(e.position))(e.position))(e.position)
           }
           val pos = clause.position
           val withClause = With(distinct = false, ReturnItems(includeExisting = false, withReturnItems.toIndexedSeq)(pos), PassAllGraphReturnItems(pos), None, None, None, None)(pos)
@@ -114,7 +121,6 @@ case object isolateAggregation extends Rewriter {
     expressionsToGoToWith
   }
 
-  private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
 
   private def getExpressions(c: Clause): Set[Expression] = c match {
     case clause: Return => clause.returnItems.items.map(_.expression).toSet

@@ -21,12 +21,14 @@ package org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters
 
 import org.neo4j.cypher.internal.util.v3_4.inSequence
 import org.neo4j.cypher.internal.compiler.v3_4.SyntaxExceptionCreator
+import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{isolateAggregation, normalizeReturnClauses, normalizeWithClauses}
+import org.neo4j.cypher.internal.frontend.v3_4.phases.Monitors
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
 class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
-  val rewriterUnderTest = isolateAggregation
+  val rewriterUnderTest = isolateAggregation.instance(ContextHelper.create(monitors =  mock[Monitors]))
 
   test("does not rewrite things that should not be rewritten") {
     assertIsNotRewritten("MATCH n RETURN n AS n")

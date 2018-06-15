@@ -32,6 +32,7 @@ import org.junit.rules.TemporaryFolder;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -44,11 +45,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.proc.JarBuilder;
 import org.neo4j.logging.Log;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -280,6 +283,34 @@ public class UserAggregationFunctionIT
         assertFalse( result.hasNext() );
     }
 
+    @Test
+    public void shouldBeAbleToAccessPropertiesFromAggregatedValues()
+    {
+        // Given
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.execute( "CREATE (:User {country: 'Sweden'})" );
+            db.execute( "CREATE (:User {country: 'Sweden'})" );
+            db.execute( "CREATE (:User {country: 'Sweden'})" );
+            db.execute( "CREATE (:User {country: 'Sweden'})" );
+            db.execute( "CREATE (:User {country: 'Germany'})" );
+            db.execute( "CREATE (:User {country: 'Germany'})" );
+            db.execute( "CREATE (:User {country: 'Germany'})" );
+            db.execute( "CREATE (:User {country: 'Mexico'})" );
+            db.execute( "CREATE (:User {country: 'Mexico'})" );
+            db.execute( "CREATE (:User {country: 'South Korea'})" );
+            tx.success();
+        }
+
+        // When
+        List<Map<String,Object>> result =
+                Iterators.asList( db.execute(
+                        "MATCH (u:User) RETURN u.country,count(*),org.neo4j.procedure.first(u).country AS first" ) );
+
+        // Then
+        assertThat( result, hasSize( 4 ) );
+    }
+
     @Before
     public void setUp() throws IOException
     {
@@ -361,6 +392,32 @@ public class UserAggregationFunctionIT
         public NodeFromIdAggregator collectNode()
         {
             return new NodeFromIdAggregator( db );
+        }
+
+        @UserAggregationFunction
+        public FirstAggregator first()
+        {
+            return new FirstAggregator();
+        }
+
+        public static class FirstAggregator
+        {
+            private Object first;
+
+            @UserAggregationUpdate
+            public void update( @Name( "item" ) Object o )
+            {
+                if ( first == null )
+                {
+                    first = o;
+                }
+            }
+
+            @UserAggregationResult
+            public Object result()
+            {
+                return first;
+            }
         }
 
         public static class NodeAggregator
