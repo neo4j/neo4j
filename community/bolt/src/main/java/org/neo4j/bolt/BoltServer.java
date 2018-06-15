@@ -43,10 +43,7 @@ import org.neo4j.bolt.transport.SocketTransport;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.runtime.BoltFactoryImpl;
-import org.neo4j.configuration.Description;
-import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -69,9 +66,6 @@ import org.neo4j.udc.UsageData;
 
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
-import static org.neo4j.kernel.configuration.Settings.STRING;
-import static org.neo4j.kernel.configuration.Settings.setting;
-import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
 import static org.neo4j.scheduler.JobScheduler.Groups.boltNetworkIO;
 
 public class BoltServer extends LifecycleAdapter
@@ -92,12 +86,6 @@ public class BoltServer extends LifecycleAdapter
     private final DependencyResolver dependencyResolver;
 
     private final LifeSupport life = new LifeSupport();
-
-    public static class Settings implements LoadableConfig
-    {
-        @Description( "Specify the SSL policy to use" )
-        public static final Setting<String> ssl_policy = setting( "bolt.ssl_policy", STRING, LEGACY_POLICY_NAME );
-    }
 
     public BoltServer( GraphDatabaseAPI db, FileSystemAbstraction fs, JobScheduler jobScheduler, AvailabilityGuard availabilityGuard,
             ConnectorPortRegister connectorPortRegister, UsageData usageData, Config config, Clock clock, Monitors monitors,
@@ -217,7 +205,7 @@ public class BoltServer extends LifecycleAdapter
     {
         try
         {
-            String policyName = config.get( Settings.ssl_policy );
+            String policyName = config.get( GraphDatabaseSettings.bolt_ssl_policy );
             if ( policyName == null )
             {
                 throw new IllegalArgumentException( "No SSL policy has been configured for Bolt server" );

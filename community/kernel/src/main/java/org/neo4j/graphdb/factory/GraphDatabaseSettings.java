@@ -77,6 +77,7 @@ import static org.neo4j.kernel.configuration.Settings.optionsIgnoreCase;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.range;
 import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
 
 /**
  * Settings for Neo4j.
@@ -930,6 +931,9 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Integer> bolt_inbound_message_throttle_low_water_mark =
             buildSetting( "unsupported.dbms.bolt.inbound_message_throttle.low_watermark", INTEGER, String.valueOf( 100 ) ).constraint(
                     range( 1, Integer.MAX_VALUE ) ).build();
+
+    @Description( "Specify the SSL policy to use for the encrypted bolt connections." )
+    public static final Setting<String> bolt_ssl_policy = setting( "bolt.ssl_policy", STRING, LEGACY_POLICY_NAME );
 
     @Description( "Create an archive of an index before re-creating it if failing to load on startup." )
     @Internal
