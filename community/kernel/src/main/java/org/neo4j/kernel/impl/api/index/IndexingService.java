@@ -703,8 +703,8 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
     private IndexPopulationJob newIndexPopulationJob( EntityType type )
     {
-        MultipleIndexPopulator multiPopulator = multiPopulatorFactory.create( storeView, logProvider, type );
-        return new IndexPopulationJob( multiPopulator, monitor, schemaState );
+        MultipleIndexPopulator multiPopulator = multiPopulatorFactory.create( storeView, logProvider, type, schemaState );
+        return new IndexPopulationJob( multiPopulator, monitor );
     }
 
     private void startIndexPopulation( IndexPopulationJob job )

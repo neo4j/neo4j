@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.IndexPopulation;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -76,6 +77,8 @@ public class MultipleIndexPopulatorTest
     private StoreScan storeScan;
     @Mock( answer = Answers.RETURNS_MOCKS )
     private LogProvider logProvider;
+    @Mock
+    private SchemaState schemaState;
     @InjectMocks
     private MultipleIndexPopulator multipleIndexPopulator;
 
@@ -373,6 +376,7 @@ public class MultipleIndexPopulatorTest
         verify( indexPopulator2 ).close( true );
         verify( indexPopulator2 ).sampleResult();
         verify( indexStoreView ).replaceIndexCounts( anyLong(), anyLong(), anyLong(), anyLong() );
+        verify( schemaState ).clear();
     }
 
     @Test

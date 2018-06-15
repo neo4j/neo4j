@@ -35,6 +35,7 @@ import org.neo4j.function.Predicates;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.util.FeatureToggles;
@@ -77,10 +78,12 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      *  @param storeView the view of the store as a visitable of nodes
      * @param logProvider the log provider
      * @param type entity type to populate
+     * @param schemaState the schema state
      */
-    BatchingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type )
+    BatchingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type,
+                                    SchemaState schemaState )
     {
-        super( storeView, logProvider, type );
+        super( storeView, logProvider, type, schemaState );
         this.executor = createThreadPool();
     }
 
@@ -92,10 +95,12 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      * @param storeView the view of the store as a visitable of nodes
      * @param executor the thread pool to use for batched index insertions
      * @param logProvider the log provider
+     * @param schemaState the schema state
      */
-    BatchingMultipleIndexPopulator( IndexStoreView storeView, ExecutorService executor, LogProvider logProvider )
+    BatchingMultipleIndexPopulator( IndexStoreView storeView, ExecutorService executor, LogProvider logProvider,
+                                    SchemaState schemaState )
     {
-        super( storeView, logProvider, EntityType.NODE );
+        super( storeView, logProvider, EntityType.NODE, schemaState );
         this.executor = executor;
     }
 

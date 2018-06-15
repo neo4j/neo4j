@@ -41,6 +41,7 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -85,7 +86,8 @@ public class MultipleIndexPopulatorUpdatesTest
 
         ProcessListenableNeoStoreIndexView
                 storeView = new ProcessListenableNeoStoreIndexView( LockService.NO_LOCK_SERVICE, neoStores );
-        MultipleIndexPopulator indexPopulator = new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE );
+        MultipleIndexPopulator indexPopulator =
+                new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE, mock( SchemaState.class ) );
 
         storeView.setProcessListener( new NodeUpdateProcessListener( indexPopulator ) );
 

@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.EntityType;
@@ -107,14 +108,16 @@ public class MultipleIndexPopulator implements IndexPopulator
     private final LogProvider logProvider;
     protected final Log log;
     private final EntityType type;
+    private final SchemaState schemaState;
     private StoreScan<IndexPopulationFailedKernelException> storeScan;
 
-    public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type )
+    public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState )
     {
         this.storeView = storeView;
         this.logProvider = logProvider;
         this.log = logProvider.getLog( IndexPopulationJob.class );
         this.type = type;
+        this.schemaState = schemaState;
     }
 
     IndexPopulation addPopulator( IndexPopulator populator, CapableIndexDescriptor capableIndexDescriptor, FlippableIndexProxy flipper,
@@ -582,6 +585,7 @@ public class MultipleIndexPopulator implements IndexPopulator
                             IndexSample sample = populator.sampleResult();
                             storeView.replaceIndexCounts( indexId, sample.uniqueValues(), sample.sampleSize(), sample.indexSize() );
                             populator.close( true );
+                            schemaState.clear();
                             return true;
                         }
                     }
