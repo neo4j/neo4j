@@ -33,6 +33,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.api.security.AuthManager;
+import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
@@ -291,13 +292,19 @@ public class CommunityEditionModule extends EditionModule
     {
         if ( platformModule.config.get( GraphDatabaseSettings.auth_enabled ) )
         {
-            setupSecurityModule( platformModule, platformModule.logging.getUserLog( getClass() ),
+            SecurityModule securityModule = setupSecurityModule( platformModule,
+                    platformModule.logging.getUserLog( getClass() ),
                     procedures, COMMUNITY_SECURITY_MODULE_ID );
+            this.authManager = securityModule.authManager();
+            this.userManagerSupplier = securityModule.userManagerSupplier();
+            platformModule.life.add( securityModule );
         }
         else
         {
-            platformModule.life.add( platformModule.dependencies.satisfyDependency( AuthManager.NO_AUTH ) );
-            platformModule.life.add( platformModule.dependencies.satisfyDependency( UserManagerSupplier.NO_AUTH ) );
+            this.authManager = AuthManager.NO_AUTH;
+            this.userManagerSupplier = UserManagerSupplier.NO_AUTH;
+            platformModule.life.add( platformModule.dependencies.satisfyDependency( this.authManager ) );
+            platformModule.life.add( platformModule.dependencies.satisfyDependency( this.userManagerSupplier ) );
         }
     }
 }

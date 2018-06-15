@@ -32,7 +32,9 @@ import org.neo4j.io.fs.watcher.RestartableFileSystemWatcher;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.SecurityModule;
+import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
@@ -112,6 +114,10 @@ public abstract class EditionModule
 
     public IdController idController;
 
+    public AuthManager authManager;
+
+    public UserManagerSupplier userManagerSupplier;
+
     protected FileSystemWatcherService createFileSystemWatcherService( FileSystemAbstraction fileSystem, File storeDir,
             LogService logging, JobScheduler jobScheduler, Predicate<String> fileNameFilter )
     {
@@ -166,7 +172,7 @@ public abstract class EditionModule
 
     public abstract void setupSecurityModule( PlatformModule platformModule, Procedures procedures );
 
-    protected static void setupSecurityModule( PlatformModule platformModule, Log log, Procedures procedures,
+    protected static SecurityModule setupSecurityModule( PlatformModule platformModule, Log log, Procedures procedures,
             String key )
     {
         for ( SecurityModule candidate : Service.load( SecurityModule.class ) )
@@ -208,18 +214,12 @@ public abstract class EditionModule
                         }
 
                         @Override
-                        public LifeSupport lifeSupport()
-                        {
-                            return platformModule.life;
-                        }
-
-                        @Override
                         public DependencySatisfier dependencySatisfier()
                         {
                             return platformModule.dependencies;
                         }
                     } );
-                    return;
+                    return candidate;
                 }
                 catch ( Exception e )
                 {

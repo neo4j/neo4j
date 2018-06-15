@@ -919,7 +919,7 @@ public class HighlyAvailableEditionModule
     @Override
     public void setupSecurityModule( PlatformModule platformModule, Procedures procedures )
     {
-        EnterpriseEditionModule.setupEnterpriseSecurityModule( platformModule, procedures );
+        EnterpriseEditionModule.setupEnterpriseSecurityModule( this, platformModule, procedures );
     }
 
     private static <T> T resolveDatabaseDependency( Dependencies dependencies, Class<T> clazz )
