@@ -37,8 +37,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.CountsAccessor;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -51,7 +49,6 @@ import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_background_sampling_enabled;
@@ -65,14 +62,15 @@ public class IndexStatisticsIT
 
     @Rule
     public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private final InMemoryIndexProvider indexProvider = new InMemoryIndexProvider( 100 );
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private GraphDatabaseService db;
+    private EphemeralFileSystemAbstraction fileSystem;
 
     @Before
     public void before()
     {
-        setupDb( fsRule.get() );
+        fileSystem = fsRule.get();
+        startDb();
     }
 
     @After
@@ -207,19 +205,18 @@ public class IndexStatisticsIT
                 .testAccessNeoStores();
     }
 
-    private void setupDb( EphemeralFileSystemAbstraction fs )
+    private void startDb()
     {
         db = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
-                                           .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
-                                           .setKernelExtensions( asList( new InMemoryIndexProviderFactory( indexProvider ) ) )
+                                           .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
                                            .newImpermanentDatabaseBuilder()
                                            .setConfig( index_background_sampling_enabled, "false" )
                                            .newGraphDatabase();
     }
 
-    public void restart()
+    void restart()
     {
         db.shutdown();
-        setupDb( fsRule.get().snapshot() );
+        startDb();
     }
 }

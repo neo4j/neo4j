@@ -43,7 +43,6 @@ import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
@@ -72,16 +71,12 @@ public class UniqueIndexRecoveryTest
     private GraphDatabaseAPI db;
 
     @Parameterized.Parameters( name = "{0}" )
-    public static Collection<Object[]> parameters()
+    public static Collection<KernelExtensionFactory> parameters()
     {
-        return asList(
-                new Object[]{new LuceneIndexProviderFactory()},
-                new Object[]{new NativeLuceneFusionIndexProviderFactory10()},
-                new Object[]{new NativeLuceneFusionIndexProviderFactory20()},
-                new Object[]{new InMemoryIndexProviderFactory()} );
+        return asList( new LuceneIndexProviderFactory(), new NativeLuceneFusionIndexProviderFactory10(), new NativeLuceneFusionIndexProviderFactory20() );
     }
 
-    @Parameterized.Parameter( 0 )
+    @Parameterized.Parameter
     public KernelExtensionFactory<?> kernelExtensionFactory;
 
     @Before

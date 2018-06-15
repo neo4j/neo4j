@@ -30,18 +30,24 @@ import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -64,6 +70,7 @@ import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.helpers.TimeUtil.parseTimeMillis;
+import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR;
 import static org.neo4j.kernel.impl.transaction.command.Commands.createIndexRule;
 import static org.neo4j.kernel.impl.transaction.command.Commands.transactionRepresentation;
 import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
@@ -91,14 +98,16 @@ public class IndexWorkSyncTransactionApplicationStressIT
         long duration = parseTimeMillis.apply( System.getProperty( getClass().getName() + ".duration", "2s" ) );
         int numThreads = Integer.getInteger( getClass().getName() + ".numThreads",
                 Runtime.getRuntime().availableProcessors() );
+        DefaultFileSystemAbstraction fs = fileSystemRule.get();
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        FusionIndexProvider indexProvider = NativeLuceneFusionIndexProviderFactory20.create( pageCache, directory.graphDbDir(), fs,
+                IndexProvider.Monitor.EMPTY, Config.defaults(), OperationalMode.single, RecoveryCleanupWorkCollector.IMMEDIATE );
         RecordStorageEngine storageEngine = storageEngineRule
-                .getWith( fileSystemRule.get(), pageCacheRule.getPageCache( fileSystemRule.get() ) )
+                .getWith( fs, pageCache )
                 .storeDirectory( directory.directory() )
-                .indexProvider( new InMemoryIndexProvider() )
+                .indexProvider( indexProvider )
                 .build();
-        storageEngine.apply( tx( singletonList( createIndexRule(
-                InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, 1, descriptor ) ) ),
-                TransactionApplicationMode.EXTERNAL );
+        storageEngine.apply( tx( singletonList( createIndexRule( DESCRIPTOR, 1, descriptor ) ) ), TransactionApplicationMode.EXTERNAL );
         Dependencies dependencies = new Dependencies();
         storageEngine.satisfyDependencies( dependencies );
         IndexProxy index = dependencies.resolveDependency( IndexingService.class )

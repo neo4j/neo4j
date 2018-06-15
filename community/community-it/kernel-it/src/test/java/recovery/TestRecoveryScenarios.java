@@ -42,8 +42,6 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -53,7 +51,6 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -66,6 +63,31 @@ import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 @RunWith( Parameterized.class )
 public class TestRecoveryScenarios
 {
+    @Rule
+    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private final Label label = label( "label" );
+    private GraphDatabaseAPI db;
+
+    private final FlushStrategy flush;
+
+    @SuppressWarnings( "deprecation" )
+    @Before
+    public void before()
+    {
+        db = (GraphDatabaseAPI) databaseFactory( fsRule.get() ).newImpermanentDatabase();
+    }
+
+    public TestRecoveryScenarios( FlushStrategy flush )
+    {
+        this.flush = flush;
+    }
+
+    @After
+    public void after()
+    {
+        db.shutdown();
+    }
+
     @Test
     public void shouldRecoverTransactionWhereNodeIsDeletedInTheFuture() throws Exception
     {
@@ -77,7 +99,7 @@ public class TestRecoveryScenarios
         flush.flush( db );
 
         // WHEN
-        crashAndRestart( indexProvider );
+        crashAndRestart();
 
         // THEN
         // -- really the problem was that recovery threw exception, so mostly assert that.
@@ -101,12 +123,11 @@ public class TestRecoveryScenarios
         Node node = createNodeWithProperty( "key", "value" );
         checkPoint();
         addLabel( node, label );
-        InMemoryIndexProvider outdatedIndexProvider = indexProvider.snapshot();
         removeProperty( node, "key" );
         flush.flush( db );
 
         // WHEN
-        crashAndRestart( outdatedIndexProvider );
+        crashAndRestart();
 
         // THEN
         // -- really the problem was that recovery threw exception, so mostly assert that.
@@ -136,13 +157,12 @@ public class TestRecoveryScenarios
             tx.success();
         }
         checkPoint();
-        InMemoryIndexProvider outdatedIndexProvider = indexProvider.snapshot();
         setProperty( node, "key", "value" );
         removeLabels( node, labels );
         flush.flush( db );
 
         // WHEN
-        crashAndRestart( outdatedIndexProvider );
+        crashAndRestart();
 
         // THEN
         // -- really the problem was that recovery threw exception, so mostly assert that.
@@ -162,7 +182,7 @@ public class TestRecoveryScenarios
         deleteNode( node );
 
         // WHEN
-        crashAndRestart( indexProvider );
+        crashAndRestart();
 
         // THEN
         // -- really the problem was that recovery threw exception, so mostly assert that.
@@ -278,38 +298,6 @@ public class TestRecoveryScenarios
         abstract void flush( GraphDatabaseAPI db ) throws IOException;
     }
 
-    @Rule
-    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private final Label label = label( "label" );
-    private GraphDatabaseAPI db;
-    private final InMemoryIndexProvider indexProvider = new InMemoryIndexProvider( 100 );
-
-    private final FlushStrategy flush;
-
-    public TestRecoveryScenarios( FlushStrategy flush )
-    {
-        this.flush = flush;
-    }
-
-    @SuppressWarnings( "deprecation" )
-    @Before
-    public void before()
-    {
-        db = (GraphDatabaseAPI) databaseFactory( fsRule.get(), indexProvider ).newImpermanentDatabase();
-    }
-
-    private TestGraphDatabaseFactory databaseFactory( FileSystemAbstraction fs, InMemoryIndexProvider indexProvider )
-    {
-        return new TestGraphDatabaseFactory()
-            .setFileSystem( fs ).setKernelExtensions( asList( new InMemoryIndexProviderFactory( indexProvider ) ) );
-    }
-
-    @After
-    public void after()
-    {
-        db.shutdown();
-    }
-
     private void checkPoint() throws IOException
     {
         db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
@@ -335,11 +323,16 @@ public class TestRecoveryScenarios
         }
     }
 
+    private TestGraphDatabaseFactory databaseFactory( FileSystemAbstraction fs )
+    {
+        return new TestGraphDatabaseFactory().setFileSystem( fs );
+    }
+
     @SuppressWarnings( "deprecation" )
-    private void crashAndRestart( InMemoryIndexProvider indexProvider ) throws Exception
+    private void crashAndRestart() throws Exception
     {
         final GraphDatabaseService db1 = db;
         FileSystemAbstraction uncleanFs = fsRule.snapshot( db1::shutdown );
-        db = (GraphDatabaseAPI) databaseFactory( uncleanFs, indexProvider ).newImpermanentDatabase();
+        db = (GraphDatabaseAPI) databaseFactory( uncleanFs ).newImpermanentDatabase();
     }
 }

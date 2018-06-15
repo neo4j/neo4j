@@ -51,6 +51,7 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -61,7 +62,6 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
@@ -153,7 +153,7 @@ public class IndexPopulationJobTest
         // GIVEN
         String value = "Taylor";
         long nodeId = createNode( map( name, value ), FIRST );
-        IndexPopulator populator = spy( inMemoryPopulator( false ) );
+        IndexPopulator populator = spy( indexPopulator( false ) );
         LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
         IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.NODE, IndexDescriptorFactory.forSchema( descriptor ) );
 
@@ -179,7 +179,7 @@ public class IndexPopulationJobTest
         String value = "Taylor";
         long nodeId = createNode( map( name, value ), FIRST );
         long relationship = createRelationship( map( name, age ), likes, nodeId, nodeId );
-        IndexPopulator populator = spy( inMemoryPopulator( false ) );
+        IndexPopulator populator = spy( indexPopulator( false ) );
         RelationTypeSchemaDescriptor descriptor = SchemaDescriptorFactory.forRelType( 0, 0 );
         IndexPopulationJob job =
                 newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.RELATIONSHIP, IndexDescriptorFactory.forSchema( descriptor ) );
@@ -206,7 +206,7 @@ public class IndexPopulationJobTest
         String value = "Taylor";
         createNode( map( name, value ), FIRST );
         stateHolder.put( "key", "original_value" );
-        IndexPopulator populator = spy( inMemoryPopulator( false ) );
+        IndexPopulator populator = spy( indexPopulator( false ) );
         IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.NODE, indexDescriptor( FIRST, name, false ) );
 
         // WHEN
@@ -226,7 +226,7 @@ public class IndexPopulationJobTest
         createNode( map( name, value ), SECOND );
         createNode( map( age, 31 ), FIRST );
         long node4 = createNode( map( age, 35, name, value ), FIRST );
-        IndexPopulator populator = spy( inMemoryPopulator( false ) );
+        IndexPopulator populator = spy( indexPopulator( false ) );
         LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
         IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.NODE, IndexDescriptorFactory.forSchema( descriptor ) );
 
@@ -262,7 +262,7 @@ public class IndexPopulationJobTest
         createRelationship( map( age, 31 ), likes, node2, node1 );
         long rel4 = createRelationship( map( age, 35, name, value ), likes, node4, node4 );
 
-        IndexPopulator populator = spy( inMemoryPopulator( false ) );
+        IndexPopulator populator = spy( indexPopulator( false ) );
         RelationTypeSchemaDescriptor descriptor = SchemaDescriptorFactory.forRelType( 0, 0 );
         IndexPopulationJob job =
                 newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.RELATIONSHIP, IndexDescriptorFactory.forSchema( descriptor ) );
@@ -405,7 +405,7 @@ public class IndexPopulationJobTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
         FlippableIndexProxy index = mock( FlippableIndexProxy.class );
         when( index.getState() ).thenReturn( InternalIndexState.ONLINE );
-        IndexPopulator populator = spy( inMemoryPopulator( false ) );
+        IndexPopulator populator = spy( indexPopulator( false ) );
         IndexPopulationJob job = newIndexPopulationJob( populator, index, indexStoreView, logProvider, EntityType.NODE, indexDescriptor( FIRST, name, false ) );
 
         // When
@@ -417,6 +417,8 @@ public class IndexPopulationJobTest
                 match.info( "Index population started: [%s]", ":FIRST(name)" ),
                 match.info( "Index creation finished. Index [%s] is %s.", ":FIRST(name)", "ONLINE" )
         );
+
+        populator.close( true );
     }
 
     @Test
@@ -427,7 +429,7 @@ public class IndexPopulationJobTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
         FlippableIndexProxy index = mock( FlippableIndexProxy.class );
         when( index.getState() ).thenReturn( InternalIndexState.POPULATING );
-        IndexPopulator populator = spy( inMemoryPopulator( false ) );
+        IndexPopulator populator = spy( indexPopulator( false ) );
         IndexPopulationJob job = newIndexPopulationJob( populator, index, indexStoreView, logProvider, EntityType.NODE, indexDescriptor( FIRST, name, true ) );
 
         // When
@@ -439,6 +441,8 @@ public class IndexPopulationJobTest
                 match.info( "Index population started: [%s]", ":FIRST(name)" ),
                 match.info( "Index created. Starting data checks. Index [%s] is %s.", ":FIRST(name)", "POPULATING" )
         );
+
+        populator.close( true );
     }
 
     @Test
@@ -448,7 +452,7 @@ public class IndexPopulationJobTest
         createNode( map( name, "irrelephant" ), FIRST );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         FlippableIndexProxy index = mock( FlippableIndexProxy.class );
-        IndexPopulator populator = spy( inMemoryPopulator( false ) );
+        IndexPopulator populator = spy( indexPopulator( false ) );
         IndexPopulationJob job = newIndexPopulationJob( populator, index, indexStoreView, logProvider, EntityType.NODE, indexDescriptor( FIRST, name, false ) );
 
         Throwable failure = new IllegalStateException( "not successful" );
@@ -469,7 +473,7 @@ public class IndexPopulationJobTest
     {
         // Given
         FailedIndexProxyFactory failureDelegateFactory = mock( FailedIndexProxyFactory.class );
-        IndexPopulator populator = spy( inMemoryPopulator( false ) );
+        IndexPopulator populator = spy( indexPopulator( false ) );
         IndexPopulationJob job =
                 newIndexPopulationJob( failureDelegateFactory, populator, new FlippableIndexProxy(), indexStoreView, NullLogProvider.getInstance(),
                         EntityType.NODE, indexDescriptor( FIRST, name, false ) );
@@ -490,7 +494,7 @@ public class IndexPopulationJobTest
         createNode( map( name, "irrelephant" ), FIRST );
         LogProvider logProvider = NullLogProvider.getInstance();
         FlippableIndexProxy index = mock( FlippableIndexProxy.class );
-        IndexPopulator populator = spy( inMemoryPopulator( false ) );
+        IndexPopulator populator = spy( indexPopulator( false ) );
         IndexPopulationJob job = newIndexPopulationJob( populator, index, indexStoreView, logProvider, EntityType.NODE, indexDescriptor( FIRST, name, false ) );
 
         String failureMessage = "not successful";
@@ -670,12 +674,13 @@ public class IndexPopulationJobTest
         }
     }
 
-    private IndexPopulator inMemoryPopulator( boolean constraint )
+    private IndexPopulator indexPopulator( boolean constraint )
             throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         IndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
-        return new InMemoryIndexProvider().getPopulator( descriptor.withId( 21 ), samplingConfig );
+        IndexProvider indexProvider = db.getDependencyResolver().resolveDependency( IndexProvider.class );
+        return indexProvider.getPopulator( descriptor.withId( 21 ), samplingConfig );
     }
 
     private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, EntityType type, IndexDescriptor descriptor )

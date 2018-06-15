@@ -30,8 +30,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
+import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -41,7 +40,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
@@ -50,6 +48,22 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 public class CountsStoreRecoveryTest
 {
+    @Rule
+    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private GraphDatabaseService db;
+
+    @Before
+    public void before()
+    {
+        db = databaseFactory( fsRule.get() ).newImpermanentDatabase();
+    }
+
+    @After
+    public void after()
+    {
+        db.shutdown();
+    }
+
     @Test
     public void shouldRecoverTheCountsStoreEvenWhenIfNeoStoreDoesNotNeedRecovery() throws Exception
     {
@@ -92,7 +106,7 @@ public class CountsStoreRecoveryTest
     {
         final GraphDatabaseService db1 = db;
         FileSystemAbstraction uncleanFs = fsRule.snapshot( db1::shutdown );
-        db = databaseFactory( uncleanFs, indexProvider ).newImpermanentDatabase();
+        db = databaseFactory( uncleanFs ).newImpermanentDatabase();
     }
 
     private void createNode( String label )
@@ -105,26 +119,8 @@ public class CountsStoreRecoveryTest
         }
     }
 
-    @Rule
-    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private GraphDatabaseService db;
-    private final InMemoryIndexProvider indexProvider = new InMemoryIndexProvider( 100 );
-
-    @Before
-    public void before()
+    private TestGraphDatabaseFactory databaseFactory( FileSystemAbstraction fs )
     {
-        db = databaseFactory( fsRule.get(), indexProvider ).newImpermanentDatabase();
-    }
-
-    private TestGraphDatabaseFactory databaseFactory( FileSystemAbstraction fs, InMemoryIndexProvider indexProvider )
-    {
-        return new TestGraphDatabaseFactory()
-                .setFileSystem( fs ).setKernelExtensions( asList( new InMemoryIndexProviderFactory( indexProvider ) ) );
-    }
-
-    @After
-    public void after()
-    {
-        db.shutdown();
+        return new TestGraphDatabaseFactory().setFileSystem( fs );
     }
 }

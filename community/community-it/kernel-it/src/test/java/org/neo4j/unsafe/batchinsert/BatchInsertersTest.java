@@ -29,8 +29,8 @@ import java.util.Map;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.unsafe.batchinsert.internal.FileSystemClosingBatchInserter;
@@ -43,11 +43,10 @@ import static org.neo4j.unsafe.batchinsert.BatchInserters.inserter;
 
 public class BatchInsertersTest
 {
-
     @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
-    public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+    public final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
 
     @Test
     public void automaticallyCloseCreatedFileSystemOnShutdown() throws Exception
@@ -61,15 +60,14 @@ public class BatchInsertersTest
     public void providedFileSystemNotClosedAfterShutdown() throws IOException
     {
         EphemeralFileSystemAbstraction fs = fileSystemRule.get();
-        vefiryProvidedFileSystemOpenAfterShutdown( inserter( getStoreDir(), fs ), fs );
-        vefiryProvidedFileSystemOpenAfterShutdown( inserter( getStoreDir(), fs, getConfig() ), fs );
-        vefiryProvidedFileSystemOpenAfterShutdown( inserter( getStoreDir(), fs, getConfig(), getKernelExtensions() ),
-                fs );
+        verifyProvidedFileSystemOpenAfterShutdown( inserter( getStoreDir(), fs ), fs );
+        verifyProvidedFileSystemOpenAfterShutdown( inserter( getStoreDir(), fs, getConfig() ), fs );
+        verifyProvidedFileSystemOpenAfterShutdown( inserter( getStoreDir(), fs, getConfig(), getKernelExtensions() ), fs );
     }
 
     private Iterable<KernelExtensionFactory<?>> getKernelExtensions()
     {
-        return Iterables.asIterable( new InMemoryIndexProviderFactory() );
+        return Iterables.asIterable( new NativeLuceneFusionIndexProviderFactory20() );
     }
 
     private Map<String,String> getConfig()
@@ -77,7 +75,7 @@ public class BatchInsertersTest
         return MapUtil.stringMap();
     }
 
-    private void vefiryProvidedFileSystemOpenAfterShutdown( BatchInserter inserter,
+    private void verifyProvidedFileSystemOpenAfterShutdown( BatchInserter inserter,
             EphemeralFileSystemAbstraction fileSystemAbstraction )
     {
         inserter.shutdown();

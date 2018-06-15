@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import javax.annotation.Nonnull;
@@ -52,7 +53,10 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder.DatabaseCreator;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -61,13 +65,21 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
-import org.neo4j.kernel.impl.api.index.inmemory.UpdateCapturingIndexProvider;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
+import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -77,6 +89,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
+import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -85,12 +98,14 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.AdversarialPageCacheGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactoryState;
@@ -100,7 +115,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.Long.max;
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -314,13 +329,9 @@ public class RecoveryIT
 
         // given
         File storeDir = directory.absolutePath();
-        InMemoryIndexProvider indexProvider = new InMemoryIndexProvider();
-        UpdateCapturingIndexProvider updateCapturingIndexProvider = new UpdateCapturingIndexProvider( indexProvider, new HashMap<>() );
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory()
-                .setKernelExtensions( asList( new InMemoryIndexProviderFactory( updateCapturingIndexProvider ) ) )
-                .setFileSystem( fs );
-        GraphDatabaseService db = dbFactory.newImpermanentDatabase( storeDir );
+        UpdateCapturingIndexProvider updateCapturingIndexProvider = new UpdateCapturingIndexProvider( IndexProvider.EMPTY, new HashMap<>() );
+        GraphDatabaseAPI db = startDatabase( storeDir, fs, updateCapturingIndexProvider );
         Label label = TestLabels.LABEL_ONE;
         String key1 = "key1";
         String key2 = "key2";
@@ -339,7 +350,6 @@ public class RecoveryIT
 
         produceRandomNodePropertyAndLabelUpdates( db, random.intBetween( 20, 40 ), label, key1, key2 );
         checkPoint( db );
-        InMemoryIndexProvider indexStateAtLastCheckPoint = indexProvider.snapshot();
         Map<Long,Collection<IndexEntryUpdate<?>>> updatesAtLastCheckPoint = updateCapturingIndexProvider.snapshot();
 
         // when
@@ -348,25 +358,21 @@ public class RecoveryIT
         // Snapshot
         flush( db );
         EphemeralFileSystemAbstraction crashedFs = fs.snapshot();
-        InMemoryIndexProvider indexStateAtCrash = indexProvider.snapshot();
         Map<Long,Collection<IndexEntryUpdate<?>>> updatesAtCrash = updateCapturingIndexProvider.snapshot();
 
         // Crash and start anew
         UpdateCapturingIndexProvider recoveredUpdateCapturingIndexProvider =
-                new UpdateCapturingIndexProvider( indexStateAtLastCheckPoint, updatesAtLastCheckPoint );
+                new UpdateCapturingIndexProvider( IndexProvider.EMPTY, updatesAtLastCheckPoint );
         long lastCommittedTxIdBeforeRecovered = lastCommittedTxId( db );
         db.shutdown();
         fs.close();
-        db = dbFactory
-                .setFileSystem( crashedFs )
-                .setKernelExtensions( asList( new InMemoryIndexProviderFactory( recoveredUpdateCapturingIndexProvider ) ) )
-                .newImpermanentDatabase( storeDir );
+
+        db = startDatabase( storeDir, crashedFs, recoveredUpdateCapturingIndexProvider );
         long lastCommittedTxIdAfterRecovered = lastCommittedTxId( db );
         Map<Long,Collection<IndexEntryUpdate<?>>> updatesAfterRecovery = recoveredUpdateCapturingIndexProvider.snapshot();
 
         // then
         assertEquals( lastCommittedTxIdBeforeRecovered, lastCommittedTxIdAfterRecovered );
-        assertTrue( indexStateAtCrash.dataEquals( indexStateAtLastCheckPoint /*which then participated in recovery*/ ) );
         assertSameUpdates( updatesAtCrash, updatesAfterRecovery );
         db.shutdown();
         crashedFs.close();
@@ -798,11 +804,6 @@ public class RecoveryIT
         return Arrays.toString( strings );
     }
 
-    private GraphDatabaseService startDatabase( File storeDir )
-    {
-        return new TestGraphDatabaseFactory().setInternalLogProvider( logProvider ).newEmbeddedDatabase( storeDir );
-    }
-
     private File copyTransactionLogs() throws IOException
     {
         File restoreDbStoreDir = this.directory.directory( "restore-db" );
@@ -821,6 +822,207 @@ public class RecoveryIT
         {
             FileOperation.MOVE.perform( fs, logFile.getName(), fromDirectory, false, toDirectory,
                     ExistingTargetStrategy.FAIL );
+        }
+    }
+
+    private static GraphDatabaseAPI startDatabase( File storeDir, EphemeralFileSystemAbstraction fs, UpdateCapturingIndexProvider indexProvider )
+    {
+        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fs ).setKernelExtensions(
+                singletonList( new IndexExtensionFactory( indexProvider ) ) ).newImpermanentDatabase( storeDir );
+    }
+
+    private GraphDatabaseService startDatabase( File storeDir )
+    {
+        return new TestGraphDatabaseFactory().setInternalLogProvider( logProvider ).newEmbeddedDatabase( storeDir );
+    }
+
+    public class UpdateCapturingIndexProvider extends IndexProvider
+    {
+        private final IndexProvider actual;
+        private final Map<Long,UpdateCapturingIndexAccessor> indexes = new ConcurrentHashMap<>();
+        private final Map<Long,Collection<IndexEntryUpdate<?>>> initialUpdates;
+
+        UpdateCapturingIndexProvider( IndexProvider actual, Map<Long,Collection<IndexEntryUpdate<?>>> initialUpdates )
+        {
+            super( actual );
+            this.actual = actual;
+            this.initialUpdates = initialUpdates;
+        }
+
+        @Override
+        public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+        {
+            return actual.getPopulator( descriptor, samplingConfig );
+        }
+
+        @Override
+        public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+                throws IOException
+        {
+            IndexAccessor actualAccessor = actual.getOnlineAccessor( descriptor, samplingConfig );
+            return indexes.computeIfAbsent( descriptor.getId(), id -> new UpdateCapturingIndexAccessor( actualAccessor, initialUpdates.get( id ) ) );
+        }
+
+        @Override
+        public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
+        {
+            return actual.getPopulationFailure( descriptor );
+        }
+
+        @Override
+        public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
+        {
+            return actual.getInitialState( descriptor );
+        }
+
+        @Override
+        public IndexCapability getCapability()
+        {
+            return actual.getCapability();
+        }
+
+        @Override
+        public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache )
+        {
+            return actual.storeMigrationParticipant( fs, pageCache );
+        }
+
+        public Map<Long,Collection<IndexEntryUpdate<?>>> snapshot()
+        {
+            Map<Long,Collection<IndexEntryUpdate<?>>> result = new HashMap<>();
+            indexes.forEach( ( indexId, index ) -> result.put( indexId, index.snapshot() ) );
+            return result;
+        }
+    }
+
+    public class UpdateCapturingIndexAccessor implements IndexAccessor
+    {
+        private final IndexAccessor actual;
+        private final Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
+
+        UpdateCapturingIndexAccessor( IndexAccessor actual, Collection<IndexEntryUpdate<?>> initialUpdates )
+        {
+            this.actual = actual;
+            if ( initialUpdates != null )
+            {
+                this.updates.addAll( initialUpdates );
+            }
+        }
+
+        @Override
+        public void drop() throws IOException
+        {
+            actual.drop();
+        }
+
+        @Override
+        public IndexUpdater newUpdater( IndexUpdateMode mode )
+        {
+            return wrap( actual.newUpdater( mode ) );
+        }
+
+        private IndexUpdater wrap( IndexUpdater actual )
+        {
+            return new UpdateCapturingIndexUpdater( actual, updates );
+        }
+
+        @Override
+        public void force( IOLimiter ioLimiter ) throws IOException
+        {
+            actual.force( ioLimiter );
+        }
+
+        @Override
+        public void refresh() throws IOException
+        {
+            actual.refresh();
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            actual.close();
+        }
+
+        @Override
+        public IndexReader newReader()
+        {
+            return actual.newReader();
+        }
+
+        @Override
+        public BoundedIterable<Long> newAllEntriesReader()
+        {
+            return actual.newAllEntriesReader();
+        }
+
+        @Override
+        public ResourceIterator<File> snapshotFiles() throws IOException
+        {
+            return actual.snapshotFiles();
+        }
+
+        @Override
+        public void verifyDeferredConstraints( NodePropertyAccessor propertyAccessor ) throws IndexEntryConflictException, IOException
+        {
+            actual.verifyDeferredConstraints( propertyAccessor );
+        }
+
+        @Override
+        public boolean isDirty()
+        {
+            return actual.isDirty();
+        }
+
+        public Collection<IndexEntryUpdate<?>> snapshot()
+        {
+            return new ArrayList<>( updates );
+        }
+    }
+
+    public class UpdateCapturingIndexUpdater implements IndexUpdater
+    {
+        private final IndexUpdater actual;
+        private final Collection<IndexEntryUpdate<?>> updatesTarget;
+
+        UpdateCapturingIndexUpdater( IndexUpdater actual, Collection<IndexEntryUpdate<?>> updatesTarget )
+        {
+            this.actual = actual;
+            this.updatesTarget = updatesTarget;
+        }
+
+        @Override
+        public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
+        {
+            actual.process( update );
+            updatesTarget.add( update );
+        }
+
+        @Override
+        public void close() throws IOException, IndexEntryConflictException
+        {
+            actual.close();
+        }
+    }
+
+    private static class IndexExtensionFactory extends KernelExtensionFactory<IndexExtensionFactory.Dependencies>
+    {
+        private final IndexProvider indexProvider;
+
+        interface Dependencies
+        {
+        }
+
+        IndexExtensionFactory( IndexProvider indexProvider )
+        {
+            super( "customExtension" );
+            this.indexProvider = indexProvider;
+        }
+
+        @Override
+        public Lifecycle newInstance( KernelContext context, Dependencies dependencies )
+        {
+            return indexProvider;
         }
     }
 }

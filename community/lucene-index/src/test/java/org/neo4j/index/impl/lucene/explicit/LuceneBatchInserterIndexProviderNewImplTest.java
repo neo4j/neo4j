@@ -29,10 +29,10 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
@@ -66,7 +66,7 @@ class LuceneBatchInserterIndexProviderNewImplTest
 
     private Iterable<KernelExtensionFactory<?>> getExtensions()
     {
-        return Iterables.asIterable( new InMemoryIndexProviderFactory() );
+        return Iterables.asIterable( new LuceneIndexProviderFactory() );
     }
 
     private Map<String,String> getConfig()

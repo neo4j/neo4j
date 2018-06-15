@@ -56,7 +56,6 @@ import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -78,6 +77,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNode;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
+import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
 import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
@@ -112,7 +112,7 @@ public class BuiltInProceduresTest
         // When/Then
         assertThat( call( "db.indexes" ),
                 contains( record( "INDEX ON :User(name)", "User", singletonList( "name" ), "ONLINE", "node_label_property",
-                        getIndexProviderDescriptorMap( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR ) ) ) );
+                        getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ) ) ) );
     }
 
     private Map<String,String> getIndexProviderDescriptorMap( IndexProvider.Descriptor providerDescriptor )
@@ -129,7 +129,7 @@ public class BuiltInProceduresTest
         // When/Then
         assertThat( call( "db.indexes" ),
                 contains( record( "INDEX ON :User(name)", "User", singletonList( "name" ), "ONLINE", "node_unique_property",
-                        getIndexProviderDescriptorMap( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR ) ) ) );
+                        getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ) ) ) );
     }
 
     @Test
@@ -424,7 +424,7 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        IndexReference index = IndexDescriptorFactory.forSchema( forLabel( labelId, propId ), InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
+        IndexReference index = IndexDescriptorFactory.forSchema( forLabel( labelId, propId ), EMPTY.getProviderDescriptor() );
         indexes.add( index );
     }
 
@@ -433,7 +433,7 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        IndexReference index = IndexDescriptorFactory.uniqueForSchema( forLabel( labelId, propId ), InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
+        IndexReference index = IndexDescriptorFactory.uniqueForSchema( forLabel( labelId, propId ), EMPTY.getProviderDescriptor() );
         uniqueIndexes.add( index );
         constraints.add( ConstraintDescriptorFactory.uniqueForLabel( labelId, propId ) );
     }

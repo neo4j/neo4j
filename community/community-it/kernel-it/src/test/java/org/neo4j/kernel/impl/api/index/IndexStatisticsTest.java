@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -48,7 +47,6 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.IndexReference;
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -75,14 +73,13 @@ import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
-import static org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider.IN_MEMORY_INDEX_PROVIDER_PRIORITY;
 
 /**
  * This test validates that we count the correct amount of index updates.
  * <p>
  * We build the index async with a node scan in the background and consume transactions to keep the index updated. Once
  * the index is build and becomes online, we save the index size(number of entries) and begin tracking updates. These
- * values can then then be used to determine when to resample the index for example.
+ * values can then then be used to determine when to re-sample the index for example.
  *
  * <pre>
  *                online
@@ -139,7 +136,6 @@ public class IndexStatisticsTest
     @Before
     public void before()
     {
-        System.setProperty( IN_MEMORY_INDEX_PROVIDER_PRIORITY, String.valueOf( Integer.MAX_VALUE ) );
         GraphDatabaseAPI graphDatabaseAPI = dbRule.getGraphDatabaseAPI();
         this.db = graphDatabaseAPI;
         DependencyResolver dependencyResolver = graphDatabaseAPI.getDependencyResolver();
@@ -147,12 +143,6 @@ public class IndexStatisticsTest
         graphDatabaseAPI.getDependencyResolver()
                 .resolveDependency( Monitors.class )
                 .addMonitorListener( indexOnlineMonitor );
-    }
-
-    @After
-    public void tearDown()
-    {
-        System.clearProperty( IN_MEMORY_INDEX_PROVIDER_PRIORITY );
     }
 
     @Test
@@ -631,7 +621,7 @@ public class IndexStatisticsTest
                     deleteNode( nodeId );
                     updatesTracker.increaseDeleted( 1 );
                 }
-                catch ( EntityNotFoundException | NotFoundException ex )
+                catch ( NotFoundException ex )
                 {
                     // ignore
                 }

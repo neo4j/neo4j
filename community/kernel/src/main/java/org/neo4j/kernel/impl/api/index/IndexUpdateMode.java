@@ -32,7 +32,7 @@ public enum IndexUpdateMode
     ONLINE_IDEMPOTENT( true, true ),
 
     /**
-     * Used when the db is recoverying
+     * Used when the db is recovering
      */
     RECOVERY( true, false );
 

@@ -36,8 +36,6 @@ import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -49,7 +47,6 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
@@ -62,6 +59,31 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class RebuildCountsTest
 {
+    private static final int ALIENS = 16;
+    private static final int HUMANS = 16;
+    private static final Label ALIEN = label( "Alien" );
+    private static final Label HUMAN = label( "Human" );
+
+    @Rule
+    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private final AssertableLogProvider userLogProvider = new AssertableLogProvider();
+    private final AssertableLogProvider internalLogProvider = new AssertableLogProvider();
+    private final File storeDir = new File( "store" ).getAbsoluteFile();
+
+    private GraphDatabaseService db;
+
+    @Before
+    public void before() throws IOException
+    {
+        restart( fsRule.get() );
+    }
+
+    @After
+    public void after()
+    {
+        doCleanShutdown();
+    }
+
     @Test
     public void shouldRebuildMissingCountsStoreOnStart() throws IOException, TransactionFailureException
     {
@@ -197,7 +219,6 @@ public class RebuildCountsTest
         db = dbFactory.setUserLogProvider( userLogProvider )
                       .setInternalLogProvider( internalLogProvider )
                       .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
-                      .setKernelExtensions( asList( new InMemoryIndexProviderFactory( indexProvider ) ) )
                       .newImpermanentDatabaseBuilder( storeDir )
                       .setConfig( index_background_sampling_enabled, "false" )
                       .newGraphDatabase();
@@ -213,31 +234,5 @@ public class RebuildCountsTest
         {
             db = null;
         }
-    }
-
-    private static final int ALIENS = 16;
-    private static final int HUMANS = 16;
-    private static final Label ALIEN = label( "Alien" );
-    private static final Label HUMAN = label( "Human" );
-
-    @Rule
-    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private final InMemoryIndexProvider indexProvider = new InMemoryIndexProvider( 100 );
-    private final AssertableLogProvider userLogProvider = new AssertableLogProvider();
-    private final AssertableLogProvider internalLogProvider = new AssertableLogProvider();
-
-    private GraphDatabaseService db;
-    private final File storeDir = new File( "store" ).getAbsoluteFile();
-
-    @Before
-    public void before() throws IOException
-    {
-        restart( fsRule.get() );
-    }
-
-    @After
-    public void after()
-    {
-        doCleanShutdown();
     }
 }

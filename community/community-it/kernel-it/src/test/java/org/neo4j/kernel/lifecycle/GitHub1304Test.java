@@ -21,10 +21,11 @@ package org.neo4j.kernel.lifecycle;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
+import java.io.IOException;
 import java.util.Collections;
 
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
@@ -32,14 +33,14 @@ import org.neo4j.unsafe.batchinsert.BatchInserters;
 public class GitHub1304Test
 {
     @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
     public DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
-    public void givenBatchInserterWhenArrayPropertyUpdated4TimesThenShouldNotFail() throws Exception
+    public void givenBatchInserterWhenArrayPropertyUpdated4TimesThenShouldNotFail() throws IOException
     {
-        BatchInserter batchInserter = BatchInserters.inserter( folder.getRoot().getAbsoluteFile(), fileSystemRule.get() );
+        BatchInserter batchInserter = BatchInserters.inserter( testDirectory.graphDbDir(), fileSystemRule.get() );
 
         long nodeId = batchInserter.createNode( Collections.emptyMap() );
 

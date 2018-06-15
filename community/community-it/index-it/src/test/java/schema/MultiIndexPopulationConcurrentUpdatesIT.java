@@ -73,7 +73,6 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.StoreScan;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -122,11 +121,10 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     {
         return asList( LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR,
                 NativeLuceneFusionIndexProviderFactory10.DESCRIPTOR,
-                NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR,
-                InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
+                NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR );
     }
 
-    @Parameterized.Parameter( 0 )
+    @Parameterized.Parameter
     public IndexProvider.Descriptor indexDescriptor;
 
     private IndexingService indexService;
