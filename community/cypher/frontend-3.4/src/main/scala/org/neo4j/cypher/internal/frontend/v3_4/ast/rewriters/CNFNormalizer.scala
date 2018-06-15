@@ -121,8 +121,12 @@ object simplifyPredicates extends Rewriter {
     case Not(Not(exp))                    => exp
     case p@Ands(exps) if exps.isEmpty     => True()(p.position)
     case p@Ors(exps) if exps.isEmpty      => True()(p.position)
-    case p@Ands(exps) if exps.contains(T) => Ands(exps.filterNot(T == _))(p.position)
-    case p@Ors(exps) if exps.contains(F)  => Ors(exps.filterNot(F == _))(p.position)
+    case p@Ands(exps) if exps.contains(T) =>
+      val expressions = exps.filterNot(T == _)
+      if (expressions.isEmpty) True()(p.position) else Ands(expressions)(p.position)
+    case p@Ors(exps) if exps.contains(F)  =>
+      val expressions = exps.filterNot(F == _)
+      if (expressions.isEmpty) False()(p.position) else Ors(expressions)(p.position)
     case p@Ors(exps) if exps.contains(T)  => True()(p.position)
     case p@Ands(exps) if exps.contains(F) => False()(p.position)
   }
