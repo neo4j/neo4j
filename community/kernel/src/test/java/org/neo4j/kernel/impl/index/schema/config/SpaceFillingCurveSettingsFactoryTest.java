@@ -153,7 +153,6 @@ public class SpaceFillingCurveSettingsFactoryTest
     {
         SpaceFillingCurveSettingsFactory factory = new SpaceFillingCurveSettingsFactory( config );
         SpaceFillingCurveSettings settings = factory.settingsFor( crs );
-        assertThat( "Should not get error when getting valid settings", settings.getFailureMessage(), is( nullValue() ) );
         assertThat( "Expected " + dimensions + "D for " + crs.getName(), settings.getDimensions(), equalTo( dimensions ) );
         int maxLevels = maxBits / dimensions;
         assertThat( "Expected maxLevels=" + maxLevels + " for " + crs.getName(), settings.getMaxLevels(), equalTo( maxLevels ) );

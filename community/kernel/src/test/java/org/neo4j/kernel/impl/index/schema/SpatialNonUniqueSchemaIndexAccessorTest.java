@@ -26,6 +26,6 @@ public class SpatialNonUniqueSchemaIndexAccessorTest extends SpatialSchemaIndexA
     @Override
     protected LayoutTestUtil<SpatialSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
-        return new SpatialLayoutTestUtil( SchemaIndexDescriptorFactory.forLabel( 42, 666 ), settings, crs );
+        return new SpatialLayoutTestUtil( SchemaIndexDescriptorFactory.forLabel( 42, 666 ), settings.settingsFor( crs ), crs );
     }
 }

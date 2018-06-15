@@ -112,7 +112,7 @@ public class SpaceFillingCurveSettingsFactory
         for ( Map.Entry<CoordinateReferenceSystem,EnvelopeSettings> entry : env.entrySet() )
         {
             CoordinateReferenceSystem crs = entry.getKey();
-            settings.put( crs, new SpaceFillingCurveSettings( crs.getDimension(), this.maxBits, entry.getValue().asEnvelope() ) );
+            settings.put( crs, SpaceFillingCurveSettings.fromConfig( crs.getDimension(), this.maxBits, entry.getValue().asEnvelope() ) );
         }
     }
 
@@ -132,7 +132,7 @@ public class SpaceFillingCurveSettingsFactory
         }
         else
         {
-            return new SpaceFillingCurveSettings( crs.getDimension(), maxBits,
+            return SpaceFillingCurveSettings.fromConfig( crs.getDimension(), maxBits,
                     envelopeFromCRS( crs.getDimension(), crs.isGeographic(), new EnvelopeSettings( crs ) ) );
         }
     }
