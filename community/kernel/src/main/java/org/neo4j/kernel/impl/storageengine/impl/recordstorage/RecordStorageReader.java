@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -84,7 +83,6 @@ public class RecordStorageReader implements StorageReader
 
     private final Supplier<IndexReaderFactory> indexReaderFactorySupplier;
     private final Supplier<LabelScanReader> labelScanReaderSupplier;
-    private final RecordCursors recordCursors;
     private final RecordStorageCommandCreationContext commandCreationContext;
 
     private IndexReaderFactory indexReaderFactory;
@@ -113,7 +111,6 @@ public class RecordStorageReader implements StorageReader
         this.indexReaderFactorySupplier = indexReaderFactory;
         this.labelScanReaderSupplier = labelScanReaderSupplier;
         this.commandCreationContext = commandCreationContext;
-        this.recordCursors = new RecordCursors( neoStores );
     }
 
     /**
@@ -379,7 +376,6 @@ public class RecordStorageReader implements StorageReader
     {
         assert !closed;
         closeSchemaResources();
-        recordCursors.close();
         commandCreationContext.close();
         closed = true;
     }
