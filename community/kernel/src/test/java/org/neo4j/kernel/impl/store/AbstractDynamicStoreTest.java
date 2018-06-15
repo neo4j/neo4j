@@ -27,6 +27,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Iterator;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -90,14 +91,14 @@ public class AbstractDynamicStoreTest
             second.setNextBlock( third.getId() );
             store.updateRecord( second );
 
-            RecordCursor<DynamicRecord> recordsCursor = store.newRecordCursor( store.newRecord() ).acquire( 1, NORMAL );
-            assertTrue( recordsCursor.next() );
-            assertEquals( first, recordsCursor.get() );
-            assertTrue( recordsCursor.next() );
-            assertEquals( second, recordsCursor.get() );
-            assertTrue( recordsCursor.next() );
-            assertEquals( third, recordsCursor.get() );
-            assertFalse( recordsCursor.next() );
+            Iterator<DynamicRecord> records = store.getRecords( 1, NORMAL ).iterator();
+            assertTrue( records.hasNext() );
+            assertEquals( first, records.next() );
+            assertTrue( records.hasNext() );
+            assertEquals( second, records.next() );
+            assertTrue( records.hasNext() );
+            assertEquals( third, records.next() );
+            assertFalse( records.hasNext() );
         }
     }
 
@@ -118,15 +119,15 @@ public class AbstractDynamicStoreTest
             second.setInUse( false );
             store.updateRecord( second );
 
-            RecordCursor<DynamicRecord> recordsCursor = store.newRecordCursor( store.newRecord() ).acquire( 1, FORCE );
-            assertTrue( recordsCursor.next() );
-            assertEquals( first, recordsCursor.get() );
-            assertFalse( recordsCursor.next() );
-            assertEquals( second, recordsCursor.get() );
+            Iterator<DynamicRecord> records = store.getRecords( 1, FORCE ).iterator();
+            assertTrue( records.hasNext() );
+            assertEquals( first, records.next() );
+            assertFalse( records.hasNext() );
+            assertEquals( second, records.next() );
             // because mode == FORCE we can still move through the chain
-            assertTrue( recordsCursor.next() );
-            assertEquals( third, recordsCursor.get() );
-            assertFalse( recordsCursor.next() );
+            assertTrue( records.hasNext() );
+            assertEquals( third, records.next() );
+            assertFalse( records.hasNext() );
         }
     }
 

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.store;
 import java.io.File;
 import java.nio.file.OpenOption;
 import java.util.Arrays;
-import java.util.List;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -105,14 +104,6 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
 
         // Load any dynamic labels and populate the node record
         node.setLabelField( node.getLabelField(), dynamicLabelStore.getRecords( firstDynamicLabelRecord, RecordLoad.NORMAL ) );
-    }
-
-    public static void ensureHeavy( NodeRecord node, RecordCursor<DynamicRecord> dynamicLabelCursor )
-    {
-        long firstDynamicLabelId = NodeLabelsField.firstDynamicLabelRecordId( node.getLabelField() );
-        dynamicLabelCursor.placeAt( firstDynamicLabelId, RecordLoad.NORMAL );
-        List<DynamicRecord> dynamicLabelRecords = dynamicLabelCursor.getAll();
-        node.setLabelField( node.getLabelField(), dynamicLabelRecords );
     }
 
     @Override

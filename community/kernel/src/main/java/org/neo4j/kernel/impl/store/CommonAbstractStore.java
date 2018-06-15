@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.graphdb.config.Setting;
@@ -415,6 +416,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     /**
      * DANGER: make sure to always close this cursor.
      */
+    @Override
     public PageCursor openPageCursorForReading( long id )
     {
         try
@@ -1159,15 +1161,16 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     @Override
     public <EXCEPTION extends Exception> void scanAllRecords( Visitor<RECORD,EXCEPTION> visitor ) throws EXCEPTION
     {
-        try ( RecordCursor<RECORD> cursor = newRecordCursor( newRecord() ) )
+        try ( PageCursor cursor = openPageCursorForReading( 0 ) )
         {
+            RECORD record = newRecord();
             long highId = getHighId();
-            cursor.acquire( getNumberOfReservedLowIds(), CHECK );
             for ( long id = getNumberOfReservedLowIds(); id < highId; id++ )
             {
-                if ( cursor.next( id ) )
+                getRecordByCursor( id, record, CHECK, cursor );
+                if ( record.inUse() )
                 {
-                    visitor.visit( cursor.get() );
+                    visitor.visit( record );
                 }
             }
         }
@@ -1176,11 +1179,24 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     @Override
     public Collection<RECORD> getRecords( long firstId, RecordLoad mode )
     {
-        try ( RecordCursor<RECORD> cursor = newRecordCursor( newRecord() ) )
+        Collection<RECORD> records = new ArrayList<>();
+        long id = firstId;
+        try ( PageCursor cursor = openPageCursorForReading( firstId ) )
         {
-            cursor.acquire( firstId, mode );
-            return cursor.getAll();
+            RECORD record;
+            do
+            {
+                record = newRecord();
+                getRecordByCursor( id, record, mode, cursor );
+                if ( record.inUse() )
+                {
+                    records.add( record );
+                }
+                id = getNextRecordReference( record );
+            }
+            while ( record.inUse() && !Record.NULL_REFERENCE.is( id ) );
         }
+        return records;
     }
 
     @Override
@@ -1193,7 +1209,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     {
         record.clear();
         mode.verify( record );
-
     }
 
     final void checkForDecodingErrors( PageCursor cursor, long recordId, RecordLoad mode )

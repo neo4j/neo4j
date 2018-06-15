@@ -19,8 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.impl.store.RecordCursor;
-import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
@@ -37,25 +37,25 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
 {
     private final int batchSize;
     private final ByteArray cache;
-    private final RecordCursor<NodeRecord> nodeRecordCursor;
+    private final NodeStore nodeStore;
+    private final PageCursor nodeCursor;
 
     private NodeRecord[] current;
     private int cursor;
 
-    public NodeSetFirstGroupStep( StageControl control, Configuration config,
-            RecordStore<NodeRecord> nodeStore, ByteArray cache )
+    NodeSetFirstGroupStep( StageControl control, Configuration config, NodeStore nodeStore, ByteArray cache )
     {
         super( control, "FIRST", config, 1 );
         this.cache = cache;
         this.batchSize = config.batchSize();
-        this.nodeRecordCursor = nodeStore.newRecordCursor( nodeStore.newRecord() );
+        this.nodeStore = nodeStore;
+        this.nodeCursor = nodeStore.openPageCursorForReading( 0 );
         newBatch();
     }
 
     @Override
     public void start( int orderingGuarantees )
     {
-        nodeRecordCursor.acquire( 0, NORMAL );
         super.start( orderingGuarantees );
     }
 
@@ -79,12 +79,12 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
             if ( cache.getByte( nodeId, 0 ) == 0 )
             {
                 cache.setByte( nodeId, 0, (byte) 1 );
-                nodeRecordCursor.next( nodeId );
-                NodeRecord node = nodeRecordCursor.get().clone();
-                node.setNextRel( group.getId() );
-                node.setDense( true );
+                NodeRecord nodeRecord = nodeStore.newRecord();
+                nodeStore.getRecordByCursor( nodeId, nodeRecord, NORMAL, nodeCursor );
+                nodeRecord.setNextRel( group.getId() );
+                nodeRecord.setDense( true );
 
-                current[cursor++] = node;
+                current[cursor++] = nodeRecord;
                 if ( cursor == batchSize )
                 {
                     sender.send( current );
@@ -107,7 +107,7 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
     @Override
     public void close() throws Exception
     {
-        nodeRecordCursor.close();
+        nodeCursor.close();
         super.close();
     }
 }

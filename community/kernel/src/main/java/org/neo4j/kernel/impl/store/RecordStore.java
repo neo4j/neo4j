@@ -116,6 +116,16 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
     RECORD getRecord( long id, RECORD target, RecordLoad mode ) throws InvalidRecordException;
 
     /**
+     * Opens a {@link PageCursor} on this store, capable of reading records using
+     * {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}.
+     * The caller is responsible for closing it when done with it.
+     *
+     * @param id cursor will initially be placed at the page containing this record id.
+     * @return PageCursor for reading records.
+     */
+    PageCursor openPageCursorForReading( long id );
+
+    /**
      * Reads a record from the store into {@code target}, see
      * {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad)}.
      * <p>
@@ -302,6 +312,12 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         public R getRecord( long id, R target, RecordLoad mode ) throws InvalidRecordException
         {
             return actual.getRecord( id, target, mode );
+        }
+
+        @Override
+        public PageCursor openPageCursorForReading( long id )
+        {
+            return actual.openPageCursorForReading( id );
         }
 
         @Override

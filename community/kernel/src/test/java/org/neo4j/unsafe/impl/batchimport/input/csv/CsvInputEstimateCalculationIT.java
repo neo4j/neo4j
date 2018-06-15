@@ -44,17 +44,16 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyValueRecordSizeCalculator;
-import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
@@ -79,11 +78,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.csv.reader.Readables.wrap;
-import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.input.RandomEntityDataGenerator.convert;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
@@ -131,7 +128,7 @@ public class CsvInputEstimateCalculationIT
             assertRoughlyEqual( estimates.numberOfNodes(), stores.getNodeStore().getNumberOfIdsInUse() );
             assertRoughlyEqual( estimates.numberOfRelationships(), stores.getRelationshipStore().getNumberOfIdsInUse() );
             assertRoughlyEqual( estimates.numberOfNodeProperties() + estimates.numberOfRelationshipProperties(),
-                    calculateNumberOfProperties( stores.getPropertyStore() ) );
+                    calculateNumberOfProperties( stores ) );
         }
         assertRoughlyEqual( propertyStorageSize(), estimates.sizeOfNodeProperties() + estimates.sizeOfRelationshipProperties() );
     }
@@ -192,17 +189,19 @@ public class CsvInputEstimateCalculationIT
                 IdType.INTEGER, COMMAS, Collector.EMPTY, groups );
     }
 
-    private long calculateNumberOfProperties( PropertyStore propertyStore )
+    private long calculateNumberOfProperties( NeoStores stores )
     {
         long count = 0;
-        try ( RecordCursor<PropertyRecord> cursor = propertyStore.newRecordCursor( propertyStore.newRecord() ).acquire( 0, CHECK ) )
+        try ( RecordStorageReader reader = new RecordStorageReader( stores );
+              StoragePropertyCursor cursor = reader.allocatePropertyCursor() )
         {
-            long highId = propertyStore.getHighId();
+            long highId = stores.getPropertyStore().getHighId();
             for ( long id = 0; id < highId; id++ )
             {
-                if ( cursor.next( id ) )
+                cursor.init( id );
+                while ( cursor.next() )
                 {
-                    count += count( cursor.get() );
+                    count++;
                 }
             }
         }
