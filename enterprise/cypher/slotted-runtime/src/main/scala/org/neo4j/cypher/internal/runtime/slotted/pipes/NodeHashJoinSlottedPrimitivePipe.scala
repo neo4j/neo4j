@@ -94,7 +94,7 @@ case class NodeHashJoinSlottedPrimitivePipe(lhsOffset: Int,
 
         while (rhsInput.nonEmpty) {
           currentRhsRow = rhsInput.next()
-          val nodeId = currentRhsRow.getLongAt(lhsOffset)
+          val nodeId = currentRhsRow.getLongAt(rhsOffset)
           if(nodeId != -1) {
             val innerMatches = probeTable.get(nodeId)
             if(innerMatches != null) {
