@@ -42,13 +42,13 @@ public class BuiltInSchemaProcedures
     @Description( "Show the schema of the data in tabular form." )
     public Stream<SchemaInfoResult> schemaAsTable()
     {
-        return new SchemaCalculator( db, tx ).calculateTabularResultStream();
+        return new SchemaCalculator( tx ).calculateTabularResultStream();
     }
 
     // TODO: Next step
-//    @Procedure( value = "db.schema.graph", mode = Mode.READ ) // TODO: Change to db.schema when ready to completly replace old one
+//    @Procedure( value = "db.schema.graph", mode = Mode.READ ) // TODO: Change to db.schema when ready to completely replace old one (if possible)
 //    @Description( "Show the schema of the data." ) // old description
-//    public Stream<SchemaProcedure.GraphResult> schemaAsGraph()   //TODO: Maybe extract inner result classes
+//    public Stream<SchemaProcedure.GraphResult> schemaAsGraph()
 //    {
 //        return new SchemaCalculator( db, tx ).calculateGraphResultStream();
 //    }

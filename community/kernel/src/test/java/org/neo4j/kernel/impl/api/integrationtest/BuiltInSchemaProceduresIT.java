@@ -150,7 +150,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
         assertThat( asList( stream ), containsInAnyOrder(
                 equalTo( new Object[]{"Node", Arrays.asList(), "prop1", "STRING"} ),
                 equalTo( new Object[]{"Node", Arrays.asList(), "prop2", "NUMBER"} ),
-                equalTo( new Object[]{"Node", Arrays.asList(), "prop3", "ANYVALUE"} ) ) );
+                equalTo( new Object[]{"Node", Arrays.asList(), "prop3", "ANY_VALUE"} ) ) );
 
         // Just for printing out the result if needed
         //printStream( stream );
@@ -264,7 +264,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                 equalTo( new Object[]{"Node", Arrays.asList(), null, null} ),
                 equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop1", "STRING"} ),
                 equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop2", "NUMBER"} ),
-                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop3", "ANYVALUE"} ) ) );
+                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop3", "ANY_VALUE"} ) ) );
 
         // Just for printing out the result if needed
         //printStream( stream );
