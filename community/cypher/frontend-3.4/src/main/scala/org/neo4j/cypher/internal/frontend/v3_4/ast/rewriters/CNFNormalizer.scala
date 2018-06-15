@@ -119,8 +119,8 @@ object simplifyPredicates extends Rewriter {
 
   private val step: Rewriter = Rewriter.lift {
     case Not(Not(exp))                    => exp
-    case p@Ands(exps) if exps.size == 1   => exps.head
-    case p@Ors(exps) if exps.size == 1    => exps.head
+    case p@Ands(exps) if exps.isEmpty     => True()(p.position)
+    case p@Ors(exps) if exps.isEmpty      => True()(p.position)
     case p@Ands(exps) if exps.contains(T) => Ands(exps.filterNot(T == _))(p.position)
     case p@Ors(exps) if exps.contains(F)  => Ors(exps.filterNot(F == _))(p.position)
     case p@Ors(exps) if exps.contains(T)  => True()(p.position)

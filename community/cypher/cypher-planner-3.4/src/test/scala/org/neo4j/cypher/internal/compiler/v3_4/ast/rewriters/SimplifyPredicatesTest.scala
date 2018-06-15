@@ -37,32 +37,4 @@ class SimplifyPredicatesTest extends CypherFunSuite with PredicateTestSupport {
   test("repeated double negation is removed") {
     not(not(not(not(P)))) <=> P
   }
-
-  test("P and P  iff  P") {
-    ands(P, P) <=> P
-  }
-
-  test("P or P  iff  P") {
-    ors(P, P) <=> P
-  }
-
-  test("P or P and P  iff  P") {
-    ors(P, ands(P, P)) <=> P
-  }
-
-  test("not P or not P and not P  iff  not P") {
-    ors(not(P), ands(not(P), not(P))) <=> not(P)
-  }
-
-  test("P or P and P or Q  iff  P or Q") {
-    ands(ors(P, P), ors(P, Q)) <=> ands(P, ors(P, Q))
-  }
-
-  test("ANDS with only one TRUE") {
-    ands(TRUE) <=> TRUE
-  }
-
-  test("ORS with only one FALSE") {
-    ors(FALSE) <=> FALSE
-  }
 }
