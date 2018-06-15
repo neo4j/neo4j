@@ -28,6 +28,7 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
@@ -37,14 +38,15 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
+import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 public class CountsStoreRecoveryTest
 {
@@ -61,11 +63,12 @@ public class CountsStoreRecoveryTest
         crashAndRestart();
 
         // then
-        try ( StorageReader reader = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( StorageEngine.class ).newReader() )
+        try ( org.neo4j.internal.kernel.api.Transaction tx = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( Kernel.class )
+                .beginTransaction( explicit, AUTH_DISABLED ) )
         {
-            assertEquals( 1, reader.countsForNode( reader.labelGetForName( "A" ) ) );
-            assertEquals( 1, reader.countsForNode( reader.labelGetForName( "B" ) ) );
-            assertEquals( 2, reader.countsForNode( -1 ) );
+            assertEquals( 1, tx.dataRead().countsForNode( tx.tokenRead().nodeLabel( "A" ) ) );
+            assertEquals( 1, tx.dataRead().countsForNode( tx.tokenRead().nodeLabel( "B" ) ) );
+            assertEquals( 2, tx.dataRead().countsForNode( NO_TOKEN ) );
         }
     }
 
