@@ -177,6 +177,8 @@ Feature "ReturnAcceptance": Scenario "Accessing a list with null as lower bound 
 Feature "ReturnAcceptance": Scenario "Accessing a list with null as upper bound should return null"
 Feature "ReturnAcceptance": Scenario "Accessing a map with null should return null"
 Feature "ReturnAcceptance": Scenario "Accessing a non-existing property with string should work"
+Feature "ReturnAcceptance": Scenario "RETURN true AND list"
+Feature "ReturnAcceptance": Scenario "RETURN false OR list"
 Feature "ShortestPathAcceptance": Scenario "Find a shortest path among paths that fulfill a predicate on all nodes"
 Feature "ShortestPathAcceptance": Scenario "Find a shortest path among paths that fulfill a predicate on all relationships"
 Feature "ShortestPathAcceptance": Scenario "Find a shortest path among paths that fulfill a predicate on all relationships 2"

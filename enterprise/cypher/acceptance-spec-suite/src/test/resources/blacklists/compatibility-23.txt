@@ -54,6 +54,8 @@ Feature "ProcedureCallAcceptance": Scenario "In-query call to unknown procedure 
 Feature "ProcedureCallAcceptance": Scenario "In-query procedure call should fail if shadowing an already bound variable"
 Feature "ProcedureCallAcceptance": Scenario "In-query procedure call should fail if one of the argument expressions uses an aggregation function"
 Feature "ReturnAcceptance": Scenario "LIMIT 0 should stop side effects"
+Feature "ReturnAcceptance": Scenario "RETURN true AND list"
+Feature "ReturnAcceptance": Scenario "RETURN false OR list"
 Feature "SkipLimitAcceptance": Scenario "Negative parameter for LIMIT should not generate errors"
 Feature "UnwindAcceptance": Scenario "Nested unwind with longs"
 Feature "UnwindAcceptance": Scenario "Nested unwind with doubles"
