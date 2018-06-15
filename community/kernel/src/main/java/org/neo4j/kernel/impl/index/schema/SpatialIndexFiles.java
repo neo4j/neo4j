@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -49,27 +48,27 @@ class SpatialIndexFiles
         indexDirectory = directoryStructure.directoryForIndex( indexId );
     }
 
-    Iterable<SpatialFileLayout> existing()
+    Iterable<SpatialFile> existing()
     {
-        List<SpatialFileLayout> existing = new ArrayList<>();
+        List<SpatialFile> existing = new ArrayList<>();
         addExistingFiles( existing );
         return existing;
     }
 
     <T> void loadExistingIndexes( SpatialIndexCache<T> indexCache ) throws IOException
     {
-        for ( SpatialFileLayout fileLayout : existing() )
+        for ( SpatialFile fileLayout : existing() )
         {
             indexCache.select( fileLayout.crs );
         }
     }
 
-    SpatialFileLayout forCrs( CoordinateReferenceSystem crs )
+    SpatialFile forCrs( CoordinateReferenceSystem crs )
     {
-        return new SpatialFileLayout( crs, settingsFactory.settingsFor( crs ).clone(), indexDirectory );
+        return new SpatialFile( crs, settingsFactory, indexDirectory );
     }
 
-    private void addExistingFiles( List<SpatialFileLayout> existing )
+    private void addExistingFiles( List<SpatialFile> existing )
     {
         File[] files = fs.listFiles( indexDirectory );
         if ( files != null )
@@ -89,30 +88,50 @@ class SpatialIndexFiles
         }
     }
 
-    static class SpatialFileLayout
+    static class SpatialFile
     {
         final File indexFile;
-        final SpaceFillingCurveSettings settings;
+        final SpaceFillingCurveSettingsFactory settings;
         private final CoordinateReferenceSystem crs;
-        Layout<SpatialIndexKey,NativeIndexValue> layout;
 
-        SpatialFileLayout( CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings, File indexDirectory )
+        SpatialFile( CoordinateReferenceSystem crs, SpaceFillingCurveSettingsFactory settingsFactory, File indexDirectory )
         {
             this.crs = crs;
-            this.settings = settings;
-            this.layout = new SpatialLayout( crs, settings.curve() );
+            this.settings = settingsFactory;
             String s = crs.getTable().getTableId() + "-" + Integer.toString( crs.getCode() );
             this.indexFile = new File( indexDirectory, s );
         }
 
-        public void readHeader( PageCache pageCache ) throws IOException
+        /**
+         * If this is the first time an index is being created, get the layout settings from the config settings only
+         */
+        SpatialFileLayout getLayoutForNewIndex()
         {
-            GBPTree.readHeader( pageCache, indexFile, settings.headerReader( NativeIndexHeaderReader::readFailureMessage ) );
-            if ( settings.isFailed() )
-            {
-                throw new IOException( settings.getFailureMessage() );
-            }
-            this.layout = new SpatialLayout( crs, settings.curve() );
+            return new SpatialFileLayout( this, settings.settingsFor( crs ) );
+        }
+
+        /**
+         * If we are loading a layout for an existing index, read the settings from the index header, and ignore config settings
+         */
+        SpatialFileLayout getLayoutForExistingIndex( PageCache pageCache ) throws IOException
+        {
+            SpaceFillingCurveSettings settings =
+                    SpaceFillingCurveSettings.fromGBPTree( indexFile, pageCache, NativeIndexHeaderReader::readFailureMessage );
+            return new SpatialFileLayout( this, settings );
+        }
+    }
+
+    static class SpatialFileLayout
+    {
+        final SpaceFillingCurveSettings settings;
+        final SpatialFile spatialFile;
+        final Layout<SpatialIndexKey,NativeIndexValue> layout;
+
+        SpatialFileLayout( SpatialFile spatialFile, SpaceFillingCurveSettings settings )
+        {
+            this.spatialFile = spatialFile;
+            this.settings = settings;
+            this.layout = new SpatialLayout( spatialFile.crs, settings.curve() );
         }
     }
 }

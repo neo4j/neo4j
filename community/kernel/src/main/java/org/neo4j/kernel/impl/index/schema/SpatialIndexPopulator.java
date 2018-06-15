@@ -151,7 +151,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         PartPopulator( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout, IndexProvider.Monitor monitor,
                        StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, SpaceFillingCurveConfiguration configuration )
         {
-            super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, monitor, descriptor, samplingConfig );
+            super( pageCache, fs, fileLayout.spatialFile.indexFile, fileLayout.layout, monitor, descriptor, samplingConfig );
             this.configuration = configuration;
             this.settings = fileLayout.settings;
         }
@@ -200,7 +200,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         @Override
         public PartPopulator newSpatial( CoordinateReferenceSystem crs ) throws IOException
         {
-            return create( spatialIndexFiles.forCrs(crs) );
+            return create( spatialIndexFiles.forCrs( crs ).getLayoutForNewIndex() );
         }
 
         private PartPopulator create( SpatialIndexFiles.SpatialFileLayout fileLayout ) throws IOException

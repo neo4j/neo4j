@@ -189,9 +189,9 @@ public class SpatialIndexSettingsTest
         accessor.close();
     }
 
-    private SpatialIndexFiles.SpatialFileLayout makeFileLayout( long indexId, SpaceFillingCurveSettingsFactory settings )
+    private SpatialIndexFiles.SpatialFile makeIndexFile( long indexId, SpaceFillingCurveSettingsFactory settings )
     {
-        return new SpatialIndexFiles.SpatialFileLayout( CoordinateReferenceSystem.WGS84, settings.settingsFor( crs ), indexDir( indexId ) );
+        return new SpatialIndexFiles.SpatialFile( CoordinateReferenceSystem.WGS84, settings, indexDir( indexId ) );
     }
 
     private File indexDir( long indexId )
@@ -202,7 +202,7 @@ public class SpatialIndexSettingsTest
     private File indexFile( long indexId )
     {
         // The indexFile location is independent of the settings, so we just use the defaults
-        return makeFileLayout( indexId, new SpaceFillingCurveSettingsFactory( Config.defaults() ) ).indexFile;
+        return makeIndexFile( indexId, new SpaceFillingCurveSettingsFactory( Config.defaults() ) ).indexFile;
     }
 
     private File indexRoot()
@@ -212,7 +212,7 @@ public class SpatialIndexSettingsTest
 
     private void createEmptyIndex( long indexId, SchemaIndexDescriptor schemaIndexDescriptor, SpaceFillingCurveSettingsFactory settings ) throws IOException
     {
-        SpatialIndexFiles.SpatialFileLayout fileLayout = makeFileLayout( indexId, settings );
+        SpatialIndexFiles.SpatialFileLayout fileLayout = makeIndexFile( indexId, settings ).getLayoutForNewIndex();
         SpatialIndexPopulator.PartPopulator populator =
                 new SpatialIndexPopulator.PartPopulator( pageCache, fs, fileLayout, monitor, schemaIndexDescriptor, indexId, samplingConfig(),
                         new StandardConfiguration() );
@@ -231,8 +231,8 @@ public class SpatialIndexSettingsTest
     {
         try
         {
-            SpaceFillingCurveSettings settings = new SpaceFillingCurveSettings( 2, 2, null );
-            GBPTree.readHeader( pageCache, indexFile, settings.headerReader( NativeSchemaIndexHeaderReader::readFailureMessage ) );
+            SpaceFillingCurveSettings settings =
+                    SpaceFillingCurveSettings.fromGBPTree( indexFile, pageCache, NativeSchemaIndexHeaderReader::readFailureMessage );
             assertThat( "Should get correct results from header", settings, equalTo( expectedSettings ) );
         }
         catch ( IOException e )

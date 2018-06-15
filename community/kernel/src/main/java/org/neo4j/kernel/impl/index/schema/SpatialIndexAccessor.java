@@ -189,7 +189,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
                 IndexSamplingConfig samplingConfig, SpaceFillingCurveConfiguration searchConfiguration ) throws IOException
         {
-            super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );
+            super( pageCache, fs, fileLayout.spatialFile.indexFile, fileLayout.layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );
             this.layout = fileLayout.layout;
             this.descriptor = descriptor;
             this.samplingConfig = samplingConfig;
@@ -237,19 +237,21 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
         @Override
         public PartAccessor newSpatial( CoordinateReferenceSystem crs ) throws IOException
         {
-            return createPartAccessor( spatialIndexFiles.forCrs( crs ) );
+            SpatialIndexFiles.SpatialFile indexFile = spatialIndexFiles.forCrs( crs );
+            if ( !fs.fileExists( indexFile.indexFile ) )
+            {
+                SpatialIndexFiles.SpatialFileLayout fileLayout = indexFile.getLayoutForNewIndex();
+                createEmptyIndex( fileLayout );
+                return createPartAccessor( fileLayout );
+            }
+            else
+            {
+                return createPartAccessor( indexFile.getLayoutForExistingIndex( pageCache ) );
+            }
         }
 
         private PartAccessor createPartAccessor( SpatialIndexFiles.SpatialFileLayout fileLayout ) throws IOException
         {
-            if ( !fs.fileExists( fileLayout.indexFile ) )
-            {
-                createEmptyIndex( fileLayout );
-            }
-            else
-            {
-                fileLayout.readHeader( pageCache );
-            }
             return new PartAccessor( pageCache,
                                      fs,
                                      fileLayout,

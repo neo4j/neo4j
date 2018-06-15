@@ -25,7 +25,6 @@ import java.io.IOException;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
@@ -34,22 +33,22 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMME
 abstract class SpatialIndexAccessorTest extends NativeIndexAccessorTest<SpatialIndexKey,NativeIndexValue>
 {
     static final CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
-    static final SpaceFillingCurveSettings settings = new SpaceFillingCurveSettingsFactory( Config.defaults() ).settingsFor( crs );
+    static final SpaceFillingCurveSettingsFactory settings = new SpaceFillingCurveSettingsFactory( Config.defaults() );
 
-    SpatialIndexFiles.SpatialFileLayout fileLayout;
+    private SpatialIndexFiles.SpatialFile spatialFile;
 
     @Override
     NativeIndexAccessor<SpatialIndexKey,NativeIndexValue> makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
     {
-        fileLayout = new SpatialIndexFiles.SpatialFileLayout( CoordinateReferenceSystem.WGS84, settings, super.getIndexFile() );
-        return new SpatialIndexAccessor.PartAccessor( pageCache, fs, fileLayout, IMMEDIATE, monitor, indexDescriptor, samplingConfig,
-                new StandardConfiguration() );
+        spatialFile = new SpatialIndexFiles.SpatialFile( CoordinateReferenceSystem.WGS84, settings, super.getIndexFile() );
+        return new SpatialIndexAccessor.PartAccessor( pageCache, fs, spatialFile.getLayoutForNewIndex(), IMMEDIATE, monitor, indexDescriptor,
+                samplingConfig, new StandardConfiguration() );
     }
 
     @Override
     public File getIndexFile()
     {
-        return fileLayout.indexFile;
+        return spatialFile.indexFile;
     }
 
     @Override

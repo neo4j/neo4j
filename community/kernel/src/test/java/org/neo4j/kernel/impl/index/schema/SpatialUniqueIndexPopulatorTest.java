@@ -25,33 +25,34 @@ import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 public class SpatialUniqueIndexPopulatorTest extends NativeUniqueIndexPopulatorTest<SpatialIndexKey,NativeIndexValue>
 {
     private static final CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
-    private static final SpaceFillingCurveSettings settings = new SpaceFillingCurveSettingsFactory( Config.defaults() ).settingsFor( crs );
+    private static final SpaceFillingCurveSettingsFactory settings = new SpaceFillingCurveSettingsFactory( Config.defaults() );
 
-    private SpatialIndexFiles.SpatialFileLayout fileLayout;
+    private SpatialIndexFiles.SpatialFile spatialFile;
 
     @Override
     NativeIndexPopulator<SpatialIndexKey,NativeIndexValue> createPopulator( IndexSamplingConfig samplingConfig )
     {
-        fileLayout = new SpatialIndexFiles.SpatialFileLayout( crs, settings, super.getIndexFile() );
-        return new SpatialIndexPopulator.PartPopulator( pageCache, fs, fileLayout, monitor, indexDescriptor, samplingConfig, new StandardConfiguration() );
+        spatialFile = new SpatialIndexFiles.SpatialFile( crs, settings, super.getIndexFile() );
+        return new SpatialIndexPopulator.PartPopulator( pageCache, fs, spatialFile.getLayoutForNewIndex(), monitor, indexDescriptor, samplingConfig,
+                new StandardConfiguration() );
     }
 
     @Override
     public File getIndexFile()
     {
-        return fileLayout.indexFile;
+        return spatialFile.indexFile;
     }
 
     @Override
     protected LayoutTestUtil<SpatialIndexKey,NativeIndexValue> createLayoutTestUtil()
     {
-        return new UniqueLayoutTestUtil<>( new SpatialLayoutTestUtil( TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ), settings, crs ) );
+        return new UniqueLayoutTestUtil<>(
+                new SpatialLayoutTestUtil( TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ), settings.settingsFor( crs ), crs ) );
     }
 }
