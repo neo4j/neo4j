@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.Iterator;
-import java.util.function.IntPredicate;
 import java.util.regex.Pattern;
 
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -132,7 +131,6 @@ public class DefaultPropertyCursor implements PropertyCursor
             }
         }
 
-        IntPredicate predicate = propertyKey -> propertiesState != null && propertiesState.isPropertyChangedOrRemoved( propertyKey );
         while ( storeCursor.next() )
         {
             boolean skip = propertiesState != null && propertiesState.isPropertyChangedOrRemoved( storeCursor.propertyKey() );

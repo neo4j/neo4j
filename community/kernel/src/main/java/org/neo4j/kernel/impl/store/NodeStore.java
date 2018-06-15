@@ -59,12 +59,6 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
         return bits.getLong( requiredBits );
     }
 
-    public RecordCursor<DynamicRecord> newLabelCursor()
-    {
-        return dynamicLabelStore.newRecordCursor( dynamicLabelStore.newRecord() ).acquire( getNumberOfReservedLowIds(),
-                RecordLoad.NORMAL );
-    }
-
     public NodeStore(
             File fileName,
             Config config,

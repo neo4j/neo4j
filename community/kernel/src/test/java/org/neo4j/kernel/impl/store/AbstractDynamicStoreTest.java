@@ -122,8 +122,10 @@ public class AbstractDynamicStoreTest
             Iterator<DynamicRecord> records = store.getRecords( 1, FORCE ).iterator();
             assertTrue( records.hasNext() );
             assertEquals( first, records.next() );
-            assertFalse( records.hasNext() );
-            assertEquals( second, records.next() );
+            assertTrue( records.hasNext() );
+            DynamicRecord secondReadRecord = records.next();
+            assertEquals( second, secondReadRecord );
+            assertFalse( secondReadRecord.inUse() );
             // because mode == FORCE we can still move through the chain
             assertTrue( records.hasNext() );
             assertEquals( third, records.next() );

@@ -37,6 +37,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -44,16 +45,15 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyValueRecordSizeCalculator;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
@@ -78,9 +78,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.csv.reader.Readables.wrap;
+import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.input.RandomEntityDataGenerator.convert;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
@@ -105,7 +107,7 @@ public class CsvInputEstimateCalculationIT
         Input input = generateData();
         RecordFormats format = LATEST_RECORD_FORMATS;
         Input.Estimates estimates = input.calculateEstimates( new PropertyValueRecordSizeCalculator(
-                LATEST_RECORD_FORMATS.property().getRecordSize( NO_STORE_HEADER ),
+                format.property().getRecordSize( NO_STORE_HEADER ),
                 parseInt( GraphDatabaseSettings.string_block_size.getDefaultValue() ), 0,
                 parseInt( GraphDatabaseSettings.array_block_size.getDefaultValue() ), 0 ) );
 
@@ -192,16 +194,16 @@ public class CsvInputEstimateCalculationIT
     private long calculateNumberOfProperties( NeoStores stores )
     {
         long count = 0;
-        try ( RecordStorageReader reader = new RecordStorageReader( stores );
-              StoragePropertyCursor cursor = reader.allocatePropertyCursor() )
+        PropertyRecord record = stores.getPropertyStore().newRecord();
+        try ( PageCursor cursor = stores.getPropertyStore().openPageCursorForReading( 0 ) )
         {
             long highId = stores.getPropertyStore().getHighId();
             for ( long id = 0; id < highId; id++ )
             {
-                cursor.init( id );
-                while ( cursor.next() )
+                stores.getPropertyStore().getRecordByCursor( id, record, CHECK, cursor );
+                if ( record.inUse() )
                 {
-                    count++;
+                    count += count( record );
                 }
             }
         }

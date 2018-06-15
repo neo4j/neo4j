@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.List;
 import java.util.function.Predicate;
 
 import org.neo4j.graphdb.ResourceIterable;
@@ -50,12 +51,11 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
  * There are two ways of getting records, either one-by-one using
  * {@link #getRecord(long, AbstractBaseRecord, RecordLoad)}, passing in record retrieved from {@link #newRecord()}.
  * This to make a conscious decision about who will create the record instance and in that process figure out
- * ways to reduce number of record instances created. The other way is to use a {@link RecordCursor}, created
- * by {@link #newRecordCursor(AbstractBaseRecord)} and placed at a certain record using
- * {@link RecordCursor#placeAt(long, RecordLoad)}. A {@link RecordCursor} will keep underlying
- * {@link PageCursor} open until until the {@link RecordCursor} is closed and so will be efficient if multiple
- * records are retrieved from it. A {@link RecordCursor} will follow {@link #getNextRecordReference(AbstractBaseRecord)}
- * references to get to {@link RecordCursor#next()} record.
+ * ways to reduce number of record instances created.
+ * <p>
+ * The other way is to use {@link #openPageCursorForReading(long)} to open a cursor and use it to read records using
+ * {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}. A {@link PageCursor} can be ket open
+ * to read multiple records before closing it.
  *
  * @param <RECORD> type of {@link AbstractBaseRecord}.
  */
@@ -87,8 +87,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
     void setHighestPossibleIdInUse( long highestIdInUse );
 
     /**
-     * @return a new record instance for receiving data by {@link #getRecord(long, AbstractBaseRecord, RecordLoad)}
-     * and {@link #newRecordCursor(AbstractBaseRecord)}.
+     * @return a new record instance for receiving data by {@link #getRecord(long, AbstractBaseRecord, RecordLoad)}.
      */
     RECORD newRecord();
 
@@ -172,20 +171,10 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * @return {@link Collection} of records in the loaded chain.
      * @throws InvalidRecordException if some record not in use and the {@code mode} is allows for throwing.
      */
-    Collection<RECORD> getRecords( long firstId, RecordLoad mode ) throws InvalidRecordException;
+    List<RECORD> getRecords( long firstId, RecordLoad mode ) throws InvalidRecordException;
 
     /**
-     * Instantiates a new record cursor capable of iterating over records in this store. A {@link RecordCursor}
-     * gets created with one record and will use every time it reads records.
-     *
-     * @param record instance to use when reading record data.
-     * @return a new {@link RecordCursor} instance capable of reading records in this store.
-     */
-    RecordCursor<RECORD> newRecordCursor( RECORD record );
-
-    /**
-     * Returns another record id which the given {@code record} references and which a {@link RecordCursor}
-     * would follow and read next.
+     * Returns another record id which the given {@code record} references, if it exists in a chain of records.
      *
      * @param record to read the "next" reference from.
      * @return record id of "next" record that the given {@code record} references, or {@link Record#NULL_REFERENCE}
@@ -333,15 +322,9 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         }
 
         @Override
-        public Collection<R> getRecords( long firstId, RecordLoad mode ) throws InvalidRecordException
+        public List<R> getRecords( long firstId, RecordLoad mode ) throws InvalidRecordException
         {
             return actual.getRecords( firstId, mode );
-        }
-
-        @Override
-        public RecordCursor<R> newRecordCursor( R record )
-        {
-            return actual.newRecordCursor( record );
         }
 
         @Override

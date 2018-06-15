@@ -376,7 +376,10 @@ public class RecordStorageReader implements StorageReader
     {
         assert !closed;
         closeSchemaResources();
-        commandCreationContext.close();
+        if ( commandCreationContext != null )
+        {
+            commandCreationContext.close();
+        }
         closed = true;
     }
 

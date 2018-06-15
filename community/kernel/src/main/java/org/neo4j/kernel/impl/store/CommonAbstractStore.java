@@ -25,7 +25,8 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -1046,7 +1047,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         }
     }
 
-    void readIntoRecord( long id, RECORD record, RecordLoad mode, PageCursor cursor ) throws IOException
+    private void readIntoRecord( long id, RECORD record, RecordLoad mode, PageCursor cursor ) throws IOException
     {
         // Mark the record with this id regardless of whether or not we load the contents of it.
         // This is done in this method since there are multiple call sites and they all want the id
@@ -1177,9 +1178,14 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     @Override
-    public Collection<RECORD> getRecords( long firstId, RecordLoad mode )
+    public List<RECORD> getRecords( long firstId, RecordLoad mode )
     {
-        Collection<RECORD> records = new ArrayList<>();
+        if ( Record.NULL_REFERENCE.is( firstId ) )
+        {
+            return Collections.emptyList();
+        }
+
+        List<RECORD> records = new ArrayList<>();
         long id = firstId;
         try ( PageCursor cursor = openPageCursorForReading( firstId ) )
         {
@@ -1188,21 +1194,13 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             {
                 record = newRecord();
                 getRecordByCursor( id, record, mode, cursor );
-                if ( record.inUse() )
-                {
-                    records.add( record );
-                }
+                // Even unused records gets added and returned
+                records.add( record );
                 id = getNextRecordReference( record );
             }
-            while ( record.inUse() && !Record.NULL_REFERENCE.is( id ) );
+            while ( !Record.NULL_REFERENCE.is( id ) );
         }
         return records;
-    }
-
-    @Override
-    public RecordCursor<RECORD> newRecordCursor( final RECORD record )
-    {
-        return new StoreRecordCursor<>( record, this );
     }
 
     private void verifyAfterNotRead( RECORD record, RecordLoad mode )

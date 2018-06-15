@@ -660,13 +660,13 @@ public class MetaDataStoreTest
         try ( MetaDataStore store = newMetaDataStore() )
         {
             MetaDataRecord record = store.newRecord();
-            try ( RecordCursor<MetaDataRecord> cursor = store.newRecordCursor( record ) )
+            try ( PageCursor cursor = store.openPageCursorForReading( 0 ) )
             {
-                cursor.acquire( 0, RecordLoad.NORMAL );
                 long highId = store.getHighId();
                 for ( long id = 0; id < highId; id++ )
                 {
-                    if ( cursor.next( id ) )
+                    store.getRecordByCursor( id, record, RecordLoad.NORMAL, cursor );
+                    if ( record.inUse() )
                     {
                         actualValues.add( record.getValue() );
                     }
