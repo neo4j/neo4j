@@ -24,8 +24,9 @@ package org.neo4j.cypher.internal
 
 import java.time.Clock
 
+import org.neo4j.cypher.internal.compatibility.v3_3.Cypher33Planner
 import org.neo4j.cypher.internal.compatibility.v3_5.Cypher35Planner
-import org.neo4j.cypher.internal.compatibility.{CypherCurrentCompiler, RuntimeContext, RuntimeContextCreator}
+import org.neo4j.cypher.internal.compatibility.{CypherCurrentCompiler, CypherPlanner, RuntimeContext, RuntimeContextCreator}
 import org.neo4j.cypher.internal.compiler.v3_5._
 import org.neo4j.cypher.internal.executionplan.GeneratedQuery
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
@@ -55,8 +56,32 @@ class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
                               config: CypherPlannerConfiguration
                              ): Compiler = {
 
-    if (cypherVersion == CypherVersion.v3_5 && cypherPlanner != CypherPlannerOption.rule) {
+    val log = logProvider.getLog(getClass)
+    val createPlanner: PartialFunction[CypherVersion, CypherPlanner] = {
+      case CypherVersion.v3_3 =>
+        Cypher33Planner(
+          config,
+          MasterCompiler.CLOCK,
+          kernelMonitors,
+          log,
+          cypherPlanner,
+          cypherUpdateStrategy,
+          LastCommittedTxIdProvider(graph))
 
+      case CypherVersion.v3_5 =>
+        Cypher35Planner(
+          config,
+          MasterCompiler.CLOCK,
+          kernelMonitors,
+          log,
+          cypherPlanner,
+          cypherUpdateStrategy,
+          LastCommittedTxIdProvider(graph))
+      }
+
+    if (cypherPlanner != CypherPlannerOption.rule && createPlanner.isDefinedAt(cypherVersion)) {
+
+      val planner = createPlanner(cypherVersion)
       val settings = graph.getDependencyResolver.resolveDependency(classOf[Config])
       val morselSize: Int = settings.get(GraphDatabaseSettings.cypher_morsel_size)
       val workers: Int = settings.get(GraphDatabaseSettings.cypher_worker_count)
@@ -70,20 +95,11 @@ class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
           new ParallelDispatcher(morselSize, numberOfThreads, executorService)
         }
 
-      val log = logProvider.getLog(getClass)
       CypherCurrentCompiler(
-        Cypher35Planner(
-          config,
-          MasterCompiler.CLOCK,
-          kernelMonitors,
-          log,
-          cypherPlanner,
-          cypherUpdateStrategy,
-          LastCommittedTxIdProvider(graph)),
+        planner,
         EnterpriseRuntimeFactory.getRuntime(cypherRuntime, config.useErrorsOverWarnings),
         EnterpriseRuntimeContextCreator(GeneratedQueryStructure, dispatcher, log),
-        kernelMonitors
-      )
+        kernelMonitors)
 
     } else
       community.createCompiler(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy, config)
