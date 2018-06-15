@@ -6,12 +6,12 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.3.6-SNAPSHOT</version>
+    <version>3.3.7-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <artifactId>neo4j-fulltext-addon</artifactId>
-  <version>3.3.6-SNAPSHOT</version>
+  <version>3.3.7-SNAPSHOT</version>
 
   <name>Neo4j - Fulltext add-on</name>
   <description>Fulltext index addon for neo4j</description>
