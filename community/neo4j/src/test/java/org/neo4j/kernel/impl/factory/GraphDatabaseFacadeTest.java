@@ -45,6 +45,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 
 public class GraphDatabaseFacadeTest
 {
@@ -71,7 +72,7 @@ public class GraphDatabaseFacadeTest
         Config config = Config.defaults();
         when( resolver.resolveDependency( Config.class ) ).thenReturn( config );
 
-        graphDatabaseFacade.init( spi, contextBridge, config );
+        graphDatabaseFacade.init( spi, contextBridge, config, mockedTokenHolders() );
     }
 
     @Test

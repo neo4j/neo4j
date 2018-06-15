@@ -160,7 +160,8 @@ public class GraphDatabaseFacadeFactory
         graphDatabaseFacade.init(
                 spi,
                 dataSource.threadToTransactionBridge,
-                platform.config
+                platform.config,
+                edition.tokenHolders
         );
 
         // Start it
