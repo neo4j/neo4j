@@ -70,6 +70,9 @@ class PreSortOperator(orderBy: Seq[ColumnOrder],
             topTable.add(outputToInputIndexes(currentRow.getCurrentRow))
             currentRow.moveToNextRow()
           }
+
+          topTable.sort()
+
           outputToInputIndexes = topTable.iterator.asScala.toArray
 
           // only the first count elements stay valid

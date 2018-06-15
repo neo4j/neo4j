@@ -391,15 +391,6 @@ abstract class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
    asScalaResult(result).toList should not be empty
   }
 
-  test("apa") {
-    val query = """CYPHER runtime=morsel
-      UNWIND ['a', 'b', 'B', null, 'abc', 'abc1'] AS i
-      RETURN max(i)
-      """
-
-    println(graph.execute(query).resultAsString())
-  }
-
   test("aggregation should not overflow morsel") {
     // Given
     graph.execute( """
@@ -456,7 +447,6 @@ abstract class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
     println(result.getExecutionPlanDescription)
   }
 }
-
 
 class ParallelMorselRuntimeAcceptanceTest extends MorselRuntimeAcceptanceTest {
   //we use a ridiculously small morsel size in order to trigger as many morsel overflows as possible

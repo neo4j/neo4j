@@ -30,12 +30,12 @@ class ArgumentOperator(argumentSize: SlotConfiguration.Size) extends Operator {
 
   override def init(queryContext: QueryContext,
                     state: QueryState,
-                    inputMorsel: MorselExecutionContext): ContinuableOperatorTask = new OTask()
+                    inputMorsel: MorselExecutionContext): ContinuableOperatorTask = new OTask(inputMorsel)
 
-  class OTask() extends ContinuableOperatorTask {
+  class OTask(argument: MorselExecutionContext) extends ContinuableOperatorTask {
     override def operate(outputRow: MorselExecutionContext, context: QueryContext, state: QueryState): Unit = {
 
-//      message.iterationState.copyArgumentStateTo(outputRow, argumentSize.nLongs, argumentSize.nReferences)
+      outputRow.copyFrom(argument, argumentSize.nLongs, argumentSize.nReferences)
 
       outputRow.moveToNextRow()
       outputRow.finishedWriting()

@@ -22,7 +22,6 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
 
@@ -37,9 +36,6 @@ class AggregationReduceOperatorNoGrouping(aggregations: Array[AggregationOffsets
                    ): ContinuableOperatorTask =
     new OTask(inputMorsels.toArray)
 
-
-  //This operator will never be "interrupted" since it will always write
-  //a single value
   class OTask(inputRows: Array[MorselExecutionContext]) extends ContinuableOperatorTask {
 
     override def operate(currentRow: MorselExecutionContext,
@@ -72,6 +68,7 @@ class AggregationReduceOperatorNoGrouping(aggregations: Array[AggregationOffsets
       currentRow.finishedWriting()
     }
 
+    // This operator will never continue since it will always write a single row
     override def canContinue: Boolean = false
   }
 }

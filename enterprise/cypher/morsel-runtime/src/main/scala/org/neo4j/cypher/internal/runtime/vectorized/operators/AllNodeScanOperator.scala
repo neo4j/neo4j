@@ -34,38 +34,36 @@ class AllNodeScanOperator(offset: Int, argumentSize: SlotConfiguration.Size) ext
                     inputMorsel: MorselExecutionContext): ContinuableOperatorTask = {
     val nodeCursor = queryContext.transactionalContext.cursors.allocateNodeCursor()
     queryContext.transactionalContext.dataRead.allNodesScan(nodeCursor)
-    new OTask(nodeCursor)
+    new OTask(nodeCursor, inputMorsel)
   }
 
-  class OTask(var nodeCursor: NodeCursor) extends ContinuableOperatorTask {
+  class OTask(var nodeCursor: NodeCursor, argument: MorselExecutionContext) extends ContinuableOperatorTask {
 
-    var hasMore = true
+    var cursorHasMore = true
 
     override def operate(currentRow: MorselExecutionContext,
                          context: QueryContext,
                          state: QueryState): Unit = {
 
-      var cursorHasMore = true
-
       while (currentRow.hasMoreRows && cursorHasMore) {
         cursorHasMore = nodeCursor.next()
         if (cursorHasMore) {
-//          iterationState.copyArgumentStateTo(currentRow, argumentSize.nLongs, argumentSize.nReferences)
+          currentRow.copyFrom(argument, argumentSize.nLongs, argumentSize.nReferences)
           currentRow.setLongAt(offset, nodeCursor.nodeReference())
           currentRow.moveToNextRow()
+        }
       }
 
       currentRow.finishedWriting()
 
-        if (!hasMore) {
-          if (nodeCursor != null) {
-            nodeCursor.close()
-            nodeCursor = null
-          }
+      if (!cursorHasMore) {
+        if (nodeCursor != null) {
+          nodeCursor.close()
+          nodeCursor = null
         }
       }
     }
 
-    override def canContinue: Boolean = hasMore
+    override def canContinue: Boolean = cursorHasMore
   }
 }

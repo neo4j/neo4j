@@ -232,6 +232,7 @@ abstract class Pipeline() {
         println("-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/-*/")
       }
 
+      currentRow.resetToFirstRow()
       val downstreamTasks = downstream.map(_.acceptMorsel(currentRow, queryContext, state)).getOrElse(Nil)
 
       state.reduceCollector match {

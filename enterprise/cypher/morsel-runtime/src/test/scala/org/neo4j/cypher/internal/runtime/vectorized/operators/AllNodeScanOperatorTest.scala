@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.VirtualValues
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class AllNodeScanOperatorTest extends CypherFunSuite {
