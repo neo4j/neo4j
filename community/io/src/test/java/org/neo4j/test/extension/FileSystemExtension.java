@@ -19,22 +19,32 @@
  */
 package org.neo4j.test.extension;
 
+import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 
-public class DefaultFileSystemExtension extends FileSystemExtension<DefaultFileSystemAbstraction>
+abstract class FileSystemExtension<T extends FileSystemAbstraction> extends StatefullFieldExtension<T> implements AfterEachCallback
 {
+    static final String FILE_SYSTEM = "fileSystem";
+    static final Namespace FILE_SYSTEM_NAMESPACE = Namespace.create( FILE_SYSTEM );
 
     @Override
-    protected Class<DefaultFileSystemAbstraction> getFieldType()
+    public void afterEach( ExtensionContext context ) throws Exception
     {
-        return DefaultFileSystemAbstraction.class;
+        getStoredValue( context ).close();
     }
 
     @Override
-    protected DefaultFileSystemAbstraction createField( ExtensionContext extensionContext )
+    protected String getFieldKey()
     {
-        return new DefaultFileSystemAbstraction();
+        return FILE_SYSTEM;
+    }
+
+    @Override
+    protected Namespace getNameSpace()
+    {
+        return FILE_SYSTEM_NAMESPACE;
     }
 }

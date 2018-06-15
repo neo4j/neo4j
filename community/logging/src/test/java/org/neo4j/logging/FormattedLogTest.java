@@ -19,6 +19,8 @@
  */
 package org.neo4j.logging;
 
+import org.junit.jupiter.api.Test;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.ZoneOffset;
@@ -26,23 +28,20 @@ import java.time.ZonedDateTime;
 import java.util.IllegalFormatException;
 import java.util.function.Supplier;
 
-import org.junit.Test;
-
 import org.neo4j.function.Suppliers;
 
 import static java.lang.String.format;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class FormattedLogTest
+class FormattedLogTest
 {
     private static final Supplier<ZonedDateTime> DATE_TIME_SUPPLIER = () ->
             ZonedDateTime.of( 1984, 10, 26, 4, 23, 24, 343000000, ZoneOffset.UTC );
 
     @Test
-    public void logShouldWriteMessage()
+    void logShouldWriteMessage()
     {
         // Given
         StringWriter writer = new StringWriter();
@@ -57,7 +56,7 @@ public class FormattedLogTest
     }
 
     @Test
-    public void logShouldWriteMessageAndThrowable()
+    void logShouldWriteMessageAndThrowable()
     {
         // Given
         StringWriter writer = new StringWriter();
@@ -76,7 +75,7 @@ public class FormattedLogTest
     }
 
     @Test
-    public void logShouldWriteMessageAndThrowableWithNullMessage()
+    void logShouldWriteMessageAndThrowableWithNullMessage()
     {
         // Given
         StringWriter writer = new StringWriter();
@@ -93,7 +92,7 @@ public class FormattedLogTest
     }
 
     @Test
-    public void logShouldWriteMessageWithFormat()
+    void logShouldWriteMessageWithFormat()
     {
         // Given
         StringWriter writer = new StringWriter();
@@ -112,7 +111,7 @@ public class FormattedLogTest
     }
 
     @Test
-    public void logShouldWriteNotFormattedMessageWhenNoParametersGiven()
+    void logShouldWriteNotFormattedMessageWhenNoParametersGiven()
     {
         // Given
         StringWriter writer = new StringWriter();
@@ -129,27 +128,18 @@ public class FormattedLogTest
     }
 
     @Test
-    public void logShouldFailAndWriteNothingForInvalidParametersArray()
+    void logShouldFailAndWriteNothingForInvalidParametersArray()
     {
         // Given
         StringWriter writer = new StringWriter();
         Log log = newFormattedLog( writer );
 
-        try
-        {
-            // When
-            log.info( "%s like me. A T-%d, advanced prototype.", "Not", "1000", 1000 );
-            fail( "Should have thrown " + IllegalFormatException.class );
-        }
-        catch ( IllegalFormatException ife )
-        {
-            // Then
-            assertThat( writer.toString(), equalTo( "" ) );
-        }
+        assertThrows( IllegalFormatException.class, () -> log.info( "%s like me. A T-%d, advanced prototype.", "Not", "1000", 1000 ) );
+        assertThat( writer.toString(), equalTo( "" ) );
     }
 
     @Test
-    public void shouldNotWriteLogIfLevelIsHigherThanWritten()
+    void shouldNotWriteLogIfLevelIsHigherThanWritten()
     {
         // Given
         StringWriter writer = new StringWriter();
@@ -163,7 +153,7 @@ public class FormattedLogTest
     }
 
     @Test
-    public void shouldAllowLevelToBeChanged()
+    void shouldAllowLevelToBeChanged()
     {
         // Given
         StringWriter writer = new StringWriter();
