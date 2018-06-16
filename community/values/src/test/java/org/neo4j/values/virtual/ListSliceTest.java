@@ -19,20 +19,20 @@
  */
 package org.neo4j.values.virtual;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.iteratorsEqual;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
-public class ListSliceTest
+class ListSliceTest
 {
     @Test
-    public void shouldSliceList()
+    void shouldSliceList()
     {
         // Given
         ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
@@ -50,7 +50,7 @@ public class ListSliceTest
     }
 
     @Test
-    public void shouldReturnEmptyListIfEmptyRange()
+    void shouldReturnEmptyListIfEmptyRange()
     {
         // Given
         ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
@@ -65,7 +65,7 @@ public class ListSliceTest
     }
 
     @Test
-    public void shouldHandleExceedingRange()
+    void shouldHandleExceedingRange()
     {
         // Given
         ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
@@ -84,7 +84,7 @@ public class ListSliceTest
     }
 
     @Test
-    public void shouldHandleNegativeStart()
+    void shouldHandleNegativeStart()
     {
         // Given
         ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
@@ -101,7 +101,7 @@ public class ListSliceTest
     }
 
     @Test
-    public void shouldBeAbleToDropFromList()
+    void shouldBeAbleToDropFromList()
     {
         // Given
         ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
@@ -119,7 +119,7 @@ public class ListSliceTest
     }
 
     @Test
-    public void shouldBeAbleToTakeFromList()
+    void shouldBeAbleToTakeFromList()
     {
         // Given
         ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),

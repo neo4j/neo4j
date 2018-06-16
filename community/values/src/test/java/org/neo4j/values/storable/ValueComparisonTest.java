@@ -19,10 +19,8 @@
  */
 package org.neo4j.values.storable;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,8 +33,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static java.lang.Integer.signum;
 import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
@@ -51,10 +50,7 @@ import static org.neo4j.values.storable.Values.pointValue;
 
 public class ValueComparisonTest
 {
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
-    private Comparator<Value> comparator = Values.COMPARATOR;
+    private static final Comparator<Value> comparator = Values.COMPARATOR;
 
     private Object[] objs = new Object[]{
             // ARRAYS
@@ -259,7 +255,7 @@ public class ValueComparisonTest
     };
 
     @Test
-    public void shouldOrderValuesCorrectly()
+    void shouldOrderValuesCorrectly()
     {
         List<Value> values = Arrays.stream( objs ).map( Values::of ).collect( Collectors.toList() );
 
@@ -270,42 +266,28 @@ public class ValueComparisonTest
                 Value left = values.get( i );
                 Value right = values.get( j );
 
-                int cmpPos = sign( i - j );
-                int cmpVal = sign( compare( comparator, left, right ) );
+                int cmpPos = signum( i - j );
+                int cmpVal = signum( compare( comparator, left, right ) );
 
-                if ( cmpPos != cmpVal )
-                {
-                    throw new AssertionError( format(
-                            "Comparing %s against %s does not agree with their positions in the sorted list (%d and " +
-                                    "%d)",
-                            left, right, i, j
-                    ) );
-                }
+                assertEquals( cmpPos, cmpVal,
+                        format( "Comparing %s against %s does not agree with their positions in the sorted list (%d and " + "%d)", left, right, i, j ) );
             }
         }
     }
 
-    @Ignore // only runnable it JVM supports East-Saskatchewan
+    @Disabled // only runnable it JVM supports East-Saskatchewan
     public void shouldCompareRenamedTimeZonesByZoneNumber()
     {
         int cmp = Values.COMPARATOR.compare( datetime( 10000, 100, ZoneId.of( "Canada/Saskatchewan" ) ),
                                              datetime( 10000, 100, ZoneId.of( "Canada/East-Saskatchewan" ) ) );
-        assertEquals( "East-Saskatchewan and Saskatchewan are the same place", 0, cmp );
+        assertEquals( 0, cmp, "East-Saskatchewan and Saskatchewan are the same place" );
     }
 
     private <T> int compare( Comparator<T> comparator, T left, T right )
     {
         int cmp1 = comparator.compare( left, right );
         int cmp2 = comparator.compare( right, left );
-        if ( sign( cmp1 ) != -sign( cmp2 ) )
-        {
-            throw new AssertionError( format( "%s is not symmetric on %s and %s", comparator, left, right ) );
-        }
+        assertEquals( signum( cmp1 ), -signum( cmp2 ), format( "%s is not symmetric on %s and %s", comparator, left, right ) );
         return cmp1;
-    }
-
-    private int sign( int value )
-    {
-        return Integer.compare( value, 0 );
     }
 }

@@ -20,7 +20,7 @@
 package org.neo4j.values.storable;
 
 import org.apache.commons.codec.digest.DigestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -29,15 +29,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.ZoneId;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class TimeZonesTest
+class TimeZonesTest
 {
     @Test
-    public void weSupportAllJavaZoneIds()
+    void weSupportAllJavaZoneIds()
     {
         ZoneId.getAvailableZoneIds().forEach( s ->
         {
@@ -56,7 +56,7 @@ public class TimeZonesTest
     }
 
     @Test
-    public void weSupportDeletedZoneIdEastSaskatchewan()
+    void weSupportDeletedZoneIdEastSaskatchewan()
     {
         try
         {
@@ -77,7 +77,7 @@ public class TimeZonesTest
      * If your changes were legit, please change the expected byte[] below.
      */
     @Test
-    public void tzidsOrderMustNotChange() throws URISyntaxException, IOException
+    void tzidsOrderMustNotChange() throws URISyntaxException, IOException
     {
         Path path = Paths.get( TimeZones.class.getResource( "/TZIDS" ).toURI() );
         byte[] timeZonesInfo = Files.readAllBytes( path );

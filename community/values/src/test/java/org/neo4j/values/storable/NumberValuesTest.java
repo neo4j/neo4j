@@ -19,7 +19,7 @@
  */
 package org.neo4j.values.storable;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -30,24 +30,24 @@ import static org.neo4j.values.storable.NumberValues.hash;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertIncomparable;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.toAnyValue;
 
-public class NumberValuesTest
+class NumberValuesTest
 {
 
     @Test
-    public void shouldHashNaN()
+    void shouldHashNaN()
     {
         assertThat( hash( Double.NaN ), equalTo( hash( Float.NaN ) ) );
     }
 
     @Test
-    public void shouldHashInfinite()
+    void shouldHashInfinite()
     {
         assertThat( hash( Double.NEGATIVE_INFINITY ), equalTo( hash( Float.NEGATIVE_INFINITY ) ) );
         assertThat( hash( Double.POSITIVE_INFINITY ), equalTo( hash( Float.POSITIVE_INFINITY ) ) );
     }
 
     @Test
-    public void shouldHandleNaNCorrectly()
+    void shouldHandleNaNCorrectly()
     {
         assertIncomparable( toAnyValue(Double.NaN), toAnyValue( Double.NaN ) );
         assertIncomparable( toAnyValue( 1 ), toAnyValue( Double.NaN ) );
@@ -55,13 +55,13 @@ public class NumberValuesTest
     }
 
     @Test
-    public void shouldHashIntegralDoubleAsLong()
+    void shouldHashIntegralDoubleAsLong()
     {
         assertThat( hash( 1337d ), equalTo( hash( 1337L ) ) );
     }
 
     @Test
-    public void shouldGiveSameResultEvenWhenArraysContainDifferentTypes()
+    void shouldGiveSameResultEvenWhenArraysContainDifferentTypes()
     {
         int[] ints = new int[32];
         long[] longs = new long[32];
@@ -78,7 +78,7 @@ public class NumberValuesTest
     }
 
     @Test
-    public void shouldGiveSameHashForLongsAndInts()
+    void shouldGiveSameHashForLongsAndInts()
     {
         Random r = ThreadLocalRandom.current();
         for ( int i = 0; i < 1_000_000; i++ )
@@ -89,7 +89,7 @@ public class NumberValuesTest
     }
 
     @Test
-    public void shouldGiveSameResultEvenWhenArraysContainDifferentTypes2()
+    void shouldGiveSameResultEvenWhenArraysContainDifferentTypes2()
     {
         byte[] bytes = new byte[32];
         short[] shorts = new short[32];

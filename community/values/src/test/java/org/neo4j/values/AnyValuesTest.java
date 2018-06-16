@@ -19,7 +19,7 @@
  */
 package org.neo4j.values;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.byteValue;
@@ -31,11 +31,11 @@ import static org.neo4j.values.storable.Values.shortValue;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 
-public class AnyValuesTest
+class AnyValuesTest
 {
 
     @Test
-    public void shouldNotEqualVirtualValue()
+    void shouldNotEqualVirtualValue()
     {
         VirtualValue virtual = new MyVirtualValue( 42 );
 

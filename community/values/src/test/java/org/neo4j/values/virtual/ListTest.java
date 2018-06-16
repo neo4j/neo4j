@@ -19,15 +19,15 @@
  */
 package org.neo4j.values.virtual;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.booleanArray;
 import static org.neo4j.values.storable.Values.byteArray;
@@ -46,10 +46,47 @@ import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.list;
 import static org.neo4j.values.virtual.VirtualValues.range;
 
-public class ListTest
+class ListTest
 {
+
+    private ListValue[] equivalentLists =
+            {VirtualValues.list( Values.longValue( 1L ), Values.longValue( 4L ), Values.longValue( 7L ) ),
+
+                    range( 1L, 8L, 3L ),
+                    VirtualValues.fromArray( Values.longArray( new long[]{1L, 4L, 7L} ) ),
+                    VirtualValues.list( NO_VALUE,
+                            longValue( 1L ),
+                            NO_VALUE,
+                            longValue( 4L ),
+                            longValue( 7L ),
+                            NO_VALUE ).dropNoValues(),
+                    list( -2L, 1L, 4L, 7L, 10L ).slice( 1, 4 ),
+                    list( -2L, 1L, 4L, 7L ).drop( 1 ),
+                    list( 1L, 4L, 7L, 10L, 13L ).take( 3 ),
+                    list( 7L, 4L, 1L ).reverse(),
+                    VirtualValues.concat( list( 1L, 4L ), list( 7L ) )
+            };
+
+    private ListValue[] nonEquivalentLists =
+            {VirtualValues.list( Values.longValue( 1L ), Values.longValue( 4L ), Values.longValue( 7L ) ),
+
+                    range( 2L, 9L, 3L ),
+                    VirtualValues.fromArray( Values.longArray( new long[]{3L, 6L, 9L} ) ),
+                    VirtualValues.list( NO_VALUE,
+                            longValue( 1L ),
+                            NO_VALUE,
+                            longValue( 5L ),
+                            longValue( 7L ),
+                            NO_VALUE ).dropNoValues(),
+                    list( -2L, 1L, 5L, 8L, 11L ).slice( 1, 4 ),
+                    list( -2L, 6L, 9L, 12L ).drop( 1 ),
+                    list( 7L, 10L, 13L, 10L, 13L ).take( 3 ),
+                    list( 15L, 12L, 9L ).reverse(),
+                    VirtualValues.concat( list( 10L, 13L ), list( 16L ) )
+            };
+
     @Test
-    public void shouldBeEqualToItself()
+    void shouldBeEqualToItself()
     {
         assertEqual(
                 list( new String[]{"hi"}, 3.0 ),
@@ -59,7 +96,7 @@ public class ListTest
     }
 
     @Test
-    public void shouldBeEqualToArrayIfValuesAreEqual()
+    void shouldBeEqualToArrayIfValuesAreEqual()
     {
         // the empty list equals any array that is empty
         assertEqualValues( list(), booleanArray( new boolean[]{} ) );
@@ -96,7 +133,7 @@ public class ListTest
     }
 
     @Test
-    public void shouldNotEqual()
+    void shouldNotEqual()
     {
         assertNotEqual( list(), list( 2 ) );
         assertNotEqual( list(), list( 1, 2 ) );
@@ -148,14 +185,14 @@ public class ListTest
     }
 
     @Test
-    public void shouldHandleNullInList()
+    void shouldHandleNullInList()
     {
         assertIncomparable( list( 1, null ), list( 1, 2 ) );
         assertNotEqual( list( 1, null ), list( 2, 3 ) );
     }
 
     @Test
-    public void shouldCoerce()
+    void shouldCoerce()
     {
         assertEqual(
                 list( new String[]{"h"}, 3.0 ),
@@ -165,7 +202,7 @@ public class ListTest
     }
 
     @Test
-    public void shouldRecurse()
+    void shouldRecurse()
     {
         assertEqual(
                 list( 'a', list( 'b', list( 'c' ) ) ),
@@ -173,7 +210,7 @@ public class ListTest
     }
 
     @Test
-    public void shouldNestCorrectly()
+    void shouldNestCorrectly()
     {
         assertEqual(
                 list(
@@ -207,67 +244,29 @@ public class ListTest
     }
 
     @Test
-    public void shouldRecurseAndCoerce()
+    void shouldRecurseAndCoerce()
     {
         assertEqual(
                 list( "a", list( 'b', list( "c" ) ) ),
                 list( 'a', list( "b", list( 'c' ) ) ) );
     }
 
-    private ListValue[] equivalentLists =
-            {VirtualValues.list( Values.longValue( 1L ), Values.longValue( 4L ), Values.longValue( 7L ) ),
-
-                    range( 1L, 8L, 3L ),
-                    VirtualValues.fromArray( Values.longArray( new long[]{1L, 4L, 7L} ) ),
-                    VirtualValues.list( NO_VALUE,
-                            longValue( 1L ),
-                            NO_VALUE,
-                            longValue( 4L ),
-                            longValue( 7L ),
-                            NO_VALUE ).dropNoValues(),
-                    list( -2L, 1L, 4L, 7L, 10L ).slice( 1, 4 ),
-                    list( -2L, 1L, 4L, 7L ).drop( 1 ),
-                    list( 1L, 4L, 7L, 10L, 13L ).take( 3 ),
-                    list( 7L, 4L, 1L ).reverse(),
-                    VirtualValues.concat( list( 1L, 4L ), list( 7L ) )
-            };
-
-    private ListValue[] nonEquivalentLists =
-            {VirtualValues.list( Values.longValue( 1L ), Values.longValue( 4L ), Values.longValue( 7L ) ),
-
-                    range( 2L, 9L, 3L ),
-                    VirtualValues.fromArray( Values.longArray( new long[]{3L, 6L, 9L} ) ),
-                    VirtualValues.list( NO_VALUE,
-                            longValue( 1L ),
-                            NO_VALUE,
-                            longValue( 5L ),
-                            longValue( 7L ),
-                            NO_VALUE ).dropNoValues(),
-                    list( -2L, 1L, 5L, 8L, 11L ).slice( 1, 4 ),
-                    list( -2L, 6L, 9L, 12L ).drop( 1 ),
-                    list( 7L, 10L, 13L, 10L, 13L ).take( 3 ),
-                    list( 15L, 12L, 9L ).reverse(),
-                    VirtualValues.concat( list( 10L, 13L ), list( 16L ) )
-            };
-
     @Test
-    public void shouldTreatDifferentListImplementationSimilar()
+    void shouldTreatDifferentListImplementationSimilar()
     {
         for ( ListValue list1 : equivalentLists )
         {
             for ( ListValue list2 : equivalentLists )
             {
                 assertEqual( list1, list2 );
-                assertArrayEquals(
-                        format( "%s.asArray != %s.toArray", list1.getClass().getSimpleName(),
-                                list2.getClass().getSimpleName() ),
-                        list1.asArray(), list2.asArray() );
+                assertArrayEquals( list1.asArray(), list2.asArray(),
+                        format( "%s.asArray != %s.toArray", list1.getClass().getSimpleName(), list2.getClass().getSimpleName() ) );
             }
         }
     }
 
     @Test
-    public void shouldNotTreatDifferentListImplementationSimilarOfNonEquivalentListsSimilar()
+    void shouldNotTreatDifferentListImplementationSimilarOfNonEquivalentListsSimilar()
     {
         for ( ListValue list1 : nonEquivalentLists )
         {
@@ -278,10 +277,8 @@ public class ListTest
                     continue;
                 }
                 assertNotEqual( list1, list2 );
-                assertFalse(
-                        format( "%s.asArray != %s.toArray", list1.getClass().getSimpleName(),
-                                list2.getClass().getSimpleName() ),
-                        Arrays.equals( list1.asArray(), list2.asArray() ) );
+                assertFalse( Arrays.equals( list1.asArray(), list2.asArray() ),
+                        format( "%s.asArray != %s.toArray", list1.getClass().getSimpleName(), list2.getClass().getSimpleName() ) );
             }
         }
     }

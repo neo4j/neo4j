@@ -19,9 +19,8 @@
  */
 package org.neo4j.values.storable;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import java.time.DateTimeException;
 import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -35,15 +34,16 @@ import org.neo4j.values.utils.TemporalParseException;
 import static java.time.ZoneOffset.UTC;
 import static java.time.ZoneOffset.ofHours;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.values.storable.TimeValue.parse;
 import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 
-public class TimeValueTest
+class TimeValueTest
 {
     static final Supplier<ZoneId> inUTC = () -> UTC;
     static final Supplier<ZoneId> orFail = () ->
@@ -52,7 +52,7 @@ public class TimeValueTest
     };
 
     @Test
-    public void shouldParseTimeWithOnlyHour()
+    void shouldParseTimeWithOnlyHour()
     {
         assertEquals( time( 14, 0, 0, 0, UTC ), parse( "14", inUTC ) );
         assertEquals( time( 4, 0, 0, 0, UTC ), parse( "4", inUTC ) );
@@ -60,7 +60,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldParseTimeWithHourAndMinute()
+    void shouldParseTimeWithHourAndMinute()
     {
         assertEquals( time( 14, 5, 0, 0, UTC ), parse( "1405", inUTC ) );
         assertEquals( time( 14, 5, 0, 0, UTC ), parse( "14:5", inUTC ) );
@@ -70,7 +70,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldParseTimeWithHourMinuteAndSecond()
+    void shouldParseTimeWithHourMinuteAndSecond()
     {
         assertEquals( time( 14, 5, 17, 0, UTC ), parse( "140517", inUTC ) );
         assertEquals( time( 14, 5, 17, 0, UTC ), parse( "14:5:17", inUTC ) );
@@ -80,7 +80,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldParseTimeWithHourMinuteSecondAndFractions()
+    void shouldParseTimeWithHourMinuteSecondAndFractions()
     {
         assertEquals( time( 14, 5, 17, 123000000, UTC ), parse( "140517.123", inUTC ) );
         assertEquals( time( 14, 5, 17, 1, UTC ), parse( "14:5:17.000000001", inUTC ) );
@@ -91,16 +91,16 @@ public class TimeValueTest
 
     @Test
     @SuppressWarnings( "ThrowableNotThrown" )
-    public void shouldFailToParseTimeOutOfRange()
+    void shouldFailToParseTimeOutOfRange()
     {
-        assertCannotParse( "24" );
-        assertCannotParse( "1760" );
-        assertCannotParse( "173260" );
-        assertCannotParse( "173250.0000000001" );
+        assertThrows( TemporalParseException.class, () -> parse( "24", inUTC ) );
+        assertThrows( TemporalParseException.class, () -> parse( "1760", inUTC ) );
+        assertThrows( TemporalParseException.class, () -> parse( "173260", inUTC ) );
+        assertThrows( TemporalParseException.class, () -> parse( "173250.0000000001", inUTC ) );
     }
 
     @Test
-    public void shouldWriteTime()
+    void shouldWriteTime()
     {
         // given
         for ( TimeValue time : new TimeValue[] {
@@ -130,7 +130,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldAddDurationToTimes()
+    void shouldAddDurationToTimes()
     {
         assertEquals( time(12, 15, 0, 0, UTC),
                 time(12, 0, 0, 0, UTC).add( DurationValue.duration( 1, 1, 900, 0 ) ) );
@@ -141,7 +141,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldReuseInstanceInArithmetics()
+    void shouldReuseInstanceInArithmetics()
     {
         final TimeValue noon = time( 12, 0, 0, 0, UTC );
         assertSame( noon,
@@ -153,7 +153,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldSubtractDurationFromTimes()
+    void shouldSubtractDurationFromTimes()
     {
         assertEquals( time(12, 0, 0, 0, UTC),
                 time(12, 15, 0, 0, UTC).sub( DurationValue.duration( 1, 1, 900, 0 ) ) );
@@ -164,25 +164,25 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldEqualItself()
+    void shouldEqualItself()
     {
         assertEqual( time( 10, 52, 5, 6, UTC ), time( 10, 52, 5, 6, UTC ) );
     }
 
     @Test
-    public void shouldNotEqualSameInstantButDifferentTimezone()
+    void shouldNotEqualSameInstantButDifferentTimezone()
     {
         assertNotEqual( time( 10000, UTC ), time( 10000, ZoneOffset.of( "+01:00" ) ) );
     }
 
     @Test
-    public void shouldNotEqualSameInstantInSameLocalTimeButDifferentTimezone()
+    void shouldNotEqualSameInstantInSameLocalTimeButDifferentTimezone()
     {
         assertNotEqual( time( 10, 52, 5, 6, UTC ), time( 11, 52, 5, 6, "+01:00" ) );
     }
 
     @Test
-    public void shouldBeAbleToParseTimeThatOverridesHeaderInformation()
+    void shouldBeAbleToParseTimeThatOverridesHeaderInformation()
     {
         String headerInformation = "{timezone:-01:00}";
         String data = "14:05:17Z";
@@ -195,7 +195,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldBeAbleToParseTimeWithoutTimeZoneWithHeaderInformation()
+    void shouldBeAbleToParseTimeWithoutTimeZoneWithHeaderInformation()
     {
         String headerInformation = "{timezone:-01:00}";
         String data = "14:05:17";
@@ -209,7 +209,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldWriteDerivedValueThatIsEqual()
+    void shouldWriteDerivedValueThatIsEqual()
     {
         TimeValue value1 = time( 42, ZoneOffset.of( "-18:00" ) );
         TimeValue value2 = time( value1.temporal() );
@@ -221,26 +221,12 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldCompareDerivedValue()
+    void shouldCompareDerivedValue()
     {
         TimeValue value1 = time( 4242, ZoneOffset.of( "-12:00" ) );
         TimeValue value2 = time( value1.temporal() );
 
         assertEquals( 0, value1.unsafeCompareTo( value2 ) );
-    }
-
-    @SuppressWarnings( "UnusedReturnValue" )
-    private TemporalParseException assertCannotParse( String text )
-    {
-        try
-        {
-            parse( text, inUTC );
-        }
-        catch ( TemporalParseException e )
-        {
-            return e;
-        }
-        throw new AssertionError( text );
     }
 
     private static OffsetTime write( TimeValue value )

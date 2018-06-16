@@ -19,20 +19,20 @@
  */
 package org.neo4j.values.virtual;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.iteratorsEqual;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
-public class AppendedPrependListTest
+class AppendedPrependListTest
 {
     @Test
-    public void shouldAppendToList()
+    void shouldAppendToList()
     {
         // Given
         ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
@@ -49,7 +49,7 @@ public class AppendedPrependListTest
     }
 
     @Test
-    public void shouldHandleEmptyAppend()
+    void shouldHandleEmptyAppend()
     {
         // Given
         ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
@@ -63,7 +63,7 @@ public class AppendedPrependListTest
     }
 
     @Test
-    public void shouldAppendToListWithDroppedNull()
+    void shouldAppendToListWithDroppedNull()
     {
         // Given
         ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
@@ -80,7 +80,7 @@ public class AppendedPrependListTest
     }
 
     @Test
-    public void shouldPrependToList()
+    void shouldPrependToList()
     {
         // Given
         ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
@@ -97,7 +97,7 @@ public class AppendedPrependListTest
     }
 
     @Test
-    public void shouldHandleEmptyPrepend()
+    void shouldHandleEmptyPrepend()
     {
         // Given
         ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
@@ -111,7 +111,7 @@ public class AppendedPrependListTest
     }
 
     @Test
-    public void shouldPrependToListWithDroppedNull()
+    void shouldPrependToListWithDroppedNull()
     {
         // Given
         ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),

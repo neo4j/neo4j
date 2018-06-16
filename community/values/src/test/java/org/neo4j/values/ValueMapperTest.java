@@ -19,15 +19,14 @@
  */
 package org.neo4j.values;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.values.storable.Value;
@@ -40,7 +39,7 @@ import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 import static java.util.stream.Collectors.toList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
@@ -79,68 +78,55 @@ import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 import static org.neo4j.values.virtual.VirtualValues.path;
 import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
-@RunWith( Parameterized.class )
-public class ValueMapperTest
+class ValueMapperTest
 {
-    @Parameterized.Parameters( name = "{0}" )
-    public static Iterable<Object[]> parameters()
+    private static Stream<AnyValue> parameters()
     {
         NodeValue node1 = nodeValue( 1, stringArray(), emptyMap() );
         NodeValue node2 = nodeValue( 2, stringArray(), emptyMap() );
         NodeValue node3 = nodeValue( 3, stringArray(), emptyMap() );
         RelationshipValue relationship1 = relationshipValue( 100, node1, node2, stringValue( "ONE" ), emptyMap() );
         RelationshipValue relationship2 = relationshipValue( 200, node2, node2, stringValue( "TWO" ), emptyMap() );
-        return Arrays.asList(
-                new Object[] {node1},
-                new Object[] {relationship1},
-                new Object[] {
-                        path(
-                                new NodeValue[] {node1, node2, node3},
-                                new RelationshipValue[] {relationship1, relationship2} )},
-                new Object[] {
-                        map(
-                                new String[] {"alpha", "beta"},
-                                new AnyValue[] {stringValue( "one" ), numberValue( 2 )} )},
-                new Object[] {NO_VALUE},
-                new Object[] {list( numberValue( 1 ), stringValue( "fine" ), node2 )},
-                new Object[] {stringValue( "hello world" )},
-                new Object[] {stringArray( "hello", "brave", "new", "world" )},
-                new Object[] {booleanValue( false )},
-                new Object[] {booleanArray( new boolean[] {true, false, true} )},
-                new Object[] {charValue( '\n' )},
-                new Object[] {charArray( new char[] {'h', 'e', 'l', 'l', 'o'} )},
-                new Object[] {byteValue( (byte) 3 )},
-                new Object[] {byteArray( new byte[] {0x00, (byte) 0x99, (byte) 0xcc} )},
-                new Object[] {shortValue( (short) 42 )},
-                new Object[] {shortArray( new short[] {1337, (short) 0xcafe, (short) 0xbabe} )},
-                new Object[] {intValue( 987654321 )},
-                new Object[] {intArray( new int[] {42, 11} )},
-                new Object[] {longValue( 9876543210L )},
-                new Object[] {longArray( new long[] {0xcafebabe, 0x1ee7} )},
-                new Object[] {floatValue( Float.MAX_VALUE )},
-                new Object[] {floatArray( new float[] {Float.NEGATIVE_INFINITY, Float.MIN_VALUE} )},
-                new Object[] {doubleValue( Double.MIN_NORMAL )},
-                new Object[] {doubleArray( new double[] {Double.POSITIVE_INFINITY, Double.MAX_VALUE} )},
-                new Object[] {datetime( 2018, 1, 16, 10, 36, 43, 123456788, ZoneId.of( "Europe/Stockholm" ) )},
-                new Object[] {localDateTime( 2018, 1, 16, 10, 36, 43, 123456788 )},
-                new Object[] {date( 2018, 1, 16 )},
-                new Object[] {time( 10, 36, 43, 123456788, ZoneOffset.ofHours( 1 ) )},
-                new Object[] {localTime( 10, 36, 43, 123456788 )},
-                new Object[] {duration( 399, 4, 48424, 133701337 )},
-                new Object[] {pointValue( Cartesian, 11, 32 )},
-                new Object[] {
-                        pointArray( new Point[] {pointValue( Cartesian, 11, 32 ), pointValue( WGS84, 13, 56 )} )} );
+        return Stream.of(
+                node1,
+                relationship1,
+                path( new NodeValue[] {node1, node2, node3}, new RelationshipValue[]{relationship1, relationship2} ),
+                map(
+                        new String[] {"alpha", "beta"},
+                        new AnyValue[] {stringValue( "one" ), numberValue( 2 )} ),
+                NO_VALUE,
+                list( numberValue( 1 ), stringValue( "fine" ), node2 ),
+                stringValue( "hello world" ),
+                stringArray( "hello", "brave", "new", "world" ),
+                booleanValue( false ),
+                booleanArray( new boolean[] {true, false, true} ),
+                charValue( '\n' ),
+                charArray( new char[] {'h', 'e', 'l', 'l', 'o'} ),
+                byteValue( (byte) 3 ),
+                byteArray( new byte[] {0x00, (byte) 0x99, (byte) 0xcc} ),
+                shortValue( (short) 42 ),
+                shortArray( new short[] {1337, (short) 0xcafe, (short) 0xbabe} ),
+                intValue( 987654321 ),
+                intArray( new int[] {42, 11} ),
+                longValue( 9876543210L ),
+                longArray( new long[] {0xcafebabe, 0x1ee7} ),
+                floatValue( Float.MAX_VALUE ),
+                floatArray( new float[] {Float.NEGATIVE_INFINITY, Float.MIN_VALUE} ),
+                doubleValue( Double.MIN_NORMAL ),
+                doubleArray( new double[] {Double.POSITIVE_INFINITY, Double.MAX_VALUE} ),
+                datetime( 2018, 1, 16, 10, 36, 43, 123456788, ZoneId.of( "Europe/Stockholm" ) ),
+                localDateTime( 2018, 1, 16, 10, 36, 43, 123456788 ),
+                date( 2018, 1, 16 ),
+                time( 10, 36, 43, 123456788, ZoneOffset.ofHours( 1 ) ),
+                localTime( 10, 36, 43, 123456788 ),
+                duration( 399, 4, 48424, 133701337 ),
+                pointValue( Cartesian, 11, 32 ),
+                pointArray( new Point[] {pointValue( Cartesian, 11, 32 ), pointValue( WGS84, 13, 56 )} ) );
     }
 
-    private final AnyValue value;
-
-    public ValueMapperTest( AnyValue value )
-    {
-        this.value = value;
-    }
-
-    @Test
-    public void shouldMapToJavaObject()
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void shouldMapToJavaObject( AnyValue value )
     {
         // given
         ValueMapper<Object> mapper = new Mapper();
@@ -210,18 +196,6 @@ public class ValueMapperTest
         MappedGraphType( VirtualValue value )
         {
 
-            this.value = value;
-        }
-    }
-
-    private static class Entry
-    {
-        final String key;
-        final AnyValue value;
-
-        private Entry( String key, AnyValue value )
-        {
-            this.key = key;
             this.value = value;
         }
     }

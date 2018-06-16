@@ -19,43 +19,36 @@
  */
 package org.neo4j.values.storable;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.values.utils.InvalidValuesArgumentException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 
-public class CoordinateReferenceSystemTest
+class CoordinateReferenceSystemTest
 {
     @Test
-    public void shouldGetCrsByCode()
+    void shouldGetCrsByCode()
     {
         assertEquals( Cartesian, CoordinateReferenceSystem.get( Cartesian.getCode() ) );
         assertEquals( WGS84, CoordinateReferenceSystem.get( WGS84.getCode() ) );
     }
 
     @Test
-    public void shouldFailToGetWithIncorrectCode()
+    void shouldFailToGetWithIncorrectCode()
     {
-        try
-        {
-            CoordinateReferenceSystem.get( 42 );
-            fail( "Exception expected" );
-        }
-        catch ( InvalidValuesArgumentException e )
-        {
-            assertEquals( "Unknown coordinate reference system code: 42", e.getMessage() );
-        }
+        InvalidValuesArgumentException exception = assertThrows( InvalidValuesArgumentException.class, () -> CoordinateReferenceSystem.get( 42 ) );
+        assertEquals( "Unknown coordinate reference system code: 42", exception.getMessage() );
     }
 
     @Test
-    public void shouldFindByTableAndCode()
+    void shouldFindByTableAndCode()
     {
         assertThat( CoordinateReferenceSystem.get( 1, 4326 ), equalTo( CoordinateReferenceSystem.WGS84 ) );
         assertThat( CoordinateReferenceSystem.get( 1, 4979 ), equalTo( CoordinateReferenceSystem.WGS84_3D ) );
@@ -64,7 +57,7 @@ public class CoordinateReferenceSystemTest
     }
 
     @Test
-    public void shouldCalculateCartesianDistance()
+    void shouldCalculateCartesianDistance()
     {
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.Cartesian;
         assertThat( "", crs.getCalculator().distance( cart( 0.0, 0.0 ), cart( 0.0, 1.0 ) ), equalTo( 1.0 ) );
@@ -80,7 +73,7 @@ public class CoordinateReferenceSystemTest
     }
 
     @Test
-    public void shouldCalculateCartesianDistance3D()
+    void shouldCalculateCartesianDistance3D()
     {
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.Cartesian_3D;
         assertThat( "", crs.getCalculator().distance( cart( 0.0, 0.0, 0.0 ), cart( 1.0, 0.0, 0.0 ) ), equalTo( 1.0 ) );
@@ -93,7 +86,7 @@ public class CoordinateReferenceSystemTest
     }
 
     @Test
-    public void shouldCalculateGeographicDistance()
+    void shouldCalculateGeographicDistance()
     {
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
         assertThat( "2D distance should match", crs.getCalculator().distance( geo( 0.0, 0.0 ), geo( 0.0, 90.0 ) ), closeTo( 10000000.0, 20000.0 ) );
@@ -109,7 +102,7 @@ public class CoordinateReferenceSystemTest
     }
 
     @Test
-    public void shouldCalculateGeographicDistance3D()
+    void shouldCalculateGeographicDistance3D()
     {
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84_3D;
         //"distance function should measure distance from Copenhagen train station to Neo4j in Malmö"
