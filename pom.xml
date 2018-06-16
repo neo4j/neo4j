@@ -372,7 +372,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.21.0</version>
+          <version>2.22.0</version>
           <configuration>
             <forkCount>${forkCounts}</forkCount>
             <reuseForks>true</reuseForks>
@@ -388,28 +388,11 @@
               <exclude>**/*IntegrationTest.class</exclude>
             </excludes>
           </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.junit.platform</groupId>
-              <artifactId>junit-platform-surefire-provider</artifactId>
-              <version>${junit.platform.version}</version>
-            </dependency>
-            <dependency>
-              <groupId>org.junit.vintage</groupId>
-              <artifactId>junit-vintage-engine</artifactId>
-              <version>${junit.version}</version>
-            </dependency>
-            <dependency>
-              <groupId>org.junit.jupiter</groupId>
-              <artifactId>junit-jupiter-engine</artifactId>
-              <version>${junit.version}</version>
-            </dependency>
-          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
-          <version>2.21.0</version>
+          <version>2.22.0</version>
           <configuration>
             <argLine>${test.runner.jvm.settings}</argLine>
             <forkCount>${forkCounts}</forkCount>
@@ -428,23 +411,6 @@
             </systemPropertyVariables>
             <jvm>${test.runner.jvm}</jvm>
           </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.junit.platform</groupId>
-              <artifactId>junit-platform-surefire-provider</artifactId>
-              <version>${junit.platform.version}</version>
-            </dependency>
-            <dependency>
-              <groupId>org.junit.vintage</groupId>
-              <artifactId>junit-vintage-engine</artifactId>
-              <version>${junit.version}</version>
-            </dependency>
-            <dependency>
-              <groupId>org.junit.jupiter</groupId>
-              <artifactId>junit-jupiter-engine</artifactId>
-              <version>${junit.version}</version>
-            </dependency>
-          </dependencies>
           <executions>
             <execution>
               <id>integration-test</id>
@@ -1091,14 +1057,6 @@
 
       <!-- The JUnit-Hamcrest-Mockito combo -->
       <dependency>
-        <groupId>org.apache.maven.surefire</groupId>
-        <artifactId>surefire-logger-api</artifactId>
-        <version>2.21.0</version>
-        <!-- to get around bug https://github.com/junit-team/junit5/issues/801 -->
-        <scope>test</scope>
-        <optional>true</optional>
-      </dependency>
-      <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-params</artifactId>
         <version>${junit.version}</version>
@@ -1111,8 +1069,14 @@
         <scope>test</scope>
       </dependency>
       <dependency>
+        <groupId>org.junit.vintage</groupId>
+        <artifactId>junit-vintage-engine</artifactId>
+        <version>${junit.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
         <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-api</artifactId>
+        <artifactId>junit-jupiter-engine</artifactId>
         <version>${junit.version}</version>
         <scope>test</scope>
       </dependency>
