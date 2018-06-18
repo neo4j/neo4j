@@ -27,42 +27,26 @@ import java.util.concurrent._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.{Failure, Success, Try}
 
-trait Spatula {
+/**
+  * A simple implementation of the Scheduler trait
+  */
+class SimpleScheduler(executor: Executor) extends Scheduler {
 
-  def execute(task: Task): QueryExecution
-}
+  private val executionService = new ExecutorCompletionService[Try[TaskResult]](executor)
 
-trait Task {
-
-  def executeWorkUnit(): Seq[Task]
-  def canContinue: Boolean
-}
-
-trait ExecutableQuery {
-  def initialTask(): Task
-}
-
-trait QueryExecution {
-  def await(): Option[Throwable]
-}
-
-class ASpatula(executor: Executor) extends Spatula {
-
-  private val fishslice = new ExecutorCompletionService[Try[TaskResult]](executor)
-
-  override def execute(task: Task): QueryExecution = new TheQueryExecution(schedule(task), this)
+  override def execute(task: Task): QueryExecution = new SimpleQueryExecution(schedule(task), this)
 
   def schedule(task: Task): Future[Try[TaskResult]] = {
-    def wrapMe(task: Task) : Callable[Try[TaskResult]] = {
+    val callableTask =
       new Callable[Try[TaskResult]] {
         override def call(): Try[TaskResult] =
           Try(TaskResult(task, task.executeWorkUnit()))
       }
-    }
-    fishslice.submit(wrapMe(task))
+
+    executionService.submit(callableTask)
   }
 
-  class TheQueryExecution(initialTask: Future[Try[TaskResult]], spatula: ASpatula) extends QueryExecution {
+  class SimpleQueryExecution(initialTask: Future[Try[TaskResult]], scheduler: SimpleScheduler) extends QueryExecution {
 
     var inFlightTasks = new ArrayBuffer[Future[Try[TaskResult]]]
     inFlightTasks += initialTask
@@ -76,10 +60,10 @@ class ASpatula(executor: Executor) extends Spatula {
           taskResultTry match {
             case Success(taskResult) =>
               for (newTask <- taskResult.newDownstreamTasks)
-                newInFlightTasks += spatula.schedule(newTask)
+                newInFlightTasks += scheduler.schedule(newTask)
 
               if (taskResult.task.canContinue)
-                newInFlightTasks += spatula.schedule(taskResult.task)
+                newInFlightTasks += scheduler.schedule(taskResult.task)
 
             case Failure(exception) =>
               return Some(exception)

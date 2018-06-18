@@ -25,7 +25,7 @@ package org.neo4j.cypher.internal.runtime.vectorized.dispatcher
 import java.util.concurrent.Executor
 
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.parallel.{ASpatula, Spatula}
+import org.neo4j.cypher.internal.runtime.parallel.{SimpleScheduler, Scheduler}
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.values.virtual.MapValue
@@ -33,7 +33,7 @@ import org.opencypher.v9_0.util.TaskCloser
 
 class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) extends Dispatcher {
 
-  val spatula: Spatula = new ASpatula(executor)
+  val scheduler: Scheduler = new SimpleScheduler(executor)
 
   def execute[E <: Exception](operators: Pipeline,
                               queryContext: QueryContext,
@@ -44,7 +44,7 @@ class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) exte
 
     val state = QueryState(params, visitor, morselSize, false)
     val initialTask = leaf.init(MorselExecutionContext.EMPTY, queryContext, state)
-    val queryExecution = spatula.execute(initialTask)
+    val queryExecution = scheduler.execute(initialTask)
     val maybeError = queryExecution.await()
     maybeError match {
       case Some(error) =>

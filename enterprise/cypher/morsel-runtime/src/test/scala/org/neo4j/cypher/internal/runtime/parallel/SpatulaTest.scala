@@ -22,7 +22,7 @@
  */
 package org.neo4j.cypher.internal.runtime.parallel
 
-import java.util.concurrent.{ConcurrentHashMap, Executors}
+import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue, Executors}
 import java.util.concurrent.atomic.AtomicLong
 
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
@@ -33,9 +33,9 @@ import scala.collection.mutable.ArrayBuffer
 
 class SpatulaTest extends CypherFunSuite {
 
-  test("execute a bunch of things") {
+  test("execute simple task") {
 
-    val s = new ASpatula( Executors.newFixedThreadPool( 1 ) )
+    val s = new SimpleScheduler( Executors.newFixedThreadPool( 1 ) )
 
     val testThread = Thread.currentThread().getId
     val taskThreadId = new AtomicLong(testThread)
@@ -49,12 +49,12 @@ class SpatulaTest extends CypherFunSuite {
     queryExecution.await()
 
     sb.result() should equal("great success")
-    taskThreadId.get() should not equal(testThread)
+    taskThreadId.get() should not equal testThread
   }
 
-  test("execute more things") {
+  test("execute 1000 simple tasks, spread over 4 threads") {
     val concurrency = 4
-    val s = new ASpatula( Executors.newFixedThreadPool( concurrency ) )
+    val s = new SimpleScheduler( Executors.newFixedThreadPool( concurrency ) )
 
     val map = new ConcurrentHashMap[Int, Long]()
     val futures =
@@ -67,13 +67,13 @@ class SpatulaTest extends CypherFunSuite {
 
     val countsPerThread = map.toSeq.groupBy(kv => kv._2).mapValues(_.size)
     for ((threadId, count) <- countsPerThread) {
-      count should be > 180
+      count should be > 150
     }
   }
 
-  test("execute a subtask thing") {
+  test("execute downstream tasks") {
 
-    val s = new ASpatula( Executors.newFixedThreadPool( 2 ) )
+    val s = new SimpleScheduler( Executors.newFixedThreadPool( 2 ) )
 
     val result: mutable.Set[String] =
       java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap[String, java.lang.Boolean])
@@ -90,12 +90,16 @@ class SpatulaTest extends CypherFunSuite {
     result should equal(Set("once", "upon", "a", "time"))
   }
 
-  test("execute more relish") {
+  test("execute reduce-like task tree") {
 
-    val s = new ASpatula( Executors.newFixedThreadPool( 64 ) )
+    val s = new SimpleScheduler( Executors.newFixedThreadPool( 64 ) )
 
-    var output: List[Int] = List()
-    val method :ArrayBuffer[Int] => Unit = (arrayBuffer) => output ++= arrayBuffer
+    var output = new ConcurrentLinkedQueue[Int]()
+    val method: ArrayBuffer[Int] => Unit =
+      arrayBuffer => {
+        for (x <- arrayBuffer)
+          output.add(x)
+      }
 
     val aggregator = Aggregator(method)
     val tasks = SubTasker(List(
@@ -105,8 +109,10 @@ class SpatulaTest extends CypherFunSuite {
     val queryExecution = s.execute(tasks)
 
     queryExecution.await()
-    output should equal(List(1,2,3))
+    output.toSet should equal(Set(1, 2, 3, 4, 5, 6))
   }
+
+  // HELPER TASKS
 
   case class Aggregator(method: ArrayBuffer[Int] => Unit) extends Task {
 
@@ -147,70 +153,6 @@ class SpatulaTest extends CypherFunSuite {
     override def canContinue: Boolean = taskSequence.nonEmpty
   }
 
-  case class Row(nodeId:Long)
-
-  /*
-
-    SemiApply
-  AS      Exp
-          Arg
-
-  L(IN) R(OUT)
-  1 T   1
-  1 T   1
-  2 F
-
-  Arg
-  argumentId L
-  0          1
-  1          1
-  2          2
-
-  post-Exp
-
-  L R N2 ArgumentId
-  1 1 3  0
-  1 2 3  0
-  1 3 4  0
-  1 1 3  1
-  1 2 3  1
-  1 3 4  1
-  2 4 4  2
-  2 5 5  2
-
-
-
-    SemiApply
-          Selection
-          OP1
-   ..   Op2 Op3
-       Op4  Op5
-           Op6  Op7
-
-   */
-
-  case class Argument(argument: Array[Row]) extends Task {
-    override def executeWorkUnit(): Seq[Task] = ???
-
-    override def canContinue: Boolean = ???
-  }
-
-
-  case class OneRowApply(inputMorsel: Array[Row], arg: Argument) extends Task {
-
-    val rows = inputMorsel.iterator
-
-    override def executeWorkUnit(): Seq[Task] = {
-      if (rows.hasNext) List(Argument(Array(rows.next)))
-      else Nil
-    }
-
-    override def canContinue: Boolean = ???
-  }
-
-
-
-
   case class NoopTask(f: () => Any) extends Task {
     override def executeWorkUnit(): Seq[Task] = {
       f()
@@ -218,21 +160,5 @@ class SpatulaTest extends CypherFunSuite {
     }
 
     override def canContinue: Boolean = false
-  }
-
-  case class SingleThreadedAllNodeScan(start:Int, end:Int) extends Task {
-    override def executeWorkUnit(): Seq[Task] = ???
-
-    override def canContinue: Boolean = ???
-  }
-
-  case class ParallelAllNodeScan() extends Task {
-    override def executeWorkUnit(): Seq[Task] = {
-      for (range <- List((0, 1000), (1001, 2000))) yield {
-        SingleThreadedAllNodeScan(range._1, range._2)
-      }
-    }
-
-    override def canContinue: Boolean = ???
   }
 }
