@@ -712,7 +712,7 @@ public class IndexPopulationJobTest
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
 
         MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, logProvider, type, stateHolder );
-        IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR );
+        IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, false );
         job.addPopulator( populator, descriptor.withId( indexId ).withoutCapabilities(),
                 format( ":%s(%s)", FIRST.name(), name ), flipper, failureDelegateFactory );
         return job;

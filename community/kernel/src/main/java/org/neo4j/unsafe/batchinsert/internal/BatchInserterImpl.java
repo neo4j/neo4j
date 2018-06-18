@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.batchinsert.internal;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -45,48 +44,40 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorWrapper;
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
-import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.NodePropertyAccessor;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.labelscan.LabelScanWriter;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constraints.IndexBackedConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.DatabaseKernelExtensions;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
-import org.neo4j.kernel.impl.api.index.EntityUpdates;
+import org.neo4j.kernel.impl.api.DatabaseSchemaState;
+import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.kernel.impl.api.index.StoreScan;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
+import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
+import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
@@ -104,12 +95,12 @@ import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
-import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyCreator;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyDeleter;
@@ -152,6 +143,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
+import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -162,6 +154,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchRelationship;
@@ -170,13 +163,15 @@ import org.neo4j.values.storable.Value;
 
 import static java.lang.Boolean.parseBoolean;
 import static java.util.Collections.emptyIterator;
-import static org.eclipse.collections.impl.utility.ArrayIterate.contains;
+import static java.util.Collections.emptyList;
 import static org.neo4j.collection.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
+import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
+import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 
@@ -189,7 +184,6 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private final TokenHolders tokenHolders;
     private final IdGeneratorFactory idGeneratorFactory;
     private final IndexProviderMap indexProviderMap;
-    private final LabelScanStore labelScanStore;
     private final Log msgLog;
     private final SchemaCache schemaCache;
     private final Config config;
@@ -197,6 +191,9 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private final StoreLocker storeLocker;
     private final PageCache pageCache;
     private final RecordStorageReader storageReader;
+    private final StoreLogService logService;
+    private final FileSystemAbstraction fileSystem;
+    private final Monitors monitors;
     private boolean labelsTouched;
     private boolean isShutdown;
 
@@ -230,7 +227,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private final PropertyKeyTokenStore propertyKeyTokenStore;
     private final PropertyStore propertyStore;
     private final SchemaStore schemaStore;
-    private final NeoStoreIndexStoreView indexStoreView;
+    private final NeoStoreIndexStoreView storeIndexStoreView;
 
     private final LabelTokenStore labelTokenStore;
     private final Locks.Client noopLockClient = new NoOpClient();
@@ -243,6 +240,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         Map<String, String> params = getDefaultParams();
         params.putAll( stringParams );
         this.config = Config.defaults( params );
+        this.fileSystem = fileSystem;
 
         life = new LifeSupport();
         this.databaseDirectory = databaseDirectory;
@@ -256,7 +254,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         config.augment( logs_directory, databaseDirectory.getCanonicalPath() );
         File internalLog = config.get( store_internal_log_path );
 
-        StoreLogService logService = life.add( StoreLogService.withInternalLog( internalLog).build( fileSystem ) );
+        logService = life.add( StoreLogService.withInternalLog( internalLog).build( fileSystem ) );
         msgLog = logService.getInternalLog( getClass() );
 
         boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
@@ -289,11 +287,12 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         schemaStore = neoStores.getSchemaStore();
         labelTokenStore = neoStores.getLabelTokenStore();
 
-        indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
+        monitors = new Monitors();
+
+        storeIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, neoStores );
         Dependencies deps = new Dependencies();
         Monitors monitors = new Monitors();
-        deps.satisfyDependencies( fileSystem, config, logService, indexStoreView, pageCache, monitors,
-                RecoveryCleanupWorkCollector.IMMEDIATE );
+        deps.satisfyDependencies( fileSystem, config, logService, storeIndexStoreView, pageCache, monitors, RecoveryCleanupWorkCollector.IMMEDIATE );
 
         DatabaseKernelExtensions extensions = life.add( new DatabaseKernelExtensions(
                 new SimpleKernelContext( databaseDirectory, DatabaseInfo.UNKNOWN, deps ),
@@ -307,14 +306,11 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         relationshipTypeTokenHolder.setInitialTokens( relationshipTypeTokenStore.getTokens() );
         TokenHolder labelTokenHolder = new DelegatingTokenHolder( this::createNewLabelId, TokenHolder.TYPE_LABEL );
         labelTokenHolder.setInitialTokens( labelTokenStore.getTokens() );
-        this.tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
+        tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
 
         indexStore = life.add( new IndexConfigStore( this.databaseDirectory, fileSystem ) );
         schemaCache = new SchemaCache( new StandardConstraintSemantics(), schemaStore, indexProviderMap );
 
-        labelScanStore = new NativeLabelScanStore( pageCache, databaseDirectory, fileSystem, FullStoreChangeStream.EMPTY, false, monitors,
-                RecoveryCleanupWorkCollector.IMMEDIATE );
-        life.add( labelScanStore );
         actions = new BatchSchemaActions();
 
         // Record access
@@ -491,88 +487,47 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         flushStrategy.forceFlush();
     }
 
-    private void repopulateAllIndexes() throws IOException, IndexEntryConflictException
+    private void repopulateAllIndexes( NativeLabelScanStore labelIndex )
     {
-        if ( !labelsTouched )
-        {
-            return;
-        }
-
-        final StoreIndexDescriptor[] indexDescriptors = getIndexesNeedingPopulation();
-        final List<IndexPopulatorWithSchema> populators = new ArrayList<>( indexDescriptors.length );
-
+        LogProvider logProvider = logService.getInternalLogProvider();
+        IndexStoreView indexStoreView = new DynamicIndexStoreView( storeIndexStoreView, labelIndex, NO_LOCK_SERVICE, neoStores, logProvider );
+        JobScheduler jobScheduler = life.add( new CentralJobScheduler() );
+        IndexingService indexingService = life.add( IndexingServiceFactory.createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView,
+                new NonTransactionalTokenNameLookup( tokenHolders ), emptyList(), logProvider, NO_MONITOR, new DatabaseSchemaState( logProvider ) ) );
         try
         {
-            final SchemaDescriptor[] descriptors = new LabelSchemaDescriptor[indexDescriptors.length];
-
-            for ( int i = 0; i < indexDescriptors.length; i++ )
+            StoreIndexDescriptor[] descriptors = getIndexesNeedingPopulation();
+            indexingService.createIndexes( true /*verify constraints before flipping over*/, descriptors );
+            for ( StoreIndexDescriptor descriptor : descriptors )
             {
-                StoreIndexDescriptor index = indexDescriptors[i];
-                descriptors[i] = index.schema();
-                IndexPopulator populator = indexProviderMap.lookup( index.providerDescriptor() )
-                        .getPopulator( index, new IndexSamplingConfig( config ) );
-                populator.create();
-                populators.add( new IndexPopulatorWithSchema( populator, index ) );
-            }
-
-            Visitor<EntityUpdates,IOException> propertyUpdateVisitor = updates ->
-            {
-                // Do a lookup from which property has changed to a list of indexes worried about that property.
-                // We do not need to load additional properties as the EntityUpdates for a full node store scan already
-                // include all properties for the node.
-                for ( IndexEntryUpdate<IndexPopulatorWithSchema> indexUpdate : updates.forIndexKeys( populators ) )
+                IndexProxy indexProxy = getIndexProxy( indexingService, descriptor );
+                try
                 {
-                    try
-                    {
-                        indexUpdate.indexKey().add( indexUpdate );
-                    }
-                    catch ( IndexEntryConflictException conflict )
-                    {
-                        throw conflict.notAllowed( indexUpdate.indexKey().index() );
-                    }
+                    indexProxy.awaitStoreScanCompleted();
                 }
-                return true;
-            };
-
-            List<SchemaDescriptor> descriptorList = Arrays.asList( descriptors );
-            int[] labelIds = descriptorList.stream()
-                    .flatMapToInt( d -> Arrays.stream( d.getEntityTokenIds() ) )
-                    .toArray();
-
-            int[] propertyKeyIds = descriptorList.stream()
-                    .flatMapToInt( d -> Arrays.stream( d.getPropertyIds() ) )
-                    .toArray();
-
-            try ( InitialNodeLabelCreationVisitor labelUpdateVisitor = new InitialNodeLabelCreationVisitor() )
-            {
-                StoreScan<IOException> storeScan = indexStoreView.visitNodes( labelIds,
-                        propertyKeyId -> contains( propertyKeyIds, propertyKeyId ),
-                        propertyUpdateVisitor, labelUpdateVisitor, true );
-                storeScan.run();
-
-                IndexEntryConflictException conflictException = null;
-                for ( IndexPopulatorWithSchema populator : populators )
+                catch ( IndexPopulationFailedKernelException e )
                 {
-                    try
-                    {
-                        populator.verifyDeferredConstraints( indexStoreView );
-                        populator.close( true );
-                    }
-                    catch ( IndexEntryConflictException e )
-                    {
-                        populator.close( false );
-                        conflictException = Exceptions.chain( conflictException, e );
-                    }
-                }
-                if ( conflictException != null )
-                {
-                    throw conflictException;
+                    // In this scenario this is OK
                 }
             }
+            indexingService.forceAll( IOLimiter.UNLIMITED );
         }
-        finally
+        catch ( InterruptedException e )
         {
-            IOUtils.closeAll( populators );
+            // Someone wanted us to abort this. The indexes may not have been fully populated. This just means that they will be populated on next startup.
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private IndexProxy getIndexProxy( IndexingService indexingService, StoreIndexDescriptor descriptpr )
+    {
+        try
+        {
+            return indexingService.getIndexProxy( descriptpr.schema() );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            throw new IllegalStateException( "Expected index by descriptor " + descriptpr + " to exist, but didn't", e );
         }
     }
 
@@ -589,24 +544,6 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
 
         CountsComputer.recomputeCounts( neoStores, pageCache );
-    }
-
-    private class InitialNodeLabelCreationVisitor implements Visitor<NodeLabelUpdate, IOException>, Closeable
-    {
-        LabelScanWriter writer = labelScanStore.newWriter();
-
-        @Override
-        public boolean visit( NodeLabelUpdate update ) throws IOException
-        {
-            writer.write( update );
-            return true;
-        }
-
-        @Override
-        public void close() throws IOException
-        {
-            writer.close();
-        }
     }
 
     private StoreIndexDescriptor[] getIndexesNeedingPopulation()
@@ -991,10 +928,10 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
         try
         {
-            repopulateAllIndexes();
-            labelScanStore.force( IOLimiter.UNLIMITED );
+            NativeLabelScanStore labelIndex = buildLabelIndex();
+            repopulateAllIndexes( labelIndex );
         }
-        catch ( IOException | IndexEntryConflictException e )
+        catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
@@ -1014,6 +951,20 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             msgLog.info( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")" );
             life.shutdown();
         }
+    }
+
+    private NativeLabelScanStore buildLabelIndex() throws IOException
+    {
+        NativeLabelScanStore labelIndex =
+                new NativeLabelScanStore( pageCache, databaseDirectory, fileSystem, new FullLabelStream( storeIndexStoreView ), false, monitors,
+                        RecoveryCleanupWorkCollector.IMMEDIATE );
+        if ( labelsTouched )
+        {
+            labelIndex.drop();
+        }
+        // Rebuild will happen as part of this call if it was dropped
+        life.add( labelIndex );
+        return labelIndex;
     }
 
     @Override
@@ -1300,65 +1251,6 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         {
             directRecordAccess.commit();
             attempts = 0;
-        }
-    }
-
-    private static class IndexPopulatorWithSchema extends IndexPopulator.Adapter implements SchemaDescriptorSupplier, AutoCloseable
-    {
-        private static final int batchSize = 1_000;
-        private final IndexPopulator populator;
-        private final IndexDescriptor index;
-        private Collection<IndexEntryUpdate<?>> batchedUpdates = new ArrayList<>( batchSize );
-        private boolean closed;
-
-        IndexPopulatorWithSchema( IndexPopulator populator, IndexDescriptor index )
-        {
-            this.populator = populator;
-            this.index = index;
-        }
-
-        @Override
-        public SchemaDescriptor schema()
-        {
-            return index.schema();
-        }
-
-        public IndexDescriptor index()
-        {
-            return index;
-        }
-
-        public void add( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
-        {
-            batchedUpdates.add( update );
-            if ( batchedUpdates.size() > batchSize )
-            {
-                populator.add( batchedUpdates );
-                batchedUpdates = new ArrayList<>( batchSize );
-            }
-        }
-
-        @Override
-        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
-        {
-            populator.add( batchedUpdates );
-            populator.verifyDeferredConstraints( nodePropertyAccessor );
-        }
-
-        @Override
-        public void close() throws IOException
-        {
-            close( false );
-        }
-
-        @Override
-        public void close( boolean populationCompletedSuccessfully )
-        {
-            if ( !closed )
-            {
-                closed = true;
-                populator.close( populationCompletedSuccessfully );
-            }
         }
     }
 }

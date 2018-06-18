@@ -27,7 +27,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
-import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static java.lang.Thread.currentThread;
@@ -42,16 +41,18 @@ import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
 public class IndexPopulationJob implements Runnable
 {
     private final IndexingService.Monitor monitor;
+    private final boolean verifyBeforeFlipping;
     private final MultipleIndexPopulator multiPopulator;
     private final CountDownLatch doneSignal = new CountDownLatch( 1 );
 
     private volatile StoreScan<IndexPopulationFailedKernelException> storeScan;
     private volatile boolean cancelled;
 
-    public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexingService.Monitor monitor )
+    public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexingService.Monitor monitor, boolean verifyBeforeFlipping )
     {
         this.multiPopulator = multiPopulator;
         this.monitor = monitor;
+        this.verifyBeforeFlipping = verifyBeforeFlipping;
     }
 
     /**
@@ -106,7 +107,7 @@ public class IndexPopulationJob implements Runnable
                     // We remain in POPULATING state
                     return;
                 }
-                multiPopulator.flipAfterPopulation();
+                multiPopulator.flipAfterPopulation( verifyBeforeFlipping );
             }
             catch ( Throwable t )
             {

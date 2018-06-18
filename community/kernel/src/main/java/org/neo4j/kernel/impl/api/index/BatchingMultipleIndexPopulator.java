@@ -51,7 +51,7 @@ import static org.neo4j.helpers.NamedThreadFactory.daemon;
  * updates are inserted in the queue. When store scan notices that queue size has reached {@link #QUEUE_THRESHOLD} than
  * it drains all batched updates and waits for all submitted to the executor tasks to complete and flushes updates from
  * the queue using {@link MultipleIndexUpdater}. If queue size never reaches {@link #QUEUE_THRESHOLD} than all queued
- * concurrent updates are flushed after the store scan in {@link #flipAfterPopulation()}.
+ * concurrent updates are flushed after the store scan in {@link MultipleIndexPopulator#flipAfterPopulation(boolean)}.
  * <p>
  * Inner {@link ExecutorService executor} is shut down after the store scan completes.
  */

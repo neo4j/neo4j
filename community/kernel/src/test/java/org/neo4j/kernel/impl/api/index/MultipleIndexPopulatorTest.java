@@ -103,7 +103,7 @@ public class MultipleIndexPopulatorTest
 
         indexPopulation.cancel();
 
-        indexPopulation.flip();
+        indexPopulation.flip( false );
 
         verify( indexPopulation.populator, never() ).sampleResult();
     }
@@ -114,7 +114,7 @@ public class MultipleIndexPopulatorTest
         IndexPopulator populator = createIndexPopulator();
         IndexPopulation indexPopulation = addPopulator( populator, 1 );
 
-        indexPopulation.flip();
+        indexPopulation.flip( false );
 
         indexPopulation.cancel();
 
@@ -184,7 +184,7 @@ public class MultipleIndexPopulatorTest
 
         assertTrue( multipleIndexPopulator.hasPopulators() );
 
-        multipleIndexPopulator.flipAfterPopulation();
+        multipleIndexPopulator.flipAfterPopulation( false );
 
         verify( populationToKeepActive.flipper ).flip( any( Callable.class ), any( FailedIndexProxyFactory.class ) );
     }
@@ -206,7 +206,7 @@ public class MultipleIndexPopulatorTest
 
         assertTrue( multipleIndexPopulator.hasPopulators() );
 
-        multipleIndexPopulator.flipAfterPopulation();
+        multipleIndexPopulator.flipAfterPopulation( false );
 
         verify( populationToCancel.flipper, never() ).flip( any( Callable.class ), any( FailedIndexProxyFactory.class ) );
     }
@@ -314,7 +314,7 @@ public class MultipleIndexPopulatorTest
         FlippableIndexProxy flipper1 = addPopulator( indexPopulator1, 1 ).flipper;
         FlippableIndexProxy flipper2 = addPopulator( indexPopulator2, 2 ).flipper;
 
-        multipleIndexPopulator.flipAfterPopulation();
+        multipleIndexPopulator.flipAfterPopulation( false );
 
         verify( flipper1 ).flip( any( Callable.class ), any( FailedIndexProxyFactory.class ) );
         verify( flipper2 ).flip( any( Callable.class ), any( FailedIndexProxyFactory.class ) );
@@ -331,7 +331,7 @@ public class MultipleIndexPopulatorTest
 
         assertTrue( multipleIndexPopulator.hasPopulators() );
 
-        multipleIndexPopulator.flipAfterPopulation();
+        multipleIndexPopulator.flipAfterPopulation( false );
 
         assertFalse( multipleIndexPopulator.hasPopulators() );
     }
@@ -368,7 +368,7 @@ public class MultipleIndexPopulatorTest
         when( indexPopulator1.sampleResult() ).thenThrow( getSampleError() );
 
         multipleIndexPopulator.indexAllEntities();
-        multipleIndexPopulator.flipAfterPopulation();
+        multipleIndexPopulator.flipAfterPopulation( false );
 
         verify( indexPopulator1 ).close( false );
         verify( failedIndexProxyFactory, times( 1 ) ).create( any( RuntimeException.class ) );
@@ -462,7 +462,28 @@ public class MultipleIndexPopulatorTest
         checkPopulatorFailure( populator );
     }
 
-    private static IndexEntryUpdate<?> createIndexEntryUpdate( LabelSchemaDescriptor schemaDescriptor )
+    @Test
+    public void shouldVerifyConstraintsBeforeFlippingIfToldTo() throws IOException, IndexEntryConflictException
+    {
+        // given
+        IndexProxyFactory indexProxyFactory = mock( IndexProxyFactory.class );
+        FailedIndexProxyFactory failedIndexProxyFactory = mock( FailedIndexProxyFactory.class );
+        FlippableIndexProxy flipper = new FlippableIndexProxy();
+        flipper.setFlipTarget( indexProxyFactory );
+        IndexPopulator indexPopulator = createIndexPopulator();
+        addPopulator( indexPopulator, 1, flipper, failedIndexProxyFactory );
+        when( indexPopulator.sampleResult() ).thenReturn( new IndexSample() );
+
+        // when
+        multipleIndexPopulator.indexAllEntities();
+        multipleIndexPopulator.flipAfterPopulation( true );
+
+        // then
+        verify( indexPopulator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
+        verify( indexPopulator ).close( true );
+    }
+
+    private IndexEntryUpdate<?> createIndexEntryUpdate( LabelSchemaDescriptor schemaDescriptor )
     {
         return add( 1, schemaDescriptor, "theValue" );
     }

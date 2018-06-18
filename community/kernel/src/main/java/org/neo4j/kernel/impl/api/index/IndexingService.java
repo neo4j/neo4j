@@ -52,8 +52,10 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.SchemaState;
@@ -345,7 +347,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
         for ( Map.Entry<EntityType,MutableLongObjectMap<StoreIndexDescriptor>> descriptorToPopulate : rebuildingDescriptorsByType.entrySet() )
         {
-            IndexPopulationJob populationJob = newIndexPopulationJob( descriptorToPopulate.getKey() );
+            IndexPopulationJob populationJob = newIndexPopulationJob( descriptorToPopulate.getKey(), false );
             populate( descriptorToPopulate.getValue(), indexMap, populationJob );
         }
     }
@@ -537,10 +539,28 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
      * This code is called from the transaction infrastructure during transaction commits, which means that
      * it is *vital* that it is stable, and handles errors very well. Failing here means that the entire db
      * will shut down.
+     *
+     * {@link IndexPopulator#verifyDeferredConstraints(NodePropertyAccessor)} will not be called as part of populating these indexes,
+     * instead that will be done by code that activates the indexes later.
      */
-    public void createIndexes( StoreIndexDescriptor... rules ) throws IOException
+    public void createIndexes( StoreIndexDescriptor... rules )
     {
-        IndexPopulationStarter populationStarter = new IndexPopulationStarter( rules );
+        createIndexes( false, rules );
+    }
+
+    /**
+     * Creates one or more indexes. They will all be populated by one and the same store scan.
+     *
+     * This code is called from the transaction infrastructure during transaction commits, which means that
+     * it is *vital* that it is stable, and handles errors very well. Failing here means that the entire db
+     * will shut down.
+     *
+     * @param verifyBeforeFlipping whether or not to call {@link IndexPopulator#verifyDeferredConstraints(NodePropertyAccessor)}
+     * as part of population, before flipping to a successful state.
+     */
+    public void createIndexes( boolean verifyBeforeFlipping, StoreIndexDescriptor... rules )
+    {
+        IndexPopulationStarter populationStarter = new IndexPopulationStarter( verifyBeforeFlipping, rules );
         indexMapRef.modify( populationStarter );
         populationStarter.startPopulation();
     }
@@ -713,10 +733,10 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         return Iterators.concatResourceIterators( snapshots.iterator() );
     }
 
-    private IndexPopulationJob newIndexPopulationJob( EntityType type )
+    private IndexPopulationJob newIndexPopulationJob( EntityType type, boolean verifyBeforeFlipping )
     {
         MultipleIndexPopulator multiPopulator = multiPopulatorFactory.create( storeView, logProvider, type, schemaState );
-        return new IndexPopulationJob( multiPopulator, monitor );
+        return new IndexPopulationJob( multiPopulator, monitor, verifyBeforeFlipping );
     }
 
     private void startIndexPopulation( IndexPopulationJob job )
@@ -761,12 +781,14 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
     private final class IndexPopulationStarter implements Function<IndexMap,IndexMap>
     {
+        private final boolean verifyBeforeFlipping;
         private final StoreIndexDescriptor[] descriptors;
         private IndexPopulationJob nodePopulationJob;
         private IndexPopulationJob relationshipPopulationJob;
 
-        IndexPopulationStarter( StoreIndexDescriptor[] descriptors )
+        IndexPopulationStarter( boolean verifyBeforeFlipping, StoreIndexDescriptor[] descriptors )
         {
+            this.verifyBeforeFlipping = verifyBeforeFlipping;
             this.descriptors = descriptors;
         }
 
@@ -805,15 +827,15 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 {
                     if ( descriptor.schema().entityType() == EntityType.NODE )
                     {
-                        nodePopulationJob = nodePopulationJob == null ? newIndexPopulationJob( EntityType.NODE ) : nodePopulationJob;
+                        nodePopulationJob = nodePopulationJob == null ? newIndexPopulationJob( EntityType.NODE, verifyBeforeFlipping ) : nodePopulationJob;
                         index = indexProxyCreator.createPopulatingIndexProxy( descriptor, flipToTentative, monitor,
                                 nodePopulationJob );
                         index.start();
                     }
                     else
                     {
-                        relationshipPopulationJob =
-                                relationshipPopulationJob == null ? newIndexPopulationJob( EntityType.RELATIONSHIP ) : relationshipPopulationJob;
+                        relationshipPopulationJob = relationshipPopulationJob == null ? newIndexPopulationJob( EntityType.RELATIONSHIP, verifyBeforeFlipping )
+                                                                                      : relationshipPopulationJob;
                         index = indexProxyCreator.createPopulatingIndexProxy( descriptor, flipToTentative, monitor,
                                 relationshipPopulationJob );
                         index.start();

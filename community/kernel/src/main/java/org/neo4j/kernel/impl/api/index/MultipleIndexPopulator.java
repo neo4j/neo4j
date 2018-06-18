@@ -82,7 +82,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * <li>Call to {@link #create()} to create data structures and files to start accepting updates.</li>
  * <li>Call to {@link #indexAllEntities()} (blocking call).</li>
  * <li>While all nodes are being indexed, calls to {@link #queueUpdate(IndexEntryUpdate)} are accepted.</li>
- * <li>Call to {@link #flipAfterPopulation()} after successful population, or {@link #fail(Throwable)} if not</li>
+ * <li>Call to {@link #flipAfterPopulation(boolean)} after successful population, or {@link #fail(Throwable)} if not</li>
  * </ol>
  */
 public class MultipleIndexPopulator implements IndexPopulator
@@ -304,13 +304,13 @@ public class MultipleIndexPopulator implements IndexPopulator
         storeView.replaceIndexCounts( indexPopulation.indexId, 0, 0, 0 );
     }
 
-    void flipAfterPopulation()
+    void flipAfterPopulation( boolean verifyBeforeFlipping )
     {
         for ( IndexPopulation population : populations )
         {
             try
             {
-                population.flip();
+                population.flip( verifyBeforeFlipping );
             }
             catch ( Throwable t )
             {
@@ -564,7 +564,7 @@ public class MultipleIndexPopulator implements IndexPopulator
             }
         }
 
-        void flip() throws FlipFailedKernelException
+        void flip( boolean verifyBeforeFlipping ) throws FlipFailedKernelException
         {
             flipper.flip( () ->
             {
@@ -577,6 +577,10 @@ public class MultipleIndexPopulator implements IndexPopulator
                         populateFromUpdateQueueIfAvailable( Long.MAX_VALUE );
                         if ( populations.contains( IndexPopulation.this ) )
                         {
+                            if ( verifyBeforeFlipping )
+                            {
+                                populator.verifyDeferredConstraints( storeView );
+                            }
                             IndexSample sample = populator.sampleResult();
                             storeView.replaceIndexCounts( indexId, sample.uniqueValues(), sample.sampleSize(), sample.indexSize() );
                             populator.close( true );

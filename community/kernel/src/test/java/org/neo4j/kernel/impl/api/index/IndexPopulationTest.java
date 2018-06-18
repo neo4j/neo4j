@@ -67,7 +67,7 @@ public class IndexPopulationTest
         multipleIndexPopulator.indexAllEntities().run();
 
         // when
-        indexPopulation.flip();
+        indexPopulation.flip( false );
 
         // then
         assertTrue( "flipper should have flipped to failing proxy", flipper.getState() == InternalIndexState.FAILED );

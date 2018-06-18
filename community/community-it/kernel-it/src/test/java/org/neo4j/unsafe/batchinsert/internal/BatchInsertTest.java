@@ -41,7 +41,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -61,7 +60,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
@@ -87,6 +86,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -101,6 +101,7 @@ import org.neo4j.values.storable.Values;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.emptyArray;
@@ -114,7 +115,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.neo4j.graphdb.Label.label;
@@ -876,10 +876,12 @@ public class BatchInsertTest
         // GIVEN
         IndexPopulator populator = mock( IndexPopulator.class );
         IndexProvider provider = mock( IndexProvider.class );
+        IndexAccessor accessor = mock( IndexAccessor.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
-        when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
-                .thenReturn( populator );
+        when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( populator );
+        when( populator.sampleResult() ).thenReturn( new IndexSample() );
+        when( provider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
                 singleInstanceIndexProviderFactory( KEY, provider ) );
@@ -896,13 +898,11 @@ public class BatchInsertTest
         verify( provider ).start();
         verify( provider ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( argThat( matchesCollection( add( nodeId, internalIndex.schema(),
-                Values.of( "Jakewins" ) ) ) ) );
+        verify( populator ).add( argThat( matchesCollection( add( nodeId, internalIndex.schema(), Values.of( "Jakewins" ) ) ) ) );
         verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
         verify( provider ).shutdown();
-        verifyNoMoreInteractions( populator );
     }
 
     @Test
@@ -911,10 +911,12 @@ public class BatchInsertTest
         // GIVEN
         IndexPopulator populator = mock( IndexPopulator.class );
         IndexProvider provider = mock( IndexProvider.class );
+        IndexAccessor accessor = mock( IndexAccessor.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
-        when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
-                .thenReturn( populator );
+        when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( populator );
+        when( populator.sampleResult() ).thenReturn( new IndexSample() );
+        when( provider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
                 singleInstanceIndexProviderFactory( KEY, provider ) );
@@ -936,7 +938,6 @@ public class BatchInsertTest
         verify( populator ).close( true );
         verify( provider ).stop();
         verify( provider ).shutdown();
-        verifyNoMoreInteractions( populator );
     }
 
     @Test
@@ -947,10 +948,12 @@ public class BatchInsertTest
 
         IndexPopulator populator = mock( IndexPopulator.class );
         IndexProvider provider = mock( IndexProvider.class );
+        IndexAccessor accessor = mock( IndexAccessor.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
-        when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
-                .thenReturn( populator );
+        when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( populator );
+        when( populator.sampleResult() ).thenReturn( new IndexSample() );
+        when( provider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
                 singleInstanceIndexProviderFactory( KEY, provider ) );
@@ -972,7 +975,6 @@ public class BatchInsertTest
         verify( populator ).close( true );
         verify( provider ).stop();
         verify( provider ).shutdown();
-        verifyNoMoreInteractions( populator );
     }
 
     @Test
@@ -1322,15 +1324,18 @@ public class BatchInsertTest
         inserter.createNode( Collections.singletonMap( property, value ), label );
 
         // Then
-        try
+        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
+        try ( Transaction tx = db.beginTx() )
         {
-            inserter.shutdown();
-            fail( "Node that violates uniqueness constraint was created by batch inserter" );
+            IndexDefinition index = db.schema().getIndexes( label ).iterator().next();
+            String indexFailure = db.schema().getIndexFailure( index );
+            assertThat( indexFailure, containsString( "IndexEntryConflictException" ) );
+            assertThat( indexFailure, containsString( value ) );
+            tx.success();
         }
-        catch ( RuntimeException ex )
+        finally
         {
-            // good
-            assertEquals( new IndexEntryConflictException( 0, 1, Values.of( value ) ), ex.getCause() );
+            db.shutdown();
         }
     }
 
@@ -1399,18 +1404,10 @@ public class BatchInsertTest
         inserter.shutdown();
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fileSystemRule.get() );
-        GraphDatabaseService db = factory.newImpermanentDatabaseBuilder( localTestDirectory.storeDir() )
+        return factory.newImpermanentDatabaseBuilder( localTestDirectory.storeDir() )
                 // Shouldn't be necessary to set dense node threshold since it's a stick config
                 .setConfig( configuration() )
                 .newGraphDatabase();
-
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
-            tx.success();
-        }
-
-        return db;
     }
 
     private LabelScanStore getLabelScanStore()
