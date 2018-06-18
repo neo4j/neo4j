@@ -151,7 +151,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         PartPopulator( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout, IndexProvider.Monitor monitor,
                        StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, SpaceFillingCurveConfiguration configuration )
         {
-            super( pageCache, fs, fileLayout.spatialFile.indexFile, fileLayout.layout, monitor, descriptor, samplingConfig );
+            super( pageCache, fs, fileLayout.getIndexFile(), fileLayout.layout, monitor, descriptor, samplingConfig );
             this.configuration = configuration;
             this.settings = fileLayout.settings;
         }
