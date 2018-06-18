@@ -184,19 +184,8 @@ public abstract class AbstractNeoServer implements NeoServer
         }
 
         this.database = dbFactory.newDatabase( config, dependencies );
-        this.dependencyResolver = new Dependencies( database.getGraph().getDependencyResolver() );
         life.add( database );
-
-        this.authManagerSupplier = dependencyResolver.provideDependency( AuthManager.class );
-        this.userManagerSupplier = dependencyResolver.provideDependency( UserManagerSupplier.class );
-        this.sslPolicyFactorySupplier = dependencyResolver.provideDependency( SslPolicyLoader.class );
-        this.webServer = createWebServer();
-
-        for ( ServerModule moduleClass : createServerModules() )
-        {
-            registerModule( moduleClass );
-        }
-
+        life.add( new ServerDependenciesLifeCycleAdapter() );
         life.add( new ServerComponentsLifecycleAdapter() );
 
         this.initialized = true;
@@ -490,6 +479,25 @@ public abstract class AbstractNeoServer implements NeoServer
     protected <T> T resolveDependency( Class<T> type )
     {
         return dependencyResolver.resolveDependency( type );
+    }
+
+    private class ServerDependenciesLifeCycleAdapter extends LifecycleAdapter
+    {
+        @Override
+        public void start()
+        {
+            dependencyResolver = new Dependencies( database.getGraph().getDependencyResolver() );
+
+            authManagerSupplier = dependencyResolver.provideDependency( AuthManager.class );
+            userManagerSupplier = dependencyResolver.provideDependency( UserManagerSupplier.class );
+            sslPolicyFactorySupplier = dependencyResolver.provideDependency( SslPolicyLoader.class );
+            webServer = createWebServer();
+
+            for ( ServerModule moduleClass : createServerModules() )
+            {
+                registerModule( moduleClass );
+            }
+        }
     }
 
     private class ServerComponentsLifecycleAdapter extends LifecycleAdapter

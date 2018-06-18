@@ -22,8 +22,6 @@ package org.neo4j.kernel;
 import java.io.File;
 import java.io.IOException;
 import java.time.Clock;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
@@ -49,7 +47,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.dependency.AllByPrioritySelectionStrategy;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
-import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
+import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactionMonitorScheduler;
 import org.neo4j.kernel.impl.api.KernelTransactionTimeoutMonitor;
@@ -142,8 +140,6 @@ import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.kernel.recovery.RecoveryService;
 import org.neo4j.kernel.recovery.RecoveryStartInformationProvider;
-import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
-import org.neo4j.kernel.spi.explicitindex.IndexProviders;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
@@ -158,7 +154,7 @@ import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 
-public class NeoStoreDataSource extends LifecycleAdapter implements IndexProviders
+public class NeoStoreDataSource extends LifecycleAdapter
 {
 
     enum Diagnostics implements DiagnosticsExtractor<NeoStoreDataSource>
@@ -246,13 +242,13 @@ public class NeoStoreDataSource extends LifecycleAdapter implements IndexProvide
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final CommitProcessFactory commitProcessFactory;
     private final PageCache pageCache;
-    private final Map<String,IndexImplementation> indexProviders = new HashMap<>();
-    private final ExplicitIndexProviderLookup explicitIndexProviderLookup;
     private final ConstraintSemantics constraintSemantics;
     private final Procedures procedures;
     private final IOLimiter ioLimiter;
     private final AvailabilityGuard availabilityGuard;
     private final SystemNanoClock clock;
+    private final IndexConfigStore indexConfigStore;
+    private final ExplicitIndexProvider explicitIndexProvider;
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
 
@@ -280,7 +276,10 @@ public class NeoStoreDataSource extends LifecycleAdapter implements IndexProvide
             LogFileCreationMonitor physicalLogMonitor,
             TransactionHeaderInformationFactory transactionHeaderInformationFactory,
             CommitProcessFactory commitProcessFactory,
-            AutoIndexing autoIndexing, PageCache pageCache, ConstraintSemantics constraintSemantics, Monitors monitors,
+            AutoIndexing autoIndexing,
+            IndexConfigStore indexConfigStore,
+            ExplicitIndexProvider explicitIndexProvider,
+            PageCache pageCache, ConstraintSemantics constraintSemantics, Monitors monitors,
             Tracers tracers, Procedures procedures, IOLimiter ioLimiter, AvailabilityGuard availabilityGuard,
             SystemNanoClock clock, AccessCapability accessCapability, StoreCopyCheckPointMutex storeCopyCheckPointMutex,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdController idController,
@@ -294,6 +293,8 @@ public class NeoStoreDataSource extends LifecycleAdapter implements IndexProvide
         this.scheduler = scheduler;
         this.logService = logService;
         this.autoIndexing = autoIndexing;
+        this.indexConfigStore = indexConfigStore;
+        this.explicitIndexProvider = explicitIndexProvider;
         this.storeCopyCheckPointMutex = storeCopyCheckPointMutex;
         this.logProvider = logService.getInternalLogProvider();
         this.tokenHolders = tokenHolders;
@@ -322,30 +323,6 @@ public class NeoStoreDataSource extends LifecycleAdapter implements IndexProvide
         this.versionContextSupplier = versionContextSupplier;
         msgLog = logProvider.getLog( getClass() );
         this.lockService = new ReentrantLockService();
-        this.explicitIndexProviderLookup = new ExplicitIndexProviderLookup()
-        {
-            @Override
-            public IndexImplementation apply( String name )
-            {
-                assert name != null : "Null provider name supplied";
-                IndexImplementation provider = indexProviders.get( name );
-                if ( provider == null )
-                {
-                    throw new IllegalArgumentException( "No index provider '" + name +
-                                                        "' found. Maybe the intended provider (or one more of its " +
-                                                        "dependencies) " +
-                                                        "aren't on the classpath or it failed to load." );
-                }
-                return provider;
-            }
-
-            @Override
-            public Iterable<IndexImplementation> all()
-            {
-                return indexProviders.values();
-            }
-        };
-
         this.commitProcessFactory = commitProcessFactory;
         this.pageCache = pageCache;
         this.monitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
@@ -373,12 +350,10 @@ public class NeoStoreDataSource extends LifecycleAdapter implements IndexProvide
                         indexProviderSelection.lowerPrioritizedCandidates() );
         dataSourceDependencies.satisfyDependency( indexProviderMap );
 
-        IndexConfigStore indexConfigStore = new IndexConfigStore( storeDir, fs );
         dataSourceDependencies.satisfyDependency( lockService );
-        dataSourceDependencies.satisfyDependency( indexConfigStore );
         life.add( indexConfigStore );
 
-        life.add( Lifecycles.multiple( indexProviders.values() ) );
+        life.add( Lifecycles.multiple( explicitIndexProvider.allIndexProviders() ) );
 
         // Check the tail of transaction logs and validate version
         final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
@@ -411,8 +386,7 @@ public class NeoStoreDataSource extends LifecycleAdapter implements IndexProvide
             Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
             idController.initialize( transactionsSnapshotSupplier );
 
-            storageEngine = buildStorageEngine(
-                    explicitIndexProviderLookup,
+            storageEngine = buildStorageEngine( explicitIndexProvider,
                     indexConfigStore, databaseSchemaState, explicitIndexTransactionOrdering, operationalMode,
                     versionContextSupplier );
             life.add( logFiles );
@@ -461,7 +435,7 @@ public class NeoStoreDataSource extends LifecycleAdapter implements IndexProvide
             dataSourceDependencies.satisfyDependency( databaseSchemaState );
             dataSourceDependencies.satisfyDependency( logEntryReader );
             dataSourceDependencies.satisfyDependency( storageEngine );
-            dataSourceDependencies.satisfyDependency( explicitIndexProviderLookup );
+            dataSourceDependencies.satisfyDependency( explicitIndexProvider );
         }
         catch ( Throwable e )
         {
@@ -534,13 +508,13 @@ public class NeoStoreDataSource extends LifecycleAdapter implements IndexProvide
                 config,
                 logService,
                 indexProviderMap,
-                indexProviders,
+                explicitIndexProvider,
                 pageCache,
                 format, tailScanner ).migrate( storeDir );
     }
 
     private StorageEngine buildStorageEngine(
-            ExplicitIndexProviderLookup explicitIndexProviderLookup, IndexConfigStore indexConfigStore,
+            ExplicitIndexProvider explicitIndexProviderLookup, IndexConfigStore indexConfigStore,
             SchemaState schemaState, SynchronizedArrayIdOrderingQueue explicitIndexTransactionOrdering,
             OperationalMode operationalMode, VersionContextSupplier versionContextSupplier )
     {
@@ -641,7 +615,7 @@ public class NeoStoreDataSource extends LifecycleAdapter implements IndexProvide
         ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( kernelProvider, indexingService, nodePropertyAccessor, logProvider );
 
         ExplicitIndexStore explicitIndexStore = new ExplicitIndexStore( config,
-                indexConfigStore, kernelProvider, explicitIndexProviderLookup );
+                indexConfigStore, kernelProvider, explicitIndexProvider );
 
         StatementOperationParts statementOperationParts = dataSourceDependencies.satisfyDependency(
                 buildStatementOperations( cpuClockRef, heapAllocationRef ) );
@@ -650,7 +624,7 @@ public class NeoStoreDataSource extends LifecycleAdapter implements IndexProvide
 
         KernelTransactions kernelTransactions = life.add( new KernelTransactions( statementLocksFactory,
                 constraintIndexCreator, statementOperationParts, schemaWriteGuard, transactionHeaderInformationFactory,
-                transactionCommitProcess, indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor,
+                transactionCommitProcess, indexConfigStore, explicitIndexProvider, hooks, transactionMonitor,
                 availabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock,
                 cpuClockRef, heapAllocationRef, accessCapability, autoIndexing,
                 explicitIndexStore, versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
@@ -665,7 +639,7 @@ public class NeoStoreDataSource extends LifecycleAdapter implements IndexProvide
         life.add( kernel );
 
         final NeoStoreFileListing fileListing = new NeoStoreFileListing( storeDir, logFiles, labelScanStore,
-                indexingService, explicitIndexProviderLookup, storageEngine );
+                indexingService, explicitIndexProvider, storageEngine );
         dataSourceDependencies.satisfyDependency( fileListing );
 
         return new NeoStoreKernelModule( transactionCommitProcess, kernel, kernelTransactions, fileListing );
@@ -819,20 +793,6 @@ public class NeoStoreDataSource extends LifecycleAdapter implements IndexProvide
                 new StackingQueryRegistrationOperations( clock, cpuClockRef, heapAllocationRef );
 
         return new StatementOperationParts( queryRegistrationOperations );
-    }
-
-    @Override
-    public void registerIndexProvider( String name, IndexImplementation index )
-    {
-        assert !indexProviders.containsKey( name ) : "Index provider '" + name + "' already registered";
-        indexProviders.put( name, index );
-    }
-
-    @Override
-    public boolean unregisterIndexProvider( String name )
-    {
-        IndexImplementation removed = indexProviders.remove( name );
-        return removed != null;
     }
 
     /**

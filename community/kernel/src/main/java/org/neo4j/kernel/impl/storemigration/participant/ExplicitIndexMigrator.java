@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.storemigration.participant;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -43,19 +43,19 @@ import org.neo4j.upgrade.lucene.LuceneExplicitIndexUpgrader.Monitor;
 public class ExplicitIndexMigrator extends AbstractStoreMigrationParticipant
 {
     private static final String LUCENE_EXPLICIT_INDEX_PROVIDER_NAME = "lucene";
-    private final Map<String,IndexImplementation> indexProviders;
+    private final ExplicitIndexProvider explicitIndexProvider;
     private final FileSystemAbstraction fileSystem;
     private File migrationExplicitIndexesRoot;
     private File originalExplicitIndexesRoot;
     private final Log log;
     private boolean explicitIndexMigrated;
 
-    public ExplicitIndexMigrator( FileSystemAbstraction fileSystem, Map<String,IndexImplementation> indexProviders,
+    public ExplicitIndexMigrator( FileSystemAbstraction fileSystem, ExplicitIndexProvider explicitIndexProvider,
             LogProvider logProvider )
     {
         super( "Explicit indexes" );
         this.fileSystem = fileSystem;
-        this.indexProviders = indexProviders;
+        this.explicitIndexProvider = explicitIndexProvider;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -63,7 +63,7 @@ public class ExplicitIndexMigrator extends AbstractStoreMigrationParticipant
     public void migrate( File storeDir, File migrationDir, ProgressReporter progressMonitor,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
-        IndexImplementation indexImplementation = indexProviders.get( LUCENE_EXPLICIT_INDEX_PROVIDER_NAME );
+        IndexImplementation indexImplementation = explicitIndexProvider.getProviderByName( LUCENE_EXPLICIT_INDEX_PROVIDER_NAME );
         if ( indexImplementation != null )
         {
             RecordFormats from = RecordFormatSelector.selectForVersion( versionToMigrateFrom );

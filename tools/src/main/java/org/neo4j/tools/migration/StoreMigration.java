@@ -24,8 +24,6 @@ package org.neo4j.tools.migration;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -39,6 +37,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.dependency.AllByPrioritySelectionStrategy;
+import org.neo4j.kernel.impl.api.DefaultExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.StoreLogService;
@@ -61,8 +60,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.LogTailScanner;
-import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
-import org.neo4j.kernel.spi.explicitindex.IndexProviders;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -119,14 +116,14 @@ public class StoreMigration
         life.add( logService );
 
         // Add participants from kernel extensions...
-        ExplicitIndexProvider explicitIndexProvider = new ExplicitIndexProvider();
+        DefaultExplicitIndexProvider migrationIndexProvider = new DefaultExplicitIndexProvider();
 
         Log log = userLogProvider.getLog( StoreMigration.class );
         try ( PageCache pageCache = createPageCache( fs, config ) )
         {
             Dependencies deps = new Dependencies();
             Monitors monitors = new Monitors();
-            deps.satisfyDependencies( fs, config, explicitIndexProvider, pageCache, logService, monitors,
+            deps.satisfyDependencies( fs, config, migrationIndexProvider, pageCache, logService, monitors,
                     RecoveryCleanupWorkCollector.IMMEDIATE );
 
             KernelContext kernelContext = new SimpleKernelContext( storeDirectory, DatabaseInfo.UNKNOWN, deps );
@@ -149,7 +146,7 @@ public class StoreMigration
 
             long startTime = System.currentTimeMillis();
             DatabaseMigrator migrator = new DatabaseMigrator( progressMonitor, fs, config, logService,
-                    indexProviderMap, explicitIndexProvider.getIndexProviders(),
+                    indexProviderMap, migrationIndexProvider,
                     pageCache, RecordFormatSelector.selectForConfig( config, userLogProvider ), tailScanner );
             migrator.migrate( storeDirectory );
 
@@ -177,29 +174,6 @@ public class StoreMigration
             TransactionLogWriter transactionLogWriter = new TransactionLogWriter( new LogEntryWriter( writer ) );
             transactionLogWriter.checkPoint( tailScanner.getTailInformation().lastCheckPoint.getLogPosition() );
             writer.prepareForFlush().flush();
-        }
-    }
-
-    private class ExplicitIndexProvider implements IndexProviders
-    {
-        private final Map<String,IndexImplementation> indexProviders = new HashMap<>();
-
-        public Map<String,IndexImplementation> getIndexProviders()
-        {
-            return indexProviders;
-        }
-
-        @Override
-        public void registerIndexProvider( String name, IndexImplementation index )
-        {
-            indexProviders.put( name, index );
-        }
-
-        @Override
-        public boolean unregisterIndexProvider( String name )
-        {
-            IndexImplementation removed = indexProviders.remove( name );
-            return removed != null;
         }
     }
 

@@ -39,7 +39,7 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
         parent = null;
     }
 
-    public Dependencies( final DependencyResolver parent )
+    public Dependencies( DependencyResolver parent )
     {
         Objects.requireNonNull( parent );
         this.parent = parent;

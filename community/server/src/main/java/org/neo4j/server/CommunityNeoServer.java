@@ -49,6 +49,7 @@ import org.neo4j.server.rest.management.JmxService;
 import org.neo4j.server.rest.management.console.ConsoleService;
 import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.server.web.WebServer;
+import org.neo4j.udc.UsageData;
 
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communityDiscoverableURIs;
@@ -79,7 +80,7 @@ public class CommunityNeoServer extends AbstractNeoServer
     {
         return Arrays.asList(
                 createDBMSModule(),
-                new RESTApiModule( webServer, getConfig(), getDependencyResolver(), logProvider ),
+                new RESTApiModule( webServer, getConfig(), getDependencyResolver().provideDependency( UsageData.class ), logProvider ),
                 new ManagementApiModule( webServer, getConfig() ),
                 new ThirdPartyJAXRSModule( webServer, getConfig(), logProvider, this ),
                 new ConsoleModule( webServer, getConfig() ),

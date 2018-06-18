@@ -40,7 +40,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
+import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -127,8 +127,8 @@ public class NeoStoreFileListingTest
         // Given
         LabelScanStore labelScanStore = mock( LabelScanStore.class );
         IndexingService indexingService = mock( IndexingService.class );
-        ExplicitIndexProviderLookup explicitIndexes = mock( ExplicitIndexProviderLookup.class );
-        when( explicitIndexes.all() ).thenReturn( Collections.emptyList() );
+        ExplicitIndexProvider explicitIndexes = mock( ExplicitIndexProvider.class );
+        when( explicitIndexes.allIndexProviders() ).thenReturn( Collections.emptyList() );
         File storeDir = mock( File.class );
         LogFiles logFiles = mock( LogFiles.class );
         filesInStoreDirAre( storeDir, STANDARD_STORE_DIR_FILES, STANDARD_STORE_DIR_DIRECTORIES );

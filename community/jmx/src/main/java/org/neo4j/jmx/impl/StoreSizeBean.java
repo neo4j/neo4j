@@ -30,7 +30,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.jmx.StoreSize;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
+import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.store.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
@@ -83,7 +83,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
         private final File storePath;
 
         private LogFiles logFiles;
-        private ExplicitIndexProviderLookup explicitIndexProviderLookup;
+        private ExplicitIndexProvider explicitIndexProviderLookup;
         private IndexProviderMap indexProviderMap;
         private LabelScanStore labelScanStore;
 
@@ -101,7 +101,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
                 public void registered( NeoStoreDataSource ds )
                 {
                     logFiles = resolveDependency( ds, LogFiles.class );
-                    explicitIndexProviderLookup = resolveDependency( ds, ExplicitIndexProviderLookup.class );
+                    explicitIndexProviderLookup = resolveDependency( ds, ExplicitIndexProvider.class );
                     indexProviderMap = resolveDependency( ds, IndexProviderMap.class );
                     labelScanStore = resolveDependency( ds, LabelScanStore.class );
                 }
@@ -187,7 +187,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
             long size = 0L;
 
             // Add explicit indices
-            for ( IndexImplementation index : explicitIndexProviderLookup.all() )
+            for ( IndexImplementation index : explicitIndexProviderLookup.allIndexProviders() )
             {
                 size += FileUtils.size( fs, index.getIndexImplementationDirectory( storePath ) );
             }

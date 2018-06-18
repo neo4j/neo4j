@@ -30,6 +30,7 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.DefaultExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
@@ -37,6 +38,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -111,6 +113,11 @@ public class DataSourceModule
 
         autoIndexing = new InternalAutoIndexing( platformModule.config, editionModule.tokenHolders.propertyKeyTokens() );
 
+        IndexConfigStore indexConfigStore = new IndexConfigStore( storeDir, fileSystem );
+        deps.satisfyDependencies( indexConfigStore );
+        DefaultExplicitIndexProvider explicitIndexProvider = new DefaultExplicitIndexProvider();
+        deps.satisfyDependencies( explicitIndexProvider );
+
         NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( editionModule.tokenHolders );
 
         storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
@@ -136,6 +143,8 @@ public class DataSourceModule
                 editionModule.headerInformationFactory,
                 editionModule.commitProcessFactory,
                 autoIndexing,
+                indexConfigStore,
+                explicitIndexProvider,
                 pageCache,
                 editionModule.constraintSemantics,
                 platformModule.monitors,

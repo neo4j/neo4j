@@ -671,7 +671,7 @@ public class KernelTransactionsTest
                 ConstraintIndexCreator constraintIndexCreator, StatementOperationParts statementOperations,
                 SchemaWriteGuard schemaWriteGuard, TransactionHeaderInformationFactory txHeaderFactory,
                 TransactionCommitProcess transactionCommitProcess, IndexConfigStore indexConfigStore,
-                ExplicitIndexProviderLookup explicitIndexProviderLookup, TransactionHooks hooks,
+                ExplicitIndexProvider explicitIndexProviderLookup, TransactionHooks hooks,
                 TransactionMonitor transactionMonitor, AvailabilityGuard availabilityGuard, Tracers tracers,
                 StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
                 AccessCapability accessCapability,

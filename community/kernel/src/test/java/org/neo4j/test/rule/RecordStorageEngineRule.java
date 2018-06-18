@@ -31,7 +31,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
-import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
+import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -103,8 +103,8 @@ public class RecordStorageEngineRule extends ExternalResource
             throw new IllegalStateException();
         }
         IdGeneratorFactory idGeneratorFactory = new EphemeralIdGenerator.Factory();
-        ExplicitIndexProviderLookup explicitIndexProviderLookup = mock( ExplicitIndexProviderLookup.class );
-        when( explicitIndexProviderLookup.all() ).thenReturn( Iterables.empty() );
+        ExplicitIndexProvider explicitIndexProviderLookup = mock( ExplicitIndexProvider.class );
+        when( explicitIndexProviderLookup.allIndexProviders() ).thenReturn( Iterables.empty() );
         IndexConfigStore indexConfigStore = new IndexConfigStore( storeDirectory, fs );
         JobScheduler scheduler = life.add( new CentralJobScheduler() );
         Config config = Config.defaults();
@@ -198,7 +198,7 @@ public class RecordStorageEngineRule extends ExternalResource
                 ConstraintSemantics constraintSemantics, JobScheduler scheduler, TokenNameLookup tokenNameLookup,
                 LockService lockService, IndexProvider indexProvider,
                 IndexingService.Monitor indexingServiceMonitor, DatabaseHealth databaseHealth,
-                ExplicitIndexProviderLookup explicitIndexProviderLookup,
+                ExplicitIndexProvider explicitIndexProviderLookup,
                 IndexConfigStore indexConfigStore, IdOrderingQueue explicitIndexTransactionOrdering,
                 IdGeneratorFactory idGeneratorFactory, IdController idController,
                 Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer, Monitors monitors,

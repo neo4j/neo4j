@@ -21,8 +21,8 @@ package org.neo4j.server.modules;
 
 import java.net.URI;
 import java.util.List;
+import java.util.function.Supplier;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
@@ -51,17 +51,16 @@ public class RESTApiModule implements ServerModule
 {
     private final Config config;
     private final WebServer webServer;
-    private DependencyResolver dependencyResolver;
+    private final Supplier<UsageData> userDataSupplier;
     private final LogProvider logProvider;
 
     private PluginManager plugins;
 
-    public RESTApiModule( WebServer webServer, Config config, DependencyResolver dependencyResolver,
-            LogProvider logProvider )
+    public RESTApiModule( WebServer webServer, Config config, Supplier<UsageData> userDataSupplier, LogProvider logProvider )
     {
         this.webServer = webServer;
         this.config = config;
-        this.dependencyResolver = dependencyResolver;
+        this.userDataSupplier = userDataSupplier;
         this.logProvider = logProvider;
     }
 
@@ -76,16 +75,9 @@ public class RESTApiModule implements ServerModule
         loadPlugins();
     }
 
-    /**
-     * The modules are instantiated before the database is, meaning we can't access the UsageData service before we
-     * start. This resolves UsageData at start time.
-     *
-     * Obviously needs to be refactored, pending discussion on unifying module frameworks between kernel and server
-     * and hashing out associated dependency hierarchy and lifecycles.
-     */
     private RecentK<String> clientNames()
     {
-        return dependencyResolver.resolveDependency( UsageData.class ).get( UsageDataKeys.clientNames );
+        return userDataSupplier.get().get( UsageDataKeys.clientNames );
     }
 
     private List<String> getClassNames()

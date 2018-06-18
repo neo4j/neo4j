@@ -19,17 +19,14 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.function.Function;
-
 import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 
 /**
  * Looks up an {@link IndexImplementation} given a name.
  */
-public interface ExplicitIndexProviderLookup extends Function<String,IndexImplementation>
+public interface ExplicitIndexProvider
 {
-    /**
-     * @return all known {@link IndexImplementation} instances in use.
-     */
-    Iterable<IndexImplementation> all();
+    IndexImplementation getProviderByName( String name );
+
+    Iterable<IndexImplementation> allIndexProviders();
 }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.function.Function;
-
 import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 
 /**
@@ -35,17 +33,17 @@ public interface ExplicitIndexApplierLookup
      */
     class Direct implements ExplicitIndexApplierLookup
     {
-        private final Function<String,IndexImplementation> providerLookup;
+        private final ExplicitIndexProvider provider;
 
-        public Direct( Function<String,IndexImplementation> providerLookup )
+        public Direct( ExplicitIndexProvider provider )
         {
-            this.providerLookup = providerLookup;
+            this.provider = provider;
         }
 
         @Override
         public TransactionApplier newApplier( String providerName, boolean recovery )
         {
-            return providerLookup.apply( providerName ).newApplier( recovery );
+            return provider.getProviderByName( providerName ).newApplier( recovery );
         }
     }
 }

@@ -49,7 +49,7 @@ import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.CountsStoreBatchTransactionApplier;
 import org.neo4j.kernel.impl.api.ExplicitBatchIndexApplier;
 import org.neo4j.kernel.impl.api.ExplicitIndexApplierLookup;
-import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
+import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.TransactionApplier;
@@ -139,7 +139,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final CommandReaderFactory commandReaderFactory;
     private final WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync;
     private final IndexStoreView indexStoreView;
-    private final ExplicitIndexProviderLookup explicitIndexProviderLookup;
+    private final ExplicitIndexProvider explicitIndexProviderLookup;
     private final PropertyPhysicalToLogicalConverter indexUpdatesConverter;
     private final IdController idController;
     private final int denseNodeThreshold;
@@ -160,7 +160,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             IndexProviderMap indexProviderMap,
             IndexingService.Monitor indexingServiceMonitor,
             DatabaseHealth databaseHealth,
-            ExplicitIndexProviderLookup explicitIndexProviderLookup,
+            ExplicitIndexProvider explicitIndexProvider,
             IndexConfigStore indexConfigStore,
             IdOrderingQueue explicitIndexTransactionOrdering,
             IdGeneratorFactory idGeneratorFactory,
@@ -174,7 +174,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.schemaState = schemaState;
         this.lockService = lockService;
         this.databaseHealth = databaseHealth;
-        this.explicitIndexProviderLookup = explicitIndexProviderLookup;
+        this.explicitIndexProviderLookup = explicitIndexProvider;
         this.indexConfigStore = indexConfigStore;
         this.constraintSemantics = constraintSemantics;
         this.explicitIndexTransactionOrdering = explicitIndexTransactionOrdering;
@@ -209,7 +209,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             integrityValidator = new IntegrityValidator( neoStores, indexingService );
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaState, tokenHolders );
 
-            explicitIndexApplierLookup = new ExplicitIndexApplierLookup.Direct( explicitIndexProviderLookup );
+            explicitIndexApplierLookup = new ExplicitIndexApplierLookup.Direct( explicitIndexProvider );
 
             labelScanStoreSync = new WorkSync<>( labelScanStore::newWriter );
 
@@ -428,7 +428,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         indexingService.forceAll( limiter );
         labelScanStore.force( limiter );
-        for ( IndexImplementation index : explicitIndexProviderLookup.all() )
+        for ( IndexImplementation index : explicitIndexProviderLookup.allIndexProviders() )
         {
             index.force();
         }

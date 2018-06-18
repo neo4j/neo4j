@@ -25,10 +25,9 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
@@ -70,7 +69,7 @@ public class ExplicitIndexMigratorTest
     {
         when( fs.listFiles( originalIndexStore ) ).thenReturn( null );
 
-        HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
+        ExplicitIndexProvider indexProviders = getExplicitIndexProvider();
         ExplicitIndexMigrator indexMigrator = new TestExplicitIndexMigrator( fs, indexProviders, logProvider, true );
 
         indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV2_3.STORE_VERSION,
@@ -83,7 +82,7 @@ public class ExplicitIndexMigratorTest
     @Test
     public void transferOriginalDataToMigrationDirectory() throws IOException
     {
-        HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
+        ExplicitIndexProvider indexProviders = getExplicitIndexProvider();
         ExplicitIndexMigrator indexMigrator = new TestExplicitIndexMigrator( fs, indexProviders, logProvider, true );
 
         indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV2_3.STORE_VERSION,
@@ -95,7 +94,7 @@ public class ExplicitIndexMigratorTest
     @Test
     public void transferMigratedIndexesToStoreDirectory() throws IOException
     {
-        HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
+        ExplicitIndexProvider indexProviders = getExplicitIndexProvider();
         ExplicitIndexMigrator indexMigrator = new TestExplicitIndexMigrator( fs, indexProviders, logProvider, true );
 
         indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV2_3.STORE_VERSION,
@@ -114,7 +113,7 @@ public class ExplicitIndexMigratorTest
         Log log = mock( Log.class );
         when( logProvider.getLog( TestExplicitIndexMigrator.class ) ).thenReturn( log );
 
-        HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
+        ExplicitIndexProvider indexProviders = getExplicitIndexProvider();
         try
         {
             ExplicitIndexMigrator indexMigrator = new TestExplicitIndexMigrator( fs, indexProviders, logProvider, false );
@@ -137,7 +136,7 @@ public class ExplicitIndexMigratorTest
     {
         when( fs.fileExists( migratedIndexStore ) ).thenReturn( true );
 
-        HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
+        ExplicitIndexProvider indexProviders = getExplicitIndexProvider();
         ExplicitIndexMigrator indexMigrator = new TestExplicitIndexMigrator( fs, indexProviders, logProvider, true );
         indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV2_3.STORE_VERSION,
                 StandardV3_0.STORE_VERSION );
@@ -146,16 +145,16 @@ public class ExplicitIndexMigratorTest
         verify( fs ).deleteRecursively( migratedIndexStore );
     }
 
-    private HashMap<String,IndexImplementation> getIndexProviders()
+    private ExplicitIndexProvider getExplicitIndexProvider()
     {
-        HashMap<String,IndexImplementation> indexProviders = new HashMap<>();
         IndexImplementation indexImplementation = mock( IndexImplementation.class );
-        indexProviders.put( "lucene", indexImplementation );
 
         when( indexImplementation.getIndexImplementationDirectory( storeDir ) ).thenReturn( originalIndexStore );
         when( indexImplementation.getIndexImplementationDirectory( migrationDir ) ).thenReturn( migratedIndexStore );
 
-        return indexProviders;
+        ExplicitIndexProvider explicitIndexProvider = mock( ExplicitIndexProvider.class );
+        when( explicitIndexProvider.getProviderByName( "lucene" ) ).thenReturn( indexImplementation );
+        return explicitIndexProvider;
     }
 
     private class TestExplicitIndexMigrator extends ExplicitIndexMigrator
@@ -163,10 +162,10 @@ public class ExplicitIndexMigratorTest
 
         private final boolean successfullMigration;
 
-        TestExplicitIndexMigrator( FileSystemAbstraction fileSystem, Map<String,IndexImplementation> indexProviders,
+        TestExplicitIndexMigrator( FileSystemAbstraction fileSystem, ExplicitIndexProvider explicitIndexProvider,
                 LogProvider logProvider, boolean successfullMigration )
         {
-            super( fileSystem, indexProviders, logProvider );
+            super( fileSystem, explicitIndexProvider, logProvider );
             this.successfullMigration = successfullMigration;
         }
 

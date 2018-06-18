@@ -138,7 +138,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             ConstraintIndexCreator constraintIndexCreator, StatementOperationParts statementOperations,
             SchemaWriteGuard schemaWriteGuard, TransactionHeaderInformationFactory txHeaderFactory,
             TransactionCommitProcess transactionCommitProcess, IndexConfigStore indexConfigStore,
-            ExplicitIndexProviderLookup explicitIndexProviderLookup, TransactionHooks hooks,
+            ExplicitIndexProvider explicitIndexProviderLookup, TransactionHooks hooks,
             TransactionMonitor transactionMonitor, AvailabilityGuard availabilityGuard, Tracers tracers,
             StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore,
             SystemNanoClock clock,

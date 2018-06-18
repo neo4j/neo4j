@@ -32,6 +32,7 @@ import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -41,6 +42,7 @@ import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
@@ -125,8 +127,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 mockedTokenHolders(), locksFactory,
                 mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR,
                 fs, transactionMonitor, databaseHealth,
-                mock( LogFileCreationMonitor.class ), TransactionHeaderInformationFactory.DEFAULT,
-                new CommunityCommitProcessFactory(), mock( InternalAutoIndexing.class ), pageCache,
+                mock( LogFileCreationMonitor.class ), TransactionHeaderInformationFactory.DEFAULT, new CommunityCommitProcessFactory(),
+                mock( InternalAutoIndexing.class ), mock( IndexConfigStore.class ), mock( ExplicitIndexProvider.class ), pageCache,
                 new StandardConstraintSemantics(), monitors,
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler, clock ),
                 mock( Procedures.class ),
