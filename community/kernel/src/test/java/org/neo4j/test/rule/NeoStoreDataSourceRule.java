@@ -158,7 +158,6 @@ public class NeoStoreDataSourceRule extends ExternalResource
         if ( dataSource != null )
         {
             dataSource.stop();
-            dataSource.shutdown();
         }
     }
 

@@ -886,7 +886,6 @@ public class NeoStoresTest
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( Config.defaults( additionalConfig ) );
         ds = dsRule.getDataSource( storeDir, fs.get(), pageCache, dependencies );
-        ds.init();
         ds.start();
 
         NeoStores neoStores = ds.getDependencyResolver()

@@ -158,7 +158,7 @@ import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 
-public class NeoStoreDataSource implements Lifecycle, IndexProviders
+public class NeoStoreDataSource extends LifecycleAdapter implements IndexProviders
 {
 
     enum Diagnostics implements DiagnosticsExtractor<NeoStoreDataSource>
@@ -352,14 +352,9 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.collectionsFactorySupplier = collectionsFactorySupplier;
     }
 
-    @Override
-    public void init()
-    {
-        // We do our own internal life management:
-        // start() does life.init() and life.start(),
-        // stop() does life.stop() and life.shutdown().
-    }
-
+    // We do our own internal life management:
+    // start() does life.init() and life.start(),
+    // stop() does life.stop() and life.shutdown().
     @Override
     public void start() throws IOException
     {
@@ -769,13 +764,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 }
             }
         };
-    }
-
-    @Override
-    public void shutdown()
-    {   // We do our own internal life management:
-        // start() does life.init() and life.start(),
-        // stop() does life.stop() and life.shutdown().
     }
 
     public StoreId getStoreId()

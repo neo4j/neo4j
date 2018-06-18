@@ -106,12 +106,11 @@ public class NeoStoreDataSourceTest
     }
 
     @Test
-    public void flushOfThePageCacheHappensOnlyOnceDuringShutdown() throws IOException
+    public void flushOfThePageCacheHappensOnlyOnceDuringShutdown() throws Throwable
     {
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
         NeoStoreDataSource ds = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCache );
 
-        ds.init();
         ds.start();
         verify( pageCache, never() ).flushAndForce();
         verify( pageCache, never() ).flushAndForce( any( IOLimiter.class ) );
@@ -122,13 +121,12 @@ public class NeoStoreDataSourceTest
     }
 
     @Test
-    public void flushOfThePageCacheOnShutdownHappensIfTheDbIsHealthy() throws IOException
+    public void flushOfThePageCacheOnShutdownHappensIfTheDbIsHealthy() throws Throwable
     {
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
 
         NeoStoreDataSource ds = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCache );
 
-        ds.init();
         ds.start();
         verify( pageCache, never() ).flushAndForce();
 
@@ -138,7 +136,7 @@ public class NeoStoreDataSourceTest
     }
 
     @Test
-    public void flushOfThePageCacheOnShutdownDoesNotHappenIfTheDbIsUnhealthy() throws IOException
+    public void flushOfThePageCacheOnShutdownDoesNotHappenIfTheDbIsUnhealthy() throws Throwable
     {
         DatabaseHealth health = mock( DatabaseHealth.class );
         when( health.isHealthy() ).thenReturn( false );
@@ -148,7 +146,6 @@ public class NeoStoreDataSourceTest
         dependencies.satisfyDependency( health );
         NeoStoreDataSource ds = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCache, dependencies );
 
-        ds.init();
         ds.start();
         verify( pageCache, never() ).flushAndForce();
 
