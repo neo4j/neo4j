@@ -33,7 +33,7 @@ class ExpandAllOperator(fromOffset: Int,
                         relOffset: Int,
                         toOffset: Int,
                         dir: SemanticDirection,
-                        types: LazyTypes) extends Operator {
+                        types: LazyTypes) extends StreamingOperator {
 
   override def init(queryContext: QueryContext, state: QueryState, inputMorsel: MorselExecutionContext): ContinuableOperatorTask =
     new OTask(inputMorsel)

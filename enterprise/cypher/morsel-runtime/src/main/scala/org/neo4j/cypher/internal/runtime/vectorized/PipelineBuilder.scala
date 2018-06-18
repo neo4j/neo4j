@@ -100,7 +100,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
       case p => throw new CantCompileQueryException(s"$p not supported in morsel runtime")
     }
 
-    new RegularPipeline(thisOp, slots, None)
+    new StreamingPipeline(thisOp, slots, None)
   }
 
   override protected def build(plan: LogicalPlan, from: Pipeline): Pipeline = {
@@ -194,8 +194,8 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
       }
 
     thisOp match {
-      case o: Operator =>
-        new RegularPipeline(o, slots, Some(source))
+      case so: StreamingOperator =>
+        new StreamingPipeline(so, slots, Some(source))
       case mo: StatelessOperator =>
         source.addOperator(mo)
         source

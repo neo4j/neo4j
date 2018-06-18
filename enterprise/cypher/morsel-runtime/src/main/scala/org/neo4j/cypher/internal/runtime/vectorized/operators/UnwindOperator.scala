@@ -31,7 +31,7 @@ import org.neo4j.values.AnyValue
 
 class UnwindOperator(collection: Expression,
                      offset: Int)
-  extends Operator with ListSupport {
+  extends StreamingOperator with ListSupport {
 
   override def init(context: QueryContext, state: QueryState, inputRow: MorselExecutionContext): ContinuableOperatorTask = {
     val queryState = new InterpretedQueryState(context, resources = null, params = state.params)

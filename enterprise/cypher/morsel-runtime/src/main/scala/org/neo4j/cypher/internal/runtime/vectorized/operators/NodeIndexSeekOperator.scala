@@ -38,7 +38,7 @@ class NodeIndexSeekOperator(offset: Int,
                             argumentSize: SlotConfiguration.Size,
                             override val valueExpr: QueryExpression[Expression],
                             override val indexMode: IndexSeekMode = IndexSeek)
-  extends Operator with NodeIndexSeeker {
+  extends StreamingOperator with NodeIndexSeeker {
 
   override def init(context: QueryContext, state: QueryState, currentRow: MorselExecutionContext): ContinuableOperatorTask = {
     val valueIndexCursor = context.transactionalContext.cursors.allocateNodeValueIndexCursor()

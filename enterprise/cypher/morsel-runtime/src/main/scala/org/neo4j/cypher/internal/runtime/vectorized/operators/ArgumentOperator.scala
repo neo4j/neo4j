@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
 
-class ArgumentOperator(argumentSize: SlotConfiguration.Size) extends Operator {
+class ArgumentOperator(argumentSize: SlotConfiguration.Size) extends StreamingOperator {
 
   override def init(queryContext: QueryContext,
                     state: QueryState,

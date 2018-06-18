@@ -56,12 +56,12 @@ class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) exte
     }
   }
 
-  private def getLeaf(pipeline: Pipeline): RegularPipeline = {
+  private def getLeaf(pipeline: Pipeline): StreamingPipeline = {
     var leafOp = pipeline
     while (leafOp.upstream.nonEmpty) {
       leafOp = leafOp.upstream.get
     }
 
-    leafOp.asInstanceOf[RegularPipeline]
+    leafOp.asInstanceOf[StreamingPipeline]
   }
 }
