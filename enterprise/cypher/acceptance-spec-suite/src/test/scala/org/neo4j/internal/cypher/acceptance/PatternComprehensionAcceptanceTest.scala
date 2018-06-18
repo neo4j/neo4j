@@ -505,7 +505,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
       RETURN [(a)-[:T1]->(b) | [(b)-[:T2]->(c) | c.prop ] ] as result
       """
 
-    val result = executeWith(Configs.Interpreted - Configs.Cost3_3 - Configs.Cost3_4 - Configs.Version2_3 - Configs.AllRulePlanners, query)
+    val result = executeWith(Configs.Interpreted - Configs.Version2_3 - Configs.AllRulePlanners, query)
     result.toList should equal(List(Map("result" -> List(List(43, 42)))))
   }
 

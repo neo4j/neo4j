@@ -33,10 +33,7 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
 
   import LogicalPlanningSupport._
 
-  override def apply(registry: IdRegistry[PatternRelationship],
-                     goal: Goal,
-                     table: IDPCache[LogicalPlan],
-                     context: LogicalPlanningContext, solveds: Solveds): Iterator[LogicalPlan] = {
+  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext, solveds: Solveds): Iterator[LogicalPlan] = {
 
     if (VERBOSE) {
       println(s"\n>>>> start solving ${show(goal, goalSymbols(goal, registry))}")

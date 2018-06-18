@@ -27,8 +27,9 @@ import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 object aggregation {
   def apply(plan: LogicalPlan, aggregation: AggregatingQueryProjection, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
 
-    val (step1, groupingExpressions) = PatternExpressionSolver()(plan, aggregation.groupingExpressions, context, solveds, cardinalities)
-    val (rewrittenPlan, aggregations) = PatternExpressionSolver()(step1, aggregation.aggregationExpressions, context, solveds, cardinalities)
+    val expressionSolver = PatternExpressionSolver()
+    val (step1, groupingExpressions) = expressionSolver(plan, aggregation.groupingExpressions, context, solveds, cardinalities)
+    val (rewrittenPlan, aggregations) = expressionSolver(step1, aggregation.aggregationExpressions, context, solveds, cardinalities)
 
     context.logicalPlanProducer.planAggregation(
       rewrittenPlan,

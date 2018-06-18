@@ -55,7 +55,7 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
   private implicit val x = singleComponentSolver
 
   def plan(queryGraph: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
-    val kit = kitWithShortestPathSupport(context.config.toKit(context, solveds, cardinalities), context, solveds)
+    val kit = kitWithShortestPathSupport(context.config.toKit(context, solveds, cardinalities), context, solveds, cardinalities)
     val components = queryGraph.connectedComponents
     val plans = if (components.isEmpty) planEmptyComponent(queryGraph, context, kit) else planComponents(components, context, solveds, cardinalities, kit)
 
@@ -65,13 +65,18 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
     result
   }
 
-  private def kitWithShortestPathSupport(kit: QueryPlannerKit, context: LogicalPlanningContext, solveds: Solveds) =
-    kit.copy(select = selectShortestPath(kit, _, _, context, solveds))
+  private def kitWithShortestPathSupport(kit: QueryPlannerKit, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities) =
+    kit.copy(select = selectShortestPath(kit, _, _, context, solveds, cardinalities))
 
-  private def selectShortestPath(kit: QueryPlannerKit, initialPlan: LogicalPlan, qg: QueryGraph, context: LogicalPlanningContext, solveds: Solveds): LogicalPlan =
+  private def selectShortestPath(kit: QueryPlannerKit,
+                                 initialPlan: LogicalPlan,
+                                 qg: QueryGraph,
+                                 context: LogicalPlanningContext,
+                                 solveds: Solveds,
+                                 cardinalities: Cardinalities): LogicalPlan =
     qg.shortestPathPatterns.foldLeft(kit.select(initialPlan, qg)) {
       case (plan, sp) if sp.isFindableFrom(plan.availableSymbols) =>
-        val shortestPath = planShortestPaths(plan, qg, sp, context, solveds)
+        val shortestPath = planShortestPaths(plan, qg, sp, context, solveds, cardinalities)
         kit.select(shortestPath, qg)
       case (plan, _) => plan
     }

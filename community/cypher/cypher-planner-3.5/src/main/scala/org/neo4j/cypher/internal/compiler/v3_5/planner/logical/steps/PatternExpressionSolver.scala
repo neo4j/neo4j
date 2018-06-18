@@ -82,6 +82,24 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
     (finalPlan, expressionBuild)
   }
 
+  def apply(source: LogicalPlan, expression: Expression, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): (LogicalPlan, Expression) = {
+    val patternExpressionSolver = solvePatternExpressions(source.availableSymbols, context, solveds, cardinalities, pathStepBuilder)
+    val patternComprehensionSolver = solvePatternComprehensions(source.availableSymbols, context, solveds, cardinalities, pathStepBuilder)
+
+    expression match {
+      case expression: PatternExpression =>
+        patternExpressionSolver.solveUsingRollUpApply(source, expression, None, context)
+
+      case expression: PatternComprehension =>
+        patternComprehensionSolver.solveUsingRollUpApply(source, expression, None, context)
+
+      case inExpression =>
+        val expression = solveUsingGetDegree(inExpression)
+        val (firstStepPlan, firstStepExpression) = patternExpressionSolver.rewriteInnerExpressions(source, expression, context)
+        patternComprehensionSolver.rewriteInnerExpressions(firstStepPlan, firstStepExpression, context)
+    }
+  }
+
   def apply(source: LogicalPlan, projectionsMap: Map[String, Expression], context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): (LogicalPlan, Map[String, Expression]) = {
     val newProjections = Map.newBuilder[String, Expression]
     val patternExpressionSolver = solvePatternExpressions(source.availableSymbols, context, solveds, cardinalities, pathStepBuilder)

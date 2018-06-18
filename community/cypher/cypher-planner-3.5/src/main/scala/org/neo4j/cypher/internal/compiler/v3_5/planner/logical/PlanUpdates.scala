@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.{LogicalPlanProducer, PatternExpressionSolver, mergeUniqueIndexSeekLeafPlanner}
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.opencypher.v9_0.util.InternalException
-import org.opencypher.v9_0.expressions.{ContainerIndex, Expression, PathExpression, Variable}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.opencypher.v9_0.expressions.{ContainerIndex, PathExpression, Variable}
+import org.opencypher.v9_0.util.InternalException
 
 /*
  * This coordinates PlannerQuery planning of updates.
@@ -74,13 +74,12 @@ case object PlanUpdates
     pattern match {
       //FOREACH
       case foreach: ForeachPattern =>
-        val (updatedSource: LogicalPlan, newExpressions: Seq[Expression]) =
-          patternExpressionSolver.apply(source, Seq(foreach.expression), context, solveds, cardinalities)
+        val (updatedSource, newExpression) = patternExpressionSolver.apply(source, foreach.expression, context, solveds, cardinalities)
 
         val innerLeaf = context.logicalPlanProducer
           .planArgument(Set.empty, Set.empty, updatedSource.availableSymbols + foreach.variable, context)
         val innerUpdatePlan = planAllUpdatesRecursively(foreach.innerUpdates, innerLeaf)
-        context.logicalPlanProducer.planForeachApply(updatedSource, innerUpdatePlan, foreach, context, newExpressions.head)
+        context.logicalPlanProducer.planForeachApply(updatedSource, innerUpdatePlan, foreach, context, newExpression)
 
       //CREATE ()
       //CREATE (a)-[:R]->(b)

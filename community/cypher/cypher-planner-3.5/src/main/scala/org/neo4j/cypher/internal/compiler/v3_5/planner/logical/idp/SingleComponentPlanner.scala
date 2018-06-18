@@ -26,11 +26,11 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp.SingleComponentPlanner.planSinglePattern
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp.expandSolverStep.{planSinglePatternSide, planSingleProjectEndpoints}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.leafPlanOptions
-import org.opencypher.v9_0.ast.RelationshipStartItem
 import org.neo4j.cypher.internal.ir.v3_5.{PatternRelationship, QueryGraph}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.opencypher.v9_0.util.InternalException
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.opencypher.v9_0.ast.RelationshipStartItem
+import org.opencypher.v9_0.util.InternalException
 
 /**
   * This class contains the main IDP loop in the cost planner.
@@ -106,10 +106,14 @@ trait SingleComponentPlannerTrait {
 
 
 object SingleComponentPlanner {
-  def DEFAULT_SOLVERS: Seq[(QueryGraph) => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]] =
+  def DEFAULT_SOLVERS: Seq[QueryGraph => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]] =
     Seq(joinSolverStep(_), expandSolverStep(_))
 
-  def planSinglePattern(qg: QueryGraph, pattern: PatternRelationship, leaves: Set[LogicalPlan], context: LogicalPlanningContext, solveds: Solveds): Iterable[LogicalPlan] = {
+  def planSinglePattern(qg: QueryGraph,
+                        pattern: PatternRelationship,
+                        leaves: Set[LogicalPlan],
+                        context: LogicalPlanningContext,
+                        solveds: Solveds): Iterable[LogicalPlan] = {
     leaves.flatMap {
       case plan if solveds.get(plan.id).lastQueryGraph.patternRelationships.contains(pattern) =>
         Set(plan)
@@ -147,8 +151,14 @@ object SingleComponentPlanner {
   If there are hints and the query graph is small, joins have to be constructed as an alternative here, otherwise the hints might not be able to be fulfilled.
   Creating joins if the query graph is larger will lead to too many joins.
    */
-  def planSinglePatternJoins(qg: QueryGraph, leftExpand: Option[LogicalPlan], rightExpand: Option[LogicalPlan], startJoinNodes: Set[String],
-                             endJoinNodes: Set[String], maybeStartPlan: Option[LogicalPlan], maybeEndPlan: Option[LogicalPlan], context: LogicalPlanningContext): Iterable[LogicalPlan] = (maybeStartPlan, maybeEndPlan) match {
+  def planSinglePatternJoins(qg: QueryGraph,
+                             leftExpand: Option[LogicalPlan],
+                             rightExpand: Option[LogicalPlan],
+                             startJoinNodes: Set[String],
+                             endJoinNodes: Set[String],
+                             maybeStartPlan: Option[LogicalPlan],
+                             maybeEndPlan: Option[LogicalPlan],
+                             context: LogicalPlanningContext): Iterable[LogicalPlan] = (maybeStartPlan, maybeEndPlan) match {
     case (Some(startPlan), Some(endPlan)) if qg.hints.nonEmpty && qg.size == 1 =>
       val startJoinHints = qg.joinHints.filter(_.coveredBy(startJoinNodes))
       val endJoinHints = qg.joinHints.filter(_.coveredBy(endJoinNodes))
