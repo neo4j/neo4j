@@ -197,7 +197,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
                       IndexSamplingConfig samplingConfig,
                       SpaceFillingCurveConfiguration searchConfiguration ) throws IOException
         {
-            super( pageCache, fs, fileLayout.spatialFile.indexFile, fileLayout.layout, recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig );
+            super( pageCache, fs, fileLayout.getIndexFile(), fileLayout.layout, recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig );
             this.layout = fileLayout.layout;
             this.descriptor = descriptor;
             this.samplingConfig = samplingConfig;
@@ -248,16 +248,16 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
         @Override
         public PartAccessor newSpatial( CoordinateReferenceSystem crs ) throws IOException
         {
-            SpatialIndexFiles.SpatialFile indexFile = spatialIndexFiles.forCrs( crs );
-            if ( !fs.fileExists( indexFile.indexFile ) )
+            SpatialIndexFiles.SpatialFile spatialFile = spatialIndexFiles.forCrs( crs );
+            if ( !fs.fileExists( spatialFile.indexFile ) )
             {
-                SpatialIndexFiles.SpatialFileLayout fileLayout = indexFile.getLayoutForNewIndex();
+                SpatialIndexFiles.SpatialFileLayout fileLayout = spatialFile.getLayoutForNewIndex();
                 createEmptyIndex( fileLayout );
                 return createPartAccessor( fileLayout );
             }
             else
             {
-                return createPartAccessor( indexFile.getLayoutForExistingIndex( pageCache ) );
+                return createPartAccessor( spatialFile.getLayoutForExistingIndex( pageCache ) );
             }
         }
 

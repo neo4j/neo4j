@@ -157,7 +157,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
                 IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig,
                 SpaceFillingCurveConfiguration configuration )
         {
-            super( pageCache, fs, fileLayout.spatialFile.indexFile, fileLayout.layout, monitor, descriptor, indexId, samplingConfig );
+            super( pageCache, fs, fileLayout.getIndexFile(), fileLayout.layout, monitor, descriptor, indexId, samplingConfig );
             this.configuration = configuration;
             this.settings = fileLayout.settings;
         }

@@ -133,5 +133,10 @@ class SpatialIndexFiles
             this.settings = settings;
             this.layout = new SpatialLayout( spatialFile.crs, settings.curve() );
         }
+
+        public File getIndexFile()
+        {
+            return spatialFile.indexFile;
+        }
     }
 }
