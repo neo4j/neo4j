@@ -57,10 +57,15 @@ import org.neo4j.causalclustering.protocol.handshake.ModifierProtocolRepository;
 import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.helpers.ListenSocketAddress;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.Arrays.asList;
+import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_in_queue_max_batch;
+import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_in_queue_max_batch_bytes;
+import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_in_queue_max_bytes;
+import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_in_queue_size;
 
 class RaftServerModule
 {
@@ -145,21 +150,14 @@ class RaftServerModule
 
     private LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> createMessageHandlerChain( CoreServerModule coreServerModule )
     {
-        RaftMessageApplier messageApplier =
-                new RaftMessageApplier( localDatabase, logProvider, consensusModule.raftMachine(), coreServerModule.downloadService(),
-                        coreServerModule.commandApplicationProcess(), catchupAddressProvider );
+        RaftMessageApplier messageApplier = new RaftMessageApplier( localDatabase, logProvider,
+                consensusModule.raftMachine(), coreServerModule.downloadService(),
+                coreServerModule.commandApplicationProcess(), catchupAddressProvider );
 
         ComposableMessageHandler monitoringHandler = RaftMessageMonitoringHandler.composable( platformModule.clock, platformModule.monitors );
-
-        int queueSize = platformModule.config.get( CausalClusteringSettings.raft_in_queue_size );
-        int maxBatch = platformModule.config.get( CausalClusteringSettings.raft_in_queue_max_batch );
-        Function<Runnable, ContinuousJob> jobFactory = runnable ->
-                new ContinuousJob( platformModule.jobScheduler.threadFactory( new JobScheduler.Group( "raft-batch-handler" ) ), runnable, logProvider );
-        ComposableMessageHandler batchingMessageHandler = BatchingMessageHandler.composable( queueSize, maxBatch, jobFactory, logProvider );
-
-        ComposableMessageHandler leaderAvailabilityHandler =
-                LeaderAvailabilityHandler.composable( consensusModule.getLeaderAvailabilityTimers(), consensusModule.raftMachine()::term );
-
+        ComposableMessageHandler batchingMessageHandler = createBatchingHandler( platformModule.config );
+        ComposableMessageHandler leaderAvailabilityHandler = LeaderAvailabilityHandler.composable(
+                consensusModule.getLeaderAvailabilityTimers(), consensusModule.raftMachine()::term );
         ComposableMessageHandler clusterBindingHandler = ClusterBindingHandler.composable( logProvider );
 
         return clusterBindingHandler
@@ -167,5 +165,19 @@ class RaftServerModule
                 .compose( batchingMessageHandler )
                 .compose( monitoringHandler )
                 .apply( messageApplier );
+    }
+
+    private ComposableMessageHandler createBatchingHandler( Config config )
+    {
+        Function<Runnable,ContinuousJob> jobFactory = runnable -> new ContinuousJob(
+                platformModule.jobScheduler.threadFactory( new JobScheduler.Group( "raft-batch-handler" ) ), runnable,
+                logProvider );
+
+        BoundedPriorityQueue.Config inQueueConfig = new BoundedPriorityQueue.Config( config.get( raft_in_queue_size ),
+                config.get( raft_in_queue_max_bytes ) );
+        BatchingMessageHandler.Config batchConfig = new BatchingMessageHandler.Config(
+                config.get( raft_in_queue_max_batch ), config.get( raft_in_queue_max_batch_bytes ) );
+
+        return BatchingMessageHandler.composable( inQueueConfig, batchConfig, jobFactory, logProvider );
     }
 }

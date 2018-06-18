@@ -26,8 +26,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.io.IOException;
-
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.RaftMessages.AppendEntries;
 import org.neo4j.causalclustering.core.consensus.RaftMessages.Timeout.Heartbeat;
@@ -50,6 +48,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -544,10 +543,8 @@ public class LeaderTest
         Leader leader = new Leader();
 
         final int BATCH_SIZE = 3;
-        RaftMessages.NewEntry.BatchRequest batchRequest = new RaftMessages.NewEntry.BatchRequest( BATCH_SIZE );
-        batchRequest.add( valueOf( 0 ) );
-        batchRequest.add( valueOf( 1 ) );
-        batchRequest.add( valueOf( 2 ) );
+        RaftMessages.NewEntry.BatchRequest batchRequest = new RaftMessages.NewEntry.BatchRequest(
+                asList( valueOf( 0 ), valueOf( 1 ), valueOf( 2 ) ) );
 
         // when
         Outcome outcome = leader.handle( batchRequest, state, log() );
@@ -790,16 +787,6 @@ public class LeaderTest
         RaftMessages.AppendEntries.Response typedResponse = (RaftMessages.AppendEntries.Response) response;
         assertThat( typedResponse.term(), equalTo( rivalTerm ) );
         // Not checking success or failure of append
-    }
-
-    private RaftState preElectionActive() throws IOException
-    {
-        return raftState()
-                .myself( myself )
-                .supportsPreVoting( true )
-                .setPreElection( true )
-                .votingMembers( asSet( myself, member1, member2 ) )
-                .build();
     }
 
     private Log log()

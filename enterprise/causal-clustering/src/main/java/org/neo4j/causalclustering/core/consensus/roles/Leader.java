@@ -23,6 +23,7 @@
 package org.neo4j.causalclustering.core.consensus.roles;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.causalclustering.core.consensus.Followers;
@@ -264,7 +265,7 @@ public class Leader implements RaftMessageHandler
         @Override
         public Outcome handle( RaftMessages.NewEntry.BatchRequest req ) throws IOException
         {
-            List<ReplicatedContent> contents = req.contents();
+            Collection<ReplicatedContent> contents = req.contents();
             Appending.appendNewEntries( ctx, outcome, contents );
             return outcome;
         }

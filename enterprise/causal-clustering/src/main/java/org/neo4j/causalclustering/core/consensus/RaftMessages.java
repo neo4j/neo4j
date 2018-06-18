@@ -23,11 +23,11 @@
 package org.neo4j.causalclustering.core.consensus;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
@@ -41,7 +41,6 @@ import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.PRUNE_
 
 public interface RaftMessages
 {
-
     interface Handler<T, E extends Exception>
     {
         T handle( Vote.Request request ) throws E;
@@ -51,13 +50,100 @@ public interface RaftMessages
         T handle( AppendEntries.Request request ) throws E;
         T handle( AppendEntries.Response response ) throws E;
         T handle( Heartbeat heartbeat ) throws E;
-        T handle( LogCompactionInfo logCompactionInfo ) throws E;
         T handle( HeartbeatResponse heartbeatResponse ) throws E;
+        T handle( LogCompactionInfo logCompactionInfo ) throws E;
         T handle( Timeout.Election election ) throws E;
         T handle( Timeout.Heartbeat heartbeat ) throws E;
         T handle( NewEntry.Request request ) throws E;
         T handle( NewEntry.BatchRequest batchRequest ) throws E;
         T handle( PruneRequest pruneRequest ) throws E;
+    }
+
+    abstract class OptionalHandler<T, E extends Exception> implements Handler<Optional<T>,E>
+    {
+        @Override
+        public Optional<T> handle( RaftMessages.Vote.Request request ) throws E
+        {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<T> handle( RaftMessages.Vote.Response response ) throws E
+        {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<T> handle( RaftMessages.PreVote.Request request ) throws E
+        {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<T> handle( RaftMessages.PreVote.Response response ) throws E
+        {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<T> handle( RaftMessages.AppendEntries.Request request ) throws E
+        {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<T> handle( RaftMessages.AppendEntries.Response response ) throws E
+        {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<T> handle( RaftMessages.Heartbeat heartbeat ) throws E
+        {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<T> handle( RaftMessages.HeartbeatResponse heartbeatResponse ) throws E
+        {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<T> handle( RaftMessages.LogCompactionInfo logCompactionInfo ) throws E
+        {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<T> handle( RaftMessages.Timeout.Election election ) throws E
+        {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<T> handle( RaftMessages.Timeout.Heartbeat heartbeat ) throws E
+        {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<T> handle( NewEntry.Request request ) throws E
+        {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<T> handle( RaftMessages.NewEntry.BatchRequest batchRequest ) throws E
+        {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<T> handle( RaftMessages.PruneRequest pruneRequest ) throws E
+        {
+            return Optional.empty();
+        }
     }
 
     // Position is used to identify messages. Changing order will break upgrade paths.
@@ -889,17 +975,12 @@ public interface RaftMessages
 
         class BatchRequest extends BaseRaftMessage
         {
-            private List<ReplicatedContent> list;
+            private final List<ReplicatedContent> batch;
 
-            public BatchRequest( int batchSize )
+            public BatchRequest( List<ReplicatedContent> batch )
             {
                 super( null, Type.NEW_BATCH_REQUEST );
-                list = new ArrayList<>( batchSize );
-            }
-
-            public void add( ReplicatedContent content )
-            {
-                list.add( content );
+                this.batch = batch;
             }
 
             @Override
@@ -924,26 +1005,26 @@ public interface RaftMessages
                     return false;
                 }
                 BatchRequest batchRequest = (BatchRequest) o;
-                return Objects.equals( list, batchRequest.list );
+                return Objects.equals( batch, batchRequest.batch );
             }
 
             @Override
             public int hashCode()
             {
-                return Objects.hash( super.hashCode(), list );
+                return Objects.hash( super.hashCode(), batch );
             }
 
             @Override
             public String toString()
             {
                 return "BatchRequest{" +
-                       "list=" + list +
+                       "batch=" + batch +
                        '}';
             }
 
             public List<ReplicatedContent> contents()
             {
-                return Collections.unmodifiableList( list );
+                return Collections.unmodifiableList( batch );
             }
         }
     }

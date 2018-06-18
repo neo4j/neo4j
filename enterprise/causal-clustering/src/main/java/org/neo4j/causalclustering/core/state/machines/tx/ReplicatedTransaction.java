@@ -23,6 +23,7 @@
 package org.neo4j.causalclustering.core.state.machines.tx;
 
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import org.neo4j.causalclustering.core.state.CommandDispatcher;
@@ -33,15 +34,9 @@ public class ReplicatedTransaction implements CoreReplicatedContent
     private final byte[] txBytes;
 
     @Override
-    public boolean hasSize()
+    public Optional<Long> size()
     {
-        return true;
-    }
-
-    @Override
-    public long size()
-    {
-        return txBytes.length;
+        return Optional.of( (long) txBytes.length );
     }
 
     public ReplicatedTransaction( byte[] txBytes )

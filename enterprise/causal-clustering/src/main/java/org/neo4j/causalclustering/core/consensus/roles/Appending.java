@@ -23,7 +23,7 @@
 package org.neo4j.causalclustering.core.consensus.roles;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Collection;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
@@ -136,7 +136,7 @@ class Appending
     }
 
     static void appendNewEntries( ReadableRaftState ctx, Outcome outcome,
-            List<ReplicatedContent> contents ) throws IOException
+            Collection<ReplicatedContent> contents ) throws IOException
     {
         long prevLogIndex = ctx.entryLog().appendIndex();
         long prevLogTerm = prevLogIndex == -1 ? -1 :

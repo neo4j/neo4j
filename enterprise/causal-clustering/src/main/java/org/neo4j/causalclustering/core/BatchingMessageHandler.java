@@ -23,14 +23,20 @@
 package org.neo4j.causalclustering.core;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
+import org.neo4j.causalclustering.core.BoundedPriorityQueue.Removable;
 import org.neo4j.causalclustering.core.consensus.ContinuousJob;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
+import org.neo4j.causalclustering.core.consensus.RaftMessages.AppendEntries;
+import org.neo4j.causalclustering.core.consensus.RaftMessages.NewEntry;
+import org.neo4j.causalclustering.core.consensus.RaftMessages.ReceivedInstantClusterIdAwareMessage;
+import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.messaging.ComposableMessageHandler;
@@ -38,36 +44,61 @@ import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.Long.max;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.function.Predicates.awaitForever;
+import static org.neo4j.causalclustering.core.BoundedPriorityQueue.Result.OK;
+import static org.neo4j.helpers.ArrayUtil.lastOf;
 
-class BatchingMessageHandler implements Runnable, LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>>
+/**
+ * This class gets Raft messages as input and queues them up for processing. Some messages are
+ * batched together before they are forwarded to the Raft machine, for reasons of efficiency.
+ */
+class BatchingMessageHandler implements Runnable, LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>>
 {
-    private final LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> handler;
+    public static class Config
+    {
+        private final int maxBatchCount;
+        private final long maxBatchBytes;
+
+        Config( int maxBatchCount, long maxBatchBytes )
+        {
+            this.maxBatchCount = maxBatchCount;
+            this.maxBatchBytes = maxBatchBytes;
+        }
+    }
+
+    private final LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> handler;
     private final Log log;
-    private final int maxBatch;
-    private final List<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> batch;
-    private final BlockingQueue<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> messageQueue;
+    private final BoundedPriorityQueue<ReceivedInstantClusterIdAwareMessage<?>> inQueue;
     private final ContinuousJob job;
-    private final ContentHandler contentHandler = new ContentHandler();
+    private final List<ReplicatedContent> contentBatch; // reused for efficiency
+    private final List<RaftLogEntry> entryBatch; // reused for efficiency
+    private final Config batchConfig;
 
     private volatile boolean stopped;
+    private volatile BoundedPriorityQueue.Result lastResult = OK;
+    private AtomicLong droppedCount = new AtomicLong();
 
-    BatchingMessageHandler( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> handler, int queueSize, int maxBatch,
-            Function<Runnable,ContinuousJob> jobSchedulerFactory, LogProvider logProvider )
+    BatchingMessageHandler( LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> handler,
+            BoundedPriorityQueue.Config inQueueConfig, Config batchConfig, Function<Runnable,ContinuousJob> jobFactory,
+            LogProvider logProvider )
     {
         this.handler = handler;
         this.log = logProvider.getLog( getClass() );
-        this.maxBatch = maxBatch;
-        this.batch = new ArrayList<>( maxBatch );
-        this.messageQueue = new ArrayBlockingQueue<>( queueSize );
-        job = jobSchedulerFactory.apply( this );
+        this.batchConfig = batchConfig;
+        this.contentBatch = new ArrayList<>( batchConfig.maxBatchCount );
+        this.entryBatch = new ArrayList<>( batchConfig.maxBatchCount );
+        this.inQueue = new BoundedPriorityQueue<>( inQueueConfig, ContentSize::of, new MessagePriority() );
+        this.job = jobFactory.apply( this );
     }
 
-    static ComposableMessageHandler composable( int queueSize, int maxBatch, Function<Runnable,ContinuousJob> jobSchedulerFactory, LogProvider logProvider )
+    static ComposableMessageHandler composable( BoundedPriorityQueue.Config inQueueConfig, Config batchConfig,
+            Function<Runnable,ContinuousJob> jobSchedulerFactory, LogProvider logProvider )
     {
-        return delegate -> new BatchingMessageHandler( delegate, queueSize, maxBatch, jobSchedulerFactory, logProvider );
+        return delegate -> new BatchingMessageHandler( delegate, inQueueConfig, batchConfig, jobSchedulerFactory,
+                logProvider );
     }
+
     @Override
     public void start( ClusterId clusterId ) throws Throwable
     {
@@ -84,7 +115,7 @@ class BatchingMessageHandler implements Runnable, LifecycleMessageHandler<RaftMe
     }
 
     @Override
-    public void handle( RaftMessages.ReceivedInstantClusterIdAwareMessage<?> message )
+    public void handle( ReceivedInstantClusterIdAwareMessage<?> message )
     {
         if ( stopped )
         {
@@ -92,169 +123,283 @@ class BatchingMessageHandler implements Runnable, LifecycleMessageHandler<RaftMe
             return;
         }
 
-        // keep trying to add the message into the queue, give up only if this component has been stopped
-        awaitForever( () -> stopped || messageQueue.offer( message ), 100, TimeUnit.MILLISECONDS );
+        BoundedPriorityQueue.Result result = inQueue.offer( message );
+        logQueueState( result );
+    }
+
+    private void logQueueState( BoundedPriorityQueue.Result result )
+    {
+        if ( result != OK )
+        {
+            droppedCount.incrementAndGet();
+        }
+
+        if ( result != lastResult )
+        {
+            if ( result == OK )
+            {
+                log.info( "Raft in-queue not dropping messages anymore. Dropped %d messages.",
+                        droppedCount.getAndSet( 0 ) );
+            }
+            else
+            {
+                log.warn( "Raft in-queue dropping messages after: " + result );
+            }
+            lastResult = result;
+        }
     }
 
     @Override
     public void run()
     {
-        RaftMessages.ReceivedInstantClusterIdAwareMessage<?> message = null;
+        Optional<ReceivedInstantClusterIdAwareMessage<?>> baseMessage;
         try
         {
-            message = messageQueue.poll( 1, SECONDS );
+            baseMessage = inQueue.poll( 1, SECONDS );
         }
         catch ( InterruptedException e )
         {
             log.warn( "Not expecting to be interrupted.", e );
+            return;
         }
 
-        if ( message != null )
+        if ( !baseMessage.isPresent() )
         {
-            if ( messageQueue.isEmpty() )
+            return;
+        }
+
+        Optional<ReceivedInstantClusterIdAwareMessage> batchedMessage = baseMessage.get().message().dispatch(
+                new BatchingHandler( baseMessage.get() ) );
+
+        handler.handle( batchedMessage.orElse( baseMessage.get() ) );
+    }
+
+    /**
+     * Batches together the content of NewEntry.Requests for efficient handling.
+     */
+    private NewEntry.BatchRequest batchNewEntries( NewEntry.Request first )
+    {
+        contentBatch.clear();
+
+        contentBatch.add( first.content() );
+        long totalBytes = first.content().size().orElse( 0L );
+
+        while ( contentBatch.size() < batchConfig.maxBatchCount )
+        {
+            Optional<Removable<NewEntry.Request>> peeked = peekNext( NewEntry.Request.class );
+
+            if ( !peeked.isPresent() )
             {
-                handler.handle( message );
+                break;
             }
-            else
+
+            ReplicatedContent content = peeked.get().get().content();
+
+            if ( content.size().isPresent() && (totalBytes + content.size().get()) > batchConfig.maxBatchBytes )
             {
-                batch.clear();
-                batch.add( message );
-                drain( messageQueue, batch, maxBatch - 1 );
-                collateAndHandleBatch( batch );
+                break;
             }
+
+            contentBatch.add( content );
+
+            boolean removed = peeked.get().remove();
+            assert removed; // single consumer assumed
+        }
+
+        /*
+         * Individual NewEntry.Requests are batched together into a BatchRequest to take advantage
+         * of group commit into the Raft log and any other batching benefits.
+         */
+        return new NewEntry.BatchRequest( contentBatch );
+    }
+
+    private AppendEntries.Request batchAppendEntries( AppendEntries.Request first )
+    {
+        entryBatch.clear();
+
+        long totalBytes = 0;
+
+        for ( RaftLogEntry entry : first.entries() )
+        {
+            totalBytes += entry.content().size().orElse( 0L );
+            entryBatch.add( entry );
+        }
+
+        long leaderCommit = first.leaderCommit();
+        long lastTerm = lastOf( first.entries() ).term();
+
+        while ( entryBatch.size() < batchConfig.maxBatchCount )
+        {
+            Optional<Removable<AppendEntries.Request>> peeked = peekNext( AppendEntries.Request.class );
+
+            if ( !peeked.isPresent() )
+            {
+                break;
+            }
+
+            AppendEntries.Request request = peeked.get().get();
+
+            if ( request.entries().length == 0 || !consecutiveOrigin( first, request, entryBatch.size() ) )
+            {
+                // probe (RaftLogShipper#sendEmpty) or leader switch
+                break;
+            }
+
+            assert lastTerm == request.prevLogTerm();
+
+            // note that this code is backwards compatible, but AppendEntries.Request generation by the leader
+            // will be changed to only generate single entry AppendEntries.Requests and the code here
+            // will be responsible for the batching of the individual and consecutive entries
+
+            RaftLogEntry[] entries = request.entries();
+            lastTerm = lastOf( entries ).term();
+
+            if ( entries.length + entryBatch.size() > batchConfig.maxBatchCount )
+            {
+                break;
+            }
+
+            long requestBytes = Arrays.stream( entries )
+                    .mapToLong( entry -> entry.content().size().orElse( 0L ) )
+                    .sum();
+
+            if ( requestBytes > 0 && (totalBytes + requestBytes) > batchConfig.maxBatchBytes )
+            {
+                break;
+            }
+
+            entryBatch.addAll( Arrays.asList( entries ) );
+            totalBytes += requestBytes;
+            leaderCommit = max( leaderCommit, request.leaderCommit() );
+
+            boolean removed = peeked.get().remove();
+            assert removed; // single consumer assumed
+        }
+
+        return new AppendEntries.Request( first.from(), first.leaderTerm(), first.prevLogIndex(), first.prevLogTerm(),
+                entryBatch.toArray( RaftLogEntry.empty ), leaderCommit );
+    }
+
+    private boolean consecutiveOrigin( AppendEntries.Request first, AppendEntries.Request request, int currentSize )
+    {
+        if ( request.leaderTerm() != first.leaderTerm() )
+        {
+            return false;
+        }
+        else
+        {
+            return request.prevLogIndex() == first.prevLogIndex() + currentSize;
         }
     }
 
-    private void drain( BlockingQueue<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> messageQueue,
-                        List<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> batch, int maxElements )
+    private <M> Optional<Removable<M>> peekNext( Class<M> acceptedType )
     {
-        List<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> tempDraining = new ArrayList<>();
-        messageQueue.drainTo( tempDraining, maxElements );
-        batch.addAll( tempDraining );
+        return inQueue.peek()
+                .filter( r -> acceptedType.isInstance( r.get().message() ) )
+                .map( r -> r.map( m -> acceptedType.cast( m.message() ) ) );
     }
 
-    private void collateAndHandleBatch( List<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> batch )
+    private static class ContentSize extends RaftMessages.OptionalHandler<Long,RuntimeException>
     {
-        RaftMessages.ReceivedInstantClusterIdAwareMessage<RaftMessages.NewEntry.BatchRequest> batchRequest = null;
+        private static final ContentSize INSTANCE = new ContentSize();
 
-        for ( RaftMessages.ReceivedInstantClusterIdAwareMessage<?> message : batch )
+        private ContentSize()
         {
-            if ( batchRequest != null && !message.clusterId().equals( batchRequest.clusterId() ) )
-            {
-                handler.handle( batchRequest );
-                batchRequest = null;
-            }
+        }
 
-            ReplicatedContent replicatedContent = message.dispatch( contentHandler );
-            if ( replicatedContent != null )
+        static long of( ReceivedInstantClusterIdAwareMessage<?> message )
+        {
+            return message.dispatch( INSTANCE ).orElse( 0L );
+        }
+
+        @Override
+        public Optional<Long> handle( NewEntry.Request request ) throws RuntimeException
+        {
+            return request.content().size();
+        }
+
+        @Override
+        public Optional<Long> handle( AppendEntries.Request request ) throws RuntimeException
+        {
+            long totalSize = 0L;
+            for ( RaftLogEntry entry : request.entries() )
             {
-                if ( batchRequest == null )
+                if ( entry.content().size().isPresent() )
                 {
-                    batchRequest =
-                            RaftMessages.ReceivedInstantClusterIdAwareMessage.of(
-                                    message.receivedAt(),
-                                    message.clusterId(),
-                                    new RaftMessages.NewEntry.BatchRequest( batch.size() )
-                            );
+                    totalSize += entry.content().size().get();
                 }
-                batchRequest.message().add( replicatedContent );
             }
-            else
-            {
-                handler.handle( message );
-            }
-        }
-
-        if ( batchRequest != null )
-        {
-            handler.handle( batchRequest );
+            return Optional.of( totalSize );
         }
     }
 
-    class ContentHandler implements RaftMessages.Handler<ReplicatedContent, RuntimeException>
+    private class MessagePriority extends RaftMessages.OptionalHandler<Integer,RuntimeException>
+            implements Comparator<ReceivedInstantClusterIdAwareMessage<?>>
     {
+        private final Integer BASE_PRIORITY = 10; // lower number means higher priority
+
         @Override
-        public ReplicatedContent handle( RaftMessages.NewEntry.Request request ) throws RuntimeException
+        public Optional<Integer> handle( AppendEntries.Request request )
         {
-            return request.content();
+            if ( request.entries().length == 0 )
+            {
+                // this is a heartbeat, so let it be handled with higher priority
+                return Optional.of( BASE_PRIORITY );
+            }
+            else
+            {
+                return Optional.of( 20 );
+            }
         }
 
         @Override
-        public ReplicatedContent handle( RaftMessages.NewEntry.BatchRequest batchRequest ) throws RuntimeException
+        public Optional<Integer> handle( NewEntry.Request request )
         {
-            return null;
+            return Optional.of( 30 );
         }
 
         @Override
-        public ReplicatedContent handle( RaftMessages.Vote.Request request ) throws RuntimeException
+        public int compare( ReceivedInstantClusterIdAwareMessage<?> messageA,
+                ReceivedInstantClusterIdAwareMessage<?> messageB )
         {
-            return null;
+            int priorityA = messageA.dispatch( this ).orElse( BASE_PRIORITY );
+            int priorityB = messageB.dispatch( this ).orElse( BASE_PRIORITY );
+
+            return Integer.compare( priorityA, priorityB );
+        }
+    }
+
+    private class BatchingHandler extends RaftMessages.OptionalHandler<ReceivedInstantClusterIdAwareMessage,RuntimeException>
+    {
+        private final ReceivedInstantClusterIdAwareMessage<?> baseMessage;
+
+        BatchingHandler( ReceivedInstantClusterIdAwareMessage<?> baseMessage )
+        {
+            this.baseMessage = baseMessage;
         }
 
         @Override
-        public ReplicatedContent handle( RaftMessages.Vote.Response response ) throws RuntimeException
+        public Optional<ReceivedInstantClusterIdAwareMessage> handle( NewEntry.Request request ) throws RuntimeException
         {
-            return null;
+            NewEntry.BatchRequest newEntryBatch = batchNewEntries( request );
+            ReceivedInstantClusterIdAwareMessage<NewEntry.BatchRequest> newMessage = ReceivedInstantClusterIdAwareMessage
+                    .of( baseMessage.receivedAt(), baseMessage.clusterId(), newEntryBatch );
+            return Optional.of( newMessage );
         }
 
-        @Override
-        public ReplicatedContent handle( RaftMessages.PreVote.Request request ) throws RuntimeException
+        public Optional<ReceivedInstantClusterIdAwareMessage> handle( AppendEntries.Request request ) throws
+                RuntimeException
         {
-            return null;
-        }
+            if ( request.entries().length == 0 )
+            {
+                // this is a heartbeat, so let it be solo handled
+                return Optional.empty();
+            }
 
-        @Override
-        public ReplicatedContent handle( RaftMessages.PreVote.Response response ) throws RuntimeException
-        {
-            return null;
-        }
-
-        @Override
-        public ReplicatedContent handle( RaftMessages.AppendEntries.Request request ) throws RuntimeException
-        {
-            return null;
-        }
-
-        @Override
-        public ReplicatedContent handle( RaftMessages.AppendEntries.Response response ) throws RuntimeException
-        {
-            return null;
-        }
-
-        @Override
-        public ReplicatedContent handle( RaftMessages.Heartbeat heartbeat ) throws RuntimeException
-        {
-            return null;
-        }
-
-        @Override
-        public ReplicatedContent handle( RaftMessages.LogCompactionInfo logCompactionInfo ) throws RuntimeException
-        {
-            return null;
-        }
-
-        @Override
-        public ReplicatedContent handle( RaftMessages.HeartbeatResponse heartbeatResponse ) throws RuntimeException
-        {
-            return null;
-        }
-
-        @Override
-        public ReplicatedContent handle( RaftMessages.Timeout.Election election ) throws RuntimeException
-        {
-            return null;
-        }
-
-        @Override
-        public ReplicatedContent handle( RaftMessages.Timeout.Heartbeat heartbeat ) throws RuntimeException
-        {
-            return null;
-        }
-
-        @Override
-        public ReplicatedContent handle( RaftMessages.PruneRequest pruneRequest ) throws RuntimeException
-        {
-            return null;
+            AppendEntries.Request appendEntriesBatch = batchAppendEntries( request );
+            ReceivedInstantClusterIdAwareMessage<AppendEntries.Request> newMessage = ReceivedInstantClusterIdAwareMessage
+                    .of( baseMessage.receivedAt(), baseMessage.clusterId(), appendEntriesBatch );
+            return Optional.of( newMessage );
         }
     }
 }

@@ -34,7 +34,7 @@ import org.neo4j.causalclustering.core.state.machines.tx.CoreReplicatedContent;
  * <p>
  * The cache relies on highly efficient underlying data structures (a circular
  * buffer) and also allows on to specify a maximum bound on the number of entries
- * as well as their total size where known, see {@link CoreReplicatedContent#hasSize()}.
+ * as well as their total size where known, see {@link CoreReplicatedContent#size()} ()}.
  */
 public class ConsecutiveInFlightCache implements InFlightCache
 {
@@ -149,7 +149,7 @@ public class ConsecutiveInFlightCache implements InFlightCache
 
     private long sizeOf( RaftLogEntry entry )
     {
-        return entry.content().hasSize() ? entry.content().size() : 0;
+        return entry.content().size().orElse( 0L );
     }
 
     private void processEvictions()

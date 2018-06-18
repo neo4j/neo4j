@@ -111,15 +111,23 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<Integer> log_shipping_max_lag =
             setting( "causal_clustering.log_shipping_max_lag", INTEGER, "256" );
 
-    @Description( "Size of the RAFT in queue" )
     @Internal
+    @Description( "Maximum number of entries in the RAFT in-queue" )
     public static final Setting<Integer> raft_in_queue_size =
-            setting( "causal_clustering.raft_in_queue_size", INTEGER, "64" );
+            setting( "causal_clustering.raft_in_queue_size", INTEGER, "1024" );
 
-    @Description( "Largest batch processed by RAFT" )
+    @Description( "Maximum number of bytes in the RAFT in-queue" )
+    public static final Setting<Long> raft_in_queue_max_bytes =
+            setting( "causal_clustering.raft_in_queue_max_bytes", BYTES, "2G" );
+
     @Internal
+    @Description( "Largest batch processed by RAFT in number of entries" )
     public static final Setting<Integer> raft_in_queue_max_batch =
-            setting( "causal_clustering.raft_in_queue_max_batch", INTEGER, "64" );
+            setting( "causal_clustering.raft_in_queue_max_batch", INTEGER, "128" );
+
+    @Description( "Largest batch processed by RAFT in bytes" )
+    public static final Setting<Long> raft_in_queue_max_batch_bytes =
+            setting( "causal_clustering.raft_in_queue_max_batch_bytes", BYTES, "8M" );
 
     @Description( "Expected number of Core machines in the cluster before startup" )
     @Deprecated

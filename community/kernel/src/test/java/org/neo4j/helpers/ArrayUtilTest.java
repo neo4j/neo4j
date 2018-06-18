@@ -97,9 +97,29 @@ public class ArrayUtilTest
         Integer[] result = ArrayUtil.concat( 0, 1, 2, 3, 4 );
 
         // THEN
-        for ( int i = 0; i < result.length; i++ )
+        for ( int i = 0; i < 5; i++ )
         {
             assertEquals( (Integer)i, result[i] );
+        }
+    }
+
+    @Test
+    public void shouldConcatSeveralArrays()
+    {
+        // GIVEN
+        Integer[] a = {0, 1, 2};
+        Integer[] b = {3, 4};
+        Integer[] c = {5, 6, 7, 8};
+
+        // WHEN
+        Integer[] result = ArrayUtil.concatArrays( a, b, c );
+
+        // THEN
+        assertEquals( a.length + b.length + c.length, result.length );
+
+        for ( int i = 0; i < result.length; i++ )
+        {
+            assertEquals( (Integer) i, result[i] );
         }
     }
 
@@ -114,6 +134,16 @@ public class ArrayUtilTest
         {
             assertEquals( i, ArrayUtil.indexOf( numbers, i ) );
         }
+    }
+
+    @Test
+    public void shouldFindLastOf()
+    {
+        // GIVEN
+        Integer[] numbers = new Integer[]{0, 100, 4, 5, 6, 3};
+
+        // WHEN/THEN
+        assertEquals( 3, (int) ArrayUtil.lastOf( numbers ) );
     }
 
     @Test

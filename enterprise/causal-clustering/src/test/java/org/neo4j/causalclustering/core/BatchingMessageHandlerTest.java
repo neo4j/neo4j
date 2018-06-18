@@ -22,8 +22,11 @@
  */
 package org.neo4j.causalclustering.core;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentMatchers;
+import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import java.time.Instant;
@@ -32,61 +35,89 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import org.neo4j.causalclustering.core.consensus.ContinuousJob;
-import org.neo4j.causalclustering.core.consensus.RaftMessages;
+import org.neo4j.causalclustering.core.consensus.RaftMessages.ReceivedInstantClusterIdAwareMessage;
 import org.neo4j.causalclustering.core.consensus.ReplicatedString;
+import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
+import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.identity.ClusterId;
+import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
+import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.neo4j.causalclustering.core.consensus.RaftMessages.AppendEntries;
+import static org.neo4j.causalclustering.core.consensus.RaftMessages.Heartbeat;
+import static org.neo4j.causalclustering.core.consensus.RaftMessages.NewEntry;
+import static org.neo4j.causalclustering.core.consensus.RaftMessages.RaftMessage;
+import static org.neo4j.helpers.ArrayUtil.lastOf;
 
 public class BatchingMessageHandlerTest
 {
-    private static final int MAX_BATCH = 16;
-    private static final int QUEUE_SIZE = 64;
+    private static final BoundedPriorityQueue.Config IN_QUEUE_CONFIG = new BoundedPriorityQueue.Config( 64, 1024 );
+    private static final BatchingMessageHandler.Config BATCH_CONFIG = new BatchingMessageHandler.Config( 16, 256 );
     private final Instant now = Instant.now();
     @SuppressWarnings( "unchecked" )
-    private LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> downstreamHandler = mock( LifecycleMessageHandler.class );
+    private LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> downstreamHandler = mock( LifecycleMessageHandler.class );
     private ClusterId localClusterId = new ClusterId( UUID.randomUUID() );
     private ContinuousJob mockJob = mock( ContinuousJob.class );
     private Function<Runnable,ContinuousJob> jobSchedulerFactory = ignored -> mockJob;
+
+    private ExecutorService executor;
+    private MemberId leader = new MemberId( UUID.randomUUID() );
+
+    @Before
+    public void before()
+    {
+        executor = Executors.newCachedThreadPool();
+    }
+
+    @After
+    public void after() throws InterruptedException
+    {
+        executor.shutdown();
+        executor.awaitTermination( 60, TimeUnit.SECONDS );
+    }
 
     @Test
     public void shouldInvokeInnerHandlerWhenRun()
     {
         // given
-        BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                downstreamHandler, QUEUE_SIZE, MAX_BATCH, jobSchedulerFactory, NullLogProvider.getInstance() );
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler( downstreamHandler, IN_QUEUE_CONFIG,
+                BATCH_CONFIG, jobSchedulerFactory, NullLogProvider.getInstance() );
 
-        RaftMessages.ReceivedInstantClusterIdAwareMessage<?> message = RaftMessages.ReceivedInstantClusterIdAwareMessage.of(
-                now, localClusterId, new RaftMessages.NewEntry.Request( null, null ) );
-        batchHandler.handle( message );
+        NewEntry.Request message = new NewEntry.Request( null, content( "dummy" ) );
+
+        batchHandler.handle( wrap( message ) );
         verifyZeroInteractions( downstreamHandler );
 
         // when
         batchHandler.run();
 
         // then
-        verify( downstreamHandler ).handle( message );
+        NewEntry.BatchRequest expected = new NewEntry.BatchRequest( singletonList( new ReplicatedString( "dummy" ) ) );
+        verify( downstreamHandler ).handle( wrap( expected ) );
     }
 
     @Test
     public void shouldInvokeHandlerOnQueuedMessage() throws Throwable
     {
         // given
-        BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                downstreamHandler, QUEUE_SIZE, MAX_BATCH, jobSchedulerFactory, NullLogProvider.getInstance() );
-        RaftMessages.ReceivedInstantClusterIdAwareMessage<?> message = RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, localClusterId,
-                new RaftMessages.NewEntry.Request( null, null ) );
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler( downstreamHandler, IN_QUEUE_CONFIG,
+                BATCH_CONFIG, jobSchedulerFactory, NullLogProvider.getInstance() );
+        ReplicatedString content = new ReplicatedString( "dummy" );
+        NewEntry.Request message = new NewEntry.Request( null, content );
 
-        ExecutorService executor = Executors.newCachedThreadPool();
         Future<?> future = executor.submit( batchHandler );
 
         // Some time for letting the batch handler block on its internal queue.
@@ -96,99 +127,243 @@ public class BatchingMessageHandlerTest
         Thread.sleep( 50 );
 
         // when
-        batchHandler.handle( message );
+        batchHandler.handle( wrap( message ) );
 
         // then
         future.get();
-        verify( downstreamHandler ).handle( message );
+        NewEntry.BatchRequest expected = new NewEntry.BatchRequest( singletonList( content ) );
+        verify( downstreamHandler ).handle( wrap( expected ) );
     }
 
     @Test
     public void shouldBatchRequests()
     {
         // given
-        BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                downstreamHandler, QUEUE_SIZE, MAX_BATCH, jobSchedulerFactory, NullLogProvider.getInstance() );
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler( downstreamHandler, IN_QUEUE_CONFIG,
+                BATCH_CONFIG, jobSchedulerFactory, NullLogProvider.getInstance() );
         ReplicatedString contentA = new ReplicatedString( "A" );
         ReplicatedString contentB = new ReplicatedString( "B" );
-        RaftMessages.NewEntry.Request messageA = new RaftMessages.NewEntry.Request( null, contentA );
-        RaftMessages.NewEntry.Request messageB = new RaftMessages.NewEntry.Request( null, contentB );
+        NewEntry.Request messageA = new NewEntry.Request( null, contentA );
+        NewEntry.Request messageB = new NewEntry.Request( null, contentB );
 
-        batchHandler.handle( RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, localClusterId, messageA ) );
-        batchHandler.handle( RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, localClusterId, messageB ) );
+        batchHandler.handle( wrap( messageA ) );
+        batchHandler.handle( wrap( messageB ) );
         verifyZeroInteractions( downstreamHandler );
 
         // when
         batchHandler.run();
 
         // then
-        RaftMessages.NewEntry.BatchRequest batchRequest = new RaftMessages.NewEntry.BatchRequest( 2 );
-        batchRequest.add( contentA );
-        batchRequest.add( contentB );
-        verify( downstreamHandler ).handle( RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, localClusterId, batchRequest ) );
+        NewEntry.BatchRequest expected = new NewEntry.BatchRequest( asList( contentA, contentB ) );
+        verify( downstreamHandler ).handle( wrap( expected ) );
     }
 
     @Test
     public void shouldBatchUsingReceivedInstantOfFirstReceivedMessage()
     {
         // given
-        BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                downstreamHandler, QUEUE_SIZE, MAX_BATCH, jobSchedulerFactory, NullLogProvider.getInstance() );
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler( downstreamHandler, IN_QUEUE_CONFIG,
+                BATCH_CONFIG, jobSchedulerFactory, NullLogProvider.getInstance() );
         ReplicatedString content = new ReplicatedString( "A" );
-        RaftMessages.NewEntry.Request messageA = new RaftMessages.NewEntry.Request( null, content );
+        NewEntry.Request messageA = new NewEntry.Request( null, content );
 
         Instant firstReceived = Instant.ofEpochMilli( 1L );
         Instant secondReceived = firstReceived.plusMillis( 1L );
 
-        batchHandler.handle( RaftMessages.ReceivedInstantClusterIdAwareMessage.of( firstReceived, localClusterId, messageA ) );
-        batchHandler.handle( RaftMessages.ReceivedInstantClusterIdAwareMessage.of( secondReceived, localClusterId, messageA ) );
+        batchHandler.handle( wrap( firstReceived, messageA ) );
+        batchHandler.handle( wrap( secondReceived, messageA ) );
 
         // when
         batchHandler.run();
 
         // then
-        RaftMessages.NewEntry.BatchRequest batchRequest = new RaftMessages.NewEntry.BatchRequest( 2 );
-        batchRequest.add( content );
-        batchRequest.add( content );
-        verify( downstreamHandler ).handle( RaftMessages.ReceivedInstantClusterIdAwareMessage.of( firstReceived, localClusterId, batchRequest ) );
+        NewEntry.BatchRequest batchRequest = new NewEntry.BatchRequest( asList( content, content ) );
+        verify( downstreamHandler ).handle( wrap( firstReceived, batchRequest ) );
     }
 
     @Test
-    public void shouldBatchNewEntriesAndHandleOtherMessagesSingularly()
+    public void shouldBatchNewEntriesAndHandleOtherMessagesFirst()
     {
         // given
-        BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                downstreamHandler, QUEUE_SIZE, MAX_BATCH, jobSchedulerFactory, NullLogProvider.getInstance() );
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler( downstreamHandler, IN_QUEUE_CONFIG,
+                BATCH_CONFIG, jobSchedulerFactory, NullLogProvider.getInstance() );
 
         ReplicatedString contentA = new ReplicatedString( "A" );
         ReplicatedString contentC = new ReplicatedString( "C" );
 
-        RaftMessages.ReceivedInstantClusterIdAwareMessage<?> messageA = RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, localClusterId,
-                new RaftMessages.NewEntry.Request( null, contentA ) );
-        RaftMessages.ReceivedInstantClusterIdAwareMessage<?> messageB = RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, localClusterId,
-                new RaftMessages.Heartbeat( null, 0, 0, 0 ) );
-        RaftMessages.ReceivedInstantClusterIdAwareMessage<?> messageC = RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, localClusterId,
-                new RaftMessages.NewEntry.Request( null, contentC ) );
-        RaftMessages.ReceivedInstantClusterIdAwareMessage<?> messageD = RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, localClusterId,
-                new RaftMessages.Heartbeat( null, 1, 1, 1 ) );
+        NewEntry.Request newEntryA = new NewEntry.Request( null, contentA );
+        Heartbeat heartbeatA = new Heartbeat( null, 0, 0, 0 );
+        NewEntry.Request newEntryB = new NewEntry.Request( null, contentC );
+        Heartbeat heartbeatB = new Heartbeat( null, 1, 1, 1 );
 
-        batchHandler.handle( messageA );
-        batchHandler.handle( messageB );
-        batchHandler.handle( messageC );
-        batchHandler.handle( messageD );
+        batchHandler.handle( wrap( newEntryA ) );
+        batchHandler.handle( wrap( heartbeatA ) );
+        batchHandler.handle( wrap( newEntryB ) );
+        batchHandler.handle( wrap( heartbeatB ) );
+        verifyZeroInteractions( downstreamHandler );
+
+        // when
+        batchHandler.run(); // heartbeatA
+        batchHandler.run(); // heartbeatB
+        batchHandler.run(); // batchRequest
+
+        // then
+        NewEntry.BatchRequest batchRequest = new NewEntry.BatchRequest( asList( contentA, contentC ) );
+
+        verify( downstreamHandler ).handle( wrap( heartbeatA ) );
+        verify( downstreamHandler ).handle( wrap( heartbeatB ) );
+        verify( downstreamHandler ).handle( wrap( batchRequest ) );
+    }
+
+    @Test
+    public void shouldBatchSingleEntryAppendEntries()
+    {
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler( downstreamHandler, IN_QUEUE_CONFIG,
+                BATCH_CONFIG, jobSchedulerFactory, NullLogProvider.getInstance() );
+
+        long leaderTerm = 1;
+        long prevLogIndex = -1;
+        long prevLogTerm = -1;
+        long leaderCommit = 0;
+
+        RaftLogEntry entryA = new RaftLogEntry( 0, content( "A" ) );
+        RaftLogEntry entryB = new RaftLogEntry( 0, content( "B" ) );
+
+        AppendEntries.Request appendA = new AppendEntries.Request( leader, leaderTerm, prevLogIndex, prevLogTerm,
+                new RaftLogEntry[]{entryA}, leaderCommit );
+
+        AppendEntries.Request appendB = new AppendEntries.Request( leader, leaderTerm, prevLogIndex + 1, 0,
+                new RaftLogEntry[]{entryB}, leaderCommit );
+
+        batchHandler.handle( wrap( appendA ) );
+        batchHandler.handle( wrap( appendB ) );
         verifyZeroInteractions( downstreamHandler );
 
         // when
         batchHandler.run();
 
         // then
-        RaftMessages.NewEntry.BatchRequest batchRequest = new RaftMessages.NewEntry.BatchRequest( 2 );
-        batchRequest.add( contentA );
-        batchRequest.add( contentC );
+        AppendEntries.Request expected = new AppendEntries.Request( leader, leaderTerm, prevLogIndex, prevLogTerm,
+                new RaftLogEntry[]{entryA, entryB}, leaderCommit );
 
-        verify( downstreamHandler ).handle( RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, localClusterId, batchRequest ) );
-        verify( downstreamHandler ).handle( messageB );
-        verify( downstreamHandler ).handle( messageD );
+        verify( downstreamHandler ).handle( wrap( expected ) );
+    }
+
+    @Test
+    public void shouldBatchMultipleEntryAppendEntries()
+    {
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler( downstreamHandler, IN_QUEUE_CONFIG,
+                BATCH_CONFIG, jobSchedulerFactory, NullLogProvider.getInstance() );
+
+        long leaderTerm = 1;
+        long prevLogIndex = -1;
+        long prevLogTerm = -1;
+        long leaderCommit = 0;
+
+        RaftLogEntry[] entriesA = entries( 0, 0, 2 );
+        RaftLogEntry[] entriesB = entries( 1, 3, 3 );
+        RaftLogEntry[] entriesC = entries( 2, 4, 8 );
+        RaftLogEntry[] entriesD = entries( 3, 9, 15 );
+
+        AppendEntries.Request appendA = new AppendEntries.Request( leader, leaderTerm, prevLogIndex, prevLogTerm,
+                entriesA, leaderCommit );
+
+        prevLogIndex += appendA.entries().length;
+        prevLogTerm = lastOf( appendA.entries() ).term();
+        leaderCommit += 2; // arbitrary
+
+        AppendEntries.Request appendB = new AppendEntries.Request( leader, leaderTerm, prevLogIndex, prevLogTerm,
+                entriesB, leaderCommit );
+
+        prevLogIndex += appendB.entries().length;
+        prevLogTerm = lastOf( appendB.entries() ).term();
+        leaderCommit += 5; // arbitrary
+
+        AppendEntries.Request appendC = new AppendEntries.Request( leader, leaderTerm, prevLogIndex, prevLogTerm,
+                ArrayUtil.concat( entriesC, entriesD ), leaderCommit );
+
+        batchHandler.handle( wrap( appendA ) );
+        batchHandler.handle( wrap( appendB ) );
+        batchHandler.handle( wrap( appendC ) );
+        verifyZeroInteractions( downstreamHandler );
+
+        // when
+        batchHandler.run();
+
+        // then
+        AppendEntries.Request expected = new AppendEntries.Request( leader, leaderTerm, -1, -1,
+                ArrayUtil.concatArrays( entriesA, entriesB, entriesC, entriesD ), leaderCommit );
+
+        verify( downstreamHandler ).handle( wrap( expected ) );
+    }
+
+    @Test
+    public void shouldNotBatchAppendEntriesDifferentLeaderTerms()
+    {
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler( downstreamHandler, IN_QUEUE_CONFIG,
+                BATCH_CONFIG, jobSchedulerFactory, NullLogProvider.getInstance() );
+
+        long leaderTerm = 1;
+        long prevLogIndex = -1;
+        long prevLogTerm = -1;
+        long leaderCommit = 0;
+
+        RaftLogEntry[] entriesA = entries( 0, 0, 2 );
+        RaftLogEntry[] entriesB = entries( 1, 3, 3 );
+
+        AppendEntries.Request appendA = new AppendEntries.Request( leader, leaderTerm, prevLogIndex, prevLogTerm,
+                entriesA, leaderCommit );
+
+        prevLogIndex += appendA.entries().length;
+        prevLogTerm = lastOf( appendA.entries() ).term();
+
+        AppendEntries.Request appendB = new AppendEntries.Request( leader, leaderTerm + 1, prevLogIndex, prevLogTerm,
+                entriesB, leaderCommit );
+
+        batchHandler.handle( wrap( appendA ) );
+        batchHandler.handle( wrap( appendB ) );
+        verifyZeroInteractions( downstreamHandler );
+
+        // when
+        batchHandler.run();
+        batchHandler.run();
+
+        // then
+        verify( downstreamHandler ).handle( wrap( appendA ) );
+        verify( downstreamHandler ).handle( wrap( appendB ) );
+    }
+
+    @Test
+    public void shouldPrioritiseCorrectly()
+    {
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler( downstreamHandler, IN_QUEUE_CONFIG,
+                BATCH_CONFIG, jobSchedulerFactory, NullLogProvider.getInstance() );
+
+        NewEntry.Request newEntry = new NewEntry.Request( null, content( "" ) );
+        AppendEntries.Request append = new AppendEntries.Request( leader, 1, -1, -1,
+                entries( 0, 0, 0 ), 0 );
+        AppendEntries.Request emptyAppend = new AppendEntries.Request( leader, 1, -1, -1, RaftLogEntry.empty, 0 );
+        Heartbeat heartbeat = new Heartbeat( null, 0, 0, 0 );
+
+        batchHandler.handle( wrap( newEntry ) );
+        batchHandler.handle( wrap( append ) );
+        batchHandler.handle( wrap( heartbeat ) );
+        batchHandler.handle( wrap( emptyAppend ) );
+        verifyZeroInteractions( downstreamHandler );
+
+        // when
+        batchHandler.run();
+        batchHandler.run();
+        batchHandler.run();
+        batchHandler.run();
+
+        // then
+        InOrder inOrder = Mockito.inOrder( downstreamHandler );
+        inOrder.verify( downstreamHandler ).handle( wrap( heartbeat ) );
+        inOrder.verify( downstreamHandler ).handle( wrap( emptyAppend ) );
+        inOrder.verify( downstreamHandler ).handle( wrap( append ) );
+        inOrder.verify( downstreamHandler ).handle(
+                wrap( new NewEntry.BatchRequest( singletonList( content( "" ) ) ) ) );
     }
 
     @Test
@@ -196,41 +371,39 @@ public class BatchingMessageHandlerTest
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                downstreamHandler, QUEUE_SIZE, MAX_BATCH, jobSchedulerFactory, logProvider );
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler( downstreamHandler, IN_QUEUE_CONFIG,
+                BATCH_CONFIG, jobSchedulerFactory, logProvider );
 
-        RaftMessages.ReceivedInstantClusterIdAwareMessage<?> message = RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now,
-                localClusterId, new RaftMessages.NewEntry.Request( null, null ) );
+        NewEntry.Request message = new NewEntry.Request( null, null );
         batchHandler.stop();
 
         // when
-        batchHandler.handle( message );
+        batchHandler.handle( wrap( message ) );
         batchHandler.run();
 
         // then
-        verify( downstreamHandler, never() ).handle( ArgumentMatchers.any( RaftMessages.ReceivedInstantClusterIdAwareMessage.class ) );
+        verify( downstreamHandler, never() ).handle(
+                ArgumentMatchers.any( ReceivedInstantClusterIdAwareMessage.class ) );
         logProvider.assertAtLeastOnce( AssertableLogProvider.inLog( BatchingMessageHandler.class )
-                .debug( "This handler has been stopped, dropping the message: %s", message ) );
+                .debug( "This handler has been stopped, dropping the message: %s", wrap( message ) ) );
     }
 
     @Test( timeout = 5_000 /* 5 seconds */ )
     public void shouldGiveUpAddingMessagesInTheQueueIfTheHandlerHasBeenStopped() throws Throwable
     {
         // given
-        int queueSize = 1;
-        BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                downstreamHandler, queueSize, MAX_BATCH, jobSchedulerFactory, NullLogProvider.getInstance() );
-        RaftMessages.ReceivedInstantClusterIdAwareMessage<?> message = RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, localClusterId,
-                new RaftMessages.NewEntry.Request( null, null ) );
-        batchHandler.handle( message ); // fill the queue
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler( downstreamHandler,
+                new BoundedPriorityQueue.Config( 1, 1, 1024 ), BATCH_CONFIG, jobSchedulerFactory,
+                NullLogProvider.getInstance() );
+        NewEntry.Request message = new NewEntry.Request( null, new ReplicatedString( "dummy" ) );
+        batchHandler.handle( wrap( message ) ); // fill the queue
 
         CountDownLatch latch = new CountDownLatch( 1 );
 
         // when
-        Thread thread = new Thread( () ->
-        {
+        Thread thread = new Thread( () -> {
             latch.countDown();
-            batchHandler.handle( message );
+            batchHandler.handle( wrap( message ) );
         } );
 
         thread.start();
@@ -248,8 +421,8 @@ public class BatchingMessageHandlerTest
     public void shouldDelegateStart() throws Throwable
     {
         // given
-        BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                downstreamHandler, QUEUE_SIZE, MAX_BATCH, jobSchedulerFactory, NullLogProvider.getInstance() );
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler( downstreamHandler, IN_QUEUE_CONFIG,
+                BATCH_CONFIG, jobSchedulerFactory, NullLogProvider.getInstance() );
         ClusterId clusterId = new ClusterId( UUID.randomUUID() );
 
         // when
@@ -263,8 +436,8 @@ public class BatchingMessageHandlerTest
     public void shouldDelegateStop() throws Throwable
     {
         // given
-        BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                downstreamHandler, QUEUE_SIZE, MAX_BATCH, jobSchedulerFactory, NullLogProvider.getInstance() );
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler( downstreamHandler, IN_QUEUE_CONFIG,
+                BATCH_CONFIG, jobSchedulerFactory, NullLogProvider.getInstance() );
 
         // when
         batchHandler.stop();
@@ -277,8 +450,8 @@ public class BatchingMessageHandlerTest
     public void shouldStartJob() throws Throwable
     {
         // given
-        BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                downstreamHandler, QUEUE_SIZE, MAX_BATCH, jobSchedulerFactory, NullLogProvider.getInstance() );
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler( downstreamHandler, IN_QUEUE_CONFIG,
+                BATCH_CONFIG, jobSchedulerFactory, NullLogProvider.getInstance() );
         ClusterId clusterId = new ClusterId( UUID.randomUUID() );
 
         // when
@@ -292,13 +465,38 @@ public class BatchingMessageHandlerTest
     public void shouldStopJob() throws Throwable
     {
         // given
-        BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                downstreamHandler, QUEUE_SIZE, MAX_BATCH, jobSchedulerFactory, NullLogProvider.getInstance() );
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler( downstreamHandler, IN_QUEUE_CONFIG,
+                BATCH_CONFIG, jobSchedulerFactory, NullLogProvider.getInstance() );
 
         // when
         batchHandler.stop();
 
         // then
         Mockito.verify( mockJob ).stop();
+    }
+
+    private ReceivedInstantClusterIdAwareMessage wrap( RaftMessage message )
+    {
+        return wrap( now, message );
+    }
+
+    private ReceivedInstantClusterIdAwareMessage<?> wrap( Instant instant, RaftMessage message )
+    {
+        return ReceivedInstantClusterIdAwareMessage.of( instant, localClusterId, message );
+    }
+
+    private ReplicatedContent content( String content )
+    {
+        return new ReplicatedString( content );
+    }
+
+    private RaftLogEntry[] entries( long term, int min, int max )
+    {
+        RaftLogEntry[] entries = new RaftLogEntry[max - min + 1];
+        for ( int i = min; i <= max; i++ )
+        {
+            entries[i - min] = new RaftLogEntry( term, new ReplicatedString( String.valueOf( i ) ) );
+        }
+        return entries;
     }
 }

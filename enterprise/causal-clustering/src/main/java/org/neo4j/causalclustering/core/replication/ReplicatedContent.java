@@ -22,18 +22,15 @@
  */
 package org.neo4j.causalclustering.core.replication;
 
+import java.util.Optional;
+
 /**
- * Marker interface for types that are
+ * Marker interface for types that can be replicated around.
  */
 public interface ReplicatedContent
 {
-    default boolean hasSize()
+    default Optional<Long> size()
     {
-        return false;
-    }
-
-    default long size()
-    {
-        throw new UnsupportedOperationException();
+        return Optional.empty();
     }
 }

@@ -28,6 +28,8 @@ import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.state.machines.dummy.DummyRequest;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class ConsecutiveInFlightCacheTest
 {
@@ -80,13 +82,15 @@ public class ConsecutiveInFlightCacheTest
         // then
         for ( int i = 0; i < 3 * capacity; i++ )
         {
+            RaftLogEntry entry = cache.get( i );
             if ( i < 2 * capacity )
             {
-                assertEquals( null, cache.get( i ) );
+                assertNull( entry );
             }
             else
             {
-                assertEquals( i, cache.get( i ).content().size() );
+                assertTrue( entry.content().size().isPresent() );
+                assertEquals( i, (long) entry.content().size().get() );
             }
         }
     }
@@ -112,13 +116,15 @@ public class ConsecutiveInFlightCacheTest
 
         for ( int i = 0; i < capacity; i++ )
         {
+            RaftLogEntry entry = cache.get( i );
             if ( i <= upToIndex )
             {
-                assertEquals( null, cache.get( i ) );
+                assertNull( entry );
             }
             else
             {
-                assertEquals( i, cache.get( i ).content().size() );
+                assertTrue( entry.content().size().isPresent() );
+                assertEquals( i, (long) entry.content().size().get() );
             }
         }
     }
@@ -145,7 +151,7 @@ public class ConsecutiveInFlightCacheTest
 
         for ( int i = fromIndex; i < capacity; i++ )
         {
-            assertEquals( null, cache.get( i ) );
+            assertNull( cache.get( i ) );
         }
     }
 

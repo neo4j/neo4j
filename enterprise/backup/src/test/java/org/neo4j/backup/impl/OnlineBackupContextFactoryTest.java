@@ -225,7 +225,7 @@ public class OnlineBackupContextFactoryTest
 
         // then
         assertEquals( Integer.valueOf( 3 ), config.get( CausalClusteringSettings.minimum_core_cluster_size_at_formation ) );
-        assertEquals( Integer.valueOf( 64 ), config.get( CausalClusteringSettings.raft_in_queue_max_batch ) );
+        assertEquals( Integer.valueOf( 128 ), config.get( CausalClusteringSettings.raft_in_queue_max_batch ) );
     }
 
     @Test

@@ -27,6 +27,9 @@ import static java.util.Arrays.copyOf;
 
 /**
  * Methods "missing" from {@link Arrays} are provided here.
+ *
+ * @deprecated This is mostly an external deprecation, and the class will be moved to an internal package eventually.
+ * However, if you can find an external utility library providing the functionality, then please use that instead.
  */
 @Deprecated
 public abstract class ArrayUtil
@@ -434,6 +437,31 @@ public abstract class ArrayUtil
     }
 
     /**
+     * Create a single array from many arrays.
+     *
+     * @param initial an initial array
+     * @param additional additional arrays to be concatenated with the initial array
+     * @param <T> the type of the array items
+     * @return the concatenated array
+     */
+    public static <T> T[] concatArrays( T[] initial, T[]... additional )
+    {
+        int length = initial.length;
+        for ( T[] array : additional )
+        {
+            length += array.length;
+        }
+        T[] result = Arrays.copyOf( initial, length );
+        int offset = initial.length;
+        for ( T[] array : additional )
+        {
+            System.arraycopy( array, 0, result, offset, array.length );
+            offset += array.length;
+        }
+        return result;
+    }
+
+    /**
      * Returns the array version of the vararg argument.
      *
      * @param varargs the items
@@ -445,6 +473,12 @@ public abstract class ArrayUtil
     public static <T> T[] array( T... varargs )
     {
         return varargs;
+    }
+
+    @Deprecated
+    public static <T> T lastOf( T[] array )
+    {
+        return array[array.length - 1];
     }
 
     @Deprecated

@@ -91,11 +91,11 @@ public class RaftReplicator implements Replicator, LeaderListener
             throw new ReplicationFailureException( "Replication aborted since no leader was available", e );
         }
 
-        if ( command.hasSize() )
+        if ( command.size().isPresent() )
         {
             try
             {
-                return throttler.invoke( () -> replicate0( command, trackResult, originalLeader ), command.size() );
+                return throttler.invoke( () -> replicate0( command, trackResult, originalLeader ), command.size().get() );
             }
             catch ( InterruptedException e )
             {
