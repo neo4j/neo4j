@@ -19,15 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.debug
 
-import org.neo4j.cypher.internal.compiler.v3_5.phases.{PlannerContext, LogicalPlanState}
+import org.neo4j.cypher.internal.compiler.v3_5.phases.{LogicalPlanState, PlannerContext}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{Argument, LogicalPlan, ProduceResult, UnwindCollection}
 import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.frontend.phases.{Condition, Phase}
+import org.opencypher.v9_0.expressions.{ListLiteral, StringLiteral, Variable}
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, Condition, Phase}
 import org.opencypher.v9_0.util.InputPosition
 import org.opencypher.v9_0.util.attribution.SequentialIdGen
-import org.opencypher.v9_0.expressions.{ListLiteral, StringLiteral, Variable}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{Argument, LogicalPlan, ProduceResult, UnwindCollection}
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 
 object DebugPrinter extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {
   override def phase: CompilationPhaseTracer.CompilationPhase = LOGICAL_PLANNING
@@ -63,7 +62,7 @@ object DebugPrinter extends Phase[PlannerContext, LogicalPlanState, LogicalPlanS
 
     val variable = Variable("col")(pos)
     val returnItem = AliasedReturnItem(variable, variable)(pos)
-    val returnClause = Return(distinct = false, ReturnItems(includeExisting = false, Seq(returnItem))(pos), None, None, None, None, Set.empty)(pos)
+    val returnClause = Return(distinct = false, ReturnItems(includeExisting = false, Seq(returnItem))(pos), None, None, None, Set.empty)(pos)
     val newStatement = Query(None, SingleQuery(Seq(returnClause))(pos))(pos)
 
     (logicalPlan, newStatement)

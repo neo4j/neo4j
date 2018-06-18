@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.conditions
 
+import org.opencypher.v9_0.ast._
+import org.opencypher.v9_0.expressions.{Expression, UnsignedDecimalIntegerLiteral}
+import org.opencypher.v9_0.rewriting.conditions.orderByOnlyOnVariables
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.opencypher.v9_0.util.{ASTNode, DummyPosition}
-import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.ast.conditions.orderByOnlyOnVariables
-import org.opencypher.v9_0.expressions.{Expression, UnsignedDecimalIntegerLiteral}
 
 class OrderByOnlyOnVariablesTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -32,13 +32,13 @@ class OrderByOnlyOnVariablesTest extends CypherFunSuite with AstConstructionTest
   test("unhappy when when order by sort on non-variable expressions") {
     val expr: Expression = UnsignedDecimalIntegerLiteral("42")_
     val orderByPos = DummyPosition(42)
-    val ast: ASTNode = Return(false, ReturnItems(false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))_))_, None, Some(OrderBy(Seq(AscSortItem(expr)_))(orderByPos)), None, None)_
+    val ast: ASTNode = Return(false, ReturnItems(false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))_))_, Some(OrderBy(Seq(AscSortItem(expr)_))(orderByPos)), None, None)_
 
     condition(ast) should equal(Seq(s"OrderBy at $orderByPos is ordering on an expression ($expr) instead of a variable"))
   }
 
   test("happy when order by sort on variable") {
-    val ast: ASTNode = Return(false, ReturnItems(false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))_))_, None, Some(OrderBy(Seq(AscSortItem(varFor("n"))_))(pos)), None, None)_
+    val ast: ASTNode = Return(false, ReturnItems(false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))_))_, Some(OrderBy(Seq(AscSortItem(varFor("n"))_))(pos)), None, None)_
 
     condition(ast) shouldBe empty
   }

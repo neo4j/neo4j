@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters
 
-import org.opencypher.v9_0.util.{Rewriter, TypedRewriter, bottomUp}
 import org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters.InliningContext._
-import org.opencypher.v9_0.rewriting.rewriters.copyVariables
 import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.rewriting.rewriters.copyVariables
+import org.opencypher.v9_0.util.{Rewriter, TypedRewriter, bottomUp}
 
 case class InliningContext(projections: Map[LogicalVariable, Expression] = Map.empty,
                            seenVariables: Set[LogicalVariable] = Set.empty,
@@ -62,12 +62,12 @@ case class InliningContext(projections: Map[LogicalVariable, Expression] = Map.e
     usageCount.withDefaultValue(0)(i) < INLINING_THRESHOLD
 
   def patternRewriter: Rewriter = bottomUp(Rewriter.lift {
-    case node @ NodePattern(Some(ident), _, _) if okToRewrite(ident) =>
+    case node @ NodePattern(Some(ident), _, _, _) if okToRewrite(ident) =>
       alias(ident) match {
         case alias @ Some(_) => node.copy(variable = alias)(node.position)
         case _               => node
       }
-    case rel @ RelationshipPattern(Some(ident), _, _, _, _, _) if okToRewrite(ident) =>
+    case rel @ RelationshipPattern(Some(ident), _, _, _, _, _, _) if okToRewrite(ident) =>
       alias(ident) match {
         case alias @ Some(_) => rel.copy(variable = alias)(rel.position)
         case _               => rel

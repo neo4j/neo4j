@@ -307,13 +307,12 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  // TODO re-enable after next front-end release
-  ignore("should fail if using a hint on a node and not using the property") {
+  test("should fail if using a hint on a node and not using the property") {
     executeAndEnsureError(
       "MATCH (n:Person) USING INDEX n:Person(name) where n.lastname = \"Teleman\" return n",
       "Cannot use index hint in this context. Index hints are only supported for the following "+
         "predicates in WHERE (either directly or as part of a top-level AND or OR): equality comparison, " +
-        "inequality (range) comparison, STARTS WITH, point distance, IN condition or checking property " +
+        "inequality (range) comparison, STARTS WITH, IN condition or checking property " +
         "existence. The comparison cannot be performed between two property values. Note that the " +
         "label and property comparison must be specified on a non-optional node (line 1, " +
         "column 18 (offset: 17))"

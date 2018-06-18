@@ -112,9 +112,9 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
     case p@PatternExpression(
       RelationshipsPattern(
         RelationshipChain(
-          NodePattern(Some(Variable(predicateFrom)), List(), None),
-          RelationshipPattern(None, predicateTypes, None, None, predicateDir, _),
-          NodePattern(Some(Variable(predicateTo)), List(), None))))
+          NodePattern(Some(Variable(predicateFrom)), List(), None, _),
+          RelationshipPattern(None, predicateTypes, None, None, predicateDir, _, _),
+          NodePattern(Some(Variable(predicateTo)), List(), None, _))))
       if predicateFrom == from && predicateTo == to && predicateTypes == types && predicateDir == dir => true
     case _ => false
   }

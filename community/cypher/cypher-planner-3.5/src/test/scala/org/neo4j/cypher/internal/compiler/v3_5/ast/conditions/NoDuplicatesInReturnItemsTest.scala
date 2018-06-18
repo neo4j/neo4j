@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_5.ast.conditions
 
 import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.ast.conditions.noDuplicatesInReturnItems
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.opencypher.v9_0.expressions.UnsignedDecimalIntegerLiteral
+import org.opencypher.v9_0.rewriting.conditions.noDuplicatesInReturnItems
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class NoDuplicatesInReturnItemsTest extends CypherFunSuite with AstConstructionTestSupport {
 

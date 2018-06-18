@@ -119,8 +119,7 @@ class HintAcceptanceTest
       }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
   }
 
-  // TODO re-enable after next front-end release
-  ignore("should accept hint on spatial index with distance function") {
+  test("should accept hint on spatial index with distance function") {
     // Given
     graph.createIndex("Business", "location")
     graph.createIndex("Review", "date")

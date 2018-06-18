@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.conditions
 
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.opencypher.v9_0.ast.AstConstructionTestSupport
-import org.opencypher.v9_0.ast.conditions.aggregationsAreIsolated
 import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.rewriting.conditions.aggregationsAreIsolated
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class AggregationsAreIsolatedTest extends CypherFunSuite with AstConstructionTestSupport {
 

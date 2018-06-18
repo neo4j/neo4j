@@ -23,8 +23,8 @@
 package org.neo4j.cypher.internal.queryReduction.ast
 
 import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.util._
 import org.opencypher.v9_0.expressions.{BinaryOperatorExpression, _}
+import org.opencypher.v9_0.util._
 
 object getChildren {
 
@@ -52,14 +52,14 @@ object getChildren {
       case EveryPath(elem) =>
         Seq(elem)
 
-      case NodePattern(maybeVar, labels, maybeProps) =>
-        ofOption(maybeVar) ++ labels ++ ofOption(maybeProps)
+      case NodePattern(maybeVar, labels, maybeProps, maybeBaseNode) =>
+        ofOption(maybeVar) ++ labels ++ ofOption(maybeProps) ++ ofOption(maybeBaseNode)
 
       case Variable(_) =>
         Seq()
 
-      case Return(_, returnItems, maybeGraphReturnItems, maybeOrderBy, maybeSkip, maybeLimit, _) =>
-        Seq(returnItems) ++ ofOption(maybeGraphReturnItems) ++ ofOption(maybeOrderBy) ++
+      case Return(_, returnItems, maybeOrderBy, maybeSkip, maybeLimit, _) =>
+        Seq(returnItems) ++ ofOption(maybeOrderBy) ++
           ofOption(maybeSkip) ++ ofOption(maybeLimit)
 
       case ReturnItems(_, items) =>
@@ -95,8 +95,8 @@ object getChildren {
       case RelationshipChain(element, relationship, rightNode) =>
         Seq(element, relationship, rightNode)
 
-      case RelationshipPattern(variable, types, length, properties, _, _) =>
-        ofOption(variable) ++  types ++ ofOption(length.flatten) ++ ofOption(properties)
+      case RelationshipPattern(variable, types, length, properties, _, _, maybeBaseRel) =>
+        ofOption(variable) ++  types ++ ofOption(length.flatten) ++ ofOption(properties) ++ ofOption(maybeBaseRel)
 
       case FunctionInvocation(namespace, functionName, _, args) =>
         Seq(namespace, functionName) ++ args
@@ -104,15 +104,12 @@ object getChildren {
       case Namespace(_) =>
         Seq()
 
-      case With(distinct, returnItems, mandatoryGraphReturnItems, orderBy, skip, limit, where) =>
-        Seq(returnItems, mandatoryGraphReturnItems) ++
+      case With(distinct, returnItems, orderBy, skip, limit, where) =>
+        Seq(returnItems) ++
         ofOption(orderBy) ++ ofOption(skip) ++ ofOption(limit) ++ ofOption(where)
 
       case MapExpression(items) =>
         items.flatMap { case (pkn, exp) => Seq(pkn, exp) }
-
-      case GraphReturnItems(_, items) =>
-        items
 
       case FilterExpression(scope, expression) =>
         Seq(scope, expression)

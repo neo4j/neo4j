@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.ir.v3_5.helpers
 
-import org.opencypher.v9_0.util.{FreshIdNameGenerator, InternalException}
 import org.neo4j.cypher.internal.ir.v3_5.helpers.ExpressionConverters._
 import org.neo4j.cypher.internal.ir.v3_5.{PatternRelationship, ShortestPathPattern}
 import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.util.{FreshIdNameGenerator, InternalException}
 
 object PatternConverters {
 
@@ -53,16 +53,16 @@ object PatternConverters {
   implicit class RelationshipChainDestructor(val chain: RelationshipChain) extends AnyVal {
     def destructedRelationshipChain: DestructResult = chain match {
       // (a)->[r]->(b)
-      case RelationshipChain(NodePattern(Some(leftNodeId), Seq(), None),
-                             RelationshipPattern(Some(relId), relTypes, length, None, direction, _),
-                             NodePattern(Some(rightNodeId), Seq(), None)) =>
+      case RelationshipChain(NodePattern(Some(leftNodeId), Seq(), None, _),
+                             RelationshipPattern(Some(relId), relTypes, length, None, direction, _, _),
+                             NodePattern(Some(rightNodeId), Seq(), None, _)) =>
         val leftNode = leftNodeId.name
         val rightNode = rightNodeId.name
         val r = PatternRelationship(relId.name, (leftNode, rightNode), direction, relTypes, length.asPatternLength)
         DestructResult(Seq(leftNode, rightNode), Seq(r), Seq.empty)
 
       // ...->[r]->(b)
-      case RelationshipChain(relChain: RelationshipChain, RelationshipPattern(Some(relId), relTypes, length, None, direction, _), NodePattern(Some(rightNodeId), Seq(), None)) =>
+      case RelationshipChain(relChain: RelationshipChain, RelationshipPattern(Some(relId), relTypes, length, None, direction, _, _), NodePattern(Some(rightNodeId), Seq(), None, _)) =>
         val destructed = relChain.destructedRelationshipChain
         val leftNode = destructed.rels.last.right
         val rightNode = rightNodeId.name
