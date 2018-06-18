@@ -143,7 +143,27 @@ public class GBPTree<KEY,VALUE> implements Closeable
             }
 
             @Override
+            public void cleanupRegistered()
+            {   // no-op
+            }
+
+            @Override
+            public void cleanupStarted()
+            {   // no-op
+            }
+
+            @Override
             public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
+            {   // no-op
+            }
+
+            @Override
+            public void cleanupClosed()
+            {   // no-op
+            }
+
+            @Override
+            public void cleanupFailed( Throwable throwable )
             {   // no-op
             }
 
@@ -165,6 +185,16 @@ public class GBPTree<KEY,VALUE> implements Closeable
         void noStoreFile();
 
         /**
+         * Called after cleanup job has been created
+         */
+        void cleanupRegistered();
+
+        /**
+         * Called after cleanup job has been started
+         */
+        void cleanupStarted();
+
+        /**
          * Called after recovery has completed and cleaning has been done.
          *
          * @param numberOfPagesVisited number of pages visited by the cleaner.
@@ -172,6 +202,17 @@ public class GBPTree<KEY,VALUE> implements Closeable
          * @param durationMillis time spent cleaning.
          */
         void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis );
+
+        /**
+         * Called when cleanup job is closed and lock is released
+         */
+        void cleanupClosed();
+
+        /**
+         * Called when cleanup job catches a throwable
+         * @param throwable cause of failure
+         */
+        void cleanupFailed( Throwable throwable );
 
         /**
          * Report tree state on startup.
@@ -1006,6 +1047,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         else
         {
             lock.cleanerLock();
+            monitor.cleanupRegistered();
 
             long generation = this.generation;
             long stableGeneration = stableGeneration( generation );
@@ -1015,7 +1057,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             CrashGenerationCleaner crashGenerationCleaner =
                     new CrashGenerationCleaner( pagedFile, bTreeNode, IdSpace.MIN_TREE_NODE_ID, highTreeNodeId,
                             stableGeneration, unstableGeneration, monitor );
-            GBPTreeCleanupJob cleanupJob = new GBPTreeCleanupJob( crashGenerationCleaner, lock );
+            GBPTreeCleanupJob cleanupJob = new GBPTreeCleanupJob( crashGenerationCleaner, lock, monitor, indexFile );
             recoveryCleanupWorkCollector.add( cleanupJob );
             return cleanupJob;
         }

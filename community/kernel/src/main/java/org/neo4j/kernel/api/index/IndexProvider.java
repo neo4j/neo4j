@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.api.index;
 
+import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -104,14 +104,44 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
             }
 
             @Override
-            public void recoveryCompleted( SchemaIndexDescriptor schemaIndexDescriptor, String indexFile, Map<String,Object> data )
+            public void recoveryCleanupRegistered( File indexFile, SchemaIndexDescriptor schemaIndexDescriptor )
+            {   // no-op
+            }
+
+            @Override
+            public void recoveryCleanupStarted( File indexFile, SchemaIndexDescriptor schemaIndexDescriptor )
+            {   // no-op
+            }
+
+            @Override
+            public void recoveryCleanupFinished( File indexFile, SchemaIndexDescriptor schemaIndexDescriptor,
+                    long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
+            {   // no-op
+            }
+
+            @Override
+            public void recoveryCleanupClosed( File indexFile, SchemaIndexDescriptor schemaIndexDescriptor )
+            {   // no-op
+            }
+
+            @Override
+            public void recoveryCleanupFailed( File indexFile, SchemaIndexDescriptor schemaIndexDescriptor, Throwable throwable )
             {   // no-op
             }
         }
 
         void failedToOpenIndex( long indexId, SchemaIndexDescriptor schemaIndexDescriptor, String action, Exception cause );
 
-        void recoveryCompleted( SchemaIndexDescriptor schemaIndexDescriptor, String indexFile, Map<String,Object> data );
+        void recoveryCleanupRegistered( File indexFile, SchemaIndexDescriptor schemaIndexDescriptor );
+
+        void recoveryCleanupStarted( File indexFile, SchemaIndexDescriptor schemaIndexDescriptor );
+
+        void recoveryCleanupFinished( File indexFile, SchemaIndexDescriptor schemaIndexDescriptor,
+                long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis );
+
+        void recoveryCleanupClosed( File indexFile, SchemaIndexDescriptor schemaIndexDescriptor );
+
+        void recoveryCleanupFailed( File indexFile, SchemaIndexDescriptor schemaIndexDescriptor, Throwable throwable );
     }
 
     public static final IndexProvider EMPTY =
