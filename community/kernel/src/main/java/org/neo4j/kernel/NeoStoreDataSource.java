@@ -78,7 +78,6 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
@@ -784,7 +783,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
     public StoreId getStoreId()
     {
-        return getDependencyResolver().resolveDependency( MetaDataStore.class ).getStoreId();
+        return storageEngine.getStoreId();
     }
 
     public File getStoreDir()

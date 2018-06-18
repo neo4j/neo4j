@@ -82,25 +82,17 @@ public class TestShortStringProperties
     @Test
     public void canUpdateShortStringInplace()
     {
-        try
-        {
-            Node node = graphdb.getGraphDatabaseAPI().createNode();
-            node.setProperty( "key", "value" );
+        Node node = graphdb.getGraphDatabaseAPI().createNode();
+        node.setProperty( "key", "value" );
 
-            newTx();
+        newTx();
 
-            assertEquals( "value", node.getProperty( "key" ) );
+        assertEquals( "value", node.getProperty( "key" ) );
 
-            node.setProperty( "key", "other" );
-            commit();
+        node.setProperty( "key", "other" );
+        commit();
 
-            assertThat( node, inTx( graphdb.getGraphDatabaseAPI(), hasProperty( "key" ).withValue( "other" )  ) );
-        }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-            throw e;
-        }
+        assertThat( node, inTx( graphdb.getGraphDatabaseAPI(), hasProperty( "key" ).withValue( "other" )  ) );
     }
 
     @Test

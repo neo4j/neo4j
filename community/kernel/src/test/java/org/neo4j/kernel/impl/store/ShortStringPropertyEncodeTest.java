@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -36,7 +35,6 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 
 public class ShortStringPropertyEncodeTest
 {
@@ -179,23 +177,15 @@ public class ShortStringPropertyEncodeTest
 
     private void assertCanEncode( String string )
     {
-        encode( string, true );
+        encode( string );
     }
 
-    private void encode( String string, boolean isShort )
+    private void encode( String string )
     {
         PropertyBlock block = new PropertyBlock();
         TextValue expectedValue = Values.stringValue( string );
         propertyStore.encodeValue( block, KEY_ID, expectedValue );
-        if ( isShort )
-        {
-            assertEquals( 0, block.getValueRecords().size() );
-        }
-        else
-        {
-            assertThat( block.getValueRecords().size(), Matchers.greaterThan( 0 ) );
-        }
-
+        assertEquals( 0, block.getValueRecords().size() );
         Value readValue = block.getType().value( block, propertyStore );
         assertEquals( expectedValue, readValue );
     }

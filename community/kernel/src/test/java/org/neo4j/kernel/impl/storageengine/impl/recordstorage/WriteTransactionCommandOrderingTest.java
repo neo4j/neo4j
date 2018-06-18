@@ -65,18 +65,6 @@ import static org.mockito.Mockito.when;
 
 public class WriteTransactionCommandOrderingTest
 {
-    public WriteTransactionCommandOrderingTest()
-    {
-        AtomicReference<List<String>> currentRecording = new AtomicReference<>();
-        RecordingPropertyStore propertyStore = new RecordingPropertyStore( currentRecording );
-        NeoStores store = mock( NeoStores.class );
-        when( store.getPropertyStore() ).thenReturn( propertyStore );
-        RecordingNodeStore nodeStore = new RecordingNodeStore( currentRecording );
-        when( store.getNodeStore() ).thenReturn( nodeStore );
-        RecordingRelationshipStore relationshipStore = new RecordingRelationshipStore( currentRecording );
-        when( store.getRelationshipStore() ).thenReturn( relationshipStore );
-    }
-
     private static NodeRecord missingNode()
     {
         return new NodeRecord( -1, false, -1, -1 );
