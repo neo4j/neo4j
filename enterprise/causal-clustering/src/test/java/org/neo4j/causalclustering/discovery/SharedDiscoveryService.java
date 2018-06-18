@@ -22,6 +22,7 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -35,9 +36,12 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.causalclustering.core.TransactionBackupServiceProvider;
 import org.neo4j.causalclustering.core.consensus.LeaderInfo;
+import org.neo4j.causalclustering.discovery.data.RefCounted;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.logging.Log;
 
 public final class SharedDiscoveryService
 {
@@ -46,7 +50,7 @@ public final class SharedDiscoveryService
     private final ConcurrentMap<MemberId,CoreServerInfo> coreMembers;
     private final ConcurrentMap<MemberId,ReadReplicaInfo> readReplicas;
     private final List<SharedDiscoveryCoreClient> listeningClients;
-    private final ConcurrentMap<String,ClusterId> clusterIdDbNames;
+    private final ConcurrentMap<String,RefCounted<TransientClusterId>> clusterIdDbNames;
     private final ConcurrentMap<String,LeaderInfo> leaderMap;
     private final CountDownLatch enoughMembers;
 
@@ -85,8 +89,11 @@ public final class SharedDiscoveryService
 
     CoreTopology getCoreTopology( String dbName, boolean canBeBootstrapped  )
     {
-        return new CoreTopology( clusterIdDbNames.get( dbName ),
-                canBeBootstrapped, Collections.unmodifiableMap( coreMembers )  );
+        //TODO: Until we build proper heartbeats, just have to always return a recently touched topology. How will caching effect this?
+        Optional<RefCounted<TransientClusterId>> clusterId = Optional.ofNullable( clusterIdDbNames.get( dbName ) );
+        RefCounted<TransientClusterId> touchedId = clusterId.map( r -> r.map( uid -> uid.touchAt( Instant.now() ) ) ).orElse( null );
+
+        return new CoreTopology( touchedId, canBeBootstrapped, Collections.unmodifiableMap( coreMembers ) );
     }
 
     ReadReplicaTopology getReadReplicaTopology()
@@ -152,9 +159,59 @@ public final class SharedDiscoveryService
         }
     }
 
-    boolean casClusterId( ClusterId clusterId, String dbName )
+    RefCounted<TransientClusterId> getClusterId( String dbName )
     {
-        ClusterId previousId = clusterIdDbNames.putIfAbsent( dbName, clusterId );
+        return clusterIdDbNames.get( dbName );
+    }
+
+    RefCounted<TransientClusterId> holdClusterId( RefCounted<TransientClusterId> clusterId, MemberId holder, String dbName )
+    {
+        synchronized ( clusterIdDbNames )
+        {
+            RefCounted<TransientClusterId> previous = Optional.ofNullable( clusterIdDbNames.get( dbName ) ).orElse( clusterId );
+            boolean doesNotConflict = previous.value().uuid().equals( clusterId.value().uuid() );
+            if ( doesNotConflict )
+            {
+                RefCounted<TransientClusterId> next = previous.hold( holder );
+                clusterIdDbNames.replace( dbName, next );
+                return next;
+            }
+            else
+            {
+                return previous;
+            }
+        }
+    }
+
+    RefCounted<TransientClusterId> releaseClusterId( RefCounted<TransientClusterId> clusterId, MemberId releaser, String dbName )
+    {
+        synchronized ( clusterIdDbNames )
+        {
+            RefCounted<TransientClusterId> previous = Optional.ofNullable( clusterIdDbNames.get( dbName ) ).orElse( clusterId );
+            boolean doesNotConflict = previous.value().uuid().equals( clusterId.value().uuid() );
+            if ( doesNotConflict )
+            {
+                RefCounted<TransientClusterId> next = previous.release( releaser );
+                clusterIdDbNames.replace( dbName, next );
+                return next;
+            }
+            else
+            {
+                return previous;
+            }
+        }
+    }
+
+    boolean removeClusterId( RefCounted<TransientClusterId> clusterId, String dbName )
+    {
+        //TODO: Synchronized needed for single atomic op?
+         return clusterIdDbNames.remove( dbName, clusterId );
+    }
+
+
+    boolean setOnceClusterId( RefCounted<TransientClusterId> clusterId, String dbName )
+    {
+        RefCounted<TransientClusterId> previousId = clusterIdDbNames.putIfAbsent( dbName, clusterId );
 
         boolean success = previousId == null || previousId.equals( clusterId );
 

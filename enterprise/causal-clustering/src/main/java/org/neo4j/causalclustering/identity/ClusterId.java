@@ -23,20 +23,30 @@
 package org.neo4j.causalclustering.identity;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
 
 import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
-public class ClusterId
+public class ClusterId implements Serializable
 {
+
+    private static final long serialVersionUID = 890705346211L;
+
     private final UUID uuid;
 
     public ClusterId( UUID uuid )
     {
         this.uuid = uuid;
+    }
+
+    public UUID uuid()
+    {
+        return uuid;
     }
 
     @Override
@@ -58,11 +68,6 @@ public class ClusterId
     public int hashCode()
     {
         return Objects.hash( uuid );
-    }
-
-    public UUID uuid()
-    {
-        return uuid;
     }
 
     @Override

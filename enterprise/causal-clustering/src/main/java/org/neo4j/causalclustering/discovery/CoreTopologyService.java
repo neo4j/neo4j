@@ -37,12 +37,18 @@ public interface CoreTopologyService extends TopologyService
     void removeLocalCoreTopologyListener( Listener listener );
 
     /**
-     * Publishes the cluster ID so that other members might discover it.
-     * Should only succeed to publish if one missing or already the same (CAS logic).
+     * Publishes a transient cluster Id so that other members might discover it.
+     * Should only succeed to publish a cluster Id under the following circumstances:
      *
-     * @param clusterId The cluster ID to publish.
+     *  - if a cluster Id does not already exist for the given dbName.
+     *  - a cluster Id does exist for the given dbName, but it has been inactive for a
+     *      period longer than the configured timeout.
+     *  - a cluster Id does exist for the given dbName, but it is equal to the clusterId
+     *      being set.
      *
-     * @return True if the cluster ID was successfully CAS:ed, otherwise false.
+     * @param clusterId The cluster Id to publish.
+     * @param dbName The database name for the cluster Id.
+     * @return True if the cluster Id was successfully updated, otherwise false.
      */
     boolean setClusterId( ClusterId clusterId, String dbName ) throws InterruptedException;
 

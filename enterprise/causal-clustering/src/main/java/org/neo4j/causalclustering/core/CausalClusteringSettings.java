@@ -44,6 +44,7 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.logging.LogProvider;
 
+import static java.time.temporal.ChronoUnit.SECONDS;
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.GZIP;
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.LZ4;
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.LZ4_HIGH_COMPRESSION;
@@ -98,6 +99,12 @@ public class CausalClusteringSettings implements LoadableConfig
             "neo4j-admin unbind." )
     public static final Setting<String> database =
             setting( "causal_clustering.database", STRING, "default" );
+
+    //TODO: Description
+    @Description( "Time after which a ClusterId for which there are no active members may be overridden by a new value. Due to the potential " +
+            "for clock skew between machines in a cluster, the minimum value for this ttl is 30 seconds." )
+    public static final Setting<Duration>  clusterId_ttl = buildSetting( "causal_clustering.clusterId_ttl", DURATION, "30s" )
+            .constraint( min( Duration.of( 30, SECONDS ) ) ).build();
 
     @Description( "Enable pre-voting extension to the Raft protocol (this is breaking and must match between the core cluster members)" )
     public static final Setting<Boolean> enable_pre_voting =

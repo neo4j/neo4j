@@ -64,7 +64,7 @@ public class ConsensusGroupSettingsIT
         // when
         for ( int i = 0; i < numberOfCoreSeversToRemove; i++ )
         {
-            cluster.removeCoreMember( cluster.getMemberWithRole( Role.LEADER ) );
+            cluster.removeCoreMember( cluster.getCoreMemberWithRole( Role.LEADER ) );
             cluster.awaitLeader( 30, SECONDS );
         }
 

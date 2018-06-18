@@ -45,6 +45,8 @@ public interface ClusterMember<T extends GraphDatabaseAPI>
 
     Config config();
 
+    String dbName();
+
     /**
      * {@link Cluster} will use this {@link ThreadGroup} for the threads that start, and shut down, this cluster member.
      * This way, the group will be transitively inherited by all the threads that are in turn started by the member

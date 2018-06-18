@@ -24,6 +24,7 @@ package org.neo4j.causalclustering.identity;
 
 import java.io.IOException;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +37,8 @@ import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 import org.neo4j.causalclustering.core.state.storage.SimpleStorage;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
+import org.neo4j.causalclustering.discovery.TransientClusterId;
+import org.neo4j.causalclustering.discovery.data.RefCounted;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.kernel.impl.util.CappedLogger;
 import org.neo4j.logging.Log;
@@ -56,12 +59,13 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
     private final long timeoutMillis;
     private final String dbName;
     private final int minCoreHosts;
+    private final Duration clusterIdTtl;
 
     private ClusterId clusterId;
 
     public ClusterBinder( SimpleStorage<ClusterId> clusterIdStorage, SimpleStorage<DatabaseName> dbNameStorage, CoreTopologyService topologyService,
             Clock clock, ThrowingAction<InterruptedException> retryWaiter, long timeoutMillis, CoreBootstrapper coreBootstrapper, String dbName,
-            int minCoreHosts, LogProvider logProvider )
+            int minCoreHosts, LogProvider logProvider, Duration clusterIdTtl )
     {
         this.clusterIdStorage = clusterIdStorage;
         this.dbNameStorage = dbNameStorage;
@@ -74,6 +78,7 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
         this.timeoutMillis = timeoutMillis;
         this.dbName = dbName;
         this.minCoreHosts = minCoreHosts;
+        this.clusterIdTtl = clusterIdTtl;
     }
 
     /**
@@ -130,9 +135,7 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
         if ( clusterIdStorage.exists() )
         {
             clusterId = clusterIdStorage.readState();
-            publishClusterId( clusterId );
-            log.info( "Already bound to cluster: " + clusterId );
-            return new BoundState( clusterId );
+            return handleLocalClusterId( clusterId );
         }
 
         CoreSnapshot snapshot = null;
@@ -143,13 +146,19 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
         {
             topology = topologyService.localCoreServers();
 
-            if ( topology.clusterId() != null )
+            RefCounted<TransientClusterId> existing = topology.clusterId();
+            if ( existing != null && existing.value().isActiveDuringLast( clusterIdTtl ) && !existing.safeToRemove() )
             {
-                clusterId = topology.clusterId();
+                clusterId = existing.value().clusterId();
                 log.info( "Bound to cluster: " + clusterId );
             }
-            else if ( hostShouldBootstrapCluster( topology ) )
+            else if ( existing != null && hostShouldBootstrapCluster( topology ) || hostShouldBootstrapCluster( topology ) )
             {
+                if( existing != null )
+                {
+                    log.warn( "A different cluster %s exists for the database %s, but is inactive. This instance may bind, but an attempt by the previous " +
+                            "cluster to rejoin will result in an error.", existing, dbName );
+                }
                 clusterId = new ClusterId( UUID.randomUUID() );
                 snapshot = coreBootstrapper.bootstrap( topology.members().keySet() );
                 log.info( format( "Bootstrapped with snapshot: %s and clusterId: %s", snapshot, clusterId ) );
@@ -179,6 +188,35 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
         return Optional.ofNullable( clusterId );
     }
 
+    private BoundState handleLocalClusterId( ClusterId localId ) throws BindingException, InterruptedException
+    {
+        CoreTopology localTopology = topologyService.localCoreServers();
+        Optional<RefCounted<TransientClusterId>> existing = Optional.ofNullable( localTopology.clusterId() );
+
+        log.info( "This instance was previously bound to cluster %s.", localId );
+
+        if ( existing.isPresent() )
+        {
+            RefCounted<TransientClusterId> e = existing.get();
+            if ( !e.value().uuid().equals( localId.uuid() ) && ( !e.value().isActiveDuringLast( clusterIdTtl ) || e.safeToRemove() ) )
+            {
+                log.warn( "A different cluster %s exists for the database %s, but appears down. This instance will bind forcefully, but an attempt by the " +
+                        "previous cluster to rejoin will result in an error.", e, dbName );
+            }
+            else if ( !e.value().uuid().equals( localId.uuid() ) )
+            {
+                throw new IllegalStateException( String.format( "Another cluster %s is already bound for the database %s.", e, dbName ) );
+            }
+        }
+        else
+        {
+            log.info( "No other cluster exists for the database %s, so rebinding to %s. ", localId, dbName);
+        }
+
+        publishClusterId( localId );
+        return new BoundState( localId );
+    }
+
     private void publishClusterId( ClusterId localClusterId ) throws BindingException, InterruptedException
     {
         boolean success = topologyService.setClusterId( localClusterId, dbName );
@@ -191,4 +229,5 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
             log.info( "Published: " + localClusterId );
         }
     }
+
 }

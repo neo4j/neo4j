@@ -23,7 +23,6 @@
 package org.neo4j.causalclustering.discovery;
 
 import com.hazelcast.config.MemberAttributeConfig;
-import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IAtomicReference;
 import com.hazelcast.core.IMap;
@@ -32,6 +31,7 @@ import com.hazelcast.core.MultiMap;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -45,7 +45,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.LeaderInfo;
-import org.neo4j.causalclustering.identity.ClusterId;
+import org.neo4j.causalclustering.discovery.data.RefCounted;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
@@ -73,10 +73,11 @@ public final class HazelcastClusterTopology
 
     // cluster-wide attributes
     static final String CLUSTER_UUID_DB_NAME_MAP = "cluster_uuid";
+    static final String CLUSTER_UUID_MEMBER_ID_MULTIMAP = "cluster_id_member_ids";
     static final String SERVER_GROUPS_MULTIMAP = "groups";
-    static final String READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP = "read-replica-transaction-servers";
+    static final String READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP = "read_replica_transaction_servers";
     static final String READ_REPLICA_BOLT_ADDRESS_MAP = "read_replicas"; // hz client uuid string -> boltAddress string
-    static final String READ_REPLICA_MEMBER_ID_MAP = "read-replica-member-ids";
+    static final String READ_REPLICA_MEMBER_ID_MAP = "read_replica_member_ids";
     static final String READ_REPLICAS_DB_NAME_MAP = "read_replicas_database_names";
     static final String DB_NAME_LEADER_TERM_PREFIX = "leader_term_for_database_name_";
 
@@ -104,7 +105,7 @@ public final class HazelcastClusterTopology
     {
         Map<MemberId,CoreServerInfo> coreMembers = emptyMap();
         boolean canBeBootstrapped = false;
-        ClusterId clusterId = null;
+        RefCounted<TransientClusterId> clusterId = null;
         String dbName = config.get( CausalClusteringSettings.database );
 
         if ( hazelcastInstance != null )
@@ -143,17 +144,22 @@ public final class HazelcastClusterTopology
         return catchupAddressMap;
     }
 
-    private static ClusterId getClusterId( HazelcastInstance hazelcastInstance, String dbName )
+    static RefCounted<TransientClusterId> getClusterId( HazelcastInstance hazelcastInstance, String dbName )
     {
-        IMap<String, UUID> uuidPerDbCluster = hazelcastInstance.getMap( CLUSTER_UUID_DB_NAME_MAP );
-        UUID uuid = uuidPerDbCluster.get( dbName );
-        return uuid != null ? new ClusterId( uuid ) : null;
+        IMap<String,TransientClusterId> clusterIdPerDb = hazelcastInstance.getMap( CLUSTER_UUID_DB_NAME_MAP );
+        MultiMap<UUID,MemberId> memberIdsPerClusterId = hazelcastInstance.getMultiMap( CLUSTER_UUID_MEMBER_ID_MULTIMAP );
+        Optional<TransientClusterId> clusterId = Optional.ofNullable( clusterIdPerDb.get( dbName ) );
+        Set<MemberId> references = clusterId.map( TransientClusterId::uuid )
+                .flatMap( uid -> Optional.ofNullable( memberIdsPerClusterId.get( uid ) ) )
+                .map( HashSet::new )
+                .orElse( new HashSet<>() );
+        return clusterId.map( id -> new RefCounted<>( id, references) ).orElse( null ) ;
     }
 
     private static Set<String> getDBNames( HazelcastInstance hazelcastInstance )
     {
-        IMap<String, UUID> uuidPerDbCluster = hazelcastInstance.getMap( CLUSTER_UUID_DB_NAME_MAP );
-        return uuidPerDbCluster.keySet();
+        IMap<String,TransientClusterId> clusterIdPerDb = hazelcastInstance.getMap( CLUSTER_UUID_DB_NAME_MAP );
+        return clusterIdPerDb.keySet();
     }
 
     public static Map<MemberId,RoleInfo> getCoreRoles( HazelcastInstance hazelcastInstance, Set<MemberId> coreMembers )
@@ -171,11 +177,62 @@ public final class HazelcastClusterTopology
         return coreMembers.stream().collect( Collectors.toMap( Function.identity(), roleMapper ) );
     }
 
-    static boolean casClusterId( HazelcastInstance hazelcastInstance, ClusterId clusterId, String dbName )
+    static boolean setOnceClusterId( HazelcastInstance hazelcastInstance, TransientClusterId clusterId, String dbName )
     {
-        IMap<String, UUID> uuidPerDbCluster = hazelcastInstance.getMap( CLUSTER_UUID_DB_NAME_MAP );
-        UUID uuid = uuidPerDbCluster.putIfAbsent( dbName, clusterId.uuid() );
-        return uuid == null || clusterId.uuid().equals( uuid );
+        IMap<String,TransientClusterId> clusterIdPerDb = hazelcastInstance.getMap( CLUSTER_UUID_DB_NAME_MAP );
+        TransientClusterId previous = clusterIdPerDb.putIfAbsent( dbName, clusterId );
+        return previous == null;
+    }
+
+    static boolean updateClusterId( HazelcastInstance hazelcastInstance, TransientClusterId previous,
+            TransientClusterId next, String dbName )
+    {
+        IMap<String,TransientClusterId> clusterIdPerDb = hazelcastInstance.getMap( CLUSTER_UUID_DB_NAME_MAP );
+        return clusterIdPerDb.replace( dbName, previous, next );
+    }
+
+    static boolean removeClusterId( HazelcastInstance hazelcastInstance, TransientClusterId clusterId, String dbName )
+    {
+        IMap<String,TransientClusterId> clusterIdPerDb = hazelcastInstance.getMap( CLUSTER_UUID_DB_NAME_MAP );
+        boolean successfulRemove = clusterIdPerDb.remove( dbName, clusterId );
+        if ( successfulRemove )
+        {
+            MultiMap<UUID,MemberId> memberIdsPerClusterId = hazelcastInstance.getMultiMap( CLUSTER_UUID_MEMBER_ID_MULTIMAP );
+            memberIdsPerClusterId.remove( clusterId.uuid() );
+        }
+        return successfulRemove;
+    }
+
+    static RefCounted<TransientClusterId> releaseClusterId( HazelcastInstance hazelcastInstance, RefCounted<TransientClusterId> clusterId, MemberId ref,
+            String dbName, Log log )
+    {
+        MultiMap<UUID,MemberId> memberIdsPerClusterId = hazelcastInstance.getMultiMap( CLUSTER_UUID_MEMBER_ID_MULTIMAP );
+        if ( memberIdsPerClusterId.remove( clusterId.value().uuid(), ref ) )
+        {
+
+            return clusterId.release( ref );
+        }
+        else
+        {
+            log.warn( "Attempt, by member %s, to release reference to cluster id %s failed.", ref, clusterId.value().uuid() );
+            return clusterId;
+        }
+    }
+
+    static RefCounted<TransientClusterId> holdClusterId( HazelcastInstance hazelcastInstance, RefCounted<TransientClusterId> clusterId,
+            MemberId ref, String dbName, Log log )
+    {
+        //TODO: Check that the clusterId is actually valid, otherwise error? Or do we allow garbage to build up?/
+        MultiMap<UUID,MemberId> memberIdsPerClusterId = hazelcastInstance.getMultiMap( CLUSTER_UUID_MEMBER_ID_MULTIMAP );
+        if( memberIdsPerClusterId.put( clusterId.value().uuid(), ref ) )
+        {
+            return clusterId.hold( ref );
+        }
+        else
+        {
+            log.warn("Attempt, by member %s, to hold reference to cluster id %s failed.", ref, clusterId.value().uuid() );
+            return clusterId;
+        }
     }
 
     private static Map<MemberId,ReadReplicaInfo> readReplicas( HazelcastInstance hazelcastInstance )

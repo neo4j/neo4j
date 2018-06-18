@@ -28,7 +28,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.causalclustering.identity.ClusterId;
+import org.neo4j.causalclustering.discovery.data.RefCounted;
 import org.neo4j.causalclustering.identity.MemberId;
 
 import static java.lang.String.format;
@@ -38,11 +38,11 @@ public class CoreTopology implements Topology<CoreServerInfo>
 {
     static final CoreTopology EMPTY = new CoreTopology( null, false, emptyMap() );
 
-    private final ClusterId clusterId;
+    private final RefCounted<TransientClusterId> clusterId;
     private final boolean canBeBootstrapped;
     private final Map<MemberId,CoreServerInfo> coreMembers;
 
-    public CoreTopology( ClusterId clusterId, boolean canBeBootstrapped, Map<MemberId,CoreServerInfo> coreMembers )
+    public CoreTopology( RefCounted<TransientClusterId> clusterId, boolean canBeBootstrapped, Map<MemberId,CoreServerInfo> coreMembers )
     {
         this.clusterId = clusterId;
         this.canBeBootstrapped = canBeBootstrapped;
@@ -55,7 +55,7 @@ public class CoreTopology implements Topology<CoreServerInfo>
         return coreMembers;
     }
 
-    public ClusterId clusterId()
+    public RefCounted<TransientClusterId> clusterId()
     {
         return clusterId;
     }

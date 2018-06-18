@@ -293,7 +293,7 @@ public class ReadReplicaReplicationIT
         cluster.coreTx( createSomeData );
 
         awaitEx( () -> readReplicasUpToDateAsTheLeader( cluster.awaitLeader(), cluster.readReplicas() ), 1, TimeUnit.MINUTES );
-        cluster.removeReadReplicaWithMemberId( readReplicaId );
+        cluster.removeReadReplicaWithServerId( readReplicaId );
 
         // let's spend some time by adding more data
         cluster.coreTx( createSomeData );

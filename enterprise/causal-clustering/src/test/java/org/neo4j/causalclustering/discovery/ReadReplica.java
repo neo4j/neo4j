@@ -61,6 +61,7 @@ public class ReadReplica implements ClusterMember<ReadReplicaGraphDatabase>
     protected ReadReplicaGraphDatabase database;
     protected Monitors monitors;
     private final ThreadGroup threadGroup;
+    private final String dbName;
 
     public ReadReplica( File parentDir, int serverId, int boltPort, int httpPort, int txPort, int backupPort,
                         DiscoveryServiceFactory discoveryServiceFactory,
@@ -105,6 +106,8 @@ public class ReadReplica implements ClusterMember<ReadReplicaGraphDatabase>
         config.put( GraphDatabaseSettings.logs_directory.name(), new File( neo4jHome, "logs" ).getAbsolutePath() );
         config.put( GraphDatabaseSettings.logical_logs_location.name(), "replica-tx-logs-" + serverId );
         memberConfig = Config.defaults( config );
+
+        this.dbName = memberConfig.get( CausalClusteringSettings.database );
 
         this.discoveryServiceFactory = discoveryServiceFactory;
         storeDir = new File( new File( new File( neo4jHome, "data" ), "databases" ), "graph.db" );
@@ -205,6 +208,12 @@ public class ReadReplica implements ClusterMember<ReadReplicaGraphDatabase>
     public String directURI()
     {
         return String.format( "bolt://%s", boltAdvertisedSocketAddress );
+    }
+
+    @Override
+    public String dbName()
+    {
+        return dbName;
     }
 
     @Override

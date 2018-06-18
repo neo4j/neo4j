@@ -60,5 +60,10 @@ public interface Topology<T extends DiscoveryServerInfo>
                 .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
     }
 
+    default boolean isEmpty()
+    {
+        return this.members().isEmpty();
+    }
+
     Topology<T> filterTopologyByDb( String dbName );
 }

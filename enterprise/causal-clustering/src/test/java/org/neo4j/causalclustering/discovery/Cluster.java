@@ -65,6 +65,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
+import org.neo4j.stream.Streams;
 import org.neo4j.test.DbRepresentation;
 
 import static java.util.stream.Collectors.toList;
@@ -146,7 +147,10 @@ public class Cluster
     public Set<CoreClusterMember> healthyCoreMembers()
     {
         return coreMembers.values().stream()
-                .filter( db -> db.database().getDependencyResolver().resolveDependency( DatabaseHealth.class ).isHealthy() )
+                .filter( db -> {
+                    CoreGraphDatabase database = db.database();
+                    return database != null && database.getDependencyResolver().resolveDependency( DatabaseHealth.class ).isHealthy();
+                } )
                 .collect( Collectors.toSet() );
     }
 
@@ -303,7 +307,7 @@ public class Cluster
         }
         else
         {
-            throw new RuntimeException( "Could not remove core member with id " + serverId );
+            throw new RuntimeException( "Could not remove core member with server id " + serverId );
         }
     }
 
@@ -313,9 +317,9 @@ public class Cluster
         coreMembers.values().remove( memberToRemove );
     }
 
-    public void removeReadReplicaWithMemberId( int memberId )
+    public void removeReadReplicaWithServerId( int serverId )
     {
-        ReadReplica memberToRemove = getReadReplicaById( memberId );
+        ReadReplica memberToRemove = getReadReplicaById( serverId );
 
         if ( memberToRemove != null )
         {
@@ -323,11 +327,11 @@ public class Cluster
         }
         else
         {
-            throw new RuntimeException( "Could not remove core member with member id " + memberId );
+            throw new RuntimeException( "Could not remove read replica with server id " + serverId );
         }
     }
 
-    private void removeReadReplica( ReadReplica memberToRemove )
+    public void removeReadReplica( ReadReplica memberToRemove )
     {
         memberToRemove.shutdown();
         readReplicas.values().remove( memberToRemove );
@@ -343,6 +347,16 @@ public class Cluster
         return readReplicas.values();
     }
 
+    public Collection<CoreClusterMember> coreMembers( String dbName )
+    {
+        return filterByDbName( coreMembers.values(), dbName );
+    }
+
+    public Collection<ReadReplica> readReplicas( String dbName )
+    {
+        return filterByDbName( readReplicas.values(), dbName );
+    }
+
     public ReadReplica findAnyReadReplica()
     {
         return firstOrNull( readReplicas.values() );
@@ -356,52 +370,55 @@ public class Cluster
         }
     }
 
-    public CoreClusterMember getMemberWithRole( Role role )
+    public CoreClusterMember getCoreMemberWithRole( Role role )
     {
-        return getMemberWithAnyRole( role );
+        return getCoreMemberWithAnyRole( role );
     }
 
-    public List<CoreClusterMember> getAllMembersWithRole( Role role )
+    public List<CoreClusterMember> getAllCoreMembersWithRole( Role role )
     {
-        return getAllMembersWithAnyRole( role );
+        return getAllCoreMembersWithAnyRole( role );
     }
 
-    public CoreClusterMember getMemberWithRole( String dbName, Role role )
+    public CoreClusterMember getCoreMemberWithRole( String dbName, Role role )
     {
-        return getMemberWithAnyRole( dbName, role );
+        return getCoreMemberWithAnyRole( dbName, role );
     }
 
-    public List<CoreClusterMember> getAllMembersWithRole( String dbName, Role role )
+    public List<CoreClusterMember> getAllCoreMembersWithRole( String dbName, Role role )
     {
-        return getAllMembersWithAnyRole( dbName, role );
+        return getAllCoreMembersWithAnyRole( dbName, role );
     }
 
-    public CoreClusterMember getMemberWithAnyRole( Role... roles )
-    {
-        String dbName = CausalClusteringSettings.database.getDefaultValue();
-        return getMemberWithAnyRole( dbName, roles );
-    }
-
-    public List<CoreClusterMember> getAllMembersWithAnyRole( Role... roles )
+    public CoreClusterMember getCoreMemberWithAnyRole( Role... roles )
     {
         String dbName = CausalClusteringSettings.database.getDefaultValue();
-        return getAllMembersWithAnyRole( dbName, roles );
+        return getCoreMemberWithAnyRole( dbName, roles );
     }
 
-    public CoreClusterMember getMemberWithAnyRole( String dbName, Role... roles )
+    public List<CoreClusterMember> getAllCoreMembersWithAnyRole( Role... roles )
     {
-        return getAllMembersWithAnyRole( dbName, roles ).stream().findFirst().orElse( null );
+        String dbName = CausalClusteringSettings.database.getDefaultValue();
+        return getAllCoreMembersWithAnyRole( dbName, roles );
     }
 
-    public List<CoreClusterMember> getAllMembersWithAnyRole( String dbName, Role... roles )
+    public CoreClusterMember getCoreMemberWithAnyRole( String dbName, Role... roles )
+    {
+        return getAllCoreMembersWithAnyRole( dbName, roles ).stream().findFirst().orElse( null );
+    }
+
+    public List<CoreClusterMember> getAllCoreMembersWithAnyRole( String dbName, Role... roles )
     {
         ensureDBName( dbName );
         Set<Role> roleSet = Arrays.stream( roles ).collect( toSet() );
 
         return coreMembers.values().stream()
-                .filter( m -> m.database() != null )
-                .filter( m -> m.dbName().equals( dbName ) )
-                .filter( m -> roleSet.contains( m.database().getRole() ) )
+                .filter( m -> {
+                    CoreGraphDatabase db = m.database();
+                    return db != null &&
+                            m.dbName().equals( dbName ) &&
+                            roleSet.contains( db.getRole() );
+                })
                 .collect( Collectors.toList() );
     }
 
@@ -427,12 +444,12 @@ public class Cluster
 
     public CoreClusterMember awaitCoreMemberWithRole( Role role, long timeout, TimeUnit timeUnit ) throws TimeoutException
     {
-        return await( () -> getMemberWithRole( role ), notNull(), timeout, timeUnit );
+        return await( () -> getCoreMemberWithRole( role ), notNull(), timeout, timeUnit );
     }
 
     public CoreClusterMember awaitCoreMemberWithRole( String dbName, Role role, long timeout, TimeUnit timeUnit ) throws TimeoutException
     {
-        return await( () -> getMemberWithRole( dbName, role ), notNull(), timeout, timeUnit );
+        return await( () -> getCoreMemberWithRole( dbName, role ), notNull(), timeout, timeUnit );
     }
 
     public int numberOfCoreMembersReportedByTopology()
@@ -790,6 +807,36 @@ public class Cluster
         return random( eligible );
     }
 
+    public int highCoreId()
+    {
+        return highestCoreServerId;
+    }
+
+    public int highReplicaId()
+    {
+        return highestReplicaServerId;
+    }
+
+    public void mergeInstanceCoreParams( Map<String, IntFunction<String>> newParams )
+    {
+        this.instanceCoreParams.putAll( newParams );
+    }
+
+    public void mergeCoreParams( Map<String, String> newParams )
+    {
+        this.coreParams.putAll( newParams );
+    }
+
+    public void mergeInstanceRRParams( Map<String, IntFunction<String>> newParams )
+    {
+        this.instanceReadReplicaParams.putAll( newParams );
+    }
+
+    public void mergeReplicaParams( Map<String, String> newParams )
+    {
+        this.readReplicaParams.putAll( newParams );
+    }
+
     private static <T> Optional<T> random( List<T> list )
     {
         if ( list.size() == 0 )
@@ -798,5 +845,10 @@ public class Cluster
         }
         int ordinal = ThreadLocalRandom.current().nextInt( list.size() );
         return Optional.of( list.get( ordinal ) );
+    }
+
+    private static <T extends ClusterMember<?>> List<T> filterByDbName( Collection<T> members, String dbName )
+    {
+        return members.stream().filter( m -> m.dbName().equals( dbName ) ).collect( Collectors.toList() );
     }
 }

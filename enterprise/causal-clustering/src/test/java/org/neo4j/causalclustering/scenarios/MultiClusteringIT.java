@@ -38,23 +38,31 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
+import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.causalclustering.helpers.DataCreator;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.graphdb.Node;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.causalclustering.ClusterRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.causalclustering.TestStoreId.getStoreIds;
@@ -189,7 +197,7 @@ public class MultiClusteringIT
     public void rejoiningFollowerShouldDownloadSnapshotFromCorrectDatabase() throws Exception
     {
         String dbName = getFirstDbName( dbNames );
-        int followerId = cluster.getMemberWithAnyRole( dbName, Role.FOLLOWER ).serverId();
+        int followerId = cluster.getCoreMemberWithAnyRole( dbName, Role.FOLLOWER ).serverId();
         cluster.removeCoreMemberWithServerId( followerId );
 
         for ( int  i = 0; i < 100; i++ )
@@ -252,6 +260,48 @@ public class MultiClusteringIT
         {
             //expected
         }
+    }
+
+    @Test
+    public void shouldBeAbleToReBindSingleClusterWithoutClusterRestart() throws Exception
+    {
+        //Get all members with a given database name
+        String dbName = getFirstDbName( dbNames );
+        Collection<CoreClusterMember> allDbNameCores = cluster.coreMembers( dbName );
+        Collection<ReadReplica> allDbNameRRs = cluster.readReplicas( dbName );
+        //Remove them
+        allDbNameCores.forEach( cluster::removeCoreMember );
+        allDbNameRRs.forEach( cluster::removeReadReplica );
+
+        //assert Eventually all down
+        assertEventually( "Removed members should be down.",
+                () -> allDbNameCores.stream().anyMatch( m -> cluster.coreMembers().contains( m ) ), is( false ), 90, TimeUnit.SECONDS );
+        //Create new members with the same database name, simulating an unbind->rejoin
+        int highId = cluster.highCoreId() + 1;
+
+        HashMap<String,IntFunction<String>> newInstanceParams = new HashMap<>();
+        newInstanceParams.put( CausalClusteringSettings.database.name(), ignored -> dbName );
+        cluster.mergeInstanceCoreParams( newInstanceParams );
+
+        List<CoreClusterMember> coreMembers = IntStream.range( highId,  highId + allDbNameCores.size() )
+                .mapToObj( ignored -> cluster.newCoreMember() )
+                .peek( m -> CompletableFuture.runAsync( m::start ) )
+                .collect( Collectors.toList() );
+
+        //As long as the new members are eventually available, then the test passes
+        assertEventually( String.format( "The Multi-cluster should eventually contain all new members with dbName %s.", dbName ),
+                () -> cluster.healthyCoreMembers().containsAll( coreMembers ), is( true ), 120, TimeUnit.SECONDS );
+    }
+
+    @Test
+    public void nameClashAfterAssumedClusterUnbindShouldSaltNameAndWarn() throws Exception
+    {
+        //Get all members with a given database name
+        //Shut them down
+        //Create new members with the same database name
+        //Check that the new members are up
+        //Restart the old members
+        //Expect the warning
     }
 
     //TODO: Test that rejoining followers wait for majority of hosts *for each database* to be available before joining

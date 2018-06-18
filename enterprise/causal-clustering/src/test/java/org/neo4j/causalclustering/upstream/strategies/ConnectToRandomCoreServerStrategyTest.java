@@ -24,6 +24,7 @@ package org.neo4j.causalclustering.upstream.strategies;
 
 import org.junit.Test;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -33,6 +34,8 @@ import org.neo4j.causalclustering.discovery.ClientConnectorAddresses;
 import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.causalclustering.discovery.TransientClusterId;
+import org.neo4j.causalclustering.discovery.data.RefCounted;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -76,7 +79,8 @@ public class ConnectToRandomCoreServerStrategyTest
     {
         assert memberIds.length > 0;
 
-        ClusterId clusterId = new ClusterId( UUID.randomUUID() );
+        TransientClusterId clusterId = new TransientClusterId( new ClusterId( UUID.randomUUID() ), Instant.now() );
+        RefCounted<TransientClusterId> clusterIdRef = new RefCounted<TransientClusterId>( clusterId );
         Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
 
         int offset = 0;
@@ -91,6 +95,6 @@ public class ConnectToRandomCoreServerStrategyTest
             offset++;
         }
 
-        return new CoreTopology( clusterId, false, coreMembers );
+        return new CoreTopology( clusterIdRef, false, coreMembers );
     }
 }

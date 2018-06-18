@@ -252,6 +252,7 @@ public class CoreClusterMember implements ClusterMember<CoreGraphDatabase>
         return serverId;
     }
 
+    @Override
     public String dbName()
     {
         return dbName;

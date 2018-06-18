@@ -105,7 +105,7 @@ public class BackupCoreIT
 
     static String backupAddress( Cluster cluster )
     {
-        return cluster.getMemberWithRole( Role.LEADER ).settingValue( "causal_clustering.transaction_listen_address" );
+        return cluster.getCoreMemberWithRole( Role.LEADER ).settingValue( "causal_clustering.transaction_listen_address" );
     }
 
     static String[] backupArguments( String from, File backupsDir, String name )

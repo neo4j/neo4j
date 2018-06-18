@@ -22,6 +22,8 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +47,7 @@ import com.hazelcast.core.MembershipListener;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.LeaderInfo;
+import org.neo4j.causalclustering.discovery.data.RefCounted;
 import org.neo4j.causalclustering.helper.RobustJobSchedulerWrapper;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -86,6 +89,7 @@ public class HazelcastCoreTopologyService implements CoreTopologyService, Lifecy
     private final HostnameResolver hostnameResolver;
     private final TopologyServiceRetryStrategy topologyServiceRetryStrategy;
     private final String localDBName;
+    private final Duration clusterIdTtl;
 
     private String membershipRegistrationId;
     private JobScheduler.JobHandle refreshJob;
@@ -94,6 +98,7 @@ public class HazelcastCoreTopologyService implements CoreTopologyService, Lifecy
     private final AtomicReference<Optional<LeaderInfo>> stepDownInfo = new AtomicReference<>( Optional.empty() );
 
     private volatile HazelcastInstance hazelcastInstance;
+    private volatile Optional<RefCounted<TransientClusterId>> clusterIdRef;
 
     /* cached data updated during each refresh */
     private volatile CoreTopology coreTopology = CoreTopology.EMPTY;
@@ -120,6 +125,8 @@ public class HazelcastCoreTopologyService implements CoreTopologyService, Lifecy
         this.hostnameResolver = hostnameResolver;
         this.topologyServiceRetryStrategy = topologyServiceRetryStrategy;
         this.localDBName = config.get( CausalClusteringSettings.database );
+        this.clusterIdTtl = config.get( CausalClusteringSettings.clusterId_ttl );
+        this.clusterIdRef = Optional.empty();
     }
 
     @Override
@@ -139,7 +146,35 @@ public class HazelcastCoreTopologyService implements CoreTopologyService, Lifecy
     public boolean setClusterId( ClusterId clusterId, String dbName ) throws InterruptedException
     {
         waitOnHazelcastInstanceCreation();
-        return HazelcastClusterTopology.casClusterId( hazelcastInstance, clusterId, dbName );
+        Optional<RefCounted<TransientClusterId>> existing = Optional.ofNullable( HazelcastClusterTopology.getClusterId( hazelcastInstance, dbName ) );
+
+        boolean stateClean = true;
+        if ( existing.isPresent() )
+        {
+            RefCounted<TransientClusterId> e = existing.get();
+            if ( e.value().clusterId() == clusterId )
+            {
+                clusterIdRef = Optional.of( HazelcastClusterTopology.holdClusterId( hazelcastInstance, e, myself, dbName, log ) );
+                return true;
+            }
+            else if ( e.value().isActiveDuringLast( clusterIdTtl ) && !e.safeToRemove() )
+            {
+                stateClean = false;
+            }
+            else
+            {
+                stateClean = HazelcastClusterTopology.removeClusterId( hazelcastInstance, e.value(), dbName );
+            }
+        }
+
+        TransientClusterId newClusterId = new TransientClusterId( clusterId, Instant.now() );
+        RefCounted<TransientClusterId> newClusterIdRef = new RefCounted<>( newClusterId );
+        boolean successfulSet = HazelcastClusterTopology.setOnceClusterId( hazelcastInstance, newClusterId, dbName );
+        if ( successfulSet )
+        {
+            clusterIdRef = Optional.of( HazelcastClusterTopology.holdClusterId( hazelcastInstance, newClusterIdRef, myself, dbName, log ) );
+        }
+        return stateClean && successfulSet;
     }
 
     @Override
@@ -246,6 +281,8 @@ public class HazelcastCoreTopologyService implements CoreTopologyService, Lifecy
 
         if ( hazelcastInstance != null && membershipRegistrationId != null )
         {
+
+            cleanupClusterIdRef();
             try
             {
                 hazelcastInstance.getCluster().removeMembershipListener( membershipRegistrationId );
@@ -256,6 +293,21 @@ public class HazelcastCoreTopologyService implements CoreTopologyService, Lifecy
                 log.warn( "Failed to stop Hazelcast", e );
             }
         }
+    }
+
+    private void cleanupClusterIdRef()
+    {
+        //TODO: does it matter if this is not an atomic ref using CAS? Only called in stop cases
+        Optional<RefCounted<TransientClusterId>> localClusterIdRef = clusterIdRef;
+        clusterIdRef = localClusterIdRef.map( r -> {
+            RefCounted<TransientClusterId> updatedRef =
+                    HazelcastClusterTopology.releaseClusterId( hazelcastInstance, r, myself, localDBName, log );
+            if( updatedRef.safeToRemove() )
+            {
+                HazelcastClusterTopology.removeClusterId( hazelcastInstance, updatedRef.value(), localDBName );
+            }
+            return updatedRef;
+        } );
     }
 
     @Override
@@ -431,10 +483,32 @@ public class HazelcastCoreTopologyService implements CoreTopologyService, Lifecy
 
     private synchronized void refreshTopology() throws InterruptedException
     {
+        touchClusterId();
         refreshCoreTopology();
         refreshReadReplicaTopology();
         refreshRoles();
         catchupAddressMap = extractCatchupAddressesMap( localCoreServers(), localReadReplicas() );
+    }
+
+    private void touchClusterId()
+    {
+        RefCounted<TransientClusterId> previous = HazelcastClusterTopology.getClusterId( hazelcastInstance, localDBName );
+        if ( clusterIdRef.isPresent() )
+        {
+            RefCounted<TransientClusterId> ref = clusterIdRef.get();
+            if ( !ref.value().uuid().equals( previous.value().uuid() ) )
+            {
+                throw new IllegalStateException( String.format( "A topology member is holding a reference to cluster id %s for dbName %s, but expected " +
+                                "cluster id %s",  ref, localDBName, previous ) );
+            }
+
+            RefCounted<TransientClusterId> next = ref.map( id -> id.touchAt( Instant.now() ) );
+            boolean success = HazelcastClusterTopology.updateClusterId( hazelcastInstance, previous.value(), next.value(), localDBName );
+            if ( success )
+            {
+                clusterIdRef = Optional.of( next );
+            }
+        }
     }
 
     private void refreshCoreTopology() throws InterruptedException

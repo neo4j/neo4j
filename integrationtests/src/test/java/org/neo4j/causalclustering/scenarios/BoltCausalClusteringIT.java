@@ -116,7 +116,7 @@ public class BoltCausalClusteringIT
         } );
 
         // when
-        int count = executeWriteAndReadThroughBolt( cluster.getMemberWithRole( Role.FOLLOWER ) );
+        int count = executeWriteAndReadThroughBolt( cluster.getCoreMemberWithRole( Role.FOLLOWER ) );
 
         // then
         assertEquals( 1, count );
