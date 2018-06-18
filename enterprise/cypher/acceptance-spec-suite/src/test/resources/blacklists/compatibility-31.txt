@@ -9,7 +9,3 @@ Ordering for lists, descending
 Shorthand case with filter should work as expected
 equality with boolean lists
 optional equality with boolean lists
-
-// PatternPredicate.feature
-// Fixed when we move from 3.1.8 to 3.1.9
-Undirected NOOP path predicate 1

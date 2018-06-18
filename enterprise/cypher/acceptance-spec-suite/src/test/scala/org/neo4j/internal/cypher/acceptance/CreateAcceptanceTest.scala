@@ -28,11 +28,10 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QuerySt
 class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport
   with CreateTempFileTestSupport {
 
-  // Version 3.1 = rule planner will work first after the next patch release 3.1.8
   test("handle null value in property map from parameter for create node") {
     val query = "CREATE (a {props}) RETURN a.foo, a.bar"
 
-    val result = updateWithCostPlannerOnly(query, "props" -> Map("foo" -> null, "bar" -> "baz"))
+    val result = updateWithBothPlanners(query, "props" -> Map("foo" -> null, "bar" -> "baz"))
 
     result.toSet should equal(Set(Map("a.foo" -> null, "a.bar" -> "baz")))
     assertStats(result, nodesCreated = 1, propertiesWritten = 1)
@@ -48,21 +47,19 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, propertiesWritten = 2)
   }
 
-  // Version 3.1 = rule planner will work first after the next patch release 3.1.8
   test("handle null value in property map from parameter for create relationship") {
     val query = "CREATE (a)-[r:REL {props}]->() RETURN r.foo, r.bar"
 
-    val result = updateWithCostPlannerOnly(query, "props" -> Map("foo" -> null, "bar" -> "baz"))
+    val result = updateWithBothPlanners(query, "props" -> Map("foo" -> null, "bar" -> "baz"))
 
     result.toSet should equal(Set(Map("r.foo" -> null, "r.bar" -> "baz")))
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 1)
   }
 
-  // Version 3.1 = rule planner will work first after the next patch release 3.1.8
   test("handle null value in property map from parameter") {
     val query = "CREATE (a {props})-[r:REL {props}]->() RETURN a.foo, a.bar, r.foo, r.bar"
 
-    val result = updateWithCostPlannerOnly(query, "props" -> Map("foo" -> null, "bar" -> "baz"))
+    val result = updateWithBothPlanners(query, "props" -> Map("foo" -> null, "bar" -> "baz"))
 
     result.toSet should equal(Set(Map("a.foo" -> null, "a.bar" -> "baz", "r.foo" -> null, "r.bar" -> "baz")))
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 2)
