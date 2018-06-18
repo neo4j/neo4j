@@ -63,7 +63,7 @@ object CommunityRuntimeContextCreator extends ContextCreator[CommunityRuntimeCon
     val metrics: Metrics = if (planContext == null)
       null
     else
-      metricsFactory.newMetrics(planContext.statistics, evaluator)
+      metricsFactory.newMetrics(planContext.statistics, evaluator, config)
 
     new CommunityRuntimeContext(exceptionCreator, tracer, notificationLogger, planContext,
                         monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock)

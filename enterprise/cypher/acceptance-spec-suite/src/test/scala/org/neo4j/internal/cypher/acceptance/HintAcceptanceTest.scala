@@ -113,9 +113,7 @@ class HintAcceptanceTest
                   |RETURN a.prop, b.prop
                 """.stripMargin
 
-    // TODO: Once 3.2 comes out with this feature added, we should change the following line to not exclude 3.3
-    val cost3_3 = TestScenario(Versions.V3_3, Planners.Cost, Runtimes.Default)
-    executeWith(Configs.Interpreted - Configs.AllRulePlanners - Configs.Cost2_3 - Configs.Cost3_1 - cost3_3, query,
+    executeWith(Configs.Interpreted - Configs.OldAndRule, query,
       planComparisonStrategy = ComparePlansWithAssertion((p) => {
         p should useOperatorTimes("NodeIndexSeek", 2)
       }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
