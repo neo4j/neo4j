@@ -37,6 +37,9 @@
     <clirr.comparisonVersion>3.0.1</clirr.comparisonVersion>
     <git.commit>unknown-commit</git.commit>
     <checkstyle.strict>true</checkstyle.strict>
+    <cypher.compatibility.23>2.3.12</cypher.compatibility.23>
+    <cypher.compatibility.31>3.1.9</cypher.compatibility.31>
+    <caffeine.version>2.3.3</caffeine.version>
   </properties>
 
   <modules>
@@ -478,7 +481,7 @@
       <dependency>
         <groupId>com.github.ben-manes.caffeine</groupId>
         <artifactId>caffeine</artifactId>
-        <version>2.3.3</version>
+        <version>${caffeine.version}</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
