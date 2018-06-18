@@ -204,7 +204,7 @@ public class OnlineIndexUpdates implements IndexUpdates
             reltypeBefore = reltypeAfter = relationshipRecord.getType();
         }
         EntityUpdates.Builder relationshipPropertyUpdates =
-                EntityUpdates.forEntity( relationshipId ).withTokensBefore( reltypeBefore ).withTokensAfter( reltypeAfter );
+                EntityUpdates.forEntity( relationshipId ).withTokens( reltypeBefore ).withTokensAfter( reltypeAfter );
         if ( propertyCommands != null )
         {
             converter.convertPropertyRecord( relationshipId, Iterables.cast( propertyCommands ), relationshipPropertyUpdates );
