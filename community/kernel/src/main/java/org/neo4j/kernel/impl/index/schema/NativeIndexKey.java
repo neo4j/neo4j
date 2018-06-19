@@ -82,6 +82,8 @@ abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends Tempora
         this.entityId = entityId;
     }
 
+    abstract Value[] asValues();
+
     protected abstract String propertiesAsString();
 
     final void initAsLowest( ValueGroup... valueGroups )

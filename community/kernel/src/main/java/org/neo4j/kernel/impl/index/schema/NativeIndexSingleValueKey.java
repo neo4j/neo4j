@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.values.storable.Value;
 
+import static org.neo4j.helpers.collection.Iterators.array;
+
 /**
  * Includes value and entity id (to be able to handle non-unique values).
  * This is the abstraction of what NativeSchemaIndex with friends need from a schema key.
@@ -57,4 +59,10 @@ abstract class NativeIndexSingleValueKey<SELF extends NativeIndexSingleValueKey<
     }
 
     abstract Value asValue();
+
+    @Override
+    Value[] asValues()
+    {
+        return array( asValue() );
+    }
 }

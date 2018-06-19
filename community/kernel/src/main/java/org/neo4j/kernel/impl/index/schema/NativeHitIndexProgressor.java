@@ -70,10 +70,9 @@ public class NativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>, VALUE ext
         return true;
     }
 
-    Value[] extractValues( KEY key )
+    private Value[] extractValues( KEY key )
     {
-        // TODO don't assume single value
-        return client.needsValues() ? new Value[]{ ((NativeIndexSingleValueKey)key).asValue()} : null;
+        return client.needsValues() ? key.asValues() : null;
     }
 
     @Override

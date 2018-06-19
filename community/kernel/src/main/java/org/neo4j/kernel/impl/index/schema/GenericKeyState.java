@@ -43,7 +43,6 @@ import static org.neo4j.kernel.impl.index.schema.DurationIndexKey.AVG_DAY_SECOND
 import static org.neo4j.kernel.impl.index.schema.DurationIndexKey.AVG_MONTH_SECONDS;
 import static org.neo4j.kernel.impl.index.schema.GenericLayout.HIGHEST_TYPE_BY_VALUE_GROUP;
 import static org.neo4j.kernel.impl.index.schema.GenericLayout.LOWEST_TYPE_BY_VALUE_GROUP;
-import static org.neo4j.kernel.impl.index.schema.StringIndexKey.ENTITY_ID_SIZE;
 import static org.neo4j.kernel.impl.index.schema.StringIndexKey.unsignedByteArrayCompare;
 import static org.neo4j.kernel.impl.index.schema.ZonedDateTimeLayout.ZONE_ID_FLAG;
 import static org.neo4j.kernel.impl.index.schema.ZonedDateTimeLayout.ZONE_ID_MASK;
@@ -736,9 +735,8 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         long0 = cursor.getByte();
     }
 
-    private void readText( PageCursor cursor, int keySize )
+    private void readText( PageCursor cursor, int bytesLength )
     {
-        int bytesLength = keySize - ENTITY_ID_SIZE;
         setBytesLength( bytesLength );
         cursor.getBytes( byteArray, 0, bytesLength );
     }

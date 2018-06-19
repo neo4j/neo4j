@@ -28,7 +28,7 @@ public class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
     // TODO we have multiple places defining size of the entityId!!
     private static final int ENTITY_ID_SIZE = Long.BYTES;
 
-    GenericKeyState state;
+    GenericKeyState state = new GenericKeyState();
 
     @Override
     protected void writeValues( Value[] values )
@@ -59,6 +59,7 @@ public class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
         return null;
     }
 
+    @Override
     Value[] asValues()
     {
         return new Value[] {state.asValue()};

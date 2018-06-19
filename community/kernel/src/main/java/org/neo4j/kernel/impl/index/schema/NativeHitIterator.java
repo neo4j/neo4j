@@ -60,8 +60,7 @@ public class NativeHitIterator<KEY extends NativeIndexKey<KEY>, VALUE extends Na
             while ( seeker.next() )
             {
                 KEY key = seeker.get().key();
-                // TODO don't assume single value
-                if ( acceptValue( ((NativeIndexSingleValueKey)key).asValue() ) )
+                if ( acceptValues( key.asValues() ) )
                 {
                     return next( key.getEntityId() );
                 }
@@ -74,7 +73,7 @@ public class NativeHitIterator<KEY extends NativeIndexKey<KEY>, VALUE extends Na
         }
     }
 
-    boolean acceptValue( Value value )
+    boolean acceptValues( Value[] value )
     {
         return true;
     }

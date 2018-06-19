@@ -39,8 +39,15 @@ class FilteringNativeHitIterator<KEY extends NativeIndexKey<KEY>, VALUE extends 
     }
 
     @Override
-    boolean acceptValue( Value value )
+    boolean acceptValues( Value[] values )
     {
-        return filters[0].acceptsValue( value );
+        for ( int i = 0; i < values.length; i++ )
+        {
+            if ( !filters[i].acceptsValue( values[i] ) )
+            {
+                return false;
+            }
+        }
+        return true;
     }
 }

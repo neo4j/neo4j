@@ -77,8 +77,14 @@ public class GenericNativeIndexProviderFactory extends KernelExtensionFactory<Ge
         Config config = dependencies.getConfig();
         OperationalMode operationalMode = context.databaseInfo().operationalMode;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = dependencies.recoveryCleanupWorkCollector();
+        return create( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
+    }
+
+    public static GenericNativeIndexProvider create( PageCache pageCache, File storeDir, FileSystemAbstraction fs, IndexProvider.Monitor monitor, Config config,
+            OperationalMode mode, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    {
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider( storeDir );
-        boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.single == operationalMode);
+        boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.single == mode);
         return new GenericNativeIndexProvider( directoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
     }
 }
