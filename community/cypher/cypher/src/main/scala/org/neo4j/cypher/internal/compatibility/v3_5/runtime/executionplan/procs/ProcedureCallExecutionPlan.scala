@@ -139,8 +139,6 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
   private def createSignatureArgument: Argument =
     Signature(signature.name, Seq.empty, resultSymbols)
 
-  override def isPeriodicCommit: Boolean = false
-
   override def runtimeUsed = ProcedureRuntimeName
 
   override def plannerUsed = ProcedurePlannerName

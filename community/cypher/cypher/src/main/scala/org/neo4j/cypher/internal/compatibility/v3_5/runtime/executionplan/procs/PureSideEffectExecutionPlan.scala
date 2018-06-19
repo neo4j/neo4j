@@ -71,6 +71,4 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
   override def runtimeUsed: RuntimeName = ProcedureRuntimeName
 
   override def plannerUsed: PlannerName = ProcedurePlannerName
-
-  override def isPeriodicCommit: Boolean = false
 }

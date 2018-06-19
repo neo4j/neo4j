@@ -91,7 +91,5 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
 
       builder.build(planType, params, notificationLogger, plannerUsed, InterpretedRuntimeName, readOnly, cardinalities)
     }
-
-    override def isPeriodicCommit: Boolean = periodicCommit.isDefined
   }
 }

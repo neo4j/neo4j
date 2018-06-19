@@ -64,7 +64,6 @@ object ExecutionPlanBuilder {
 }
 
 case class CompiledPlan(updating: Boolean,
-                        periodicCommit: Option[PeriodicCommitInfo] = None,
                         plannerUsed: PlannerName,
                         planDescription: Provider[InternalPlanDescription],
                         columns: Seq[String],

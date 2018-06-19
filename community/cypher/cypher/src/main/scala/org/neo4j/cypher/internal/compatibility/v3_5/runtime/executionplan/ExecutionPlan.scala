@@ -27,7 +27,6 @@ import org.neo4j.values.virtual.MapValue
 
 abstract class ExecutionPlan {
   def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult
-  def isPeriodicCommit: Boolean
   def plannerUsed: PlannerName
   def runtimeUsed: RuntimeName
   def plannedIndexUsage: Seq[IndexUsage] = Seq.empty

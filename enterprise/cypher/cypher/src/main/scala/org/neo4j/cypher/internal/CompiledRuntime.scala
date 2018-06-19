@@ -91,8 +91,6 @@ object CompiledRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
 
     override def plannedIndexUsage: Seq[IndexUsage] = compiled.plannedIndexUsage
 
-    override def isPeriodicCommit: Boolean = compiled.periodicCommit.isDefined
-
     override def plannerUsed: PlannerName = compiled.plannerUsed
   }
 

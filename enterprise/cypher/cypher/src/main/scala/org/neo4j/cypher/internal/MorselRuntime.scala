@@ -117,9 +117,6 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
         params, fieldNames, taskCloser, dispatcher)
     }
 
-
-    override def isPeriodicCommit: Boolean = false
-
     override def runtimeUsed: RuntimeName = MorselRuntimeName
   }
 

@@ -123,8 +123,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       }
     }
 
-    def isPeriodicCommit: Boolean = inner.isPeriodicCommit
-
     def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState = reusabilityState
 
     override val compilerInfo: CompilerInfo = {
