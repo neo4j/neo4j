@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.proc;
 
 import java.time.Clock;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -35,6 +36,7 @@ import org.neo4j.kernel.api.KernelTransaction;
  */
 public interface Context
 {
+    Key<DependencyResolver> DEPENDENCY_RESOLVER = Key.key( "DependencyResolver", DependencyResolver.class );
     Key<KernelTransaction> KERNEL_TRANSACTION = Key.key( "KernelTransaction", KernelTransaction.class );
     Key<SecurityContext> SECURITY_CONTEXT = Key.key( "SecurityContext", SecurityContext.class );
     Key<Thread> THREAD = Key.key( "Thread", Thread.class );

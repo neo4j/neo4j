@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.MonotonicCounter;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -102,6 +103,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final ExplicitIndexStore explicitIndexStore;
     private final IndexingProvidersService indexProviders;
     private final TokenHolders tokenHolders;
+    private final Dependencies dataSourceDependencies;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final SchemaState schemaState;
 
@@ -134,23 +136,15 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
      */
     private volatile boolean stopped = true;
 
-    public KernelTransactions( StatementLocksFactory statementLocksFactory,
-            ConstraintIndexCreator constraintIndexCreator, StatementOperationParts statementOperations,
-            SchemaWriteGuard schemaWriteGuard, TransactionHeaderInformationFactory txHeaderFactory,
-            TransactionCommitProcess transactionCommitProcess, IndexConfigStore indexConfigStore,
-            ExplicitIndexProvider explicitIndexProviderLookup, TransactionHooks hooks,
-            TransactionMonitor transactionMonitor, AvailabilityGuard availabilityGuard, Tracers tracers,
-            StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore,
-            SystemNanoClock clock,
-            AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability,
-            AutoIndexing autoIndexing,
-            ExplicitIndexStore explicitIndexStore,
-            VersionContextSupplier versionContextSupplier,
-            CollectionsFactorySupplier collectionsFactorySupplier,
-            ConstraintSemantics constraintSemantics,
-            SchemaState schemaState,
-            IndexingProvidersService indexProviders,
-            TokenHolders tokenHolders )
+    public KernelTransactions( StatementLocksFactory statementLocksFactory, ConstraintIndexCreator constraintIndexCreator,
+            StatementOperationParts statementOperations, SchemaWriteGuard schemaWriteGuard, TransactionHeaderInformationFactory txHeaderFactory,
+            TransactionCommitProcess transactionCommitProcess, IndexConfigStore indexConfigStore, ExplicitIndexProvider explicitIndexProviderLookup,
+            TransactionHooks hooks, TransactionMonitor transactionMonitor, AvailabilityGuard availabilityGuard, Tracers tracers, StorageEngine storageEngine,
+            Procedures procedures, TransactionIdStore transactionIdStore, SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef,
+            AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability, AutoIndexing autoIndexing,
+            ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
+            ConstraintSemantics constraintSemantics, SchemaState schemaState, IndexingProvidersService indexProviders, TokenHolders tokenHolders,
+            Dependencies dataSourceDependencies )
     {
         this.statementLocksFactory = statementLocksFactory;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -172,6 +166,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.explicitIndexStore = explicitIndexStore;
         this.indexProviders = indexProviders;
         this.tokenHolders = tokenHolders;
+        this.dataSourceDependencies = dataSourceDependencies;
         this.explicitIndexTxStateSupplier = () ->
                 new CachingExplicitIndexTransactionState(
                         new ExplicitIndexTransactionStateImpl( indexConfigStore, explicitIndexProviderLookup ) );
@@ -373,7 +368,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
                             tracers.pageCursorTracerSupplier, storageEngine, accessCapability,
                             autoIndexing,
                             explicitIndexStore, versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
-                            schemaState, indexProviders, tokenHolders );
+                            schemaState, indexProviders, tokenHolders, dataSourceDependencies );
             this.transactions.add( tx );
             return tx;
         }

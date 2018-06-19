@@ -75,6 +75,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNode;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPoint;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
+import static org.neo4j.kernel.api.proc.Context.DEPENDENCY_RESOLVER;
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
 import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 import static org.neo4j.kernel.impl.query.QueryEngineProvider.noEngine;
@@ -329,7 +330,7 @@ public class GraphDatabaseFacadeFactory
         //  - Group-transaction writes (same pattern as above, but rather than splitting large transactions,
         //                              combine lots of small ones)
         //  - Bleeding-edge performance (KernelTransaction, to bypass overhead of working with Core API)
-        procedures.registerComponent( DependencyResolver.class, ctx -> platform.dependencies, false );
+        procedures.registerComponent( DependencyResolver.class, ctx -> ctx.get( DEPENDENCY_RESOLVER ), false );
         procedures.registerComponent( KernelTransaction.class, ctx -> ctx.get( KERNEL_TRANSACTION ), false );
         procedures.registerComponent( GraphDatabaseAPI.class, ctx -> platform.graphDatabaseFacade, false );
 

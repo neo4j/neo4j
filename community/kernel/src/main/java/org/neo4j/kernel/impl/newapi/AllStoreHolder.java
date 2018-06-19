@@ -70,6 +70,7 @@ import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -94,20 +95,17 @@ public class AllStoreHolder extends Read
     private final ExplicitIndexStore explicitIndexStore;
     private final Procedures procedures;
     private final SchemaState schemaState;
+    private final Dependencies dataSourceDependencies;
 
-    public AllStoreHolder(
-            StorageReader storageReader,
-            KernelTransactionImplementation ktx,
-            DefaultCursors cursors,
-            ExplicitIndexStore explicitIndexStore,
-            Procedures procedures,
-            SchemaState schemaState )
+    public AllStoreHolder( StorageReader storageReader, KernelTransactionImplementation ktx, DefaultCursors cursors, ExplicitIndexStore explicitIndexStore,
+            Procedures procedures, SchemaState schemaState, Dependencies dataSourceDependencies )
     {
         super( cursors, ktx );
         this.storageReader = storageReader;
         this.explicitIndexStore = explicitIndexStore;
         this.procedures = procedures;
         this.schemaState = schemaState;
+        this.dataSourceDependencies = dataSourceDependencies;
     }
 
     @Override
@@ -507,8 +505,7 @@ public class AllStoreHolder extends Read
         SchemaDescriptor schema = ((IndexDescriptor) index).schema();
         sharedOptimisticLock( schema.keyType(), schema.keyId() );
         ktx.assertOpen();
-        return storageReader
-                .indexUniqueValuesPercentage( schema );
+        return storageReader.indexUniqueValuesPercentage( schema );
     }
 
     @Override
@@ -732,7 +729,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public Set<ProcedureSignature> proceduresGetAll( ) throws ProcedureException
+    public Set<ProcedureSignature> proceduresGetAll( )
     {
         ktx.assertOpen();
         return procedures.getAllProcedures();
@@ -755,8 +752,7 @@ public class AllStoreHolder extends Read
             throw accessMode.onViolation( format( "Read operations are not allowed for %s.",
                     ktx.securityContext().description() ) );
         }
-        return callProcedure( id, arguments, new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static
-                .READ ) );
+        return callProcedure( id, arguments, new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
     }
 
     @Override
@@ -997,7 +993,7 @@ public class AllStoreHolder extends Read
               Statement statement = ktx.acquireStatement() )
         {
             procedureCall = procedures
-                    .callProcedure( populateProcedureContext( procedureSecurityContext ), id, input, statement );
+                    .callProcedure( prepareContext( procedureSecurityContext ), id, input, statement );
         }
         return createIterator( procedureSecurityContext, procedureCall );
     }
@@ -1014,7 +1010,7 @@ public class AllStoreHolder extends Read
               Statement statement = ktx.acquireStatement() )
         {
             procedureCall = procedures
-                    .callProcedure( populateProcedureContext( procedureSecurityContext ), name, input, statement );
+                    .callProcedure( prepareContext( procedureSecurityContext ), name, input, statement );
         }
         return createIterator( procedureSecurityContext, procedureCall );
     }
@@ -1048,9 +1044,10 @@ public class AllStoreHolder extends Read
     {
         ktx.assertOpen();
 
-        try ( KernelTransaction.Revertable ignore = ktx.overrideWith( ktx.securityContext().withMode( mode ) ) )
+        SecurityContext securityContext = ktx.securityContext().withMode( mode );
+        try ( KernelTransaction.Revertable ignore = ktx.overrideWith( securityContext ) )
         {
-            return procedures.callFunction( populateFunctionContext(), id, input );
+            return procedures.callFunction( prepareContext( securityContext ), id, input );
         }
     }
 
@@ -1059,9 +1056,10 @@ public class AllStoreHolder extends Read
     {
         ktx.assertOpen();
 
-        try ( KernelTransaction.Revertable ignore = ktx.overrideWith( ktx.securityContext().withMode( mode ) ) )
+        SecurityContext securityContext = ktx.securityContext().withMode( mode );
+        try ( KernelTransaction.Revertable ignore = ktx.overrideWith( securityContext ) )
         {
-            return procedures.callFunction( populateFunctionContext(), name, input );
+            return procedures.callFunction( prepareContext( securityContext ), name, input );
         }
     }
 
@@ -1070,9 +1068,10 @@ public class AllStoreHolder extends Read
     {
         ktx.assertOpen();
 
-        try ( KernelTransaction.Revertable ignore = ktx.overrideWith( ktx.securityContext().withMode( mode ) ) )
+        SecurityContext securityContext = ktx.securityContext().withMode( mode );
+        try ( KernelTransaction.Revertable ignore = ktx.overrideWith( securityContext ) )
         {
-            return procedures.createAggregationFunction( populateAggregationContext(), id );
+            return procedures.createAggregationFunction( prepareContext( securityContext ), id );
         }
     }
 
@@ -1081,38 +1080,24 @@ public class AllStoreHolder extends Read
     {
         ktx.assertOpen();
 
-        try ( KernelTransaction.Revertable ignore = ktx.overrideWith( ktx.securityContext().withMode( mode ) ) )
+        SecurityContext securityContext = ktx.securityContext().withMode( mode );
+        try ( KernelTransaction.Revertable ignore = ktx.overrideWith( securityContext ) )
         {
-            return procedures.createAggregationFunction( populateAggregationContext(), name );
+            return procedures.createAggregationFunction( prepareContext( securityContext ), name );
         }
     }
 
-    private BasicContext populateFunctionContext()
+    private BasicContext prepareContext( SecurityContext securityContext )
     {
         BasicContext ctx = new BasicContext();
         ctx.put( Context.KERNEL_TRANSACTION, ktx );
+        ctx.put( Context.DEPENDENCY_RESOLVER, dataSourceDependencies );
         ctx.put( Context.THREAD, Thread.currentThread() );
         ClockContext clocks = ktx.clocks();
         ctx.put( Context.SYSTEM_CLOCK, clocks.systemClock() );
         ctx.put( Context.STATEMENT_CLOCK, clocks.statementClock() );
         ctx.put( Context.TRANSACTION_CLOCK, clocks.transactionClock() );
-        return ctx;
-    }
-
-    private BasicContext populateAggregationContext()
-    {
-        BasicContext ctx = new BasicContext();
-        ctx.put( Context.KERNEL_TRANSACTION, ktx );
-        ctx.put( Context.THREAD, Thread.currentThread() );
-        return ctx;
-    }
-
-    private BasicContext populateProcedureContext( SecurityContext procedureSecurityContext )
-    {
-        BasicContext ctx = new BasicContext();
-        ctx.put( Context.KERNEL_TRANSACTION, ktx );
-        ctx.put( Context.THREAD, Thread.currentThread() );
-        ctx.put( Context.SECURITY_CONTEXT, procedureSecurityContext );
+        ctx.put( Context.SECURITY_CONTEXT, securityContext );
         return ctx;
     }
 
