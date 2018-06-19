@@ -336,6 +336,8 @@ public class NeoStoreDataSource extends LifecycleAdapter
     public void start() throws IOException
     {
         dataSourceDependencies = new Dependencies( dependencyResolver );
+        dataSourceDependencies.satisfyDependency( tokenHolders );
+
         life = new LifeSupport();
 
         life.add( recoveryCleanupWorkCollector );

@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
-import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.CanWrite;
@@ -117,18 +116,12 @@ public class CommunityEditionModule extends EditionModule
         dependencies.satisfyDependency( idGeneratorFactory );
         dependencies.satisfyDependency( idController );
 
-        TokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder(
-                createPropertyKeyCreator( config, dataSourceManager ), DelegatingTokenHolder.TYPE_PROPERTY_KEY );
-        DelegatingTokenHolder labelTokenHolder = new DelegatingTokenHolder(
-                createLabelIdCreator( config, dataSourceManager ), DelegatingTokenHolder.TYPE_LABEL );
-        DelegatingTokenHolder relationshipTypeTokenHolder = new DelegatingTokenHolder(
-                createRelationshipTypeCreator( config, dataSourceManager ), DelegatingTokenHolder.TYPE_RELATIONSHIP_TYPE );
-        tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
+        tokenHoldersSupplier = () -> new TokenHolders(
+                new DelegatingTokenHolder( createPropertyKeyCreator( config, dataSourceManager ), DelegatingTokenHolder.TYPE_PROPERTY_KEY ),
+                new DelegatingTokenHolder( createLabelIdCreator( config, dataSourceManager ), DelegatingTokenHolder.TYPE_LABEL ),
+                new DelegatingTokenHolder( createRelationshipTypeCreator( config, dataSourceManager ), DelegatingTokenHolder.TYPE_RELATIONSHIP_TYPE ) );
 
-        dependencies.satisfyDependency( tokenHolders );
-
-        dependencies.satisfyDependency(
-                createKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade, life ) );
+        dependencies.satisfyDependency( createKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade, life ) );
 
         commitProcessFactory = new CommunityCommitProcessFactory();
 

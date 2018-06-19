@@ -246,17 +246,15 @@ public class IndexingServiceIntegrationTest
 
     private void createData( GraphDatabaseService database, int numberOfNodes )
     {
-        int index = 0;
-        while ( index < numberOfNodes )
+        for ( int i = 0; i < numberOfNodes; i++ )
         {
             try ( Transaction transaction = database.beginTx() )
             {
                 Node node = database.createNode( Label.label( FOOD_LABEL ), Label.label( CLOTHES_LABEL ),
                         Label.label( WEATHER_LABEL ) );
-                node.setProperty( PROPERTY_NAME, "Node" + index );
+                node.setProperty( PROPERTY_NAME, "Node" + i );
                 Relationship relationship = node.createRelationshipTo( node, RelationshipType.withName( FOOD_LABEL ) );
-                relationship.setProperty( PROPERTY_NAME, "Relationship" + index );
-                index++;
+                relationship.setProperty( PROPERTY_NAME, "Relationship" + i );
                 transaction.success();
             }
         }

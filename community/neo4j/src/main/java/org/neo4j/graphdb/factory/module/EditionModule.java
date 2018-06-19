@@ -21,6 +21,7 @@ package org.neo4j.graphdb.factory.module;
 
 import java.io.File;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
@@ -86,7 +87,7 @@ public abstract class EditionModule
 
     public IdTypeConfigurationProvider idTypeConfigurationProvider;
 
-    public TokenHolders tokenHolders;
+    public Supplier<TokenHolders> tokenHoldersSupplier;
 
     public Locks lockManager;
 

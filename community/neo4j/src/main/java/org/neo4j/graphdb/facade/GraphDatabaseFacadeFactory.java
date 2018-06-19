@@ -195,7 +195,7 @@ public class GraphDatabaseFacadeFactory
                 spi,
                 dataSource.threadToTransactionBridge,
                 platform.config,
-                edition.tokenHolders
+                dataSource.tokenHolders
         );
 
         // Start it

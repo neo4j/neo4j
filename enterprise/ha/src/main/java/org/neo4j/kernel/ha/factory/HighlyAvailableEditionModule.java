@@ -195,6 +195,7 @@ public class HighlyAvailableEditionModule
 {
     private HighAvailabilityMemberStateMachine memberStateMachine;
     public ClusterMembers members;
+    private TokenHolders tokenHolders;
 
     public HighlyAvailableEditionModule( final PlatformModule platformModule )
     {
@@ -505,8 +506,10 @@ public class HighlyAvailableEditionModule
         DelegatingTokenHolder relationshipTypeTokenHolder = new DelegatingTokenHolder(
                 createRelationshipTypeCreator( config, componentSwitcherContainer, masterDelegateInvocationHandler, requestContextFactory, kernelProvider ),
                 DelegatingTokenHolder.TYPE_RELATIONSHIP_TYPE );
+
+        // HA will only support a single token holder
         tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
-        dependencies.satisfyDependency( tokenHolders );
+        tokenHoldersSupplier = () -> tokenHolders;
 
         dependencies.satisfyDependency(
                 createKernelData( config, platformModule.graphDatabaseFacade, members, fs, platformModule.pageCache,

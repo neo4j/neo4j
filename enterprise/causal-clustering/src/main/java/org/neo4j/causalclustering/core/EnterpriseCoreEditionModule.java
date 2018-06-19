@@ -311,7 +311,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         dependencies.satisfyDependency( idGeneratorFactory );
         dependencies.satisfyDependency( idController );
 
-        this.tokenHolders = coreStateMachinesModule.tokenHolders;
+        // TODO: this is broken, coreStateMachinesModule.tokenHolders should be supplier, somehow...
+        this.tokenHoldersSupplier = () -> coreStateMachinesModule.tokenHolders;
         this.lockManager = coreStateMachinesModule.lockManager;
         this.commitProcessFactory = coreStateMachinesModule.commitProcessFactory;
         this.accessCapability = new LeaderCanWrite( consensusModule.raftMachine() );

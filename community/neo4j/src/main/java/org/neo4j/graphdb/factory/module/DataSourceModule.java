@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -77,6 +78,8 @@ public class DataSourceModule
 
     public final AutoIndexing autoIndexing;
 
+    public final TokenHolders tokenHolders;
+
     public DataSourceModule( final PlatformModule platformModule, EditionModule editionModule,
             Supplier<QueryExecutionEngine> queryExecutionEngineSupplier, Procedures procedures )
     {
@@ -87,6 +90,9 @@ public class DataSourceModule
         DataSourceManager dataSourceManager = platformModule.dataSourceManager;
         LifeSupport life = platformModule.life;
         final GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
+
+        tokenHolders = editionModule.tokenHoldersSupplier.get();
+
         File storeDir = platformModule.storeDir;
         DiagnosticsManager diagnosticsManager = platformModule.diagnosticsManager;
         this.queryExecutor = queryExecutionEngineSupplier;
@@ -111,14 +117,14 @@ public class DataSourceModule
         DatabaseHealth databaseHealth = deps.satisfyDependency( new DatabaseHealth( databasePanicEventGenerator,
                 logging.getInternalLog( DatabaseHealth.class ) ) );
 
-        autoIndexing = new InternalAutoIndexing( platformModule.config, editionModule.tokenHolders.propertyKeyTokens() );
+        autoIndexing = new InternalAutoIndexing( platformModule.config, tokenHolders.propertyKeyTokens() );
 
         IndexConfigStore indexConfigStore = new IndexConfigStore( storeDir, fileSystem );
         deps.satisfyDependencies( indexConfigStore );
         DefaultExplicitIndexProvider explicitIndexProvider = new DefaultExplicitIndexProvider();
         deps.satisfyDependencies( explicitIndexProvider );
 
-        NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( editionModule.tokenHolders );
+        NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
 
         storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
         deps.satisfyDependency( storeCopyCheckPointMutex );
@@ -131,7 +137,7 @@ public class DataSourceModule
                 platformModule.jobScheduler,
                 tokenNameLookup,
                 deps,
-                editionModule.tokenHolders,
+                tokenHolders,
                 editionModule.statementLocksFactory,
                 schemaWriteGuard,
                 transactionEventHandlers,
@@ -166,7 +172,7 @@ public class DataSourceModule
         this.storeId = neoStoreDataSource::getStoreId;
         this.kernelAPI = neoStoreDataSource::getKernel;
 
-        ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platformModule, this, editionModule.coreAPIAvailabilityGuard, editionModule.tokenHolders );
+        ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platformModule, this, editionModule.coreAPIAvailabilityGuard, tokenHolders );
         procedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply, true );
     }
 }
