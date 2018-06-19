@@ -34,8 +34,8 @@ import org.neo4j.values.storable.Values;
 
 class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,NativeIndexValue>
 {
-    GenericNativeIndexReader( GBPTree<CompositeGenericKey,NativeIndexValue> tree, Layout<CompositeGenericKey,NativeIndexValue> layout, IndexSamplingConfig samplingConfig,
-            IndexDescriptor descriptor )
+    GenericNativeIndexReader( GBPTree<CompositeGenericKey,NativeIndexValue> tree, Layout<CompositeGenericKey,NativeIndexValue> layout,
+            IndexSamplingConfig samplingConfig, IndexDescriptor descriptor )
     {
         super( tree, layout, samplingConfig, descriptor );
     }
@@ -74,7 +74,7 @@ class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,Nat
             treeKeyTo.from( Long.MAX_VALUE, exactPredicate.value() );
             return false;
         case range:
-            RangePredicate<?> rangePredicate = (RangePredicate<?>)predicate;
+            RangePredicate<?> rangePredicate = (RangePredicate<?>) predicate;
             initFromForRange( rangePredicate, treeKeyFrom );
             initToForRange( rangePredicate, treeKeyTo );
             return false;

@@ -200,7 +200,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         private final TemporalIndexFiles temporalIndexFiles;
 
         PartFactory( PageCache pageCache, FileSystemAbstraction fs, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor,
-                     StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TemporalIndexFiles temporalIndexFiles )
+                StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TemporalIndexFiles temporalIndexFiles )
         {
             this.pageCache = pageCache;
             this.fs = fs;
@@ -247,7 +247,8 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
             return createPartAccessor( temporalIndexFiles.duration() );
         }
 
-        private <KEY extends NativeIndexSingleValueKey<KEY>> PartAccessor<KEY> createPartAccessor( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
+        private <KEY extends NativeIndexSingleValueKey<KEY>> PartAccessor<KEY> createPartAccessor( TemporalIndexFiles.FileLayout<KEY> fileLayout )
+                throws IOException
         {
             if ( !fs.fileExists( fileLayout.indexFile ) )
             {
