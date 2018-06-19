@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
+import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.values.storable.ValueCategory;
@@ -56,7 +56,7 @@ public class SpatialIndexProvider extends IndexProvider
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final boolean readOnly;
     private final SpaceFillingCurveConfiguration configuration;
-    private final SpaceFillingCurveSettingsFactory settingsFactory;
+    private final ConfiguredSpaceFillingCurveSettingsCache configuredSettings;
 
     public SpatialIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
             IndexDirectoryStructure.Factory directoryStructure, Monitor monitor,
@@ -69,12 +69,12 @@ public class SpatialIndexProvider extends IndexProvider
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.readOnly = readOnly;
         this.configuration = getConfiguredSpaceFillingCurveConfiguration( config );
-        this.settingsFactory = getConfiguredSpaceFillingCurveSettings( config );
+        this.configuredSettings = getConfiguredSpaceFillingCurveSettings( config );
     }
 
-    private SpaceFillingCurveSettingsFactory getConfiguredSpaceFillingCurveSettings( Config config )
+    private ConfiguredSpaceFillingCurveSettingsCache getConfiguredSpaceFillingCurveSettings( Config config )
     {
-        return new SpaceFillingCurveSettingsFactory( config );
+        return new ConfiguredSpaceFillingCurveSettingsCache( config );
     }
 
     private static SpaceFillingCurveConfiguration getConfiguredSpaceFillingCurveConfiguration( Config config )
@@ -100,21 +100,21 @@ public class SpatialIndexProvider extends IndexProvider
         {
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
-        SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), descriptor.getId(), fs, settingsFactory );
+        SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), descriptor.getId(), fs, configuredSettings );
         return new SpatialIndexPopulator( descriptor, samplingConfig, files, pageCache, fs, monitor, configuration );
     }
 
     @Override
     public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), descriptor.getId(), fs, settingsFactory );
+        SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), descriptor.getId(), fs, configuredSettings );
         return new SpatialIndexAccessor( descriptor, samplingConfig, pageCache, fs, recoveryCleanupWorkCollector, monitor, files, configuration );
     }
 
     @Override
     public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
     {
-        SpatialIndexFiles spatialIndexFiles = new SpatialIndexFiles( directoryStructure(), descriptor.getId(), fs, settingsFactory );
+        SpatialIndexFiles spatialIndexFiles = new SpatialIndexFiles( directoryStructure(), descriptor.getId(), fs, configuredSettings );
 
         try
         {
@@ -137,7 +137,7 @@ public class SpatialIndexProvider extends IndexProvider
     @Override
     public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
     {
-        SpatialIndexFiles spatialIndexFiles = new SpatialIndexFiles( directoryStructure(), descriptor.getId(), fs, settingsFactory );
+        SpatialIndexFiles spatialIndexFiles = new SpatialIndexFiles( directoryStructure(), descriptor.getId(), fs, configuredSettings );
 
         final Iterable<SpatialIndexFiles.SpatialFile> existing = spatialIndexFiles.existing();
         InternalIndexState state = InternalIndexState.ONLINE;

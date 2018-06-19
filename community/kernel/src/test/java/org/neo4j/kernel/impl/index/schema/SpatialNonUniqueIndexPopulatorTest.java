@@ -25,20 +25,20 @@ import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
+import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 public class SpatialNonUniqueIndexPopulatorTest extends NativeNonUniqueIndexPopulatorTest<SpatialIndexKey,NativeIndexValue>
 {
     private static final CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
-    private static final SpaceFillingCurveSettingsFactory settings = new SpaceFillingCurveSettingsFactory( Config.defaults() );
+    private static final ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() );
 
     private SpatialIndexFiles.SpatialFile spatialFile;
 
     @Override
     NativeIndexPopulator<SpatialIndexKey,NativeIndexValue> createPopulator( IndexSamplingConfig samplingConfig )
     {
-        spatialFile = new SpatialIndexFiles.SpatialFile( crs, settings, super.getIndexFile() );
+        spatialFile = new SpatialIndexFiles.SpatialFile( crs, configuredSettings, super.getIndexFile() );
         return new SpatialIndexPopulator.PartPopulator( pageCache, fs, spatialFile.getLayoutForNewIndex(), monitor, indexDescriptor, samplingConfig,
                 new StandardConfiguration() );
     }
@@ -52,6 +52,6 @@ public class SpatialNonUniqueIndexPopulatorTest extends NativeNonUniqueIndexPopu
     @Override
     protected LayoutTestUtil<SpatialIndexKey,NativeIndexValue> createLayoutTestUtil()
     {
-        return new SpatialLayoutTestUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ), settings.settingsFor( crs ), crs );
+        return new SpatialLayoutTestUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ), configuredSettings.forCRS( crs ), crs );
     }
 }

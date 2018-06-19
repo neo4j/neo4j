@@ -19,33 +19,57 @@
  */
 package org.neo4j.kernel.impl.index.schema.config;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.function.Function;
 
-import org.neo4j.configuration.ConfigValue;
 import org.neo4j.gis.spatial.index.Envelope;
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 /**
- * These settings affect the creation of the 2D (or 3D) to 1D mapper.
- * Changing these will change the values of the 1D mapping, and require re-indexing, so
- * once data has been indexed, do not change these without recreating the index.
+ * <p>
+ * This factory can be used to create new space filling curve settings for use in configuring the curves.
+ * These settings can be created either by defaults from the neo4j.conf file (see ConfiguredSpaceFullCurveSettingsCache)
+ * or from reading the header of an existing GBPTree based index.
  */
-public class SpaceFillingCurveSettingsFactory
+public abstract class SpaceFillingCurveSettingsFactory
 {
-    private int maxBits;
-    private HashMap<CoordinateReferenceSystem,SpaceFillingCurveSettings> settings = new HashMap<>();
     private static final double DEFAULT_MIN_EXTENT = -1000000;
     private static final double DEFAULT_MAX_EXTENT = 1000000;
     private static final double DEFAULT_MIN_LATITUDE = -90;
     private static final double DEFAULT_MAX_LATITUDE = 90;
     private static final double DEFAULT_MIN_LONGITUDE = -180;
     private static final double DEFAULT_MAX_LONGITUDE = 180;
-    private static final String SPATIAL_SETTING_PREFIX = "unsupported.dbms.db.spatial.crs.";
 
-    private class EnvelopeSettings
+    /**
+     * This method builds the default index configuration object for the specified CRS and other config options.
+     * Currently we only support a SingleSpaceFillingCurveSettings which is the best option for cartesian, but
+     * not necessarily the best for geographic coordinate systems.
+     */
+    static SpaceFillingCurveSettings fromConfig( int maxBits, EnvelopeSettings envelopeSettings )
+    {
+        // Currently we support only one type of index, but in future we could support different types for different CRS
+        return new SpaceFillingCurveSettings.SettingsFromConfig( envelopeSettings.crs.getDimension(), maxBits, envelopeSettings.asEnvelope() );
+    }
+
+    public static SpaceFillingCurveSettings fromGBPTree( File indexFile, PageCache pageCache, Function<ByteBuffer,String> onError ) throws IOException
+    {
+        SpaceFillingCurveSettings.SettingsFromIndexHeader settings = new SpaceFillingCurveSettings.SettingsFromIndexHeader();
+        GBPTree.readHeader( pageCache, indexFile, settings.headerReader( onError ) );
+        if ( settings.isFailed() )
+        {
+            throw new IOException( settings.getFailureMessage() );
+        }
+        return settings;
+    }
+
+    static class EnvelopeSettings
     {
         CoordinateReferenceSystem crs;
         double[] min;
@@ -60,108 +84,107 @@ public class SpaceFillingCurveSettingsFactory
             Arrays.fill( this.max, Double.NaN );
         }
 
+        private double minOrDefault( int i, double defVal )
+        {
+            return valOrDefault( min[i], defVal );
+        }
+
+        private double maxOrDefault( int i, double defVal )
+        {
+            return valOrDefault( max[i], defVal );
+        }
+
         Envelope asEnvelope()
         {
-            return envelopeFromCRS( crs.getDimension(), crs.isGeographic(), this );
+            int dimension = crs.getDimension();
+            assert dimension >= 2;
+            double[] min = new double[dimension];
+            double[] max = new double[dimension];
+            int cartesianStartIndex = 0;
+            if ( crs.isGeographic() )
+            {
+                // Geographic CRS default to extent of the earth in degrees
+                min[0] = minOrDefault( 0, DEFAULT_MIN_LONGITUDE );
+                max[0] = maxOrDefault( 0, DEFAULT_MAX_LONGITUDE );
+                min[1] = minOrDefault( 1, DEFAULT_MIN_LATITUDE );
+                max[1] = maxOrDefault( 1, DEFAULT_MAX_LATITUDE );
+                cartesianStartIndex = 2;    // if geographic index has higher than 2D, then other dimensions are cartesian
+            }
+            for ( int i = cartesianStartIndex; i < dimension; i++ )
+            {
+                min[i] = minOrDefault( i, DEFAULT_MIN_EXTENT );
+                max[i] = maxOrDefault( i, DEFAULT_MAX_EXTENT );
+            }
+            return new Envelope( min, max );
+        }
+
+        private static double valOrDefault( double val, double def )
+        {
+            return Double.isNaN( val ) ? def : val;
         }
     }
 
-    public SpaceFillingCurveSettingsFactory( Config config )
+    enum SpatialIndexType
     {
-        this.maxBits = config.get( SpatialIndexSettings.space_filling_curve_max_bits );
-        HashMap<CoordinateReferenceSystem,EnvelopeSettings> env = new HashMap<>();
-        for ( Map.Entry<String,ConfigValue> entry : config.getConfigValues().entrySet() )
+        SingleSpaceFillingCurve( 1 )
+                {
+                    @Override
+                    public void writeHeader( SpaceFillingCurveSettings settings, PageCursor cursor )
+                    {
+                        cursor.putInt( settings.maxLevels );
+                        cursor.putInt( settings.dimensions );
+                        double[] min = settings.extents.getMin();
+                        double[] max = settings.extents.getMax();
+                        for ( int i = 0; i < settings.dimensions; i++ )
+                        {
+                            cursor.putLong( Double.doubleToLongBits( min[i] ) );
+                            cursor.putLong( Double.doubleToLongBits( max[i] ) );
+                        }
+                    }
+
+                    @Override
+                    public void readHeader( SpaceFillingCurveSettings.SettingsFromIndexHeader settings, ByteBuffer headerBytes )
+                    {
+                        try
+                        {
+                            settings.maxLevels = headerBytes.getInt();
+                            settings.dimensions = headerBytes.getInt();
+                            double[] min = new double[settings.dimensions];
+                            double[] max = new double[settings.dimensions];
+                            for ( int i = 0; i < settings.dimensions; i++ )
+                            {
+                                min[i] = headerBytes.getDouble();
+                                max[i] = headerBytes.getDouble();
+                            }
+                            settings.extents = new Envelope( min, max );
+                        }
+                        catch ( BufferUnderflowException e )
+                        {
+                            settings.markAsFailed( "Failed to read settings from GBPTree header: " + e.getMessage() );
+                        }
+                    }
+                };
+        int id;
+
+        public abstract void writeHeader( SpaceFillingCurveSettings settings, PageCursor cursor );
+
+        public abstract void readHeader( SpaceFillingCurveSettings.SettingsFromIndexHeader settingsFromIndexHeader, ByteBuffer headerBytes );
+
+        SpatialIndexType( int id )
         {
-            String key = entry.getKey();
-            String value = entry.getValue().toString();
-            if ( key.startsWith( SPATIAL_SETTING_PREFIX ) )
+            this.id = id;
+        }
+
+        static SpatialIndexType get( int id )
+        {
+            for ( SpatialIndexType type : values() )
             {
-                String[] fields = key.replace( SPATIAL_SETTING_PREFIX, "" ).split( "\\." );
-                if ( fields.length != 3 )
+                if ( type.id == id )
                 {
-                    throw new IllegalArgumentException(
-                            "Invalid spatial config settings, expected three fields after '" + SPATIAL_SETTING_PREFIX + "': " + key );
-                }
-                else
-                {
-                    CoordinateReferenceSystem crs = CoordinateReferenceSystem.byName( fields[0] );
-                    EnvelopeSettings envelopeSettings = env.computeIfAbsent( crs, EnvelopeSettings::new );
-                    int index = "xyz".indexOf( fields[1].toLowerCase() );
-                    if ( index < 0 )
-                    {
-                        throw new IllegalArgumentException( "Invalid spatial coordinate key (should be one of 'x', 'y' or 'z'): " + fields[1] );
-                    }
-                    if ( index >= crs.getDimension() )
-                    {
-                        throw new IllegalArgumentException( "Invalid spatial coordinate key for " + crs.getDimension() + "D: " + fields[1] );
-                    }
-                    switch ( fields[2].toLowerCase() )
-                    {
-                    case "min":
-                        envelopeSettings.min[index] = Double.parseDouble( value );
-                        break;
-                    case "max":
-                        envelopeSettings.max[index] = Double.parseDouble( value );
-                        break;
-                    default:
-                        throw new IllegalArgumentException( "Invalid spatial coordinate range key (should be one of 'max' or 'min'): " + fields[2] );
-                    }
+                    return type;
                 }
             }
+            return null;
         }
-        for ( Map.Entry<CoordinateReferenceSystem,EnvelopeSettings> entry : env.entrySet() )
-        {
-            CoordinateReferenceSystem crs = entry.getKey();
-            settings.put( crs, SpaceFillingCurveSettings.fromConfig( crs.getDimension(), this.maxBits, entry.getValue().asEnvelope() ) );
-        }
-    }
-
-    /**
-     * The space filling curve is configured up front to cover a specific region of 2D (or 3D) space,
-     * and the mapping tree is configured up front to have a specific maximum depth. These settings
-     * are stored in an instance of SpaceFillingCurveSettings and are determined by the Coordinate
-     * Reference System, and any neo4j.conf settings to override the CRS defaults.
-     *
-     * @return The settings for the specified coordinate reference system
-     */
-    public SpaceFillingCurveSettings settingsFor( CoordinateReferenceSystem crs )
-    {
-        if ( settings.containsKey( crs ) )
-        {
-            return settings.get( crs );
-        }
-        else
-        {
-            return SpaceFillingCurveSettings.fromConfig( crs.getDimension(), maxBits,
-                    envelopeFromCRS( crs.getDimension(), crs.isGeographic(), new EnvelopeSettings( crs ) ) );
-        }
-    }
-
-    private static Envelope envelopeFromCRS( int dimension, boolean geographic, EnvelopeSettings envelopeSettings )
-    {
-        assert dimension >= 2;
-        double[] min = new double[dimension];
-        double[] max = new double[dimension];
-        int cartesianStartIndex = 0;
-        if ( geographic )
-        {
-            // Geographic CRS default to extent of the earth in degrees
-            min[0] = valOrDefault( envelopeSettings.min[0], DEFAULT_MIN_LONGITUDE );
-            max[0] = valOrDefault( envelopeSettings.max[0], DEFAULT_MAX_LONGITUDE );
-            min[1] = valOrDefault( envelopeSettings.min[1], DEFAULT_MIN_LATITUDE );
-            max[1] = valOrDefault( envelopeSettings.max[1], DEFAULT_MAX_LATITUDE );
-            cartesianStartIndex = 2;    // if geographic index has higher than 2D, then other dimensions are cartesian
-        }
-        for ( int i = cartesianStartIndex; i < dimension; i++ )
-        {
-            min[i] = valOrDefault( envelopeSettings.min[i], DEFAULT_MIN_EXTENT );
-            max[i] = valOrDefault( envelopeSettings.max[i], DEFAULT_MAX_EXTENT );
-        }
-        return new Envelope( min, max );
-    }
-
-    private static double valOrDefault( double val, double def )
-    {
-        return Double.isNaN( val ) ? def : val;
     }
 }

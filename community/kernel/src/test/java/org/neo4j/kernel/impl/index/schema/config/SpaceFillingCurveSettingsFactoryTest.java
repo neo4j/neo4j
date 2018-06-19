@@ -151,8 +151,8 @@ public class SpaceFillingCurveSettingsFactoryTest
 
     private void shouldGetSettingsFor( Config config, CoordinateReferenceSystem crs, int dimensions, int maxBits, Envelope envelope )
     {
-        SpaceFillingCurveSettingsFactory factory = new SpaceFillingCurveSettingsFactory( config );
-        SpaceFillingCurveSettings settings = factory.settingsFor( crs );
+        ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( config );
+        SpaceFillingCurveSettings settings = configuredSettings.forCRS( crs );
         assertThat( "Expected " + dimensions + "D for " + crs.getName(), settings.getDimensions(), equalTo( dimensions ) );
         int maxLevels = maxBits / dimensions;
         assertThat( "Expected maxLevels=" + maxLevels + " for " + crs.getName(), settings.getMaxLevels(), equalTo( maxLevels ) );

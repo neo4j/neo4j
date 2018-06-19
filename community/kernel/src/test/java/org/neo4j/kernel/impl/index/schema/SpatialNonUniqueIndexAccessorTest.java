@@ -26,6 +26,6 @@ public class SpatialNonUniqueIndexAccessorTest extends SpatialIndexAccessorTest
     @Override
     protected LayoutTestUtil<SpatialIndexKey,NativeIndexValue> createLayoutTestUtil()
     {
-        return new SpatialLayoutTestUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ), settings.settingsFor( crs ), crs );
+        return new SpatialLayoutTestUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ), configuredSettings.forCRS( crs ), crs );
     }
 }
