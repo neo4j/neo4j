@@ -22,13 +22,12 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import java.util.function.Supplier;
-
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -37,7 +36,7 @@ import org.neo4j.scheduler.JobScheduler;
 class PageCacheWarmerKernelExtension extends LifecycleAdapter
 {
     private final AvailabilityGuard availabilityGuard;
-    private final Supplier<NeoStoreFileListing> fileListing;
+    private final DataSourceManager dataSourceManager;
     private final Config config;
     private final PageCacheWarmer pageCacheWarmer;
     private final WarmupAvailabilityListener availabilityListener;
@@ -45,10 +44,10 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
 
     PageCacheWarmerKernelExtension(
             JobScheduler scheduler, AvailabilityGuard availabilityGuard, PageCache pageCache, FileSystemAbstraction fs,
-            Supplier<NeoStoreFileListing> fileListing, Log log, PageCacheWarmerMonitor monitor, Config config )
+            DataSourceManager dataSourceManager, Log log, PageCacheWarmerMonitor monitor, Config config )
     {
         this.availabilityGuard = availabilityGuard;
-        this.fileListing = fileListing;
+        this.dataSourceManager = dataSourceManager;
         this.config = config;
         pageCacheWarmer = new PageCacheWarmer( fs, pageCache, scheduler );
         availabilityListener = new WarmupAvailabilityListener( scheduler, pageCacheWarmer, config, log, monitor );
@@ -61,7 +60,7 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
         {
             pageCacheWarmer.start();
             availabilityGuard.addListener( availabilityListener );
-            fileListing.get().registerStoreFileProvider( pageCacheWarmer );
+            getNeoStoreFileListing().registerStoreFileProvider( pageCacheWarmer );
             started = true;
         }
     }
@@ -76,5 +75,10 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
             pageCacheWarmer.stop();
             started = false;
         }
+    }
+
+    private NeoStoreFileListing getNeoStoreFileListing()
+    {
+        return dataSourceManager.getDataSource().getDependencyResolver().resolveDependency( NeoStoreFileListing.class );
     }
 }

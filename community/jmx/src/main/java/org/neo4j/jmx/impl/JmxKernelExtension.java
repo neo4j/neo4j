@@ -30,11 +30,11 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.KernelData;
-import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class JmxKernelExtension implements Lifecycle
+public class JmxKernelExtension extends LifecycleAdapter
 {
     private final KernelData kernelData;
     private final DataSourceManager dataSourceManager;
@@ -51,7 +51,7 @@ public class JmxKernelExtension implements Lifecycle
     }
 
     @Override
-    public void init()
+    public void start()
     {
         support = ManagementSupport.load();
         mbs = support.getMBeanServer();
@@ -95,17 +95,7 @@ public class JmxKernelExtension implements Lifecycle
     }
 
     @Override
-    public void start()
-    {
-    }
-
-    @Override
     public void stop()
-    {
-    }
-
-    @Override
-    public void shutdown()
     {
         for ( Neo4jMBean bean : beans )
         {

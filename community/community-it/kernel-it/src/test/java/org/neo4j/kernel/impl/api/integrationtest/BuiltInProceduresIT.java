@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.Version;
 
 import static java.util.Collections.singletonList;
@@ -283,7 +284,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         {
             // When
             dbmsOperations().procedureCallDbms( procedureName( "dbms", "iDoNotExist" ), new Object[0],
-                    AnonymousContext.none().authorize( s -> -1 ), resourceTracker );
+                   new Dependencies(), AnonymousContext.none().authorize( s -> -1 ), resourceTracker );
             fail( "This should never get here" );
         }
         catch ( Exception e )

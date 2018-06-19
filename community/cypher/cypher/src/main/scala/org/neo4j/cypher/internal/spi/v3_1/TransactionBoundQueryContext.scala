@@ -23,7 +23,6 @@ import java.net.URL
 import java.util.function.Predicate
 
 import org.eclipse.collections.api.iterator.LongIterator
-import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v3_1.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
@@ -906,8 +905,8 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
 
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
     callProcedure(name, args,
-                  txContext.dbmsOperations.procedureCallDbms(_,_,txContext.securityContext,
-                                                                        txContext.resourceTracker))
+                  txContext.dbmsOperations.procedureCallDbms(_,_,txContext.graph.getDependencyResolver, txContext.securityContext,
+        txContext.resourceTracker))
   }
 
   private def callProcedure(name: QualifiedName, args: Seq[Any], call: KernelProcedureCall) = {

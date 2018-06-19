@@ -853,6 +853,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     callProcedure(args,
                   transactionalContext.dbmsOperations.procedureCallDbms(id,
                                                                         _,
+                                                                        transactionalContext.graph.getDependencyResolver,
                                                                         transactionalContext.securityContext,
                                                                         transactionalContext.resourceTracker))
   }
@@ -893,6 +894,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     callProcedure(args,
                   transactionalContext.dbmsOperations.procedureCallDbms(kn,
                                                                         _,
+                                                                        transactionalContext.graph.getDependencyResolver,
                                                                         transactionalContext.securityContext,
                                                                         transactionalContext.resourceTracker))
   }

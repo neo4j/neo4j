@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
+import org.neo4j.kernel.impl.util.Dependencies;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertArrayEquals;
@@ -45,6 +46,7 @@ import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureNa
 public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
 {
     private final ResourceTracker resourceTracker = new StubResourceManager();
+    private final Dependencies dependencyResolver = new Dependencies();
 
     @Test
     public void listConfig() throws Exception
@@ -52,7 +54,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         // When
         RawIterator<Object[],ProcedureException> stream =
                 dbmsOperations().procedureCallDbms( procedureName( "dbms", "listConfig" ),
-                        Arrays.asList( "" ).toArray(),
+                        Arrays.asList( "" ).toArray(), dependencyResolver,
                         SecurityContext.AUTH_DISABLED,
                         resourceTracker );
 
@@ -79,7 +81,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         // When
         RawIterator<Object[],ProcedureException> stream =
                 dbmsOperations().procedureCallDbms( procedureName( "dbms", "listConfig" ),
-                        Arrays.asList( GraphDatabaseSettings.strict_config_validation.name() ).toArray(),
+                        Arrays.asList( GraphDatabaseSettings.strict_config_validation.name() ).toArray(), dependencyResolver,
                         SecurityContext.AUTH_DISABLED, resourceTracker );
 
         // Then
@@ -99,7 +101,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         // When
         RawIterator<Object[],ProcedureException> stream =
                 dbmsOperations().procedureCallDbms( procedureName( "dbms", "listConfig" ),
-                        Collections.singletonList( GraphDatabaseSettings.transaction_timeout.name() ).toArray(),
+                        Collections.singletonList( GraphDatabaseSettings.transaction_timeout.name() ).toArray(), dependencyResolver,
                         SecurityContext.AUTH_DISABLED, resourceTracker );
 
         // Then
