@@ -42,6 +42,9 @@ import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.Loaders;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyCreator;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyTraverser;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -92,6 +95,7 @@ public class OnlineIndexUpdatesTest
     private PropertyCreator propertyCreator;
     private PropertyStore propertyStore;
     private DirectRecordAccess<PropertyRecord,PrimitiveRecord> recordAccess;
+    private JobScheduler scheduler;
 
     @Before
     public void setUp() throws Exception
@@ -108,7 +112,7 @@ public class OnlineIndexUpdatesTest
         nodeStore = neoStores.getNodeStore();
         relationshipStore = neoStores.getRelationshipStore();
         propertyStore = neoStores.getPropertyStore();
-        JobScheduler scheduler = new CentralJobScheduler();
+        scheduler = new CentralJobScheduler();
         indexingService =
                 IndexingServiceFactory.createIndexingService( Config.defaults(), scheduler, new DefaultIndexProviderMap( new InMemoryIndexProvider() ),
                         new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores ), SchemaUtil.idTokenNameLookup, empty(),
@@ -148,6 +152,7 @@ public class OnlineIndexUpdatesTest
 
         StoreIndexDescriptor indexDescriptor = forSchema( SchemaDescriptorFactory.multiToken( new int[0], NODE, 1, 4, 6 ), PROVIDER_DESCRIPTOR ).withId( 0 );
         indexingService.createIndexes( indexDescriptor );
+        indexingService.getIndexProxy( indexDescriptor.schema() ).awaitStoreScanCompleted();
 
         onlineIndexUpdates.feed( LongObjectMaps.immutable.of( nodeId, asList( propertyCommand ) ), LongObjectMaps.immutable.empty(),
                 LongObjectMaps.immutable.of( nodeId, nodeCommand ), LongObjectMaps.immutable.empty() );
@@ -177,6 +182,7 @@ public class OnlineIndexUpdatesTest
         StoreIndexDescriptor indexDescriptor =
                 forSchema( SchemaDescriptorFactory.multiToken( new int[0], RELATIONSHIP, 1, 4, 6 ), PROVIDER_DESCRIPTOR ).withId( 0 );
         indexingService.createIndexes( indexDescriptor );
+        indexingService.getIndexProxy( indexDescriptor.schema() ).awaitStoreScanCompleted();
 
         onlineIndexUpdates.feed( LongObjectMaps.immutable.empty(), LongObjectMaps.immutable.of( relId, asList( propertyCommand ) ),
                 LongObjectMaps.immutable.empty(), LongObjectMaps.immutable.of( relId, relationshipCommand ) );
@@ -207,6 +213,7 @@ public class OnlineIndexUpdatesTest
         StoreIndexDescriptor nodeIndexDescriptor =
                 forSchema( SchemaDescriptorFactory.multiToken( new int[0], NODE, 1, 4, 6 ), PROVIDER_DESCRIPTOR ).withId( 0 );
         indexingService.createIndexes( nodeIndexDescriptor );
+        indexingService.getIndexProxy( nodeIndexDescriptor.schema() ).awaitStoreScanCompleted();
 
         long relId = 0;
         RelationshipRecord inUse = getRelationship( relId, true );
@@ -224,6 +231,7 @@ public class OnlineIndexUpdatesTest
         StoreIndexDescriptor relationshipIndexDescriptor =
                 forSchema( SchemaDescriptorFactory.multiToken( new int[0], RELATIONSHIP, 1, 4, 6 ), PROVIDER_DESCRIPTOR ).withId( 1 );
         indexingService.createIndexes( relationshipIndexDescriptor );
+        indexingService.getIndexProxy( relationshipIndexDescriptor.schema() ).awaitStoreScanCompleted();
 
         onlineIndexUpdates.feed( LongObjectMaps.immutable.of( nodeId, asList( nodePropertyCommand ) ),
                 LongObjectMaps.immutable.of( relId, asList( relationshipPropertyCommand ) ), LongObjectMaps.immutable.of( nodeId, nodeCommand ),
@@ -264,6 +272,9 @@ public class OnlineIndexUpdatesTest
         StoreIndexDescriptor indexDescriptor2 =
                 forSchema( SchemaDescriptorFactory.multiToken( new int[]{1}, RELATIONSHIP, 1 ), PROVIDER_DESCRIPTOR ).withId( 2 );
         indexingService.createIndexes( indexDescriptor0, indexDescriptor1, indexDescriptor2 );
+        indexingService.getIndexProxy( indexDescriptor0.schema() ).awaitStoreScanCompleted();
+        indexingService.getIndexProxy( indexDescriptor1.schema() ).awaitStoreScanCompleted();
+        indexingService.getIndexProxy( indexDescriptor2.schema() ).awaitStoreScanCompleted();
 
         onlineIndexUpdates.feed( LongObjectMaps.immutable.empty(), LongObjectMaps.immutable.of( relId, asList( propertyCommand, propertyCommand2 ) ),
                 LongObjectMaps.immutable.empty(), LongObjectMaps.immutable.of( relId, relationshipCommand ) );

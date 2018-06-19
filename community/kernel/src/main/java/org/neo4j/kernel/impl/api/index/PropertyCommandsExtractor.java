@@ -118,7 +118,7 @@ public class PropertyCommandsExtractor extends TransactionApplier.Adapter
         List<PropertyCommand> group = propertyCommandsByEntityIds.get( entityId );
         if ( group == null )
         {
-            this.propertyCommandsByNodeIds.put( entityId, group = new ArrayList<>() );
+            propertyCommandsByEntityIds.put( entityId, group = new ArrayList<>() );
         }
         group.add( command );
         hasUpdates = true;

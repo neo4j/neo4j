@@ -197,8 +197,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     readOnly, monitors, recoveryCleanupWorkCollector );
 
             // We need to load the property tokens here, since we need them before we load the indexes.
-            propertyKeyTokenHolder.setInitialTokens(
-                    neoStores.getPropertyKeyTokenStore().getTokens( Integer.MAX_VALUE ) );
+            tokenHolders.propertyKeyTokens().setInitialTokens( neoStores.getPropertyKeyTokenStore().getTokens() );
 
             indexStoreView = new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, lockService, neoStores, logProvider );
             this.indexProviderMap = indexProviderMap;
