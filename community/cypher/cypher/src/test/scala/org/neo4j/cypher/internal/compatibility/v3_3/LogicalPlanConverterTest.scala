@@ -384,7 +384,6 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
   test("should convert all logical plans") {
     val subTypes = reflectLogicalPlans.getSubTypesOf(classOf[plansV3_3.LogicalPlan]).asScala
     subTypes.filter(c => !Modifier.isAbstract(c.getModifiers))
-      .filter(c => c.getSimpleName == "ScanQueryExpression")  // removed in later versions of 3.3.x, but not earlier versions - delete this filter
       .toList.sortBy(_.getName)
       .foreach { subType =>
         val constructor = subType.getConstructors.head
@@ -456,6 +455,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
       case "InequalitySeekRange" => compilerV3_3.RangeGreaterThan(frontendV3_3.helpers.NonEmptyList(frontendV3_3.InclusiveBound(variable)))
       case "PrefixRange" => compilerV3_3.PrefixRange(variable)
 
+      case "QueryExpression" => plansV3_3.SingleQueryExpression(variable)
       case "LogicalPlan" => plansV3_3.AllNodesScan("n", Set.empty)(solved3_3)
       case "PlannerQuery" => solved3_3
       case "Exception" => new frontendV3_3.ExhaustiveShortestPathForbiddenException
