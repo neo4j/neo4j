@@ -48,16 +48,13 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -179,10 +176,10 @@ public class IndexPopulationJobTest
         String value = "Taylor";
         long nodeId = createNode( map( name, value ), FIRST );
         long relationship = createRelationship( map( name, age ), likes, nodeId, nodeId );
-        IndexPopulator populator = spy( indexPopulator( false ) );
-        RelationTypeSchemaDescriptor descriptor = SchemaDescriptorFactory.forRelType( 0, 0 );
+        IndexDescriptor descriptor = IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forRelType( 0, 0 ) );
+        IndexPopulator populator = spy( indexPopulator( descriptor ) );
         IndexPopulationJob job =
-                newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.RELATIONSHIP, IndexDescriptorFactory.forSchema( descriptor ) );
+                newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.RELATIONSHIP, descriptor );
 
         // WHEN
         job.run();
@@ -251,7 +248,7 @@ public class IndexPopulationJobTest
     public void shouldPopulateRelatonshipIndexWithASmallDataset() throws Exception
     {
         // GIVEN
-        String value = "Mattias";
+        String value = "Philip J.Fry";
         long node1 = createNode( map( name, value ), FIRST );
         long node2 = createNode( map( name, value ), SECOND );
         long node3 = createNode( map( age, 31 ), FIRST );
@@ -262,10 +259,10 @@ public class IndexPopulationJobTest
         createRelationship( map( age, 31 ), likes, node2, node1 );
         long rel4 = createRelationship( map( age, 35, name, value ), likes, node4, node4 );
 
-        IndexPopulator populator = spy( indexPopulator( false ) );
-        RelationTypeSchemaDescriptor descriptor = SchemaDescriptorFactory.forRelType( 0, 0 );
+        IndexDescriptor descriptor = IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forRelType( 0, 0 ) );
+        IndexPopulator populator = spy( indexPopulator( descriptor ) );
         IndexPopulationJob job =
-                newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.RELATIONSHIP, IndexDescriptorFactory.forSchema( descriptor ) );
+                newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.RELATIONSHIP, descriptor );
 
         // WHEN
         job.run();
@@ -677,8 +674,13 @@ public class IndexPopulationJobTest
     private IndexPopulator indexPopulator( boolean constraint )
             throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
     {
-        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         IndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
+        return indexPopulator( descriptor );
+    }
+
+    private IndexPopulator indexPopulator( IndexDescriptor descriptor )
+    {
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         IndexProvider indexProvider = db.getDependencyResolver().resolveDependency( IndexProvider.class );
         return indexProvider.getPopulator( descriptor.withId( 21 ), samplingConfig );
     }
