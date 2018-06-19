@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compatibility
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{ExecutionPlan, ExecutionResultBuilderFactory, InterpretedExecutionResultBuilderFactory, PeriodicCommitInfo}
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.profiler.Profiler
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan._
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.profiler.{InterpretedProfilerInformation, Profiler}
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
@@ -47,45 +47,34 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
     val periodicCommitInfo = state.periodicCommit.map(x => PeriodicCommitInfo(x.batchSize))
     val columns = state.statement().returnColumns
     val resultBuilderFactory = InterpretedExecutionResultBuilderFactory(pipe, context.readOnly, columns, logicalPlan)
-    val func = InterpretedRuntime.getExecutionPlanFunction(periodicCommitInfo,
-      resultBuilderFactory,
-      context.notificationLogger,
-      state.plannerName,
-      InterpretedRuntimeName,
-      context.readOnly,
-      cardinalities)
 
-    new InterpretedExecutionPlan(func, logicalPlan, periodicCommitInfo.isDefined, state.plannerName)
+    new InterpretedExecutionPlan(periodicCommitInfo,
+                                 resultBuilderFactory,
+                                 context.notificationLogger,
+                                 state.plannerName,
+                                 InterpretedRuntimeName,
+                                 context.readOnly,
+                                 cardinalities,
+                                 logicalPlan.indexUsage)
   }
 
   /**
     * Executable plan for a single cypher query. Warning, this class will get cached! Do not leak transaction objects
     * or other resources in here.
     */
-  class InterpretedExecutionPlan(val executionPlanFunc: (QueryContext, ExecutionMode, MapValue) => InternalExecutionResult,
-                                 val logicalPlan: LogicalPlan,
-                                 override val isPeriodicCommit: Boolean,
-                                 override val plannerUsed: PlannerName) extends ExecutionPlan {
+  class InterpretedExecutionPlan(periodicCommit: Option[PeriodicCommitInfo],
+                                 resultBuilderFactory: ExecutionResultBuilderFactory,
+                                 notificationLogger: InternalNotificationLogger,
+                                 override val plannerUsed: PlannerName,
+                                 override val runtimeUsed: RuntimeName,
+                                 readOnly: Boolean,
+                                 cardinalities: Cardinalities,
+                                 override val plannedIndexUsage: Seq[IndexUsage]) extends ExecutionPlan {
 
-    override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult =
-      executionPlanFunc(queryContext, planType, params)
-
-    override def runtimeUsed: RuntimeName = InterpretedRuntimeName
-
-    override def plannedIndexUsage: Seq[IndexUsage] = logicalPlan.indexUsage
-  }
-
-  def getExecutionPlanFunction(periodicCommit: Option[PeriodicCommitInfo],
-                               resultBuilderFactory: ExecutionResultBuilderFactory,
-                               notificationLogger: InternalNotificationLogger,
-                               plannerName: PlannerName,
-                               runtimeName: RuntimeName,
-                               readOnly: Boolean,
-                               cardinalities: Cardinalities):
-  (QueryContext, ExecutionMode, MapValue) => InternalExecutionResult =
-    (queryContext: QueryContext, planType: ExecutionMode, params: MapValue) => {
+    override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult = {
       val builder = resultBuilderFactory.create()
 
+      val profileInformation = new InterpretedProfilerInformation
       val profiling = planType == ProfileMode
       val builderContext = if (!readOnly || profiling) new UpdateCountingQueryContext(queryContext) else queryContext
 
@@ -98,8 +87,11 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
       }
 
       if (profiling)
-        builder.setPipeDecorator(new Profiler(queryContext.transactionalContext.databaseInfo))
+        builder.setPipeDecorator(new Profiler(queryContext.transactionalContext.databaseInfo, profileInformation))
 
-      builder.build(planType, params, notificationLogger, plannerName, runtimeName, readOnly, cardinalities)
+      builder.build(planType, params, notificationLogger, plannerUsed, InterpretedRuntimeName, readOnly, cardinalities)
     }
+
+    override def isPeriodicCommit: Boolean = periodicCommit.isDefined
+  }
 }
