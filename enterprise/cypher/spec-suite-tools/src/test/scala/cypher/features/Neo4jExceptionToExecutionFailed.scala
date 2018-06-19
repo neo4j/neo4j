@@ -113,7 +113,7 @@ object Neo4jExceptionToExecutionFailed {
       UNDEFINED_VARIABLE
     else if (msg.matches(semanticError(".+ not defined")))
       UNDEFINED_VARIABLE
-    else if (msg.matches(semanticError("Type mismatch: .+ already defined with conflicting type .+ \\(expected .+\\)")))
+    else if (msg.matches(semanticError("Type mismatch: .+ defined with conflicting type .+ \\(expected .+\\)")))
       VARIABLE_TYPE_CONFLICT
     else if (msg.matches(semanticError("Cannot use the same relationship variable '.+' for multiple patterns")))
       RELATIONSHIP_UNIQUENESS_VIOLATION
