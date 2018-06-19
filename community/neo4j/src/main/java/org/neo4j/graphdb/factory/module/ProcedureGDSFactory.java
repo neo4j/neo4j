@@ -22,7 +22,6 @@ package org.neo4j.graphdb.factory.module;
 import java.net.URL;
 
 import org.neo4j.function.ThrowingFunction;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.facade.spi.ProcedureGDBFacadeSPI;
 import org.neo4j.graphdb.security.URLAccessValidationError;
@@ -38,17 +37,14 @@ public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDataba
 {
     private final PlatformModule platform;
     private final DataSourceModule dataSource;
-    private final DependencyResolver resolver;
     private final CoreAPIAvailabilityGuard availability;
     private final ThrowingFunction<URL, URL, URLAccessValidationError> urlValidator;
     private final TokenHolders tokenHolders;
 
-    public ProcedureGDSFactory( PlatformModule platform, DataSourceModule dataSource, DependencyResolver resolver,
-            CoreAPIAvailabilityGuard coreAPIAvailabilityGuard, TokenHolders tokenHolders )
+    ProcedureGDSFactory( PlatformModule platform, DataSourceModule dataSource, CoreAPIAvailabilityGuard coreAPIAvailabilityGuard, TokenHolders tokenHolders )
     {
         this.platform = platform;
         this.dataSource = dataSource;
-        this.resolver = resolver;
         this.availability = coreAPIAvailabilityGuard;
         this.urlValidator = url -> platform.urlAccessRule.validate( platform.config, url );
         this.tokenHolders = tokenHolders;
@@ -72,7 +68,7 @@ public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDataba
             new ProcedureGDBFacadeSPI(
                 platform,
                 dataSource,
-                resolver,
+                dataSource.neoStoreDataSource.getDependencyResolver(),
                 availability,
                 urlValidator,
                 securityContext
