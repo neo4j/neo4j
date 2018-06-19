@@ -58,7 +58,7 @@ public class ZipUtils
         }
         Map<String,String> env = MapUtil.stringMap( "create", "true" );
         Path rootPath = sourceToCompress.toPath();
-        URI archiveAbsoluteURI = URI.create( "jar:file:" + destinationZip.toURI().getPath() );
+        URI archiveAbsoluteURI = URI.create( "jar:file:" + destinationZip.toURI().getRawPath() );
 
         try ( FileSystem zipFs = FileSystems.newFileSystem( archiveAbsoluteURI, env ) )
         {

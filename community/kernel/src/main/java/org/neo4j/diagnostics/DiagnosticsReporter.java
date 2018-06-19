@@ -86,7 +86,7 @@ public class DiagnosticsReporter
         env.put( "create", "true" );
 
         // NOTE: we need the toUri() in order to handle windows file paths
-        URI uri = URI.create("jar:file:" + destination.toAbsolutePath().toUri().getPath() );
+        URI uri = URI.create("jar:file:" + destination.toAbsolutePath().toUri().getRawPath() );
 
         try ( FileSystem fs = FileSystems.newFileSystem( uri, env ) )
         {
