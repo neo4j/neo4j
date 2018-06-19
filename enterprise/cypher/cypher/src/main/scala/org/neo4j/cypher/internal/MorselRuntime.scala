@@ -60,8 +60,7 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
         MorselExpressionConverters,
         SlottedExpressionConverters,
         CommunityExpressionConverter)
-      val readOnly = state.solveds(state.logicalPlan.id).readOnly
-      val operatorBuilder = new PipelineBuilder(physicalPlan, converters, readOnly)
+      val operatorBuilder = new PipelineBuilder(physicalPlan, converters, context.readOnly)
 
       val operators = operatorBuilder.create(logicalPlan)
       val dispatcher =
@@ -72,10 +71,16 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
       context.notificationLogger.log(
         ExperimentalFeatureNotification("use the morsel runtime at your own peril, " +
                                       "not recommended to be run on production systems"))
-       VectorizedExecutionPlan(state.plannerName, operators,  physicalPlan.slotConfigurations, logicalPlan, fieldNames,
-                                             dispatcher, context.notificationLogger,
-      readOnly,
-    state.cardinalities)
+
+      VectorizedExecutionPlan(state.plannerName,
+                              operators,
+                              physicalPlan.slotConfigurations,
+                              logicalPlan,
+                              fieldNames,
+                              dispatcher,
+                              context.notificationLogger,
+                              context.readOnly,
+                              state.cardinalities)
   }
 
   private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan, semanticTable: SemanticTable) = {

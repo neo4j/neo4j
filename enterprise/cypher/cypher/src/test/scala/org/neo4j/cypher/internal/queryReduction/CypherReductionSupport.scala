@@ -190,7 +190,7 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
     baseState = rewriting.transform(baseState, planningContext)
 
     val logicalPlanState = CypherReductionSupport.compiler.planPreparedQuery(baseState, planningContext)
-
+    val readOnly = logicalPlanState.solveds(logicalPlanState.logicalPlan.id).readOnly
 
     val runtime = CommunityRuntimeFactory.getRuntime(CypherRuntimeOption.default, planningContext.config.useErrorsOverWarnings)
 
@@ -199,7 +199,7 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
      else
       CommunityRuntimeContextCreator
 
-    val runtimeContext = runtimeContextCreator.create(devNullLogger, planContext, MasterCompiler.CLOCK, Set())
+    val runtimeContext = runtimeContextCreator.create(devNullLogger, planContext, MasterCompiler.CLOCK, Set(), readOnly)
     val executionPlan = runtime.compileToExecutable(logicalPlanState, runtimeContext)
 
     val queryContext = new TransactionBoundQueryContext(txContextWrapper)(CypherReductionSupport.searchMonitor)

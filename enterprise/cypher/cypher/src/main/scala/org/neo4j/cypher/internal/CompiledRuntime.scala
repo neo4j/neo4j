@@ -46,13 +46,12 @@ object CompiledRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
   @throws[CantCompileQueryException]
   override def compileToExecutable(state: LogicalPlanState, context: EnterpriseRuntimeContext): ExecutionPlanv3_5 = {
     val codeGen = new CodeGenerator(context.codeStructure, context.clock, CodeGenConfiguration(context.debugOptions))
-    val readOnly = state.solveds(state.logicalPlan.id).readOnly
     val compiled: CompiledPlan = codeGen.generate(
       state.logicalPlan,
       context.tokenContext,
       state.semanticTable(),
       state.plannerName,
-      readOnly,
+      context.readOnly,
       state.cardinalities)
     new CompiledExecutionPlan(
       compiled,

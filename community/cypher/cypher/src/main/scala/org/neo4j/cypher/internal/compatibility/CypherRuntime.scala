@@ -55,6 +55,7 @@ trait CypherRuntime[-CONTEXT <: RuntimeContext] {
 abstract class RuntimeContext {
   def notificationLogger: InternalNotificationLogger
   def tokenContext: TokenContext
+  def readOnly: Boolean
 }
 
 /**
@@ -66,7 +67,8 @@ trait RuntimeContextCreator[CONTEXT <: RuntimeContext] {
   def create(notificationLogger: InternalNotificationLogger,
              tokenContext: TokenContext,
              clock: Clock,
-             debugOptions: Set[String]
+             debugOptions: Set[String],
+             readOnly: Boolean
             ): CONTEXT
 }
 

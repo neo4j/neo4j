@@ -36,24 +36,23 @@ import org.opencypher.v9_0.util.PeriodicCommitInOpenTransactionException
 
 object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
   override def compileToExecutable(state: LogicalPlanState, context: RuntimeContext): ExecutionPlan = {
-    val readOnly = state.solveds(state.logicalPlan.id).readOnly
     val cardinalities = state.cardinalities
     val logicalPlan = state.logicalPlan
     val converters = new ExpressionConverters(CommunityExpressionConverter)
     val executionPlanBuilder = new PipeExecutionPlanBuilder(
       expressionConverters = converters,
       pipeBuilderFactory = InterpretedPipeBuilderFactory)
-    val pipeBuildContext = PipeExecutionBuilderContext(state.semanticTable(), readOnly, cardinalities)
+    val pipeBuildContext = PipeExecutionBuilderContext(state.semanticTable(), context.readOnly, cardinalities)
     val pipe = executionPlanBuilder.build(logicalPlan)(pipeBuildContext, context.tokenContext)
     val periodicCommitInfo = state.periodicCommit.map(x => PeriodicCommitInfo(x.batchSize))
     val columns = state.statement().returnColumns
-    val resultBuilderFactory = InterpretedExecutionResultBuilderFactory(pipe, readOnly, columns, logicalPlan)
+    val resultBuilderFactory = InterpretedExecutionResultBuilderFactory(pipe, context.readOnly, columns, logicalPlan)
     val func = InterpretedRuntime.getExecutionPlanFunction(periodicCommitInfo,
       resultBuilderFactory,
       context.notificationLogger,
       state.plannerName,
       InterpretedRuntimeName,
-      readOnly,
+      context.readOnly,
       cardinalities)
 
     new InterpretedExecutionPlan(func, logicalPlan, periodicCommitInfo.isDefined, state.plannerName)

@@ -112,6 +112,7 @@ class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
   */
 case class EnterpriseRuntimeContext(notificationLogger: InternalNotificationLogger,
                                     tokenContext: TokenContext,
+                                    readOnly: Boolean,
                                     codeStructure: CodeStructure[GeneratedQuery],
                                     dispatcher: Dispatcher,
                                     log: Log,
@@ -130,7 +131,15 @@ case class EnterpriseRuntimeContextCreator(codeStructure: CodeStructure[Generate
   override def create(notificationLogger: InternalNotificationLogger,
                       tokenContext: TokenContext,
                       clock: Clock,
-                      debugOptions: Set[String]
+                      debugOptions: Set[String],
+                      readOnly: Boolean
                      ): EnterpriseRuntimeContext =
-    EnterpriseRuntimeContext(notificationLogger, tokenContext, codeStructure, dispatcher, log, clock, debugOptions)
+    EnterpriseRuntimeContext(notificationLogger,
+                             tokenContext,
+                             readOnly,
+                             codeStructure,
+                             dispatcher,
+                             log,
+                             clock,
+                             debugOptions)
 }

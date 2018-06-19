@@ -28,13 +28,15 @@ import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
   * The regular community runtime context.
   */
 case class CommunityRuntimeContext(notificationLogger: InternalNotificationLogger,
-                                   tokenContext: TokenContext) extends RuntimeContext
+                                   tokenContext: TokenContext,
+                                   readOnly: Boolean) extends RuntimeContext
 
 object CommunityRuntimeContextCreator extends RuntimeContextCreator[RuntimeContext] {
   override def create(notificationLogger: InternalNotificationLogger,
                       tokenContext: TokenContext,
                       clock: Clock,
-                      debugOptions: Set[String]
+                      debugOptions: Set[String],
+                      readOnly: Boolean
                      ): RuntimeContext =
-    CommunityRuntimeContext(notificationLogger, tokenContext)
+    CommunityRuntimeContext(notificationLogger, tokenContext, readOnly)
 }

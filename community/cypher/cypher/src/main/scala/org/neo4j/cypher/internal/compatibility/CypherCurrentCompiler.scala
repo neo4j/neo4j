@@ -72,10 +72,13 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     val logicalPlanResult =
       planner.parseAndPlan(preParsedQuery, tracer, preParsingNotifications, transactionalContext)
 
+    val logicalPlan = logicalPlanResult.logicalPlanState.logicalPlan
+
     val runtimeContext = contextCreator.create(logicalPlanResult.plannerContext.notificationLogger,
                                                logicalPlanResult.plannerContext.planContext,
                                                logicalPlanResult.plannerContext.clock,
-                                               logicalPlanResult.plannerContext.debugOptions)
+                                               logicalPlanResult.plannerContext.debugOptions,
+                                               logicalPlanResult.logicalPlanState.solveds(logicalPlan.id).readOnly)
 
     val executionPlan3_5 = runtime.compileToExecutable(logicalPlanResult.logicalPlanState, runtimeContext)
 

@@ -71,19 +71,18 @@ object SlottedRuntime extends CypherRuntime[EnterpriseRuntimeContext] with Debug
         SlottedExpressionConverters, CommunityExpressionConverter)
       val pipeBuilderFactory = SlottedPipeBuilder.Factory(physicalPlan)
       val executionPlanBuilder = new PipeExecutionPlanBuilder(expressionConverters = converters, pipeBuilderFactory = pipeBuilderFactory)
-      val readOnly = state.solveds(state.logicalPlan.id).readOnly
-      val pipeBuildContext = PipeExecutionBuilderContext(state.semanticTable(), readOnly, state.cardinalities)
+      val pipeBuildContext = PipeExecutionBuilderContext(state.semanticTable(), context.readOnly, state.cardinalities)
       val pipe = executionPlanBuilder.build(logicalPlan)(pipeBuildContext, context.tokenContext)
       val periodicCommitInfo = state.periodicCommit.map(x => PeriodicCommitInfo(x.batchSize))
       val columns = state.statement().returnColumns
       val resultBuilderFactory =
-        new SlottedExecutionResultBuilderFactory(pipe, readOnly, columns, logicalPlan, physicalPlan.slotConfigurations)
+        new SlottedExecutionResultBuilderFactory(pipe, context.readOnly, columns, logicalPlan, physicalPlan.slotConfigurations)
       val func = InterpretedRuntime.getExecutionPlanFunction(periodicCommitInfo,
         resultBuilderFactory,
         context.notificationLogger,
         state.plannerName,
         SlottedRuntimeName,
-        readOnly,
+        context.readOnly,
         state.cardinalities)
 
       val periodicCommit = periodicCommitInfo.isDefined
