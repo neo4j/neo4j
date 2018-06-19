@@ -43,6 +43,9 @@ import static org.neo4j.kernel.impl.index.schema.DurationIndexKey.AVG_DAY_SECOND
 import static org.neo4j.kernel.impl.index.schema.DurationIndexKey.AVG_MONTH_SECONDS;
 import static org.neo4j.kernel.impl.index.schema.GenericLayout.HIGHEST_TYPE_BY_VALUE_GROUP;
 import static org.neo4j.kernel.impl.index.schema.GenericLayout.LOWEST_TYPE_BY_VALUE_GROUP;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.HIGH;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.LOW;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 import static org.neo4j.kernel.impl.index.schema.StringIndexKey.unsignedByteArrayCompare;
 import static org.neo4j.kernel.impl.index.schema.ZonedDateTimeLayout.ZONE_ID_FLAG;
 import static org.neo4j.kernel.impl.index.schema.ZonedDateTimeLayout.ZONE_ID_MASK;
@@ -71,11 +74,12 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     // TODO spatial
     // TODO arrays of all types ^^^
 
-    long long0;
-    long long1;
-    long long2;
-    long long3;
-    byte[] byteArray;
+    private long long0;
+    private long long1;
+    private long long2;
+    private long long3;
+    private byte[] byteArray;
+    private NativeIndexKey.Inclusion inclusion;
 
     void clear()
     {
@@ -84,6 +88,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         long1 = 0;
         long2 = 0;
         long3 = 0;
+        inclusion = NEUTRAL;
     }
 
     Value assertCorrectType( Value value )
@@ -148,6 +153,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         {
             long3 = TRUE;
         }
+        inclusion = HIGH;
     }
 
     int compareValueTo( GenericKeyState other )
@@ -183,7 +189,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         }
     }
 
-    void copyByteArrayFromIfExists( GenericKeyState key, int targetLength )
+    private void copyByteArrayFromIfExists( GenericKeyState key, int targetLength )
     {
         if ( key.type == Type.TEXT )
         {
@@ -196,7 +202,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         }
     }
 
-    void setBytesLength( int length )
+    private void setBytesLength( int length )
     {
         if ( booleanOf( long1 ) || byteArray == null || byteArray.length < length )
         {
@@ -214,6 +220,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         clear();
         writeString( prefix );
         long2 = FALSE;
+        inclusion = LOW;
         // Don't set ignoreLength = true here since the "low" a.k.a. left side of the range should care about length.
         // This will make the prefix lower than those that matches the prefix (their length is >= that of the prefix)
     }
@@ -223,6 +230,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         clear();
         writeString( prefix );
         long2 = TRUE;
+        inclusion = HIGH;
     }
 
     @Override
@@ -558,7 +566,8 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
                    Long.BYTES +    /* months */
                    Long.BYTES;     /* days */
         case TEXT:
-            return (int) long0;    /* bytesLength */
+            return Short.SIZE +    /* short field with bytesLength value */
+                   (int) long0;    /* bytesLength */
         case BOOLEAN:
             return Byte.BYTES;     /* byte for this boolean value */
         case NUMBER:
@@ -619,6 +628,8 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 
     private void writeText( PageCursor cursor )
     {
+        // TODO short/int weird asymmetry ey?
+        cursor.putShort( (short) long0 );
         cursor.putBytes( byteArray, 0, (int) long0 );
     }
 
@@ -668,7 +679,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 
     void read( PageCursor cursor, int size )
     {
-        if ( size < TYPE_ID_SIZE )
+        if ( size <= TYPE_ID_SIZE )
         {
             initializeToDummyValue();
             return;
@@ -722,6 +733,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         type = Type.NUMBER;
         long0 = 0;
         long1 = 0;
+        inclusion = NEUTRAL;
     }
 
     private void readNumber( PageCursor cursor )
@@ -735,8 +747,13 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         long0 = cursor.getByte();
     }
 
-    private void readText( PageCursor cursor, int bytesLength )
+    private void readText( PageCursor cursor, int maxSize )
     {
+        short bytesLength = cursor.getShort();
+        if ( bytesLength <= 0 || bytesLength > maxSize )
+        {
+            initializeToDummyValue();
+        }
         setBytesLength( bytesLength );
         cursor.getBytes( byteArray, 0, bytesLength );
     }
@@ -786,5 +803,11 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
             long2 = -1;
             long3 = asZoneOffset( encodedZone );
         }
+    }
+
+    void writeValue( Value value, NativeIndexKey.Inclusion inclusion )
+    {
+        value.writeTo( this );
+        this.inclusion = inclusion;
     }
 }

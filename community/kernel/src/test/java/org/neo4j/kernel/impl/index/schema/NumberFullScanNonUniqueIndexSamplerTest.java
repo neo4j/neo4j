@@ -31,9 +31,11 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 import static org.neo4j.values.storable.Values.values;
 
 public class NumberFullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil<NumberIndexKey,NativeIndexValue>
@@ -83,7 +85,8 @@ public class NumberFullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil
                 long nodeId = 0;
                 for ( Number number : values )
                 {
-                    key.from( nodeId, values( number ) );
+                    key.initialize( nodeId );
+                    key.initFromValue( 0, Values.of( number ), NEUTRAL );
                     value.from( values( number ) );
                     writer.put( key, value );
                     nodeId++;

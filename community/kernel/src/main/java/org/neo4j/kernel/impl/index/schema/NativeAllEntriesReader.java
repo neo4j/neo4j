@@ -29,7 +29,6 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.values.storable.ValueGroup;
 
 public class NativeAllEntriesReader<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue> implements BoundedIterable<Long>
 {
@@ -47,9 +46,11 @@ public class NativeAllEntriesReader<KEY extends NativeIndexKey<KEY>,VALUE extend
     public Iterator<Long> iterator()
     {
         KEY from = layout.newKey();
-        from.initAsLowest( ValueGroup.UNKNOWN );
+        from.initialize( Long.MIN_VALUE );
+        from.initValuesAsLowest();
         KEY to = layout.newKey();
-        to.initAsHighest( ValueGroup.UNKNOWN );
+        to.initialize( Long.MAX_VALUE );
+        to.initValuesAsHighest();
         try
         {
             closeSeeker();

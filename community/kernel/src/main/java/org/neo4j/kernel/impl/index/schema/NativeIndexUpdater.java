@@ -24,6 +24,9 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.values.storable.Value;
+
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 
 class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
         implements IndexUpdater
@@ -100,7 +103,7 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIn
     {
         // todo Do we need to verify that we actually removed something at all?
         // todo Difference between online and recovery?
-        treeKey.from( update.getEntityId(), update.values() );
+        initializeKeyFromUpdate( treeKey, update.getEntityId(), update.values() );
         writer.remove( treeKey );
     }
 
@@ -110,10 +113,10 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIn
             throws IndexEntryConflictException
     {
         // Remove old entry
-        treeKey.from( update.getEntityId(), update.beforeValues() );
+        initializeKeyFromUpdate( treeKey, update.getEntityId(), update.beforeValues() );
         writer.remove( treeKey );
         // Insert new entry
-        treeKey.from( update.getEntityId(), update.values() );
+        initializeKeyFromUpdate( treeKey, update.getEntityId(), update.values() );
         treeValue.from( update.values() );
         conflictDetectingValueMerger.controlConflictDetection( treeKey );
         writer.merge( treeKey, treeValue, conflictDetectingValueMerger );
@@ -124,10 +127,19 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIn
             Writer<KEY,VALUE> writer, ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
             throws IndexEntryConflictException
     {
-        treeKey.from( update.getEntityId(), update.values() );
+        initializeKeyFromUpdate( treeKey, update.getEntityId(), update.values() );
         treeValue.from( update.values() );
         conflictDetectingValueMerger.controlConflictDetection( treeKey );
         writer.merge( treeKey, treeValue, conflictDetectingValueMerger );
         conflictDetectingValueMerger.checkConflict( update.values() );
+    }
+
+    private static <KEY extends NativeIndexKey<KEY>> void initializeKeyFromUpdate( KEY treeKey, long entityId, Value[] values )
+    {
+        treeKey.initialize( entityId );
+        for ( int i = 0; i < values.length; i++ )
+        {
+            treeKey.initFromValue( i, values[i], NEUTRAL );
+        }
     }
 }

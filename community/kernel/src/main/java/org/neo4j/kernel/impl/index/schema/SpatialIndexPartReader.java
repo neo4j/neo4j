@@ -111,8 +111,8 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
     {
         SpatialIndexKey treeKeyFrom = layout.newKey();
         SpatialIndexKey treeKeyTo = layout.newKey();
-        treeKeyFrom.initAsLowest( ValueGroup.GEOMETRY );
-        treeKeyTo.initAsHighest( ValueGroup.GEOMETRY );
+        treeKeyFrom.initValueAsLowest( ValueGroup.GEOMETRY );
+        treeKeyTo.initValueAsHighest( ValueGroup.GEOMETRY );
         startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, predicates, false );
     }
 

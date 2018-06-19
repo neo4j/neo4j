@@ -57,8 +57,8 @@ class NumberIndexReader<VALUE extends NativeIndexValue> extends NativeIndexReade
         switch ( predicate.type() )
         {
         case exists:
-            treeKeyFrom.initAsLowest( ValueGroup.NUMBER );
-            treeKeyTo.initAsHighest( ValueGroup.NUMBER );
+            treeKeyFrom.initValueAsLowest( ValueGroup.NUMBER );
+            treeKeyTo.initValueAsHighest( ValueGroup.NUMBER );
             break;
         case exact:
             ExactPredicate exactPredicate = (ExactPredicate) predicate;
@@ -81,7 +81,7 @@ class NumberIndexReader<VALUE extends NativeIndexValue> extends NativeIndexReade
         Value toValue = rangePredicate.toValue();
         if ( toValue == Values.NO_VALUE )
         {
-            treeKeyTo.initAsHighest( ValueGroup.NUMBER );
+            treeKeyTo.initValueAsHighest( ValueGroup.NUMBER );
         }
         else
         {
@@ -95,7 +95,7 @@ class NumberIndexReader<VALUE extends NativeIndexValue> extends NativeIndexReade
         Value fromValue = rangePredicate.fromValue();
         if ( fromValue == Values.NO_VALUE )
         {
-            treeKeyFrom.initAsLowest( ValueGroup.NUMBER );
+            treeKeyFrom.initValueAsLowest( ValueGroup.NUMBER );
         }
         else
         {

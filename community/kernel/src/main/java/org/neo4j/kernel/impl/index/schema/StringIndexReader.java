@@ -59,8 +59,8 @@ class StringIndexReader extends NativeIndexReader<StringIndexKey,NativeIndexValu
         switch ( predicate.type() )
         {
         case exists:
-            treeKeyFrom.initAsLowest( ValueGroup.TEXT );
-            treeKeyTo.initAsHighest( ValueGroup.TEXT );
+            treeKeyFrom.initValueAsLowest( ValueGroup.TEXT );
+            treeKeyTo.initValueAsHighest( ValueGroup.TEXT );
             return false;
         case exact:
             ExactPredicate exactPredicate = (ExactPredicate) predicate;
@@ -79,8 +79,8 @@ class StringIndexReader extends NativeIndexReader<StringIndexKey,NativeIndexValu
             return false;
         case stringSuffix:
         case stringContains:
-            treeKeyFrom.initAsLowest( ValueGroup.TEXT );
-            treeKeyTo.initAsHighest( ValueGroup.TEXT );
+            treeKeyFrom.initValueAsLowest( ValueGroup.TEXT );
+            treeKeyTo.initValueAsHighest( ValueGroup.TEXT );
             return true;
         default:
             throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
@@ -92,7 +92,7 @@ class StringIndexReader extends NativeIndexReader<StringIndexKey,NativeIndexValu
         Value fromValue = rangePredicate.fromValue();
         if ( fromValue == Values.NO_VALUE )
         {
-            treeKeyFrom.initAsLowest( ValueGroup.TEXT );
+            treeKeyFrom.initValueAsLowest( ValueGroup.TEXT );
         }
         else
         {
@@ -106,7 +106,7 @@ class StringIndexReader extends NativeIndexReader<StringIndexKey,NativeIndexValu
         Value toValue = rangePredicate.toValue();
         if ( toValue == Values.NO_VALUE )
         {
-            treeKeyTo.initAsHighest( ValueGroup.TEXT );
+            treeKeyTo.initValueAsHighest( ValueGroup.TEXT );
         }
         else
         {

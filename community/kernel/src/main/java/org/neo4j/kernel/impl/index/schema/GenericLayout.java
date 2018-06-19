@@ -28,7 +28,7 @@ import org.neo4j.values.storable.ValueGroup;
 
 import static java.util.Comparator.comparing;
 
-public class GenericLayout extends IndexLayout<CompositeGenericKey>
+class GenericLayout extends IndexLayout<CompositeGenericKey>
 {
     private static final int KEY_HEADER_SIZE = Byte.BYTES;
     static final Comparator<Type> TYPE_COMPARATOR = comparing( t -> t.valueGroup );
@@ -53,11 +53,6 @@ public class GenericLayout extends IndexLayout<CompositeGenericKey>
             this.valueGroup = valueGroup;
             this.typeId = typeId;
         }
-
-        ValueGroup valueGroup()
-        {
-            return valueGroup;
-        }
     }
 
     static final Type[] TYPES = Type.values();
@@ -77,7 +72,7 @@ public class GenericLayout extends IndexLayout<CompositeGenericKey>
         }
     }
 
-    public GenericLayout()
+    GenericLayout()
     {
         super( "NSIL", 0, 1 );
     }
@@ -85,7 +80,8 @@ public class GenericLayout extends IndexLayout<CompositeGenericKey>
     @Override
     public CompositeGenericKey newKey()
     {
-        return new CompositeGenericKey();
+        // TODO for now it's not composite
+        return new CompositeGenericKey( 1 );
     }
 
     @Override

@@ -57,8 +57,8 @@ class TemporalIndexPartReader<KEY extends NativeIndexSingleValueKey<KEY>> extend
         switch ( predicate.type() )
         {
         case exists:
-            treeKeyFrom.initAsLowest( ValueGroup.UNKNOWN );
-            treeKeyTo.initAsHighest( ValueGroup.UNKNOWN );
+            treeKeyFrom.initValueAsLowest( ValueGroup.UNKNOWN );
+            treeKeyTo.initValueAsHighest( ValueGroup.UNKNOWN );
             break;
 
         case exact:
@@ -84,7 +84,7 @@ class TemporalIndexPartReader<KEY extends NativeIndexSingleValueKey<KEY>> extend
         Value fromValue = rangePredicate.fromValue();
         if ( fromValue == Values.NO_VALUE )
         {
-            treeKeyFrom.initAsLowest( ValueGroup.UNKNOWN );
+            treeKeyFrom.initValueAsLowest( ValueGroup.UNKNOWN );
         }
         else
         {
@@ -98,7 +98,7 @@ class TemporalIndexPartReader<KEY extends NativeIndexSingleValueKey<KEY>> extend
         Value toValue = rangePredicate.toValue();
         if ( toValue == Values.NO_VALUE )
         {
-            treeKeyTo.initAsHighest( ValueGroup.UNKNOWN );
+            treeKeyTo.initValueAsHighest( ValueGroup.UNKNOWN );
         }
         else
         {

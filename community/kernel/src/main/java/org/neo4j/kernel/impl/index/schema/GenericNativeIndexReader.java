@@ -32,6 +32,9 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.HIGH;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.LOW;
+
 class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,NativeIndexValue>
 {
     GenericNativeIndexReader( GBPTree<CompositeGenericKey,NativeIndexValue> tree, Layout<CompositeGenericKey,NativeIndexValue> layout,
@@ -61,62 +64,68 @@ class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,Nat
     @Override
     boolean initializeRangeForQuery( CompositeGenericKey treeKeyFrom, CompositeGenericKey treeKeyTo, IndexQuery[] predicates )
     {
-        IndexQuery predicate = predicates[0];
-        switch ( predicate.type() )
+        boolean needsFiltering = false;
+        for ( int i = 0; i < predicates.length; i++ )
         {
-        case exists:
-            treeKeyFrom.initAsLowest( ValueGroup.UNKNOWN );
-            treeKeyTo.initAsHighest( ValueGroup.UNKNOWN );
-            return false;
-        case exact:
-            ExactPredicate exactPredicate = (ExactPredicate) predicate;
-            treeKeyFrom.from( Long.MIN_VALUE, exactPredicate.value() );
-            treeKeyTo.from( Long.MAX_VALUE, exactPredicate.value() );
-            return false;
-        case range:
-            RangePredicate<?> rangePredicate = (RangePredicate<?>) predicate;
-            initFromForRange( rangePredicate, treeKeyFrom );
-            initToForRange( rangePredicate, treeKeyTo );
-            return false;
-        case stringPrefix:
-            StringPrefixPredicate prefixPredicate = (StringPrefixPredicate) predicate;
-            treeKeyFrom.initAsPrefixLow( prefixPredicate.prefix() );
-            treeKeyTo.initAsPrefixHigh( prefixPredicate.prefix() );
-            return false;
-        case stringSuffix:
-        case stringContains:
-            treeKeyFrom.initAsLowest( ValueGroup.TEXT );
-            treeKeyTo.initAsHighest( ValueGroup.TEXT );
-            return true;
-        default:
-            throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
+            IndexQuery predicate = predicates[i];
+            switch ( predicate.type() )
+            {
+            case exists:
+                treeKeyFrom.initValueAsLowest( i, ValueGroup.UNKNOWN );
+                treeKeyTo.initValueAsHighest( i, ValueGroup.UNKNOWN );
+                break;
+            case exact:
+                ExactPredicate exactPredicate = (ExactPredicate) predicate;
+                treeKeyFrom.initFromValue( i, exactPredicate.value(), LOW );
+                treeKeyTo.initFromValue( i, exactPredicate.value(), HIGH );
+                break;
+            case range:
+                RangePredicate<?> rangePredicate = (RangePredicate<?>) predicate;
+                initFromForRange( i, rangePredicate, treeKeyFrom );
+                initToForRange( i, rangePredicate, treeKeyTo );
+                break;
+            case stringPrefix:
+                StringPrefixPredicate prefixPredicate = (StringPrefixPredicate) predicate;
+                treeKeyFrom.initAsPrefixLow( i, prefixPredicate.prefix() );
+                treeKeyTo.initAsPrefixHigh( i, prefixPredicate.prefix() );
+                break;
+            case stringSuffix:
+            case stringContains:
+                treeKeyFrom.initValueAsLowest( i, ValueGroup.TEXT );
+                treeKeyTo.initValueAsHighest( i, ValueGroup.TEXT );
+                needsFiltering = true;
+                break;
+            default:
+                throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
+            }
         }
+        return needsFiltering;
     }
 
-    private void initFromForRange( RangePredicate<?> rangePredicate, CompositeGenericKey treeKeyFrom )
+    private void initFromForRange( int stateSlot, RangePredicate<?> rangePredicate, CompositeGenericKey treeKeyFrom )
     {
         Value fromValue = rangePredicate.fromValue();
         if ( fromValue == Values.NO_VALUE )
         {
-            treeKeyFrom.initAsLowest( ValueGroup.UNKNOWN );
+            treeKeyFrom.initValueAsLowest( stateSlot, ValueGroup.UNKNOWN );
         }
         else
         {
-            treeKeyFrom.from( rangePredicate.fromInclusive() ? Long.MIN_VALUE : Long.MAX_VALUE, fromValue );
+            treeKeyFrom.initFromValue( stateSlot, fromValue, rangePredicate.fromInclusive() ? LOW : HIGH );
             treeKeyFrom.setCompareId( true );
         }
     }
 
-    private void initToForRange( RangePredicate<?> rangePredicate, CompositeGenericKey treeKeyTo )
+    private void initToForRange( int stateSlot, RangePredicate<?> rangePredicate, CompositeGenericKey treeKeyTo )
     {
         Value toValue = rangePredicate.toValue();
         if ( toValue == Values.NO_VALUE )
         {
-            treeKeyTo.initAsHighest( ValueGroup.UNKNOWN );
+            treeKeyTo.initValueAsHighest( stateSlot, ValueGroup.UNKNOWN );
         }
         else
         {
-            treeKeyTo.from( rangePredicate.toInclusive() ? Long.MAX_VALUE : Long.MIN_VALUE, toValue );
+            treeKeyTo.initFromValue( stateSlot, toValue, rangePredicate.toInclusive() ? HIGH : LOW );
             treeKeyTo.setCompareId( true );
         }
     }

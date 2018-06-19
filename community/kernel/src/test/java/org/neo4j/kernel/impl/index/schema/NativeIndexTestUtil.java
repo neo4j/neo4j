@@ -53,6 +53,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.rules.RuleChain.outerRule;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
 public abstract class NativeIndexTestUtil<KEY extends NativeIndexSingleValueKey<KEY>,VALUE extends NativeIndexValue>
@@ -134,9 +135,9 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexSingleValueKey<
     private RawCursor<Hit<KEY,VALUE>, IOException> scan( GBPTree<KEY,VALUE> tree ) throws IOException
     {
         KEY lowest = layout.newKey();
-        lowest.initAsLowest( ValueGroup.UNKNOWN );
+        lowest.initValueAsLowest( ValueGroup.UNKNOWN );
         KEY highest = layout.newKey();
-        highest.initAsHighest( ValueGroup.UNKNOWN );
+        highest.initValueAsHighest( ValueGroup.UNKNOWN );
         return tree.seek( lowest, highest );
     }
 
@@ -174,7 +175,11 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexSingleValueKey<
         for ( IndexEntryUpdate<IndexDescriptor> u : updates )
         {
             KEY key = layout.newKey();
-            key.from( u.getEntityId(), u.values() );
+            key.initialize( u.getEntityId() );
+            for ( int i = 0; i < u.values().length; i++ )
+            {
+                key.initFromValue( i, u.values()[i], NEUTRAL );
+            }
             VALUE value = layout.newValue();
             value.from( u.values() );
             hits.add( hit( key, value ) );

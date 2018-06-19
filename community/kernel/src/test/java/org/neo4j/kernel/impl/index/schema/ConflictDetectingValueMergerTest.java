@@ -83,10 +83,11 @@ public class ConflictDetectingValueMergerTest
         detector.checkConflict( array() ); // <-- should not throw conflict exception
     }
 
-    private static NumberIndexKey key( long entityId, Value... value )
+    private static NumberIndexKey key( long entityId, Value value )
     {
         NumberIndexKey key = new NumberIndexKey();
-        key.from( entityId, value );
+        key.initialize( entityId );
+        key.initFromValue( 0, value, NativeIndexKey.Inclusion.LOW );
         return key;
     }
 }

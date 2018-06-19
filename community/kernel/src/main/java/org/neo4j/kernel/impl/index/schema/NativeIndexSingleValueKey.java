@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.helpers.collection.Iterators.array;
 
@@ -27,28 +28,46 @@ import static org.neo4j.helpers.collection.Iterators.array;
  * Includes value and entity id (to be able to handle non-unique values).
  * This is the abstraction of what NativeSchemaIndex with friends need from a schema key.
  * Note that it says nothing about how keys are compared, serialized, read, written, etc. That is the job of Layout.
+ *
+ * // TODO some of the methods in here are here to mimic the old interface and are kept/reinstated simply to reduce changes in current code
  */
 abstract class NativeIndexSingleValueKey<SELF extends NativeIndexSingleValueKey<SELF>> extends NativeIndexKey<SELF>
 {
     @Override
-    protected void assertValidValues( Value... values )
+    void assertValidValue( int stateSlot, Value value )
     {
-        if ( values.length > 1 )
+        if ( stateSlot > 0 )
         {
             throw new IllegalArgumentException( "Tried to create composite key with non-composite schema key layout" );
         }
-        if ( values.length < 1 )
+        if ( stateSlot < 0 )
         {
             throw new IllegalArgumentException( "Tried to create key without value" );
         }
-        assertCorrectType( values[0] );
+        assertCorrectType( value );
     }
 
     @Override
-    protected void writeValues( Value[] values )
+    void writeValue( int stateSlot, Value value, Inclusion inclusion )
     {
-        values[0].writeTo( this );
+        value.writeTo( this );
     }
+
+    @Override
+    final void initValueAsLowest( int stateSlot, ValueGroup valueGroup )
+    {
+        initValueAsLowest( valueGroup );
+    }
+
+    abstract void initValueAsLowest( ValueGroup... valueGroups );
+
+    @Override
+    final void initValueAsHighest( int stateSlot, ValueGroup valueGroup )
+    {
+        initValueAsHighest( valueGroup );
+    }
+
+    abstract void initValueAsHighest( ValueGroup... valueGroups );
 
     abstract Value assertCorrectType( Value value );
 
@@ -64,5 +83,17 @@ abstract class NativeIndexSingleValueKey<SELF extends NativeIndexSingleValueKey<
     Value[] asValues()
     {
         return array( asValue() );
+    }
+
+    void from( long entityId, Value value )
+    {
+        assertCorrectType( value );
+        value.writeTo( this );
+    }
+
+    @Override
+    int numberOfStateSlots()
+    {
+        return 1;
     }
 }

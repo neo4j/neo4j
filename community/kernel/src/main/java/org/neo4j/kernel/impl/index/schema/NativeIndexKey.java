@@ -26,6 +26,14 @@ import org.neo4j.values.storable.ValueGroup;
 
 abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends TemporalValueWriterAdapter<RuntimeException>
 {
+    enum Inclusion
+    {
+        // Order of these is important, must be kept lower --> higher
+        LOW,
+        NEUTRAL,
+        HIGH;
+    }
+
     private static final boolean DEFAULT_COMPARE_ID = true;
 
     private long entityId;
@@ -58,17 +66,15 @@ abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends Tempora
         this.entityId = entityId;
     }
 
-    final void from( long entityId, Value... values )
+    final void initFromValue( int stateSlot, Value value, Inclusion inclusion )
     {
-        initialize( entityId );
-        // copy value state and store in this key instance
-        assertValidValues( values );
-        writeValues( values );
+        assertValidValue( stateSlot, value );
+        writeValue( stateSlot, value, inclusion );
     }
 
-    protected abstract void writeValues( Value[] values );
+    abstract void writeValue( int stateSlot, Value value, Inclusion inclusion );
 
-    protected abstract void assertValidValues( Value[] values );
+    abstract void assertValidValue( int stateSlot, Value value );
 
     /**
      * Initializes this key with entity id and resets other flags to default values.
@@ -84,23 +90,31 @@ abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends Tempora
 
     abstract Value[] asValues();
 
-    protected abstract String propertiesAsString();
+    abstract String propertiesAsString();
 
-    final void initAsLowest( ValueGroup... valueGroups )
+    abstract void initValueAsLowest( int stateSlot, ValueGroup valueGroup );
+
+    abstract void initValueAsHighest( int stateSlot, ValueGroup valueGroup );
+
+    abstract int numberOfStateSlots();
+
+    final void initValuesAsLowest()
     {
-        initialize( Long.MIN_VALUE );
-        initValueAsLowest( valueGroups );
+        int slots = numberOfStateSlots();
+        for ( int i = 0; i < slots; i++ )
+        {
+            initValueAsLowest( i, ValueGroup.UNKNOWN );
+        }
     }
 
-    abstract void initValueAsLowest( ValueGroup... valueGroups );
-
-    final void initAsHighest( ValueGroup... valueGroups )
+    final void initValuesAsHighest()
     {
-        initialize( Long.MAX_VALUE );
-        initValueAsHighest( valueGroups );
+        int slots = numberOfStateSlots();
+        for ( int i = 0; i < slots; i++ )
+        {
+            initValueAsHighest( i, ValueGroup.UNKNOWN );
+        }
     }
-
-    abstract void initValueAsHighest( ValueGroup... valueGroups );
 
     /**
      * Compares the value of this key to that of another key.

@@ -23,94 +23,122 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-public class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
+class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
 {
     // TODO we have multiple places defining size of the entityId!!
     private static final int ENTITY_ID_SIZE = Long.BYTES;
 
-    GenericKeyState state = new GenericKeyState();
+    private GenericKeyState[] states;
 
-    @Override
-    protected void writeValues( Value[] values )
+    CompositeGenericKey( int length )
     {
-        values[0].writeTo( state );
+        states = new GenericKeyState[length];
+        for ( int i = 0; i < states.length; i++ )
+        {
+            states[i] = new GenericKeyState();
+        }
     }
 
     @Override
-    protected void assertValidValues( Value[] values )
+    void writeValue( int stateSlot, Value value, Inclusion inclusion )
     {
-        if ( values.length > 1 )
-        {
-            throw new IllegalArgumentException( "Composite values" );
-        }
-        state.assertCorrectType( values[0] );
+        states[stateSlot].writeValue( value, inclusion );
+    }
+
+    @Override
+    void assertValidValue( int stateSlot, Value value )
+    {
+        states[stateSlot].assertCorrectType( value );
     }
 
     @Override
     void initialize( long entityId )
     {
         super.initialize( entityId );
-        state.clear();
+        for ( GenericKeyState state : states )
+        {
+            state.clear();
+        }
     }
 
     @Override
-    protected String propertiesAsString()
+    String propertiesAsString()
     {
-        return null;
+        return "todo";
     }
 
     @Override
     Value[] asValues()
     {
-        return new Value[] {state.asValue()};
+        Value[] values = new Value[states.length];
+        for ( int i = 0; i < states.length; i++ )
+        {
+            values[i] = states[i].asValue();
+        }
+        return values;
     }
 
     @Override
-    void initValueAsLowest( ValueGroup... valueGroups )
+    void initValueAsLowest( int stateSlot, ValueGroup valueGroup )
     {
-        state.initValueAsLowest( valueGroups[0] );
+        states[stateSlot].initValueAsLowest( valueGroup );
     }
 
     @Override
-    void initValueAsHighest( ValueGroup... valueGroups )
+    void initValueAsHighest( int stateSlot, ValueGroup valueGroup )
     {
-        state.initValueAsHighest( valueGroups[0] );
+        states[stateSlot].initValueAsHighest( valueGroup );
     }
 
     @Override
     int compareValueTo( CompositeGenericKey other )
     {
-        return state.compareValueTo( other.state );
+        for ( int i = 0; i < states.length; i++ )
+        {
+            int comparison = states[i].compareValueTo( other.states[i] );
+            if ( comparison != 0 )
+            {
+                return comparison;
+            }
+        }
+        return 0;
     }
 
-    void initAsPrefixLow( String prefix )
+    void initAsPrefixLow( int stateSlot, String prefix )
     {
-        initialize( Long.MIN_VALUE );
-        state.initAsPrefixLow( prefix );
+        states[stateSlot].initAsPrefixLow( prefix );
     }
 
-    void initAsPrefixHigh( String prefix )
+    void initAsPrefixHigh( int stateSlot, String prefix )
     {
-        initialize( Long.MAX_VALUE );
-        state.initAsPrefixHigh( prefix );
+        states[stateSlot].initAsPrefixHigh( prefix );
     }
 
     void copyValuesFrom( CompositeGenericKey key )
     {
-        state.copyFrom( key.state );
+        for ( int i = 0; i < states.length; i++ )
+        {
+            key.states[i].copyFrom( states[i] );
+        }
     }
 
     int size()
     {
         int size = ENTITY_ID_SIZE;
-        size += state.size();
+        for ( GenericKeyState state : states )
+        {
+            size += state.size();
+        }
         return size;
     }
 
     void write( PageCursor cursor )
     {
         cursor.putLong( getEntityId() );
-        state.write( cursor );
+        for ( GenericKeyState state : states )
+        {
+            state.write( cursor );
+        }
     }
 
     void read( PageCursor cursor, int keySize )
@@ -122,12 +150,28 @@ public class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
         }
 
         setEntityId( cursor.getLong() );
-        state.read( cursor, keySize - ENTITY_ID_SIZE );
+        int offset = cursor.getOffset();
+        for ( GenericKeyState state : states )
+        {
+            state.read( cursor, keySize );
+            int offsetAfterRead = cursor.getOffset();
+            keySize -= offsetAfterRead - offset;
+            offset = offsetAfterRead;
+        }
     }
 
     private void initializeToDummyValue()
     {
         setEntityId( Long.MIN_VALUE );
-        state.initializeToDummyValue();
+        for ( GenericKeyState state : states )
+        {
+            state.initializeToDummyValue();
+        }
+    }
+
+    @Override
+    int numberOfStateSlots()
+    {
+        return states.length;
     }
 }

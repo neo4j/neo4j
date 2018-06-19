@@ -40,6 +40,9 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
 
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.HIGH;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.LOW;
+
 abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
         implements IndexReader
 {
@@ -86,8 +89,13 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     {
         KEY treeKeyFrom = layout.newKey();
         KEY treeKeyTo = layout.newKey();
-        treeKeyFrom.from( nodeId, propertyValues );
-        treeKeyTo.from( nodeId, propertyValues );
+        treeKeyFrom.initialize( nodeId );
+        treeKeyTo.initialize( nodeId );
+        for ( int i = 0; i < propertyValues.length; i++ )
+        {
+            treeKeyFrom.initFromValue( i, propertyValues[i], LOW );
+            treeKeyTo.initFromValue( i, propertyValues[i], HIGH );
+        }
         try ( RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( treeKeyFrom, treeKeyTo ) )
         {
             long count = 0;
@@ -143,6 +151,9 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
 
         KEY treeKeyFrom = layout.newKey();
         KEY treeKeyTo = layout.newKey();
+
+        treeKeyFrom.initialize( Long.MIN_VALUE );
+        treeKeyTo.initialize( Long.MAX_VALUE );
 
         boolean needFilter = initializeRangeForQuery( treeKeyFrom, treeKeyTo, predicates );
         startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates, needFilter );

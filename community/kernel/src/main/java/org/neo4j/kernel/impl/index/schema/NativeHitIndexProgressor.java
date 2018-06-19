@@ -70,7 +70,7 @@ public class NativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>, VALUE ext
         return true;
     }
 
-    private Value[] extractValues( KEY key )
+    Value[] extractValues( KEY key )
     {
         return client.needsValues() ? key.asValues() : null;
     }
