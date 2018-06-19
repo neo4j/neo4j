@@ -21,9 +21,11 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.collection.Iterators;
@@ -415,9 +417,24 @@ public class AllStoreHolder extends Read
     {
         ktx.assertOpen();
 
-        // This is only used for querying, and thus is is "fine" (at least for now) that it is not tx-state aware
-
         IndexDescriptor index = storageReader.indexGetForName( name );
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            Predicate<IndexDescriptor> namePredicate = indexDescriptor ->
+            {
+                try
+                {
+                    return indexDescriptor.getUserSuppliedName().get().equals( name );
+                }
+                catch ( NoSuchElementException e )
+                {
+                    //No name cannot match a name.
+                    return false;
+                }
+            };
+            Iterator<IndexDescriptor> indexes = ktx.txState().indexChanges().filterAdded( namePredicate ).apply( Iterators.iterator( index ) );
+            index = singleOrNull( indexes );
+        }
         if ( index == null )
         {
             return IndexReference.NO_INDEX;

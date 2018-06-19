@@ -196,6 +196,11 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
         }
     }
 
+    public Optional<String> getUserSuppliedName()
+    {
+        return userSuppliedName;
+    }
+
     public enum Type
     {
         GENERAL,

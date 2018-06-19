@@ -65,10 +65,8 @@ public class TransactionStats implements TransactionMonitor, TransactionCounters
     @Override
     public void upgradeToWriteTransaction()
     {
-        long readCount = activeReadTransactionCount.decrementAndGet();
-        assert readCount >= 0;
-        long writeCount = activeWriteTransactionCount.incrementAndGet();
-        assert writeCount > 0;
+        decrementCounter( activeReadTransactionCount, activeWriteTransactionCount, false );
+        incrementCounter( activeReadTransactionCount, activeWriteTransactionCount, true );
     }
 
     @Override

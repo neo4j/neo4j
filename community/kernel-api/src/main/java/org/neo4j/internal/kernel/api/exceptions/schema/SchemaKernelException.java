@@ -19,9 +19,6 @@
  */
 package org.neo4j.internal.kernel.api.exceptions.schema;
 
-import java.util.Arrays;
-import java.util.stream.Collectors;
-
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -53,29 +50,9 @@ public abstract class SchemaKernelException extends KernelException
         super( statusCode, message );
     }
 
-    protected static String messageWithLabelAndPropertyName( TokenNameLookup tokenNameLookup, String formatString,
-            SchemaDescriptor descriptor )
+    protected static String messageWithLabelAndPropertyName( TokenNameLookup tokenNameLookup, String formatString, SchemaDescriptor descriptor )
     {
-        int[] propertyIds = descriptor.getPropertyIds();
-
-        if ( tokenNameLookup != null )
-        {
-            String propertyString = propertyIds.length == 1 ?
-                                    "property '" + tokenNameLookup.propertyKeyGetName( propertyIds[0]) + "'" :
-                                    "properties " + Arrays.stream( propertyIds )
-                                            .mapToObj( i -> "'" + tokenNameLookup.propertyKeyGetName( i ) + "'" )
-                                            .collect( Collectors.joining( " and " ));
-            return String.format( formatString,
-                    tokenNameLookup.labelGetName( descriptor.keyId() ), propertyString);
-        }
-        else
-        {
-            String keyString = propertyIds.length == 1 ? "key[" + propertyIds[0] + "]" :
-                               "keys[" + Arrays.stream( propertyIds )
-                                       .mapToObj( Integer::toString )
-                                       .collect( Collectors.joining( ", " )) + "]";
-            return String.format( formatString,
-                    "label[" + descriptor.keyId() + "]", keyString );
-        }
+        return String.format( formatString, descriptor.userDescription( tokenNameLookup ) );
     }
 }
+

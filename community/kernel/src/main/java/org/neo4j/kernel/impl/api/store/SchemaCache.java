@@ -340,7 +340,7 @@ public class SchemaCache
                 CapableIndexDescriptor index = indexDescriptorById.remove( id );
                 SchemaDescriptor schema = index.schema();
                 indexDescriptors.remove( schema );
-                indexDescriptorsByName.remove( index.getName() );
+                indexDescriptorsByName.remove( index.getName(), index );
 
                 for ( int entityTokenId : schema.getEntityTokenIds() )
                 {

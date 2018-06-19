@@ -889,7 +889,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         exclusiveSchemaLock( descriptor.keyType(), descriptor.keyId() );
         ktx.assertOpen();
         assertValidDescriptor( descriptor, SchemaKernelException.OperationContext.INDEX_CREATION );
-        assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, descriptor );
+        assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, descriptor, name );
 
         IndexProvider.Descriptor providerDescriptor = indexProviders.indexProviderForNameOrDefault( provider );
         IndexDescriptor index = IndexDescriptorFactory.forSchema( descriptor, name, providerDescriptor );
@@ -962,7 +962,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
         assertConstraintDoesNotExist( constraint );
         // It is not allowed to create uniqueness constraints on indexed label/property pairs
-        assertIndexDoesNotExist( SchemaKernelException.OperationContext.CONSTRAINT_CREATION, descriptor );
+        assertIndexDoesNotExist( SchemaKernelException.OperationContext.CONSTRAINT_CREATION, descriptor, Optional.empty() );
 
         // Create constraints
         indexBackedConstraintCreate( constraint, provider );
@@ -987,7 +987,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         NodeKeyConstraintDescriptor constraint = ConstraintDescriptorFactory.nodeKeyForSchema( descriptor );
         assertConstraintDoesNotExist( constraint );
         // It is not allowed to create node key constraints on indexed label/property pairs
-        assertIndexDoesNotExist( SchemaKernelException.OperationContext.CONSTRAINT_CREATION, descriptor );
+        assertIndexDoesNotExist( SchemaKernelException.OperationContext.CONSTRAINT_CREATION, descriptor, Optional.empty() );
 
         //enforce constraints
         try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor() )
@@ -1089,10 +1089,18 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         ktx.txState().constraintDoDrop( descriptor );
     }
 
-    private void assertIndexDoesNotExist( SchemaKernelException.OperationContext context,
-            SchemaDescriptor descriptor ) throws AlreadyIndexedException, AlreadyConstrainedException
+    private void assertIndexDoesNotExist( SchemaKernelException.OperationContext context, SchemaDescriptor descriptor, Optional<String> name )
+            throws AlreadyIndexedException, AlreadyConstrainedException
     {
         IndexDescriptor existingIndex = allStoreHolder.indexGetForSchema( descriptor );
+        if ( existingIndex == null && name.isPresent() )
+        {
+            IndexReference indexReference = allStoreHolder.indexGetForName( name.get() );
+            if ( indexReference != IndexReference.NO_INDEX )
+            {
+                existingIndex = (IndexDescriptor) indexReference;
+            }
+        }
         if ( existingIndex != null )
         {
             // OK so we found a matching constraint index. We check whether or not it has an owner

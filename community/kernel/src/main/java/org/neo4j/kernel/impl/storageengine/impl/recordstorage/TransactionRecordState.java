@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.List;
 
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -252,15 +254,24 @@ public class TransactionRecordState implements RecordState
                 commands.add( new Command.NeoStoreCommand( change.getBefore(), change.forReadingData() ) );
             }
         }
+        //noinspection unchecked
+        List<Command>[] schemaChangeByMode = new List[Mode.values().length];
+        for ( int i = 0; i < schemaChangeByMode.length; i++ )
+        {
+            schemaChangeByMode[i] = new ArrayList<>();
+        }
         for ( RecordProxy<SchemaRecord, SchemaRule> change : recordChangeSet.getSchemaRuleChanges().changes() )
         {
             if ( change.forReadingLinkage().inUse() )
             {
                 integrityValidator.validateSchemaRule( change.getAdditionalData() );
             }
-            commands.add( new Command.SchemaRuleCommand(
-                    change.getBefore(), change.forChangingData(), change.getAdditionalData() ) );
+            Command.SchemaRuleCommand cmd = new Command.SchemaRuleCommand( change.getBefore(), change.forChangingData(), change.getAdditionalData() );
+            schemaChangeByMode[cmd.getMode().ordinal()].add( cmd );
         }
+        commands.addAll( schemaChangeByMode[Mode.DELETE.ordinal()] );
+        commands.addAll( schemaChangeByMode[Mode.CREATE.ordinal()] );
+        commands.addAll( schemaChangeByMode[Mode.UPDATE.ordinal()] );
         assert commands.size() == noOfCommands - skippedCommands : format( "Expected %d final commands, got %d " +
                 "instead, with %d skipped", noOfCommands, commands.size(), skippedCommands );
 
