@@ -912,8 +912,8 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     @Override
     public void indexDrop( IndexReference indexReference ) throws SchemaKernelException
     {
+        assertValidIndex( indexReference );
         IndexDescriptor index = (IndexDescriptor) indexReference;
-        assertValidIndex( index );
         SchemaDescriptor schema = index.schema();
 
         exclusiveSchemaLock( schema.keyType(), schema.keyId() );
@@ -1255,7 +1255,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
     }
 
-    private void assertValidIndex( IndexDescriptor index ) throws NoSuchIndexException
+    private void assertValidIndex( IndexReference index ) throws NoSuchIndexException
     {
         if ( index == IndexReference.NO_INDEX )
         {

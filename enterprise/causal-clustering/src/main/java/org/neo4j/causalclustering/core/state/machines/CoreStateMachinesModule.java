@@ -200,6 +200,7 @@ public class CoreStateMachinesModule
         };
 
         this.tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
+        dependencies.satisfyDependencies( tokenHolders );
     }
 
     private Map<IdType,Integer> getIdTypeAllocationSizeFromConfig( Config config )

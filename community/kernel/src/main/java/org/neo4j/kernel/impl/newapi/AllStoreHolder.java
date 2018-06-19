@@ -418,7 +418,11 @@ public class AllStoreHolder extends Read
         // This is only used for querying, and thus is is "fine" (at least for now) that it is not tx-state aware
 
         IndexDescriptor index = storageReader.indexGetForName( name );
-        //TODO locking
+        if ( index == null )
+        {
+            return IndexReference.NO_INDEX;
+        }
+        sharedOptimisticLock( index.schema().keyType(), index.schema().keyId() );
         return index;
     }
 
