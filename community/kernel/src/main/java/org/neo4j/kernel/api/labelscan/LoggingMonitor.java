@@ -95,6 +95,6 @@ public class LoggingMonitor extends Monitor.Adaptor
     @Override
     public void recoveryCleanupFailed( Throwable throwable )
     {
-        log.info( "Label index cleanup job failed.\nCaused by: " + ExceptionUtils.getStackTrace( throwable ) );
+        log.info( String.format( "Label index cleanup job failed.%nCaused by: %s", ExceptionUtils.getStackTrace( throwable ) ) );
     }
 }

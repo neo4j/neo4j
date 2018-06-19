@@ -55,7 +55,7 @@ public class GroupingRecoveryCleanupWorkCollector extends LifecycleAdapter imple
         started = false;
         if ( !jobs.isEmpty() )
         {
-            StringJoiner joiner = new StringJoiner( "\n  ", "Did not expect there to be any cleanup jobs still here. Jobs[", "]" );
+            StringJoiner joiner = new StringJoiner( String.format( "%n  " ), "Did not expect there to be any cleanup jobs still here. Jobs[", "]" );
             consumeAndCloseJobs( cj -> joiner.add( jobs.toString() ) );
             throw new IllegalStateException( joiner.toString() );
         }
