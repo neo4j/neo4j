@@ -27,10 +27,11 @@ import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.runtime.{ExplainMode, InternalExecutionResult, NormalMode, ProfileMode}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{ExplicitNodeIndexUsage, ExplicitRelationshipIndexUsage, SchemaIndexScanUsage, SchemaIndexSeekUsage}
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.cypher.internal._
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RuntimeName
 import org.neo4j.graphdb.{Notification, Result}
-import org.neo4j.kernel.api.query.{ExplicitIndexUsage, CompilerInfo, SchemaIndexUsage}
+import org.neo4j.kernel.api.query.{CompilerInfo, ExplicitIndexUsage, SchemaIndexUsage}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.values.virtual.MapValue
@@ -87,14 +88,24 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       preParsingNotifications,
       logicalPlanResult.reusability,
       logicalPlanResult.paramNames,
-      logicalPlanResult.extractedParams)
+      logicalPlanResult.extractedParams,
+      buildCompilerInfo(logicalPlan, executionPlan3_5.runtimeName))
   }
+
+  def buildCompilerInfo(logicalPlan: LogicalPlan, runtimeName: RuntimeName): CompilerInfo =
+    new CompilerInfo(planner.name.name, runtimeName.name, logicalPlan.indexUsage.map {
+      case SchemaIndexSeekUsage(identifier, labelId, label, propertyKeys) => new SchemaIndexUsage(identifier, labelId, label, propertyKeys: _*)
+      case SchemaIndexScanUsage(identifier, labelId, label, propertyKey) => new SchemaIndexUsage(identifier, labelId, label, propertyKey)
+      case ExplicitNodeIndexUsage(identifier, index) => new ExplicitIndexUsage(identifier, "NODE", index)
+      case ExplicitRelationshipIndexUsage(identifier, index) => new ExplicitIndexUsage(identifier, "RELATIONSHIP", index)
+    }.asJava)
 
   protected class CypherExecutableQuery(inner: ExecutionPlan_v3_5,
                                         preParsingNotifications: Set[org.neo4j.graphdb.Notification],
                                         reusabilityState: ReusabilityState,
                                         override val paramNames: Seq[String],
-                                        override val extractedParams: MapValue) extends ExecutableQuery {
+                                        override val extractedParams: MapValue,
+                                        override val compilerInfo: CompilerInfo) extends ExecutableQuery {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
 
@@ -124,15 +135,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     }
 
     def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState = reusabilityState
-
-    override val compilerInfo: CompilerInfo = {
-      new CompilerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, inner.plannedIndexUsage.map {
-        case SchemaIndexSeekUsage(identifier, labelId, label, propertyKeys) => new SchemaIndexUsage(identifier, labelId, label, propertyKeys: _*)
-        case SchemaIndexScanUsage(identifier, labelId, label, propertyKey) => new SchemaIndexUsage(identifier, labelId, label, propertyKey)
-        case ExplicitNodeIndexUsage(identifier, index) => new ExplicitIndexUsage(identifier, "NODE", index)
-        case ExplicitRelationshipIndexUsage(identifier, index) => new ExplicitIndexUsage(identifier, "RELATIONSHIP", index)
-      }.asJava)
-    }
   }
 
 }

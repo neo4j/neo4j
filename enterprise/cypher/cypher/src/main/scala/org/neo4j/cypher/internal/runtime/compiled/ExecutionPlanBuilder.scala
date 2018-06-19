@@ -22,19 +22,16 @@
  */
 package org.neo4j.cypher.internal.runtime.compiled
 
-import org.neo4j.cypher.internal.PlanFingerprint
 import org.neo4j.cypher.internal.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.codegen.profiling.ProfilingTracer
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{PeriodicCommitInfo, Provider}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.CompiledRuntimeName
-import org.opencypher.v9_0.frontend.PlannerName
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.Provider
 import org.neo4j.cypher.internal.runtime.compiled.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, ProfileMode, QueryContext}
-import org.opencypher.v9_0.util.TaskCloser
-import org.neo4j.cypher.internal.v3_5.logical.plans.IndexUsage
 import org.neo4j.values.virtual.MapValue
+import org.opencypher.v9_0.util.TaskCloser
 
 object ExecutionPlanBuilder {
   type DescriptionProvider =
@@ -64,11 +61,9 @@ object ExecutionPlanBuilder {
 }
 
 case class CompiledPlan(updating: Boolean,
-                        plannerUsed: PlannerName,
                         planDescription: Provider[InternalPlanDescription],
                         columns: Seq[String],
-                        executionResultBuilder: RunnablePlan,
-                        plannedIndexUsage: Seq[IndexUsage] = Seq.empty)
+                        executionResultBuilder: RunnablePlan)
 
 trait RunnablePlan {
   def apply(queryContext: QueryContext,

@@ -87,11 +87,7 @@ object CompiledRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
       }
     }
 
-    override def runtimeUsed: RuntimeName = CompiledRuntimeName
-
-    override def plannedIndexUsage: Seq[IndexUsage] = compiled.plannedIndexUsage
-
-    override def plannerUsed: PlannerName = compiled.plannerUsed
+    override val runtimeName: RuntimeName = CompiledRuntimeName
   }
 
   private def createTracer(mode: ExecutionMode, queryContext: QueryContext): DescriptionProvider = mode match {

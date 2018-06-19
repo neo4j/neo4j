@@ -39,6 +39,7 @@ import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 import org.opencypher.v9_0.ast.Statement
 import org.opencypher.v9_0.expressions.Parameter
+import org.opencypher.v9_0.frontend.PlannerName
 import org.opencypher.v9_0.frontend.phases._
 import org.opencypher.v9_0.rewriting.RewriterStepSequencer
 import org.opencypher.v9_0.util.InputPosition
@@ -168,6 +169,8 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
         context)
     }
   }
+
+  override val name: PlannerName = plannerName
 }
 
 private[v3_5] class Parser3_5(planner: v3_5.CypherPlanner[PlannerContext],

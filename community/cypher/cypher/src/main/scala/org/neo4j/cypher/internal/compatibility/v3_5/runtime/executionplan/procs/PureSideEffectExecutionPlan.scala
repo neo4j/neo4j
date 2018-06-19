@@ -20,17 +20,15 @@
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.procs
 
 import org.neo4j.cypher.CypherVersion
-import org.neo4j.cypher.internal.{FineToReuse, ReusabilityState}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.ExecutionPlan
-import org.opencypher.v9_0.frontend.PlannerName
-import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, ProcedurePlannerName}
+import org.neo4j.cypher.internal.planner.v3_5.spi.ProcedurePlannerName
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.runtime.planDescription.{NoChildren, PlanDescriptionImpl}
-import org.opencypher.v9_0.util.attribution.Id
 import org.neo4j.values.virtual.MapValue
+import org.opencypher.v9_0.util.attribution.Id
 
 /**
   * Execution plan for performing pure side-effects, i.e. returning no data to the user.
@@ -59,16 +57,14 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
   }
 
   private def description = PlanDescriptionImpl(Id.INVALID_ID, name, NoChildren,
-                                                Seq(Planner(plannerUsed.toTextOutput),
-                                                    PlannerImpl(plannerUsed.name),
-                                                    PlannerVersion(plannerUsed.version),
-                                                    Runtime(runtimeUsed.toTextOutput),
-                                                    RuntimeImpl(runtimeUsed.name),
+                                                Seq(Planner(ProcedurePlannerName.toTextOutput),
+                                                    PlannerImpl(ProcedurePlannerName.name),
+                                                    PlannerVersion(ProcedurePlannerName.version),
+                                                    Runtime(ProcedureRuntimeName.toTextOutput),
+                                                    RuntimeImpl(ProcedureRuntimeName.name),
                                                     Version(s"CYPHER ${CypherVersion.default.name}"),
                                                     RuntimeVersion(CypherVersion.default.name))
                                                 , Set.empty)
 
-  override def runtimeUsed: RuntimeName = ProcedureRuntimeName
-
-  override def plannerUsed: PlannerName = ProcedurePlannerName
+  override def runtimeName: RuntimeName = ProcedureRuntimeName
 }

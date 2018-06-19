@@ -54,8 +54,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
                                  state.plannerName,
                                  InterpretedRuntimeName,
                                  context.readOnly,
-                                 cardinalities,
-                                 logicalPlan.indexUsage)
+                                 cardinalities)
   }
 
   /**
@@ -65,11 +64,10 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
   class InterpretedExecutionPlan(periodicCommit: Option[PeriodicCommitInfo],
                                  resultBuilderFactory: ExecutionResultBuilderFactory,
                                  notificationLogger: InternalNotificationLogger,
-                                 override val plannerUsed: PlannerName,
-                                 override val runtimeUsed: RuntimeName,
+                                 plannerName: PlannerName,
+                                 override val runtimeName: RuntimeName,
                                  readOnly: Boolean,
-                                 cardinalities: Cardinalities,
-                                 override val plannedIndexUsage: Seq[IndexUsage]) extends ExecutionPlan {
+                                 cardinalities: Cardinalities) extends ExecutionPlan {
 
     override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult = {
       val builder = resultBuilderFactory.create()
@@ -89,7 +87,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
       if (profiling)
         builder.setPipeDecorator(new Profiler(queryContext.transactionalContext.databaseInfo, profileInformation))
 
-      builder.build(planType, params, notificationLogger, plannerUsed, InterpretedRuntimeName, readOnly, cardinalities)
+      builder.build(planType, params, notificationLogger, plannerName, InterpretedRuntimeName, readOnly, cardinalities)
     }
   }
 }

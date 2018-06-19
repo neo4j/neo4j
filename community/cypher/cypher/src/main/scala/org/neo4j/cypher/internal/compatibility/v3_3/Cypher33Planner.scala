@@ -23,7 +23,7 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
-import org.neo4j.cypher.internal.compatibility.v3_3.helpers.as3_3
+import org.neo4j.cypher.internal.compatibility.v3_3.helpers.{as3_3, as3_5}
 import org.neo4j.cypher.internal.compatibility.v3_5.notification.LogicalPlanNotifications
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compatibility.v3_5.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextv3_5}
@@ -38,14 +38,15 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Parameter, State
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_3.phases
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseState, Monitors => MonitorsV3_3, RecordingNotificationLogger => RecordingNotificationLoggerV3_3}
-import org.neo4j.cypher.internal.planner.v3_5.spi.{PlanContext, InstrumentedGraphStatistics => InstrumentedGraphStatisticsv3_5, MutableGraphStatisticsSnapshot => MutableGraphStatisticsSnapshotv3_5}
+import org.neo4j.cypher.internal.planner.v3_5.spi.{PlanContext, PlannerNameWithVersion, InstrumentedGraphStatistics => InstrumentedGraphStatisticsv3_5, MutableGraphStatisticsSnapshot => MutableGraphStatisticsSnapshotv3_5}
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.spi.v3_3.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_3, TransactionBoundGraphStatistics => TransactionBoundGraphStatisticsV3_3, TransactionBoundPlanContext => TransactionBoundPlanContextV3_3}
-import org.neo4j.cypher.{CypherPlannerOption, CypherUpdateStrategy}
+import org.neo4j.cypher.{CypherPlannerOption, CypherUpdateStrategy, CypherVersion}
 import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
+import org.opencypher.v9_0.frontend.PlannerName
 import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, RecordingNotificationLogger => RecordingNotificationLoggerv3_5}
 import org.opencypher.v9_0.util.attribution.SequentialIdGen
 
@@ -218,6 +219,8 @@ case class Cypher33Planner(configv3_5: CypherPlannerConfiguration,
         contextv3_5)
     }
   }
+
+  override val name: PlannerName = PlannerNameWithVersion(as3_5(plannerName), CypherVersion.v3_3.name)
 }
 
 private[v3_3] class Parser3_3(compiler: v3_3.CypherCompiler[CommunityRuntimeContext],

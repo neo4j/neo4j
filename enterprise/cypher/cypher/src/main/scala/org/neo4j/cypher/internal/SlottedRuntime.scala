@@ -95,8 +95,7 @@ object SlottedRuntime extends CypherRuntime[EnterpriseRuntimeContext] with Debug
         state.plannerName,
         SlottedRuntimeName,
         context.readOnly,
-        state.cardinalities,
-        logicalPlan.indexUsage)
+        state.cardinalities)
     }
     catch {
       case e: CypherException =>

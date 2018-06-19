@@ -93,7 +93,7 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
   case class VectorizedExecutionPlan(plannerUsed: PlannerName,
                                      operators: Pipeline,
                                      slots: SlotConfigurations,
-                                     physicalPlan: LogicalPlan,
+                                     logicalPlan: LogicalPlan,
                                      fieldNames: Array[String],
                                      dispatcher: Dispatcher,
                                      notificationLogger: InternalNotificationLogger,
@@ -104,7 +104,7 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
       taskCloser.addTask(queryContext.transactionalContext.close)
       taskCloser.addTask(queryContext.resources.close)
       val planDescription =
-        () => LogicalPlan2PlanDescription(physicalPlan, plannerUsed, readOnly, cardinalities)
+        () => LogicalPlan2PlanDescription(logicalPlan, plannerUsed, readOnly, cardinalities)
           .addArgument(Runtime(MorselRuntimeName.toTextOutput))
           .addArgument(RuntimeImpl(MorselRuntimeName.name))
 
@@ -113,11 +113,11 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
         taskCloser.close(success = true)
         ExplainExecutionResult(fieldNames, planDescription(), READ_ONLY,
           notificationLogger.notifications.map(asKernelNotification(notificationLogger.offset)))
-      } else new VectorizedOperatorExecutionResult(operators, physicalPlan, planDescription, queryContext,
+      } else new VectorizedOperatorExecutionResult(operators, logicalPlan, planDescription, queryContext,
         params, fieldNames, taskCloser, dispatcher)
     }
 
-    override def runtimeUsed: RuntimeName = MorselRuntimeName
+    override def runtimeName: RuntimeName = MorselRuntimeName
   }
 
   class VectorizedOperatorExecutionResult(operators: Pipeline,
