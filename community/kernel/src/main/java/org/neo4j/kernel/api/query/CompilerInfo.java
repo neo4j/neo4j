@@ -23,13 +23,13 @@ import java.util.List;
 
 import javax.annotation.Nonnull;
 
-public class PlannerInfo
+public class CompilerInfo
 {
     private final String planner;
     private final String runtime;
     private final List<IndexUsage> indexes;
 
-    public PlannerInfo( @Nonnull String planner, @Nonnull String runtime, @Nonnull List<IndexUsage> indexes )
+    public CompilerInfo( @Nonnull String planner, @Nonnull String runtime, @Nonnull List<IndexUsage> indexes )
     {
         this.planner = planner;
         this.runtime = runtime;

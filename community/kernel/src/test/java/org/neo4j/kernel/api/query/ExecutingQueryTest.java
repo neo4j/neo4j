@@ -85,7 +85,7 @@ public class ExecutingQueryTest
         assertEquals( "planning", query.snapshot().status() );
 
         // when
-        query.planningCompleted( new PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
+        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ) );
 
         // then
         assertEquals( "running", query.snapshot().status() );
@@ -120,16 +120,16 @@ public class ExecutingQueryTest
 
         // then
         QuerySnapshot snapshot = query.snapshot();
-        assertEquals( snapshot.planningTimeMillis(), snapshot.elapsedTimeMillis() );
+        assertEquals( snapshot.compilationTimeMillis(), snapshot.elapsedTimeMillis() );
 
         // when
         clock.forward( 16, TimeUnit.MILLISECONDS );
-        query.planningCompleted( new PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
+        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ) );
         clock.forward( 200, TimeUnit.MILLISECONDS );
 
         // then
         snapshot = query.snapshot();
-        assertEquals( 140, snapshot.planningTimeMillis() );
+        assertEquals( 140, snapshot.compilationTimeMillis() );
         assertEquals( 340, snapshot.elapsedTimeMillis() );
     }
 
@@ -137,7 +137,7 @@ public class ExecutingQueryTest
     public void shouldReportWaitTime()
     {
         // given
-        query.planningCompleted( new PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
+        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ) );
 
         // then
         assertEquals( "running", query.snapshot().status() );
@@ -189,7 +189,7 @@ public class ExecutingQueryTest
     public void shouldReportQueryWaitTime()
     {
         // given
-        query.planningCompleted( new PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
+        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ) );
 
         // when
         query.waitsForQuery( subQuery );

@@ -25,16 +25,16 @@ import static java.util.Collections.emptyList;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
-public class PlannerInfoTest
+public class CompilerInfoTest
 {
     @Test
     public void plannerInfoShouldBeInSmallCase()
     {
         // given
-        PlannerInfo plannerInfo = new PlannerInfo( "PLANNER", "RUNTIME", emptyList() );
+        CompilerInfo compilerInfo = new CompilerInfo( "PLANNER", "RUNTIME", emptyList() );
 
         // then
-        assertThat( plannerInfo.planner(), is( "planner" ) );
-        assertThat( plannerInfo.runtime(), is( "runtime" ) );
+        assertThat( compilerInfo.planner(), is( "planner" ) );
+        assertThat( compilerInfo.runtime(), is( "runtime" ) );
     }
 }

@@ -55,7 +55,7 @@ class QueryLogFormatter
 
     static void formatDetailedTime( StringBuilder result, QuerySnapshot query )
     {
-        result.append( "(planning: " ).append( query.planningTimeMillis() );
+        result.append( "(planning: " ).append( query.compilationTimeMillis() );
         Long cpuTime = query.cpuTimeMillis();
         if ( cpuTime != null )
         {

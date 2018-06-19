@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.CypherExecutionMode
 import org.neo4j.graphdb.Result
-import org.neo4j.kernel.api.query.PlannerInfo
+import org.neo4j.kernel.api.query.CompilerInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 
@@ -38,15 +38,17 @@ trait ExecutableQuery {
     * @param params the parameters
     * @return the query result
     */
-  def run(transactionalContext: TransactionalContext, executionMode: CypherExecutionMode, params: MapValue): Result
+  def execute(transactionalContext: TransactionalContext, executionMode: CypherExecutionMode, params: MapValue): Result
 
   /**
     * The reusability state of this executable query.
     */
   def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState
 
-  // This is to force eager calculation
-  val plannerInfo: PlannerInfo
+  /**
+    * Meta-data about the compiled used for this query.
+    */
+  val compilerInfo: CompilerInfo // val to force eager calculation
 
   /**
     * Names of all parameters for this query, explicit and auto-parametrized.

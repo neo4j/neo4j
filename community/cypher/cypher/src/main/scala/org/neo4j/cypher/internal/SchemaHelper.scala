@@ -63,7 +63,7 @@ class SchemaHelper(val queryCache: QueryCache[_,_]) {
     import scala.collection.JavaConverters._
 
     def planLabels = {
-      plan.plannerInfo.indexes().asScala.collect { case item: SchemaIndexUsage => item.getLabelId.toLong }
+      plan.compilerInfo.indexes().asScala.collect { case item: SchemaIndexUsage => item.getLabelId.toLong }
     }
 
     def allLabels: Seq[Long] = {
