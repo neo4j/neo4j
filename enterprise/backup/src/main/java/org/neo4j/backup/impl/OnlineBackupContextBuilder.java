@@ -192,6 +192,9 @@ class OnlineBackupContextBuilder
             // Any other custom page swapper, etc. settings are preserved and used.
             config.augment( pagecache_memory, pagecacheMemory );
 
+            // Disable prometheus to avoid binding exceptions
+            config.augment( "metrics.prometheus.enabled", "false" );
+
             // Build consistency-checker configuration.
             // Note: We can remove the loading from config file in 4.0.
             BiFunction<String,Setting<Boolean>,Boolean> oneOf =
