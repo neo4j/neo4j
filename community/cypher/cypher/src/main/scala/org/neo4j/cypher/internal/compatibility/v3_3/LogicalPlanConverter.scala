@@ -161,6 +161,25 @@ object LogicalPlanConverter {
         case (item: plansV3_3.ResolvedCall, children: Seq[AnyRef]) =>
           convertVersion("org.neo4j.cypher.internal.v3_3.logical.plans", "org.neo4j.cypher.internal.v3_5.logical.plans", item, children, helpers.as3_5(item.position), classOf[InputPosition])
 
+        case (item: astV3_3.RelationshipPattern, children: Seq[AnyRef]) =>
+          expressionsv3_5.RelationshipPattern(
+            children(0).asInstanceOf[Option[expressionsv3_5.LogicalVariable]],
+            children(1).asInstanceOf[Seq[expressionsv3_5.RelTypeName]],
+            children(2).asInstanceOf[Option[Option[expressionsv3_5.Range]]],
+            children(3).asInstanceOf[Option[expressionsv3_5.Expression]],
+            children(4).asInstanceOf[expressionsv3_5.SemanticDirection],
+            children(5).asInstanceOf[Boolean],
+            None
+          )(helpers.as3_5(item.position))
+
+        case (item: astV3_3.NodePattern, children: Seq[AnyRef]) =>
+          expressionsv3_5.NodePattern(
+            children(0).asInstanceOf[Option[expressionsv3_5.LogicalVariable]],
+            children(1).asInstanceOf[Seq[expressionsv3_5.LabelName]],
+            children(2).asInstanceOf[Option[expressionsv3_5.Expression]],
+            None
+          )(helpers.as3_5(item.position))
+
         case (expressionV3_3: astV3_3.ASTNode, children: Seq[AnyRef]) =>
           convertVersion(v3_3_AST, "org.opencypher.v9_0.expressions", expressionV3_3, children, helpers.as3_5(expressionV3_3.position), classOf[InputPosition])
 
