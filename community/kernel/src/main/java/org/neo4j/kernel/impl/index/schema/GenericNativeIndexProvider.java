@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.ValueCategory;
@@ -41,8 +42,9 @@ import org.neo4j.values.storable.ValueCategory;
  */
 public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGenericKey,NativeIndexValue>
 {
-    public static final String KEY = "native-all"; // TODO should be native, but can't because number index is called that.
-    public static final Descriptor DESCRIPTOR = new Descriptor( KEY, "1.0" );
+    public static final String KEY = "all-native"; // TODO should be native, but can't because number index is called that.
+    public static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( KEY, "1.0" );
+
     // TODO implement
     public static final IndexCapability CAPABILITY = new IndexCapability()
     {
@@ -59,10 +61,10 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
         }
     };
 
-    public GenericNativeIndexProvider( IndexDirectoryStructure.Factory directoryStructureFactory, PageCache pageCache,
+    public GenericNativeIndexProvider( int priority, IndexDirectoryStructure.Factory directoryStructureFactory, PageCache pageCache,
             FileSystemAbstraction fs, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
     {
-        super( DESCRIPTOR, 1_000, directoryStructureFactory, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
+        super( DESCRIPTOR, priority, directoryStructureFactory, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
     }
 
     @Override

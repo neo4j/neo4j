@@ -555,6 +555,7 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     public enum SchemaIndex
     {
+        ALL_NATIVE10( "all-native-1.0" ), // TODO naming damnit
         NATIVE20( "lucene+native-2.0" ),
         NATIVE10( "lucene+native-1.0" ),
         LUCENE10( "lucene-1.0" );
@@ -590,7 +591,8 @@ public class GraphDatabaseSettings implements LoadableConfig
             "- Controllable memory usage, due to being bound by the page cache" )
             public static final Setting<String> default_schema_provider =
             setting( "dbms.index.default_schema_provider",
-                    optionsIgnoreCase( SchemaIndex.NATIVE20.providerName(), SchemaIndex.NATIVE10.providerName(), SchemaIndex.LUCENE10.providerName() ),
+                    optionsIgnoreCase( SchemaIndex.NATIVE20.providerName(), SchemaIndex.NATIVE10.providerName(), SchemaIndex.LUCENE10.providerName(),
+                            SchemaIndex.ALL_NATIVE10.providerName() ),
                     null );
 
     @Description( "Location where Neo4j keeps the logical transaction logs." )

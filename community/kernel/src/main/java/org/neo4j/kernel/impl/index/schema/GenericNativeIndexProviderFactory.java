@@ -44,9 +44,11 @@ import static org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider.DESC
 @Service.Implementation( KernelExtensionFactory.class )
 public class GenericNativeIndexProviderFactory extends KernelExtensionFactory<GenericNativeIndexProviderFactory.Dependencies>
 {
+    private static final int PRIORITY = 0;
+
     public GenericNativeIndexProviderFactory()
     {
-        super( "all-native" );
+        super( GenericNativeIndexProvider.KEY );
     }
 
     public interface Dependencies
@@ -83,8 +85,15 @@ public class GenericNativeIndexProviderFactory extends KernelExtensionFactory<Ge
     public static GenericNativeIndexProvider create( PageCache pageCache, File storeDir, FileSystemAbstraction fs, IndexProvider.Monitor monitor, Config config,
             OperationalMode mode, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
+        String selectedSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
+        int priority = PRIORITY;
+        if ( GraphDatabaseSettings.SchemaIndex.ALL_NATIVE10.providerName().equals( selectedSchemaProvider ) )
+        {
+            priority = 100;
+        }
+
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider( storeDir );
         boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.single == mode);
-        return new GenericNativeIndexProvider( directoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
+        return new GenericNativeIndexProvider( priority, directoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
     }
 }
