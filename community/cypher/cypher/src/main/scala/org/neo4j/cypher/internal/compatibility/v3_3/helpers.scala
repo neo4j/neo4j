@@ -60,7 +60,9 @@ object helpers {
       config.errorIfShortestPathFallbackUsedAtRuntime,
       config.errorIfShortestPathHasCommonNodesAtRuntime,
       config.legacyCsvQuoteEscaping,
-      config.nonIndexedLabelWarningThreshold)
+      config.csvBufferSize,
+      config.nonIndexedLabelWarningThreshold,
+      config.planWithMinimumCardinalityEstimates)
 
   /** This is awful but needed until 3_0 is updated no to send in the tracer here */
   def as3_3(tracer: CompilationPhaseTracer): CompilationPhaseTracer3_3 = {
