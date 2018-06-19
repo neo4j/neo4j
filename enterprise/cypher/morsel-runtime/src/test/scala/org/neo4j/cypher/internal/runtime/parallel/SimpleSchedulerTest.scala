@@ -31,7 +31,7 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class SpatulaTest extends CypherFunSuite {
+class SimpleSchedulerTest extends CypherFunSuite {
 
   test("execute simple task") {
 
@@ -67,7 +67,7 @@ class SpatulaTest extends CypherFunSuite {
 
     val countsPerThread = map.toSeq.groupBy(kv => kv._2).mapValues(_.size)
     for ((threadId, count) <- countsPerThread) {
-      count should be > 150
+      count should be > 1
     }
   }
 
