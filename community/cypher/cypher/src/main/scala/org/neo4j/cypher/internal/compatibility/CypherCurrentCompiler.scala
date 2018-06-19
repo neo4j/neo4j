@@ -67,7 +67,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
   override def compile(preParsedQuery: PreParsedQuery,
                        tracer: CompilationPhaseTracer,
                        preParsingNotifications: Set[Notification],
-                       transactionalContext: TransactionalContext): CacheableExecutableQuery = {
+                       transactionalContext: TransactionalContext): ExecutableQuery = {
 
     val logicalPlanResult =
       planner.parseAndPlan(preParsedQuery, tracer, preParsingNotifications, transactionalContext)
@@ -82,14 +82,19 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
 
     val executionPlan3_5 = runtime.compileToExecutable(logicalPlanResult.logicalPlanState, runtimeContext)
 
-    val executionPlan = new ExecutionPlanWrapper(executionPlan3_5, preParsingNotifications, logicalPlanResult.reusability)
-    CacheableExecutableQuery(executionPlan, logicalPlanResult.paramNames, logicalPlanResult.extractedParams)
+    new CypherExecutableQuery(
+      executionPlan3_5,
+      preParsingNotifications,
+      logicalPlanResult.reusability,
+      logicalPlanResult.paramNames,
+      logicalPlanResult.extractedParams)
   }
 
-  protected class ExecutionPlanWrapper(inner: ExecutionPlan_v3_5,
-                                       preParsingNotifications: Set[org.neo4j.graphdb.Notification],
-                                       reusabilityState: ReusabilityState)
-    extends ExecutionPlan {
+  protected class CypherExecutableQuery(inner: ExecutionPlan_v3_5,
+                                        preParsingNotifications: Set[org.neo4j.graphdb.Notification],
+                                        reusabilityState: ReusabilityState,
+                                        override val paramNames: Seq[String],
+                                        override val extractedParams: MapValue) extends ExecutableQuery {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
 

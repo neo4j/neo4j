@@ -93,7 +93,7 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
   def compile(preParsedQuery: PreParsedQuery,
               tracer: CompilationPhaseTracer,
               transactionalContext: TransactionalContext
-             ): CacheableExecutableQuery = {
+             ): ExecutableQuery = {
 
     var notifications = Set.newBuilder[org.neo4j.graphdb.Notification]
     val supportedRuntimes3_1 = Seq(CypherRuntimeOption.interpreted, CypherRuntimeOption.default)
@@ -115,7 +115,7 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
       * @param preParsedQuery the query to compile
       * @return the compiled query
       */
-    def innerCompile(preParsedQuery: PreParsedQuery): CacheableExecutableQuery = {
+    def innerCompile(preParsedQuery: PreParsedQuery): ExecutableQuery = {
 
       if ((preParsedQuery.version == CypherVersion.v3_3 || preParsedQuery.version == CypherVersion.v3_5) && preParsedQuery.planner == CypherPlannerOption.rule) {
         notifications += rulePlannerUnavailableFallbackNotification(preParsedQuery.offset)

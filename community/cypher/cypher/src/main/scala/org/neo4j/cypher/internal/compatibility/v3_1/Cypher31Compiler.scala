@@ -66,8 +66,11 @@ trait Cypher31Compiler extends CachingPlanner[PreparedQuerySyntax] with Compiler
 
   implicit val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v3_1, preParsingNotifications: Set[org.neo4j.graphdb.Notification], offSet: InputPosition3_1)
-    extends ExecutionPlan {
+  class Cypher31ExecutableQuery(inner: ExecutionPlan_v3_1,
+                                preParsingNotifications: Set[org.neo4j.graphdb.Notification],
+                                offSet: InputPosition3_1,
+                                override val paramNames: Seq[String],
+                                override val extractedParams: MapValue) extends ExecutableQuery {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
 
@@ -123,7 +126,7 @@ trait Cypher31Compiler extends CachingPlanner[PreparedQuerySyntax] with Compiler
                        tracer: v3_5.phases.CompilationPhaseTracer,
                        preParsingNotifications: Set[org.neo4j.graphdb.Notification],
                        transactionalContext: TransactionalContext
-                      ): CacheableExecutableQuery = {
+                      ): ExecutableQuery = {
 
     exceptionHandler.runSafely {
       val notificationLogger = new RecordingNotificationLogger
@@ -141,8 +144,12 @@ trait Cypher31Compiler extends CachingPlanner[PreparedQuerySyntax] with Compiler
       // Log notifications/warnings from planning
       executionPlan3_1.notifications(planContext).foreach(notificationLogger += _)
 
-      val executionPlan = new ExecutionPlanWrapper(executionPlan3_1, preParsingNotifications, position3_1)
-      CacheableExecutableQuery(executionPlan, Seq.empty[String], ValueConversion.asValues(extractedParameters))
+      new Cypher31ExecutableQuery(
+        executionPlan3_1,
+        preParsingNotifications,
+        position3_1,
+        Seq.empty[String],
+        ValueConversion.asValues(extractedParameters))
     }
   }
 }

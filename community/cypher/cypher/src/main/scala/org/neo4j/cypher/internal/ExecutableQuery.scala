@@ -25,12 +25,36 @@ import org.neo4j.kernel.api.query.PlannerInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 
-trait ExecutionPlan {
+/**
+  * A fully compiled query in executable form.
+  */
+trait ExecutableQuery {
 
+  /**
+    * Execute this executable query.
+    *
+    * @param transactionalContext the transaction in which to execute
+    * @param executionMode the execution mode
+    * @param params the parameters
+    * @return the query result
+    */
   def run(transactionalContext: TransactionalContext, executionMode: CypherExecutionMode, params: MapValue): Result
 
+  /**
+    * The reusability state of this executable query.
+    */
   def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState
 
   // This is to force eager calculation
   val plannerInfo: PlannerInfo
+
+  /**
+    * Names of all parameters for this query, explicit and auto-parametrized.
+    */
+  val paramNames: Seq[String]
+
+  /**
+    * The names and values of the auto-parametrized parameters for this query.
+    */
+  val extractedParams: MapValue
 }

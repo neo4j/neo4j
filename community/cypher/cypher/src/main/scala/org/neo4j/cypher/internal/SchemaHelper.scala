@@ -42,7 +42,7 @@ class SchemaHelper(val queryCache: QueryCache[_,_]) {
   }
 
   def lockLabels(schemaTokenBefore: SchemaToken,
-                 executionPlan: ExecutionPlan,
+                 executionPlan: ExecutableQuery,
                  version: CypherVersion,
                  tc: TransactionalContext): Boolean = {
     val labelIds: Seq[Long] = extractPlanLabels(executionPlan, version, tc)
@@ -59,7 +59,7 @@ class SchemaHelper(val queryCache: QueryCache[_,_]) {
     true
   }
 
-  private def extractPlanLabels(plan: ExecutionPlan, version: CypherVersion, tc: TransactionalContext): Seq[Long] = {
+  private def extractPlanLabels(plan: ExecutableQuery, version: CypherVersion, tc: TransactionalContext): Seq[Long] = {
     import scala.collection.JavaConverters._
 
     def planLabels = {

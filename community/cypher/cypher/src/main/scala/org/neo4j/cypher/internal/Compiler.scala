@@ -43,5 +43,5 @@ trait Compiler {
               tracer: CompilationPhaseTracer,
               preParsingNotifications: Set[org.neo4j.graphdb.Notification],
               transactionalContext: TransactionalContext
-             ): CacheableExecutableQuery
+             ): ExecutableQuery
 }

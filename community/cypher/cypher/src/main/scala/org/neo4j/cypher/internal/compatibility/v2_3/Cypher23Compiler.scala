@@ -67,8 +67,11 @@ trait Cypher23Compiler extends CachingPlanner[PreparedQuery] with Compiler {
 
   implicit val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v2_3, preParsingNotifications: Set[org.neo4j.graphdb.Notification], offSet: frontend.v2_3.InputPosition)
-    extends ExecutionPlan {
+  class Cypher23ExecutableQuery(inner: ExecutionPlan_v2_3,
+                                preParsingNotifications: Set[org.neo4j.graphdb.Notification],
+                                offSet: frontend.v2_3.InputPosition,
+                                override val paramNames: Seq[String],
+                                override val extractedParams: MapValue) extends ExecutableQuery {
 
     private def queryContext(transactionalContext: TransactionalContextWrapper): QueryContext =
       new ExceptionTranslatingQueryContext(new TransactionBoundQueryContext(transactionalContext))
@@ -121,7 +124,7 @@ trait Cypher23Compiler extends CachingPlanner[PreparedQuery] with Compiler {
                        tracer: CompilationPhaseTracer,
                        preParsingNotifications: Set[org.neo4j.graphdb.Notification],
                        transactionalContext: TransactionalContext
-                      ): CacheableExecutableQuery = {
+                      ): ExecutableQuery = {
 
     exceptionHandler.runSafely {
       val notificationLogger = new RecordingNotificationLogger
@@ -137,8 +140,12 @@ trait Cypher23Compiler extends CachingPlanner[PreparedQuery] with Compiler {
 
       // Log notifications/warnings from planning
       executionPlan2_3.notifications(planContext).foreach(notificationLogger += _)
-      val executionPlan = new ExecutionPlanWrapper(executionPlan2_3, preParsingNotifications, position2_3)
-      CacheableExecutableQuery(executionPlan, Seq.empty[String], ValueConversion.asValues(extractedParameters))
+      new Cypher23ExecutableQuery(
+        executionPlan2_3,
+        preParsingNotifications,
+        position2_3,
+        Seq.empty[String],
+        ValueConversion.asValues(extractedParameters))
     }
   }
 }

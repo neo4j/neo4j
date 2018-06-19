@@ -56,9 +56,9 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   private val preParser = new PreParser(config.version, config.planner, config.runtime, config.queryCacheSize)
   private val lastCommittedTxIdProvider = LastCommittedTxIdProvider(queryService)
-  private def planReusabilitiy(cachedExecutableQuery: CacheableExecutableQuery,
+  private def planReusabilitiy(executableQuery: ExecutableQuery,
                                transactionalContext: TransactionalContext): ReusabilityState =
-    cachedExecutableQuery.plan.reusabilityState(lastCommittedTxIdProvider, transactionalContext)
+    executableQuery.reusabilityState(lastCommittedTxIdProvider, transactionalContext)
 
   // Log on stale query discard from query cache
   private val log = logProvider.getLog( getClass )
@@ -69,11 +69,11 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   })
 
   private val planStalenessCaller =
-    new PlanStalenessCaller[CacheableExecutableQuery](clock,
-                                                   config.statsDivergenceCalculator,
-                                                   lastCommittedTxIdProvider,
-                                                   planReusabilitiy)
-  private val queryCache: QueryCache[String, CacheableExecutableQuery] =
+    new PlanStalenessCaller[ExecutableQuery](clock,
+                                             config.statsDivergenceCalculator,
+                                             lastCommittedTxIdProvider,
+                                             planReusabilitiy)
+  private val queryCache: QueryCache[String, ExecutableQuery] =
     new QueryCache(config.queryCacheSize, planStalenessCaller, cacheTracer)
 
   private val masterCompiler: MasterCompiler =
@@ -91,13 +91,13 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
     try {
       val preParsedQuery = preParser.preParseQuery(query, profile)
-      val cachedExecutableQuery = getOrCompile(context, preParsedQuery, queryTracer)
+      val executableQuery = getOrCompile(context, preParsedQuery, queryTracer)
       if (preParsedQuery.executionMode.name != "explain") {
-        checkParameters(cachedExecutableQuery.paramNames, params, cachedExecutableQuery.extractedParams)
+        checkParameters(executableQuery.paramNames, params, executableQuery.extractedParams)
       }
-      val combinedParams = params.updatedWith(cachedExecutableQuery.extractedParams)
-      context.executingQuery().planningCompleted(cachedExecutableQuery.plan.plannerInfo)
-      cachedExecutableQuery.plan.run(context, preParsedQuery.executionMode, combinedParams)
+      val combinedParams = params.updatedWith(executableQuery.extractedParams)
+      context.executingQuery().planningCompleted(executableQuery.plannerInfo)
+      executableQuery.run(context, preParsedQuery.executionMode, combinedParams)
 
     } catch {
       case t: Throwable =>
@@ -117,7 +117,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private def getOrCompile(context: TransactionalContext,
                            preParsedQuery: PreParsedQuery,
                            tracer: QueryCompilationEvent
-                          ): CacheableExecutableQuery = {
+                          ): ExecutableQuery = {
     val cacheKey = preParsedQuery.statementWithVersionAndPlanner
 
     // create transaction and query context
@@ -137,7 +137,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
           case _: CacheHit[_] |
                _: CacheDisabled[_] =>
             val executableQuery = cacheLookup.executableQuery
-            if (schemaHelper.lockLabels(schemaToken, executableQuery.plan, preParsedQuery.version, tc)) {
+            if (schemaHelper.lockLabels(schemaToken, executableQuery, preParsedQuery.version, tc)) {
               tc.cleanForReuse()
               return executableQuery
             }
