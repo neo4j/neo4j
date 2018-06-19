@@ -55,7 +55,6 @@ Apache Software License, Version 2.0
   openCypher TCK Features and Graphs
   openCypher Utils
   org.apiguardian:apiguardian-api
-  org.opentest4j:opentest4j
   parboiled-core
   parboiled-scala
   salat-core
@@ -81,10 +80,6 @@ Eclipse Distribution License - v 1.0
 Eclipse Public License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
-
-Eclipse Public License v2.0
-  org.junit.jupiter:junit-jupiter-api
-  org.junit.platform:junit-platform-commons
 
 MIT License
   Gherkin
