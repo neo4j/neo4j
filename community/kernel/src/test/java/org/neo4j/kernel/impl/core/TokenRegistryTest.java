@@ -28,7 +28,7 @@ import org.neo4j.internal.kernel.api.NamedToken;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-public class InMemoryTokenCacheTest
+public class TokenRegistryTest
 {
     private static final String INBOUND2_TYPE = "inbound2";
     private static final String INBOUND1_TYPE = "inbound1";
@@ -38,7 +38,7 @@ public class InMemoryTokenCacheTest
     @Test
     public void addTokenWithDuplicatedNotAllowed()
     {
-        InMemoryTokenCache tokenCache = createTokenCache();
+        TokenRegistry tokenCache = createTokenCache();
         tokenCache.put( new NamedToken( INBOUND1_TYPE, 1 ) );
         tokenCache.put( new NamedToken( INBOUND2_TYPE, 2 ) );
 
@@ -51,7 +51,7 @@ public class InMemoryTokenCacheTest
     @Test
     public void keepOriginalTokenWhenAddDuplicate()
     {
-        InMemoryTokenCache tokenCache = createTokenCache();
+        TokenRegistry tokenCache = createTokenCache();
         tokenCache.put( new NamedToken( INBOUND1_TYPE, 1 ) );
         tokenCache.put( new NamedToken( INBOUND2_TYPE, 2 ) );
 
@@ -62,12 +62,12 @@ public class InMemoryTokenCacheTest
         assertNull( tokenCache.getToken( 3 ) );
     }
 
-    private InMemoryTokenCache createTokenCache()
+    private TokenRegistry createTokenCache()
     {
-        return new InMemoryTokenCache( "testType" );
+        return new TokenRegistry( "testType" );
     }
 
-    private void tryToAddDuplicate( InMemoryTokenCache tokenCache )
+    private void tryToAddDuplicate( TokenRegistry tokenCache )
     {
         try
         {

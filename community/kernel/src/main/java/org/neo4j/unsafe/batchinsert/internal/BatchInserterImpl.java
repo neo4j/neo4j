@@ -176,6 +176,7 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.helpers.Numbers.safeCastLongToInt;
+import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 
@@ -698,7 +699,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private boolean primitiveHasProperty( PrimitiveRecord record, String propertyName )
     {
         int propertyKeyId = tokenHolders.propertyKeyTokens().getIdByName( propertyName );
-        return propertyKeyId != -1 && propertyTraverser.findPropertyRecordContaining( record, propertyKeyId,
+        return propertyKeyId != NO_TOKEN && propertyTraverser.findPropertyRecordContaining( record, propertyKeyId,
                 recordAccess.getPropertyRecords(), false ) != Record.NO_NEXT_PROPERTY.intValue();
     }
 
@@ -827,7 +828,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     public boolean nodeHasLabel( long node, Label label )
     {
         int labelId = tokenHolders.labelTokens().getIdByName( label.name() );
-        return labelId != -1 && nodeHasLabel( node, labelId );
+        return labelId != NO_TOKEN && nodeHasLabel( node, labelId );
     }
 
     private boolean nodeHasLabel( long node, int labelId )

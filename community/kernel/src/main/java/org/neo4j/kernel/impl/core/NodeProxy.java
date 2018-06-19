@@ -64,12 +64,12 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allIterator;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingIterator;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingIterator;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
-import static org.neo4j.kernel.impl.core.TokenHolder.NO_ID;
 
 public class NodeProxy implements Node, RelationshipFactory<Relationship>
 {
@@ -675,7 +675,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
     {
         KernelTransaction transaction = safeAcquireTransaction();
         int typeId = transaction.tokenRead().relationshipType( type.name() );
-        if ( typeId == NO_ID )
+        if ( typeId == NO_TOKEN )
         {   // This type doesn't even exist. Return 0
             return 0;
         }
@@ -717,7 +717,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
     {
         KernelTransaction transaction = safeAcquireTransaction();
         int typeId = transaction.tokenRead().relationshipType( type.name() );
-        if ( typeId == NO_ID )
+        if ( typeId == NO_TOKEN )
         {   // This type doesn't even exist. Return 0
             return 0;
         }

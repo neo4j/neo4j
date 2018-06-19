@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.core.NonUniqueTokenException;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
+import org.neo4j.kernel.impl.core.TokenRegistry;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -47,6 +48,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 
+import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.NO_DECORATION;
 
 abstract class ReplicatedTokenHolder implements TokenHolder
@@ -80,7 +82,7 @@ abstract class ReplicatedTokenHolder implements TokenHolder
     @Override
     public void addToken( NamedToken token ) throws NonUniqueTokenException
     {
-        tokenRegistry.addToken( token );
+        tokenRegistry.put( token );
     }
 
     @Override
@@ -167,7 +169,7 @@ abstract class ReplicatedTokenHolder implements TokenHolder
         Integer id = tokenRegistry.getId( name );
         if ( id == null )
         {
-            return NO_ID;
+            return NO_TOKEN;
         }
         return id;
     }

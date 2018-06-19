@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.management.IndexSamplingManager;
 import org.neo4j.storageengine.api.StorageEngine;
 
-import static org.neo4j.kernel.impl.core.TokenHolder.NO_ID;
+import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 
 @Service.Implementation( ManagementBeanProvider.class )
 public final class IndexSamplingManagerBean extends ManagementBeanProvider
@@ -127,15 +127,15 @@ public final class IndexSamplingManagerBean extends ManagementBeanProvider
 
         public void triggerIndexSampling( String labelKey, String propertyKey, boolean forceSample )
         {
-            int labelKeyId = -1;
-            int propertyKeyId = -1;
+            int labelKeyId = NO_TOKEN;
+            int propertyKeyId = NO_TOKEN;
             State state = this.state;
             if ( state != null )
             {
                 labelKeyId = state.tokenHolders.labelTokens().getIdByName( labelKey );
                 propertyKeyId = state.tokenHolders.propertyKeyTokens().getIdByName( propertyKey );
             }
-            if ( state == null || labelKeyId == NO_ID || propertyKeyId == NO_ID )
+            if ( state == null || labelKeyId == NO_TOKEN || propertyKeyId == NO_TOKEN )
             {
                 throw new IllegalArgumentException( "No property or label key was found associated with " +
                         propertyKey + " and " + labelKey );

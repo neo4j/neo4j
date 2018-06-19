@@ -36,11 +36,12 @@ import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 
 import static org.neo4j.function.Predicates.ALWAYS_FALSE_INT;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
+import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 
 /**
- * Keeps a cache of tokens using {@link InMemoryTokenCache}.
- * When asked for a token that isn't in the cache, delegates to a TokenCreator to create the token,
- * then stores it in the cache.
+ * Keeps a cache of tokens using {@link TokenRegistry}.
+ * When asked for a token that isn't in the registry, delegates to a TokenCreator to create the token,
+ * then stores it in the registry.
  */
 public class DelegatingTokenHolder implements TokenHolder
 {
@@ -48,33 +49,32 @@ public class DelegatingTokenHolder implements TokenHolder
     public static final String TYPE_RELATIONSHIP_TYPE = "RelationshipType";
     public static final String TYPE_LABEL = "Label";
 
-    protected InMemoryTokenCache tokenCache;
+    private TokenRegistry tokenRegistry;
 
     private final TokenCreator tokenCreator;
 
     public DelegatingTokenHolder( TokenCreator tokenCreator, String tokenType )
     {
         this.tokenCreator = tokenCreator;
-        this.tokenCache = new InMemoryTokenCache( tokenType );
+        this.tokenRegistry = new TokenRegistry( tokenType );
     }
 
     @Override
     public void setInitialTokens( List<NamedToken> tokens ) throws NonUniqueTokenException
     {
-        tokenCache.clear();
-        tokenCache.putAll( tokens );
+        tokenRegistry.setInitialTokens( tokens );
     }
 
     @Override
     public void addToken( NamedToken token ) throws NonUniqueTokenException
     {
-        tokenCache.put( token );
+        tokenRegistry.put( token );
     }
 
     @Override
     public int getOrCreateId( String name )
     {
-        Integer id = tokenCache.getId( name );
+        Integer id = tokenRegistry.getId( name );
         if ( id != null )
         {
             return id;
@@ -105,7 +105,7 @@ public class DelegatingTokenHolder implements TokenHolder
      */
     private synchronized int createToken( String name ) throws KernelException
     {
-        Integer id = tokenCache.getId( name );
+        Integer id = tokenRegistry.getId( name );
         if ( id != null )
         {
             return id;
@@ -114,7 +114,7 @@ public class DelegatingTokenHolder implements TokenHolder
         id = tokenCreator.createToken( name );
         try
         {
-            tokenCache.put( new NamedToken( name, id ) );
+            tokenRegistry.put( new NamedToken( name, id ) );
         }
         catch ( NonUniqueTokenException e )
         {
@@ -144,7 +144,7 @@ public class DelegatingTokenHolder implements TokenHolder
         boolean foundUnresolvable = false;
         for ( int i = 0; i < ids.length; i++ )
         {
-            Integer id = tokenCache.getId( names[i] );
+            Integer id = tokenRegistry.getId( names[i] );
             if ( id != null )
             {
                 ids[i] = id;
@@ -176,7 +176,7 @@ public class DelegatingTokenHolder implements TokenHolder
             createdTokens.forEachKeyValue( ( name, index ) ->
                     createdTokensList.add( new NamedToken( name, ids[index] ) ) );
 
-            tokenCache.putAll( createdTokensList );
+            tokenRegistry.putAll( createdTokensList );
         }
     }
 
@@ -253,16 +253,16 @@ public class DelegatingTokenHolder implements TokenHolder
     @Override
     public NamedToken getTokenByIdOrNull( int id )
     {
-        return tokenCache.getToken( id );
+        return tokenRegistry.getToken( id );
     }
 
     @Override
     public int getIdByName( String name )
     {
-        Integer id = tokenCache.getId( name );
+        Integer id = tokenRegistry.getId( name );
         if ( id == null )
         {
-            return NO_ID;
+            return NO_TOKEN;
         }
         return id;
     }
@@ -276,12 +276,12 @@ public class DelegatingTokenHolder implements TokenHolder
     @Override
     public Iterable<NamedToken> getAllTokens()
     {
-        return tokenCache.allTokens();
+        return tokenRegistry.allTokens();
     }
 
     @Override
     public int size()
     {
-        return tokenCache.size();
+        return tokenRegistry.size();
     }
 }

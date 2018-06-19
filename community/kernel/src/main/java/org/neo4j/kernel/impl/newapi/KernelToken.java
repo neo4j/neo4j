@@ -265,7 +265,7 @@ public class KernelToken implements Token
     {
         ktx.assertOpen();
         int id = tokens.getIdByName( checkValidTokenName( name ) );
-        if ( id != TokenHolder.NO_ID )
+        if ( id != NO_TOKEN )
         {
             return id;
         }
@@ -280,7 +280,7 @@ public class KernelToken implements Token
         for ( int i = 0; i < names.length; i++ )
         {
             ids[i] = tokenHolder.getIdByName( checkValidTokenName( names[i] ) );
-            if ( ids[i] == TokenHolder.NO_ID )
+            if ( ids[i] == NO_TOKEN )
             {
                 ktx.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
                 tokenHolder.getOrCreateIds( names, ids );

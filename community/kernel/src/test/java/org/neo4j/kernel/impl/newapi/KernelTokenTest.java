@@ -25,7 +25,6 @@ import org.neo4j.function.ThrowingAction;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.storageengine.api.StorageReader;
 
@@ -34,6 +33,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 import static org.neo4j.test.assertion.Assert.assertException;
 
@@ -49,7 +49,7 @@ public class KernelTokenTest
     {
         assertIllegalToken( () -> token.labelGetOrCreateForName( null ) );
         assertIllegalToken( () -> token.labelGetOrCreateForName( "" ) );
-        when( tokenHolders.labelTokens().getIdByName( "label" ) ).thenReturn( TokenHolder.NO_ID );
+        when( tokenHolders.labelTokens().getIdByName( "label" ) ).thenReturn( NO_TOKEN );
         when( tokenHolders.labelTokens().getOrCreateId( "label" ) ).thenReturn( 42 );
         assertThat( token.labelGetOrCreateForName( "label" ), is( 42 ) );
     }
@@ -61,7 +61,7 @@ public class KernelTokenTest
         assertIllegalToken( () -> token.labelGetOrCreateForNames( new String[]{""}, new int[1] ) );
         String[] names = {"a", "b"};
         int[] ids = new int[2];
-        when( tokenHolders.labelTokens().getIdByName( "a" ) ).thenReturn( TokenHolder.NO_ID );
+        when( tokenHolders.labelTokens().getIdByName( "a" ) ).thenReturn( NO_TOKEN );
         token.labelGetOrCreateForNames( names, ids );
         verify( tokenHolders.labelTokens() ).getOrCreateIds( names, ids );
     }
@@ -71,7 +71,7 @@ public class KernelTokenTest
     {
         assertIllegalToken( () -> token.propertyKeyGetOrCreateForName( null ) );
         assertIllegalToken( () -> token.propertyKeyGetOrCreateForName( "" ) );
-        when( tokenHolders.propertyKeyTokens().getIdByName( "prop" ) ).thenReturn( TokenHolder.NO_ID );
+        when( tokenHolders.propertyKeyTokens().getIdByName( "prop" ) ).thenReturn( NO_TOKEN );
         when( tokenHolders.propertyKeyTokens().getOrCreateId( "prop" ) ).thenReturn( 42 );
         assertThat( token.propertyKeyGetOrCreateForName( "prop" ), is( 42 ) );
     }
@@ -83,7 +83,7 @@ public class KernelTokenTest
         assertIllegalToken( () -> token.propertyKeyGetOrCreateForNames( new String[]{""}, new int[1] ) );
         String[] names = {"a", "b"};
         int[] ids = new int[2];
-        when( tokenHolders.propertyKeyTokens().getIdByName( "a" ) ).thenReturn( TokenHolder.NO_ID );
+        when( tokenHolders.propertyKeyTokens().getIdByName( "a" ) ).thenReturn( NO_TOKEN );
         token.propertyKeyGetOrCreateForNames( names, ids );
         verify( tokenHolders.propertyKeyTokens() ).getOrCreateIds( names, ids );
     }
@@ -93,7 +93,7 @@ public class KernelTokenTest
     {
         assertIllegalToken( () -> token.relationshipTypeGetOrCreateForName( null ) );
         assertIllegalToken( () -> token.relationshipTypeGetOrCreateForName( "" ) );
-        when( tokenHolders.relationshipTypeTokens().getIdByName( "rel" ) ).thenReturn( TokenHolder.NO_ID );
+        when( tokenHolders.relationshipTypeTokens().getIdByName( "rel" ) ).thenReturn( NO_TOKEN );
         when( tokenHolders.relationshipTypeTokens().getOrCreateId( "rel" ) ).thenReturn( 42 );
         assertThat( token.relationshipTypeGetOrCreateForName( "rel" ), is( 42 ) );
     }
@@ -105,7 +105,7 @@ public class KernelTokenTest
         assertIllegalToken( () -> token.relationshipTypeGetOrCreateForNames( new String[]{""}, new int[1] ) );
         String[] names = {"a", "b"};
         int[] ids = new int[2];
-        when( tokenHolders.relationshipTypeTokens().getIdByName( "a" ) ).thenReturn( TokenHolder.NO_ID );
+        when( tokenHolders.relationshipTypeTokens().getIdByName( "a" ) ).thenReturn( NO_TOKEN );
         token.relationshipTypeGetOrCreateForNames( names, ids );
         verify( tokenHolders.relationshipTypeTokens() ).getOrCreateIds( names, ids );
     }

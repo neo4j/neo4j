@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.core.replication.RaftReplicator;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.core.TokenRegistry;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.storageengine.api.StorageEngine;
 

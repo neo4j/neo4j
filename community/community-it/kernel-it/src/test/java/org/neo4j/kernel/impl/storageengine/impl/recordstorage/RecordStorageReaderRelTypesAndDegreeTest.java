@@ -52,7 +52,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.Read.ANY_RELATIONSHIP_TYPE;
-import static org.neo4j.kernel.impl.core.TokenHolder.NO_ID;
+import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.TestRelType.IN;
 import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.TestRelType.LOOP;
 import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.TestRelType.OUT;
@@ -595,7 +595,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
     private int relTypeId( TestRelType type )
     {
         int id = relationshipTypeId( type );
-        assertNotEquals( NO_ID, id );
+        assertNotEquals( NO_TOKEN, id );
         return id;
     }
 
