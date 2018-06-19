@@ -17,16 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_3
+package org.neo4j.cypher.internal.spi.v3_4
 
-import org.neo4j.cypher.internal.compiler.v3_3.{IndexDescriptor => CypherIndexDescriptor}
+import org.neo4j.cypher.internal.planner.v3_4.spi.{IndexLimitation, SlowContains, IndexDescriptor => CypherIndexDescriptor}
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor
-import org.neo4j.kernel.api.schema.index.{IndexDescriptor => KernelIndexDescriptor}
+import org.neo4j.internal.kernel.api.{IndexLimitation => KernelIndexLimitation}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
+import org.neo4j.kernel.api.schema.index.{IndexDescriptor => KernelIndexDescriptor}
 
 trait IndexDescriptorCompatibility {
   def kernelToCypher(index: KernelIndexDescriptor): CypherIndexDescriptor =
     CypherIndexDescriptor(index.schema().keyId, index.schema().getPropertyIds)
+
+  def kernelToCypher(limitation: KernelIndexLimitation): IndexLimitation = {
+    limitation match {
+      case KernelIndexLimitation.SLOW_CONTAINS => SlowContains
+      case _ => throw new IllegalStateException("Missing kernel to cypher mapping for limitation: " + limitation)
+    }
+  }
 
   def cypherToKernelSchema(index: CypherIndexDescriptor): LabelSchemaDescriptor =
     SchemaDescriptorFactory.forLabel(index.label.id, index.properties.map(_.id):_*)

@@ -17,13 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_3
+package org.neo4j.cypher.internal.spi.v3_4
 
-import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
+import org.neo4j.cypher.internal.planner.v3_4.spi.TokenContext
 import org.neo4j.cypher.{ConstraintValidationException, CypherExecutionException}
 import org.neo4j.graphdb.{ConstraintViolationException => KernelConstraintViolationException}
 import org.neo4j.internal.kernel.api.TokenNameLookup
 import org.neo4j.internal.kernel.api.exceptions.KernelException
+import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException
 
 trait ExceptionTranslationSupport {
   inner: TokenContext =>
@@ -39,6 +40,7 @@ trait ExceptionTranslationSupport {
       def relationshipTypeGetName(relTypeId: Int): String = inner.getRelTypeName(relTypeId)
     }), e)
     case e : KernelConstraintViolationException => throw new ConstraintValidationException(e.getMessage, e)
+    case e : ResourceCloseFailureException => throw new CypherExecutionException(e.getMessage, e)
   }
 
   protected def translateIterator[A](iteratorFactory: => Iterator[A]): Iterator[A] = {

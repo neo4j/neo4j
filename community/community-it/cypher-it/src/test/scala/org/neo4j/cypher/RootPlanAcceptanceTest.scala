@@ -26,39 +26,39 @@ import org.opencypher.v9_0.frontend.PlannerName
 
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
-  test("cost should be default planner in 3.4") {
+  test("cost should be default planner in 3.5") {
     given("match (n) return n")
       .withCypherVersion(CypherVersion.v3_5)
       .shouldHavePlanner(CostBasedPlannerName.default)
   }
 
-  test("3.3 query should have 3.3 version") {
+  test("3.4 query should have 3.4 version") {
     given("match (n) return n")
-      .withCypherVersion(CypherVersion.v3_3)
-      .shouldHaveCypherVersion(CypherVersion.v3_3)
+      .withCypherVersion(CypherVersion.v3_4)
+      .shouldHaveCypherVersion(CypherVersion.v3_4)
   }
 
-  test("interpreted should be default runtime in 3.4") {
+  test("interpreted should be default runtime in 3.5") {
     given("match (n) return n")
       .withCypherVersion(CypherVersion.v3_5)
       .shouldHaveRuntime(InterpretedRuntimeName)
   }
 
-  test("should use cost for varlength in 3.4") {
+  test("should use cost for varlength in 3.5") {
     given("match (a)-[r:T1*]->(b) return a,r,b")
       .withCypherVersion(CypherVersion.v3_5)
       .shouldHaveCypherVersion(CypherVersion.v3_5)
       .shouldHavePlanner(CostBasedPlannerName.default)
   }
 
-  test("should use cost for cycles in 3.4") {
+  test("should use cost for cycles in 3.5") {
     given("match (a)-[r]->(a) return a")
       .withCypherVersion(CypherVersion.v3_5)
       .shouldHaveCypherVersion(CypherVersion.v3_5)
       .shouldHavePlanner(CostBasedPlannerName.default)
   }
 
-  test("should handle updates in 3.4") {
+  test("should handle updates in 3.5") {
     given("create() return 1")
       .withCypherVersion(CypherVersion.v3_5)
       .shouldHaveCypherVersion(CypherVersion.v3_5)

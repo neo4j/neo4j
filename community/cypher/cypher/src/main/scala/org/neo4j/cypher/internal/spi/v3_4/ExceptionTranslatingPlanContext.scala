@@ -17,12 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_3
+package org.neo4j.cypher.internal.spi.v3_4
 
-import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
-import org.neo4j.cypher.internal.compiler.v3_3.spi._
-import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.v3_3.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
+import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, IndexDescriptor, PlanContext}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
 
 class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext with ExceptionTranslationSupport {
 
@@ -44,7 +43,7 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def checkNodeIndex(idxName: String): Unit =
     translateException(inner.checkNodeIndex(idxName))
 
-  // This should never be used in 3.4 code, because the txIdProvider will be used from 3.4 context in v3_3/Compatibility
+  // This should never be used in 3.4 code, because the txIdProvider will be used from 3.4 context in v3_4/Compatibility
   override def txIdProvider: () => Long = ???
 
   override def procedureSignature(name: QualifiedName): ProcedureSignature =
@@ -94,4 +93,7 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
 
   override def notificationLogger(): InternalNotificationLogger =
     translateException(inner.notificationLogger())
+
+  override def twoLayerTransactionState(): Boolean =
+    translateException(inner.twoLayerTransactionState())
 }

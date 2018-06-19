@@ -24,7 +24,7 @@ package org.neo4j.cypher.internal
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compatibility.v3_3.Cypher33Planner
+import org.neo4j.cypher.internal.compatibility.v3_4.Cypher34Planner
 import org.neo4j.cypher.internal.compatibility.v3_5.Cypher35Planner
 import org.neo4j.cypher.internal.compatibility.{CypherCurrentCompiler, CypherPlanner, RuntimeContext, RuntimeContextCreator}
 import org.neo4j.cypher.internal.compiler.v3_5._
@@ -58,8 +58,8 @@ class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
 
     val log = logProvider.getLog(getClass)
     val createPlanner: PartialFunction[CypherVersion, CypherPlanner] = {
-      case CypherVersion.v3_3 =>
-        Cypher33Planner(
+      case CypherVersion.v3_4 =>
+        Cypher34Planner(
           config,
           MasterCompiler.CLOCK,
           kernelMonitors,

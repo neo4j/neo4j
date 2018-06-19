@@ -17,16 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3
+package org.neo4j.cypher.internal.compatibility.v3_4
 
-import org.neo4j.cypher._
 import org.neo4j.cypher.exceptionHandler.{RunSafely, mapToCypher}
-import org.neo4j.cypher.internal.compatibility.{ExceptionHandler, _}
-import org.neo4j.cypher.internal.frontend.v3_3.spi.MapToPublicExceptions
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException => InternalCypherExceptionV3_3}
-import org.opencypher.v9_0.util.{CypherException => InternalCypherExceptionv3_5}
-import org.neo4j.cypher.{exceptionHandler => exceptionHandlerv3_5}
+import org.neo4j.cypher.internal.compatibility.ExceptionHandler
+import org.neo4j.cypher.internal.util.v3_4.spi.MapToPublicExceptions
+import org.neo4j.cypher.internal.util.v3_4.{CypherException => InternalCypherExceptionV3_4}
+import org.neo4j.cypher.{exceptionHandler => exceptionHandlerv3_5, _}
 import org.neo4j.values.utils.ValuesException
+import org.opencypher.v9_0.util.{CypherException => InternalCypherExceptionv3_5}
 
 object exceptionHandler extends MapToPublicExceptions[CypherException] {
   override def syntaxException(message: String, query: String, offset: Option[Int], cause: Throwable) = new SyntaxException(message, query, offset, cause)
@@ -49,7 +48,7 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
 
   override def internalException(message: String, cause: Exception) = new InternalException(message, cause)
 
-  override def loadCsvStatusWrapCypherException(extraInfo: String, cause: InternalCypherExceptionV3_3) =
+  override def loadCsvStatusWrapCypherException(extraInfo: String, cause: InternalCypherExceptionV3_4) =
     new LoadCsvStatusWrapCypherException(extraInfo, cause.mapToPublic(exceptionHandler))
 
   override def loadExternalResourceException(message: String, cause: Throwable) = throw new LoadExternalResourceException(message, cause)
@@ -96,7 +95,7 @@ object runSafely extends RunSafely {
       body
     }
     catch {
-      case e: InternalCypherExceptionV3_3 =>
+      case e: InternalCypherExceptionV3_4 =>
         f(e)
         throw e.mapToPublic(exceptionHandler)
       case e: InternalCypherExceptionv3_5 =>

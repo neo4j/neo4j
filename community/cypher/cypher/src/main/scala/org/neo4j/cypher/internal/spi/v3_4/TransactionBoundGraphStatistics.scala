@@ -17,12 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_3
+package org.neo4j.cypher.internal.spi.v3_4
 
-import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, NameId, RelTypeId}
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, Selectivity}
+import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, IndexDescriptor, StatisticsCompletingGraphStatistics}
+import org.neo4j.cypher.internal.util.v3_4._
 import org.neo4j.internal.kernel.api.{Read, SchemaRead}
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
 
@@ -46,7 +44,7 @@ object TransactionBoundGraphStatistics {
         Selectivity.of(indexSelectivity)
       }
       catch {
-        case e: IndexNotFoundKernelException => None
+        case _: IndexNotFoundKernelException => None
       }
 
     def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
@@ -60,7 +58,7 @@ object TransactionBoundGraphStatistics {
         Selectivity.of(indexSelectivity)
       }
       catch {
-        case e: IndexNotFoundKernelException => None
+        case _: IndexNotFoundKernelException => None
       }
 
     def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =

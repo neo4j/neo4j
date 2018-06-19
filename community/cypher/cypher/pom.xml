@@ -218,8 +218,8 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-3.3</artifactId>
-      <version>3.3.6</version>
+      <artifactId>neo4j-cypher-planner-3.4</artifactId>
+      <version>3.4.1</version>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>

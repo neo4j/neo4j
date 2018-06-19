@@ -17,23 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_3
+package org.neo4j.cypher.internal.spi.v3_4
 
 import java.util.Optional
 
 import org.neo4j.cypher.MissingIndexException
-import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
-import org.neo4j.cypher.internal.compiler.v3_3.spi._
-import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherExecutionException, symbols}
-import org.neo4j.cypher.internal.v3_3.logical.plans._
+import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.planner.v3_4.spi._
+import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
+import org.neo4j.cypher.internal.util.v3_4.{CypherExecutionException, symbols}
+import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.internal.kernel.api.exceptions.KernelException
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.internal.kernel.api.procs.{DefaultParameterValue, Neo4jTypes}
 import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs}
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor
 import org.neo4j.procedure.Mode
 
 import scala.collection.JavaConverters._
@@ -85,7 +85,10 @@ class TransactionBoundPlanContext(txSupplier: () => KernelTransaction, logger: I
 
   private def getOnlineIndex(reference: IndexReference): Option[IndexDescriptor] =
     txSupplier().schemaRead.indexGetState(reference) match {
-      case InternalIndexState.ONLINE => Some(IndexDescriptor(reference.label(), reference.properties()))
+      case InternalIndexState.ONLINE => reference match {
+        case cir: CapableIndexDescriptor => Some(IndexDescriptor(cir.label(), cir.properties(), cir.limitations().map(kernelToCypher).toSet))
+        case _ => Some(IndexDescriptor(reference.label(), reference.properties()))
+      }
       case _ => None
     }
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
@@ -120,7 +123,7 @@ class TransactionBoundPlanContext(txSupplier: () => KernelTransaction, logger: I
 
   val statistics: GraphStatistics = graphStatistics
 
-  // This should never be used in 3.4 code, because the txIdProvider will be used from 3.4 context in v3_3/Compatibility
+  // This should never be used in 3.4 code, because the txIdProvider will be used from 3.4 context in v3_4/Compatibility
   def txIdProvider: () => Long = ???
 
   override def procedureSignature(name: QualifiedName) = {
@@ -138,7 +141,7 @@ class TransactionBoundPlanContext(txSupplier: () => KernelTransaction, logger: I
     val description = asOption(signature.description())
     val warning = asOption(signature.warning())
 
-    ProcedureSignature(name, input, output, deprecationInfo, mode, description, warning)
+    ProcedureSignature(name, input, output, deprecationInfo, mode, description, warning, Some(handle.id()))
   }
 
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = {
@@ -162,6 +165,8 @@ class TransactionBoundPlanContext(txSupplier: () => KernelTransaction, logger: I
                                  signature.allowed(), description, isAggregate = aggregation))
     }
   }
+
+  override def twoLayerTransactionState(): Boolean = false
 
   private def asOption[T](optional: Optional[T]): Option[T] = if (optional.isPresent) Some(optional.get()) else None
 

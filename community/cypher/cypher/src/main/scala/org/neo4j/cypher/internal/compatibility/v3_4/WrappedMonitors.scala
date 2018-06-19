@@ -17,30 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3
+package org.neo4j.cypher.internal.compatibility.v3_4
 
-import org.opencypher.v9_0.util.attribution._
-import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan => LogicalPlanV3_3}
+import org.neo4j.cypher.internal.frontend.v3_4.phases.Monitors
+import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
-trait IdConverter {
-  def convertId(plan:LogicalPlanV3_3): IdGen
-}
+import scala.reflect.ClassTag
 
-/**
-  * Converts ids while keeping track of the maximum encountered id. This id can
-  * then be used to create a new IdGen which continues with the next available id.
-  */
-class MaxIdConverter extends IdConverter {
-
-  private var _maxId: Int = 0
-
-  def maxId: Int = _maxId
-
-  override def convertId(plan: LogicalPlanV3_3): IdGen = {
-    val id = plan.assignedId.underlying
-    _maxId = math.max(_maxId, id)
-    SameId(Id(id))
+case class WrappedMonitors(kernelMonitors: KernelMonitors) extends Monitors {
+  def addMonitorListener[T](monitor: T, tags: String*) {
+    kernelMonitors.addMonitorListener(monitor, tags: _*)
   }
 
-  def idGenFromMax: IdGen = new SequentialIdGen(_maxId + 1)
+  def newMonitor[T <: AnyRef : ClassTag](tags: String*): T = {
+    val clazz = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
+    kernelMonitors.newMonitor(clazz, tags: _*)
+  }
 }

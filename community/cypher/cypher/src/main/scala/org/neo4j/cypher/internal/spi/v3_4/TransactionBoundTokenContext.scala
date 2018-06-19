@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_3
+package org.neo4j.cypher.internal.spi.v3_4
 
-import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
+import org.neo4j.cypher.internal.planner.v3_4.spi.TokenContext
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException
 import org.neo4j.kernel.api.KernelTransaction
@@ -33,7 +33,7 @@ abstract class TransactionBoundTokenContext(txSupplier: () => KernelTransaction)
     else Some(propertyId)
   }
 
-  def getPropertyKeyId(propertyKeyName: String) = {
+  def getPropertyKeyId(propertyKeyName: String): Int = {
     val propertyId: Int = txSupplier().tokenRead().propertyKey(propertyKeyName)
     if (propertyId == TokenRead.NO_TOKEN)
       throw new PropertyKeyNotFoundException("No such property.", null)

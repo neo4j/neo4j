@@ -17,19 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3
+package org.neo4j.cypher.internal.compatibility.v3_4
 
-import org.neo4j.cypher.internal.compatibility.v3_3.helpers.as3_5
-import org.neo4j.cypher.internal.frontend.v3_3.{ast => astV3_3}
-import org.opencypher.v9_0.ast.semantics.SemanticCheck
-import org.opencypher.v9_0.{ast => astv3_5}
+import org.neo4j.cypher.internal.planner.v3_4.spi.KernelStatisticProvider
+import org.neo4j.kernel.impl.query.statistic.StatisticProvider
 
-import org.opencypher.v9_0.util.InputPosition
+class ProfileKernelStatisticProvider(statisticProvider: StatisticProvider) extends KernelStatisticProvider {
 
-case class StatementWrapper(statement: astV3_3.Statement) extends astv3_5.Statement {
-  override def semanticCheck: SemanticCheck = ???
+  override def getPageCacheHits: Long = {
+    statisticProvider.getPageCacheHits
+  }
 
-  override lazy val returnColumns: List[String] = statement.returnColumns
-
-  override lazy val position: InputPosition = as3_5(statement.position)
+  override def getPageCacheMisses: Long = {
+    statisticProvider.getPageCacheMisses
+  }
 }

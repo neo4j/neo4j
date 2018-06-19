@@ -44,7 +44,7 @@ class PreParser(configuredVersion: CypherVersion,
                 planCacheSize: Int) {
 
   private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(CypherPlannerOption, CypherRuntimeOption)] = Set((CypherPlannerOption.rule, CypherRuntimeOption.compiled), (CypherPlannerOption.rule, CypherRuntimeOption.slotted))
-  private final val ILLEGAL_PLANNER_VERSION_COMBINATIONS: Set[(CypherPlannerOption, CypherVersion)] = Set((CypherPlannerOption.rule, CypherVersion.v3_3), (CypherPlannerOption.rule, CypherVersion.v3_5))
+  private final val ILLEGAL_PLANNER_VERSION_COMBINATIONS: Set[(CypherPlannerOption, CypherVersion)] = Set((CypherPlannerOption.rule, CypherVersion.v3_4), (CypherPlannerOption.rule, CypherVersion.v3_5))
 
   private val preParsedQueries = new LFUCache[String, PreParsedQuery](planCacheSize)
 
