@@ -23,7 +23,6 @@
 package org.neo4j.backup;
 
 import java.net.URI;
-import java.util.function.Supplier;
 
 import org.neo4j.backup.impl.BackupImpl;
 import org.neo4j.backup.impl.BackupServer;
@@ -37,6 +36,7 @@ import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreCopyServer;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
@@ -85,20 +85,17 @@ public class OnlineBackupKernelExtension implements Lifecycle
 
     public OnlineBackupKernelExtension( Config config, final GraphDatabaseAPI graphDatabaseAPI, final LogProvider logProvider,
                                         final Monitors monitors, final NeoStoreDataSource neoStoreDataSource,
-                                        final Supplier<CheckPointer> checkPointerSupplier,
-                                        final Supplier<TransactionIdStore> transactionIdStoreSupplier,
-                                        final Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
-                                        final Supplier<LogFileInformation> logFileInformationSupplier,
                                         final FileSystemAbstraction fileSystemAbstraction )
     {
         this( config, graphDatabaseAPI, () ->
         {
-            TransactionIdStore transactionIdStore = transactionIdStoreSupplier.get();
-            StoreCopyServer copier = new StoreCopyServer( neoStoreDataSource, checkPointerSupplier.get(),
+            DependencyResolver dependencyResolver = graphDatabaseAPI.getDependencyResolver();
+            TransactionIdStore transactionIdStore = resolveDependency( dependencyResolver, TransactionIdStore.class );
+            StoreCopyServer copier = new StoreCopyServer( neoStoreDataSource, resolveDependency( dependencyResolver, CheckPointer.class ),
                     fileSystemAbstraction, graphDatabaseAPI.getStoreDir(),
                     monitors.newMonitor( StoreCopyServer.Monitor.class ) );
-            LogicalTransactionStore logicalTransactionStore = logicalTransactionStoreSupplier.get();
-            LogFileInformation logFileInformation = logFileInformationSupplier.get();
+            LogicalTransactionStore logicalTransactionStore = resolveDependency( dependencyResolver, LogicalTransactionStore.class );
+            LogFileInformation logFileInformation = resolveDependency( dependencyResolver, LogFileInformation.class );
             return new BackupImpl( copier, logicalTransactionStore, transactionIdStore, logFileInformation,
                     graphDatabaseAPI::storeId, logProvider );
         }, monitors, logProvider );
@@ -243,5 +240,10 @@ public class OnlineBackupKernelExtension implements Lifecycle
         String host = hostString.contains( INADDR_ANY ) ? me.getHost() : hostString;
         int port = server.getSocketAddress().getPort();
         return URI.create("backup://" + host + ":" + port);
+    }
+
+    private static <T> T resolveDependency( DependencyResolver dependencyResolver, Class<T> clazz )
+    {
+        return dependencyResolver.resolveDependency( clazz );
     }
 }

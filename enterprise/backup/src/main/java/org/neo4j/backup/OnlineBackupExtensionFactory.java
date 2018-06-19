@@ -98,8 +98,7 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
         if ( !isCausalClusterInstance( context ) )
         {
             return new OnlineBackupKernelExtension( dependencies.getConfig(), dependencies.getGraphDatabaseAPI(),
-                    dependencies.logService().getInternalLogProvider(), dependencies.monitors(), dependencies.neoStoreDataSource(), dependencies.checkPointer(),
-                    dependencies.transactionIdStoreSupplier(), dependencies.logicalTransactionStoreSupplier(), dependencies.logFileInformationSupplier(),
+                    dependencies.logService().getInternalLogProvider(), dependencies.monitors(), dependencies.neoStoreDataSource(),
                     dependencies.fileSystemAbstraction() );
         }
         return new LifecycleAdapter();
