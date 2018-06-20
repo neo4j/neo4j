@@ -75,6 +75,14 @@ public class IndexTxStateUpdater
     {
         assert noSchemaChangedInTx();
 
+        // Check all indexes of the changed label
+        Iterator<? extends IndexDescriptor> indexes = storageReader.indexesGetForLabel( labelId );
+
+        if ( !indexes.hasNext() )
+        {
+            return;
+        }
+
         // Find properties of the changed node
         final MutableIntSet nodePropertyIds = new IntHashSet();
         node.properties( propertyCursor );
@@ -83,8 +91,6 @@ public class IndexTxStateUpdater
             nodePropertyIds.add( propertyCursor.propertyKey() );
         }
 
-        // Check all indexes of the changed label
-        Iterator<? extends IndexDescriptor> indexes = storageReader.indexesGetForLabel( labelId );
         while ( indexes.hasNext() )
         {
             IndexDescriptor index = indexes.next();
