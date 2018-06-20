@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.security;
 
 import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
@@ -73,7 +74,7 @@ public class AnonymousContext implements LoginContext
     }
 
     @Override
-    public SecurityContext authorize( Function<String, Integer> propertyIdLookup )
+    public SecurityContext authorize( ToIntFunction<String> propertyIdLookup )
     {
         return new SecurityContext( subject(), accessMode );
     }

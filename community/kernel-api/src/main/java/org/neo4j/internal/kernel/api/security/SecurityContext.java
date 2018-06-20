@@ -19,9 +19,10 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-import java.util.function.Function;
-
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
+
+import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
 /**
  * Controls the capabilities of a KernelTransaction, including the authenticated user and authorization data.
@@ -62,7 +63,7 @@ public class SecurityContext implements LoginContext
     }
 
     @Override
-    public SecurityContext authorize( Function<String, Integer> propertyIdLookup )
+    public SecurityContext authorize( ToIntFunction<String> propertyIdLookup )
     {
         return this;
     }

@@ -22,9 +22,12 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit.v300;
 
+import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.offsetForId;
+import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.pageIdForRecord;
+
 import java.io.IOException;
 import java.util.function.Function;
-
+import java.util.function.ToIntFunction;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.impl.CompositePageCursor;
 import org.neo4j.kernel.impl.store.StoreHeader;
@@ -36,9 +39,6 @@ import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
-
-import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.offsetForId;
-import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.pageIdForRecord;
 
 /**
  * Base class for record format which utilizes dynamically sized references to other record IDs and with ability
@@ -89,7 +89,7 @@ abstract class BaseHighLimitRecordFormatV3_0_0<RECORD extends AbstractBaseRecord
     static final int HEADER_BIT_RECORD_UNIT = 0b0000_0010;
     static final int HEADER_BIT_FIRST_RECORD_UNIT = 0b0000_0100;
 
-    protected BaseHighLimitRecordFormatV3_0_0( Function<StoreHeader,Integer> recordSize, int recordHeaderSize )
+    protected BaseHighLimitRecordFormatV3_0_0( ToIntFunction<StoreHeader> recordSize, int recordHeaderSize )
     {
         super( recordSize, recordHeaderSize, IN_USE_BIT, HighLimitV3_0_0.DEFAULT_MAXIMUM_BITS_PER_ID );
     }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.bolt.v2.messaging;
 
-import org.junit.Test;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
@@ -32,9 +30,10 @@ import java.time.temporal.ChronoField;
 import java.time.temporal.ValueRange;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
-
+import org.junit.Test;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
@@ -295,7 +294,7 @@ public class Neo4jPackV2Test
         testPackingAndUnpacking( index -> randomValueGenerator.get() );
     }
 
-    private static <T extends AnyValue> void testPackingAndUnpacking( Function<Integer,T> randomValueGenerator )
+    private static <T extends AnyValue> void testPackingAndUnpacking( IntFunction<T> randomValueGenerator )
     {
         IntStream.range( 0, RANDOM_VALUES_TO_TEST )
                 .mapToObj( randomValueGenerator::apply )
@@ -362,7 +361,7 @@ public class Neo4jPackV2Test
         return randomList( index -> randomValueGenerator.get() );
     }
 
-    private static <T extends AnyValue> ListValue randomList( Function<Integer,T> randomValueGenerator )
+    private static <T extends AnyValue> ListValue randomList( IntFunction<T> randomValueGenerator )
     {
         AnyValue[] values = random().ints( RANDOM_LISTS_TO_TEST, 1, RANDOM_LIST_MAX_SIZE )
                 .mapToObj( index -> randomValueGenerator.apply( index ) )

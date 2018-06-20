@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api.security;
 
 import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
 /**
  * The LoginContext hold the executing authenticated user (subject).
@@ -39,7 +40,7 @@ public interface LoginContext
      * @param propertyIdLookup token lookup, used to compile property level security verification
      * @return the security context
      */
-    SecurityContext authorize( Function<String, Integer> propertyIdLookup );
+    SecurityContext authorize( ToIntFunction<String> propertyIdLookup );
 
     LoginContext AUTH_DISABLED = new LoginContext()
     {
@@ -50,7 +51,7 @@ public interface LoginContext
         }
 
         @Override
-        public SecurityContext authorize( Function<String, Integer> propertyIdLookup )
+        public SecurityContext authorize( ToIntFunction<String> propertyIdLookup )
         {
             return SecurityContext.AUTH_DISABLED;
         }

@@ -22,16 +22,32 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.Strings.escape;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
+import static org.neo4j.test.assertion.Assert.assertException;
+
+import java.util.Collections;
+import java.util.function.Function;
+import java.util.function.ToIntFunction;
 import org.apache.shiro.cache.MemoryConstrainedCacheManager;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.util.Collections;
-import java.util.function.Function;
-
 import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
@@ -56,23 +72,6 @@ import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.Strings.escape;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
-import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
-import static org.neo4j.test.assertion.Assert.assertException;
-
 public class MultiRealmAuthManagerTest extends InitialUserTest
 {
     private AuthenticationStrategy authStrategy;
@@ -83,7 +82,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
     @Rule
     public ExpectedException expect = ExpectedException.none();
 
-    private Function<String, Integer> token = s -> -1;
+    private ToIntFunction<String> token = s -> -1;
 
     @Before
     public void setUp() throws Throwable

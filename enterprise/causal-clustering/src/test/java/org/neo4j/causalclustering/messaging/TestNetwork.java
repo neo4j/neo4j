@@ -34,6 +34,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
+import java.util.function.ToLongBiFunction;
 
 public class TestNetwork<T>
 {
@@ -41,9 +42,9 @@ public class TestNetwork<T>
     private final Map<T, Outbound> outboundChannels = new HashMap<>();
 
     private final AtomicLong seqGen = new AtomicLong();
-    private final BiFunction<T/*from*/, T/*to*/, Long> latencySpecMillis;
+    private final ToLongBiFunction<T,T> latencySpecMillis;
 
-    public TestNetwork( BiFunction<T, T, Long> latencySpecMillis )
+    public TestNetwork( ToLongBiFunction<T,T> latencySpecMillis )
     {
         this.latencySpecMillis = latencySpecMillis;
     }
@@ -161,7 +162,7 @@ public class TestNetwork<T>
 
         private void doSend( T destination, Message message, long now )
         {
-            long atMillis = now + latencySpecMillis.apply( me, destination );
+            long atMillis = now + latencySpecMillis.applyAsLong( me, destination );
             networkThread.scheduleDelivery( destination, message, atMillis );
         }
 

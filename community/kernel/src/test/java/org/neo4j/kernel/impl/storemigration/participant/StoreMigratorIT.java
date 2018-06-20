@@ -19,18 +19,21 @@
  */
 package org.neo4j.kernel.impl.storemigration.participant;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Function;
-
+import java.util.function.Predicate;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -61,10 +64,6 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP;
-
 @RunWith( Parameterized.class )
 public class StoreMigratorIT
 {
@@ -88,7 +87,7 @@ public class StoreMigratorIT
     public LogPosition expectedLogPosition;
 
     @Parameterized.Parameter( 2 )
-    public Function<TransactionId, Boolean> txIdComparator;
+    public Predicate<TransactionId> txIdComparator;
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<Object[]> versions()
@@ -101,7 +100,7 @@ public class StoreMigratorIT
         );
     }
 
-    private static Function<TransactionId,Boolean> txInfoAcceptanceOnIdAndTimestamp( long id, long timestamp )
+    private static Predicate<TransactionId> txInfoAcceptanceOnIdAndTimestamp( long id, long timestamp )
     {
         return txInfo -> txInfo.transactionId() == id &&
                txInfo.commitTimestamp() == timestamp;
@@ -277,7 +276,7 @@ public class StoreMigratorIT
                 versionToMigrateFrom, upgradableDatabase.currentVersion() );
 
         // then
-        assertTrue( txIdComparator.apply( migrator.readLastTxInformation( migrationDir ) ) );
+        assertTrue( txIdComparator.test( migrator.readLastTxInformation( migrationDir ) ) );
     }
 
     private UpgradableDatabase getUpgradableDatabase( PageCache pageCache, LogTailScanner tailScanner )

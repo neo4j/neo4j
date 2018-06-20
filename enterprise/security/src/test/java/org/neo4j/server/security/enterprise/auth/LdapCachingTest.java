@@ -22,7 +22,22 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
+import static org.neo4j.server.security.enterprise.auth.AuthTestUtil.listOf;
+
 import com.google.common.testing.FakeTicker;
+import java.time.Clock;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.ToIntFunction;
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
@@ -33,15 +48,6 @@ import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.time.Clock;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
@@ -52,20 +58,13 @@ import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
-import static org.neo4j.server.security.enterprise.auth.AuthTestUtil.listOf;
-
 public class LdapCachingTest
 {
     private MultiRealmAuthManager authManager;
     private TestRealm testRealm;
     private FakeTicker fakeTicker;
 
-    private Function<String, Integer> token;
+    private ToIntFunction<String> token;
 
     @Before
     public void setup() throws Throwable

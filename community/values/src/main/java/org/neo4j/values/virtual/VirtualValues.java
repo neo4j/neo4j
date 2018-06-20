@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;

@@ -22,13 +22,18 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.junit.Test;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-
+import java.util.function.ToIntFunction;
+import org.junit.Test;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
@@ -40,12 +45,6 @@ import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.DoubleLatch;
-
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
-import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 public class EmbeddedBuiltInProceduresInteractionIT extends BuiltInProceduresInteractionTestBase<EnterpriseLoginContext>
 {
@@ -117,7 +116,7 @@ public class EmbeddedBuiltInProceduresInteractionIT extends BuiltInProceduresInt
         return new EnterpriseLoginContext()
         {
             @Override
-            public EnterpriseSecurityContext authorize( Function<String, Integer> propertyIdLookup )
+            public EnterpriseSecurityContext authorize( ToIntFunction<String> propertyIdLookup )
             {
                 return new EnterpriseSecurityContext( subject(), inner.mode(), Collections.emptySet(), false );
             }

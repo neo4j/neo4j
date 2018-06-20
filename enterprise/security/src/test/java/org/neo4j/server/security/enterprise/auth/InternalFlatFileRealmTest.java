@@ -22,6 +22,26 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
+import static org.neo4j.server.security.enterprise.auth.AuthTestUtil.listOf;
+
+import java.time.Clock;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Function;
+import java.util.function.ToIntFunction;
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
@@ -33,13 +53,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.time.Clock;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.function.Function;
-
 import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
@@ -59,20 +72,6 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 import org.neo4j.time.Clocks;
 
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
-import static org.neo4j.server.security.enterprise.auth.AuthTestUtil.listOf;
-
 public class InternalFlatFileRealmTest
 {
     @Rule
@@ -80,7 +79,7 @@ public class InternalFlatFileRealmTest
 
     private MultiRealmAuthManager authManager;
     private TestRealm testRealm;
-    private Function<String, Integer> token = s -> -1;
+    private ToIntFunction<String> token = s -> -1;
 
     @Before
     public void setup() throws Throwable

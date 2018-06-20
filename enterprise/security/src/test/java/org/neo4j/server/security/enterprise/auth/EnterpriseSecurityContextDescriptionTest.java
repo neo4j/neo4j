@@ -22,13 +22,17 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
 
 import java.time.Clock;
 import java.util.function.Function;
-
+import java.util.function.ToIntFunction;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
@@ -37,11 +41,6 @@ import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
-import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
-
 public class EnterpriseSecurityContextDescriptionTest
 {
     @Rule
@@ -49,7 +48,7 @@ public class EnterpriseSecurityContextDescriptionTest
             new RateLimitedAuthenticationStrategy( Clock.systemUTC(), 3 ) );
 
     private EnterpriseUserManager manager;
-    private Function<String, Integer> token = s -> -1;
+    private ToIntFunction<String> token = s -> -1;
 
     @Before
     public void setUp() throws Throwable
