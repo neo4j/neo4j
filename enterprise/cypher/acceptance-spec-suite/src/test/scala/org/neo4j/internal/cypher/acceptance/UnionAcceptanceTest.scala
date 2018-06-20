@@ -65,7 +65,7 @@ class UnionAcceptanceTest extends ExecutionEngineFunSuite with LernaeanTestSuppo
     """.stripMargin
 
 
-    val result = testWith(Configs.All - Configs.Compiled - Configs.BackwardsCompatibility + Configs.AllRulePlanners, query)
+    val result = testWith(Configs.All - Configs.Compiled - Configs.BackwardsCompatibility + Scenarios.Compatibility3_1Cost + Configs.AllRulePlanners, query)
     val expected = List(Map("A" -> "b", "B" -> "a"), Map("A" -> "a", "B" -> "b"))
 
     result.toList should equal(expected)
