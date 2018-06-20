@@ -62,6 +62,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolder;
+import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.TransactionRecordState.PropertyReceiver;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
@@ -149,7 +150,7 @@ public class NeoStoresTest
         StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
                 fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         sf.openAllNeoStores( true ).close();
-        propertyKeyTokenHolder = new DelegatingTokenHolder( this::createPropertyKeyToken, DelegatingTokenHolder.TYPE_PROPERTY_KEY );
+        propertyKeyTokenHolder = new DelegatingTokenHolder( this::createPropertyKeyToken, TokenHolder.TYPE_PROPERTY_KEY );
     }
 
     private int createPropertyKeyToken( String name )
@@ -939,7 +940,7 @@ public class NeoStoresTest
 
     private void validateNodeRel1( final long node, StorageProperty prop1,
             StorageProperty prop2, StorageProperty prop3, long rel1, long rel2,
-            final int relType1, final int relType2 ) throws IOException
+            final int relType1, final int relType2 ) throws IOException, TokenNotFoundException
     {
         assertTrue( nodeExists( node ) );
         Map<Integer,Pair<StorageProperty,Long>> props = new HashMap<>();
@@ -954,19 +955,19 @@ public class NeoStoresTest
             StorageProperty data = block.newPropertyKeyValue( pStore );
             if ( data.propertyKeyId() == prop1.propertyKeyId() )
             {
-                assertEquals( "prop1", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop1", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( "string1", data.value().asObject() );
                 nodeAddProperty( node, prop1.propertyKeyId(), "-string1" );
             }
             else if ( data.propertyKeyId() == prop2.propertyKeyId() )
             {
-                assertEquals( "prop2", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop2", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( 1, data.value().asObject() );
                 nodeAddProperty( node, prop2.propertyKeyId(), -1 );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
-                assertEquals( "prop3", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop3", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( true, data.value().asObject() );
                 nodeAddProperty( node, prop3.propertyKeyId(), false );
             }
@@ -1038,8 +1039,7 @@ public class NeoStoresTest
 
     private void validateNodeRel2( final long node, StorageProperty prop1,
             StorageProperty prop2, StorageProperty prop3,
-            long rel1, long rel2, final int relType1, final int relType2 )
-            throws IOException, RuntimeException
+            long rel1, long rel2, final int relType1, final int relType2 ) throws IOException, RuntimeException, TokenNotFoundException
     {
         assertTrue( nodeExists( node ) );
         Map<Integer,Pair<StorageProperty,Long>> props = new HashMap<>();
@@ -1053,19 +1053,19 @@ public class NeoStoresTest
             StorageProperty data = block.newPropertyKeyValue( pStore );
             if ( data.propertyKeyId() == prop1.propertyKeyId() )
             {
-                assertEquals( "prop1", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop1", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( "string2", data.value().asObject() );
                 nodeAddProperty( node, prop1.propertyKeyId(), "-string2" );
             }
             else if ( data.propertyKeyId() == prop2.propertyKeyId() )
             {
-                assertEquals( "prop2", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop2", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( 2, data.value().asObject() );
                 nodeAddProperty( node, prop2.propertyKeyId(), -2 );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
-                assertEquals( "prop3", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop3", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( false, data.value().asObject() );
                 nodeAddProperty( node, prop3.propertyKeyId(), true );
             }
@@ -1119,7 +1119,7 @@ public class NeoStoresTest
 
     private void validateRel1( long rel, StorageProperty prop1,
             StorageProperty prop2, StorageProperty prop3, long firstNode, long secondNode,
-            int relType ) throws IOException
+            int relType ) throws IOException, TokenNotFoundException
     {
         Map<Integer,Pair<StorageProperty,Long>> props = new HashMap<>();
         relLoadProperties( rel, newPropertyReceiver( props ) );
@@ -1132,19 +1132,19 @@ public class NeoStoresTest
             StorageProperty data = block.newPropertyKeyValue( pStore );
             if ( data.propertyKeyId() == prop1.propertyKeyId() )
             {
-                assertEquals( "prop1", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop1", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( "string1", data.value().asObject() );
                 relAddProperty( rel, prop1.propertyKeyId(), "-string1" );
             }
             else if ( data.propertyKeyId() == prop2.propertyKeyId() )
             {
-                assertEquals( "prop2", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop2", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( 1, data.value().asObject() );
                 relAddProperty( rel, prop2.propertyKeyId(), -1 );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
-                assertEquals( "prop3", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop3", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( true, data.value().asObject() );
                 relAddProperty( rel, prop3.propertyKeyId(), false );
             }
@@ -1178,7 +1178,7 @@ public class NeoStoresTest
 
     private void validateRel2( long rel, StorageProperty prop1,
             StorageProperty prop2, StorageProperty prop3,
-            long firstNode, long secondNode, int relType ) throws IOException
+            long firstNode, long secondNode, int relType ) throws IOException, TokenNotFoundException
     {
         Map<Integer,Pair<StorageProperty,Long>> props = new HashMap<>();
         relLoadProperties( rel, newPropertyReceiver( props ) );
@@ -1191,19 +1191,19 @@ public class NeoStoresTest
             StorageProperty data = block.newPropertyKeyValue( pStore );
             if ( data.propertyKeyId() == prop1.propertyKeyId() )
             {
-                assertEquals( "prop1", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop1", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( "string2", data.value().asObject() );
                 relAddProperty( rel, prop1.propertyKeyId(), "-string2" );
             }
             else if ( data.propertyKeyId() == prop2.propertyKeyId() )
             {
-                assertEquals( "prop2", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop2", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( 2, data.value().asObject() );
                 relAddProperty( rel, prop2.propertyKeyId(), -2 );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
-                assertEquals( "prop3", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop3", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( false, data.value().asObject() );
                 relAddProperty( rel, prop3.propertyKeyId(), true );
             }
@@ -1262,17 +1262,17 @@ public class NeoStoresTest
             StorageProperty data = block.newPropertyKeyValue( pStore );
             if ( data.propertyKeyId() == prop1.propertyKeyId() )
             {
-                assertEquals( "prop1", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop1", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( "-string1", data.value().asObject() );
             }
             else if ( data.propertyKeyId() == prop2.propertyKeyId() )
             {
-                assertEquals( "prop2", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop2", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( -1, data.value().asObject() );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
-                assertEquals( "prop3", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop3", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( false, data.value().asObject() );
                 transaction.relationshipDoRemoveProperty( rel, prop3.propertyKeyId() );
             }
@@ -1320,17 +1320,17 @@ public class NeoStoresTest
             StorageProperty data = block.newPropertyKeyValue( pStore );
             if ( data.propertyKeyId() == prop1.propertyKeyId() )
             {
-                assertEquals( "prop1", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop1", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( "-string2", data.value().asObject() );
             }
             else if ( data.propertyKeyId() == prop2.propertyKeyId() )
             {
-                assertEquals( "prop2", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop2", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( -2, data.value().asObject() );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
-                assertEquals( "prop3", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop3", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( true, data.value().asObject() );
                 transaction.relationshipDoRemoveProperty( rel, prop3.propertyKeyId() );
             }
@@ -1367,8 +1367,7 @@ public class NeoStoresTest
     }
 
     private void deleteNode1( long node, StorageProperty prop1,
-            StorageProperty prop2, StorageProperty prop3 )
-            throws IOException
+            StorageProperty prop2, StorageProperty prop3 ) throws IOException, TokenNotFoundException
     {
         Map<Integer,Pair<StorageProperty,Long>> props = new HashMap<>();
         nodeLoadProperties( node, newPropertyReceiver( props ) );
@@ -1381,17 +1380,17 @@ public class NeoStoresTest
             StorageProperty data = block.newPropertyKeyValue( pStore );
             if ( data.propertyKeyId() == prop1.propertyKeyId() )
             {
-                assertEquals( "prop1", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop1", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( "-string1", data.value().asObject() );
             }
             else if ( data.propertyKeyId() == prop2.propertyKeyId() )
             {
-                assertEquals( "prop2", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop2", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( -1, data.value().asObject() );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
-                assertEquals( "prop3", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop3", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( false, data.value().asObject() );
                 transaction.nodeDoRemoveProperty( node, prop3.propertyKeyId() );
             }
@@ -1410,8 +1409,7 @@ public class NeoStoresTest
     }
 
     private void deleteNode2( long node, StorageProperty prop1,
-            StorageProperty prop2, StorageProperty prop3 )
-            throws IOException
+            StorageProperty prop2, StorageProperty prop3 ) throws IOException, TokenNotFoundException
     {
         Map<Integer,Pair<StorageProperty,Long>> props = new HashMap<>();
         nodeLoadProperties( node, newPropertyReceiver( props ) );
@@ -1424,17 +1422,17 @@ public class NeoStoresTest
             StorageProperty data = block.newPropertyKeyValue( pStore );
             if ( data.propertyKeyId() == prop1.propertyKeyId() )
             {
-                assertEquals( "prop1", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop1", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( "-string2", data.value().asObject() );
             }
             else if ( data.propertyKeyId() == prop2.propertyKeyId() )
             {
-                assertEquals( "prop2", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop2", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( -2, data.value().asObject() );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
-                assertEquals( "prop3", propertyKeyTokenHolder.getTokenByIdOrNull( keyId ).name() );
+                assertEquals( "prop3", propertyKeyTokenHolder.getTokenById( keyId ).name() );
                 assertEquals( true, data.value().asObject() );
                 transaction.nodeDoRemoveProperty( node, prop3.propertyKeyId() );
             }

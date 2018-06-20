@@ -35,15 +35,10 @@ import static org.neo4j.kernel.impl.store.id.IdType.RELATIONSHIP_TYPE_TOKEN;
 
 public class ReplicatedRelationshipTypeTokenHolder extends ReplicatedTokenHolder
 {
-    public ReplicatedRelationshipTypeTokenHolder( TokenRegistry registry,
-            RaftReplicator replicator, IdGeneratorFactory idGeneratorFactory, Supplier<StorageEngine> storageEngineSupplier )
+    public ReplicatedRelationshipTypeTokenHolder( TokenRegistry registry, RaftReplicator replicator, IdGeneratorFactory idGeneratorFactory,
+            Supplier<StorageEngine> storageEngineSupplier )
     {
-        super( registry, replicator, idGeneratorFactory, RELATIONSHIP_TYPE_TOKEN, storageEngineSupplier, RELATIONSHIP );
-    }
-
-    @Override
-    protected void createToken( TransactionState txState, String tokenName, int tokenId )
-    {
-        txState.relationshipTypeDoCreateForName( tokenName, tokenId );
+        super( registry, replicator, idGeneratorFactory, RELATIONSHIP_TYPE_TOKEN, storageEngineSupplier, RELATIONSHIP,
+                TransactionState::relationshipTypeDoCreateForName );
     }
 }

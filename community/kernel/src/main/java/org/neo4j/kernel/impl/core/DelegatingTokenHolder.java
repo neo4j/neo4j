@@ -34,66 +34,21 @@ import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 
-import static org.neo4j.function.Predicates.ALWAYS_FALSE_INT;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
-import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 
 /**
- * Keeps a cache of tokens using {@link TokenRegistry}.
- * When asked for a token that isn't in the registry, delegates to a TokenCreator to create the token,
+ * Keeps a registry of tokens using {@link TokenRegistry}.
+ * When asked for a token that isn't in the registry, delegates to a {@link TokenCreator} to create the token,
  * then stores it in the registry.
  */
-public class DelegatingTokenHolder implements TokenHolder
+public class DelegatingTokenHolder extends AbstractTokenHolderBase
 {
-    public static final String TYPE_PROPERTY_KEY = "PropertyKey";
-    public static final String TYPE_RELATIONSHIP_TYPE = "RelationshipType";
-    public static final String TYPE_LABEL = "Label";
-
-    private TokenRegistry tokenRegistry;
-
     private final TokenCreator tokenCreator;
 
     public DelegatingTokenHolder( TokenCreator tokenCreator, String tokenType )
     {
+        super( new TokenRegistry( tokenType ) );
         this.tokenCreator = tokenCreator;
-        this.tokenRegistry = new TokenRegistry( tokenType );
-    }
-
-    @Override
-    public void setInitialTokens( List<NamedToken> tokens ) throws NonUniqueTokenException
-    {
-        tokenRegistry.setInitialTokens( tokens );
-    }
-
-    @Override
-    public void addToken( NamedToken token ) throws NonUniqueTokenException
-    {
-        tokenRegistry.put( token );
-    }
-
-    @Override
-    public int getOrCreateId( String name )
-    {
-        Integer id = tokenRegistry.getId( name );
-        if ( id != null )
-        {
-            return id;
-        }
-
-        // Let's create it
-        try
-        {
-            id = createToken( name );
-            return id;
-        }
-        catch ( ReadOnlyDbException e )
-        {
-            throw new TransactionFailureException( e.getMessage(), e );
-        }
-        catch ( Throwable e )
-        {
-            throw new TransactionFailureException( "Could not create token.", e );
-        }
     }
 
     /**
@@ -103,7 +58,8 @@ public class DelegatingTokenHolder implements TokenHolder
      * @return newly created token id
      * @throws KernelException
      */
-    private synchronized int createToken( String name ) throws KernelException
+    @Override
+    protected synchronized int createToken( String name ) throws KernelException
     {
         Integer id = tokenRegistry.getId( name );
         if ( id != null )
@@ -137,29 +93,6 @@ public class DelegatingTokenHolder implements TokenHolder
         {
             createMissingTokens( names, ids );
         }
-    }
-
-    private boolean resolveIds( String[] names, int[] ids, IntPredicate unresolvedIndexCheck )
-    {
-        boolean foundUnresolvable = false;
-        for ( int i = 0; i < ids.length; i++ )
-        {
-            Integer id = tokenRegistry.getId( names[i] );
-            if ( id != null )
-            {
-                ids[i] = id;
-            }
-            else
-            {
-                foundUnresolvable = true;
-                if ( unresolvedIndexCheck.test( i ) )
-                {
-                    // If the check returns `true`, it's a signal that we should stop early.
-                    break;
-                }
-            }
-        }
-        return foundUnresolvable;
     }
 
     private synchronized void createMissingTokens( String[] names, int[] ids )
@@ -237,51 +170,5 @@ public class DelegatingTokenHolder implements TokenHolder
         {
             throw new TransactionFailureException( "Could not create tokens.", e );
         }
-    }
-
-    @Override
-    public NamedToken getTokenById( int id ) throws TokenNotFoundException
-    {
-        NamedToken result = getTokenByIdOrNull( id );
-        if ( result == null )
-        {
-            throw new TokenNotFoundException( "Token for id " + id );
-        }
-        return result;
-    }
-
-    @Override
-    public NamedToken getTokenByIdOrNull( int id )
-    {
-        return tokenRegistry.getToken( id );
-    }
-
-    @Override
-    public int getIdByName( String name )
-    {
-        Integer id = tokenRegistry.getId( name );
-        if ( id == null )
-        {
-            return NO_TOKEN;
-        }
-        return id;
-    }
-
-    @Override
-    public boolean getIdsByNames( String[] names, int[] ids )
-    {
-        return resolveIds( names, ids, ALWAYS_FALSE_INT );
-    }
-
-    @Override
-    public Iterable<NamedToken> getAllTokens()
-    {
-        return tokenRegistry.allTokens();
-    }
-
-    @Override
-    public int size()
-    {
-        return tokenRegistry.size();
     }
 }

@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
+import org.neo4j.kernel.impl.core.TokenNotFoundException;
 
 import static java.lang.String.format;
 
@@ -61,13 +61,9 @@ public class NonTransactionalTokenNameLookup implements TokenNameLookup
     {
         try
         {
-            NamedToken token = tokenHolder.getTokenByIdOrNull( tokenId );
-            if ( token != null )
-            {
-                return token.name();
-            }
+            return tokenHolder.getTokenById( tokenId ).name();
         }
-        catch ( RuntimeException e )
+        catch ( TokenNotFoundException e )
         {
             // Ignore errors from reading key
         }

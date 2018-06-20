@@ -85,7 +85,7 @@ public class ReplicatedTokenHolderTest
         Integer tokenId = tokenHolder.getOrCreateId( "name1" );
 
         // then
-        assertThat( tokenId, equalTo( 1 ));
+        assertThat( tokenId, equalTo( 1 ) );
     }
 
     @Test
@@ -103,20 +103,18 @@ public class ReplicatedTokenHolderTest
 
         TokenRegistry registry = new TokenRegistry( "Label" );
         int generatedTokenId = 1;
-        ReplicatedTokenHolder tokenHolder = new ReplicatedLabelTokenHolder( registry,
-                ( content, trackResult ) ->
-                {
-                    CompletableFuture<Object> completeFuture = new CompletableFuture<>();
-                    completeFuture.complete( generatedTokenId );
-                    return completeFuture;
-                },
-                idGeneratorFactory, storageEngineSupplier );
+        ReplicatedTokenHolder tokenHolder = new ReplicatedLabelTokenHolder( registry, ( content, trackResult ) ->
+        {
+            CompletableFuture<Object> completeFuture = new CompletableFuture<>();
+            completeFuture.complete( generatedTokenId );
+            return completeFuture;
+        }, idGeneratorFactory, storageEngineSupplier );
 
         // when
         Integer tokenId = tokenHolder.getOrCreateId( "name1" );
 
         // then
-        assertThat( tokenId, equalTo( generatedTokenId ));
+        assertThat( tokenId, equalTo( generatedTokenId ) );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -139,12 +137,11 @@ public class ReplicatedTokenHolderTest
                 }
             } );
             return null;
-        } ).when( storageEngine ).createCommands( anyCollection(), any( ReadableTransactionState.class ),
-                any( StorageReader.class ), any( ResourceLocker.class ), anyLong(), any( TxStateVisitor.Decorator.class ) );
+        } ).when( storageEngine ).createCommands( anyCollection(), any( ReadableTransactionState.class ), any( StorageReader.class ),
+                any( ResourceLocker.class ), anyLong(), any( TxStateVisitor.Decorator.class ) );
 
         StorageReader readLayer = mock( StorageReader.class );
         when( storageEngine.newReader() ).thenReturn( readLayer );
         return storageEngine;
     }
-
 }

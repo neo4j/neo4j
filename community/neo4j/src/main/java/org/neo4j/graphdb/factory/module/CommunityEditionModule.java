@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
+import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.CanWrite;
@@ -113,9 +114,9 @@ public class CommunityEditionModule extends EditionModule
         dependencies.satisfyDependency( idController );
 
         tokenHoldersSupplier = () -> new TokenHolders(
-                new DelegatingTokenHolder( createPropertyKeyCreator( config, dataSourceManager ), DelegatingTokenHolder.TYPE_PROPERTY_KEY ),
-                new DelegatingTokenHolder( createLabelIdCreator( config, dataSourceManager ), DelegatingTokenHolder.TYPE_LABEL ),
-                new DelegatingTokenHolder( createRelationshipTypeCreator( config, dataSourceManager ), DelegatingTokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+                new DelegatingTokenHolder( createPropertyKeyCreator( config, dataSourceManager ), TokenHolder.TYPE_PROPERTY_KEY ),
+                new DelegatingTokenHolder( createLabelIdCreator( config, dataSourceManager ), TokenHolder.TYPE_LABEL ),
+                new DelegatingTokenHolder( createRelationshipTypeCreator( config, dataSourceManager ), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
 
         dependencies.satisfyDependency( createKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade, life ) );
 

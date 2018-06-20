@@ -92,6 +92,7 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
+import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.coreapi.schema.BaseNodeConstraintCreator;
 import org.neo4j.kernel.impl.coreapi.schema.IndexCreatorImpl;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
@@ -205,7 +206,14 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         @Override
         public Label apply( long from )
         {
-            return label( tokenHolders.labelTokens().getTokenByIdOrNull( safeCastLongToInt( from ) ).name() );
+            try
+            {
+                return label( tokenHolders.labelTokens().getTokenById( safeCastLongToInt( from ) ).name() );
+            }
+            catch ( TokenNotFoundException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
     };
 
@@ -295,11 +303,11 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         IndexProvider provider = extensions.resolveDependency( IndexProvider.class, HighestSelectionStrategy.INSTANCE );
         indexProviderMap = new DefaultIndexProviderMap( provider );
 
-        TokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder( this::createNewPropertyKeyId, DelegatingTokenHolder.TYPE_PROPERTY_KEY );
+        TokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder( this::createNewPropertyKeyId, TokenHolder.TYPE_PROPERTY_KEY );
         propertyKeyTokenHolder.setInitialTokens( propertyKeyTokenStore.getTokens() );
-        TokenHolder relationshipTypeTokenHolder = new DelegatingTokenHolder( this::createNewRelationshipType, DelegatingTokenHolder.TYPE_RELATIONSHIP_TYPE );
+        TokenHolder relationshipTypeTokenHolder = new DelegatingTokenHolder( this::createNewRelationshipType, TokenHolder.TYPE_RELATIONSHIP_TYPE );
         relationshipTypeTokenHolder.setInitialTokens( relationshipTypeTokenStore.getTokens() );
-        TokenHolder labelTokenHolder = new DelegatingTokenHolder( this::createNewLabelId, DelegatingTokenHolder.TYPE_LABEL );
+        TokenHolder labelTokenHolder = new DelegatingTokenHolder( this::createNewLabelId, TokenHolder.TYPE_LABEL );
         labelTokenHolder.setInitialTokens( labelTokenStore.getTokens() );
         this.tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
 
@@ -935,8 +943,15 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
     private BatchRelationship batchRelationshipOf( long id, int type, long startNode, long endNode )
     {
-        return new BatchRelationship( id, startNode, endNode,
-                RelationshipType.withName( tokenHolders.relationshipTypeTokens().getTokenByIdOrNull( type ).name() ) );
+        try
+        {
+            return new BatchRelationship( id, startNode, endNode,
+                    RelationshipType.withName( tokenHolders.relationshipTypeTokens().getTokenById( type ).name() ) );
+        }
+        catch ( TokenNotFoundException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @Override
@@ -1009,9 +1024,16 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         final Map<String, Object> map = new HashMap<>();
         propertyTraverser.getPropertyChain( nextProp, recordAccess.getPropertyRecords(), propBlock ->
         {
-            String key = tokenHolders.propertyKeyTokens().getTokenByIdOrNull( propBlock.getKeyIndexId() ).name();
-            Value propertyValue = propBlock.newPropertyValue( propertyStore );
-            map.put( key, propertyValue.asObject() );
+            try
+            {
+                String key = tokenHolders.propertyKeyTokens().getTokenById( propBlock.getKeyIndexId() ).name();
+                Value propertyValue = propBlock.newPropertyValue( propertyStore );
+                map.put( key, propertyValue.asObject() );
+            }
+            catch ( TokenNotFoundException e )
+            {
+                throw new RuntimeException( e );
+            }
         } );
         return map;
     }

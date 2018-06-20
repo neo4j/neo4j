@@ -26,6 +26,10 @@ import org.neo4j.internal.kernel.api.TokenRead;
 
 public interface TokenHolder
 {
+    String TYPE_PROPERTY_KEY = "PropertyKey";
+    String TYPE_RELATIONSHIP_TYPE = "RelationshipType";
+    String TYPE_LABEL = "Label";
+
     void setInitialTokens( List<NamedToken> tokens ) throws NonUniqueTokenException;
 
     void addToken( NamedToken token ) throws NonUniqueTokenException;
@@ -49,8 +53,6 @@ public interface TokenHolder
     void getOrCreateIds( String[] names, int[] ids );
 
     NamedToken getTokenById( int id ) throws TokenNotFoundException;
-
-    NamedToken getTokenByIdOrNull( int id );
 
     /**
      * Returns the id, or {@link TokenRead#NO_TOKEN} if no token with this name exists.

@@ -140,6 +140,7 @@ import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.LastTxIdGetter;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
+import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
@@ -501,13 +502,13 @@ public class HighlyAvailableEditionModule
 
         DelegatingTokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder(
                 createPropertyKeyCreator( config, componentSwitcherContainer, masterDelegateInvocationHandler, requestContextFactory, kernelProvider ),
-                DelegatingTokenHolder.TYPE_PROPERTY_KEY );
+                TokenHolder.TYPE_PROPERTY_KEY );
         DelegatingTokenHolder labelTokenHolder = new DelegatingTokenHolder(
                 createLabelIdCreator( config, componentSwitcherContainer, masterDelegateInvocationHandler, requestContextFactory, kernelProvider ),
-                DelegatingTokenHolder.TYPE_LABEL );
+                TokenHolder.TYPE_LABEL );
         DelegatingTokenHolder relationshipTypeTokenHolder = new DelegatingTokenHolder(
                 createRelationshipTypeCreator( config, componentSwitcherContainer, masterDelegateInvocationHandler, requestContextFactory, kernelProvider ),
-                DelegatingTokenHolder.TYPE_RELATIONSHIP_TYPE );
+                TokenHolder.TYPE_RELATIONSHIP_TYPE );
 
         // HA will only support a single token holder
         tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );

@@ -47,7 +47,7 @@ import org.neo4j.values.storable.ValueGroup;
 import static java.lang.Math.toIntExact;
 import static java.util.Collections.emptyIterator;
 import static org.apache.commons.lang3.ArrayUtils.contains;
-import static org.neo4j.kernel.impl.core.DelegatingTokenHolder.TYPE_PROPERTY_KEY;
+import static org.neo4j.kernel.impl.core.TokenHolder.TYPE_PROPERTY_KEY;
 
 /**
  * Implementation of {@link StorageReader} with focus on making testing the storage read cursors easy without resorting to mocking.

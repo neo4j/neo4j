@@ -79,7 +79,7 @@ public class TxStateTransactionDataViewTest
         when( tokenRead.propertyKeyName( anyInt() ) ).thenAnswer( invocationOnMock ->
         {
             int id = invocationOnMock.getArgument( 0 );
-            return ops.propertyKeyTokenHolder().getTokenByIdOrNull( id ).name();
+            return ops.propertyKeyTokenHolder().getTokenById( id ).name();
         } );
     }
 
