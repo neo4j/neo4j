@@ -310,7 +310,7 @@ public class SchemaCache
                 for ( int entityTokenId : schemaDescriptor.getEntityTokenIds() )
                 {
                     Set<CapableIndexDescriptor> forLabel =
-                            indexDescriptorsByLabel.getIfAbsent( entityTokenId, HashSet::new );
+                            indexDescriptorsByLabel.getIfAbsentPut( entityTokenId, HashSet::new );
                     forLabel.add( index );
                 }
 

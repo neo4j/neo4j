@@ -48,10 +48,11 @@ abstract class IsolatedTransactionTokenCreator implements TokenCreator
     public synchronized int createToken( String name ) throws KernelException
     {
         Kernel kernel = kernelSupplier.get();
-        try ( Transaction transaction = kernel.beginTransaction( Type.implicit, LoginContext.AUTH_DISABLED ) )
+        try ( Transaction tx = kernel.beginTransaction( Type.implicit, LoginContext.AUTH_DISABLED ) )
         {
-            int id = createKey( transaction, name );
-            transaction.success();
+            tx.locks().acquireSharedTokenLock();
+            int id = createKey( tx, name );
+            tx.success();
             return id;
         }
     }
@@ -62,6 +63,7 @@ abstract class IsolatedTransactionTokenCreator implements TokenCreator
         Kernel kernel = kernelSupplier.get();
         try ( Transaction tx = kernel.beginTransaction( Type.implicit, LoginContext.AUTH_DISABLED ) )
         {
+            tx.locks().acquireSharedTokenLock();
             for ( int i = 0; i < ids.length; i++ )
             {
                 if ( filter.test( i ) )

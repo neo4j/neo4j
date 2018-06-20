@@ -35,6 +35,7 @@ import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Locks;
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.Read;
@@ -85,6 +86,7 @@ import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexEntityType;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageReader;
@@ -96,6 +98,8 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
+
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.schemaTokenLockingIds;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
@@ -886,7 +890,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
                                        Optional<String> provider,
                                        Optional<String> name ) throws SchemaKernelException
     {
-        exclusiveSchemaLock( descriptor.keyType(), descriptor.keyId() );
+        exclusiveSchemaLock( descriptor );
         ktx.assertOpen();
         assertValidDescriptor( descriptor, SchemaKernelException.OperationContext.INDEX_CREATION );
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, descriptor, name );
@@ -916,7 +920,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         IndexDescriptor index = (IndexDescriptor) indexReference;
         SchemaDescriptor schema = index.schema();
 
-        exclusiveSchemaLock( schema.keyType(), schema.keyId() );
+        exclusiveSchemaLock( schema );
         ktx.assertOpen();
         try
         {
@@ -954,7 +958,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             throws SchemaKernelException
     {
         //Lock
-        exclusiveSchemaLock( descriptor.keyType(), descriptor.keyId() );
+        exclusiveSchemaLock( descriptor );
         ktx.assertOpen();
 
         //Check data integrity
@@ -979,7 +983,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor, Optional<String> provider ) throws SchemaKernelException
     {
         //Lock
-        exclusiveSchemaLock( ResourceTypes.LABEL, descriptor.getLabelId() );
+        exclusiveSchemaLock( descriptor );
         ktx.assertOpen();
 
         //Check data integrity
@@ -1006,7 +1010,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             throws SchemaKernelException
     {
         //Lock
-        exclusiveSchemaLock( ResourceTypes.LABEL, descriptor.getLabelId() );
+        exclusiveSchemaLock( descriptor );
         ktx.assertOpen();
 
         //verify data integrity
@@ -1032,7 +1036,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             throws SchemaKernelException
     {
         //Lock
-        exclusiveSchemaLock( ResourceTypes.RELATIONSHIP_TYPE, descriptor.getRelTypeId() );
+        exclusiveSchemaLock( descriptor );
         ktx.assertOpen();
 
         //verify data integrity
@@ -1148,9 +1152,46 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), type, tokenId );
     }
 
-    private void exclusiveSchemaLock( ResourceType type, int tokenId )
+    private void exclusiveSchemaLock( SchemaDescriptor schema )
     {
-        ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), type, tokenId );
+        long[] lockingIds = schemaTokenLockingIds( schema );
+        ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), schema.keyType(), lockingIds );
+
+        if ( SchemaDescriptor.isAnyEntityTokenSchema( schema ) )
+        {
+            exclusiveAnyEntityTokenSchema( schema );
+        }
+    }
+
+    private void exclusiveAnyEntityTokenSchema( SchemaDescriptor schema )
+    {
+        // After we get the exclusive token lock, no new tokens can be created. This allows us to grab a lock on all
+        // the existing tokens, and be sure that we won't miss any updates.
+        allStoreHolder.acquireExclusiveTokenLock();
+        ResourceType resourceType;
+        long[] tokens;
+        Iterator<NamedToken> itr;
+        if ( schema.entityType() == EntityType.NODE )
+        {
+            resourceType = ResourceTypes.LABEL;
+            tokens = new long[token.labelCount()];
+            itr = token.labelsGetAllTokens();
+        }
+        else
+        {
+            resourceType = ResourceTypes.RELATIONSHIP_TYPE;
+            tokens = new long[token.relationshipTypeCount()];
+            itr = token.relationshipTypesGetAllTokens();
+        }
+
+        int i = 0;
+        while ( itr.hasNext() )
+        {
+            tokens[i] = itr.next().id();
+        }
+
+        LockTracer lockTracer = ktx.lockTracer();
+        ktx.statementLocks().optimistic().acquireExclusive( lockTracer, resourceType, tokens );
     }
 
     private void lockRelationshipNodes( long startNodeId, long endNodeId )

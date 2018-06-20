@@ -55,4 +55,16 @@ public interface Locks
     void releaseSharedExplicitIndexLock( long... ids );
 
     void releaseSharedLabelLock( long... ids );
+
+    /**
+     * Shared token locks are held when new tokens are created.
+     */
+    void acquireSharedTokenLock();
+
+    /**
+     * Exclusive token locks are used to hold back the creation of new tokens.
+     *
+     * This is useful for when a lock on "all tokens" are needed.
+     */
+    void acquireExclusiveTokenLock();
 }

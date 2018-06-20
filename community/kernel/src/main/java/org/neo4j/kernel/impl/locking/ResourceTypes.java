@@ -42,7 +42,7 @@ public enum ResourceTypes implements ResourceType
     EXPLICIT_INDEX( 5, LockWaitStrategies.INCREMENTAL_BACKOFF ),
     LABEL( 6, LockWaitStrategies.INCREMENTAL_BACKOFF ),
     RELATIONSHIP_TYPE( 7, LockWaitStrategies.INCREMENTAL_BACKOFF ),
-    SCHEMA( 8, LockWaitStrategies.INCREMENTAL_BACKOFF );
+    TOKEN_CREATE( 8, LockWaitStrategies.INCREMENTAL_BACKOFF );
 
     private static final boolean useStrongHashing =
             FeatureToggles.flag( ResourceTypes.class, "useStrongHashing", false );

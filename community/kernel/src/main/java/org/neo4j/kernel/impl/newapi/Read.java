@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.ExplicitIndex;
@@ -59,6 +60,7 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.schemaTokenLockingIds;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 import static org.neo4j.values.storable.ValueGroup.GEOMETRY;
@@ -578,6 +580,18 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
+    public void acquireSharedTokenLock()
+    {
+        acquireSharedLock( ResourceTypes.TOKEN_CREATE, 1 );
+    }
+
+    @Override
+    public void acquireExclusiveTokenLock()
+    {
+        acquireSharedLock( ResourceTypes.TOKEN_CREATE, 1 );
+    }
+
+    @Override
     public void releaseSharedNodeLock( long... ids )
     {
         releaseSharedLock( ResourceTypes.NODE, ids );
@@ -603,6 +617,12 @@ abstract class Read implements TxStateHolder,
     {
         releaseSharedLock( ResourceTypes.LABEL, ids );
         ktx.assertOpen();
+    }
+
+    void acquireSharedSchemaLock( SchemaDescriptor schema )
+    {
+        long[] lockingIds = schemaTokenLockingIds( schema );
+        ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), schema.keyType(), lockingIds );
     }
 
     void sharedOptimisticLock( ResourceType resource, long resourceId )

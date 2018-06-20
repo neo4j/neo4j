@@ -410,7 +410,8 @@ public class AllStoreHolder extends Read
         {
             iterator = ktx.txState().indexDiffSetsByLabel( labelId ).apply( iterator );
         }
-        return (Iterator)iterator;
+        //noinspection unchecked
+        return (Iterator) iterator;
     }
 
     @Override
@@ -440,7 +441,7 @@ public class AllStoreHolder extends Read
         {
             return IndexReference.NO_INDEX;
         }
-        sharedOptimisticLock( index.schema().keyType(), index.schema().keyId() );
+        acquireSharedSchemaLock( index.schema() );
         return index;
     }
 
@@ -457,7 +458,7 @@ public class AllStoreHolder extends Read
 
         return Iterators.map( indexDescriptor ->
         {
-            sharedOptimisticLock( indexDescriptor.schema().keyType(), indexDescriptor.schema().keyId() );
+            acquireSharedSchemaLock( indexDescriptor.schema() );
             return indexDescriptor;
         }, iterator );
     }
@@ -466,7 +467,7 @@ public class AllStoreHolder extends Read
     public InternalIndexState indexGetState( IndexReference index ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
-        sharedOptimisticLock( index.schema().keyType(), index.schema().keyId() );
+        acquireSharedSchemaLock( index.schema() );
         ktx.assertOpen();
         return indexGetState( (IndexDescriptor) index );
     }
@@ -476,7 +477,7 @@ public class AllStoreHolder extends Read
             throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
-        sharedOptimisticLock( index.schema().keyType(), index.schema().keyId() );
+        acquireSharedSchemaLock( index.schema() );
         ktx.assertOpen();
 
         if ( ktx.hasTxStateWithChanges() )
@@ -493,7 +494,7 @@ public class AllStoreHolder extends Read
     @Override
     public Long indexGetOwningUniquenessConstraintId( IndexReference index )
     {
-        sharedOptimisticLock( index.schema().keyType(), index.schema().keyId() );
+        acquireSharedSchemaLock( index.schema() );
         ktx.assertOpen();
         if ( index instanceof StoreIndexDescriptor )
         {
@@ -508,7 +509,7 @@ public class AllStoreHolder extends Read
     @Override
     public long indexGetCommittedId( IndexReference index ) throws SchemaRuleNotFoundException
     {
-        sharedOptimisticLock( index.schema().keyType(), index.schema().keyId() );
+        acquireSharedSchemaLock( index.schema() );
         ktx.assertOpen();
         if ( index instanceof StoreIndexDescriptor )
         {
@@ -532,7 +533,7 @@ public class AllStoreHolder extends Read
     {
         assertValidIndex( index );
         SchemaDescriptor schema = index.schema();
-        sharedOptimisticLock( schema.keyType(), schema.keyId() );
+        acquireSharedSchemaLock( schema );
         ktx.assertOpen();
         return storageReader.indexUniqueValuesPercentage( schema );
     }
@@ -542,7 +543,7 @@ public class AllStoreHolder extends Read
     {
         assertValidIndex( index );
         SchemaDescriptor schema = index.schema();
-        sharedOptimisticLock( schema.keyType(), schema.keyId() );
+        acquireSharedSchemaLock( schema );
         ktx.assertOpen();
         return storageReader.indexSize( schema );
     }
@@ -631,7 +632,7 @@ public class AllStoreHolder extends Read
         {
             indexes = filter(
                     SchemaDescriptor.equalTo( descriptor ),
-                    ktx.txState().indexDiffSetsByLabel( descriptor.keyId() ).apply( indexes ) );
+                    ktx.txState().indexDiffSetsBySchema( descriptor ).apply( indexes ) );
         }
         return singleOrNull( indexes );
     }
@@ -654,7 +655,7 @@ public class AllStoreHolder extends Read
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor )
     {
-        sharedOptimisticLock( descriptor.keyType(), descriptor.keyId() );
+        acquireSharedSchemaLock( descriptor );
         ktx.assertOpen();
         Iterator<ConstraintDescriptor> constraints = storageReader.constraintsGetForSchema( descriptor );
         if ( ktx.hasTxStateWithChanges() )
@@ -668,7 +669,7 @@ public class AllStoreHolder extends Read
     public boolean constraintExists( ConstraintDescriptor descriptor )
     {
         SchemaDescriptor schema = descriptor.schema();
-        sharedOptimisticLock( schema.keyType(), schema.keyId() );
+        acquireSharedSchemaLock( schema );
         ktx.assertOpen();
         boolean inStore = storageReader.constraintExists( descriptor );
         if ( ktx.hasTxStateWithChanges() )

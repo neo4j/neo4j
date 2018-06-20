@@ -72,7 +72,7 @@ public class NodeSchemaMatcher
         {
             SUPPLIER schemaSupplier = schemaSuppliers.next();
             SchemaDescriptor schema = schemaSupplier.schema();
-            if ( node.hasLabel( schema.keyId() ) )
+            if ( schema.isAffected( node.labels().all() ) )
             {
                 if ( nodePropertyIds == null )
                 {

@@ -114,6 +114,18 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
         return Arrays.equals(schema.getEntityTokenIds(), ANY_ENTITY_TOKEN );
     }
 
+    static long[] schemaTokenLockingIds( SchemaDescriptor schema )
+    {
+        // TODO make getEntityTokenIds produce a long array directly, and avoid this extra copying.
+        int[] entityTokenIds = schema.getEntityTokenIds();
+        long[] lockingIds = new long[entityTokenIds.length];
+        for ( int i = 0; i < lockingIds.length; i++ )
+        {
+            lockingIds[i] = entityTokenIds[i];
+        }
+        return lockingIds;
+    }
+
     /**
      * Returns true if any of the given entity token ids are part of this schema unit.
      * @param entityTokenIds entity token ids to check against.
