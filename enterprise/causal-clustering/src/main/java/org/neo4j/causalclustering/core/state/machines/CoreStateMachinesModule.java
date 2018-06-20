@@ -27,6 +27,7 @@ import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
@@ -72,6 +73,7 @@ import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.StorageEngine;
 
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.array_block_id_allocation_size;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.id_alloc_state_size;
@@ -145,18 +147,20 @@ public class CoreStateMachinesModule
         dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
         TokenRegistry relationshipTypeTokenRegistry = new TokenRegistry( "RelationshipType" );
+        Supplier<StorageEngine> storageEngineSupplier = () -> localDatabase.dataSource().getDependencyResolver().resolveDependency( StorageEngine.class );
         ReplicatedRelationshipTypeTokenHolder relationshipTypeTokenHolder =
                 new ReplicatedRelationshipTypeTokenHolder( relationshipTypeTokenRegistry, replicator,
-                        this.idGeneratorFactory, dependencies );
+                        this.idGeneratorFactory, storageEngineSupplier );
 
         TokenRegistry propertyKeyTokenRegistry = new TokenRegistry( "PropertyKey" );
         ReplicatedPropertyKeyTokenHolder propertyKeyTokenHolder =
                 new ReplicatedPropertyKeyTokenHolder( propertyKeyTokenRegistry, replicator, this.idGeneratorFactory,
-                        dependencies );
+                        storageEngineSupplier );
 
         TokenRegistry labelTokenRegistry = new TokenRegistry( "Label" );
         ReplicatedLabelTokenHolder labelTokenHolder =
-                new ReplicatedLabelTokenHolder( labelTokenRegistry, replicator, this.idGeneratorFactory, dependencies );
+                new ReplicatedLabelTokenHolder( labelTokenRegistry, replicator, this.idGeneratorFactory,
+                        storageEngineSupplier );
 
         ReplicatedLockTokenStateMachine replicatedLockTokenStateMachine =
                 new ReplicatedLockTokenStateMachine( lockTokenState );
@@ -182,7 +186,7 @@ public class CoreStateMachinesModule
         lockManager = createLockManager( config, platformModule.clock, logging, replicator, myself, raftMachine,
                 replicatedLockTokenStateMachine );
 
-        RecoverConsensusLogIndex consensusLogIndexRecovery = new RecoverConsensusLogIndex( dependencies, logProvider );
+        RecoverConsensusLogIndex consensusLogIndexRecovery = new RecoverConsensusLogIndex( localDatabase, logProvider );
 
         coreStateMachines = new CoreStateMachines( replicatedTxStateMachine, labelTokenStateMachine,
                 relationshipTypeTokenStateMachine, propertyKeyTokenStateMachine, replicatedLockTokenStateMachine,

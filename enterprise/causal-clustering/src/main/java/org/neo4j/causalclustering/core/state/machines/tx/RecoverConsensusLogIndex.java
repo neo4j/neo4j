@@ -22,9 +22,10 @@
  */
 package org.neo4j.causalclustering.core.state.machines.tx;
 
+import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.graphdb.DependencyResolver.SelectionStrategy.ONLY;
@@ -35,17 +36,18 @@ import static org.neo4j.graphdb.DependencyResolver.SelectionStrategy.ONLY;
  */
 public class RecoverConsensusLogIndex
 {
-    private final Dependencies dependencies;
+    private final LocalDatabase localDatabase;
     private final LogProvider logProvider;
 
-    public RecoverConsensusLogIndex( Dependencies dependencies, LogProvider logProvider )
+    public RecoverConsensusLogIndex( LocalDatabase localDatabase, LogProvider logProvider )
     {
-        this.dependencies = dependencies;
+        this.localDatabase = localDatabase;
         this.logProvider = logProvider;
     }
 
     public long findLastAppliedIndex()
     {
+        DependencyResolver dependencies = localDatabase.dataSource().getDependencyResolver();
         TransactionIdStore transactionIdStore = dependencies.resolveDependency( TransactionIdStore.class, ONLY );
         LogicalTransactionStore transactionStore = dependencies.resolveDependency( LogicalTransactionStore.class, ONLY );
 

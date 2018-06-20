@@ -53,18 +53,16 @@ public abstract class StoreCopyRequestHandler<T extends StoreCopyRequest> extend
 {
     private final CatchupServerProtocol protocol;
     private final Supplier<NeoStoreDataSource> dataSource;
-    private final Supplier<CheckPointer> checkpointerSupplier;
     private final StoreFileStreamingProtocol storeFileStreamingProtocol;
 
     private final FileSystemAbstraction fs;
     private final Log log;
 
-    StoreCopyRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource, Supplier<CheckPointer> checkpointerSupplier,
-            StoreFileStreamingProtocol storeFileStreamingProtocol, FileSystemAbstraction fs, LogProvider logProvider )
+    StoreCopyRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource, StoreFileStreamingProtocol storeFileStreamingProtocol,
+            FileSystemAbstraction fs, LogProvider logProvider )
     {
         this.protocol = protocol;
         this.dataSource = dataSource;
-        this.checkpointerSupplier = checkpointerSupplier;
         this.storeFileStreamingProtocol = storeFileStreamingProtocol;
         this.fs = fs;
         this.log = logProvider.getLog( StoreCopyRequestHandler.class );
@@ -82,7 +80,8 @@ public abstract class StoreCopyRequestHandler<T extends StoreCopyRequest> extend
             {
                 responseStatus = StoreCopyFinishedResponse.Status.E_STORE_ID_MISMATCH;
             }
-            else if ( !isTransactionWithinReach( request.requiredTransactionId(), checkpointerSupplier.get() ) )
+            else if ( !isTransactionWithinReach( request.requiredTransactionId(),
+                    neoStoreDataSource.getDependencyResolver().resolveDependency( CheckPointer.class ) ) )
             {
                 responseStatus = StoreCopyFinishedResponse.Status.E_TOO_FAR_BEHIND;
             }
@@ -130,7 +129,7 @@ public abstract class StoreCopyRequestHandler<T extends StoreCopyRequest> extend
         public GetStoreFileRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource, Supplier<CheckPointer> checkpointerSupplier,
                 StoreFileStreamingProtocol storeFileStreamingProtocol, FileSystemAbstraction fs, LogProvider logProvider )
         {
-            super( protocol, dataSource, checkpointerSupplier, storeFileStreamingProtocol, fs, logProvider );
+            super( protocol, dataSource, storeFileStreamingProtocol, fs, logProvider );
         }
 
         @Override
@@ -151,7 +150,7 @@ public abstract class StoreCopyRequestHandler<T extends StoreCopyRequest> extend
                 Supplier<CheckPointer> checkpointerSupplier, StoreFileStreamingProtocol storeFileStreamingProtocol,
                 FileSystemAbstraction fs, LogProvider logProvider )
         {
-            super( protocol, dataSource, checkpointerSupplier, storeFileStreamingProtocol, fs, logProvider );
+            super( protocol, dataSource, storeFileStreamingProtocol, fs, logProvider );
         }
 
         @Override

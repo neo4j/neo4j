@@ -42,16 +42,14 @@ import static org.neo4j.causalclustering.catchup.storecopy.DataSourceChecks.hasS
 public class PrepareStoreCopyRequestHandler extends SimpleChannelInboundHandler<PrepareStoreCopyRequest>
 {
     private final CatchupServerProtocol protocol;
-    private final Supplier<CheckPointer> checkPointerSupplier;
     private final PrepareStoreCopyFilesProvider prepareStoreCopyFilesProvider;
     private final Supplier<NeoStoreDataSource> dataSourceSupplier;
     private final StoreFileStreamingProtocol streamingProtocol = new StoreFileStreamingProtocol();
 
-    public PrepareStoreCopyRequestHandler( CatchupServerProtocol catchupServerProtocol, Supplier<CheckPointer> checkPointerSupplier,
-            Supplier<NeoStoreDataSource> dataSourceSupplier, PrepareStoreCopyFilesProvider prepareStoreCopyFilesProvider )
+    public PrepareStoreCopyRequestHandler( CatchupServerProtocol catchupServerProtocol, Supplier<NeoStoreDataSource> dataSourceSupplier,
+            PrepareStoreCopyFilesProvider prepareStoreCopyFilesProvider )
     {
         this.protocol = catchupServerProtocol;
-        this.checkPointerSupplier = checkPointerSupplier;
         this.prepareStoreCopyFilesProvider = prepareStoreCopyFilesProvider;
         this.dataSourceSupplier = dataSourceSupplier;
     }
@@ -71,7 +69,7 @@ public class PrepareStoreCopyRequestHandler extends SimpleChannelInboundHandler<
             }
             else
             {
-                CheckPointer checkPointer = checkPointerSupplier.get();
+                CheckPointer checkPointer = neoStoreDataSource.getDependencyResolver().resolveDependency( CheckPointer.class );
                 closeablesListener.add( tryCheckpointAndAcquireMutex( checkPointer ) );
                 PrepareStoreCopyFiles prepareStoreCopyFiles =
                         closeablesListener.add( prepareStoreCopyFilesProvider.prepareStoreCopyFiles( neoStoreDataSource ) );

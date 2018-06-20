@@ -39,8 +39,6 @@ import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotRequestHandler
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -51,8 +49,6 @@ public class RegularCatchupServerHandler implements CatchupServerHandler
     private final Monitors monitors;
     private final LogProvider logProvider;
     private final Supplier<StoreId> storeIdSupplier;
-    private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
-    private final Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier;
     private final Supplier<NeoStoreDataSource> dataSourceSupplier;
     private final BooleanSupplier dataSourceAvailabilitySupplier;
     private final FileSystemAbstraction fs;
@@ -60,15 +56,12 @@ public class RegularCatchupServerHandler implements CatchupServerHandler
     private final Supplier<CheckPointer> checkPointerSupplier;
 
     public RegularCatchupServerHandler( Monitors monitors, LogProvider logProvider, Supplier<StoreId> storeIdSupplier,
-            Supplier<TransactionIdStore> transactionIdStoreSupplier, Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
             Supplier<NeoStoreDataSource> dataSourceSupplier, BooleanSupplier dataSourceAvailabilitySupplier, FileSystemAbstraction fs,
             CoreSnapshotService snapshotService, Supplier<CheckPointer> checkPointerSupplier )
     {
         this.monitors = monitors;
         this.logProvider = logProvider;
         this.storeIdSupplier = storeIdSupplier;
-        this.transactionIdStoreSupplier = transactionIdStoreSupplier;
-        this.logicalTransactionStoreSupplier = logicalTransactionStoreSupplier;
         this.dataSourceSupplier = dataSourceSupplier;
         this.dataSourceAvailabilitySupplier = dataSourceAvailabilitySupplier;
         this.fs = fs;
@@ -79,8 +72,8 @@ public class RegularCatchupServerHandler implements CatchupServerHandler
     @Override
     public ChannelHandler txPullRequestHandler( CatchupServerProtocol catchupServerProtocol )
     {
-        return new TxPullRequestHandler( catchupServerProtocol, storeIdSupplier, dataSourceAvailabilitySupplier, transactionIdStoreSupplier,
-                logicalTransactionStoreSupplier, monitors, logProvider );
+        return new TxPullRequestHandler( catchupServerProtocol, storeIdSupplier, dataSourceAvailabilitySupplier, dataSourceSupplier,
+                monitors, logProvider );
     }
 
     @Override
@@ -92,7 +85,7 @@ public class RegularCatchupServerHandler implements CatchupServerHandler
     @Override
     public ChannelHandler storeListingRequestHandler( CatchupServerProtocol catchupServerProtocol )
     {
-        return new PrepareStoreCopyRequestHandler( catchupServerProtocol, checkPointerSupplier, dataSourceSupplier, new PrepareStoreCopyFilesProvider( fs ) );
+        return new PrepareStoreCopyRequestHandler( catchupServerProtocol, dataSourceSupplier, new PrepareStoreCopyFilesProvider( fs ) );
     }
 
     @Override

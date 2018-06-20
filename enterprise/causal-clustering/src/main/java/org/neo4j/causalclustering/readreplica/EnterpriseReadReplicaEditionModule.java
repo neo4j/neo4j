@@ -124,7 +124,6 @@ import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -260,19 +259,6 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
-        Supplier<TransactionCommitProcess> writableCommitProcess =
-                () -> new TransactionRepresentationCommitProcess( dependencies.resolveDependency( TransactionAppender.class ),
-                        dependencies.resolveDependency( StorageEngine.class ) );
-
-        LifeSupport txPulling = new LifeSupport();
-        int maxBatchSize = config.get( CausalClusteringSettings.read_replica_transaction_applier_batch_size );
-        BatchingTxApplier batchingTxApplier = new BatchingTxApplier(
-                maxBatchSize, dependencies.provideDependency( TransactionIdStore.class ), writableCommitProcess,
-                platformModule.monitors, platformModule.tracers.pageCursorTracerSupplier,
-                platformModule.versionContextSupplier, logProvider );
-
-        TimerService timerService = new TimerService( platformModule.jobScheduler, logProvider );
-
         StoreFiles storeFiles = new StoreFiles( fileSystem, pageCache );
         LogFiles logFiles = buildLocalDatabaseLogFiles( platformModule, fileSystem, storeDir, config );
 
@@ -280,6 +266,19 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 new LocalDatabase( platformModule.storeDir, storeFiles, logFiles, platformModule.dataSourceManager,
                         databaseHealthSupplier,
                         watcherService, platformModule.availabilityGuard, logProvider );
+
+        Supplier<TransactionCommitProcess> writableCommitProcess = () -> new TransactionRepresentationCommitProcess(
+                localDatabase.dataSource().getDependencyResolver().resolveDependency( TransactionAppender.class ),
+                localDatabase.dataSource().getDependencyResolver().resolveDependency( StorageEngine.class ) );
+
+        LifeSupport txPulling = new LifeSupport();
+        int maxBatchSize = config.get( CausalClusteringSettings.read_replica_transaction_applier_batch_size );
+        BatchingTxApplier batchingTxApplier = new BatchingTxApplier(
+                maxBatchSize, () -> localDatabase.dataSource().getDependencyResolver().resolveDependency( TransactionIdStore.class ), writableCommitProcess,
+                platformModule.monitors, platformModule.tracers.pageCursorTracerSupplier,
+                platformModule.versionContextSupplier, logProvider );
+
+        TimerService timerService = new TimerService( platformModule.jobScheduler, logProvider );
 
         ExponentialBackoffStrategy storeCopyBackoffStrategy =
                 new ExponentialBackoffStrategy( 1, config.get( CausalClusteringSettings.store_copy_backoff_max_wait ).toMillis(), TimeUnit.MILLISECONDS );
@@ -319,8 +318,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 platformModule.logging.getUserLogProvider(), storeCopyProcess, topologyService ) );
 
         RegularCatchupServerHandler catchupServerHandler = new RegularCatchupServerHandler( platformModule.monitors,
-                logProvider, localDatabase::storeId, platformModule.dependencies.provideDependency( TransactionIdStore.class ),
-                platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
+                logProvider, localDatabase::storeId, localDatabase::dataSource, localDatabase::isAvailable,
                 fileSystem, null, platformModule.dependencies.provideDependency( CheckPointer.class ) );
 
         InstalledProtocolHandler installedProtocolHandler = new InstalledProtocolHandler(); // TODO: hook into a procedure

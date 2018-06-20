@@ -22,19 +22,21 @@
  */
 package org.neo4j.causalclustering.core.state.machines.token;
 
+import java.util.function.Supplier;
+
 import org.neo4j.causalclustering.core.replication.Replicator;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.storageengine.api.StorageEngine;
 
 public class ReplicatedLabelTokenHolder extends ReplicatedTokenHolder implements TokenHolder
 {
     public ReplicatedLabelTokenHolder( TokenRegistry registry, Replicator replicator,
-            IdGeneratorFactory idGeneratorFactory, Dependencies dependencies )
+            IdGeneratorFactory idGeneratorFactory, Supplier<StorageEngine> storageEngineSupplier )
     {
-        super( registry, replicator, idGeneratorFactory, IdType.LABEL_TOKEN, dependencies, TokenType.LABEL );
+        super( registry, replicator, idGeneratorFactory, IdType.LABEL_TOKEN, storageEngineSupplier, TokenType.LABEL );
     }
 
     @Override
