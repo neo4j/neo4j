@@ -314,11 +314,6 @@ public class SchemaCache
                     forLabel.add( index );
                 }
 
-
-                Set<CapableIndexDescriptor> forLabel =
-                        indexDescriptorsByLabel.getIfAbsentPut( schemaDescriptor.keyId(), HashSet::new );
-                forLabel.add( index );
-
                 for ( int propertyId : index.schema().getPropertyIds() )
                 {
                     List<CapableIndexDescriptor> indexesForProperty =

@@ -236,6 +236,7 @@ public class AllStoreHolder extends Read
     @Override
     IndexReader indexReader( IndexReference index, boolean fresh ) throws IndexNotFoundKernelException
     {
+        assertValidIndex( index );
         return fresh ? storageReader.getFreshIndexReader( (IndexDescriptor) index ) :
                storageReader.getIndexReader( (IndexDescriptor) index );
     }
@@ -465,41 +466,38 @@ public class AllStoreHolder extends Read
     public InternalIndexState indexGetState( IndexReference index ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
-        IndexDescriptor descriptor = (IndexDescriptor) index;
-        sharedOptimisticLock( descriptor.schema().keyType(), descriptor.schema().keyId() );
+        sharedOptimisticLock( index.schema().keyType(), index.schema().keyId() );
         ktx.assertOpen();
-        return indexGetState( descriptor );
+        return indexGetState( (IndexDescriptor) index );
     }
 
     @Override
     public PopulationProgress indexGetPopulationProgress( IndexReference index )
             throws IndexNotFoundKernelException
     {
-        IndexDescriptor descriptor = (IndexDescriptor) index;
-        sharedOptimisticLock( descriptor.schema().keyType(), descriptor.schema().keyId() );
+        assertValidIndex( index );
+        sharedOptimisticLock( index.schema().keyType(), index.schema().keyId() );
         ktx.assertOpen();
 
         if ( ktx.hasTxStateWithChanges() )
         {
-            if ( checkIndexState( descriptor,
-                    ktx.txState().indexDiffSetsBySchema( descriptor.schema() ) ) )
+            if ( checkIndexState( (IndexDescriptor) index, ktx.txState().indexDiffSetsBySchema( index.schema() ) ) )
             {
                 return PopulationProgress.NONE;
             }
         }
 
-        return storageReader.indexGetPopulationProgress( descriptor.schema() );
+        return storageReader.indexGetPopulationProgress( index.schema() );
     }
 
     @Override
     public Long indexGetOwningUniquenessConstraintId( IndexReference index )
     {
-        IndexDescriptor descriptor = (IndexDescriptor) index;
-        sharedOptimisticLock( descriptor.schema().keyType(), descriptor.schema().keyId() );
+        sharedOptimisticLock( index.schema().keyType(), index.schema().keyId() );
         ktx.assertOpen();
-        if ( descriptor instanceof StoreIndexDescriptor )
+        if ( index instanceof StoreIndexDescriptor )
         {
-            return ((StoreIndexDescriptor) descriptor).getOwningConstraint();
+            return ((StoreIndexDescriptor) index).getOwningConstraint();
         }
         else
         {
@@ -510,16 +508,15 @@ public class AllStoreHolder extends Read
     @Override
     public long indexGetCommittedId( IndexReference index ) throws SchemaRuleNotFoundException
     {
-        IndexDescriptor descriptor = (IndexDescriptor) index;
-        sharedOptimisticLock( descriptor.schema().keyType(), descriptor.schema().keyId() );
+        sharedOptimisticLock( index.schema().keyType(), index.schema().keyId() );
         ktx.assertOpen();
-        if ( descriptor instanceof StoreIndexDescriptor )
+        if ( index instanceof StoreIndexDescriptor )
         {
-            return ((StoreIndexDescriptor) descriptor).getId();
+            return ((StoreIndexDescriptor) index).getId();
         }
         else
         {
-            throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, ((IndexDescriptor)index).schema() );
+            throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, index.schema() );
         }
     }
 
@@ -527,15 +524,14 @@ public class AllStoreHolder extends Read
     public String indexGetFailure( IndexReference index ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
-        IndexDescriptor descriptor = (IndexDescriptor) index;
-        return storageReader.indexGetFailure( descriptor.schema() );
+        return storageReader.indexGetFailure( index.schema() );
     }
 
     @Override
     public double indexUniqueValuesSelectivity( IndexReference index ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
-        SchemaDescriptor schema = ((IndexDescriptor) index).schema();
+        SchemaDescriptor schema = index.schema();
         sharedOptimisticLock( schema.keyType(), schema.keyId() );
         ktx.assertOpen();
         return storageReader.indexUniqueValuesPercentage( schema );
@@ -545,7 +541,7 @@ public class AllStoreHolder extends Read
     public long indexSize( IndexReference index ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
-        SchemaDescriptor schema = ((IndexDescriptor) index).schema();
+        SchemaDescriptor schema = index.schema();
         sharedOptimisticLock( schema.keyType(), schema.keyId() );
         ktx.assertOpen();
         return storageReader.indexSize( schema );
@@ -555,6 +551,7 @@ public class AllStoreHolder extends Read
     public long nodesCountIndexed( IndexReference index, long nodeId, Value value ) throws KernelException
     {
         ktx.assertOpen();
+        assertValidIndex( index );
         IndexReader reader = storageReader.getIndexReader( (IndexDescriptor) index );
         return reader.countIndexedNodes( nodeId, value );
     }
@@ -580,8 +577,8 @@ public class AllStoreHolder extends Read
             throws IndexNotFoundKernelException
     {
         ktx.assertOpen();
-        return storageReader.indexUpdatesAndSize(
-                SchemaDescriptorFactory.forLabel( index.label(), index.properties() ), target );
+        assertValidIndex( index );
+        return storageReader.indexUpdatesAndSize( index.schema(), target );
 
     }
 
@@ -590,8 +587,8 @@ public class AllStoreHolder extends Read
             throws IndexNotFoundKernelException
     {
         ktx.assertOpen();
-        return storageReader.indexSample(
-                SchemaDescriptorFactory.forLabel( index.label(), index.properties() ), target );
+        assertValidIndex( index );
+        return storageReader.indexSample( index.schema(), target );
     }
 
     IndexReference indexGetCapability( IndexDescriptor schemaIndexDescriptor )
