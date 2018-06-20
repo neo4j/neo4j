@@ -45,6 +45,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.util.OptionalHostnamePort;
 
 import static org.neo4j.consistency.ConsistencyCheckSettings.consistency_check_graph;
@@ -193,7 +194,7 @@ class OnlineBackupContextBuilder
             config.augment( pagecache_memory, pagecacheMemory );
 
             // Disable prometheus to avoid binding exceptions
-            config.augment( "metrics.prometheus.enabled", "false" );
+            config.augment( "metrics.prometheus.enabled", Settings.FALSE );
 
             // Build consistency-checker configuration.
             // Note: We can remove the loading from config file in 4.0.

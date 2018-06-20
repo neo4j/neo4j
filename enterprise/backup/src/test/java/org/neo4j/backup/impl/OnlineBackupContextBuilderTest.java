@@ -40,6 +40,7 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -329,6 +330,13 @@ public class OnlineBackupContextBuilderTest
             // then
             assertEquals( expected.get( useCase ), context.getRequiredArguments().getSelectedBackupProtocol() );
         }
+    }
+
+    @Test
+    public void prometheusShouldBeDisabledToAvoidPortConflicts() throws CommandFailed, IncorrectUsage
+    {
+        OnlineBackupContext context = new OnlineBackupContextBuilder( homeDir, configDir ).createContext( requiredAnd() );
+        assertEquals( Settings.FALSE, context.getConfig().getRaw().get( "metrics.prometheus.enabled" ) );
     }
 
     private String[] requiredAnd( String... additionalArgs )
