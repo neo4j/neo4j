@@ -90,12 +90,12 @@ public class OnlineBackupKernelExtension implements Lifecycle
         this( config, graphDatabaseAPI, () ->
         {
             DependencyResolver dependencyResolver = graphDatabaseAPI.getDependencyResolver();
-            TransactionIdStore transactionIdStore = resolveDependency( dependencyResolver, TransactionIdStore.class );
-            StoreCopyServer copier = new StoreCopyServer( neoStoreDataSource, resolveDependency( dependencyResolver, CheckPointer.class ),
+            TransactionIdStore transactionIdStore = dependencyResolver.resolveDependency( TransactionIdStore.class );
+            StoreCopyServer copier = new StoreCopyServer( neoStoreDataSource, dependencyResolver.resolveDependency( CheckPointer.class ),
                     fileSystemAbstraction, graphDatabaseAPI.getStoreDir(),
                     monitors.newMonitor( StoreCopyServer.Monitor.class ) );
-            LogicalTransactionStore logicalTransactionStore = resolveDependency( dependencyResolver, LogicalTransactionStore.class );
-            LogFileInformation logFileInformation = resolveDependency( dependencyResolver, LogFileInformation.class );
+            LogicalTransactionStore logicalTransactionStore = dependencyResolver.resolveDependency( LogicalTransactionStore.class );
+            LogFileInformation logFileInformation = dependencyResolver.resolveDependency( LogFileInformation.class );
             return new BackupImpl( copier, logicalTransactionStore, transactionIdStore, logFileInformation,
                     graphDatabaseAPI::storeId, logProvider );
         }, monitors, logProvider );
@@ -240,10 +240,5 @@ public class OnlineBackupKernelExtension implements Lifecycle
         String host = hostString.contains( INADDR_ANY ) ? me.getHost() : hostString;
         int port = server.getSocketAddress().getPort();
         return URI.create("backup://" + host + ":" + port);
-    }
-
-    private static <T> T resolveDependency( DependencyResolver dependencyResolver, Class<T> clazz )
-    {
-        return dependencyResolver.resolveDependency( clazz );
     }
 }
