@@ -48,14 +48,12 @@ import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -135,24 +133,17 @@ public class BuiltInProcedures
                         type = IndexType.NODE_LABEL_PROPERTY.typeName();
                     }
 
-                    String label = tokenRead.nodeLabelName( index.label() );
+                    String[] tokenNames = tokens.entityTokensGetNames( index.schema().entityType(), index.schema().getEntityTokenIds() );
                     List<String> propertyNames = propertyNames( tokens, index );
-                    result.add( new IndexResult( "INDEX ON " +
-                                                 SchemaDescriptorFactory.forLabel( index.label(), index.properties() )
-                                                         .userDescription( tokens ), label,
+                    result.add( new IndexResult( "INDEX ON " + index.schema().userDescription( tokens ), tokenNames,
                             propertyNames,
                             schemaRead.indexGetState( index ).toString(), type,
-                            indexProviderDescriptorMap( schemaRead.index( index.label(), index.properties() ) ) ) );
+                            indexProviderDescriptorMap( schemaRead.index( index.schema() ) ) ) );
                 }
                 catch ( IndexNotFoundKernelException e )
                 {
                     throw new ProcedureException( Status.Schema.IndexNotFound, e,
                             "No index on ", index.userDescription( tokens ) );
-                }
-                catch ( LabelNotFoundKernelException e )
-                {
-                    throw new ProcedureException( Status.General.InvalidArguments, e,
-                            "Label not found " );
                 }
             }
             return result.stream();
@@ -818,17 +809,17 @@ public class BuiltInProcedures
     public static class IndexResult
     {
         public final String description;
-        public final String label;
+        public final String[] tokenNames;
         public final List<String> properties;
         public final String state;
         public final String type;
         public final Map<String,String> provider;
 
-        private IndexResult( String description, String label, List<String> properties, String state, String type,
+        private IndexResult( String description, String[] tokenNames, List<String> properties, String state, String type,
                 Map<String,String> provider )
         {
             this.description = description;
-            this.label = label;
+            this.tokenNames = tokenNames;
             this.properties = properties;
             this.state = state;
             this.type = type;

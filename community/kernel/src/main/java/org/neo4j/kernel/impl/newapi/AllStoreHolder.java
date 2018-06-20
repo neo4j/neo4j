@@ -400,6 +400,12 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    public IndexReference indexReferenceUnchecked( SchemaDescriptor schema )
+    {
+        return IndexDescriptorFactory.forSchema( schema, Optional.empty(), IndexProvider.UNDECIDED );
+    }
+
+    @Override
     public Iterator<IndexReference> indexesGetForLabel( int labelId )
     {
         sharedOptimisticLock( ResourceTypes.LABEL, labelId );

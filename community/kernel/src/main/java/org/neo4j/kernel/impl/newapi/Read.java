@@ -154,11 +154,15 @@ abstract class Read implements TxStateHolder,
     {
         assertIndexOnline( index );
         assertPredicatesMatchSchema( index, predicates );
-        int labelId = index.label();
 
         Locks.Client locks = ktx.statementLocks().optimistic();
         LockTracer lockTracer = ktx.lockTracer();
-        long indexEntryId = indexEntryResourceId( labelId, predicates );
+        int[] entityTokenIds = index.schema().getEntityTokenIds();
+        if ( entityTokenIds.length != 1 )
+        {
+            throw new IndexNotApplicableKernelException( "Multi-token index " + index + " does not support uniqueness." );
+        }
+        long indexEntryId = indexEntryResourceId( entityTokenIds[0], predicates );
 
         //First try to find node under a shared lock
         //if not found upgrade to exclusive and try again

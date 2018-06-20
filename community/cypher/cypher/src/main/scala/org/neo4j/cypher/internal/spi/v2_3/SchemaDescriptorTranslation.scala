@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.schema.constraints.{NodeExistenceConstraintDescripto
 trait SchemaDescriptorTranslation {
   implicit def kernelToCypher(index: KernelIndexReference): SchemaTypes.IndexDescriptor =
     if (index.properties().length == 1)
-      SchemaTypes.IndexDescriptor(index.label(), index.properties()(0))
+      SchemaTypes.IndexDescriptor(index.schema().getEntityTokenIds()(0), index.schema().getPropertyIds()(0))
     else
       throw new UnsupportedOperationException("Cypher 2.3 does not support composite indexes")
 

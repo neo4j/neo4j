@@ -144,7 +144,7 @@ public class SchemaImpl implements Schema
     {
         try
         {
-            Label label = label( tokenRead.nodeLabelName( index.label() ) );
+            Label label = label( tokenRead.nodeLabelName( index.schema().getEntityTokenIds()[0] ) );
             boolean constraintIndex = index.isUnique();
             String[] propertyNames = PropertyNameUtils.getPropertyKeys( tokenRead, index.properties() );
             return new IndexDefinitionImpl( actions, label, propertyNames, constraintIndex );

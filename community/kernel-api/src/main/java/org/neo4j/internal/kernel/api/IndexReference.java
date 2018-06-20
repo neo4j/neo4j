@@ -41,11 +41,6 @@ public interface IndexReference extends IndexCapability
     boolean isUnique();
 
     /**
-     * Returns the labelId associated with this index.
-     */
-    int label();
-
-    /**
      * Returns the propertyKeyIds associated with this index.
      */
     int[] properties();
@@ -109,12 +104,6 @@ public interface IndexReference extends IndexCapability
         public boolean isUnique()
         {
             return false;
-        }
-
-        @Override
-        public int label()
-        {
-            return Token.NO_TOKEN;
         }
 
         @Override

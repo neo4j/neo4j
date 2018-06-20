@@ -140,8 +140,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         SchemaRead schemaRead = ktx.schemaRead();
         for ( IndexReference reference : loop( sortByType( schemaRead.indexesGetAll() ) ) )
         {
-            String userDescription = SchemaDescriptorFactory.forLabel( reference.label(), reference.properties() )
-                    .userDescription( nameLookup );
+            String userDescription = reference.schema().userDescription( nameLookup );
             double uniqueValuesPercentage = schemaRead.indexUniqueValuesSelectivity( reference );
             long size = schemaRead.indexSize( reference );
             visitor.visitIndex( (IndexDescriptor) reference, userDescription, uniqueValuesPercentage, size );

@@ -308,7 +308,7 @@ public class EnterpriseCreateIndexProcedureIT extends KernelIntegrationTest
         assertEquals( "provider key", "lucene+native", index.providerKey() );
         assertEquals( "provider version", "1.0", index.providerVersion() );
         assertEquals( expectedUnique, index.isUnique() );
-        assertEquals( "label id", labelId, index.label() );
+        assertEquals( "label id", labelId, index.schema().getEntityTokenIds()[0] );
         for ( int i = 0; i < propertyKeyIds.length; i++ )
         {
             assertEquals( "property key id", propertyKeyIds[i], index.properties()[i] );

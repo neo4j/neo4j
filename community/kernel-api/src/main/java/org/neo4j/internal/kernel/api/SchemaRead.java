@@ -64,6 +64,15 @@ public interface SchemaRead
     IndexReference indexReferenceUnchecked( int label, int... properties );
 
     /**
+     * Acquire an index reference of the given {@code label} and {@code properties}. This method does not assert
+     * that the created reference points to a valid online index.
+     *
+     * @param schema {@link SchemaDescriptor} for the index
+     * @return a IndexReference for the given label and properties
+     */
+    IndexReference indexReferenceUnchecked( SchemaDescriptor schema );
+
+    /**
      * Returns all indexes associated with the given label
      *
      * @param labelId The id of the label which associated indexes you are looking for

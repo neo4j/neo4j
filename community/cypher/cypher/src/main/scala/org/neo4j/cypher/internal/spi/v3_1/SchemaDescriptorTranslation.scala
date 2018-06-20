@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.schema.constraints.{ConstraintDescriptorFactory, Nod
 trait SchemaDescriptorTranslation {
   implicit def toCypher(index: KernelIndexReference): SchemaTypes.IndexDescriptor = {
     assertSingleProperty(index.properties())
-    SchemaTypes.IndexDescriptor(index.label(), index.properties()(0))
+      SchemaTypes.IndexDescriptor(index.schema().getEntityTokenIds()(0), index.schema().getPropertyIds()(0))
   }
 
   implicit def toKernel(constraint: SchemaTypes.UniquenessConstraint): KernelUniquenessConstraint =

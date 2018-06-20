@@ -491,14 +491,14 @@ public class IndexStatisticsTest
     {
         return ((GraphDatabaseAPI) db).getDependencyResolver()
                                       .resolveDependency( IndexingService.class )
-                                      .indexUpdatesAndSize( forLabel( reference.label(), reference.properties() ) ).readSecond();
+                                      .indexUpdatesAndSize( reference.schema() ).readSecond();
     }
 
     private long indexUpdates( IndexReference reference  ) throws KernelException
     {
         return ((GraphDatabaseAPI) db).getDependencyResolver()
                                       .resolveDependency( IndexingService.class )
-                                      .indexUpdatesAndSize( forLabel( reference.label(), reference.properties() ) ).readFirst();
+                                      .indexUpdatesAndSize( reference.schema() ).readFirst();
     }
 
     private double indexSelectivity( IndexReference reference ) throws KernelException

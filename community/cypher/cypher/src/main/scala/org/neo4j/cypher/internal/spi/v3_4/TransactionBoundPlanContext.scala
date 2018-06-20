@@ -86,8 +86,8 @@ class TransactionBoundPlanContext(txSupplier: () => KernelTransaction, logger: I
   private def getOnlineIndex(reference: IndexReference): Option[IndexDescriptor] =
     txSupplier().schemaRead.indexGetState(reference) match {
       case InternalIndexState.ONLINE => reference match {
-        case cir: CapableIndexDescriptor => Some(IndexDescriptor(cir.label(), cir.properties(), cir.limitations().map(kernelToCypher).toSet))
-        case _ => Some(IndexDescriptor(reference.label(), reference.properties()))
+        case cir: CapableIndexDescriptor => Some(IndexDescriptor(cir.schema().getEntityTokenIds()(0), cir.properties, cir.limitations().map(kernelToCypher).toSet))
+        case _ => Some(IndexDescriptor(reference.schema().getEntityTokenIds()(0), reference.properties))
       }
       case _ => None
     }

@@ -85,8 +85,8 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     tc.schemaRead.indexGetState(reference) match {
       case InternalIndexState.ONLINE =>
         reference match {
-          case cir: CapableIndexDescriptor => Some(IndexDescriptor(cir.label(), cir.properties(), cir.limitations().map(kernelToCypher).toSet))
-          case _ => Some(IndexDescriptor(reference.label(), reference.properties()))
+          case cir: CapableIndexDescriptor => Some(IndexDescriptor(cir.schema().getEntityTokenIds()(0), cir.schema().getPropertyIds, cir.limitations().map(kernelToCypher).toSet))
+          case _ => Some(IndexDescriptor(reference.schema().getEntityTokenIds()(0), reference.properties()))
         }
       case _ => None
     }

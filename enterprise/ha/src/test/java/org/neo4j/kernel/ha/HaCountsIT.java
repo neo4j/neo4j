@@ -217,7 +217,7 @@ public class HaCountsIT
         try ( org.neo4j.internal.kernel.api.Transaction tx = db.getDependencyResolver().resolveDependency( Kernel.class )
                 .beginTransaction( explicit, AUTH_DISABLED ) )
         {
-            IndexReference indexReference = tx.schemaRead().index( indexDescriptor.label(), indexDescriptor.properties() );
+            IndexReference indexReference = tx.schemaRead().index( indexDescriptor.schema() );
             assertDoubleLongEquals( expectedIndexUpdates, expectedIndexSize, tx.schemaRead().indexUpdatesAndSize( indexReference, newDoubleLongRegister() ) );
             assertDoubleLongEquals( expectedUniqueValues, expectedSampleSize, tx.schemaRead().indexSample( indexReference, newDoubleLongRegister() ) );
         }

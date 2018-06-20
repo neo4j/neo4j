@@ -517,14 +517,14 @@ public class BuiltInProceduresTest
                     int prop = invocationOnMock.getArgument( 1 );
                     for ( IndexReference index : indexes )
                     {
-                        if ( index.label() == label && prop == index.properties()[0] )
+                        if ( index.schema().getEntityTokenIds()[0] == label && prop == index.properties()[0] )
                         {
                             return index;
                         }
                     }
                     for ( IndexReference index : uniqueIndexes )
                     {
-                        if ( index.label() == label && prop == index.properties()[0] )
+                        if ( index.schema().getEntityTokenIds()[0] == label && prop == index.properties()[0] )
                         {
                             return index;
                         }

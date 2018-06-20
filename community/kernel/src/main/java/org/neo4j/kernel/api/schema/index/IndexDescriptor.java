@@ -87,12 +87,6 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
     }
 
     @Override
-    public int label()
-    {
-        return schema.keyId();
-    }
-
-    @Override
     public int[] properties()
     {
         return schema.getPropertyIds();

@@ -67,7 +67,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
 
   private def getOnlineIndex(descriptor: IndexReference): Option[SchemaTypes.IndexDescriptor] =
     tc.schemaRead.indexGetState(descriptor) match {
-      case InternalIndexState.ONLINE => Some(SchemaTypes.IndexDescriptor(descriptor.label(), descriptor.properties()(0)))
+      case InternalIndexState.ONLINE => Some(SchemaTypes.IndexDescriptor(descriptor.schema().getEntityTokenIds()(0), descriptor.schema().getPropertyIds()(0)))
       case _                         => None
     }
 
