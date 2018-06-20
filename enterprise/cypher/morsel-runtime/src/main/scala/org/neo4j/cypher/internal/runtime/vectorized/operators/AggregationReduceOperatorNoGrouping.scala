@@ -36,23 +36,23 @@ class AggregationReduceOperatorNoGrouping(aggregations: Array[AggregationOffsets
                    ): ContinuableOperatorTask =
     new OTask(inputMorsels.toArray)
 
-  class OTask(inputMorsels: Array[MorselExecutionContext]) extends ContinuableOperatorTask {
+  class OTask(inputRows: Array[MorselExecutionContext]) extends ContinuableOperatorTask {
 
     override def operate(currentRow: MorselExecutionContext,
                          context: QueryContext,
                          state: QueryState): Unit = {
 
-      val incomingSlots = aggregations.map(_.mapperOutputSlot)
       val reducers = aggregations.map(_.aggregation.createAggregationReducer)
+      var morselPos = 0
 
       //Go through the morsels and collect the output from the map step
       //and reduce the values
       var i = 0
-      while (i < inputMorsels.length) {
-        val currentInputRow = inputMorsels(i)
+      while (i < inputRows.length) {
+        val currentInputRow = inputRows(i)
         var j = 0
         while (j < aggregations.length) {
-          reducers(j).reduce(currentInputRow.getRefAt(incomingSlots(j)))
+          reducers(j).reduce(currentInputRow.getRefAt(aggregations(j).mapperOutputSlot))
           j += 1
         }
         i += 1
