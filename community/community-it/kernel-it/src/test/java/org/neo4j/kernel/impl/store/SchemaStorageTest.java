@@ -65,7 +65,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR;
+import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.uniqueForSchema;
@@ -360,12 +360,12 @@ public class SchemaStorageTest
 
     private StoreIndexDescriptor makeIndexRule( long ruleId, String label, String propertyKey )
     {
-        return forSchema( forLabel( labelId( label ), propId( propertyKey ) ), DESCRIPTOR ).withId( ruleId );
+        return forSchema( forLabel( labelId( label ), propId( propertyKey ) ), EMPTY.getProviderDescriptor() ).withId( ruleId );
     }
 
     private StoreIndexDescriptor makeIndexRuleForConstraint( long ruleId, String label, String propertyKey, long constraintId )
     {
-        return uniqueForSchema( forLabel( labelId( label ), propId( propertyKey ) ), DESCRIPTOR ).withIds( ruleId, constraintId );
+        return uniqueForSchema( forLabel( labelId( label ), propId( propertyKey ) ), EMPTY.getProviderDescriptor() ).withIds( ruleId, constraintId );
     }
 
     private ConstraintRule getUniquePropertyConstraintRule( long id, String label, String property )

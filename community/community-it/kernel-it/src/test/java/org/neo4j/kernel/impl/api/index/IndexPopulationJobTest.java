@@ -403,19 +403,23 @@ public class IndexPopulationJobTest
         FlippableIndexProxy index = mock( FlippableIndexProxy.class );
         when( index.getState() ).thenReturn( InternalIndexState.ONLINE );
         IndexPopulator populator = spy( indexPopulator( false ) );
-        IndexPopulationJob job = newIndexPopulationJob( populator, index, indexStoreView, logProvider, EntityType.NODE, indexDescriptor( FIRST, name, false ) );
+        try
+        {
+            IndexPopulationJob job = newIndexPopulationJob( populator, index, indexStoreView, logProvider,
+                            EntityType.NODE, indexDescriptor( FIRST, name, false ) );
 
-        // When
-        job.run();
+            // When
+            job.run();
 
-        // Then
-        LogMatcherBuilder match = inLog( IndexPopulationJob.class );
-        logProvider.assertExactly(
-                match.info( "Index population started: [%s]", ":FIRST(name)" ),
-                match.info( "Index creation finished. Index [%s] is %s.", ":FIRST(name)", "ONLINE" )
-        );
-
-        populator.close( true );
+            // Then
+            LogMatcherBuilder match = inLog( IndexPopulationJob.class );
+            logProvider.assertExactly( match.info( "Index population started: [%s]", ":FIRST(name)" ),
+                    match.info( "Index creation finished. Index [%s] is %s.", ":FIRST(name)", "ONLINE" ) );
+        }
+        finally
+        {
+            populator.close( true );
+        }
     }
 
     @Test
@@ -427,19 +431,23 @@ public class IndexPopulationJobTest
         FlippableIndexProxy index = mock( FlippableIndexProxy.class );
         when( index.getState() ).thenReturn( InternalIndexState.POPULATING );
         IndexPopulator populator = spy( indexPopulator( false ) );
-        IndexPopulationJob job = newIndexPopulationJob( populator, index, indexStoreView, logProvider, EntityType.NODE, indexDescriptor( FIRST, name, true ) );
+        try
+        {
+            IndexPopulationJob job = newIndexPopulationJob( populator, index, indexStoreView, logProvider,
+                    EntityType.NODE, indexDescriptor( FIRST, name, true ) );
 
-        // When
-        job.run();
+            // When
+            job.run();
 
-        // Then
-        LogMatcherBuilder match = inLog( IndexPopulationJob.class );
-        logProvider.assertExactly(
-                match.info( "Index population started: [%s]", ":FIRST(name)" ),
-                match.info( "Index created. Starting data checks. Index [%s] is %s.", ":FIRST(name)", "POPULATING" )
-        );
-
-        populator.close( true );
+            // Then
+            LogMatcherBuilder match = inLog( IndexPopulationJob.class );
+            logProvider.assertExactly( match.info( "Index population started: [%s]", ":FIRST(name)" ),
+                    match.info( "Index created. Starting data checks. Index [%s] is %s.", ":FIRST(name)", "POPULATING" ) );
+        }
+        finally
+        {
+            populator.close( true );
+        }
     }
 
     @Test
