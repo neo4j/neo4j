@@ -51,7 +51,9 @@ class AggregationReduceOperator(aggregations: Array[AggregationOffsets],
     private var aggregates: Iterator[(GroupingKey, Array[AggregationReducer])] = _
 
     override def operate(outputRow: MorselExecutionContext, context: QueryContext, state: QueryState): Unit = {
-      aggregates = aggregateInputs(inputMorsels)
+      if (null == aggregates) {
+        aggregates = aggregateInputs(inputMorsels)
+      }
       val outgoingSlots = aggregations.map(_.reducerOutputSlot)
       while (aggregates.hasNext && outputRow.hasMoreRows) {
         val (key, reducers) = aggregates.next()
