@@ -32,11 +32,11 @@ import scala.collection.mutable
 
 object SemanticTableConverter {
 
-  type ExpressionMapping3To4 = Map[(ExpressionV3_4, InputPositionV3_4), Expressionv3_5]
+  type ExpressionMapping4To5 = Map[(ExpressionV3_4, InputPositionV3_4), Expressionv3_5]
 
   // The semantic table needs to have the same objects as keys, therefore we cannot convert expressions again
   // but must use the already converted 3.4 instances
-  def convertSemanticTable(table: SemanticTableV3_4, expressionMapping: ExpressionMapping3To4): SemanticTablev3_5 = {
+  def convertSemanticTable(table: SemanticTableV3_4, expressionMapping: ExpressionMapping4To5): SemanticTablev3_5 = {
     new SemanticTablev3_5(
       convert(table.types, expressionMapping),
       astv3_5.ASTAnnotationMap.empty,
@@ -45,7 +45,7 @@ object SemanticTableConverter {
       convert(table.resolvedRelTypeNames))
   }
 
-  private def convert(types: astV3_4.ASTAnnotationMap[ExpressionV3_4, semanticsV3_4.ExpressionTypeInfo], expressionMapping: ExpressionMapping3To4):
+  private def convert(types: astV3_4.ASTAnnotationMap[ExpressionV3_4, semanticsV3_4.ExpressionTypeInfo], expressionMapping: ExpressionMapping4To5):
   astv3_5.ASTAnnotationMap[expressionsv3_5.Expression, astv3_5.semantics.ExpressionTypeInfo] = {
     val result: Map[Expressionv3_5, ExpressionTypeInfo] = types.filter {
       case (exprV3_4, _) => expressionMapping.isDefinedAt((exprV3_4, exprV3_4.position))

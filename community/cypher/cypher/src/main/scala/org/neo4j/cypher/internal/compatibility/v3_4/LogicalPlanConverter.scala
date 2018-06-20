@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4
 
 import java.lang.reflect.Constructor
 
-import org.neo4j.cypher.internal.compatibility.v3_4.SemanticTableConverter.ExpressionMapping3To4
+import org.neo4j.cypher.internal.compatibility.v3_4.SemanticTableConverter.ExpressionMapping4To5
 import org.neo4j.cypher.internal.compiler.v3_5.helpers.PredicateHelper
 import org.neo4j.cypher.internal.frontend.{v3_4 => frontendV3_4}
 import org.neo4j.cypher.internal.ir.v3_5.{CreateNode, CreateRelationship}
@@ -47,10 +47,39 @@ import scala.collection.mutable
 import scala.collection.mutable.{HashMap => MutableHashMap}
 import scala.util.{Failure, Success, Try}
 
+/**
+  * This is responsible for converting logical plans from the old version to the current version.
+  */
 object LogicalPlanConverter {
 
   type MutableExpressionMapping3To4 = mutable.Map[(ExpressionV3_4, InputPositionV3_4), Expressionv3_5]
 
+  val oldLogicalPlanPackage = "org.neo4j.cypher.internal.v3_4.logical.plans"
+  val newLogicalPlanPackage = "org.neo4j.cypher.internal.v3_5.logical.plans"
+  val oldASTPackage = "org.neo4j.cypher.internal.frontend.v3_4.ast"
+  val newASTPackage = "org.opencypher.v9_0.ast"
+  val oldExpressionPackage = "org.neo4j.cypher.internal.v3_4.expressions"
+  val newExpressionPackage = "org.opencypher.v9_0.expressions"
+  val oldUtilPackage = "org.neo4j.cypher.internal.util.v3_4"
+  val newUtilPackage = "org.opencypher.v9_0.util"
+  val oldIRPackage = "org.neo4j.cypher.internal.ir.v3_4"
+  val newIRPackage = "org.neo4j.cypher.internal.ir.v3_5"
+  val oldRewritersPackage = "org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters"
+
+  /**
+    * This rewriter traverses the tree bottom up and applies the mappings given here. We need to use RewriterWithArgs,
+    * since we're changing types while going up, and not yet converted old parent plan cannot hold already converted
+    * child plans. We get the already converted child plans as `children: Seq[AnyRef]}` instead.
+    *
+    * @param expressionMap
+    *                      During the tree traversal of logical plans we need to remember which old expressions we
+    *                      converted to which new expressions. This is because the new semantic table must have the
+    *                      same objects (object identity) as keys, and thus we can't simply convert the old
+    *                      expressions again when we convert the semantic table.
+    * @param isImportant
+    *                    Not all expressions have been _seen_ by the semantic table. An expression is not important
+    *                    if it has not been seen. Then we won't stick it in the expressionMap
+    */
   //noinspection ZeroIndexToHead
   private class LogicalPlanRewriter(solveds3_4: SolvedsV3_4,
                                     cardinalities3_4: CardinalitiesV3_4,
@@ -126,7 +155,7 @@ object LogicalPlanConverter {
           )(ids.convertId(plan))
 
         case (plan: plansV3_4.LogicalPlan, children: Seq[AnyRef]) =>
-          convertVersion("org.neo4j.cypher.internal.v3_4.logical.plans", "org.neo4j.cypher.internal.v3_5.logical.plans", plan, children, ids.convertId(plan), classOf[IdGen])
+          convertVersion(oldLogicalPlanPackage, newLogicalPlanPackage, plan, children, ids.convertId(plan), classOf[IdGen])
 
         case (inp: expressionsv3_4.InvalidNodePattern, children: Seq[AnyRef]) =>
           new expressionsv3_5.InvalidNodePattern(children.head.asInstanceOf[Option[expressionsv3_5.Variable]].get)(helpers.as3_5(inp.position))
@@ -136,20 +165,20 @@ object LogicalPlanConverter {
                     _: plansV3_4.PointDistanceSeekRangeWrapper |
                     _: plansV3_4.NestedPlanExpression |
                     _: plansV3_4.ResolvedFunctionInvocation), children: Seq[AnyRef]) =>
-          convertVersion("org.neo4j.cypher.internal.v3_4.logical.plans", "org.neo4j.cypher.internal.v3_5.logical.plans", item, children, helpers.as3_5(item.asInstanceOf[utilv3_4.ASTNode].position), classOf[InputPosition])
+          convertVersion(oldLogicalPlanPackage, newLogicalPlanPackage, item, children, helpers.as3_5(item.asInstanceOf[utilv3_4.ASTNode].position), classOf[InputPosition])
 
           // TODO this seems unnecessary
         case (item: frontendV3_4.ast.rewriters.DesugaredMapProjection, children: Seq[AnyRef]) =>
-          convertVersion("org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters", "org.opencypher.v9_0.expressions", item, children, helpers.as3_5(item.position), classOf[InputPosition])
+          convertVersion(oldRewritersPackage, newExpressionPackage, item, children, helpers.as3_5(item.position), classOf[InputPosition])
 
         case (item: frontendV3_4.ast.ProcedureResultItem, children: Seq[AnyRef]) =>
-          convertVersion("org.neo4j.cypher.internal.frontend.v3_4.ast", "org.opencypher.v9_0.ast", item, children, helpers.as3_5(item.position), classOf[InputPosition])
+          convertVersion(oldASTPackage, newASTPackage, item, children, helpers.as3_5(item.position), classOf[InputPosition])
 
         case (item: plansV3_4.ResolvedCall, children: Seq[AnyRef]) =>
-          convertVersion("org.neo4j.cypher.internal.v3_4.logical.plans", "org.neo4j.cypher.internal.v3_5.logical.plans", item, children, helpers.as3_5(item.position), classOf[InputPosition])
+          convertVersion(oldLogicalPlanPackage, newLogicalPlanPackage, item, children, helpers.as3_5(item.position), classOf[InputPosition])
 
         case (expressionV3_4: utilv3_4.ASTNode, children: Seq[AnyRef]) =>
-          convertVersion("org.neo4j.cypher.internal.v3_4.expressions", "org.opencypher.v9_0.expressions", expressionV3_4, children, helpers.as3_5(expressionV3_4.position), classOf[InputPosition])
+          convertVersion(oldExpressionPackage, newExpressionPackage, expressionV3_4, children, helpers.as3_5(expressionV3_4.position), classOf[InputPosition])
 
         case (symbolsV3_4.CTAny, _) => symbolsv3_5.CTAny
         case (symbolsV3_4.CTBoolean, _) => symbolsv3_5.CTBoolean
@@ -190,10 +219,10 @@ object LogicalPlanConverter {
         case (expressionsv3_4.NilPathStep, _) => expressionsv3_5.NilPathStep
 
         case (item@(_: expressionsv3_4.PathStep | _: expressionsv3_4.NameToken[_]), children: Seq[AnyRef]) =>
-          convertVersion("org.neo4j.cypher.internal.v3_4.expressions", "org.opencypher.v9_0.expressions", item, children)
+          convertVersion(oldExpressionPackage, newExpressionPackage, item, children)
 
         case (nameId: utilv3_4.NameId, children: Seq[AnyRef]) =>
-          convertVersion("org.neo4j.cypher.internal.util.v3_4", "org.opencypher.v9_0.util", nameId, children)
+          convertVersion(oldUtilPackage, newUtilPackage, nameId, children)
 
         case (utilv3_4.Fby(head, tail), children: Seq[AnyRef]) => utilv3_5.Fby(children(0), children(1).asInstanceOf[utilv3_5.NonEmptyList[_]])
 
@@ -226,17 +255,17 @@ object LogicalPlanConverter {
                     _: plansV3_4.QueryExpression[_] |
                     _: plansV3_4.SeekableArgs |
                     _: plansV3_4.ColumnOrder), children: Seq[AnyRef]) =>
-          convertVersion("org.neo4j.cypher.internal.v3_4.logical.plans", "org.neo4j.cypher.internal.v3_5.logical.plans", item, children)
+          convertVersion(oldLogicalPlanPackage, newLogicalPlanPackage, item, children)
 
         case (item@(_: irV3_4.PatternRelationship |
                     _: irV3_4.VarPatternLength), children: Seq[AnyRef]) =>
-          convertVersion("org.neo4j.cypher.internal.ir.v3_4", "org.neo4j.cypher.internal.ir.v3_5", item, children)
+          convertVersion(oldIRPackage, newIRPackage, item, children)
 
         case (item: plansV3_4.Bound[_], children: Seq[AnyRef]) =>
-          convertVersion("org.neo4j.cypher.internal.v3_4.logical.plans", "org.neo4j.cypher.internal.v3_5.logical.plans", item, children)
+          convertVersion(oldLogicalPlanPackage, newLogicalPlanPackage, item, children)
 
         case (item: plansV3_4.SeekRange[_], children: Seq[AnyRef]) =>
-          convertVersion("org.neo4j.cypher.internal.v3_4.logical.plans", "org.neo4j.cypher.internal.v3_5.logical.plans", item, children)
+          convertVersion(oldLogicalPlanPackage, newLogicalPlanPackage, item, children)
       }.apply(before)
 
       before._1 match {
@@ -249,7 +278,7 @@ object LogicalPlanConverter {
           if (cardinalities3_4.isDefinedAt(plan.id)) {
             cardinalities3_5.set(plan3_5.id, helpers.as3_5(cardinalities3_4.get(plan.id)))
           }
-        // Save Mapping from 3.3 expression to 3.5 expression
+        // Save Mapping from 3.4 expression to 3.5 expression
         case e: ExpressionV3_4 if isImportant(e) => expressionMap += (((e, e.position), rewritten.asInstanceOf[Expressionv3_5]))
         case _ =>
       }
@@ -257,18 +286,26 @@ object LogicalPlanConverter {
     }
   }
 
+  /**
+    * Converts a logical plan. It will keep the same id and will also set solved and cardinality on the converted plan
+    * Returns also a mapping from old to new expressions for all expressions that are imporant according to the
+    * provided lambda.
+    */
   def convertLogicalPlan[T <: LogicalPlanv3_5](logicalPlan: LogicalPlanV3_4,
                                                solveds3_4: SolvedsV3_4,
                                                cardinalities3_4: CardinalitiesV3_4,
                                                solveds3_5: SolvedsV3_5,
                                                cardinalities3_5: CardinalitiesV3_5,
                                                idConverter: IdConverter,
-                                               isImportant: ExpressionV3_4 => Boolean = _ => true): (LogicalPlanv3_5, ExpressionMapping3To4) = {
+                                               isImportant: ExpressionV3_4 => Boolean = _ => true): (LogicalPlanv3_5, ExpressionMapping4To5) = {
     val rewriter = new LogicalPlanRewriter(solveds3_4, cardinalities3_4, solveds3_5, cardinalities3_5, idConverter, isImportant = isImportant)
     val planv3_5 = new RewritableAny[LogicalPlanV3_4](logicalPlan).rewrite(rewriter, Seq.empty).asInstanceOf[T]
     (planv3_5, rewriter.expressionMap.toMap)
   }
 
+  /**
+    * Converts an expression.
+    */
   private[v3_4] def convertExpression[T <: Expressionv3_5](expression: ExpressionV3_4,
                                                            solveds3_4: SolvedsV3_4,
                                                            cardinalities3_4: CardinalitiesV3_4,
@@ -280,6 +317,9 @@ object LogicalPlanConverter {
       .asInstanceOf[T]
   }
 
+  /**
+    * Converts an AST node.
+    */
   private def convertASTNode[T <: utilv3_5.ASTNode](ast: utilv3_4.ASTNode,
                                                     expressionMap: MutableExpressionMapping3To4,
                                                     solveds3_4: SolvedsV3_4,
@@ -299,11 +339,19 @@ object LogicalPlanConverter {
       .asInstanceOf[T]
   }
 
+  /**
+    * A cache for all constructors we encounter so we don't have to use reflection all over again
+    * to find the constructors every time.
+    */
   private val constructors = new ThreadLocal[MutableHashMap[(String, String, String), Constructor[_]]]() {
     override def initialValue: MutableHashMap[(String, String, String), Constructor[_]] =
       new MutableHashMap[(String, String, String), Constructor[_]]
   }
 
+  /**
+    * Given the class name in 3.4 and the old and new package names, return the constructor of the
+    * 3.5 class with the same name.
+    */
   private def getConstructor(classNameV3_4: String, oldPackage: String, newPackage: String): Constructor[_] = {
     constructors.get.getOrElseUpdate((classNameV3_4, oldPackage, newPackage), {
       assert(classNameV3_4.contains(oldPackage), s"wrong 3.4 package name given. $classNameV3_4 does not contain $oldPackage")
@@ -319,6 +367,26 @@ object LogicalPlanConverter {
     })
   }
 
+  /**
+    * Convert something (expression, AstNode, LogicalPlan) from 3.4 to 3.5.
+    *
+    * @param oldPackage the package name in 3.4
+    * @param newPackage the package name in 3.5
+    * @param thing      the thing to convert
+    * @param children   the already converted children, which will be used as constructor arguments when constructing the
+    *                   converted thing
+    * @param extraArg
+    *                   if there is second set of constructor arguments, this will be the first argument in the second set.
+    *                   Otherwise `null`.
+    * @param assignableClazzForArg
+    *                              The class of `extraArg`. Used to check if the constructor matches type with that argument.
+    * @param extraArg2
+    *                   if there is second set of constructor arguments, this will be the second argument in the second set.
+    *                   Otherwise `null`.
+    * @param assignableClazzForArg2
+    *                              The class of `extraArg2`. Used to check if the constructor matches type with that argument.
+    * @return the converted thing.
+    */
   private def convertVersion(oldPackage: String,
                              newPackage: String,
                              thing: AnyRef,

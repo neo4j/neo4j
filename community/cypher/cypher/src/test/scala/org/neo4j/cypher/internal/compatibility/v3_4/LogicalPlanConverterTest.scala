@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4
 
 import java.lang.reflect.Modifier
 
-import org.neo4j.cypher.internal.compatibility.v3_4.SemanticTableConverter.ExpressionMapping3To4
+import org.neo4j.cypher.internal.compatibility.v3_4.SemanticTableConverter.ExpressionMapping4To5
 import org.neo4j.cypher.internal.frontend.v3_4.{ast => astV3_4}
 import org.neo4j.cypher.internal.frontend.{v3_4 => frontendV3_4}
 import org.neo4j.cypher.internal.ir.{v3_4 => irV3_4}
@@ -51,6 +51,8 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
 
   private val pos3_4 = InputPositionV3_4(0,0,0)
   private val pos3_5 = InputPosition(0,0,0)
+  // We use these package names to enumerate all classes of a certain type in these packages and test
+  // for all of them.
   private val reflectExpressions = new Reflections("org.neo4j.cypher.internal.v3_4.expressions")
   private val reflectLogicalPlans = new Reflections("org.neo4j.cypher.internal.v3_4.logical.plans")
 
@@ -414,6 +416,11 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
       }
   }
 
+  /**
+    * While enumerating all expressions and logical plans with reflection, we need to be able
+    * to instantiate the old types and thus need to provide them with the correct constructor arguments.
+    * This method return a suitable object given the simple class name.
+    */
   private def argumentProvider[T <: AnyRef](clazz: Class[T]): T = {
     val variable = expressionsv3_4.Variable("n")(pos3_4)
     val value = clazz.getSimpleName match {
@@ -482,6 +489,9 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     value.asInstanceOf[T]
   }
 
+  /**
+    * Converts an expression.
+    */
   private def convert[T <: expressionsv3_5.Expression](input: expressionsv3_4.Expression): T = {
     val solveds = new SolvedsV3_4
     val cardinalities = new CardinalitiesV3_4
@@ -493,6 +503,9 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     LogicalPlanConverter.convertExpression(input, solveds, cardinalities, new SolvedsV3_5, new CardinalitiesV3_5, new MaxIdConverter)
   }
 
+  /**
+    * Converts a logical plan with default solved and cardinality.
+    */
   private def convert[T <: plansv3_5.LogicalPlan](input: plansV3_4.LogicalPlan): plansv3_5.LogicalPlan = {
     val solveds = new SolvedsV3_4
     val cardinalities = new CardinalitiesV3_4
@@ -500,8 +513,11 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     LogicalPlanConverter.convertLogicalPlan(input, solveds, cardinalities, new SolvedsV3_5, new CardinalitiesV3_5, new MaxIdConverter)._1
   }
 
+  /**
+    * Given a plan and a lambda deciding which expressions are important, returns the expression mapping
+    */
   private def expressionMapping(input: plansV3_4.LogicalPlan,
-                                isImportant: expressionsv3_4.Expression => Boolean): ExpressionMapping3To4 = {
+                                isImportant: expressionsv3_4.Expression => Boolean): ExpressionMapping4To5 = {
     val solveds = new SolvedsV3_4
     val cardinalities = new CardinalitiesV3_4
     assignAttributesRecursivelyWithDefaultValues(input, solveds, cardinalities)
@@ -515,6 +531,9 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
                                           )._2
   }
 
+  /**
+    * Sets a default solved and cardinality for the input and all its subplans, recursively.
+    */
   private def assignAttributesRecursivelyWithDefaultValues(input: plansV3_4.LogicalPlan,
                                                            solveds: SolvedsV3_4,
                                                            cardinalities: CardinalitiesV3_4) : Unit = {
