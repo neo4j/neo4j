@@ -117,11 +117,15 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
     static long[] schemaTokenLockingIds( SchemaDescriptor schema )
     {
         // TODO make getEntityTokenIds produce a long array directly, and avoid this extra copying.
-        int[] entityTokenIds = schema.getEntityTokenIds();
-        long[] lockingIds = new long[entityTokenIds.length];
+        return schemaTokenLockingIds( schema.getEntityTokenIds() );
+    }
+
+    static long[] schemaTokenLockingIds( int[] tokenIds )
+    {
+        long[] lockingIds = new long[tokenIds.length];
         for ( int i = 0; i < lockingIds.length; i++ )
         {
-            lockingIds[i] = entityTokenIds[i];
+            lockingIds[i] = tokenIds[i];
         }
         return lockingIds;
     }

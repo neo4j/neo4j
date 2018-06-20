@@ -42,7 +42,13 @@ public enum ResourceTypes implements ResourceType
     EXPLICIT_INDEX( 5, LockWaitStrategies.INCREMENTAL_BACKOFF ),
     LABEL( 6, LockWaitStrategies.INCREMENTAL_BACKOFF ),
     RELATIONSHIP_TYPE( 7, LockWaitStrategies.INCREMENTAL_BACKOFF ),
-    TOKEN_CREATE( 8, LockWaitStrategies.INCREMENTAL_BACKOFF );
+    /**
+     * Resources ids of the type SPECIAL_SINGLETON each represent a distinct (singleton) resource that is used for a
+     * special purpose in the database kernel. The individual ids otherwise have nothing in common.
+     * <p>
+     * Each resource is given by a SINGLETON_* constant in this file.
+     */
+    SPECIAL_SINGLETON( 8, LockWaitStrategies.INCREMENTAL_BACKOFF );
 
     private static final boolean useStrongHashing =
             FeatureToggles.flag( ResourceTypes.class, "useStrongHashing", false );
@@ -50,6 +56,21 @@ public enum ResourceTypes implements ResourceType
     private static final MutableIntObjectMap<ResourceType> idToType = new IntObjectHashMap<>();
     private static final HashFunction indexEntryHash_2_2_0 = HashFunction.xorShift32();
     private static final HashFunction indexEntryHash_4_x = HashFunction.incrementalXXH64();
+
+    /**
+     * The SINGLETON_TOKEN_CREATE resource constant is used to coordinate the creation of new tokens, with locks taken
+     * by "any-token" indexes when they are created or dropped. These indexes need to lock all tokens of a particular
+     * type. To do this, they need to ensure that no new tokens are created concurrently with their critical section.
+     * Token creates take a shared lock on this resource, because token creation is internally synchronised and can be
+     * allowed to happen in parallel. Meanwhile, dropping or creating "any token" indexes will take exclusive locks on
+     * this resource to prevent new tokens from being allocated.
+     */
+    public static final int SINGLETON_TOKEN_CREATE = 1;
+    /**
+     * Nodes can be created without any labels, but would still be indexed by "any-token" node indexes. To coordinate
+     * schema locking between these two cases, we use this special singleton lock.
+     */
+    public static final int SINGLETON_UNLABELLED_NODE = 2;
 
     static
     {

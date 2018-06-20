@@ -586,13 +586,25 @@ abstract class Read implements TxStateHolder,
     @Override
     public void acquireSharedTokenLock()
     {
-        acquireSharedLock( ResourceTypes.TOKEN_CREATE, 1 );
+        acquireSharedLock( ResourceTypes.SPECIAL_SINGLETON, ResourceTypes.SINGLETON_TOKEN_CREATE );
     }
 
     @Override
     public void acquireExclusiveTokenLock()
     {
-        acquireSharedLock( ResourceTypes.TOKEN_CREATE, 1 );
+        acquireSharedLock( ResourceTypes.SPECIAL_SINGLETON, ResourceTypes.SINGLETON_TOKEN_CREATE );
+    }
+
+    @Override
+    public void acquireSharedUnlabelledNodeLock()
+    {
+        acquireSharedLock( ResourceTypes.SPECIAL_SINGLETON, ResourceTypes.SINGLETON_UNLABELLED_NODE );
+    }
+
+    @Override
+    public void acquireExclusiveUnlabelledNodeLock()
+    {
+        acquireExclusiveLock( ResourceTypes.SPECIAL_SINGLETON, ResourceTypes.SINGLETON_UNLABELLED_NODE );
     }
 
     @Override

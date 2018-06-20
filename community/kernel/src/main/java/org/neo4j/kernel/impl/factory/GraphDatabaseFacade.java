@@ -258,8 +258,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true );
         try ( Statement ignore = transaction.acquireStatement() )
         {
-            Write write = transaction.dataWrite();
-            long nodeId = write.nodeCreate();
             TokenWrite tokenWrite = transaction.tokenWrite();
             int[] labelIds = new int[labels.length];
             String[] labelNames = new String[labels.length];
@@ -268,17 +266,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                 labelNames[i] = labels[i].name();
             }
             tokenWrite.labelGetOrCreateForNames( labelNames, labelIds );
-            for ( int labelId : labelIds )
-            {
-                try
-                {
-                    write.nodeAddLabel( nodeId, labelId );
-                }
-                catch ( EntityNotFoundException e )
-                {
-                    throw new NotFoundException( "No node with id " + nodeId + " found.", e );
-                }
-            }
+
+            Write write = transaction.dataWrite();
+            long nodeId = write.nodeCreateWithLabels( labelIds );
             return newNodeProxy( nodeId );
         }
         catch ( ConstraintValidationException e )

@@ -101,6 +101,7 @@ import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelExcept
 
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.schemaTokenLockingIds;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
@@ -168,8 +169,43 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     public long nodeCreate()
     {
         ktx.assertOpen();
+        sharedSchemaLock( ResourceTypes.SPECIAL_SINGLETON, ResourceTypes.SINGLETON_UNLABELLED_NODE );
         long nodeId = statement.reserveNode();
         ktx.txState().nodeDoCreate( nodeId );
+        return nodeId;
+    }
+
+    @Override
+    public long nodeCreateWithLabels( int[] labels ) throws ConstraintValidationException
+    {
+        if ( labels == null || labels.length == 0 )
+        {
+            return nodeCreate();
+        }
+
+        // We don't need to check the node for existence, like we do in nodeAddLabel, because we just created it.
+        // We also don't need to check if the node already has some of the labels, because we know it has none.
+        // And we don't need to take the exclusive lock on the node, because it was created in this transaction and
+        // isn't visible to anyone else yet.
+        ktx.assertOpen();
+        long[] lockingIds = SchemaDescriptor.schemaTokenLockingIds( labels );
+        Arrays.sort( lockingIds ); // Sort to ensure labels are locked and assigned in order.
+        ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, lockingIds );
+        long nodeId = statement.reserveNode();
+        ktx.txState().nodeDoCreate( nodeId );
+        nodeCursor.single( nodeId, allStoreHolder );
+        nodeCursor.next();
+
+        int prevLabel = NO_SUCH_LABEL;
+        for ( long lockingId : lockingIds )
+        {
+            int label = (int) lockingId;
+            if ( label != prevLabel ) // Filter out duplicates.
+            {
+                checkConstraintsAndAddLabelToNode( nodeId, label );
+                prevLabel = label;
+            }
+        }
         return nodeId;
     }
 
@@ -242,6 +278,13 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             return false;
         }
 
+        checkConstraintsAndAddLabelToNode( node, nodeLabel );
+        return true;
+    }
+
+    private void checkConstraintsAndAddLabelToNode( long node, int nodeLabel )
+            throws UniquePropertyValueValidationException, UnableToValidateConstraintException
+    {
         //Check so that we are not breaking uniqueness constraints
         //We do this by checking if there is an existing node in the index that
         //with the same label and property combination.
@@ -264,7 +307,6 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         //node is there and doesn't already have the label, let's add
         ktx.txState().nodeDoAddLabel( nodeLabel, node );
         updater.onLabelChange( nodeLabel, nodeCursor, propertyCursor, ADDED_LABEL );
-        return true;
     }
 
     private boolean nodeDelete( long node, boolean lock ) throws AutoIndexingKernelException
@@ -1168,6 +1210,10 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         // After we get the exclusive token lock, no new tokens can be created. This allows us to grab a lock on all
         // the existing tokens, and be sure that we won't miss any updates.
         allStoreHolder.acquireExclusiveTokenLock();
+        // We also need to coordinate with the creation of unlabelled nodes,
+        // since they are indexable by "any token" indexes.
+        allStoreHolder.acquireExclusiveUnlabelledNodeLock();
+
         ResourceType resourceType;
         long[] tokens;
         Iterator<NamedToken> itr;

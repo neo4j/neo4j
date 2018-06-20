@@ -67,4 +67,14 @@ public interface Locks
      * This is useful for when a lock on "all tokens" are needed.
      */
     void acquireExclusiveTokenLock();
+
+    /**
+     * Shared unlabelled node locks are taken when nodes are created without any label.
+     */
+    void acquireSharedUnlabelledNodeLock();
+
+    /**
+     * Exclusive unlabelled node locks are taken when "any label" indexes are dropped or created.
+     */
+    void acquireExclusiveUnlabelledNodeLock();
 }
