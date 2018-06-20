@@ -198,7 +198,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
 
     // when
     val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.ProcedureOrSchema)) +
-      TestConfiguration(Versions(Versions.V3_1, Versions.V3_3), Planners.Cost, Runtimes.Default)
+      TestConfiguration(Versions(Versions.V3_1, Versions.V3_4), Planners.Cost, Runtimes.Default)
     failWithError(config, query, List("Expected to find a node at"))
   }
 

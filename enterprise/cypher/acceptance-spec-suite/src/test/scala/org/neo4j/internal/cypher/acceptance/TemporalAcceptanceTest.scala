@@ -163,7 +163,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
                              planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "timeSpan")
         plan should useOperatorWithText("NodeIndexSeek", ":Occasion(timeSpan)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_3),
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_4),
                              params = Map("param" ->
         Array(LocalDate.of(2018, 4, 1))))
 
@@ -189,7 +189,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
                              planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "timeSpan")
         plan should useOperatorWithText("NodeIndexSeek", ":Occasion(timeSpan)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_3),
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_4),
                              params = Map("param" ->
         List(LocalDate.of(2018, 4, 1))))
 
@@ -215,7 +215,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
                              planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "timeSpan")
         plan should useOperatorWithText("NodeIndexSeek", ":Occasion(timeSpan)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_3),
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_4),
                              params = Map("param" ->
         Array(LocalDate.of(2018, 4, 1), LocalDate.of(2018, 4, 2))))
 
@@ -242,7 +242,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
                              planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "timeSpan")
         plan should useOperatorWithText("NodeIndexSeek", ":Occasion(timeSpan)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_3),
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_4),
                              params = Map("param" ->
         List(LocalDate.of(2018, 4, 1), LocalDate.of(2018, 4, 2))))
 

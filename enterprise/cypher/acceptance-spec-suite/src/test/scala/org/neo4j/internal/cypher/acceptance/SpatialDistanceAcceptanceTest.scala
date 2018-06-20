@@ -667,15 +667,13 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     graph.execute("CREATE (p:Place) SET p.location = point({y: 0, x: 0, crs: 'cartesian'})")
     Range(11, 100).foreach(i => graph.execute(s"CREATE (p:Place) SET p.location = point({y: $i, x: $i, crs: 'cartesian'})"))
 
-    val config = distanceConfig - Configs.Version3_3
-
     val query =
       """MATCH (p:Place)
         |WHERE distance(p.location, 5) <= 10
         |RETURN p.location as point
       """.stripMargin
     // When
-    val result = executeWith(config, query)
+    val result = executeWith(distanceConfig, query)
 
     // Then
     result.toList shouldBe empty
@@ -683,7 +681,7 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     // And given
     graph.execute(s"DROP INDEX ON :Place(location)")
     // when
-    val resultNoIndex = executeWith(config, query)
+    val resultNoIndex = executeWith(distanceConfig, query)
 
     // Then
     resultNoIndex.toList shouldBe empty

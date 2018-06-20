@@ -27,8 +27,6 @@ import java.io.{File, PrintWriter}
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.ExecutionEngine
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
-import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer.QueryEvent
@@ -36,21 +34,22 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes.ProcedureOrSchema
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V2_3, V3_1, v3_5}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V3_1, v3_5}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.io.fs.FileUtils
 import org.neo4j.kernel.NeoStoreDataSource
-import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction
 import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CreateTempFileTestSupport with CypherComparisonSupport {
 
-  private val startConf = Configs.CommunityInterpreted - Configs.Version3_3
+  private val startConf = Configs.CommunityInterpreted - Configs.Version3_4
 
   test("shouldGetRelationshipById") {
     val n = createNode()

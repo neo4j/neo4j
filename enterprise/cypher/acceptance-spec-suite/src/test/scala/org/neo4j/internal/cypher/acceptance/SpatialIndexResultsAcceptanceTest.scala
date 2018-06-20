@@ -32,7 +32,7 @@ import scala.collection.immutable.{Map => ImmutableMap}
 class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
 
   private val equalityConfig = Configs.Interpreted - Configs.Before3_3AndRule
-  private val indexConfig = Configs.Interpreted - Configs.BackwardsCompatibility - Configs.AllRulePlanners
+  private val indexConfig = Configs.Interpreted - Configs.Cost3_1 - Configs.Cost2_3 - Configs.AllRulePlanners
 
   override def cypherComparisonSupport = true
 
@@ -65,7 +65,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
       planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "point")
         plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_3))
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_4))
 
     // Then
     val point = result.columnAs("point").toList.head.asInstanceOf[Point]
@@ -87,7 +87,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
                              planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "point")
         plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_3),
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_4),
                              params = ImmutableMap("param" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7)))
 
     // Then
@@ -110,7 +110,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
                              planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "point")
         plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_3),
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_4),
                              params = ImmutableMap("param" -> Array(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
 
     // Then
@@ -137,7 +137,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
                              planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "point")
         plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_3),
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_4),
                              params = ImmutableMap("param" ->
         Array(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7),
           Values.pointValue(CoordinateReferenceSystem.WGS84, 13.78, 56.7))))
@@ -170,7 +170,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
                              planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "point")
         plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_3),
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_4),
                              params = ImmutableMap("param" ->
         List(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7),
           Values.pointValue(CoordinateReferenceSystem.WGS84, 13.78, 56.7))))
@@ -210,7 +210,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 40.7, longitude: -35.78, crs: 'WGS-84'})")
 
-    val configuration = TestConfiguration(Versions(Versions.V3_3, Versions.v3_5, Versions.Default), Planners(Planners.Cost, Planners.Default), Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.Default))
+    val configuration = TestConfiguration(Versions(Versions.V3_4, Versions.v3_5, Versions.Default), Planners(Planners.Cost, Planners.Default), Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.Default))
     // When
     val result = executeWith(configuration,
       "MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point",
@@ -235,7 +235,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
       planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "point")
         plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_3))
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_4))
 
     // Then
     val point = result.columnAs("point").toList.head.asInstanceOf[Point]
@@ -251,7 +251,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     graph.execute("MATCH (p:Place) SET p.location = point({x: 1.2, y: 3.4, z: 5.6}) RETURN p.location as point")
     graph.execute("CREATE (p:Place) SET p.location = point({x: 1.2, y: 3.4, z: 5.601})")
 
-    val configuration = TestConfiguration(Versions(Versions.V3_3, Versions.v3_5, Versions.Default), Planners(Planners.Cost, Planners.Default), Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.Default))
+    val configuration = TestConfiguration(Versions(Versions.V3_4, Versions.v3_5, Versions.Default), Planners(Planners.Cost, Planners.Default), Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.Default))
     // When
     val result = executeWith(configuration,
       "MATCH (p:Place) WHERE p.location = point({x: 1.2, y: 3.4, z: 5.6}) RETURN p.location as point",

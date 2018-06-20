@@ -30,12 +30,11 @@ import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
 class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
   val pointConfig = Configs.Interpreted - Configs.Version2_3
-  val equalityConfig = Configs.Interpreted - Configs.Before3_3AndRule
-  val latestPointConfig = Configs.Interpreted - Configs.BackwardsCompatibility - Configs.AllRulePlanners
+  val equalityAndLatestPointConfig = Configs.Interpreted - Configs.Before3_3AndRule
 
   test("toString on points") {
-    executeWith(latestPointConfig, "RETURN toString(point({x:1, y:2})) AS s").toList should equal(List(Map("s" -> "point({x: 1.0, y: 2.0, crs: 'cartesian'})")))
-    executeWith(latestPointConfig, "RETURN toString(point({longitude:1, latitude:2, height:3})) AS s").toList should equal(List(Map("s" -> "point({x: 1.0, y: 2.0, z: 3.0, crs: 'wgs-84-3d'})")))
+    executeWith(equalityAndLatestPointConfig, "RETURN toString(point({x:1, y:2})) AS s").toList should equal(List(Map("s" -> "point({x: 1.0, y: 2.0, crs: 'cartesian'})")))
+    executeWith(equalityAndLatestPointConfig, "RETURN toString(point({longitude:1, latitude:2, height:3})) AS s").toList should equal(List(Map("s" -> "point({x: 1.0, y: 2.0, z: 3.0, crs: 'wgs-84-3d'})")))
   }
 
   test("point function should work with literal map") {
@@ -99,7 +98,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
 
   test("point function should not work with NaN or infinity") {
     for(invalidDouble <- Seq(Double.NaN, Double.PositiveInfinity, Double.NegativeInfinity)) {
-      failWithError(Configs.DefaultInterpreted + Configs.SlottedInterpreted + Configs.Version3_3 + Configs.Procs,
+      failWithError(Configs.DefaultInterpreted + Configs.SlottedInterpreted + Configs.Version3_4 + Configs.Procs,
         "RETURN point({x: 2.3, y: $v}) as point", List("Cannot create a point with non-finite coordinate values"), params = Map(("v", invalidDouble)))
     }
   }
@@ -296,7 +295,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     createLabeledNode("Place")
 
     // When
-    val result = executeWith(equalityConfig, "MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78}) RETURN p.location as point",
+    val result = executeWith(equalityAndLatestPointConfig, "MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78}) RETURN p.location as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -439,8 +438,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
          |RETURN a > b, a < b
       """.stripMargin
 
-    val pointConfig = Configs.Interpreted - Configs.BackwardsCompatibility - Configs.AllRulePlanners
-    val result = executeWith(pointConfig, query).toList
+    val result = executeWith(equalityAndLatestPointConfig, query).toList
     withClue(s"Comparing '$a' to '$b'") {
       result should equal(List(Map("a > b" -> aBiggerB, "a < b" -> aSmallerB)))
     }
@@ -459,7 +457,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
         |MATCH (place:Place) SET place.location = points
         |RETURN points
       """.stripMargin
-    val result = executeWith(equalityConfig, query,
+    val result = executeWith(equalityAndLatestPointConfig, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -588,7 +586,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
       """.stripMargin
 
     // Then
-    failWithError(equalityConfig + Configs.Procs, query, Seq("Collections containing point values with different CRS can not be stored in properties."))
+    failWithError(equalityAndLatestPointConfig + Configs.Procs, query, Seq("Collections containing point values with different CRS can not be stored in properties."))
   }
 
   test("accessors on 2D cartesian points") {

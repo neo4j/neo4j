@@ -22,9 +22,9 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.opencypher.v9_0.util.test_helpers.WindowsStringSafe
 import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.opencypher.v9_0.util.test_helpers.WindowsStringSafe
 
 class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
   with CypherComparisonSupport {
@@ -552,7 +552,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         |""".stripMargin
 
     val result = executeWith(expectedToSucceed, query,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should matchPlan(expectedPlan), expectPlansToFail = Configs.All - Configs.Cost3_4))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should matchPlan(expectedPlan), expectPlansToFail = Configs.All - Configs.Cost3_5))
     assertStats(result, nodesCreated = 171, relationshipsCreated = 253, propertiesWritten = 564, labelsAdded = 171)
   }
 
@@ -583,7 +583,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         |+-----------------+----------------+-------------------------------------------------------------------------------------------------+
         |""".stripMargin
 
-    val result = executeWith(expectedToSucceed, query, planComparisonStrategy = ComparePlansWithAssertion(_ should matchPlan(expectedPlan), expectPlansToFail = Configs.All - Configs.Cost3_4))
+    val result = executeWith(expectedToSucceed, query, planComparisonStrategy = ComparePlansWithAssertion(_ should matchPlan(expectedPlan), expectPlansToFail = Configs.All - Configs.Cost3_5))
     assertStats(result, nodesCreated = 8, relationshipsCreated = 7, propertiesWritten = 21, labelsAdded = 8)
   }
 
@@ -611,7 +611,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         || | |                     +----------------+---------------------------+-----------------------+
         || | +Optional             |              1 | line, u2                  |                       |
         || | |                     +----------------+---------------------------+-----------------------+
-        || | +ActiveRead           |              1 | line, u2                  |                       |
+        || | +ActiveRead           |              0 | line, u2                  |                       |
         || | |                     +----------------+---------------------------+-----------------------+
         || | +Filter               |              0 | line, u2                  | u2.login = line.user2 |
         || | |                     +----------------+---------------------------+-----------------------+
@@ -629,7 +629,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         || | |                     +----------------+---------------------------+-----------------------+
         || | +Optional             |              1 | line, u1                  |                       |
         || | |                     +----------------+---------------------------+-----------------------+
-        || | +ActiveRead           |              1 | line, u1                  |                       |
+        || | +ActiveRead           |              0 | line, u1                  |                       |
         || | |                     +----------------+---------------------------+-----------------------+
         || | +Filter               |              0 | line, u1                  | u1.login = line.user1 |
         || | |                     +----------------+---------------------------+-----------------------+
@@ -639,9 +639,9 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         |+-------------------------+----------------+---------------------------+-----------------------+
         |""".stripMargin
 
-    val correctPlans = TestConfiguration(Versions(Versions.v3_5, Versions.v3_5), Planners.all, Runtimes.Interpreted)
     executeWith(expectedToSucceed, query, planComparisonStrategy = ComparePlansWithAssertion(_ should matchPlan(expectedPlan),
-      expectPlansToFail = Configs.All - correctPlans), params = Map("csv_filename" -> "x"))
+      // FIXME this is horrible, but I cardified it
+      expectPlansToFail = Configs.Version2_3 + Configs.Version3_1 + Configs.AllRulePlanners + Configs.SlottedInterpreted + TestConfiguration(Versions.V3_4, Planners(Planners.Cost, Planners.Default), Runtimes(Runtimes.Slotted, Runtimes.Default))), params = Map("csv_filename" -> "x"))
   }
 
   test("Don't compact query with consecutive expands due to presence of values in 'other' column") {

@@ -118,11 +118,11 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
     }
   }
 
-  test("should allow executing enterprise queries on CYPHER 3.3") {
+  test("should allow executing enterprise queries on CYPHER 3.4") {
     runWithConfig() {
       db =>
-        assertVersionAndRuntime(db, "3.3", "slotted")
-        assertVersionAndRuntime(db, "3.3", "compiled")
+        assertVersionAndRuntime(db, "3.4", "slotted")
+        assertVersionAndRuntime(db, "3.4", "compiled")
     }
   }
 

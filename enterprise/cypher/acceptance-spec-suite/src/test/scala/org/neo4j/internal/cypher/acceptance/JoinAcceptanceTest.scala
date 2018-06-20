@@ -89,7 +89,7 @@ class JoinAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
 
     val expectSucceed = Configs.Interpreted - Configs.Cost2_3 - Configs.Cost3_1
     executeWith(expectSucceed, query,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeRightOuterHashJoin"), Configs.AllRulePlanners + Configs.BackwardsCompatibility))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeRightOuterHashJoin"), Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
   }
 
   test("should handle node left outer hash join with different types for the node variable") {
@@ -127,7 +127,7 @@ class JoinAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
 
     val expectSucceed = Configs.Interpreted - Configs.Cost2_3 - Configs.Cost3_1
     val result = executeWith(expectSucceed, query,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeRightOuterHashJoin"), Configs.AllRulePlanners + Configs.BackwardsCompatibility))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeRightOuterHashJoin"), Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
   }
 
   test("optional match join should not crash") {
