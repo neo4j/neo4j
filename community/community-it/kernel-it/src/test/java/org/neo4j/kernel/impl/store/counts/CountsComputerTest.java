@@ -48,6 +48,8 @@ import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
+import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
@@ -60,12 +62,15 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class CountsComputerTest
 {
+    private static final String COUNTS_STORE_BASE = MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
     private static final NullLogProvider LOG_PROVIDER = NullLogProvider.getInstance();
     private static final Config CONFIG = Config.defaults();
     private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
@@ -80,6 +85,31 @@ public class CountsComputerTest
     private GraphDatabaseBuilder dbBuilder;
     private PageCache pageCache;
 
+    @Before
+    public void setup()
+    {
+        fs = fsRule.get();
+        dir = testDir.directory( "dir" ).getAbsoluteFile();
+        dbBuilder = new TestGraphDatabaseFactory().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+                .newImpermanentDatabaseBuilder( dir );
+        pageCache = pcRule.getPageCache( fs );
+    }
+
+    @Test
+    public void skipPopulationWhenNodeAndRelationshipStoresAreEmpty()
+    {
+        GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
+        long lastCommittedTransactionId = getLastTxId( db );
+        db.shutdown();
+
+        InvocationTrackingProgressReporter progressReporter = new InvocationTrackingProgressReporter();
+        rebuildCounts( lastCommittedTransactionId, progressReporter );
+
+        checkEmptyCountStore();
+        assertTrue( progressReporter.isCompleteInvoked() );
+        assertFalse( progressReporter.isStartInvoked() );
+    }
+
     @Test
     public void shouldCreateAnEmptyCountsStoreFromAnEmptyDatabase()
     {
@@ -90,13 +120,7 @@ public class CountsComputerTest
 
         rebuildCounts( lastCommittedTransactionId );
 
-        try ( Lifespan life = new Lifespan() )
-        {
-            CountsTracker store = life.add( createCountsTracker() );
-            // a transaction for creating the label and a transaction for the node
-            assertEquals( BASE_TX_ID, store.txId() );
-            assertEquals( 0, store.totalEntriesStored() );
-        }
+        checkEmptyCountStore();
     }
 
     @Test
@@ -279,18 +303,6 @@ public class CountsComputerTest
         }
     }
 
-    @Before
-    public void setup()
-    {
-        fs = fsRule.get();
-        dir = testDir.directory( "dir" ).getAbsoluteFile();
-        dbBuilder = new TestGraphDatabaseFactory().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
-                .newImpermanentDatabaseBuilder( dir );
-        pageCache = pcRule.getPageCache( fs );
-    }
-
-    private static final String COUNTS_STORE_BASE = MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
-
     private File alphaStoreFile()
     {
         return new File( dir, COUNTS_STORE_BASE + CountsTracker.LEFT );
@@ -304,7 +316,16 @@ public class CountsComputerTest
     private long getLastTxId( @SuppressWarnings( "deprecation" ) GraphDatabaseAPI db )
     {
         return db.getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastCommittedTransactionId();
+    }
 
+    private void checkEmptyCountStore()
+    {
+        try ( Lifespan life = new Lifespan() )
+        {
+            CountsTracker store = life.add( createCountsTracker() );
+            assertEquals( BASE_TX_ID, store.txId() );
+            assertEquals( 0, store.totalEntriesStored() );
+        }
     }
 
     private void cleanupCountsForRebuilding()
@@ -321,6 +342,11 @@ public class CountsComputerTest
 
     private void rebuildCounts( long lastCommittedTransactionId )
     {
+        rebuildCounts( lastCommittedTransactionId, SilentProgressReporter.INSTANCE );
+    }
+
+    private void rebuildCounts( long lastCommittedTransactionId, ProgressReporter progressReporter )
+    {
         cleanupCountsForRebuilding();
 
         IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fs );
@@ -333,8 +359,8 @@ public class CountsComputerTest
             int highLabelId = (int) neoStores.getLabelTokenStore().getHighId();
             int highRelationshipTypeId = (int) neoStores.getRelationshipTypeTokenStore().getHighId();
             CountsComputer countsComputer = new CountsComputer(
-                    lastCommittedTransactionId, nodeStore, relationshipStore, highLabelId, highRelationshipTypeId,
-                    NumberArrayFactory.AUTO_WITHOUT_PAGECACHE );
+                    lastCommittedTransactionId, nodeStore, relationshipStore, highLabelId, highRelationshipTypeId, NumberArrayFactory.AUTO_WITHOUT_PAGECACHE,
+                    progressReporter );
             CountsTracker countsTracker = createCountsTracker();
             life.add( countsTracker.setInitializer( countsComputer ) );
         }
@@ -345,5 +371,39 @@ public class CountsComputerTest
         Register.DoubleLongRegister value = Registers.newDoubleLongRegister();
         store.get( key, value );
         return value.readSecond();
+    }
+
+    private static class InvocationTrackingProgressReporter implements ProgressReporter
+    {
+        private boolean startInvoked;
+        private boolean completeInvoked;
+
+        @Override
+        public void start( long max )
+        {
+            startInvoked = true;
+        }
+
+        @Override
+        public void progress( long add )
+        {
+
+        }
+
+        @Override
+        public void completed()
+        {
+            completeInvoked = true;
+        }
+
+        boolean isStartInvoked()
+        {
+            return startInvoked;
+        }
+
+        boolean isCompleteInvoked()
+        {
+            return completeInvoked;
+        }
     }
 }
