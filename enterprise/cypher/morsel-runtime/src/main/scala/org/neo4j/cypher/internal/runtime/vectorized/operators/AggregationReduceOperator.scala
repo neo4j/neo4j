@@ -48,10 +48,9 @@ class AggregationReduceOperator(aggregations: Array[AggregationOffsets],
   }
 
   class OTask(inputMorsels: Array[MorselExecutionContext]) extends ContinuableOperatorTask {
-    private var aggregates: Iterator[(GroupingKey, Array[AggregationReducer])] = _
+    lazy val aggregates: Iterator[(GroupingKey, Array[AggregationReducer])] = aggregateInputs(inputMorsels)
 
     override def operate(outputRow: MorselExecutionContext, context: QueryContext, state: QueryState): Unit = {
-      aggregates = aggregateInputs(inputMorsels)
       val outgoingSlots = aggregations.map(_.reducerOutputSlot)
       while (aggregates.hasNext && outputRow.hasMoreRows) {
         val (key, reducers) = aggregates.next()
