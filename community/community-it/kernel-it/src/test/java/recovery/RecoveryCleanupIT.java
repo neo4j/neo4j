@@ -141,7 +141,14 @@ public class RecoveryCleanupIT
         startDatabase().shutdown();
 
         // then
-        logProvider.assertContainsLogCallContaining( "Scan store recovery completed" );
+        logProvider.assertContainsLogCallContaining( "Label index cleanup job registered" );
+        logProvider.assertContainsLogCallContaining( "Label index cleanup job started" );
+        logProvider.assertContainsMessageMatching( Matchers.stringContainsInOrder( Iterables.asIterable(
+                "Label index cleanup job finished",
+                "Number of pages visited",
+                "Number of cleaned crashed pointers",
+                "Time spent" ) ) );
+        logProvider.assertContainsLogCallContaining( "Label index cleanup job closed" );
     }
 
     @Test
@@ -158,24 +165,39 @@ public class RecoveryCleanupIT
 
         // then
         List<Matcher<String>> matchers = new ArrayList<>();
-        matchers.add( indexRecoveryLogMatcher( "string" ) );
-        matchers.add( indexRecoveryLogMatcher( "native" ) );
-        matchers.add( indexRecoveryLogMatcher( "spatial" ) );
-        matchers.add( indexRecoveryLogMatcher( "temporal" ) );
+        String[] subTypes = new String[]{"string", "native", "spatial", "temporal"};
+        for ( String subType : subTypes )
+        {
+            matchers.add( indexRecoveryLogMatcher( "Schema index cleanup job registered", subType ) );
+            matchers.add( indexRecoveryLogMatcher( "Schema index cleanup job started", subType ) );
+            matchers.add( indexRecoveryFinishedLogMatcher( subType ) );
+            matchers.add( indexRecoveryLogMatcher( "Schema index cleanup job closed", subType ) );
+        }
         matchers.forEach( logProvider::assertContainsExactlyOneMessageMatching );
     }
 
-    private Matcher<String> indexRecoveryLogMatcher( String subIndexProviderKey )
+    private Matcher<String> indexRecoveryLogMatcher( String logMessage, String subIndexProviderKey )
     {
 
         return Matchers.stringContainsInOrder( Iterables.asIterable(
-                "Schema index recovery completed",
+                logMessage,
                 "descriptor",
-                "file=",
+                "indexFile=",
+                File.separator + subIndexProviderKey ) );
+    }
+
+    private Matcher<String> indexRecoveryFinishedLogMatcher( String subIndexProviderKey )
+    {
+
+        return Matchers.stringContainsInOrder( Iterables.asIterable(
+                "Schema index cleanup job finished",
+                "descriptor",
+                "indexFile=",
                 File.separator + subIndexProviderKey,
-                "cleaned crashed pointers",
-                "pages visited",
-                "Time spent" ) );
+                "Number of pages visited",
+                "Number of cleaned crashed pointers",
+                "Time spent" )
+        );
     }
 
     private void dirtyDatabase() throws IOException
@@ -295,7 +317,7 @@ public class RecoveryCleanupIT
         }
 
         @Override
-        public void recoveryCompleted( Map<String,Object> data )
+        public void recoveryCleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
         {
             barrier.reached();
         }

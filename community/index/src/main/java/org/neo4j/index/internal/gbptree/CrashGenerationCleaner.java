@@ -69,8 +69,9 @@ class CrashGenerationCleaner
 
     public void clean() throws IOException
     {
-        assert unstableGeneration > stableGeneration;
-        assert unstableGeneration - stableGeneration > 1;
+        monitor.cleanupStarted();
+        assert unstableGeneration > stableGeneration : unexpectedGenerations();
+        assert unstableGeneration - stableGeneration > 1 : unexpectedGenerations();
 
         long startTime = currentTimeMillis();
         int threads = availableProcessors;
@@ -237,5 +238,10 @@ class CrashGenerationCleaner
             GenerationSafePointer.clean( cursor );
             cleanedPointers.incrementAndGet();
         }
+    }
+
+    private String unexpectedGenerations( )
+    {
+        return "Unexpected generations, stableGeneration=" + stableGeneration + ", unstableGeneration=" + unstableGeneration;
     }
 }
