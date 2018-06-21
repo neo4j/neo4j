@@ -221,6 +221,9 @@ class OnlineBackupContextFactory
     {
         // We don't want to pile up tx logs
         config.augment( GraphDatabaseSettings.logical_log_rotation_threshold, "1m" ); // Forces rotations to be performed when catching up
+
+        // Disable prometheus to avoid binding exceptions
+        config.augment( "metrics.prometheus.enabled", Settings.FALSE );
     }
 
     private Path getBackupDirectory( Arguments arguments ) throws CommandFailed

@@ -42,6 +42,7 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -343,6 +344,13 @@ public class OnlineBackupContextFactoryTest
 
         // then
         assertEquals( ByteUnit.mebiBytes( 1 ), context.getConfig().get( GraphDatabaseSettings.logical_log_rotation_threshold ).longValue() );
+    }
+
+    @Test
+    public void prometheusShouldBeDisabledToAvoidPortConflicts() throws CommandFailed, IncorrectUsage
+    {
+        OnlineBackupContext context = new OnlineBackupContextFactory( homeDir, configDir ).createContext( requiredAnd() );
+        assertEquals( Settings.FALSE, context.getConfig().getRaw().get( "metrics.prometheus.enabled" ) );
     }
 
     private String[] requiredAnd( String... additionalArgs )
