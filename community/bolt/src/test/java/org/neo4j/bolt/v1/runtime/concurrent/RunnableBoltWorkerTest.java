@@ -22,13 +22,10 @@ package org.neo4j.bolt.v1.runtime.concurrent;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -38,7 +35,6 @@ import org.neo4j.bolt.v1.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.BoltWorkerQueueMonitor;
 import org.neo4j.bolt.v1.runtime.Job;
-import org.neo4j.cypher.internal.frontend.v3_2.ast.functions.Collect;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.logging.AssertableLogProvider;
@@ -52,13 +48,11 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyCollection;
 import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -131,7 +125,7 @@ public class RunnableBoltWorkerTest
         RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService );
         worker.enqueue( s ->
         {
-            throw new BoltConnectionAuthFatality( "fatality" );
+            throw new BoltConnectionAuthFatality( "fatality", new RuntimeException() );
         } );
 
         // When

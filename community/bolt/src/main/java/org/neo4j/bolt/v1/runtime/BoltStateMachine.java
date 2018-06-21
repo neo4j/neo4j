@@ -378,12 +378,12 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                         catch ( AuthenticationException | AuthProviderTimeoutException | AuthProviderFailedException e )
                         {
                             fail( machine, Neo4jError.fatalFrom( e.status(), e.getMessage() ) );
-                            throw new BoltConnectionAuthFatality( e.getMessage() );
+                            throw new BoltConnectionAuthFatality( "Failed to process INIT message", e );
                         }
                         catch ( Throwable t )
                         {
                             fail( machine, Neo4jError.fatalFrom( Status.General.UnknownError, t.getMessage() ) );
-                            throw new BoltConnectionFatality( t.getMessage() );
+                            throw new BoltConnectionFatality( "Failed to process INIT message", t );
                         }
                     }
                 },
@@ -412,7 +412,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                         catch ( AuthorizationExpiredException e )
                         {
                             fail( machine, Neo4jError.fatalFrom( e ) );
-                            throw new BoltConnectionAuthFatality( e.getMessage() );
+                            throw new BoltConnectionAuthFatality( "Failed to process RUN message", e );
                         }
                         catch ( Throwable e )
                         {
@@ -466,7 +466,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                         catch ( AuthorizationExpiredException e )
                         {
                             fail( machine, Neo4jError.fatalFrom( e ) );
-                            throw new BoltConnectionAuthFatality( e.getMessage() );
+                            throw new BoltConnectionAuthFatality( "Failed to process PULL_ALL message", e );
                         }
                         catch ( Throwable e )
                         {
@@ -488,7 +488,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                         catch ( AuthorizationExpiredException e )
                         {
                             fail( machine, Neo4jError.fatalFrom( e ) );
-                            throw new BoltConnectionAuthFatality( e.getMessage() );
+                            throw new BoltConnectionAuthFatality( "Failed to process DISCARD_ALL message", e );
                         }
                         catch ( Throwable e )
                         {
@@ -665,7 +665,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
             catch ( Throwable e )
             {
                 fail( machine, Neo4jError.fatalFrom( e ) );
-                throw new BoltConnectionFatality( e.getMessage() );
+                throw new BoltConnectionFatality( "Failed to reset the bolt state machine", e );
             }
         }
     }

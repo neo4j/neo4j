@@ -26,6 +26,6 @@ public class BoltProtocolBreachFatality extends BoltConnectionFatality
 {
     public BoltProtocolBreachFatality( String message )
     {
-        super( message );
+        super( message, null );
     }
 }
