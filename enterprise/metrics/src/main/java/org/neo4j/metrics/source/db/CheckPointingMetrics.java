@@ -26,6 +26,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 
 import java.util.TreeMap;
+import java.util.function.Supplier;
 
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
@@ -51,15 +52,15 @@ public class CheckPointingMetrics extends LifecycleAdapter
 
     private final MetricRegistry registry;
     private final Monitors monitors;
-    private final CheckPointerMonitor checkPointerMonitor;
+    private final Supplier<CheckPointerMonitor> checkPointerMonitorSupplier;
     private final DefaultCheckPointerTracer.Monitor listener;
 
     public CheckPointingMetrics( EventReporter reporter, MetricRegistry registry,
-            Monitors monitors, CheckPointerMonitor checkPointerMonitor )
+            Monitors monitors, Supplier<CheckPointerMonitor> checkPointerMonitorSupplier )
     {
         this.registry = registry;
         this.monitors = monitors;
-        this.checkPointerMonitor = checkPointerMonitor;
+        this.checkPointerMonitorSupplier = checkPointerMonitorSupplier;
         this.listener = durationMillis ->
         {
             TreeMap<String,Gauge> gauges = new TreeMap<>();
@@ -73,6 +74,7 @@ public class CheckPointingMetrics extends LifecycleAdapter
     {
         monitors.addMonitorListener( listener );
 
+        CheckPointerMonitor checkPointerMonitor = checkPointerMonitorSupplier.get();
         registry.register( CHECK_POINT_EVENTS, (Gauge<Long>) checkPointerMonitor::numberOfCheckPointEvents );
         registry.register( CHECK_POINT_TOTAL_TIME,
                 (Gauge<Long>) checkPointerMonitor::checkPointAccumulatedTotalTimeMillis );

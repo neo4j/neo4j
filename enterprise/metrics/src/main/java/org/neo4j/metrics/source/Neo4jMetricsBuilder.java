@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.metrics.MetricsSettings;
@@ -79,17 +80,11 @@ public class Neo4jMetricsBuilder
 
         PageCacheCounters pageCacheCounters();
 
-        CheckPointerMonitor checkPointerMonitor();
-
-        LogRotationMonitor logRotationMonitor();
-
-        StoreEntityCounters entityCountStats();
-
         Supplier<ClusterMembers> clusterMembers();
 
         Supplier<CoreMetaData> raft();
 
-        Supplier<TransactionIdStore> transactionIdStore();
+        DataSourceManager dataSourceManager();
     }
 
     public Neo4jMetricsBuilder( MetricRegistry registry, EventReporter reporter, Config config, LogService logService,
@@ -109,7 +104,7 @@ public class Neo4jMetricsBuilder
         boolean result = false;
         if ( config.get( MetricsSettings.neoTxEnabled ) )
         {
-            life.add( new TransactionMetrics( registry, dependencies.transactionIdStore(),
+            life.add( new TransactionMetrics( registry, databaseDependencySupplier( TransactionIdStore.class ),
                     dependencies.transactionCounters() ) );
             result = true;
         }
@@ -123,14 +118,14 @@ public class Neo4jMetricsBuilder
         if ( config.get( MetricsSettings.neoCheckPointingEnabled ) )
         {
             life.add( new CheckPointingMetrics( reporter, registry, dependencies.monitors(),
-                    dependencies.checkPointerMonitor() ) );
+                    databaseDependencySupplier( CheckPointerMonitor.class ) ) );
             result = true;
         }
 
         if ( config.get( MetricsSettings.neoLogRotationEnabled ) )
         {
             life.add( new LogRotationMetrics( reporter, registry, dependencies.monitors(),
-                    dependencies.logRotationMonitor() ) );
+                    databaseDependencySupplier( LogRotationMonitor.class ) ) );
             result = true;
         }
 
@@ -139,7 +134,7 @@ public class Neo4jMetricsBuilder
             if ( kernelContext.databaseInfo().edition != Edition.community &&
                     kernelContext.databaseInfo().edition != Edition.unknown )
             {
-                life.add( new EntityCountMetrics( registry, dependencies.entityCountStats() ) );
+                life.add( new EntityCountMetrics( registry, databaseDependencySupplier( StoreEntityCounters.class ) ) );
                 result = true;
             }
         }
@@ -219,5 +214,10 @@ public class Neo4jMetricsBuilder
         }
 
         return result;
+    }
+
+    private <T> Supplier<T> databaseDependencySupplier( Class<T> clazz )
+    {
+        return () -> dependencies.dataSourceManager().getDataSource().getDependencyResolver().resolveDependency( clazz );
     }
 }
