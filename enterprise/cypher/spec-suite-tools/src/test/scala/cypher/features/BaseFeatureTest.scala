@@ -75,8 +75,8 @@ abstract class BaseFeatureTest {
   }
 
   @TestFactory
-  def runCompatibility33(): Collection[DynamicTest] = {
-    createTests(scenarios, Compatibility33TestConfig)
+  def runCompatibility34(): Collection[DynamicTest] = {
+    createTests(scenarios, Compatibility34TestConfig)
   }
 
   @TestFactory
@@ -136,7 +136,7 @@ abstract class BaseFeatureTest {
 
   @Disabled
   def generateBlacklistCompatibility33(): Unit = {
-    printComputedBlacklist(scenarios, Compatibility33TestConfig)
+    printComputedBlacklist(scenarios, Compatibility34TestConfig)
     fail("Do not forget to add @Disabled to this method")
   }
 
