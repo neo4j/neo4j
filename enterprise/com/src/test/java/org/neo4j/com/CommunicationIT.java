@@ -28,8 +28,6 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
-import java.io.IOException;
-
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
@@ -62,6 +60,7 @@ public class CommunicationIT
 {
     private static final byte INTERNAL_PROTOCOL_VERSION = 0;
     private static final byte APPLICATION_PROTOCOL_VERSION = 0;
+    private static final int port = PortAuthority.allocatePort();
 
     private final LifeSupport life = new LifeSupport();
     private StoreId storeIdToUse;
@@ -168,9 +167,9 @@ public class CommunicationIT
     @Test
     public void communicateBetweenJvms()
     {
-        ServerInterface server = builder.serverInOtherJvm();
+        ServerInterface server = builder.serverInOtherJvm( port );
         server.awaitStarted();
-        MadeUpClient client = builder.port( MadeUpServerProcess.PORT ).client();
+        MadeUpClient client = builder.port( port ).client();
         life.add( client );
         life.start();
 
@@ -219,9 +218,9 @@ public class CommunicationIT
     public void applicationProtocolVersionsMustMatchMultiJvm()
     {
         ServerInterface server = builder.applicationProtocolVersion( (byte) (APPLICATION_PROTOCOL_VERSION + 1) )
-                                        .serverInOtherJvm();
+                                        .serverInOtherJvm( port );
         server.awaitStarted();
-        MadeUpClient client = builder.port( MadeUpServerProcess.PORT ).client();
+        MadeUpClient client = builder.port( port ).client();
         life.add( client );
         life.start();
 
@@ -255,9 +254,9 @@ public class CommunicationIT
     @Test
     public void internalProtocolVersionsMustMatchMultiJvm()
     {
-        ServerInterface server = builder.internalProtocolVersion( (byte) 1 ).serverInOtherJvm();
+        ServerInterface server = builder.internalProtocolVersion( (byte) 1 ).serverInOtherJvm( port );
         server.awaitStarted();
-        MadeUpClient client = builder.port( MadeUpServerProcess.PORT ).internalProtocolVersion( (byte) 2 ).client();
+        MadeUpClient client = builder.port( port ).internalProtocolVersion( (byte) 2 ).client();
         life.add( client );
         life.start();
 
@@ -538,25 +537,25 @@ public class CommunicationIT
                     port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
 
-        public Builder chunkSize( int chunkSize )
+        Builder chunkSize( int chunkSize )
         {
             return new Builder(
                     port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
 
-        public Builder internalProtocolVersion( byte internalProtocolVersion )
+        Builder internalProtocolVersion( byte internalProtocolVersion )
         {
             return new Builder(
                     port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
 
-        public Builder applicationProtocolVersion( byte applicationProtocolVersion )
+        Builder applicationProtocolVersion( byte applicationProtocolVersion )
         {
             return new Builder(
                     port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
 
-        public Builder verifier( TxChecksumVerifier verifier )
+        Builder verifier( TxChecksumVerifier verifier )
         {
             return new Builder(
                     port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
@@ -585,7 +584,7 @@ public class CommunicationIT
             return clientWith( ResponseUnpacker.NO_OP_RESPONSE_UNPACKER );
         }
 
-        public MadeUpClient clientWith( ResponseUnpacker responseUnpacker )
+        MadeUpClient clientWith( ResponseUnpacker responseUnpacker )
         {
             return new MadeUpClient( port, storeId, chunkSize, responseUnpacker )
             {
@@ -597,11 +596,10 @@ public class CommunicationIT
             };
         }
 
-        public ServerInterface serverInOtherJvm()
+        ServerInterface serverInOtherJvm( int port )
         {
-            ServerInterface server = new MadeUpServerProcess().start( new StartupData(
-                    storeId.getCreationTime(), storeId.getRandomId(), internalProtocolVersion,
-                    applicationProtocolVersion, chunkSize ) );
+            ServerInterface server = new MadeUpServerProcess().start( new StartupData( storeId.getCreationTime(), storeId.getRandomId(),
+                    internalProtocolVersion, applicationProtocolVersion, chunkSize, port ) );
             server.awaitStarted();
             return server;
         }
@@ -613,7 +611,7 @@ public class CommunicationIT
         private final long txCount;
         private long expectedTxId = 1;
 
-        public TransactionStreamVerifyingResponseHandler( int txCount )
+        TransactionStreamVerifyingResponseHandler( int txCount )
         {
             this.txCount = txCount;
         }
