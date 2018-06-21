@@ -194,7 +194,9 @@ class OnlineBackupContextFactory
             // We only replace the page cache memory setting.
             // Any other custom page swapper, etc. settings are preserved and used.
             config.augment( pagecache_memory, pagecacheMemory );
-            overrideConfigWithBackupSpecificSettings( config );
+
+            // Disable prometheus to avoid binding exceptions
+            config.augment( "metrics.prometheus.enabled", Settings.FALSE );
 
             // Build consistency-checker configuration.
             // Note: We can remove the loading from config file in 4.0.
@@ -215,15 +217,6 @@ class OnlineBackupContextFactory
         {
             throw new CommandFailed( e.getMessage(), e );
         }
-    }
-
-    private void overrideConfigWithBackupSpecificSettings( Config config )
-    {
-        // We don't want to pile up tx logs
-        config.augment( GraphDatabaseSettings.logical_log_rotation_threshold, "1m" ); // Forces rotations to be performed when catching up
-
-        // Disable prometheus to avoid binding exceptions
-        config.augment( "metrics.prometheus.enabled", Settings.FALSE );
     }
 
     private Path getBackupDirectory( Arguments arguments ) throws CommandFailed

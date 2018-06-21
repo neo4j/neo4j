@@ -338,6 +338,14 @@ public class OnlineBackupCommandHaIT
         startDb( port );
         createSomeData( db );
 
+        // and backup client is told to rotate conveniently
+        Config config = Config
+                .builder()
+                .withSetting( GraphDatabaseSettings.logical_log_rotation_threshold, "1m" )
+                .build();
+        File configOverrideFile = testDirectory.file( "neo4j-backup.conf" );
+        OnlineBackupCommandBuilder.writeConfigToFile( config, configOverrideFile );
+
         // and we have a full backup
         String backupName = "backupName" + recordFormat;
         String address = "localhost:" + port;
@@ -346,6 +354,7 @@ public class OnlineBackupCommandHaIT
                 "--cc-report-dir=" + backupDir,
                 "--backup-dir=" + backupDir,
                 "--protocol=common",
+                "--additional-config=" + configOverrideFile,
                 "--name=" + backupName ) );
 
         // and the database contains a few more transactions
@@ -358,6 +367,7 @@ public class OnlineBackupCommandHaIT
                 "--cc-report-dir=" + backupDir,
                 "--backup-dir=" + backupDir,
                 "--protocol=common",
+                "--additional-config=" + configOverrideFile,
                 "--name=" + backupName ) );
 
         // then there has been a rotation

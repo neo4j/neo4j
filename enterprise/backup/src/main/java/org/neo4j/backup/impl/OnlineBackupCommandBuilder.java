@@ -311,7 +311,7 @@ public class OnlineBackupCommandBuilder
         return format( "--additional-config=%s", configFile );
     }
 
-    private void writeConfigToFile( Config config, File file ) throws IOException
+    static void writeConfigToFile( Config config, File file ) throws IOException
     {
         try ( Writer fileWriter = new BufferedWriter( new FileWriter( file ) ) )
         {

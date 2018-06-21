@@ -335,18 +335,6 @@ public class OnlineBackupContextFactoryTest
     }
 
     @Test
-    public void configIsProvided1mRotation() throws CommandFailed, IncorrectUsage
-    {
-        OnlineBackupContextFactory builder = new OnlineBackupContextFactory( homeDir, configDir );
-
-        //
-        OnlineBackupContext context = builder.createContext( requiredAnd() );
-
-        // then
-        assertEquals( ByteUnit.mebiBytes( 1 ), context.getConfig().get( GraphDatabaseSettings.logical_log_rotation_threshold ).longValue() );
-    }
-
-    @Test
     public void prometheusShouldBeDisabledToAvoidPortConflicts() throws CommandFailed, IncorrectUsage
     {
         OnlineBackupContext context = new OnlineBackupContextFactory( homeDir, configDir ).createContext( requiredAnd() );

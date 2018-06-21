@@ -285,6 +285,14 @@ public class OnlineBackupCommandCcIT
         Cluster cluster = startCluster( recordFormat );
         createSomeData( cluster );
 
+        // and backup client is told to rotate conveniently
+        Config config = Config
+                .builder()
+                .withSetting( GraphDatabaseSettings.logical_log_rotation_threshold, "1m" )
+                .build();
+        File configOverrideFile = testDirectory.file( "neo4j-backup.conf" );
+        OnlineBackupCommandBuilder.writeConfigToFile( config, configOverrideFile );
+
         // and we have a full backup
         String backupName = "backupName" + recordFormat;
         String address = CausalClusteringTestHelpers.backupAddress( clusterLeader( cluster ).database() );
@@ -292,6 +300,7 @@ public class OnlineBackupCommandCcIT
                 "--from", address,
                 "--cc-report-dir=" + backupDir,
                 "--backup-dir=" + backupDir,
+                "--additional-config=" + configOverrideFile,
                 "--name=" + backupName ) );
 
         // and the database contains a few more transactions
@@ -303,6 +312,7 @@ public class OnlineBackupCommandCcIT
                 "--from", address,
                 "--cc-report-dir=" + backupDir,
                 "--backup-dir=" + backupDir,
+                "--additional-config=" + configOverrideFile,
                 "--name=" + backupName ) );
 
         // then there has been a rotation
