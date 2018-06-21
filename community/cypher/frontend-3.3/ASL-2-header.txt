@@ -1,4 +1,4 @@
-Copyright (c) ${inceptionYear}-${currentYear} "Neo Technology,"
+Copyright (c) ${inceptionYear}-${currentYear} "Neo4j,"
 Network Engine for Objects in Lund AB [http://neotechnology.com]
 
 Licensed under the Apache License, Version 2.0 (the "License");
