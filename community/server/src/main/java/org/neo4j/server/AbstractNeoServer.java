@@ -47,7 +47,6 @@ import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -128,7 +127,7 @@ public abstract class AbstractNeoServer implements NeoServer
     private Optional<AdvertisedSocketAddress> httpsAdvertisedAddress;
 
     protected Database database;
-    private Dependencies dependencyResolver;
+    private DependencyResolver dependencyResolver;
     protected CypherExecutor cypherExecutor;
     protected WebServer webServer;
     protected Supplier<AuthManager> authManagerSupplier;
@@ -486,7 +485,7 @@ public abstract class AbstractNeoServer implements NeoServer
         @Override
         public void start()
         {
-            dependencyResolver = new Dependencies( database.getGraph().getDependencyResolver() );
+            dependencyResolver = database.getGraph().getDependencyResolver();
 
             authManagerSupplier = dependencyResolver.provideDependency( AuthManager.class );
             userManagerSupplier = dependencyResolver.provideDependency( UserManagerSupplier.class );
