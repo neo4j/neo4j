@@ -38,7 +38,7 @@ public interface FileMoveAction
 
     File file();
 
-    static FileMoveAction copyViaPageCache( File file, PageCache pageCache )
+    static FileMoveAction moveViaPageCache( File file, PageCache pageCache )
     {
         return new FileMoveAction()
         {
@@ -61,7 +61,7 @@ public interface FileMoveAction
         };
     }
 
-    static FileMoveAction copyViaFileSystem( File file, File basePath )
+    static FileMoveAction moveViaFileSystem( File file, File basePath )
     {
         Path base = basePath.toPath();
         return new FileMoveAction()

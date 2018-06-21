@@ -103,7 +103,7 @@ public class ToFileStoreWriter implements StoreWriter
     // the page cache later on when we want to move the files written through the page cache.
     private void addPageCacheMoveAction( File file )
     {
-        fileMoveActions.add( FileMoveAction.copyViaPageCache( file, pageCache ) );
+        fileMoveActions.add( FileMoveAction.moveViaPageCache( file, pageCache ) );
     }
 
     private int filePageSize( int alignment )
