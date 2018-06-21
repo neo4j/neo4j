@@ -275,6 +275,11 @@ public abstract class AbstractNeoServer implements NeoServer
         new RunCarefully( map( module -> module::stop, serverModules ) ).run();
     }
 
+    private void clearModules()
+    {
+        serverModules.clear();
+    }
+
     @Override
     public Config getConfig()
     {
@@ -530,6 +535,7 @@ public abstract class AbstractNeoServer implements NeoServer
         {
             stopWebServer();
             stopModules();
+            clearModules();
         }
     }
 }
