@@ -454,7 +454,7 @@ public class BackupIT
             {
                 try ( Transaction tx = db.beginTx() )
                 {
-                    db.createNode( indexedLabels.get( random.nextInt( numberOfIndexedLabels ) ) ).setProperty( "prop", random.propertyValue() );
+                    db.createNode( indexedLabels.get( random.nextInt( numberOfIndexedLabels ) ) ).setProperty( "prop", random.nextValue() );
                     tx.success();
                 }
             }
