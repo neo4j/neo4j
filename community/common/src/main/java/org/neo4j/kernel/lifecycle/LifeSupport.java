@@ -316,8 +316,8 @@ public class LifeSupport implements Lifecycle
     private void bringToState( LifecycleInstance instance )
             throws LifecycleException
     {
-        switch ( status )
-        {
+            switch ( status )
+            {
             case STARTED:
                 instance.start();
                 break;

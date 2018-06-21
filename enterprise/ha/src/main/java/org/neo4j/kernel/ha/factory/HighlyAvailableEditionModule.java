@@ -234,14 +234,14 @@ public class HighlyAvailableEditionModule
 
         RequestContextFactory requestContextFactory = dependencies.satisfyDependency( new RequestContextFactory(
                 serverId.toIntegerIndex(),
-                dependencies.provideDependency( TransactionIdStore.class ) ) );
+                () -> resolveDatabaseDependency( dependencies, TransactionIdStore.class ) ) );
 
         final long idReuseSafeZone = config.get( HaSettings.id_reuse_safe_zone_time ).toMillis();
         TransactionCommittingResponseUnpacker responseUnpacker = dependencies.satisfyDependency(
                 new TransactionCommittingResponseUnpacker( dependencies,
                         config.get( HaSettings.pull_apply_batch_size ), idReuseSafeZone ) );
 
-        Supplier<Kernel> kernelProvider = dependencies.provideDependency( Kernel.class );
+        Supplier<Kernel> kernelProvider = () -> resolveDatabaseDependency( dependencies, Kernel.class );
 
         transactionStartTimeout = config.get( HaSettings.state_switch_timeout ).toMillis();
 
@@ -270,8 +270,7 @@ public class HighlyAvailableEditionModule
         // TODO There's a cyclical dependency here that should be fixed
         final AtomicReference<HighAvailabilityMemberStateMachine> electionProviderRef = new AtomicReference<>();
         OnDiskLastTxIdGetter lastTxIdGetter = new OnDiskLastTxIdGetter(
-                () -> platformModule.dependencies.resolveDependency(
-                        TransactionIdStore.class ).getLastCommittedTransactionId() );
+                () -> resolveDatabaseDependency( dependencies, TransactionIdStore.class ).getLastCommittedTransactionId() );
         ElectionCredentialsProvider electionCredentialsProvider = config.get( HaSettings.slave_only ) ?
                 new NotElectableElectionCredentialsProvider() :
                 new DefaultElectionCredentialsProvider(
@@ -387,8 +386,7 @@ public class HighlyAvailableEditionModule
         // but merely provide a way to get access to it. That's why this is a Supplier and will be asked
         // later, after the data source module and all that have started.
         @SuppressWarnings( {"deprecation", "unchecked"} )
-        Supplier<LogEntryReader<ReadableClosablePositionAwareChannel>> logEntryReader =
-                (Supplier) dependencies.provideDependency( LogEntryReader.class );
+        Supplier<LogEntryReader<ReadableClosablePositionAwareChannel>> logEntryReader = () -> resolveDatabaseDependency( dependencies, LogEntryReader.class );
 
         MasterClientResolver masterClientResolver = new MasterClientResolver( logging.getInternalLogProvider(),
                 responseUnpacker,
@@ -427,10 +425,10 @@ public class HighlyAvailableEditionModule
                 () -> new DefaultMasterImplSPI( platformModule.graphDatabaseFacade, platformModule.fileSystem,
                         platformModule.monitors,
                         tokenHolders, this.idGeneratorFactory,
-                        platformModule.dependencies.resolveDependency( TransactionCommitProcess.class ),
-                        platformModule.dependencies.resolveDependency( CheckPointer.class ),
-                        platformModule.dependencies.resolveDependency( TransactionIdStore.class ),
-                        platformModule.dependencies.resolveDependency( LogicalTransactionStore.class ),
+                        resolveDatabaseDependency( dependencies, TransactionCommitProcess.class ),
+                        resolveDatabaseDependency( dependencies, CheckPointer.class ),
+                        resolveDatabaseDependency( dependencies, TransactionIdStore.class ),
+                        resolveDatabaseDependency( dependencies, LogicalTransactionStore.class ),
                         platformModule.dependencies.resolveDependency( NeoStoreDataSource.class ),
                         logging.getInternalLogProvider() );
 
@@ -447,8 +445,8 @@ public class HighlyAvailableEditionModule
                 ( master1, conversationManager ) ->
                 {
                     TransactionChecksumLookup txChecksumLookup = new TransactionChecksumLookup(
-                            platformModule.dependencies.resolveDependency( TransactionIdStore.class ),
-                            platformModule.dependencies.resolveDependency( LogicalTransactionStore.class ) );
+                            resolveDatabaseDependency( dependencies, TransactionIdStore.class ),
+                            resolveDatabaseDependency( dependencies, LogicalTransactionStore.class ) );
 
                     return new MasterServer( master1, logging.getInternalLogProvider(),
                             masterServerConfig( config ),
@@ -603,7 +601,7 @@ public class HighlyAvailableEditionModule
                         monitors.newMonitor( SwitchToSlave.Monitor.class ),
                         monitors.newMonitor( StoreCopyClientMonitor.class ),
                         dependencies.provideDependency( NeoStoreDataSource.class ),
-                        dependencies.provideDependency( TransactionIdStore.class ),
+                        () -> resolveDatabaseDependency( dependencies, TransactionIdStore.class ),
                         slaveServerFactory, updatePullerProxy, platformModule.pageCache,
                         monitors, platformModule.transactionMonitor );
             case copy_then_branch:
@@ -615,7 +613,7 @@ public class HighlyAvailableEditionModule
                         monitors.newMonitor( SwitchToSlave.Monitor.class ),
                         monitors.newMonitor( StoreCopyClientMonitor.class ),
                         dependencies.provideDependency( NeoStoreDataSource.class ),
-                        dependencies.provideDependency( TransactionIdStore.class ),
+                        () -> resolveDatabaseDependency( dependencies, TransactionIdStore.class ),
                         slaveServerFactory, updatePullerProxy, platformModule.pageCache,
                         monitors, platformModule.transactionMonitor );
             default:
@@ -730,7 +728,7 @@ public class HighlyAvailableEditionModule
 
     private TokenCreator createPropertyKeyCreator( Config config, ComponentSwitcherContainer componentSwitcherContainer,
             DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
-            RequestContextFactory requestContextFactory, Supplier<Kernel> kernelProvider )
+            RequestContextFactory requestContextFactory, Supplier<Kernel> kernelSupplier )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -744,7 +742,7 @@ public class HighlyAvailableEditionModule
 
         PropertyKeyCreatorSwitcher propertyKeyCreatorModeSwitcher = new PropertyKeyCreatorSwitcher(
                 propertyKeyCreatorDelegate, masterDelegateInvocationHandler,
-                requestContextFactory, kernelProvider );
+                requestContextFactory, kernelSupplier );
 
         componentSwitcherContainer.add( propertyKeyCreatorModeSwitcher );
         return propertyTokenCreator;
@@ -838,10 +836,11 @@ public class HighlyAvailableEditionModule
         } );
     }
 
-    private static void assureLastCommitTimestampInitialized( DependencyResolver resolver )
+    private static void assureLastCommitTimestampInitialized( DependencyResolver globalResolver )
     {
-        MetaDataStore metaDataStore = resolver.resolveDependency( MetaDataStore.class );
-        LogicalTransactionStore txStore = resolver.resolveDependency( LogicalTransactionStore.class );
+        DependencyResolver databaseResolver = globalResolver.resolveDependency( NeoStoreDataSource.class ).getDependencyResolver();
+        MetaDataStore metaDataStore = databaseResolver.resolveDependency( MetaDataStore.class );
+        LogicalTransactionStore txStore = databaseResolver.resolveDependency( LogicalTransactionStore.class );
 
         TransactionId txInfo = metaDataStore.getLastCommittedTransaction();
         long lastCommitTimestampFromStore = txInfo.commitTimestamp();
@@ -921,5 +920,10 @@ public class HighlyAvailableEditionModule
     public void setupSecurityModule( PlatformModule platformModule, Procedures procedures )
     {
         EnterpriseEditionModule.setupEnterpriseSecurityModule( platformModule, procedures );
+    }
+
+    private static <T> T resolveDatabaseDependency( Dependencies dependencies, Class<T> clazz )
+    {
+        return dependencies.resolveDependency( NeoStoreDataSource.class ).getDependencyResolver().resolveDependency( clazz );
     }
 }

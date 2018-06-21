@@ -27,6 +27,7 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
@@ -217,11 +218,11 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
      */
     private static class ResolvableDependencies implements Dependencies
     {
-        private final DependencyResolver resolver;
+        private final DependencyResolver globalResolver;
 
-        ResolvableDependencies( DependencyResolver resolver )
+        ResolvableDependencies( DependencyResolver globalResolver )
         {
-            this.resolver = resolver;
+            this.globalResolver = globalResolver;
         }
 
         @Override
@@ -230,9 +231,10 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
             // We simply can't resolve the commit process here, since the commit process of a slave
             // is one that sends transactions to the master. We here, however would like to actually
             // commit transactions in this db.
+            DependencyResolver databaseResolver = getDatabaseResolver();
             return new TransactionRepresentationCommitProcess(
-                    resolver.resolveDependency( TransactionAppender.class ),
-                    resolver.resolveDependency( StorageEngine.class ) );
+                    databaseResolver.resolveDependency( TransactionAppender.class ),
+                    databaseResolver.resolveDependency( StorageEngine.class ) );
         }
 
         @Override
@@ -240,7 +242,7 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
         {
             try
             {
-                return resolver.resolveDependency( TransactionObligationFulfiller.class );
+                return globalResolver.resolveDependency( TransactionObligationFulfiller.class );
             }
             catch ( UnsatisfiedDependencyException e )
             {
@@ -254,19 +256,25 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
         @Override
         public LogService logService()
         {
-            return resolver.resolveDependency( LogService.class );
+            return globalResolver.resolveDependency( LogService.class );
         }
 
         @Override
         public KernelTransactions kernelTransactions()
         {
-            return resolver.resolveDependency( KernelTransactions.class );
+            return getDatabaseResolver().resolveDependency( KernelTransactions.class );
+        }
+
+        private DependencyResolver getDatabaseResolver()
+        {
+            NeoStoreDataSource dataSource = globalResolver.resolveDependency( NeoStoreDataSource.class );
+            return dataSource.getDependencyResolver();
         }
 
         @Override
         public VersionContextSupplier versionContextSupplier()
         {
-            return resolver.resolveDependency( VersionContextSupplier.class );
+            return globalResolver.resolveDependency( VersionContextSupplier.class );
         }
     }
 
