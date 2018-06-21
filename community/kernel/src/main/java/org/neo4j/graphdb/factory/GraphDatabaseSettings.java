@@ -756,24 +756,30 @@ public class GraphDatabaseSettings implements LoadableConfig
             PATH );
 
     @Description( "Log parameters for the executed queries being logged." )
+    @Dynamic
     public static final Setting<Boolean> log_queries_parameter_logging_enabled =
             setting( "dbms.logs.query.parameter_logging_enabled", BOOLEAN, TRUE );
 
-    @Description( "Log detailed time information for the executed queries being logged." )
+    @Description( "Log detailed time information for the executed queries being logged. Requires `dbms.track_query_cpu_time=true`" )
+    @Dynamic
     public static final Setting<Boolean> log_queries_detailed_time_logging_enabled =
             setting( "dbms.logs.query.time_logging_enabled", BOOLEAN, FALSE );
 
     @Description( "Log allocated bytes for the executed queries being logged. " +
             "The logged number is cumulative over the duration of the query, " +
-            "i.e. for memory intense or long-running queries the value may be larger than the current memory allocation." )
+            "i.e. for memory intense or long-running queries the value may be larger " +
+            "than the current memory allocation. Requires `dbms.track_query_allocation=true`" )
+    @Dynamic
     public static final Setting<Boolean> log_queries_allocation_logging_enabled =
             setting( "dbms.logs.query.allocation_logging_enabled", BOOLEAN, FALSE );
 
     @Description( "Logs which runtime that was used to run the query" )
+    @Dynamic
     public static final Setting<Boolean> log_queries_runtime_logging_enabled =
             setting( "dbms.logs.query.runtime_logging_enabled", BOOLEAN, FALSE );
 
     @Description( "Log page hits and page faults for the executed queries being logged." )
+    @Dynamic
     public static final Setting<Boolean> log_queries_page_detail_logging_enabled =
             setting( "dbms.logs.query.page_logging_enabled", BOOLEAN, FALSE );
 
