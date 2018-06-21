@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -33,16 +36,17 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class SchemaLoggingIT
 {
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule( logProvider );
+    public final ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule( logProvider );
 
     @Test
-    public void shouldLogUserReadableLabelAndPropertyNames()
+    public void shouldLogUserReadableLabelAndPropertyNames() throws Exception
     {
         //noinspection deprecation
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
@@ -55,10 +59,9 @@ public class SchemaLoggingIT
 
         // then
         LogMatcherBuilder match = inLog( IndexPopulationJob.class );
-        logProvider.assertAtLeastOnce(
-                match.info( "Index population started: [%s]", ":User(name) [provider: {key=lucene+native, version=2.0}]" ),
-                match.info( "Index creation finished. Index [%s] is %s.",
-                        ":User(name) [provider: {key=lucene+native, version=2.0}]", "ONLINE" ) );
+        logProvider.assertAtLeastOnce( match.info( "Index population started: [%s]", ":User(name) [provider: {key=lucene+native, version=2.0}]" ) );
+
+        assertEventually( (ThrowingSupplier<Object,Exception>) () -> null, new LogMessageMatcher( match ), 1, TimeUnit.MINUTES );
     }
 
     private void createIndex( GraphDatabaseAPI db, String labelName, String property )
@@ -73,6 +76,31 @@ public class SchemaLoggingIT
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.success();
+        }
+    }
+
+    private class LogMessageMatcher extends BaseMatcher<Object>
+    {
+        private static final String CREATION_FINISHED = "Index creation finished. Index [%s] is %s.";
+        private final LogMatcherBuilder match;
+
+        LogMessageMatcher( LogMatcherBuilder match )
+        {
+            this.match = match;
+        }
+
+        @Override
+        public boolean matches( Object item )
+        {
+            return logProvider.containsMatchingLogCall(
+                    match.info( CREATION_FINISHED, ":User(name) [provider: {key=lucene+native, version=2.0}]", "ONLINE" ) );
+        }
+
+        @Override
+        public void describeTo( Description description )
+        {
+            description.appendText( " expected log message: '" ).appendText( CREATION_FINISHED )
+                    .appendText( "', but not found. Messages was: '" ).appendText( logProvider.serialize() ).appendText( "." );
         }
     }
 }
