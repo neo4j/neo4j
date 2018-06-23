@@ -91,7 +91,7 @@
     <scala-maven-plugin.version>3.3.2</scala-maven-plugin.version>
     <scala.version>2.11.12</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
-    <asm.version>6.1.1</asm.version>
+    <asm.version>6.2</asm.version>
     <metrics.version>4.0.2</metrics.version>
     <scala.target.vm>1.8</scala.target.vm>
     <scala.java.additional.args/>
@@ -935,7 +935,7 @@
         <jdk>[9, )</jdk>
       </activation>
       <properties>
-        <java.exports>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-modules java.xml.bind</java.exports>
+        <java.exports>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</java.exports>
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <scala.java.additional.args>-nobootcp</scala.java.additional.args>
       </properties>

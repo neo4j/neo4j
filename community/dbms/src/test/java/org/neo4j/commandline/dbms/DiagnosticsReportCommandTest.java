@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.api.condition.JRE;
 import org.junit.rules.ExpectedException;
 
 import java.io.ByteArrayOutputStream;
@@ -206,7 +207,9 @@ public class DiagnosticsReportCommandTest
     @Test
     public void overrideDestination() throws Exception
     {
-        String[] args = {"--to=other/", "all"};
+        // because of https://bugs.openjdk.java.net/browse/JDK-8202127 and current surefire behaviour we need to have custom value for JRE >= 11
+        String toArgument = JRE.JAVA_11.isCurrentVersion() ? "--to=" + System.getProperty( "user.dir" ) + "/other/" : "--to=other/";
+        String[] args = {toArgument, "all"};
         try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
         {
             DiagnosticsReportCommand
