@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast._
 import org.neo4j.cypher.internal.runtime.DbAccess
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_5.logical.plans.CoerceToPredicate
+import org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian
 import org.neo4j.values.storable.LocalTimeValue.localTime
 import org.neo4j.values.storable.Values._
 import org.neo4j.values.storable.{DoubleValue, Values}
@@ -206,6 +207,17 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
     compiled.evaluate(ctx, db, map(Array("a", "b", "c"), Array(NO_VALUE, longValue(2), NO_VALUE))) should equal(longValue(2))
     compiled.evaluate(ctx, db, map(Array("a", "b", "c"), Array(NO_VALUE, NO_VALUE, NO_VALUE))) should equal(NO_VALUE)
+  }
+
+  test("distance function") {
+    val compiled = compile(function("distance", parameter("p1"), parameter("p2")))
+    val keys = Array("p1", "p2")
+    compiled.evaluate(ctx, db, map(keys,
+                                   Array(pointValue(Cartesian, 0.0, 0.0),
+                                         pointValue(Cartesian, 1.0, 1.0)))) should equal(doubleValue(Math.sqrt(2)))
+    compiled.evaluate(ctx, db, map(keys,
+                                   Array(pointValue(Cartesian, 0.0, 0.0),
+                                         NO_VALUE))) should equal(NO_VALUE)
   }
 
   test("add numbers") {

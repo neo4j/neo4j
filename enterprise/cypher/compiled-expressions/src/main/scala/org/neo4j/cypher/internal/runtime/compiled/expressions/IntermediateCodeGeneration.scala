@@ -414,6 +414,14 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         Some(IntermediateExpression(repr, args.exists(_.nullable)))
       }
 
+    case functions.Distance =>
+      for {p1 <- compile(c.args(0))
+           p2 <- compile(c.args(1))
+      } yield {
+        IntermediateExpression(
+          invokeStatic(method[CypherFunctions, Value, AnyValue, AnyValue]("distance"), p1.ir, p2.ir), nullable = true)
+      }
+
     case _ => None
   }
 

@@ -29,8 +29,8 @@ import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.NumberValue;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -310,6 +310,32 @@ public final class CypherFunctions
     public static DoubleValue rand()
     {
         return doubleValue( ThreadLocalRandom.current().nextDouble() );
+    }
+
+    // TODO: Support better calculations, like https://en.wikipedia.org/wiki/Vincenty%27s_formulae
+    // TODO: Support more coordinate systems
+    public static Value distance( AnyValue lhs, AnyValue rhs )
+    {
+        if ( lhs instanceof PointValue && rhs instanceof PointValue )
+        {
+            return calculateDistance( (PointValue) lhs, (PointValue) rhs );
+        }
+        else
+        {
+            return NO_VALUE;
+        }
+    }
+
+    private static Value calculateDistance( PointValue p1, PointValue p2 )
+    {
+        if ( p1.getCoordinateReferenceSystem().equals( p2.getCoordinateReferenceSystem() ) )
+        {
+            return doubleValue( p1.getCoordinateReferenceSystem().getCalculator().distance( p1, p2 ) );
+        }
+        else
+        {
+            return NO_VALUE;
+        }
     }
 
     private static long asLong( AnyValue value )
