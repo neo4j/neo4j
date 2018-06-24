@@ -31,13 +31,12 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,106 +47,105 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.zip.ZipOutputStream;
 
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.test.rule.RepeatRule;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.VerboseTimeout;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static java.time.Duration.ofSeconds;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
-public class DatabaseIndexIntegrationTest
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+class DatabaseIndexIntegrationTest
 {
     private static final int THREAD_NUMBER = 5;
     private static ExecutorService workers;
 
-    private final TestDirectory testDirectory = TestDirectory.testDirectory();
-    private final RepeatRule repeatRule = new RepeatRule();
-    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( repeatRule )
-            .around( fileSystemRule );
-
-    @Rule
-    public final VerboseTimeout timeout = VerboseTimeout.builder()
-            .withTimeout( 60, TimeUnit.SECONDS )
-            .build();
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private DefaultFileSystemAbstraction fileSystem;
 
     private final CountDownLatch raceSignal = new CountDownLatch( 1 );
     private SyncNotifierDirectoryFactory directoryFactory;
     private WritableTestDatabaseIndex luceneIndex;
 
-    @BeforeClass
-    public static void initExecutors()
+    @BeforeAll
+    static void initExecutors()
     {
         workers = Executors.newFixedThreadPool( THREAD_NUMBER );
     }
 
-    @AfterClass
-    public static void shutDownExecutor()
+    @AfterAll
+    static void shutDownExecutor()
     {
         workers.shutdownNow();
     }
 
-    @Before
-    public void setUp() throws IOException
+    @BeforeEach
+    void setUp() throws IOException
     {
         directoryFactory = new SyncNotifierDirectoryFactory( raceSignal );
         luceneIndex = createTestLuceneIndex( directoryFactory, testDirectory.directory() );
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         directoryFactory.close();
     }
 
-    @Test
-    @RepeatRule.Repeat( times = 2 )
-    public void testSaveCallCommitAndCloseFromMultipleThreads() throws Exception
+    @RepeatedTest( 2 )
+    void testSaveCallCommitAndCloseFromMultipleThreads()
     {
-        generateInitialData();
-        Supplier<Runnable> closeTaskSupplier = () -> createConcurrentCloseTask( raceSignal );
-        List<Future<?>> closeFutures = submitTasks( closeTaskSupplier );
-
-        for ( Future<?> closeFuture : closeFutures )
+        assertTimeout( ofSeconds( 60 ), () ->
         {
-            closeFuture.get();
-        }
+            generateInitialData();
+            Supplier<Runnable> closeTaskSupplier = () -> createConcurrentCloseTask( raceSignal );
+            List<Future<?>> closeFutures = submitTasks( closeTaskSupplier );
 
-        assertFalse( luceneIndex.isOpen() );
+            for ( Future<?> closeFuture: closeFutures )
+            {
+                closeFuture.get();
+            }
+
+            assertFalse( luceneIndex.isOpen() );
+        } );
     }
 
-    @Test
-    @RepeatRule.Repeat( times = 2 )
-    public void saveCallCloseAndDropFromMultipleThreads() throws Exception
+    @RepeatedTest( 2 )
+    void saveCallCloseAndDropFromMultipleThreads()
     {
-        generateInitialData();
-        Supplier<Runnable> dropTaskSupplier = () -> createConcurrentDropTask( raceSignal );
-        List<Future<?>> futures = submitTasks( dropTaskSupplier );
-
-        for ( Future<?> future : futures )
+        assertTimeout( ofSeconds( 60 ), () ->
         {
-            future.get();
-        }
+            generateInitialData();
+            Supplier<Runnable> dropTaskSupplier = () -> createConcurrentDropTask( raceSignal );
+            List<Future<?>> futures = submitTasks( dropTaskSupplier );
 
-        assertFalse( luceneIndex.isOpen() );
+            for ( Future<?> future: futures )
+            {
+                future.get();
+            }
+
+            assertFalse( luceneIndex.isOpen() );
+        } );
     }
 
     private WritableTestDatabaseIndex createTestLuceneIndex( DirectoryFactory dirFactory, File folder ) throws IOException
     {
         PartitionedIndexStorage indexStorage = new PartitionedIndexStorage(
-                dirFactory, fileSystemRule.get(), folder );
+                dirFactory, fileSystem, folder );
         WritableTestDatabaseIndex index = new WritableTestDatabaseIndex( indexStorage );
         index.create();
         index.open();
@@ -223,7 +221,7 @@ public class DatabaseIndexIntegrationTest
         };
     }
 
-    private Document createTestDocument()
+    private static Document createTestDocument()
     {
         Document document = new Document();
         document.add( new TextField( "text", "textValue", Field.Store.YES ) );

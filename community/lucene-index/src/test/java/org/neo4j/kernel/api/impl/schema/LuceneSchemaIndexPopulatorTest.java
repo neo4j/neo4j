@@ -26,16 +26,17 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -50,26 +51,29 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.Long.parseLong;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.defaultDirectoryStructure;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 
-public class LuceneSchemaIndexPopulatorTest
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+class LuceneSchemaIndexPopulatorTest
 {
-    @Rule
-    public final DefaultFileSystemRule fs = new DefaultFileSystemRule();
-    @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
+    @Inject
+    private DefaultFileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDir;
 
     private IndexStoreView indexStoreView;
     private LuceneIndexProvider provider;
@@ -80,13 +84,13 @@ public class LuceneSchemaIndexPopulatorTest
     private static final int propertyKeyId = 666;
     private StoreIndexDescriptor index;
 
-    @Before
-    public void before() throws Exception
+    @BeforeEach
+    void before() throws Exception
     {
         directory = new RAMDirectory();
         DirectoryFactory directoryFactory = new DirectoryFactory.Single(
                 new DirectoryFactory.UncloseableDirectory( directory ) );
-        provider = new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( testDir.directory( "folder" ) ),
+        provider = new LuceneIndexProvider( fs, directoryFactory, defaultDirectoryStructure( testDir.directory( "folder" ) ),
                 IndexProvider.Monitor.EMPTY, Config.defaults(), OperationalMode.single );
         indexStoreView = mock( IndexStoreView.class );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
@@ -95,8 +99,8 @@ public class LuceneSchemaIndexPopulatorTest
         indexPopulator.create();
     }
 
-    @After
-    public void after() throws Exception
+    @AfterEach
+    void after() throws Exception
     {
         if ( reader != null )
         {
@@ -106,7 +110,7 @@ public class LuceneSchemaIndexPopulatorTest
     }
 
     @Test
-    public void addingValuesShouldPersistThem() throws Exception
+    void addingValuesShouldPersistThem() throws Exception
     {
         // WHEN
         addUpdate( indexPopulator, 1, "First" );
@@ -131,7 +135,7 @@ public class LuceneSchemaIndexPopulatorTest
     }
 
     @Test
-    public void multipleEqualValues() throws Exception
+    void multipleEqualValues() throws Exception
     {
         // WHEN
         addUpdate( indexPopulator, 1, "value" );
@@ -144,7 +148,7 @@ public class LuceneSchemaIndexPopulatorTest
     }
 
     @Test
-    public void multipleEqualValuesWithUpdateThatRemovesOne() throws Exception
+    void multipleEqualValuesWithUpdateThatRemovesOne() throws Exception
     {
         // WHEN
         addUpdate( indexPopulator, 1, "value" );
@@ -158,7 +162,7 @@ public class LuceneSchemaIndexPopulatorTest
     }
 
     @Test
-    public void changeUpdatesInterleavedWithAdds() throws Exception
+    void changeUpdatesInterleavedWithAdds() throws Exception
     {
         // WHEN
         addUpdate( indexPopulator, 1, "1" );
@@ -175,7 +179,7 @@ public class LuceneSchemaIndexPopulatorTest
     }
 
     @Test
-    public void addUpdatesInterleavedWithAdds() throws Exception
+    void addUpdatesInterleavedWithAdds() throws Exception
     {
         // WHEN
         addUpdate( indexPopulator, 1, "1" );
@@ -192,7 +196,7 @@ public class LuceneSchemaIndexPopulatorTest
     }
 
     @Test
-    public void removeUpdatesInterleavedWithAdds() throws Exception
+    void removeUpdatesInterleavedWithAdds() throws Exception
     {
         // WHEN
         addUpdate( indexPopulator, 1, "1" );
@@ -208,7 +212,7 @@ public class LuceneSchemaIndexPopulatorTest
     }
 
     @Test
-    public void multipleInterleaves() throws Exception
+    void multipleInterleaves() throws Exception
     {
         // WHEN
         addUpdate( indexPopulator, 1, "1" );
@@ -279,7 +283,7 @@ public class LuceneSchemaIndexPopulatorTest
         for ( Hit hit : expectedHits )
         {
             TopDocs hits = searcher.search( LuceneDocumentStructure.newSeekQuery( hit.value ), 10 );
-            assertEquals( "Unexpected number of index results from " + hit.value, hit.nodeIds.length, hits.totalHits );
+            assertEquals( hit.nodeIds.length, hits.totalHits, "Unexpected number of index results from " + hit.value );
             Set<Long> foundNodeIds = new HashSet<>();
             for ( int i = 0; i < hits.totalHits; i++ )
             {

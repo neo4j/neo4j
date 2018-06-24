@@ -23,12 +23,13 @@ import org.apache.commons.lang3.RandomUtils;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -36,29 +37,30 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.test.ThreadTestUtils;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.mockito.Mockito.mock;
 
-public class PooledConcurrentMergeSchedulerTest
+class PooledConcurrentMergeSchedulerTest
 {
 
     private TestPooledConcurrentMergeScheduler mergeScheduler;
     private IndexWriter indexWriter = mock( IndexWriter.class );
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         mergeScheduler = new TestPooledConcurrentMergeScheduler();
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         mergeScheduler.getExecutionLatch().countDown();
     }
 
     @Test
-    public void doNotAddMergeTaskWhenWriterDoesNotHaveMergesToDo() throws Exception
+    void doNotAddMergeTaskWhenWriterDoesNotHaveMergesToDo() throws Exception
     {
         IndexWriter indexWriter = mock( IndexWriter.class );
 
@@ -68,7 +70,7 @@ public class PooledConcurrentMergeSchedulerTest
     }
 
     @Test
-    public void addMergeTaskWhenWriterHasOneMergeToPerform() throws IOException
+    void addMergeTaskWhenWriterHasOneMergeToPerform() throws IOException
     {
         SegmentCommitInfo segmentCommitInfo = getSegmentCommitInfo();
 
@@ -81,7 +83,7 @@ public class PooledConcurrentMergeSchedulerTest
     }
 
     @Test
-    public void addTwoMergeTasksWhenWriterHastwoMergeToPerform() throws IOException
+    void addTwoMergeTasksWhenWriterHastwoMergeToPerform() throws IOException
     {
         SegmentCommitInfo segmentCommitInfo = getSegmentCommitInfo();
 
@@ -93,28 +95,30 @@ public class PooledConcurrentMergeSchedulerTest
         assertEquals( 2, mergeScheduler.getWriterTaskCount() );
     }
 
-    @Test( timeout = 10_000 )
-    public void writerCloseWaitForMergesInMergeQueue() throws IOException, InterruptedException
+    @Test
+    void writerCloseWaitForMergesInMergeQueue()
     {
-        indexWriter = mock( IndexWriter.class );
-        SegmentCommitInfo segmentCommitInfo = getSegmentCommitInfo();
+        assertTimeout( Duration.ofSeconds( 10 ), () ->
+        {
+            indexWriter = mock( IndexWriter.class );
+            SegmentCommitInfo segmentCommitInfo = getSegmentCommitInfo();
 
-        Mockito.when( indexWriter.getNextMerge() ).thenReturn( new TestOneMerge( segmentCommitInfo ) )
-                .thenReturn( null );
+            Mockito.when( indexWriter.getNextMerge() ).thenReturn( new TestOneMerge( segmentCommitInfo ) ).thenReturn( null );
 
-        mergeScheduler.merge( indexWriter, MergeTrigger.EXPLICIT, false );
+            mergeScheduler.merge( indexWriter, MergeTrigger.EXPLICIT, false );
 
-        assertEquals( 1, mergeScheduler.getWriterTaskCount() );
+            assertEquals( 1, mergeScheduler.getWriterTaskCount() );
 
-        Thread closeSchedulerThread = ThreadTestUtils.fork( () -> mergeScheduler.close() );
-        ThreadTestUtils.awaitThreadState( closeSchedulerThread, TimeUnit.SECONDS.toMillis( 5 ), Thread.State.TIMED_WAITING );
-        mergeScheduler.getExecutionLatch().countDown();
-        closeSchedulerThread.join();
+            Thread closeSchedulerThread = ThreadTestUtils.fork( () -> mergeScheduler.close() );
+            ThreadTestUtils.awaitThreadState( closeSchedulerThread, TimeUnit.SECONDS.toMillis( 5 ), Thread.State.TIMED_WAITING );
+            mergeScheduler.getExecutionLatch().countDown();
+            closeSchedulerThread.join();
 
-        assertEquals( 0, mergeScheduler.getWriterTaskCount() );
+            assertEquals( 0, mergeScheduler.getWriterTaskCount() );
+        } );
     }
 
-    private SegmentCommitInfo getSegmentCommitInfo()
+    private static SegmentCommitInfo getSegmentCommitInfo()
     {
         SegmentInfo segmentInfo =
                 new SegmentInfo( mock( Directory.class ), Version.LATEST, "test", Integer.MAX_VALUE, true,
@@ -122,9 +126,8 @@ public class PooledConcurrentMergeSchedulerTest
         return new SegmentCommitInfo( segmentInfo, 1, 1L, 1L, 1L );
     }
 
-    private class TestPooledConcurrentMergeScheduler extends PooledConcurrentMergeScheduler
+    private static class TestPooledConcurrentMergeScheduler extends PooledConcurrentMergeScheduler
     {
-
         private CountDownLatch executionLatch = new CountDownLatch( 1 );
 
         @Override
@@ -164,9 +167,8 @@ public class PooledConcurrentMergeSchedulerTest
         }
     }
 
-    private class TestOneMerge extends MergePolicy.OneMerge
+    private static class TestOneMerge extends MergePolicy.OneMerge
     {
-
         TestOneMerge( SegmentCommitInfo segmentCommitInfo )
         {
             super( Collections.singletonList( segmentCommitInfo ) );

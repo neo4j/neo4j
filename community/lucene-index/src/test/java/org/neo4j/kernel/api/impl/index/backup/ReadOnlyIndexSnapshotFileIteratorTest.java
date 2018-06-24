@@ -24,10 +24,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,35 +38,38 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.stream.Collectors.toSet;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class ReadOnlyIndexSnapshotFileIteratorTest
 {
-    @Rule
-    public final TestDirectory testDir = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory testDir;
 
-    protected File indexDir;
+    File indexDir;
     protected Directory dir;
 
-    @Before
-    public void setUp() throws IOException
+    @BeforeEach
+    void setUp() throws IOException
     {
         indexDir = testDir.directory();
         dir = DirectoryFactory.PERSISTENT.open( indexDir );
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws IOException
     {
         IOUtils.closeAll( dir );
     }
 
     @Test
-    public void shouldReturnRealSnapshotIfIndexAllowsIt() throws IOException
+    void shouldReturnRealSnapshotIfIndexAllowsIt() throws IOException
     {
         prepareIndex();
 
@@ -81,7 +84,7 @@ public class ReadOnlyIndexSnapshotFileIteratorTest
     }
 
     @Test
-    public void shouldReturnEmptyIteratorWhenNoCommitsHaveBeenMade() throws IOException
+    void shouldReturnEmptyIteratorWhenNoCommitsHaveBeenMade() throws IOException
     {
         try ( ResourceIterator<File> snapshot = makeSnapshot() )
         {

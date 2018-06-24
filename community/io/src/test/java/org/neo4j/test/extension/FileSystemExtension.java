@@ -34,6 +34,7 @@ abstract class FileSystemExtension<T extends FileSystemAbstraction> extends Stat
     public void afterEach( ExtensionContext context ) throws Exception
     {
         getStoredValue( context ).close();
+        removeStoredValue( context );
     }
 
     @Override

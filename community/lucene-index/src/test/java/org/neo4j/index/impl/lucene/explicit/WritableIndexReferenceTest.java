@@ -21,56 +21,51 @@ package org.neo4j.index.impl.lucene.explicit;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class WritableIndexReferenceTest
+class WritableIndexReferenceTest
 {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
     private IndexIdentifier identifier = mock( IndexIdentifier.class );
     private IndexSearcher searcher = mock( IndexSearcher.class );
     private IndexWriter indexWriter = mock( IndexWriter.class );
     private CloseTrackingIndexReader reader = new CloseTrackingIndexReader();
     private WritableIndexReference indexReference = new WritableIndexReference( identifier, searcher, indexWriter );
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         when( searcher.getIndexReader() ).thenReturn( reader );
     }
 
     @Test
-    public void useProvidedWriterAsIndexWriter()
+    void useProvidedWriterAsIndexWriter()
     {
         assertSame( indexWriter, indexReference.getWriter() );
     }
 
     @Test
-    public void stalingWritableIndex()
+    void stalingWritableIndex()
     {
-        assertFalse( "Index is not stale by default.", indexReference.checkAndClearStale() );
+        assertFalse( indexReference.checkAndClearStale(), "Index is not stale by default." );
         indexReference.setStale();
-        assertTrue( "We should be able to reset stale index state.", indexReference.checkAndClearStale() );
-        assertFalse( "Index is not stale anymore.", indexReference.checkAndClearStale() );
+        assertTrue( indexReference.checkAndClearStale(), "We should be able to reset stale index state." );
+        assertFalse( indexReference.checkAndClearStale(), "Index is not stale anymore." );
 
     }
 
     @Test
-    public void disposeWritableIndex() throws Exception
+    void disposeWritableIndex() throws Exception
     {
         indexReference.dispose();
-        assertTrue( "Reader should be closed.", reader.isClosed() );
-        assertTrue( "Writer should be closed.", indexReference.isWriterClosed() );
+        assertTrue( reader.isClosed(), "Reader should be closed." );
+        assertTrue( indexReference.isWriterClosed(), "Reader should be closed." );
     }
 
 }

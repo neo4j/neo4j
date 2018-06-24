@@ -25,9 +25,9 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,35 +44,36 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class PartitionedIndexStorageTest
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+class PartitionedIndexStorageTest
 {
-    @Rule
-    public final DefaultFileSystemRule fsRule = new DefaultFileSystemRule();
-    @Rule
-    public final TestDirectory testDir = TestDirectory.testDirectory( getClass(), fsRule.get() );
+    @Inject
+    private DefaultFileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDir;
 
-    private FileSystemAbstraction fs;
     private PartitionedIndexStorage storage;
 
-    @Before
-    public void createIndexStorage()
+    @BeforeEach
+    void createIndexStorage()
     {
-        fs = fsRule.get();
         storage = new PartitionedIndexStorage( getOrCreateDirFactory( fs ), fs, testDir.graphDbDir() );
     }
 
     @Test
-    public void prepareFolderCreatesFolder() throws IOException
+    void prepareFolderCreatesFolder() throws IOException
     {
         File folder = createRandomFolder( testDir.graphDbDir() );
 
@@ -82,7 +83,7 @@ public class PartitionedIndexStorageTest
     }
 
     @Test
-    public void prepareFolderRemovesFromFileSystem() throws IOException
+    void prepareFolderRemovesFromFileSystem() throws IOException
     {
         File folder = createRandomFolder( testDir.graphDbDir() );
         createRandomFilesAndFolders( folder );
@@ -94,7 +95,7 @@ public class PartitionedIndexStorageTest
     }
 
     @Test
-    public void prepareFolderRemovesFromLucene() throws IOException
+    void prepareFolderRemovesFromLucene() throws IOException
     {
         File folder = createRandomFolder( testDir.graphDbDir() );
         Directory dir = createRandomLuceneDir( folder );
@@ -108,7 +109,7 @@ public class PartitionedIndexStorageTest
     }
 
     @Test
-    public void openIndexDirectoriesForEmptyIndex() throws IOException
+    void openIndexDirectoriesForEmptyIndex() throws IOException
     {
         File indexFolder = storage.getIndexFolder();
 
@@ -118,7 +119,7 @@ public class PartitionedIndexStorageTest
     }
 
     @Test
-    public void openIndexDirectories() throws IOException
+    void openIndexDirectories() throws IOException
     {
         File indexFolder = storage.getIndexFolder();
         createRandomLuceneDir( indexFolder ).close();
@@ -140,7 +141,7 @@ public class PartitionedIndexStorageTest
     }
 
     @Test
-    public void listFoldersForEmptyFolder() throws IOException
+    void listFoldersForEmptyFolder() throws IOException
     {
         File indexFolder = storage.getIndexFolder();
         fs.mkdirs( indexFolder );
@@ -151,7 +152,7 @@ public class PartitionedIndexStorageTest
     }
 
     @Test
-    public void listFolders() throws IOException
+    void listFolders() throws IOException
     {
         File indexFolder = storage.getIndexFolder();
         fs.mkdirs( indexFolder );
@@ -167,7 +168,7 @@ public class PartitionedIndexStorageTest
     }
 
     @Test
-    public void shouldListIndexPartitionsSorted() throws Exception
+    void shouldListIndexPartitionsSorted() throws Exception
     {
         // GIVEN
         try ( FileSystemAbstraction scramblingFs = new DefaultFileSystemAbstraction()
@@ -199,8 +200,7 @@ public class PartitionedIndexStorageTest
             for ( Map.Entry<File,Directory> directory : directories.entrySet() )
             {
                 int current = parseInt( directory.getKey().getName() );
-                assertTrue( "Wanted directory " + current + " to have higher id than previous " + previous,
-                        current > previous );
+                assertTrue( current > previous, "Wanted directory " + current + " to have higher id than previous " + previous );
                 previous = current;
             }
         }

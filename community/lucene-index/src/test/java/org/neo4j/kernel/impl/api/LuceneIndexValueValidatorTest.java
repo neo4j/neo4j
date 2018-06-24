@@ -21,50 +21,46 @@ package org.neo4j.kernel.impl.api;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.values.storable.Values;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.kernel.impl.api.LuceneIndexValueValidator.INSTANCE;
 import static org.neo4j.kernel.impl.api.LuceneIndexValueValidator.MAX_TERM_LENGTH;
 
-public class LuceneIndexValueValidatorTest
+class LuceneIndexValueValidatorTest
 {
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     @Test
-    public void tooLongArrayIsNotAllowed()
+    void tooLongArrayIsNotAllowed()
     {
         int length = MAX_TERM_LENGTH + 1;
-        expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( containsString( "is longer than " + MAX_TERM_LENGTH ) );
-        getValidator().validate( RandomUtils.nextBytes( length ) );
+        IllegalArgumentException iae = assertThrows( IllegalArgumentException.class, () -> getValidator().validate( RandomUtils.nextBytes( length ) ) );
+        assertThat( iae.getMessage(), containsString( "is longer than " + MAX_TERM_LENGTH ) );
     }
 
     @Test
-    public void stringOverExceedLimitNotAllowed()
+    void stringOverExceedLimitNotAllowed()
     {
         int length = MAX_TERM_LENGTH * 2;
-        expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( containsString( length + " is longer than " + MAX_TERM_LENGTH ) );
-        getValidator().validate( RandomStringUtils.randomAlphabetic( length ) );
+        IllegalArgumentException iae =
+                assertThrows( IllegalArgumentException.class, () -> getValidator().validate( RandomStringUtils.randomAlphabetic( length ) ) );
+        assertThat( iae.getMessage(), containsString( length + " is longer than " + MAX_TERM_LENGTH ) );
     }
 
     @Test
-    public void nullIsNotAllowed()
+    void nullIsNotAllowed()
     {
-        expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( "Null value" );
-        getValidator().validate( null );
+        IllegalArgumentException iae = assertThrows( IllegalArgumentException.class, () -> getValidator().validate( null ) );
+        assertEquals( iae.getMessage(), "Null value" );
     }
 
     @Test
-    public void numberIsValidValue()
+    void numberIsValidValue()
     {
         getValidator().validate( 5 );
         getValidator().validate( 5.0d );
@@ -73,14 +69,14 @@ public class LuceneIndexValueValidatorTest
     }
 
     @Test
-    public void shortArrayIsValidValue()
+    void shortArrayIsValidValue()
     {
         getValidator().validate( new long[] {1, 2, 3} );
         getValidator().validate( RandomUtils.nextBytes( 200 ) );
     }
 
     @Test
-    public void shortStringIsValidValue()
+    void shortStringIsValidValue()
     {
         getValidator().validate( RandomStringUtils.randomAlphabetic( 5 ) );
         getValidator().validate( RandomStringUtils.randomAlphabetic( 10 ) );
@@ -90,7 +86,7 @@ public class LuceneIndexValueValidatorTest
     }
 
     // Meant to be overridden for tests that want to verify the same things, but for a different validator
-    protected Validator<Object> getValidator()
+    private Validator<Object> getValidator()
     {
         return object -> INSTANCE.validate( Values.of( object ) );
     }

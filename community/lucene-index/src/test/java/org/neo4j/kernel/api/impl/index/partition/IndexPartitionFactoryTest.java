@@ -22,51 +22,49 @@ package org.neo4j.kernel.api.impl.index.partition;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class IndexPartitionFactoryTest
+@ExtendWith( TestDirectoryExtension.class )
+class IndexPartitionFactoryTest
 {
 
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
+    @Inject
+    private TestDirectory testDirectory;
     private Directory directory;
 
-    @Before
-    public void setUp() throws IOException
+    @BeforeEach
+    void setUp() throws IOException
     {
         directory = DirectoryFactory.PERSISTENT.open( testDirectory.directory() );
     }
 
     @Test
-    public void createReadOnlyPartition() throws Exception
+    void createReadOnlyPartition() throws Exception
     {
         prepareIndex();
         try ( AbstractIndexPartition indexPartition =
-                      new ReadOnlyIndexPartitionFactory().createPartition( testDirectory.directory(), directory ) )
+                new ReadOnlyIndexPartitionFactory().createPartition( testDirectory.directory(), directory ) )
         {
-            expectedException.expect( UnsupportedOperationException.class );
-
-            indexPartition.getIndexWriter();
+            assertThrows(UnsupportedOperationException.class, indexPartition::getIndexWriter );
         }
     }
 
     @Test
-    public void createWritablePartition() throws Exception
+    void createWritablePartition() throws Exception
     {
         try ( AbstractIndexPartition indexPartition =
                       new WritableIndexPartitionFactory( IndexWriterConfigs::standard )
@@ -80,8 +78,7 @@ public class IndexPartitionFactoryTest
                 indexPartition.maybeRefreshBlocking();
                 try ( PartitionSearcher searcher = indexPartition.acquireSearcher() )
                 {
-                    assertEquals( "We should be able to see newly added document ",
-                            1, searcher.getIndexSearcher().getIndexReader().numDocs() );
+                    assertEquals( 1, searcher.getIndexSearcher().getIndexReader().numDocs(), "We should be able to see newly added document " );
                 }
             }
         }

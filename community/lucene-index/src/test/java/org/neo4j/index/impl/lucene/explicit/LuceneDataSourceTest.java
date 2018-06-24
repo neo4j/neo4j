@@ -248,11 +248,6 @@ public class LuceneDataSourceTest
         dataSource.shutdown();
     }
 
-    private Map<String, String> config()
-    {
-        return stringMap();
-    }
-
     private void prepareIndexesByIdentifiers( IndexIdentifier indexIdentifier ) throws Exception
     {
         Config config = Config.defaults();
