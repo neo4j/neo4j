@@ -49,7 +49,6 @@ object CodeGeneration {
 
   private val DEBUG = false
   private val VALUES = classOf[Values]
-  private val VALUE = classOf[Value]
   private val LONG = classOf[LongValue]
   private val DOUBLE = classOf[DoubleValue]
   private val TEXT = classOf[TextValue]
@@ -122,7 +121,8 @@ object CodeGeneration {
       Expression.notEqual(compileExpression(lhs, block), compileExpression(rhs, block))
 
     //run multiple ops in a block, the value of the block is the last expression
-    case Block(ops) => ops.map(compileExpression(_, block)).last
+    case Block(ops) =>
+      ops.map(compileExpression(_, block)).last
 
     //if (test) {onTrue}
     case Condition(test, onTrue) =>

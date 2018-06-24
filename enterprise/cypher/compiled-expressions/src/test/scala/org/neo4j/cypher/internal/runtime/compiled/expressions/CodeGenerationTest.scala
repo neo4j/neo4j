@@ -196,6 +196,18 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(range).evaluate(ctx, db, EMPTY_MAP) should equal(list(longValue(5), longValue(7), longValue(9)))
   }
 
+  test("coalesce function") {
+    compile(function("coalesce", noValue, noValue, literalInt(2), noValue)).evaluate(ctx, db, EMPTY_MAP) should equal(longValue(2))
+    compile(function("coalesce", noValue, noValue)).evaluate(ctx, db, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
+  test("coalesce function with parameters") {
+    val compiled = compile(function("coalesce", parameter("a"), parameter("b"), parameter("c")))
+
+    compiled.evaluate(ctx, db, map(Array("a", "b", "c"), Array(NO_VALUE, longValue(2), NO_VALUE))) should equal(longValue(2))
+    compiled.evaluate(ctx, db, map(Array("a", "b", "c"), Array(NO_VALUE, NO_VALUE, NO_VALUE))) should equal(NO_VALUE)
+  }
+
   test("add numbers") {
     // Given
     val expression = add(literalInt(42), literalInt(10))

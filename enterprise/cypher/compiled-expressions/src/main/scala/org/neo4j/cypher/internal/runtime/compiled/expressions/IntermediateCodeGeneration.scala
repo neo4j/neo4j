@@ -50,87 +50,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
   def compile(expression: Expression): Option[IntermediateExpression] = expression match {
 
     //functions
-    case c: FunctionInvocation => c.function match {
-      case functions.Acos =>
-
-        compile(c.args.head).map(in => IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("acos"), in.ir)), in.nullable))
-      case functions.Cos =>
-        compile(c.args.head).map(in => IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("cos"), in.ir)), in.nullable))
-      case functions.Cot =>
-        compile(c.args.head).map(in => IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("cot"), in.ir)), in.nullable))
-      case functions.Asin =>
-        compile(c.args.head).map(in => IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("asin"), in.ir)), in.nullable))
-      case functions.Haversin =>
-        compile(c.args.head).map(in => IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("haversin"), in.ir)), in.nullable))
-      case functions.Sin =>
-        compile(c.args.head).map(in => IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("sin"), in.ir)), in.nullable))
-      case functions.Atan =>
-        compile(c.args.head).map(in => IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("atan"), in.ir)), in.nullable))
-      case functions.Atan2 =>
-        for {y <- compile(c.args(0))
-             x <- compile(c.args(1))
-        } yield {
-          IntermediateExpression(
-            noValueCheck(y, x)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue, AnyValue]("atan2"), y.ir, x.ir)),
-            y.nullable || x.nullable)
-        }
-      case functions.Tan =>
-        compile(c.args.head).map(in => IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("tan"), in.ir)), in.nullable))
-      case functions.Round =>
-        compile(c.args.head).map(in => IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("round"), in.ir)), in.nullable))
-      case functions.Rand =>
-        Some(IntermediateExpression(invokeStatic(method[CypherFunctions, DoubleValue]("rand")),
-                                    nullable = false))
-      case functions.Abs =>
-        compile(c.args.head).map(in => IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, NumberValue, AnyValue]("abs"), in.ir)), in.nullable))
-      case functions.Ceil =>
-        compile(c.args.head).map(in => IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("ceil"), in.ir)), in.nullable))
-      case functions.Floor =>
-        compile(c.args.head).map(in => IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("floor"), in.ir)), in.nullable))
-      case functions.Degrees =>
-        compile(c.args.head).map(in => IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("toDegrees"), in.ir)), in.nullable))
-      case functions.Exp =>
-        compile(c.args.head).map(in => IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("exp"), in.ir)), in.nullable))
-      case functions.Log =>
-        compile(c.args.head).map(in => IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("log"), in.ir)), in.nullable))
-      case functions.Log10 =>
-        compile(c.args.head).map(in => IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("log10"), in.ir)), in.nullable))
-      case functions.Radians =>
-        compile(c.args.head).map(in => IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("toRadians"), in.ir)), in.nullable))
-      case functions.Sign =>
-        compile(c.args.head).map(in => IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, LongValue, AnyValue]("signum"), in.ir)), in.nullable))
-      case functions.Sqrt =>
-        compile(c.args.head).map(in => IntermediateExpression(
-          noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("sqrt"), in.ir)), in.nullable))
-      case functions.Range =>
-        for {start <- compile(c.args(0))
-             end <- compile(c.args(1))
-             step <- compile(c.args(2))
-        } yield IntermediateExpression(invokeStatic(method[CypherFunctions, ListValue, AnyValue, AnyValue, AnyValue]("range"),
-                             start.ir, end.ir, step.ir), nullable = false)
-
-      case functions.Pi => Some(IntermediateExpression(getStatic[Values, DoubleValue]("PI"), nullable = false))
-      case functions.E => Some(IntermediateExpression(getStatic[Values, DoubleValue]("E"), nullable = false))
-      case _ => None
-    }
+    case c: FunctionInvocation => compileFunction(c)
 
     //math
     case Multiply(lhs, rhs) =>
@@ -380,6 +300,119 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
 
     case IsPrimitiveNull(offset) =>
       Some(IntermediateExpression(ternary(equal(getLongAt(offset), constant(-1L)), truthValue, falseValue), nullable = false))
+
+    case _ => None
+  }
+
+  def compileFunction(c: FunctionInvocation): Option[IntermediateExpression] = c.function match {
+    case functions.Acos =>
+      compile(c.args.head).map(in => IntermediateExpression(
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("acos"), in.ir)), in.nullable))
+    case functions.Cos =>
+      compile(c.args.head).map(in => IntermediateExpression(
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("cos"), in.ir)), in.nullable))
+    case functions.Cot =>
+      compile(c.args.head).map(in => IntermediateExpression(
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("cot"), in.ir)), in.nullable))
+    case functions.Asin =>
+      compile(c.args.head).map(in => IntermediateExpression(
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("asin"), in.ir)), in.nullable))
+    case functions.Haversin =>
+      compile(c.args.head).map(in => IntermediateExpression(
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("haversin"), in.ir)), in.nullable))
+    case functions.Sin =>
+      compile(c.args.head).map(in => IntermediateExpression(
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("sin"), in.ir)), in.nullable))
+    case functions.Atan =>
+      compile(c.args.head).map(in => IntermediateExpression(
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("atan"), in.ir)), in.nullable))
+    case functions.Atan2 =>
+      for {y <- compile(c.args(0))
+           x <- compile(c.args(1))
+      } yield {
+        IntermediateExpression(
+          noValueCheck(y, x)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue, AnyValue]("atan2"), y.ir, x.ir)),
+          y.nullable || x.nullable)
+      }
+    case functions.Tan =>
+      compile(c.args.head).map(in => IntermediateExpression(
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("tan"), in.ir)), in.nullable))
+    case functions.Round =>
+      compile(c.args.head).map(in => IntermediateExpression(
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("round"), in.ir)), in.nullable))
+    case functions.Rand =>
+      Some(IntermediateExpression(invokeStatic(method[CypherFunctions, DoubleValue]("rand")),
+                                  nullable = false))
+    case functions.Abs =>
+      compile(c.args.head).map(in => IntermediateExpression(
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, NumberValue, AnyValue]("abs"), in.ir)), in.nullable))
+    case functions.Ceil =>
+      compile(c.args.head).map(in => IntermediateExpression(
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("ceil"), in.ir)), in.nullable))
+    case functions.Floor =>
+      compile(c.args.head).map(in => IntermediateExpression(
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("floor"), in.ir)), in.nullable))
+    case functions.Degrees =>
+      compile(c.args.head).map(in => IntermediateExpression(
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("toDegrees"), in.ir)), in.nullable))
+    case functions.Exp =>
+      compile(c.args.head).map(in => IntermediateExpression(
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("exp"), in.ir)), in.nullable))
+    case functions.Log =>
+      compile(c.args.head).map(in => IntermediateExpression(
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("log"), in.ir)), in.nullable))
+    case functions.Log10 =>
+      compile(c.args.head).map(in => IntermediateExpression(
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("log10"), in.ir)), in.nullable))
+    case functions.Radians =>
+      compile(c.args.head).map(in => IntermediateExpression(
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("toRadians"), in.ir)), in.nullable))
+    case functions.Sign =>
+      compile(c.args.head).map(in => IntermediateExpression(
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, LongValue, AnyValue]("signum"), in.ir)), in.nullable))
+    case functions.Sqrt =>
+      compile(c.args.head).map(in => IntermediateExpression(
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, DoubleValue, AnyValue]("sqrt"), in.ir)), in.nullable))
+    case functions.Range =>
+      for {start <- compile(c.args(0))
+           end <- compile(c.args(1))
+           step <- compile(c.args(2))
+      } yield IntermediateExpression(invokeStatic(method[CypherFunctions, ListValue, AnyValue, AnyValue, AnyValue]("range"),
+                                                  start.ir, end.ir, step.ir), nullable = false)
+
+    case functions.Pi => Some(IntermediateExpression(getStatic[Values, DoubleValue]("PI"), nullable = false))
+    case functions.E => Some(IntermediateExpression(getStatic[Values, DoubleValue]("E"), nullable = false))
+
+    case functions.Coalesce =>
+      val args = c.args.flatMap(compile)
+      if (args.size < c.args.size) None
+      else {
+        val tempVariable = nextVariableName()
+
+        //AnyValue tempVariable = arg0;
+        //if (tempVariable == NO_VALUE) {
+        //  tempVariable = arg1;
+        //  if ( tempVariable == NO_VALUE) {
+        //    tempVariable = arg2;
+        //  ...
+        //}
+        def loop(expressions: List[IntermediateExpression]): IntermediateRepresentation = expressions match {
+          case Nil => throw new InternalException("we should never exhaust this loop")
+          case e :: Nil => assign(tempVariable, e.ir)
+          case hd :: tl =>
+            //tempVariable = hd; if (tempVariable == NO_VALUE){[continue with tail]}
+            if (hd.nullable) block(assign(tempVariable, hd.ir),
+                                 condition(equal(load(tempVariable), noValue))(loop(tl)))
+            // WHOAH[Keanu Reeves voice] if not nullable we don't even need to generate code for the coming expressions,
+            else assign(tempVariable, hd.ir)
+        }
+        val repr = block(declare[AnyValue](tempVariable),
+                          assign(tempVariable, noValue),
+                          loop(args.toList),
+                          load(tempVariable))
+
+        Some(IntermediateExpression(repr, args.exists(_.nullable)))
+      }
 
     case _ => None
   }
