@@ -175,8 +175,8 @@ public class FileMoveProvider
     {
         if ( fileMoveActionInformer.shouldBeManagedByPageCache( fileToMove.getName() ) )
         {
-            return FileMoveAction.moveViaPageCache( fileToMove, pageCache );
+            return FileMoveAction.copyViaPageCache( fileToMove, pageCache );
         }
-        return FileMoveAction.moveViaFileSystem( fileToMove, basePath );
+        return FileMoveAction.copyViaFileSystem( fileToMove, basePath );
     }
 }

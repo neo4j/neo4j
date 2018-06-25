@@ -59,7 +59,7 @@ public class FileMoveActionTest
 
         // when
         File targetRename = new File( "target" );
-        FileMoveAction.moveViaPageCache( pageCacheFile, pageCache ).move( targetRename );
+        FileMoveAction.copyViaPageCache( pageCacheFile, pageCache ).move( targetRename );
 
         // then
         assertFalse( pageCacheFile.exists() );
@@ -84,7 +84,7 @@ public class FileMoveActionTest
         assertFalse( targetFile.exists() );
 
         // when
-        FileMoveAction.moveViaFileSystem( sourceFile, sourceDirectory ).move( targetDirectory );
+        FileMoveAction.copyViaFileSystem( sourceFile, sourceDirectory ).move( targetDirectory );
 
         // then
         assertTrue( targetFile.exists() );
