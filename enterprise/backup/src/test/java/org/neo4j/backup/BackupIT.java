@@ -444,29 +444,35 @@ public class BackupIT
         AtomicBoolean end = new AtomicBoolean();
         int backupPort = PortAuthority.allocatePort();
         GraphDatabaseService db = getEmbeddedTestDataBaseService( backupPort );
-        int numberOfIndexedLabels = 100;
-        List<Label> indexedLabels = createIndexes( db, numberOfIndexedLabels );
-
-        // start thread that continuously writes to indexes
-        executorService.submit( () ->
+        try
         {
-            while ( !end.get() )
-            {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    db.createNode( indexedLabels.get( random.nextInt( numberOfIndexedLabels ) ) ).setProperty( "prop", random.nextValue() );
-                    tx.success();
-                }
-            }
-        } );
-        executorService.shutdown();
+            int numberOfIndexedLabels = 10;
+            List<Label> indexedLabels = createIndexes( db, numberOfIndexedLabels );
 
-        // create backup
-        OnlineBackup backup = OnlineBackup.from( "127.0.0.1", backupPort ).full( backupPath.getPath() );
-        assertTrue( "Should be consistent", backup.isConsistent() );
-        end.set( true );
-        executorService.awaitTermination( 1, TimeUnit.MINUTES );
-        db.shutdown();
+            // start thread that continuously writes to indexes
+            executorService.submit( () ->
+            {
+                while ( !end.get() )
+                {
+                    try ( Transaction tx = db.beginTx() )
+                    {
+                        db.createNode( indexedLabels.get( random.nextInt( numberOfIndexedLabels ) ) ).setProperty( "prop", random.nextValue() );
+                        tx.success();
+                    }
+                }
+            } );
+            executorService.shutdown();
+
+            // create backup
+            OnlineBackup backup = OnlineBackup.from( "127.0.0.1", backupPort ).full( backupPath.getPath() );
+            assertTrue( "Should be consistent", backup.isConsistent() );
+            end.set( true );
+            executorService.awaitTermination( 1, TimeUnit.MINUTES );
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 
     private List<Label> createIndexes( GraphDatabaseService db, int indexCount )
