@@ -19,20 +19,18 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.opencypher.v9_0.util.CypherTypeException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
-case class IdFunction(inner: Expression) extends NullInNullOutExpression(inner) {
+case class IdFunction(inner: Expression) extends Expression {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
-    case node: NodeValue => Values.longValue(node.id())
-    case rel: RelationshipValue => Values.longValue(rel.id())
-    case x => throw new CypherTypeException(
-      "Expected `%s` to be a node or relationship, but it was `%s`".format(inner, x.getClass.getSimpleName))
+  override def apply(ctx: ExecutionContext,
+                     state: QueryState): AnyValue = inner(ctx, state) match {
+    case Values.NO_VALUE => Values.NO_VALUE
+    case value => CypherFunctions.id(value)
   }
 
   def rewrite(f: (Expression) => Expression) = f(IdFunction(inner.rewrite(f)))

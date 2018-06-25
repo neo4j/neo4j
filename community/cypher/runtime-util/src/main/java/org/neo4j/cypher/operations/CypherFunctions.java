@@ -427,6 +427,24 @@ public final class CypherFunctions
         }
     }
 
+    public static LongValue id( AnyValue item )
+    {
+        if ( item instanceof VirtualNodeValue )
+        {
+            return longValue( ((VirtualNodeValue) item).id() );
+        }
+        else if ( item instanceof VirtualRelationshipValue )
+        {
+            return longValue( ((VirtualRelationshipValue) item).id() );
+        }
+        else
+        {
+            throw new CypherTypeException( format( "Expected %s to be a node or relationship, but it was `%s`",
+                    item, item.getClass().getSimpleName() ), null );
+
+        }
+    }
+
     private static AnyValue listAccess( SequenceValue container, AnyValue index )
     {
         if ( !(index instanceof IntegralValue) )
