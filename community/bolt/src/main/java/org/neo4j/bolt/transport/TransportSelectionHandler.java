@@ -95,6 +95,13 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
         }
     }
 
+    @Override
+    public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) throws Exception
+    {
+        logging.getLog( getClass() ).error( "Fatal error occurred during protocol selection for connection: " + ctx.channel(), cause );
+        ctx.close();
+    }
+
     private boolean isBoltPreamble( ByteBuf in )
     {
         return in.getInt( 0 ) == BOLT_MAGIC_PREAMBLE;
