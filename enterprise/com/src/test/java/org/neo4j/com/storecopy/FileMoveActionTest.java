@@ -27,13 +27,10 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.StandardOpenOption;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertFalse;
@@ -43,28 +40,6 @@ public class FileMoveActionTest
 {
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
-
-    private FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
-    private Config config = Config.defaults();
-
-    @Test
-    public void pageCacheFilesMovedDoNotLeaveOriginal() throws IOException
-    {
-        // given
-        PageCache pageCache = aPageCache();
-
-        // and
-        File pageCacheFile = new File( "page-cache-file" );
-        pageCache.map( pageCacheFile, 100, StandardOpenOption.CREATE );
-
-        // when
-        File targetRename = new File( "target" );
-        FileMoveAction.moveViaPageCache( pageCacheFile, pageCache ).move( targetRename );
-
-        // then
-        assertFalse( pageCacheFile.exists() );
-        assertTrue( targetRename.exists() );
-    }
 
     @Test
     public void nonPageCacheFilesMovedDoNotLeaveOriginal() throws IOException
@@ -84,15 +59,10 @@ public class FileMoveActionTest
         assertFalse( targetFile.exists() );
 
         // when
-        FileMoveAction.moveViaFileSystem( sourceFile, sourceDirectory ).move( targetDirectory );
+        FileMoveAction.copyViaFileSystem( sourceFile, sourceDirectory ).move( targetDirectory );
 
         // then
         assertTrue( targetFile.exists() );
         assertFalse( sourceFile.exists() );
-    }
-
-    private PageCache aPageCache()
-    {
-        return ConfigurableStandalonePageCacheFactory.createPageCache( fileSystemAbstraction, config );
     }
 }
