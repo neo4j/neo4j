@@ -21,6 +21,7 @@ package org.neo4j.bolt.transport.pipeline;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.concurrent.EventExecutorGroup;
 
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -29,6 +30,7 @@ public class HouseKeeper extends ChannelInboundHandlerAdapter
 {
     private final BoltConnection connection;
     private final LogService logging;
+    private boolean failed;
 
     public HouseKeeper( BoltConnection connection, LogService logging )
     {
@@ -45,8 +47,20 @@ public class HouseKeeper extends ChannelInboundHandlerAdapter
     @Override
     public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
     {
+        if ( failed || isShuttingDown( ctx ) )
+        {
+            return;
+        }
+        failed = true; // log only the first exception to not polute the log
+
         logging.getInternalLog( getClass() ).error( "Fatal error occurred when handling a client connection: " + ctx.channel(), cause );
 
         ctx.close();
+    }
+
+    private static boolean isShuttingDown( ChannelHandlerContext ctx )
+    {
+        EventExecutorGroup eventLoopGroup = ctx.executor().parent();
+        return eventLoopGroup != null && eventLoopGroup.isShuttingDown();
     }
 }
