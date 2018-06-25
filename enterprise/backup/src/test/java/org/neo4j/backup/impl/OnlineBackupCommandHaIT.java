@@ -49,6 +49,8 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -70,6 +72,7 @@ import static java.util.stream.Collectors.joining;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
@@ -139,7 +142,7 @@ public class OnlineBackupCommandHaIT
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=" + backupName ) );
-        assertEquals( getDbRepresentation(), getBackupDbRepresentation( backupName ) );
+        assertEquals( DbRepresentation.of( db ), getBackupDbRepresentation( backupName ) );
         createSomeData( db );
         assertEquals(
                 0,
@@ -147,7 +150,7 @@ public class OnlineBackupCommandHaIT
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=" + backupName ) );
-        assertEquals( getDbRepresentation(), getBackupDbRepresentation( backupName ) );
+        assertEquals( DbRepresentation.of( db ), getBackupDbRepresentation( backupName ) );
     }
 
     @Test
@@ -286,6 +289,48 @@ public class OnlineBackupCommandHaIT
     }
 
     @Test
+    public void backupRenamesWork() throws Exception
+    {
+        // given a prexisting backup from a different store
+        String backupName = "preexistingBackup_" + recordFormat;
+        int firstBackupPort = PortAuthority.allocatePort();
+        startDb( firstBackupPort );
+        createSpecificNodePair( db, "first" );
+
+        assertEquals( 0, runSameJvm( backupDir, backupName,
+                "--from", "127.0.0.1:" + firstBackupPort,
+                "--cc-report-dir=" + backupDir,
+                "--protocol=common",
+                "--backup-dir=" + backupDir,
+                "--name=" + backupName ) );
+        DbRepresentation firstDatabaseRepresentation = DbRepresentation.of( db );
+
+        // and a different database
+        int secondBackupPort = PortAuthority.allocatePort();
+        GraphDatabaseService db2 = createDb2( secondBackupPort );
+        createSpecificNodePair( db2, "second" );
+        DbRepresentation secondDatabaseRepresentation = DbRepresentation.of( db2 );
+
+        // when backup is performed
+        assertEquals( 0, runSameJvm(backupDir, backupName,
+                "--from", "127.0.0.1:" + secondBackupPort,
+                "--cc-report-dir=" + backupDir,
+                "--backup-dir=" + backupDir,
+                "--protocol=common",
+                "--name=" + backupName ) );
+
+        // then the new backup has the correct name
+        assertEquals( secondDatabaseRepresentation, getBackupDbRepresentation( backupName ) );
+
+        // and the old backup is in a renamed location
+        assertEquals( firstDatabaseRepresentation, getBackupDbRepresentation( backupName + ".err.0" ) );
+
+        // and the data isn't equal (sanity check)
+        assertNotEquals( firstDatabaseRepresentation, secondDatabaseRepresentation );
+        db2.shutdown();
+    }
+
+    @Test
     public void onlyTheLatestTransactionIsKeptAfterIncrementalBackup() throws Exception
     {
         // given database exists with data
@@ -354,6 +399,19 @@ public class OnlineBackupCommandHaIT
         }
     }
 
+    private static void createSpecificNodePair( GraphDatabaseService db, String name )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node left = db.createNode();
+            left.setProperty( "name", name + "Left" );
+            Node right = db.createNode();
+            right.setProperty( "name", name + "Right" );
+            right.createRelationshipTo( left, RelationshipType.withName( "KNOWS" ) );
+            tx.success();
+        }
+    }
+
     private void repeatedlyPopulateDatabase( GraphDatabaseService db, AtomicBoolean continueFlagReference )
     {
         while ( continueFlagReference.get() )
@@ -378,7 +436,21 @@ public class OnlineBackupCommandHaIT
         }
     }
 
+    private GraphDatabaseService createDb2( Integer backupPort )
+    {
+        File storeDir = testDirectory.directory("graph-db-2");
+        GraphDatabaseFactory factory = new GraphDatabaseFactory();
+        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
+        builder.setConfig( OnlineBackupSettings.online_backup_server, "0.0.0.0:" + backupPort );
+        return builder.newGraphDatabase();
+    }
+
     private void startDb( Integer backupPort )
+    {
+        startDb( db, backupPort );
+    }
+
+    private void startDb( EmbeddedDatabaseRule db, Integer backupPort )
     {
         db.setConfig( GraphDatabaseSettings.record_format, recordFormat );
         db.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
@@ -398,9 +470,18 @@ public class OnlineBackupCommandHaIT
         return runBackupToolFromOtherJvmToGetExitCode( neo4jHome, args );
     }
 
-    private DbRepresentation getDbRepresentation()
+    private static int runSameJvm( File home, String name, String... args )
     {
-        return DbRepresentation.of( db );
+        try
+        {
+            new OnlineBackupCommandBuilder().withRawArgs( args ).backup( home, name );
+            return 0;
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+            return 1;
+        }
     }
 
     private DbRepresentation getBackupDbRepresentation( String name )
