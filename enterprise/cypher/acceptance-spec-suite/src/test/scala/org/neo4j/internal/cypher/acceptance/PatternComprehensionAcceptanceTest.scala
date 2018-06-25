@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.PathImpl
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.PathImpl
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V3_1, V3_2}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.kernel.impl.proc.Procedures
@@ -281,6 +281,44 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
     result.toList should equal(List(
       Map("n" -> a)
     ))
+  }
+
+  test("bug found where NOT predicate in pattern comprehension wasn't planned properly 1") {
+    val query =
+      """
+        |CREATE (bonus:Bonus)-[:FOR]->(movie:Movie)-[:BY]->(director:Director),
+        |   (user:User)-[:REVIEWED]->(movie1:Movie)-[:BY]->(director)
+        |WITH user, movie, director
+        |RETURN
+        |  [(b:Bonus)-[:FOR]->(movie)
+        |    WHERE NOT (user)-[:REVIEWED]->(:Movie)-[:BY]->(director) | id(b)] AS bonus
+      """.stripMargin
+
+    val result = executeWith(expectedToSucceedRestricted, query)
+    result.toList should equal(List(
+      Map("bonus" -> List())
+    ))
+    result.executionPlanDescription() should useOperators("AntiSemiApply", "RollUpApply")
+  }
+
+  test("bug found where NOT predicate in pattern comprehension wasn't planned properly 2") {
+    // In the original bug, the following query was the alternative that worked.
+    // This test is to make sure it will in the future as well
+    val query =
+    """
+      |CREATE (bonus:Bonus)-[:FOR]->(movie:Movie)-[:BY]->(director:Director),
+      |     (user:User)-[:REVIEWED]->(movie1:Movie)-[:BY]->(director)
+      |WITH user, movie, director
+      |RETURN
+      |  [(b:Bonus)-[:FOR]->(movie)
+      |    WHERE size([(user)-[r:REVIEWED]->(:Movie)-[:BY]->(director) | r]) = 0 | id(b)] AS bonus
+    """.stripMargin
+
+    val result = executeWith(expectedToSucceedRestricted, query)
+    result.toList should equal(List(
+      Map("bonus" -> List())
+    ))
+    result.executionPlanDescription() should useOperators("RollUpApply")
   }
 
   test("using pattern comprehension as grouping key") {
