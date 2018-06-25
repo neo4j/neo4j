@@ -547,12 +547,12 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
       val expectedPlan =
       """
         || |               +----------------+-------------------------------------------------------------------------------------------------+
-        || +Create         |              1 | anon[26936], anon[26983], anon[27029], anon[27083], anon[27172], anon[27260], anon[27364], ...  |
+        || +Create         |              1 | anon[10142], anon[10200], anon[10266], anon[10333], anon[10398], anon[10464], anon[10529], ...  |
         |+-----------------+----------------+-------------------------------------------------------------------------------------------------+
         |""".stripMargin
 
     val result = executeWith(expectedToSucceed, query,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should matchPlan(expectedPlan), expectPlansToFail = Configs.All - Configs.Cost3_5))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should matchPlan(expectedPlan), expectPlansToFail = Configs.Version2_3 + Configs.Version3_1 + Configs.Version3_4 + Configs.SlottedInterpreted + Configs.AllRulePlanners))
     assertStats(result, nodesCreated = 171, relationshipsCreated = 253, propertiesWritten = 564, labelsAdded = 171)
   }
 
@@ -583,7 +583,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         |+-----------------+----------------+-------------------------------------------------------------------------------------------------+
         |""".stripMargin
 
-    val result = executeWith(expectedToSucceed, query, planComparisonStrategy = ComparePlansWithAssertion(_ should matchPlan(expectedPlan), expectPlansToFail = Configs.All - Configs.Cost3_5))
+    val result = executeWith(expectedToSucceed, query, planComparisonStrategy = ComparePlansWithAssertion(_ should matchPlan(expectedPlan), expectPlansToFail = Configs.Version2_3 + Configs.Version3_1 + Configs.Version3_4 + Configs.SlottedInterpreted + Configs.AllRulePlanners))
     assertStats(result, nodesCreated = 8, relationshipsCreated = 7, propertiesWritten = 21, labelsAdded = 8)
   }
 

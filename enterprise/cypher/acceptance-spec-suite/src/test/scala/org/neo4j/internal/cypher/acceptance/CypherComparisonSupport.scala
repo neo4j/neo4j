@@ -617,9 +617,6 @@ object CypherComparisonSupport {
 
     def Cost3_4: TestConfiguration = TestScenario(Versions.V3_4, Planners.Cost, Runtimes.Default)
 
-    // FIXME that guy no works. Not part of AbsolutelyAll
-    def Cost3_5: TestConfiguration = TestScenario(Versions.v3_5, Planners.Cost, Runtimes.Default)
-
     def Rule2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Rule, Runtimes.Default)
 
     def Rule3_1: TestConfiguration = TestScenario(Versions.V3_1, Planners.Rule, Runtimes.Default)
