@@ -101,6 +101,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     private long stashedProgress;
     private long progress;
     private ImportStage currentStage;
+    private long lastReportTime;
 
     public HumanUnderstandableExecutionMonitor( PrintStream out, Monitor monitor, ExternalMonitor externalMonitor )
     {
@@ -209,6 +210,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
             stashedProgress += progress;
             progress = 0;
         }
+        lastReportTime = currentTimeMillis();
     }
 
     private void endPrevious()
@@ -325,7 +327,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
             if ( currentLine < line || currentDotOnLine == dotsPerLine() )
             {
                 int percentage = percentage( currentLine );
-                out.println( format( " %s%%", percentage ) );
+                out.println( format( "%" + (4 - numberOfDigits( percentage )) + "s%s%% ∆%s", "", percentage, durationSinceLastReport() ) );
                 monitor.progress( currentStage, percentage );
                 currentLine++;
                 if ( currentLine == lines() )
@@ -338,6 +340,18 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
 
         // TODO not quite right
         this.progress = max( this.progress, progress );
+    }
+
+    private String durationSinceLastReport()
+    {
+        long diff = currentTimeMillis() - lastReportTime;
+        lastReportTime = currentTimeMillis();
+        return duration( diff );
+    }
+
+    private int numberOfDigits( int percentage )
+    {
+        return String.valueOf( percentage ).length();
     }
 
     private static int percentage( int line )
