@@ -24,6 +24,7 @@ import org.opencypher.v9_0.util.InvalidArgumentException;
 
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.storable.IntegralValue;
@@ -32,6 +33,8 @@ import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -323,6 +326,30 @@ public final class CypherFunctions
         else
         {
             return NO_VALUE;
+        }
+    }
+
+    public static NodeValue startNode( AnyValue anyValue, DbAccess access )
+    {
+        if ( anyValue instanceof RelationshipValue )
+        {
+            return access.relationshipGetStartNode( (RelationshipValue) anyValue );
+        }
+        else
+        {
+            throw new CypherTypeException( String.format( "Expected %s to be a RelationshipValue", anyValue), null );
+        }
+    }
+
+    public static NodeValue endNode( AnyValue anyValue, DbAccess access )
+    {
+        if ( anyValue instanceof RelationshipValue )
+        {
+            return access.relationshipGetEndNode( (RelationshipValue) anyValue );
+        }
+        else
+        {
+            throw new CypherTypeException( String.format( "Expected %s to be a RelationshipValue", anyValue), null );
         }
     }
 

@@ -219,11 +219,11 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getImportURL(url: URL) =
     translateException(inner.getImportURL(url))
 
-  override def edgeGetStartNode(edge: RelationshipValue) =
-    translateException(inner.edgeGetStartNode(edge))
+  override def relationshipGetStartNode(edge: RelationshipValue) =
+    translateException(inner.relationshipGetStartNode(edge))
 
-  override def edgeGetEndNode(edge: RelationshipValue) =
-    translateException(inner.edgeGetEndNode(edge))
+  override def relationshipGetEndNode(edge: RelationshipValue) =
+    translateException(inner.relationshipGetEndNode(edge))
 
   override def createRelationship(start: Long, end: Long, relType: Int) =
     translateException(inner.createRelationship(start, end, relType))

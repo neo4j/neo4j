@@ -26,7 +26,10 @@ import java.lang.Math.PI
 import java.time.Duration
 import java.util.concurrent.ThreadLocalRandom
 
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast._
 import org.neo4j.cypher.internal.runtime.DbAccess
@@ -36,7 +39,8 @@ import org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian
 import org.neo4j.values.storable.LocalTimeValue.localTime
 import org.neo4j.values.storable.Values._
 import org.neo4j.values.storable.{DoubleValue, Values}
-import org.neo4j.values.virtual.VirtualValues.{EMPTY_LIST, EMPTY_MAP, list, map}
+import org.neo4j.values.virtual.VirtualValues._
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 import org.opencypher.v9_0.ast.AstConstructionTestSupport
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
@@ -46,6 +50,13 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   private val ctx = mock[ExecutionContext]
   private val db = mock[DbAccess]
+  when(db.relationshipGetStartNode(any[RelationshipValue])).thenAnswer(new Answer[NodeValue] {
+    override def answer(in: InvocationOnMock): NodeValue = in.getArgument[RelationshipValue](0).startNode()
+  })
+  when(db.relationshipGetEndNode(any[RelationshipValue])).thenAnswer(new Answer[NodeValue] {
+    override def answer(in: InvocationOnMock): NodeValue = in.getArgument[RelationshipValue](0).endNode()
+  })
+
   private val random = ThreadLocalRandom.current()
 
   test("round function") {
@@ -218,6 +229,27 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, map(keys,
                                    Array(pointValue(Cartesian, 0.0, 0.0),
                                          NO_VALUE))) should equal(NO_VALUE)
+  }
+
+  test("startNode") {
+    val compiled = compile(function("startNode", parameter("a")))
+    val rel = relationshipValue(43,
+                                nodeValue(1, EMPTY_TEXT_ARRAY, EMPTY_MAP),
+                                nodeValue(2, EMPTY_TEXT_ARRAY, EMPTY_MAP),
+                                stringValue("R"), EMPTY_MAP)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(rel))) should equal(rel.startNode())
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+  }
+
+  test("endNode") {
+    val compiled = compile(function("endNode", parameter("a")))
+    val rel = relationshipValue(43,
+                                nodeValue(1, EMPTY_TEXT_ARRAY, EMPTY_MAP),
+                                nodeValue(2, EMPTY_TEXT_ARRAY, EMPTY_MAP),
+                                stringValue("R"), EMPTY_MAP)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(rel))) should equal(rel.endNode())
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+
   }
 
   test("add numbers") {

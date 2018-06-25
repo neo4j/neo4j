@@ -422,6 +422,16 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           invokeStatic(method[CypherFunctions, Value, AnyValue, AnyValue]("distance"), p1.ir, p2.ir), nullable = true)
       }
 
+    case functions.StartNode =>
+      compile(c.args.head).map(in => IntermediateExpression(
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, NodeValue, AnyValue, DbAccess]("startNode"), in.ir,
+                                      load("dbAccess"))), in.nullable))
+
+    case functions.EndNode =>
+      compile(c.args.head).map(in => IntermediateExpression(
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, NodeValue, AnyValue, DbAccess]("endNode"), in.ir,
+                                      load("dbAccess"))), in.nullable))
+
     case _ => None
   }
 

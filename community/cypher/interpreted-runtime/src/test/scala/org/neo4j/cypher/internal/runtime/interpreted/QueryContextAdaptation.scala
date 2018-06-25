@@ -63,9 +63,9 @@ trait QueryContextAdaptation {
 
   override def asObject(value: AnyValue): AnyRef = ???
 
-  override def edgeGetStartNode(edge: RelationshipValue): NodeValue = ???
+  override def relationshipGetStartNode(edge: RelationshipValue): NodeValue = ???
 
-  override def edgeGetEndNode(edge: RelationshipValue): NodeValue = ???
+  override def relationshipGetEndNode(edge: RelationshipValue): NodeValue = ???
 
   /**
     * This should not be used. We'll remove sooner (or later). Don't do it.

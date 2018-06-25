@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.CastSupport.castOrFail
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
@@ -31,8 +31,8 @@ case class RelationshipEndPoints(relExpression: Expression, start: Boolean) exte
     case v if v == Values.NO_VALUE => Values.NO_VALUE
     case value =>
       val rel = castOrFail[RelationshipValue](value)
-      if (start) state.query.edgeGetStartNode(rel)
-      else state.query.edgeGetEndNode(rel)
+      if (start) state.query.relationshipGetStartNode(rel)
+      else state.query.relationshipGetEndNode(rel)
   }
 
   def arguments = Seq(relExpression)

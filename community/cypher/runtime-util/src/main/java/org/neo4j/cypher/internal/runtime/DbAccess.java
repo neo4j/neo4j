@@ -65,4 +65,8 @@ public interface DbAccess
     int nodeGetTotalDegree( long node, String relationship );
 
     int nodeGetTotalDegree( long node, int relationship );
+
+    NodeValue relationshipGetStartNode( RelationshipValue relationship );
+
+    NodeValue relationshipGetEndNode( RelationshipValue relationship );
 }

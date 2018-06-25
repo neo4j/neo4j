@@ -739,9 +739,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
   }
 
-  override def edgeGetStartNode(edge: RelationshipValue) = edge.startNode()
+  override def relationshipGetStartNode(edge: RelationshipValue) = edge.startNode()
 
-  override def edgeGetEndNode(edge: RelationshipValue) = edge.endNode()
+  override def relationshipGetEndNode(edge: RelationshipValue) = edge.endNode()
 
   private lazy val tokenNameLookup = new SilentTokenNameLookup(transactionalContext.kernelTransaction.tokenRead())
 

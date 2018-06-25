@@ -154,10 +154,6 @@ trait QueryContext extends TokenContext with DbAccess {
    */
   def createNewQueryContext(): QueryContext
 
-  def edgeGetStartNode(edge: RelationshipValue): NodeValue
-
-  def edgeGetEndNode(edge: RelationshipValue): NodeValue
-
   def nodeGetDegree(node: Long, dir: SemanticDirection): Int = dir match {
     case SemanticDirection.OUTGOING => nodeGetOutgoingDegree(node)
     case SemanticDirection.INCOMING => nodeGetIncomingDegree(node)
