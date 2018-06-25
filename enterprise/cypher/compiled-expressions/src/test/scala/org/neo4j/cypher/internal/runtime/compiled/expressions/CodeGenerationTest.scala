@@ -308,6 +308,30 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(NO_VALUE, intValue(4)))) should equal(NO_VALUE)
   }
 
+  test("ltrim function") {
+    val compiled = compile(function("ltrim", parameter("a")))
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(stringValue("  HELLO  ")))) should
+      equal(stringValue("HELLO  "))
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+  }
+
+  test("rtrim function") {
+    val compiled = compile(function("rtrim", parameter("a")))
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(stringValue("  HELLO  ")))) should
+      equal(stringValue("  HELLO"))
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+  }
+
+  test("trim function") {
+    val compiled = compile(function("trim", parameter("a")))
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(stringValue("  HELLO  ")))) should
+      equal(stringValue("HELLO"))
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+  }
+
   test("id on node") {
     val compiled = compile(function("id", parameter("a")))
 

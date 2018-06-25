@@ -456,9 +456,43 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException(
-                    format("Expected a string value for `left`, but got: %s; consider converting it to a string with toString().", in),
-                    null);
+            throw notAString( "left", in );
+        }
+    }
+
+    public static TextValue ltrim( AnyValue in )
+    {
+        if ( in instanceof TextValue )
+        {
+            return ((TextValue) in).ltrim();
+        }
+        else
+        {
+            throw notAString( "ltrim", in );
+        }
+    }
+
+    public static TextValue rtrim( AnyValue in )
+    {
+        if ( in instanceof TextValue )
+        {
+            return ((TextValue) in).rtrim();
+        }
+        else
+        {
+            throw notAString( "rtrim", in );
+        }
+    }
+
+    public static TextValue trim( AnyValue in )
+    {
+        if ( in instanceof TextValue )
+        {
+            return ((TextValue) in).trim();
+        }
+        else
+        {
+            throw notAString( "trim", in );
         }
     }
 
@@ -565,4 +599,13 @@ public final class CypherFunctions
     {
         return new CypherTypeException( format( "%s requires numbers", method ), null );
     }
+
+    private static CypherTypeException notAString( String method, AnyValue in )
+    {
+        return  new CypherTypeException(
+                format("Expected a string value for `%s`, but got: %s; consider converting it to a string with toString().",
+                        method, in), null);
+    }
+
+
 }

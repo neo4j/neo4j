@@ -484,6 +484,24 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
                                         in.ir, endPos.ir)), in.nullable)
       }
 
+    case functions.LTrim =>
+      for (in <- compile(c.args.head)) yield {
+        IntermediateExpression(
+          noValueCheck(in)(invokeStatic(method[CypherFunctions, TextValue, AnyValue]("ltrim"), in.ir)), in.nullable)
+      }
+
+    case functions.RTrim =>
+      for (in <- compile(c.args.head)) yield {
+        IntermediateExpression(
+          noValueCheck(in)(invokeStatic(method[CypherFunctions, TextValue, AnyValue]("rtrim"), in.ir)), in.nullable)
+      }
+
+    case functions.Trim =>
+      for (in <- compile(c.args.head)) yield {
+        IntermediateExpression(
+          noValueCheck(in)(invokeStatic(method[CypherFunctions, TextValue, AnyValue]("trim"), in.ir)), in.nullable)
+      }
+
     case _ => None
   }
 
