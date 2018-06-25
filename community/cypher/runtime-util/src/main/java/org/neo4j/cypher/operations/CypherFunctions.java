@@ -428,6 +428,25 @@ public final class CypherFunctions
         }
     }
 
+    public static AnyValue last( AnyValue container )
+    {
+        if ( container instanceof SequenceValue )
+        {
+            SequenceValue sequence = (SequenceValue) container;
+            int length = sequence.length();
+            if ( length == 0 )
+            {
+                return NO_VALUE;
+            }
+
+            return sequence.value( length - 1 );
+        }
+        else
+        {
+            throw new CypherTypeException( format( "Expected %s to be a list", container ), null );
+        }
+    }
+
     public static LongValue id( AnyValue item )
     {
         if ( item instanceof VirtualNodeValue )
