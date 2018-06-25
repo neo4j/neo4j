@@ -30,8 +30,8 @@ import static java.util.Comparator.comparing;
 
 class GenericLayout extends IndexLayout<CompositeGenericKey>
 {
-    private static final int KEY_HEADER_SIZE = Byte.BYTES;
     static final Comparator<Type> TYPE_COMPARATOR = comparing( t -> t.valueGroup );
+    private final int numberOfSlots;
 
     enum Type
     {
@@ -72,16 +72,16 @@ class GenericLayout extends IndexLayout<CompositeGenericKey>
         }
     }
 
-    GenericLayout()
+    GenericLayout( int numberOfSlots )
     {
         super( "NSIL", 0, 1 );
+        this.numberOfSlots = numberOfSlots;
     }
 
     @Override
     public CompositeGenericKey newKey()
     {
-        // TODO for now it's not composite
-        return new CompositeGenericKey( 1 );
+        return new CompositeGenericKey( numberOfSlots );
     }
 
     @Override
@@ -95,11 +95,6 @@ class GenericLayout extends IndexLayout<CompositeGenericKey>
 
     @Override
     public int keySize( CompositeGenericKey key )
-    {
-        return KEY_HEADER_SIZE + actualKeySize( key );
-    }
-
-    private int actualKeySize( CompositeGenericKey key )
     {
         return key.size();
     }

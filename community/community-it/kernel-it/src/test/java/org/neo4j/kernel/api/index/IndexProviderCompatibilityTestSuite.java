@@ -68,6 +68,11 @@ public abstract class IndexProviderCompatibilityTestSuite
 
     public abstract boolean supportsTemporal();
 
+    public boolean supportsGranularCompositeQueries()
+    {
+        return false;
+    }
+
     public abstract static class Compatibility
     {
         @Rule

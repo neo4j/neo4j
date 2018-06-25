@@ -70,7 +70,8 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
     @Override
     Layout<CompositeGenericKey,NativeIndexValue> layout( StoreIndexDescriptor descriptor )
     {
-        return new GenericLayout();
+        int numberOfSlots = descriptor.properties().length;
+        return new GenericLayout( numberOfSlots );
     }
 
     @Override

@@ -79,7 +79,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     private long long2;
     private long long3;
     private byte[] byteArray;
-    private NativeIndexKey.Inclusion inclusion;
+    NativeIndexKey.Inclusion inclusion;
 
     void clear()
     {
@@ -554,6 +554,11 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     }
 
     int size()
+    {
+        return valueSize() + TYPE_ID_SIZE;
+    }
+
+    private int valueSize()
     {
         // TODO copy-pasted from individual keys
         // TODO also put this in Type enum
