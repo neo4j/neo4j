@@ -409,6 +409,24 @@ public final class CypherFunctions
         }
     }
 
+    public static AnyValue head( AnyValue container )
+    {
+        if ( container instanceof SequenceValue )
+        {
+            SequenceValue sequence = (SequenceValue) container;
+            if ( sequence.length() == 0 )
+            {
+                return NO_VALUE;
+            }
+
+            return sequence.value( 0 );
+        }
+        else
+        {
+            throw new CypherTypeException( format( "Expected %s to be a list", container ), null );
+        }
+    }
+
     private static AnyValue listAccess( SequenceValue container, AnyValue index )
     {
         if ( !(index instanceof IntegralValue) )
