@@ -70,6 +70,7 @@ class BackupCopyService
             {
                 moves.next().move( target );
             }
+            oldLocation.toFile().delete();
         }
         catch ( IOException e )
         {
