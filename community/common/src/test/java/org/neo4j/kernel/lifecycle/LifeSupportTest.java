@@ -519,7 +519,7 @@ class LifeSupportTest
         Lifecycle notLastComponent2 = mock( Lifecycle.class );
         Lifecycle notLastComponent3 = mock( Lifecycle.class );
         Lifecycle notLastComponent4 = mock( Lifecycle.class );
-        lifeSupport.addLast( lastComponent );
+        lifeSupport.setLast( lastComponent );
         lifeSupport.add( notLastComponent1 );
         lifeSupport.add( notLastComponent2 );
         lifeSupport.add( notLastComponent3 );
@@ -547,7 +547,7 @@ class LifeSupportTest
         Lifecycle notLastComponent4 = mock( Lifecycle.class );
         lifeSupport.add( notLastComponent1 );
         lifeSupport.add( notLastComponent2 );
-        lifeSupport.addLast( lastComponent );
+        lifeSupport.setLast( lastComponent );
         lifeSupport.add( notLastComponent3 );
         lifeSupport.add( notLastComponent4 );
 
@@ -567,7 +567,7 @@ class LifeSupportTest
     {
         LifeSupport lifeSupport = newLifeSupport();
         Lifecycle lastComponent = mock( Lifecycle.class );
-        lifeSupport.addLast( lastComponent );
+        lifeSupport.setLast( lastComponent );
         lifeSupport.start();
         List<Lifecycle> lifecycleInstances = lifeSupport.getLifecycleInstances();
 
@@ -581,8 +581,8 @@ class LifeSupportTest
         LifeSupport lifeSupport = newLifeSupport();
         Lifecycle lastComponent = mock( Lifecycle.class );
         Lifecycle anotherLastComponent = mock( Lifecycle.class );
-        lifeSupport.addLast( lastComponent );
-        assertThrows( IllegalStateException.class, () -> lifeSupport.addLast( anotherLastComponent ) );
+        lifeSupport.setLast( lastComponent );
+        assertThrows( IllegalStateException.class, () -> lifeSupport.setLast( anotherLastComponent ) );
     }
 
     static class LifecycleMock implements Lifecycle

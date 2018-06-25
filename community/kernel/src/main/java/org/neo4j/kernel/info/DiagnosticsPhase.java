@@ -25,10 +25,8 @@ public enum DiagnosticsPhase
 {
     REQUESTED( true, false ),
     EXPLICIT( true, false ),
-    CREATED( false, true ),
     INITIALIZED( false, true ),
     STARTED( false, true ),
-    LOG_ROTATION( false, true ),
     STOPPING( false, false ),
     SHUTDOWN( false, false ), ;
 

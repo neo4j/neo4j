@@ -215,7 +215,7 @@ public class LifeSupport implements Lifecycle
         return instance;
     }
 
-    public synchronized <T extends Lifecycle> T addLast( T instance )
+    public synchronized <T extends Lifecycle> T setLast( T instance )
     {
         if ( last != null )
         {

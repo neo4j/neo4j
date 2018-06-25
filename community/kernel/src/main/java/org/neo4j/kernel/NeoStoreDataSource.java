@@ -66,6 +66,7 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.AccessCapability;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
@@ -258,7 +259,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
     private File storeDir;
     private boolean readOnly;
     private final IdController idController;
-    private final OperationalMode operationalMode;
+    private final DatabaseInfo databaseInfo;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final VersionContextSupplier versionContextSupplier;
     private final AccessCapability accessCapability;
@@ -283,7 +284,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
             Tracers tracers, Procedures procedures, IOLimiter ioLimiter, AvailabilityGuard availabilityGuard,
             SystemNanoClock clock, AccessCapability accessCapability, StoreCopyCheckPointMutex storeCopyCheckPointMutex,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdController idController,
-            OperationalMode operationalMode, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier )
+            DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -319,7 +320,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
 
         readOnly = config.get( GraphDatabaseSettings.read_only );
         this.idController = idController;
-        this.operationalMode = operationalMode;
+        this.databaseInfo = databaseInfo;
         this.versionContextSupplier = versionContextSupplier;
         msgLog = logProvider.getLog( getClass() );
         this.lockService = new ReentrantLockService();
@@ -389,7 +390,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
             idController.initialize( transactionsSnapshotSupplier );
 
             storageEngine = buildStorageEngine( explicitIndexProvider,
-                    indexConfigStore, databaseSchemaState, explicitIndexTransactionOrdering, operationalMode,
+                    indexConfigStore, databaseSchemaState, explicitIndexTransactionOrdering, databaseInfo.operationalMode,
                     versionContextSupplier );
             life.add( logFiles );
 
@@ -459,7 +460,8 @@ public class NeoStoreDataSource extends LifecycleAdapter
             throw new RuntimeException( e );
         }
 
-        life.addLast( lifecycleToTriggerCheckPointOnShutdown() );
+        life.add( new DatabaseDiagnostics( dataSourceDependencies.resolveDependency( DiagnosticsManager.class ), this, databaseInfo ) );
+        life.setLast( lifecycleToTriggerCheckPointOnShutdown() );
 
         try
         {

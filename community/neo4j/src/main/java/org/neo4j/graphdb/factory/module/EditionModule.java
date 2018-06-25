@@ -23,7 +23,6 @@ import java.io.File;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
@@ -31,7 +30,6 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.RestartableFileSystemWatcher;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.SecurityModule;
@@ -62,8 +60,6 @@ import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionEventListener;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileSystemWatcherService;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
-import org.neo4j.kernel.info.DiagnosticsManager;
-import org.neo4j.kernel.internal.KernelDiagnostics;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
@@ -152,17 +148,6 @@ public abstract class EditionModule
     }
 
     protected abstract void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException;
-
-    protected void doAfterRecoveryAndStartup( DatabaseInfo databaseInfo, DependencyResolver dependencyResolver )
-    {
-        DiagnosticsManager diagnosticsManager = dependencyResolver.resolveDependency( DiagnosticsManager.class );
-        NeoStoreDataSource neoStoreDataSource = dependencyResolver.resolveDependency( NeoStoreDataSource.class );
-
-        diagnosticsManager.prependProvider( new KernelDiagnostics.Versions(
-                databaseInfo, neoStoreDataSource.getStoreId() ) );
-        neoStoreDataSource.registerDiagnosticsWith( diagnosticsManager );
-        diagnosticsManager.appendProvider( new KernelDiagnostics.StoreFiles( neoStoreDataSource.getStoreDir() ) );
-    }
 
     protected void publishEditionInfo( UsageData sysInfo, DatabaseInfo databaseInfo, Config config )
     {

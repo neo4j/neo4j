@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
-import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
@@ -138,7 +138,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 RecoveryCleanupWorkCollector.IMMEDIATE,
                 new BufferedIdController(
                         new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, idConfigurationProvider ), jobScheduler ),
-                OperationalMode.single, new TransactionVersionContextSupplier(), ON_HEAP );
+                DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP );
         return dataSource;
     }
 

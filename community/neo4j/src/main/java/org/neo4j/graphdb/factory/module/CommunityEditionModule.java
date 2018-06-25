@@ -24,14 +24,12 @@ import java.time.Clock;
 import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
@@ -50,7 +48,6 @@ import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.ReadOnly;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
@@ -72,7 +69,6 @@ import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.udc.UsageData;
 
 /**
@@ -136,8 +132,6 @@ public class CommunityEditionModule extends EditionModule
         coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
 
         ioLimiter = IOLimiter.UNLIMITED;
-
-        registerRecovery( platformModule.databaseInfo, life, dependencies );
 
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
 
@@ -260,18 +254,6 @@ public class CommunityEditionModule extends EditionModule
     protected TransactionHeaderInformationFactory createHeaderInformationFactory()
     {
         return TransactionHeaderInformationFactory.DEFAULT;
-    }
-
-    private void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,
-            final DependencyResolver dependencyResolver )
-    {
-        life.addLifecycleListener( ( instance, from, to ) ->
-        {
-            if ( instance instanceof DatabaseAvailability && to.equals( LifecycleStatus.STARTED ) )
-            {
-                doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );
-            }
-        } );
     }
 
     @Override

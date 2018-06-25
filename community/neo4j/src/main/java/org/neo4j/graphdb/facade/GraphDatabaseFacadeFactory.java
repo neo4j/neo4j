@@ -185,7 +185,7 @@ public class GraphDatabaseFacadeFactory
         platform.life.add( new DatabaseAvailability( platform.availabilityGuard, platform.transactionMonitor,
                 config.get( GraphDatabaseSettings.shutdown_transaction_end_timeout ).toMillis() ) );
         platform.life.add( new StartupWaiter( platform.availabilityGuard, edition.transactionStartTimeout ) );
-        platform.life.addLast( platform.eventHandlers );
+        platform.life.setLast( platform.eventHandlers );
 
         Logger msgLog = platform.logging.getInternalLog( getClass() ).infoLogger();
         CoreAPIAvailabilityGuard coreAPIAvailabilityGuard = edition.coreAPIAvailabilityGuard;

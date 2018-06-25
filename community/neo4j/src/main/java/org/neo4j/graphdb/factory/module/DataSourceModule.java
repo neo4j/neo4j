@@ -88,7 +88,6 @@ public class DataSourceModule
         LogService logging = platformModule.logging;
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
         DataSourceManager dataSourceManager = platformModule.dataSourceManager;
-        LifeSupport life = platformModule.life;
         final GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 
         tokenHolders = editionModule.tokenHoldersSupplier.get();
@@ -104,7 +103,7 @@ public class DataSourceModule
 
         diagnosticsManager.prependProvider( config );
 
-        life.add( platformModule.kernelExtensions );
+        platformModule.life.add( platformModule.kernelExtensions );
 
         // Factories for things that needs to be created later
         PageCache pageCache = platformModule.pageCache;
@@ -163,7 +162,7 @@ public class DataSourceModule
                 storeCopyCheckPointMutex,
                 platformModule.recoveryCleanupWorkCollector,
                 editionModule.idController,
-                platformModule.databaseInfo.operationalMode,
+                platformModule.databaseInfo,
                 platformModule.versionContextSupplier,
                 platformModule.collectionsFactorySupplier ) );
 
