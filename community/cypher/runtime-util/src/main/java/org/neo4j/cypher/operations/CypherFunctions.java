@@ -39,6 +39,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
@@ -523,6 +524,18 @@ public final class CypherFunctions
         else
         {
             throw new ParameterWrongTypeException( "Expected a Node, got: " + item, null );
+        }
+    }
+
+    public static ListValue nodes( AnyValue in )
+    {
+        if ( in instanceof PathValue )
+        {
+            return VirtualValues.list( ((PathValue) in).nodes() );
+        }
+        else
+        {
+            throw new CypherTypeException( format( "Expected %s to be a path.", in ), null );
         }
     }
 
