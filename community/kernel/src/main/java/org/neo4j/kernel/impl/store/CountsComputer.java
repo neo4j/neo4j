@@ -45,7 +45,6 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
         }
     }
 
-    private static final int EMPTY_NODE_AND_RELATIONSHIP_STORE = -2;
     private final NodeStore nodes;
     private final RelationshipStore relationships;
     private final int highLabelId;
@@ -85,13 +84,17 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
     @Override
     public void initialize( CountsAccessor.Updater countsUpdater )
     {
-        long recordsToVisit = Math.addExact( nodes.getHighestPossibleIdInUse(), relationships.getHighestPossibleIdInUse() );
-        if ( recordsToVisit != EMPTY_NODE_AND_RELATIONSHIP_STORE )
+        if ( hasNotEmptyNodesOrRelationshipsStores() )
         {
-            progressMonitor.start( recordsToVisit );
+            progressMonitor.start( nodes.getHighestPossibleIdInUse() + relationships.getHighestPossibleIdInUse() );
             populateCountStore( countsUpdater );
         }
         progressMonitor.completed();
+    }
+
+    private boolean hasNotEmptyNodesOrRelationshipsStores()
+    {
+        return (nodes.getHighestPossibleIdInUse() != -1) || (relationships.getHighestPossibleIdInUse() != -1);
     }
 
     private void populateCountStore( CountsAccessor.Updater countsUpdater )
