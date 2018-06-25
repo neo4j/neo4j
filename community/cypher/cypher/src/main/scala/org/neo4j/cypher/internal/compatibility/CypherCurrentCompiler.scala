@@ -24,12 +24,13 @@ import org.neo4j.cypher.internal.compatibility.v3_5.ExceptionTranslatingQueryCon
 import org.neo4j.cypher.{CypherException, CypherExecutionMode}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{ExecutionPlan => ExecutionPlan_v3_5}
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
-import org.neo4j.cypher.internal.runtime.{ExplainMode, InternalExecutionResult, NormalMode, ProfileMode}
+import org.neo4j.cypher.internal.runtime.{ExecutableQuery => _, _}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RuntimeName
+import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.graphdb.{Notification, Result}
 import org.neo4j.kernel.api.query.{CompilerInfo, ExplicitIndexUsage, SchemaIndexUsage}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
@@ -73,15 +74,17 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     val logicalPlanResult =
       planner.parseAndPlan(preParsedQuery, tracer, preParsingNotifications, transactionalContext)
 
-    val logicalPlan = logicalPlanResult.logicalPlanState.logicalPlan
+    val planState = logicalPlanResult.logicalPlanState
+    val logicalPlan = planState.logicalPlan
+    val queryType = getQueryType(planState)
 
     val runtimeContext = contextCreator.create(logicalPlanResult.plannerContext.notificationLogger,
                                                logicalPlanResult.plannerContext.planContext,
                                                logicalPlanResult.plannerContext.clock,
                                                logicalPlanResult.plannerContext.debugOptions,
-                                               logicalPlanResult.logicalPlanState.solveds(logicalPlan.id).readOnly)
+                                               queryType == READ_ONLY)
 
-    val executionPlan3_5 = runtime.compileToExecutable(logicalPlanResult.logicalPlanState, runtimeContext)
+    val executionPlan3_5 = runtime.compileToExecutable(planState, runtimeContext)
 
     new CypherExecutableQuery(
       executionPlan3_5,
@@ -99,6 +102,28 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       case ExplicitNodeIndexUsage(identifier, index) => new ExplicitIndexUsage(identifier, "NODE", index)
       case ExplicitRelationshipIndexUsage(identifier, index) => new ExplicitIndexUsage(identifier, "RELATIONSHIP", index)
     }.asJava)
+
+  private def getQueryType(planState: LogicalPlanState): InternalQueryType = {
+    val procedureOrSchema = ProcedureCallOrSchemaCommandRuntime.queryType(planState.logicalPlan)
+    if (procedureOrSchema.isDefined) // check this first, because if this is true solveds will be empty
+      procedureOrSchema.get
+    else if (planState.solveds(planState.logicalPlan.id).readOnly)
+      READ_ONLY
+    else if (columnNames(planState.logicalPlan).isEmpty)
+      WRITE
+    else
+      READ_WRITE
+  }
+
+  private def columnNames(logicalPlan: LogicalPlan): Array[String] =
+    logicalPlan match {
+      case produceResult: ProduceResult => produceResult.columns.toArray
+
+      case procedureCall: StandAloneProcedureCall =>
+        procedureCall.signature.outputSignature.map(_.seq.map(_.name).toArray).getOrElse(Array.empty)
+
+      case _ => Array()
+    }
 
   protected class CypherExecutableQuery(inner: ExecutionPlan_v3_5,
                                         preParsingNotifications: Set[org.neo4j.graphdb.Notification],

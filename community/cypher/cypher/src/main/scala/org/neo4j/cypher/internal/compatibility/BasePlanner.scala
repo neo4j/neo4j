@@ -77,7 +77,7 @@ abstract class BasePlanner[STATEMENT <: AnyRef, PARSED_STATE <: AnyRef](
                                      planContext: PlanContext): ReusabilityState = {
 
     if (ProcedureCallOrSchemaCommandRuntime
-      .logicalToExecutable(planContext.notificationLogger())
+      .logicalToExecutable
       .isDefinedAt(logicalPlanState.maybeLogicalPlan.get))
       FineToReuse
     else {

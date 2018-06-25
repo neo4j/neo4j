@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.{QueryContext, SCHEMA_WRITE}
+import org.neo4j.cypher.internal.runtime.{InternalQueryType, ProcedureCallMode, QueryContext, SCHEMA_WRITE}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, RelTypeName}
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
@@ -38,32 +38,40 @@ import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
 object ProcedureCallOrSchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
   override def compileToExecutable(state: LogicalPlanState, context: RuntimeContext): ExecutionPlan = {
 
-    def throwCantCompile(unknownPlan: LogicalPlan): ExecutionPlan = {
+    def throwCantCompile(unknownPlan: LogicalPlan): Nothing = {
       throw new CantCompileQueryException(
         s"Plan is not a procedure call or schema command: ${unknownPlan.getClass.getSimpleName}")
     }
 
-    logicalToExecutable(context.notificationLogger).applyOrElse(state.maybeLogicalPlan.get, throwCantCompile)
-
+    logicalToExecutable.applyOrElse(state.maybeLogicalPlan.get, throwCantCompile)(context.notificationLogger)
   }
 
-  def logicalToExecutable(logger: InternalNotificationLogger): PartialFunction[LogicalPlan, ExecutionPlan] = {
+  def queryType(logicalPlan: LogicalPlan): Option[InternalQueryType] =
+    if (logicalToExecutable.isDefinedAt(logicalPlan)) {
+      logicalPlan match {
+        case StandAloneProcedureCall(signature, args, types, indices) =>
+          Some(ProcedureCallMode.fromAccessMode(signature.accessMode).queryType)
+        case _ => Some(SCHEMA_WRITE)
+      }
+    } else None
+
+  val logicalToExecutable: PartialFunction[LogicalPlan, InternalNotificationLogger => ExecutionPlan] = {
     // Global call: CALL foo.bar.baz("arg1", 2)
     case StandAloneProcedureCall(signature, args, types, indices) =>
       val converters = new ExpressionConverters(CommunityExpressionConverter)
-      ProcedureCallExecutionPlan(signature, args, types, indices,
+      logger => ProcedureCallExecutionPlan(signature, args, types, indices,
         logger.notifications.map(asKernelNotification(logger.offset)), converters)
 
     // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
     case CreateNodeKeyConstraint(_, label, props) =>
-      PureSideEffectExecutionPlan("CreateNodeKeyConstraint", SCHEMA_WRITE, ctx => {
+      logger => PureSideEffectExecutionPlan("CreateNodeKeyConstraint", SCHEMA_WRITE, ctx => {
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
         ctx.createNodeKeyConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))
       })
 
     // DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
     case DropNodeKeyConstraint(label, props) =>
-      PureSideEffectExecutionPlan("DropNodeKeyConstraint", SCHEMA_WRITE, ctx => {
+      logger => PureSideEffectExecutionPlan("DropNodeKeyConstraint", SCHEMA_WRITE, ctx => {
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
         ctx.dropNodeKeyConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))
       })
@@ -71,7 +79,7 @@ object ProcedureCallOrSchemaCommandRuntime extends CypherRuntime[RuntimeContext]
     // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
     // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
     case CreateUniquePropertyConstraint(_, label, props) =>
-      PureSideEffectExecutionPlan("CreateUniqueConstraint", SCHEMA_WRITE, ctx => {
+      logger => PureSideEffectExecutionPlan("CreateUniqueConstraint", SCHEMA_WRITE, ctx => {
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
         ctx.createUniqueConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))
       })
@@ -79,44 +87,44 @@ object ProcedureCallOrSchemaCommandRuntime extends CypherRuntime[RuntimeContext]
     // DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
     // DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
     case DropUniquePropertyConstraint(label, props) =>
-      PureSideEffectExecutionPlan("DropUniqueConstraint", SCHEMA_WRITE, ctx => {
+      logger => PureSideEffectExecutionPlan("DropUniqueConstraint", SCHEMA_WRITE, ctx => {
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
         ctx.dropUniqueConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))
       })
 
     // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
     case CreateNodePropertyExistenceConstraint(label, prop) =>
-      PureSideEffectExecutionPlan("CreateNodePropertyExistenceConstraint", SCHEMA_WRITE, ctx => {
+      logger => PureSideEffectExecutionPlan("CreateNodePropertyExistenceConstraint", SCHEMA_WRITE, ctx => {
         (ctx.createNodePropertyExistenceConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
       })
 
     // DROP CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
     case DropNodePropertyExistenceConstraint(label, prop) =>
-      PureSideEffectExecutionPlan("DropNodePropertyExistenceConstraint", SCHEMA_WRITE, ctx => {
+      logger => PureSideEffectExecutionPlan("DropNodePropertyExistenceConstraint", SCHEMA_WRITE, ctx => {
         (ctx.dropNodePropertyExistenceConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
       })
 
     // CREATE CONSTRAINT ON ()-[r:R]-() ASSERT r.prop EXISTS
     case CreateRelationshipPropertyExistenceConstraint(relType, prop) =>
-      PureSideEffectExecutionPlan("CreateRelationshipPropertyExistenceConstraint", SCHEMA_WRITE, ctx => {
+      logger => PureSideEffectExecutionPlan("CreateRelationshipPropertyExistenceConstraint", SCHEMA_WRITE, ctx => {
         (ctx.createRelationshipPropertyExistenceConstraint _).tupled(typeProp(ctx)(relType, prop.propertyKey))
       })
 
     // DROP CONSTRAINT ON ()-[r:R]-() ASSERT r.prop EXISTS
     case DropRelationshipPropertyExistenceConstraint(relType, prop) =>
-      PureSideEffectExecutionPlan("DropRelationshipPropertyExistenceConstraint", SCHEMA_WRITE, ctx => {
+      logger => PureSideEffectExecutionPlan("DropRelationshipPropertyExistenceConstraint", SCHEMA_WRITE, ctx => {
         (ctx.dropRelationshipPropertyExistenceConstraint _).tupled(typeProp(ctx)(relType, prop.propertyKey))
       })
 
     // CREATE INDEX ON :LABEL(prop)
     case CreateIndex(label, props) =>
-      PureSideEffectExecutionPlan("CreateIndex", SCHEMA_WRITE, ctx => {
+      logger => PureSideEffectExecutionPlan("CreateIndex", SCHEMA_WRITE, ctx => {
         ctx.addIndexRule(IndexDescriptor(labelToId(ctx)(label), propertiesToIds(ctx)(props)))
       })
 
     // DROP INDEX ON :LABEL(prop)
     case DropIndex(label, props) =>
-      PureSideEffectExecutionPlan("DropIndex", SCHEMA_WRITE, ctx => {
+      logger => PureSideEffectExecutionPlan("DropIndex", SCHEMA_WRITE, ctx => {
         ctx.dropIndexRule(IndexDescriptor(labelToId(ctx)(label), propertiesToIds(ctx)(props)))
       })
   }

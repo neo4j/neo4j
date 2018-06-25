@@ -21,14 +21,13 @@ package org.neo4j.cypher.internal.compatibility
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan._
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.profiler.{InterpretedProfilerInformation, Profiler}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.profiler.Profiler
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, ProfileMode, QueryContext}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexUsage, LogicalPlan}
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.frontend.PlannerName
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
@@ -72,7 +71,6 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
     override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult = {
       val builder = resultBuilderFactory.create()
 
-      val profileInformation = new InterpretedProfilerInformation
       val profiling = planType == ProfileMode
       val builderContext = if (!readOnly || profiling) new UpdateCountingQueryContext(queryContext) else queryContext
 
@@ -85,9 +83,9 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
       }
 
       if (profiling)
-        builder.setPipeDecorator(new Profiler(queryContext.transactionalContext.databaseInfo, profileInformation))
+        builder.setPipeDecorator(new Profiler(queryContext.transactionalContext.databaseInfo))
 
-      builder.build(planType, params, notificationLogger, plannerName, InterpretedRuntimeName, readOnly, cardinalities)
+      builder.build(planType, params, notificationLogger, plannerName, runtimeName, readOnly, cardinalities)
     }
   }
 }
