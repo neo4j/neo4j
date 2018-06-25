@@ -223,6 +223,7 @@ public class ReadReplica implements ClusterMember<ReadReplicaGraphDatabase>
         return new MemberId( new UUID( ((long) serverId) << 32, 0 ) );
     }
 
+    @Override
     public int serverId()
     {
         return serverId;
