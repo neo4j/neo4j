@@ -203,8 +203,8 @@ public class MasterClientTest
         return life.add( new MasterServer( masterImpl, NullLogProvider.getInstance(),
                 masterServerConfiguration(),
                 mock( TxChecksumVerifier.class ),
-                monitors.newMonitor( ByteCounterMonitor.class, MasterClient.class ),
-                monitors.newMonitor( RequestMonitor.class, MasterClient.class ), mock(
+                monitors.newMonitor( ByteCounterMonitor.class, MasterClient.class.getName() ),
+                monitors.newMonitor( RequestMonitor.class, MasterClient.class.getName() ), mock(
                 ConversationManager.class ), logEntryReader ) );
     }
 
@@ -217,8 +217,8 @@ public class MasterClientTest
     {
         return life.add( new MasterClient320( MASTER_SERVER_HOST, MASTER_SERVER_PORT, null, NullLogProvider.getInstance(),
                 storeId, TIMEOUT, TIMEOUT, 1, CHUNK_SIZE, responseUnpacker,
-                monitors.newMonitor( ByteCounterMonitor.class, MasterClient320.class ),
-                monitors.newMonitor( RequestMonitor.class, MasterClient320.class ), logEntryReader ) );
+                monitors.newMonitor( ByteCounterMonitor.class, MasterClient320.class.getName() ),
+                monitors.newMonitor( RequestMonitor.class, MasterClient320.class.getName() ), logEntryReader ) );
     }
 
     private static Response<Void> voidResponseWithTransactionLogs()

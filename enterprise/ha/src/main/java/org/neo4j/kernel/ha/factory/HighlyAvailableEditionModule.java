@@ -414,8 +414,8 @@ public class HighlyAvailableEditionModule
 
         Function<Slave, SlaveServer> slaveServerFactory =
                 slave -> new SlaveServer( slave, slaveServerConfig( config ), logging.getInternalLogProvider(),
-                        monitors.newMonitor( ByteCounterMonitor.class, SlaveServer.class ),
-                        monitors.newMonitor( RequestMonitor.class, SlaveServer.class ) );
+                        monitors.newMonitor( ByteCounterMonitor.class, SlaveServer.class.getName() ),
+                        monitors.newMonitor( RequestMonitor.class, SlaveServer.class.getName() ) );
 
         SwitchToSlave switchToSlaveInstance = chooseSwitchToSlaveStrategy( platformModule, config, dependencies, logging, monitors,
                 masterDelegateInvocationHandler, requestContextFactory, clusterMemberAvailability,
@@ -439,7 +439,7 @@ public class HighlyAvailableEditionModule
 
         BiFunction<ConversationManager, LifeSupport, Master> masterFactory = ( conversationManager, life1 ) ->
                 life1.add( new MasterImpl( masterSPIFactory.newInstance(),
-                conversationManager, monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class ), config ) );
+                conversationManager, monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class.getName() ), config ) );
 
         BiFunction<Master, ConversationManager, MasterServer> masterServerFactory =
                 ( master1, conversationManager ) ->
@@ -451,8 +451,8 @@ public class HighlyAvailableEditionModule
                     return new MasterServer( master1, logging.getInternalLogProvider(),
                             masterServerConfig( config ),
                             new BranchDetectingTxVerifier( logging.getInternalLogProvider(), txChecksumLookup ),
-                            monitors.newMonitor( ByteCounterMonitor.class, MasterServer.class ),
-                            monitors.newMonitor( RequestMonitor.class, MasterServer.class ), conversationManager,
+                            monitors.newMonitor( ByteCounterMonitor.class, MasterServer.class.getName() ),
+                            monitors.newMonitor( RequestMonitor.class, MasterServer.class.getName() ), conversationManager,
                             logEntryReader.get() );
                 };
 

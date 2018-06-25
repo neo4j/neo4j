@@ -156,7 +156,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     public RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer )
     {
         StoreCopyServer streamer = new StoreCopyServer( neoStoreDataSource, checkPointer, fileSystem, storeDir,
-                monitors.newMonitor( StoreCopyServer.Monitor.class, StoreCopyServer.class ) );
+                monitors.newMonitor( StoreCopyServer.Monitor.class, StoreCopyServer.class.getName() ) );
         return streamer.flushStoresAndStreamStoreFiles( STORE_COPY_CHECKPOINT_TRIGGER, writer, false );
     }
 
