@@ -26,6 +26,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.LongValue;
@@ -33,11 +34,16 @@ import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
+import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
+import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.TRUE;
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.longValue;
 
@@ -350,6 +356,26 @@ public final class CypherFunctions
         else
         {
             throw new CypherTypeException( String.format( "Expected %s to be a RelationshipValue", anyValue), null );
+        }
+    }
+
+    public static BooleanValue propertyExists( String key, AnyValue holder, DbAccess dbAccess )
+    {
+        if ( holder instanceof VirtualNodeValue )
+        {
+            return dbAccess.nodeHasProperty( ((VirtualNodeValue) holder).id(), key ) ? TRUE : FALSE;
+        }
+        else if ( holder instanceof VirtualRelationshipValue )
+        {
+            return dbAccess.relationshipHasProperty( ((VirtualRelationshipValue) holder).id(), key ) ? TRUE : FALSE;
+        }
+        else if ( holder instanceof MapValue )
+        {
+            return ((MapValue) holder).containsKey( key ) ? TRUE : FALSE;
+        }
+        else
+        {
+            throw new CypherTypeException( String.format( "Expected %s to be a property container", holder), null );
         }
     }
 

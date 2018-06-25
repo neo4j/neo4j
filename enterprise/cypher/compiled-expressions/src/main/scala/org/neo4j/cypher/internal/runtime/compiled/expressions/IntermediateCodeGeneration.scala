@@ -28,7 +28,8 @@ import org.neo4j.cypher.internal.compiler.v3_5.helpers.PredicateHelper.isPredica
 import org.neo4j.cypher.internal.runtime.DbAccess
 import org.neo4j.cypher.internal.runtime.compiled.expressions.IntermediateRepresentation.method
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_5.logical.plans.CoerceToPredicate
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NestedPipeExpression
+import org.neo4j.cypher.internal.v3_5.logical.plans.{CoerceToPredicate, NestedPlanExpression}
 import org.neo4j.cypher.operations.{CypherBoolean, CypherFunctions, CypherMath}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
@@ -431,6 +432,20 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       compile(c.args.head).map(in => IntermediateExpression(
         noValueCheck(in)(invokeStatic(method[CypherFunctions, NodeValue, AnyValue, DbAccess]("endNode"), in.ir,
                                       load("dbAccess"))), in.nullable))
+
+    case functions.Exists =>
+      c.arguments.head match {
+        case property: Property =>
+          compile(property.map).map(in => IntermediateExpression(
+            noValueCheck(in)(
+              invokeStatic(method[CypherFunctions, BooleanValue, String, AnyValue, DbAccess]("propertyExists"),
+                           constant(property.propertyKey.name),
+                           in.ir, load("dbAccess") )), in.nullable))
+        case e: ContainerIndex => None
+        case _: PatternExpression => None//TODO
+        case _: NestedPipeExpression => None//TODO?
+        case _: NestedPlanExpression => None//TODO
+      }
 
     case _ => None
   }

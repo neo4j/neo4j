@@ -252,6 +252,37 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   }
 
+  test("exists on node") {
+    val compiled = compile(function("exists", property(parameter("a"), "prop")))
+
+    val node = nodeValue(1, EMPTY_TEXT_ARRAY, map(Array("prop"), Array(stringValue("hello"))))
+    when(db.nodeHasProperty(1, "prop")).thenReturn(true)
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(node))) should equal(Values.TRUE)
+  }
+
+  test("exists on relationship") {
+    val compiled = compile(function("exists", property(parameter("a"), "prop")))
+
+    val rel = relationshipValue(43,
+                                nodeValue(1, EMPTY_TEXT_ARRAY, EMPTY_MAP),
+                                nodeValue(2, EMPTY_TEXT_ARRAY, EMPTY_MAP),
+                                stringValue("R"), map(Array("prop"), Array(stringValue("hello"))))
+    when(db.relationshipHasProperty(43, "prop")).thenReturn(true)
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(rel))) should equal(Values.TRUE)
+  }
+
+  test("exists on map") {
+    val compiled = compile(function("exists", property(parameter("a"), "prop")))
+
+    val mapValue = map(Array("prop"), Array(stringValue("hello")))
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(mapValue))) should equal(Values.TRUE)
+  }
+
   test("add numbers") {
     // Given
     val expression = add(literalInt(42), literalInt(10))
@@ -724,4 +755,6 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   private def equals(lhs: Expression, rhs: Expression) = Equals(lhs, rhs)(pos)
 
   private def notEquals(lhs: Expression, rhs: Expression) = NotEquals(lhs, rhs)(pos)
+
+  private def property(map: Expression, key: String) = Property(map, PropertyKeyName(key)(pos))(pos)
 }
