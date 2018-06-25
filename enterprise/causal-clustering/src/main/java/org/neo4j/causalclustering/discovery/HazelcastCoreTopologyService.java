@@ -180,7 +180,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
             try
             {
                 hazelcastInstance.getCluster().removeMembershipListener( membershipRegistrationId );
-                hazelcastInstance.getLifecycleService().terminate();
+                hazelcastInstance.getLifecycleService().shutdown();
             }
             catch ( Throwable e )
             {
