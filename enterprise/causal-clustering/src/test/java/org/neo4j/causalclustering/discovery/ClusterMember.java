@@ -63,6 +63,8 @@ public interface ClusterMember<T extends GraphDatabaseAPI>
 
     File homeDir();
 
+    int serverId();
+
     default void updateConfig( Setting<?> setting, String value )
     {
         config().augment( setting, value );
