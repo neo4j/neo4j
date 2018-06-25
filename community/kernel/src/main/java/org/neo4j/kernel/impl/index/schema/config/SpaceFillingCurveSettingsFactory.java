@@ -30,8 +30,9 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 /**
  * These settings affect the creation of the 2D (or 3D) to 1D mapper.
- * Changing these will change the values of the 1D mapping, and require re-indexing, so
- * once data has been indexed, do not change these without recreating the index.
+ * Changing these will change the values of the 1D mapping, but this will not invalidate existing indexes. They store the settings used to create
+ * them, and will not use these settings at all. Changes will only affect future indexes made. In order to change existing indexes, you will need
+ * to drop and recreate any indexes you wish to affect.
  */
 public class SpaceFillingCurveSettingsFactory
 {
