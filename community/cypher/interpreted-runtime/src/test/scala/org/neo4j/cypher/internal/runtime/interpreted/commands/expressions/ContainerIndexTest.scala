@@ -20,17 +20,14 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.mockito.Mockito._
-import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
-import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.util.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue
-import org.neo4j.values.storable.{Value, Values}
-import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.{CypherTypeException, InvalidArgumentException}
 
 import scala.collection.JavaConverters._
 
@@ -86,17 +83,9 @@ class ContainerIndexTest extends CypherFunSuite {
     val node = mock[Node]
     when(node.getId).thenReturn(0)
     implicit val expression = Literal(node)
-    when(qtx.getOptPropertyKeyId("v")).thenReturn(Some(0))
-    when(qtx.getOptPropertyKeyId("c")).thenReturn(Some(1))
-    val nodeOps = mock[Operations[NodeValue]]
-    when(nodeOps.getProperty(0, 0)).thenAnswer(new Answer[Value] {
-      override def answer(invocation: InvocationOnMock): Value = Values.longValue(1)
-    })
-    when(nodeOps.getProperty(0, 1)).thenAnswer(new Answer[Value] {
-      override def answer(invocation: InvocationOnMock): Value = Values.NO_VALUE
-    })
-    when(qtx.nodeOps).thenReturn(nodeOps)
 
+    when(qtx.nodeProperty(0, "v")).thenReturn(longValue(1))
+    when(qtx.nodeProperty(0, "c")).thenReturn(Values.NO_VALUE)
     idx("v") should equal(longValue(1))
     idx("c") should equal(expectedNull)
   }
@@ -105,17 +94,9 @@ class ContainerIndexTest extends CypherFunSuite {
     val rel = mock[Relationship]
     when(rel.getId).thenReturn(0)
     implicit val expression = Literal(rel)
-    when(qtx.getOptPropertyKeyId("v")).thenReturn(Some(0))
-    when(qtx.getOptPropertyKeyId("c")).thenReturn(Some(1))
-    val relOps = mock[Operations[RelationshipValue]]
-    when(relOps.getProperty(0, 0)).thenAnswer(new Answer[Value] {
-      override def answer(invocation: InvocationOnMock): Value = Values.longValue(1)
-    })
-    when(relOps.getProperty(0, 1)).thenAnswer(new Answer[Value] {
-      override def answer(invocation: InvocationOnMock): Value = Values.NO_VALUE
-    })
-    when(qtx.relationshipOps).thenReturn(relOps)
 
+    when(qtx.relationshipProperty(0, "v")).thenReturn(longValue(1))
+    when(qtx.relationshipProperty(0, "c")).thenReturn(Values.NO_VALUE)
     idx("v") should equal(longValue(1))
     idx("c") should equal(expectedNull)
   }

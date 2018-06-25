@@ -42,6 +42,7 @@ import org.neo4j.values.storable.{DoubleValue, Values}
 import org.neo4j.values.virtual.VirtualValues._
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 import org.opencypher.v9_0.ast.AstConstructionTestSupport
+import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.opencypher.v9_0.util.{CypherTypeException, symbols}
@@ -716,6 +717,43 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(IsPrimitiveNull(offset)).evaluate(ctx, db, EMPTY_MAP) should equal(Values.FALSE)
   }
 
+  test("containerIndex on node") {
+    val node =  nodeValue(1, EMPTY_TEXT_ARRAY, map(Array("prop"), Array(stringValue("hello"))))
+    when(db.nodeProperty(1, "prop")).thenReturn(stringValue("hello"))
+    val compiled = compile(containerIndex(parameter("a"), literalString("prop")))
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(node))) should equal(stringValue("hello"))
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+  }
+
+  test("containerIndex on relationship") {
+    val rel = relationshipValue(43,
+                                nodeValue(1, EMPTY_TEXT_ARRAY, EMPTY_MAP),
+                                nodeValue(2, EMPTY_TEXT_ARRAY, EMPTY_MAP),
+                                stringValue("R"), map(Array("prop"), Array(stringValue("hello"))))
+    when(db.relationshipProperty(43, "prop")).thenReturn(stringValue("hello"))
+    val compiled = compile(containerIndex(parameter("a"), literalString("prop")))
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(rel))) should equal(stringValue("hello"))
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+  }
+
+  test("containerIndex on map") {
+    val mapValue = map(Array("prop"), Array(stringValue("hello")))
+    val compiled = compile(containerIndex(parameter("a"), literalString("prop")))
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(mapValue))) should equal(stringValue("hello"))
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+  }
+
+  test("containerIndex on list") {
+    val listValue = list(longValue(42), stringValue("hello"), intValue(42))
+    val compiled = compile(containerIndex(parameter("a"), literalInt(1)))
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(listValue))) should equal(stringValue("hello"))
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+  }
+
   private def compile(e: Expression) =
     CodeGeneration.compile(new IntermediateCodeGeneration(SlotConfiguration.empty).compile(e).map(_.ir).getOrElse(fail()))
 
@@ -757,4 +795,9 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   private def notEquals(lhs: Expression, rhs: Expression) = NotEquals(lhs, rhs)(pos)
 
   private def property(map: Expression, key: String) = Property(map, PropertyKeyName(key)(pos))(pos)
+
+  private def containerIndex(container: Expression, index: Expression) = ContainerIndex(container, index)(pos)
+
+ private def literalString(s: String) = expressions.StringLiteral(s)(pos)
+
 }

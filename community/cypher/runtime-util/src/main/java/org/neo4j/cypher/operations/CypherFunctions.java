@@ -26,12 +26,14 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
@@ -41,6 +43,7 @@ import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
+import static java.lang.String.format;
 import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.TRUE;
@@ -343,7 +346,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( String.format( "Expected %s to be a RelationshipValue", anyValue), null );
+            throw new CypherTypeException( format( "Expected %s to be a RelationshipValue", anyValue), null );
         }
     }
 
@@ -355,28 +358,95 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( String.format( "Expected %s to be a RelationshipValue", anyValue), null );
+            throw new CypherTypeException( format( "Expected %s to be a RelationshipValue", anyValue), null );
         }
     }
 
-    public static BooleanValue propertyExists( String key, AnyValue holder, DbAccess dbAccess )
+    public static BooleanValue propertyExists( String key, AnyValue container, DbAccess dbAccess )
     {
-        if ( holder instanceof VirtualNodeValue )
+        if ( container instanceof VirtualNodeValue )
         {
-            return dbAccess.nodeHasProperty( ((VirtualNodeValue) holder).id(), key ) ? TRUE : FALSE;
+            return dbAccess.nodeHasProperty( ((VirtualNodeValue) container).id(), key ) ? TRUE : FALSE;
         }
-        else if ( holder instanceof VirtualRelationshipValue )
+        else if ( container instanceof VirtualRelationshipValue )
         {
-            return dbAccess.relationshipHasProperty( ((VirtualRelationshipValue) holder).id(), key ) ? TRUE : FALSE;
+            return dbAccess.relationshipHasProperty( ((VirtualRelationshipValue) container).id(), key ) ? TRUE : FALSE;
         }
-        else if ( holder instanceof MapValue )
+        else if ( container instanceof MapValue )
         {
-            return ((MapValue) holder).containsKey( key ) ? TRUE : FALSE;
+            return ((MapValue) container).containsKey( key ) ? TRUE : FALSE;
         }
         else
         {
-            throw new CypherTypeException( String.format( "Expected %s to be a property container", holder), null );
+            throw new CypherTypeException( format( "Expected %s to be a property container", container), null );
         }
+    }
+
+    public static AnyValue containerIndex( AnyValue container, AnyValue index, DbAccess dbAccess )
+    {
+        if ( container instanceof VirtualNodeValue )
+        {
+            return dbAccess.nodeProperty( ((VirtualNodeValue) container).id(), asString( index ) );
+        }
+        else if ( container instanceof VirtualRelationshipValue )
+        {
+            return dbAccess.relationshipProperty( ((VirtualRelationshipValue) container).id(), asString( index ) );
+        }
+        if ( container instanceof MapValue )
+        {
+            return mapAccess( (MapValue) container, index );
+        }
+        else if ( container instanceof SequenceValue )
+        {
+            return listAccess( (SequenceValue) container, index );
+        }
+        else
+        {
+            throw new CypherTypeException( format(
+                    "`%s` is not a collection or a map. Element access is only possible by performing a collection " +
+                    "lookup using an integer index, or by performing a map lookup using a string key (found: %s[%s])",
+                    container, container, index ), null );
+        }
+    }
+
+    private static AnyValue listAccess( SequenceValue container, AnyValue index )
+    {
+        if ( !(index instanceof IntegralValue) )
+        {
+            throw new CypherTypeException( format( "Expected %s to be an integer", index), null );
+        }
+        long idx = ((IntegralValue) index).longValue();
+        if ( idx > Integer.MAX_VALUE || idx < Integer.MIN_VALUE )
+        {
+            throw new InvalidArgumentException(
+                    format( "Cannot index a list using a value greater than %d or lesser than %d, got %d",
+                            Integer.MAX_VALUE, Integer.MIN_VALUE, idx ), null );
+        }
+
+        if ( idx < 0 )
+        {
+            idx = container.length() + idx;
+        }
+        if ( idx >= container.length() || idx < 0 )
+        {
+            return NO_VALUE;
+        }
+        return container.value( (int) idx );
+    }
+
+    private static AnyValue mapAccess( MapValue container, AnyValue index )
+    {
+
+        return container.get( asString( index ) );
+    }
+
+    private static String asString( AnyValue value )
+    {
+        if ( !(value instanceof TextValue) )
+        {
+            throw new CypherTypeException( format( "Expected %s to be an index key", value), null );
+        }
+        return ((TextValue) value).stringValue();
     }
 
     private static Value calculateDistance( PointValue p1, PointValue p2 )
@@ -406,6 +476,6 @@ public final class CypherFunctions
 
     private static CypherTypeException needsNumbers( String method )
     {
-        return new CypherTypeException( String.format( "%s requires numbers", method ), null );
+        return new CypherTypeException( format( "%s requires numbers", method ), null );
     }
 }
