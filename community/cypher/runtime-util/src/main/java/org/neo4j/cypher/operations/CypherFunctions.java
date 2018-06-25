@@ -21,6 +21,7 @@ package org.neo4j.cypher.operations;
 
 import org.opencypher.v9_0.util.CypherTypeException;
 import org.opencypher.v9_0.util.InvalidArgumentException;
+import org.opencypher.v9_0.util.ParameterWrongTypeException;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -442,6 +443,18 @@ public final class CypherFunctions
             throw new CypherTypeException( format( "Expected %s to be a node or relationship, but it was `%s`",
                     item, item.getClass().getSimpleName() ), null );
 
+        }
+    }
+
+    public static ListValue labels( AnyValue item, DbAccess access )
+    {
+        if ( item instanceof NodeValue )
+        {
+            return access.getLabelsForNode( ((NodeValue) item).id() );
+        }
+        else
+        {
+            throw new ParameterWrongTypeException( "Expected a Node, got: " + item, null );
         }
     }
 

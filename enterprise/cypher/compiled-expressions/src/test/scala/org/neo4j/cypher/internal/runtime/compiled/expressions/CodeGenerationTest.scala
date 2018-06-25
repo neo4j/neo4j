@@ -40,7 +40,7 @@ import org.neo4j.values.storable.LocalTimeValue.localTime
 import org.neo4j.values.storable.Values._
 import org.neo4j.values.storable.{DoubleValue, Values}
 import org.neo4j.values.virtual.VirtualValues._
-import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue, VirtualValues}
 import org.opencypher.v9_0.ast.AstConstructionTestSupport
 import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions._
@@ -312,6 +312,17 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
     compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
     compiled.evaluate(ctx, db, map(Array("a"), Array(rel))) should equal(longValue(43))
+  }
+
+  test("labels function") {
+    val compiled = compile(function("labels", parameter("a")))
+
+    val labels = Values.stringArray("A", "B", "C")
+    val node = nodeValue(1, labels, EMPTY_MAP)
+    when(db.getLabelsForNode(node.id())).thenReturn(VirtualValues.fromArray(labels))
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(node))) should equal(labels)
   }
 
   test("add numbers") {

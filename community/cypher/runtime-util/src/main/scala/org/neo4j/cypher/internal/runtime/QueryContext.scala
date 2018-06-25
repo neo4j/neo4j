@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 import org.opencypher.v9_0.expressions.SemanticDirection
 
 import scala.collection.Iterator
@@ -83,8 +83,6 @@ trait QueryContext extends TokenContext with DbAccess {
   def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): RelationshipValue
 
   def getOrCreateLabelId(labelName: String): Int
-
-  def getLabelsForNode(node: Long): ListValue
 
   def isLabelSetOnNode(label: Int, node: Long): Boolean
 
