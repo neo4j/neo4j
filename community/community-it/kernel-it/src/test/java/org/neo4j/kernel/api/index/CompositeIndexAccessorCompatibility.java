@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -79,6 +80,8 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Test
     public void testIndexSeekAndScanByPoint() throws Exception
     {
+        Assume.assumeTrue( testSuite.supportsSpatial() );
+
         PointValue gps = Values.pointValue( CoordinateReferenceSystem.WGS84, 12.6, 56.7 );
         PointValue car = Values.pointValue( CoordinateReferenceSystem.Cartesian, 12.6, 56.7 );
         PointValue gps3d = Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 12.6, 56.7, 100.0 );
@@ -135,6 +138,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         @Test
         public void testDuplicatesInIndexSeekByPoint() throws Exception
         {
+            Assume.assumeTrue( testSuite.supportsSpatial() );
             PointValue gps = Values.pointValue( CoordinateReferenceSystem.WGS84, 12.6, 56.7 );
             updateAndCommit( asList(
                     add( 1L, descriptor.schema(), gps, gps ),

@@ -116,9 +116,14 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
 
     void copyValuesFrom( CompositeGenericKey key )
     {
-        for ( int i = 0; i < states.length; i++ )
+        if ( key.states.length != states.length )
         {
-            key.states[i].copyFrom( states[i] );
+            throw new IllegalArgumentException( "Different state lengths " + key.states.length + " vs " + states.length );
+        }
+
+        for ( int i = 0; i < key.states.length; i++ )
+        {
+            states[i].copyFrom( key.states[i] );
         }
     }
 

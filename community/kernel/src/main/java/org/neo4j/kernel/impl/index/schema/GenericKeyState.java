@@ -139,6 +139,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         {
             long3 = FALSE;
         }
+        inclusion = LOW;
     }
 
     void initValueAsHighest( ValueGroup valueGroup )
@@ -164,6 +165,17 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
             return typeComparison;
         }
 
+        int valueComparison = internalCompareValueTo( other );
+        if ( valueComparison != 0 )
+        {
+            return valueComparison;
+        }
+
+        return inclusion.compareTo( other.inclusion );
+    }
+
+    private int internalCompareValueTo( GenericKeyState other )
+    {
         switch ( type )
         {
         case ZONED_DATE_TIME:
@@ -538,6 +550,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         this.long2 = key.long2;
         this.long3 = key.long3;
         this.copyByteArrayFromIfExists( key, (int) key.long0 );
+        this.inclusion = key.inclusion;
     }
 
     int size()
@@ -694,6 +707,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 
         size -= TYPE_ID_SIZE;
         type = GenericLayout.TYPE_BY_ID[typeId];
+        inclusion = NEUTRAL;
         switch ( type )
         {
         case ZONED_DATE_TIME:
@@ -753,6 +767,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         if ( bytesLength <= 0 || bytesLength > maxSize )
         {
             initializeToDummyValue();
+            return;
         }
         setBytesLength( bytesLength );
         cursor.getBytes( byteArray, 0, bytesLength );
