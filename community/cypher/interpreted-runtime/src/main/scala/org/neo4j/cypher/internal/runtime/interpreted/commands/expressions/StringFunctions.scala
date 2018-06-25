@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.opencypher.v9_0.util.symbols._
-import org.opencypher.v9_0.util.{CypherTypeException, ParameterWrongTypeException}
+import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values._
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.VirtualValues
+import org.opencypher.v9_0.util.symbols._
+import org.opencypher.v9_0.util.{CypherTypeException, ParameterWrongTypeException}
 
 abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(arg) {
 
@@ -190,10 +191,8 @@ case class SplitFunction(orig: Expression, separator: Expression)
 case class LeftFunction(orig: Expression, length: Expression)
   extends NullInNullOutExpression(orig) with NumericHelper {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
-      case origVal: TextValue => origVal.substring(0, asInt(length(m, state)).value())
-      case _ => StringFunction.notAString(value)
-  }
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
+    CypherFunctions.left(value, length(m, state))
 
   override def arguments = Seq(orig, length)
 

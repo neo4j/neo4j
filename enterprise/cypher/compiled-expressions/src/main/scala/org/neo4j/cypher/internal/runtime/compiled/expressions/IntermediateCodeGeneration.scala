@@ -475,6 +475,15 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         noValueCheck(in)(invokeStatic(method[CypherFunctions, AnyValue, AnyValue]("last"), in.ir)),
         nullable = true))
 
+    case functions.Left =>
+      for {in <- compile(c.args(0))
+           endPos <- compile(c.args(1))
+      } yield {
+        IntermediateExpression(
+          noValueCheck(in)(invokeStatic(method[CypherFunctions, TextValue, AnyValue, AnyValue]("left"),
+                                        in.ir, endPos.ir)), in.nullable)
+      }
+
     case _ => None
   }
 

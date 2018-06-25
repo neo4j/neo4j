@@ -447,6 +447,21 @@ public final class CypherFunctions
         }
     }
 
+    public static TextValue left( AnyValue in, AnyValue endPos )
+    {
+        if ( in instanceof TextValue )
+        {
+            int len = asInt( endPos );
+            return ((TextValue) in).substring( 0, len );
+        }
+        else
+        {
+            throw new CypherTypeException(
+                    format("Expected a string value for `left`, but got: %s; consider converting it to a string with toString().", in),
+                    null);
+        }
+    }
+
     public static LongValue id( AnyValue item )
     {
         if ( item instanceof VirtualNodeValue )
@@ -539,7 +554,11 @@ public final class CypherFunctions
         {
             throw new CypherTypeException( "Expected a numeric value but got: " + value.toString(), null );
         }
+    }
 
+    private static int asInt( AnyValue value )
+    {
+       return (int) asLong( value );
     }
 
     private static CypherTypeException needsNumbers( String method )
