@@ -120,6 +120,9 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         KEY treeKeyFrom = layout.newKey();
         KEY treeKeyTo = layout.newKey();
 
+        treeKeyFrom.initialize( Long.MIN_VALUE );
+        treeKeyTo.initialize( Long.MAX_VALUE );
+
         boolean needFilter = initializeRangeForQuery( treeKeyFrom, treeKeyTo, predicates );
         if ( isBackwardsSeek( treeKeyFrom, treeKeyTo ) )
         {

@@ -62,8 +62,8 @@ class NumberIndexReader<VALUE extends NativeIndexValue> extends NativeIndexReade
             break;
         case exact:
             ExactPredicate exactPredicate = (ExactPredicate) predicate;
-            treeKeyFrom.from( Long.MIN_VALUE, exactPredicate.value() );
-            treeKeyTo.from( Long.MAX_VALUE, exactPredicate.value() );
+            treeKeyFrom.from( exactPredicate.value() );
+            treeKeyTo.from( exactPredicate.value() );
             break;
         case range:
             RangePredicate<?> rangePredicate = (RangePredicate<?>) predicate;
@@ -85,7 +85,8 @@ class NumberIndexReader<VALUE extends NativeIndexValue> extends NativeIndexReade
         }
         else
         {
-            treeKeyTo.from( rangePredicate.toInclusive() ? Long.MAX_VALUE : Long.MIN_VALUE, toValue );
+            treeKeyTo.initialize( rangePredicate.toInclusive() ? Long.MAX_VALUE : Long.MIN_VALUE );
+            treeKeyTo.from( toValue );
             treeKeyTo.setCompareId( true );
         }
     }
@@ -99,7 +100,8 @@ class NumberIndexReader<VALUE extends NativeIndexValue> extends NativeIndexReade
         }
         else
         {
-            treeKeyFrom.from( rangePredicate.fromInclusive() ? Long.MIN_VALUE : Long.MAX_VALUE, fromValue );
+            treeKeyFrom.initialize( rangePredicate.fromInclusive() ? Long.MIN_VALUE : Long.MAX_VALUE );
+            treeKeyFrom.from( fromValue );
             treeKeyFrom.setCompareId( true );
         }
     }

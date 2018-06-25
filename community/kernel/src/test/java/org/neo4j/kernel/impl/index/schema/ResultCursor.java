@@ -60,7 +60,8 @@ class ResultCursor implements RawCursor<Hit<StringIndexKey,NativeIndexValue>,IOE
     public Hit<StringIndexKey,NativeIndexValue> get()
     {
         StringIndexKey key = new StringIndexKey();
-        key.from( pos, stringValue( current ) );
+        key.initialize( pos );
+        key.from( stringValue( current ) );
         return new SimpleHit<>( key, NativeIndexValue.INSTANCE );
     }
 }

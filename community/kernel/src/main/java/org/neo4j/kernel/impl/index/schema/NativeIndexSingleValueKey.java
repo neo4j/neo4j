@@ -85,7 +85,7 @@ abstract class NativeIndexSingleValueKey<SELF extends NativeIndexSingleValueKey<
         return array( asValue() );
     }
 
-    void from( long entityId, Value value )
+    void from( Value value )
     {
         assertCorrectType( value );
         value.writeTo( this );

@@ -85,13 +85,18 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
     {
         validateQuery( indexOrder, predicates );
         IndexQuery predicate = predicates[0];
+
+        SpatialIndexKey treeKeyFrom = layout.newKey();
+        SpatialIndexKey treeKeyTo = layout.newKey();
+        initializeKeys( treeKeyFrom, treeKeyTo );
+
         switch ( predicate.type() )
         {
         case exists:
-            startSeekForExists( cursor, predicate );
+            startSeekForExists( treeKeyFrom, treeKeyTo, cursor, predicate );
             break;
         case exact:
-            startSeekForExact( cursor, ((ExactPredicate) predicate).value(), predicate );
+            startSeekForExact( treeKeyFrom, treeKeyTo, cursor, ((ExactPredicate) predicate).value(), predicate );
             break;
         case range:
             GeometryRangePredicate rangePredicate = (GeometryRangePredicate) predicate;
@@ -107,21 +112,17 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
         }
     }
 
-    private void startSeekForExists( IndexProgressor.NodeValueClient client, IndexQuery... predicates )
+    private void startSeekForExists( SpatialIndexKey treeKeyFrom, SpatialIndexKey treeKeyTo, IndexProgressor.NodeValueClient client, IndexQuery... predicates )
     {
-        SpatialIndexKey treeKeyFrom = layout.newKey();
-        SpatialIndexKey treeKeyTo = layout.newKey();
         treeKeyFrom.initValueAsLowest( ValueGroup.GEOMETRY );
         treeKeyTo.initValueAsHighest( ValueGroup.GEOMETRY );
         startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, predicates, false );
     }
 
-    private void startSeekForExact( IndexProgressor.NodeValueClient client, Value value, IndexQuery... predicates )
+    private void startSeekForExact( SpatialIndexKey treeKeyFrom, SpatialIndexKey treeKeyTo, IndexProgressor.NodeValueClient client, Value value, IndexQuery... predicates )
     {
-        SpatialIndexKey treeKeyFrom = layout.newKey();
-        SpatialIndexKey treeKeyTo = layout.newKey();
-        treeKeyFrom.from( Long.MIN_VALUE, value );
-        treeKeyTo.from( Long.MAX_VALUE, value );
+        treeKeyFrom.from( value );
+        treeKeyTo.from( value );
         startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, predicates, false );
     }
 
@@ -139,6 +140,7 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
             {
                 SpatialIndexKey treeKeyFrom = layout.newKey();
                 SpatialIndexKey treeKeyTo = layout.newKey();
+                initializeKeys( treeKeyFrom, treeKeyTo );
                 treeKeyFrom.fromDerivedValue( Long.MIN_VALUE, range.min );
                 treeKeyTo.fromDerivedValue( Long.MAX_VALUE, range.max + 1 );
                 RawCursor<Hit<SpatialIndexKey,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo );
@@ -182,5 +184,11 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
     public boolean hasFullValuePrecision( IndexQuery... predicates )
     {
         return false;
+    }
+
+    private void initializeKeys( SpatialIndexKey treeKeyFrom, SpatialIndexKey treeKeyTo )
+    {
+        treeKeyFrom.initialize( Long.MIN_VALUE );
+        treeKeyTo.initialize( Long.MAX_VALUE );
     }
 }
