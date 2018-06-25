@@ -202,7 +202,7 @@ public class EnterpriseCreateIndexProcedureIT extends KernelIntegrationTest
         catch ( ProcedureException e )
         {
             // then
-            assertThat( e.getMessage(), containsString( "There already exists an index for " ) );
+            assertThat( e.getMessage(), containsString( "There already exists an index " ) );
         }
     }
 

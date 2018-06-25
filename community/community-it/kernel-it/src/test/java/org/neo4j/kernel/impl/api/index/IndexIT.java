@@ -254,8 +254,8 @@ public class IndexIT extends KernelIntegrationTest
         // then
         catch ( SchemaKernelException e )
         {
-            assertEquals( "Label '" + LABEL + "' and property '" + PROPERTY_KEY + "' have a unique constraint defined" +
-                          " on them, so an index is already created that matches this.", e.getMessage() );
+            assertEquals( "There is a uniqueness constraint on :" + LABEL + "(" + PROPERTY_KEY + "), so an index is " +
+                          "already created that matches this.", e.getMessage() );
         }
         commit();
     }

@@ -45,6 +45,7 @@ import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ResourceTracker;
@@ -110,9 +111,9 @@ public class BuiltInProceduresTest
         givenIndex( "User", "name" );
 
         // When/Then
-        assertThat( call( "db.indexes" ),
-                contains( record( "INDEX ON :User(name)", "User", singletonList( "name" ), "ONLINE", "node_label_property",
-                        getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ) ) ) );
+        assertThat( call( "db.indexes" ), contains( record(
+                "INDEX ON :User(name)", singletonList( "User" ), singletonList( "name" ), "ONLINE", "node_label_property",
+                getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ) ) ) );
     }
 
     private Map<String,String> getIndexProviderDescriptorMap( IndexProvider.Descriptor providerDescriptor )
@@ -127,9 +128,9 @@ public class BuiltInProceduresTest
         givenUniqueConstraint( "User", "name" );
 
         // When/Then
-        assertThat( call( "db.indexes" ),
-                contains( record( "INDEX ON :User(name)", "User", singletonList( "name" ), "ONLINE", "node_unique_property",
-                        getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ) ) ) );
+        assertThat( call( "db.indexes" ), contains( record(
+                "INDEX ON :User(name)", singletonList( "User" ), singletonList( "name" ), "ONLINE", "node_unique_property",
+                getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ) ) ) );
     }
 
     @Test
@@ -216,7 +217,7 @@ public class BuiltInProceduresTest
                         "Wait for all indexes to come online (for example: CALL db.awaitIndexes(\"500\")).", "READ" ),
                 record( "db.constraints", "db.constraints() :: (description :: STRING?)",
                         "List all constraints in the database.", "READ" ),
-                record( "db.indexes", "db.indexes() :: (description :: STRING?, label :: STRING?, properties :: LIST? OF STRING?, " +
+                record( "db.indexes", "db.indexes() :: (description :: STRING?, tokenNames :: LIST? OF STRING?, properties :: LIST? OF STRING?, " +
                                 "state :: STRING?, type :: STRING?, provider :: MAP?)",
                         "List all indexes in the database.", "READ" ),
                 record( "db.labels", "db.labels() :: (label :: STRING?)", "List all labels in the database.", "READ" ),
@@ -511,26 +512,12 @@ public class BuiltInProceduresTest
         when( tokens.relationshipTypesGetAllTokens() ).thenAnswer( asTokens( relTypes ) );
         when( schemaRead.indexesGetAll() ).thenAnswer(
                 i -> Iterators.concat( indexes.iterator(), uniqueIndexes.iterator() ) );
-        when( schemaRead.index( anyInt(), anyInt() )).thenAnswer(
-                (Answer<IndexReference>) invocationOnMock -> {
-                    int label = invocationOnMock.getArgument( 0 );
-                    int prop = invocationOnMock.getArgument( 1 );
-                    for ( IndexReference index : indexes )
-                    {
-                        if ( index.schema().getEntityTokenIds()[0] == label && prop == index.properties()[0] )
-                        {
-                            return index;
-                        }
-                    }
-                    for ( IndexReference index : uniqueIndexes )
-                    {
-                        if ( index.schema().getEntityTokenIds()[0] == label && prop == index.properties()[0] )
-                        {
-                            return index;
-                        }
-                    }
-                    throw new AssertionError(  );
-                } );
+        when( schemaRead.index( any( SchemaDescriptor.class ) ) ).thenAnswer( (Answer<IndexReference>) invocationOnMock -> {
+            SchemaDescriptor schema = invocationOnMock.getArgument( 0 );
+            int label = schema.keyId();
+            int prop = schema.getPropertyId();
+            return getIndexReference( label, prop );
+        } );
         when( schemaRead.constraintsGetAll() ).thenAnswer( i -> constraints.iterator() );
 
         when( tokens.propertyKeyName( anyInt() ) )
@@ -548,6 +535,25 @@ public class BuiltInProceduresTest
         when( read.countsForNode( anyInt() ) ).thenReturn( 1L );
         when( read.countsForRelationship( anyInt(), anyInt(), anyInt() ) ).thenReturn( 1L );
         when( schemaRead.indexGetState( any( IndexReference.class ) ) ).thenReturn( InternalIndexState.ONLINE );
+    }
+
+    private IndexReference getIndexReference( int label, int prop )
+    {
+        for ( IndexReference index : indexes )
+        {
+            if ( index.schema().getEntityTokenIds()[0] == label && prop == index.properties()[0] )
+            {
+                return index;
+            }
+        }
+        for ( IndexReference index : uniqueIndexes )
+        {
+            if ( index.schema().getEntityTokenIds()[0] == label && prop == index.properties()[0] )
+            {
+                return index;
+            }
+        }
+        throw new AssertionError(  );
     }
 
     private Answer<Iterator<NamedToken>> asTokens( Map<Integer,String> tokens )

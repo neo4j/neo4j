@@ -129,7 +129,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                 equalTo( new Object[]{"db.constraints", "db.constraints() :: (description :: STRING?)",
                         "List all constraints in the database.", "READ"} ),
                 equalTo( new Object[]{"db.indexes",
-                        "db.indexes() :: (description :: STRING?, label :: STRING?, properties :: LIST? OF STRING?, state :: STRING?, " +
+                        "db.indexes() :: (description :: STRING?, tokenNames :: LIST? OF STRING?, properties :: LIST? OF STRING?, state :: STRING?, " +
                                 "type :: STRING?, provider :: MAP?)",
                         "List all indexes in the database.", "READ"} ),
                 equalTo( new Object[]{"db.awaitIndex",
@@ -345,13 +345,13 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         }
 
         // Then
-        Map<String,String> providerDescriptionMap = MapUtil.stringMap(
+        Map<String,String> pdm = MapUtil.stringMap( // Provider Descriptor Map.
                 "key", "lucene+native",
                 "version", "2.0" );
         assertThat( result, containsInAnyOrder(
-                new Object[]{"INDEX ON :Age(foo)", "Age", singletonList("foo" ), "ONLINE", "node_unique_property", providerDescriptionMap},
-                new Object[]{"INDEX ON :Person(foo)", "Person", singletonList( "foo" ), "ONLINE", "node_label_property", providerDescriptionMap},
-                new Object[]{"INDEX ON :Person(foo, bar)", "Person", Arrays.asList( "foo", "bar" ), "ONLINE", "node_label_property", providerDescriptionMap}
+                new Object[]{"INDEX ON :Age(foo)", singletonList( "Age" ), singletonList("foo" ), "ONLINE", "node_unique_property", pdm},
+                new Object[]{"INDEX ON :Person(foo)", singletonList( "Person" ), singletonList( "foo" ), "ONLINE", "node_label_property", pdm},
+                new Object[]{"INDEX ON :Person(foo, bar)", singletonList( "Person" ), Arrays.asList( "foo", "bar" ), "ONLINE", "node_label_property", pdm}
         ) );
         commit();
     }

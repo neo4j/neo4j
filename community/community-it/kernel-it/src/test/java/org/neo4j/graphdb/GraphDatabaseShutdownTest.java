@@ -36,6 +36,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -78,7 +79,7 @@ public class GraphDatabaseShutdownTest
         {
             Node node = db.createNode();
             tx.acquireWriteLock( node );
-            assertEquals( 1, lockCount( locks ) );
+            assertThat( lockCount( locks ), greaterThanOrEqualTo( 1 ) );
 
             db.shutdown();
 

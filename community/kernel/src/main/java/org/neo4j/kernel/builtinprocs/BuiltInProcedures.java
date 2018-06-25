@@ -20,6 +20,7 @@
 package org.neo4j.kernel.builtinprocs;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -49,6 +50,7 @@ import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
@@ -133,12 +135,14 @@ public class BuiltInProcedures
                         type = IndexType.NODE_LABEL_PROPERTY.typeName();
                     }
 
-                    String[] tokenNames = tokens.entityTokensGetNames( index.schema().entityType(), index.schema().getEntityTokenIds() );
+                    SchemaDescriptor schema = index.schema();
+                    List<String> tokenNames = Arrays.asList( tokens.entityTokensGetNames( schema.entityType(), schema.getEntityTokenIds() ) );
                     List<String> propertyNames = propertyNames( tokens, index );
-                    result.add( new IndexResult( "INDEX ON " + index.schema().userDescription( tokens ), tokenNames,
-                            propertyNames,
-                            schemaRead.indexGetState( index ).toString(), type,
-                            indexProviderDescriptorMap( schemaRead.index( index.schema() ) ) ) );
+                    String description = "INDEX ON " + schema.userDescription( tokens );
+                    String state = schemaRead.indexGetState( index ).toString();
+                    Map<String,String> providerDescriptorMap = indexProviderDescriptorMap( schemaRead.index( schema ) );
+                    result.add( new IndexResult(
+                            description, tokenNames, propertyNames, state, type, providerDescriptorMap ) );
                 }
                 catch ( IndexNotFoundKernelException e )
                 {
@@ -809,13 +813,13 @@ public class BuiltInProcedures
     public static class IndexResult
     {
         public final String description;
-        public final String[] tokenNames;
+        public final List<String> tokenNames;
         public final List<String> properties;
         public final String state;
         public final String type;
         public final Map<String,String> provider;
 
-        private IndexResult( String description, String[] tokenNames, List<String> properties, String state, String type,
+        private IndexResult( String description, List<String> tokenNames, List<String> properties, String state, String type,
                 Map<String,String> provider )
         {
             this.description = description;

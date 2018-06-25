@@ -131,8 +131,7 @@ public class SchemaAcceptanceTest
             }
             catch ( ConstraintViolationException e )
             {
-                assertEquals( "There already exists an index for label 'MY_LABEL' on property 'my_property_key'.",
-                        e.getMessage() );
+                assertEquals( "There already exists an index :MY_LABEL(my_property_key).", e.getMessage() );
             }
             tx.success();
         }
@@ -386,8 +385,8 @@ public class SchemaAcceptanceTest
         }
         catch ( ConstraintViolationException e )
         {
-            assertEquals( "There already exists an index for label 'MY_LABEL' on property 'my_property_key'. " +
-                          "A constraint cannot be created until the index has been dropped.", e.getMessage() );
+            assertEquals( "There already exists an index :MY_LABEL(my_property_key). A constraint cannot be created " +
+                          "until the index has been dropped.", e.getMessage() );
         }
     }
 
@@ -450,9 +449,8 @@ public class SchemaAcceptanceTest
         }
         catch ( ConstraintViolationException e )
         {
-            assertEquals(
-                    "Label 'MY_LABEL' and property 'my_property_key' have a unique constraint defined on them, so an " +
-                    "index is already created that matches this.", e.getMessage() );
+            assertEquals( "There is a uniqueness constraint on :MY_LABEL(my_property_key), so an index is already " +
+                          "created that matches this.", e.getMessage() );
         }
     }
 
@@ -470,8 +468,7 @@ public class SchemaAcceptanceTest
         }
         catch ( ConstraintViolationException e )
         {
-            assertEquals( "There already exists an index for label 'MY_LABEL' on property 'my_property_key'.",
-                    e.getMessage() );
+            assertEquals( "There already exists an index :MY_LABEL(my_property_key).", e.getMessage() );
         }
     }
 
