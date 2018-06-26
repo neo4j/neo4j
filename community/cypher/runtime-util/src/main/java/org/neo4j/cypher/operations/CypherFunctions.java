@@ -390,7 +390,7 @@ public final class CypherFunctions
         }
         else if ( container instanceof MapValue )
         {
-            return ((MapValue) container).containsKey( key ) ? TRUE : FALSE;
+            return ((MapValue) container).get( key ) != NO_VALUE ? TRUE : FALSE;
         }
         else
         {
