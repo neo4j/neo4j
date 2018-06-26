@@ -198,15 +198,8 @@ case class LeftFunction(orig: Expression, length: Expression)
 case class RightFunction(orig: Expression, length: Expression)
   extends NullInNullOutExpression(orig) with NumericHelper {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
-      case origVal: TextValue =>
-        // if length goes off the end of the string, let's be nice and handle that.
-        val lengthVal = asInt(length(m, state)).value()
-        if (lengthVal < 0) throw new IndexOutOfBoundsException(s"negative length")
-        val startVal = origVal.length - lengthVal
-        origVal.substring(Math.max(0,startVal))
-      case _ => StringFunction.notAString(value)
-    }
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
+    CypherFunctions.right(value, length(m, state))
 
   override def arguments = Seq(orig, length)
 

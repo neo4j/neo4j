@@ -531,6 +531,25 @@ public final class CypherFunctions
         }
     }
 
+    public static TextValue right( AnyValue original, AnyValue length )
+    {
+        if ( original instanceof TextValue )
+        {
+            TextValue asText = ((TextValue) original);
+            int len = asInt( length );
+            if ( len < 0 )
+            {
+                throw new IndexOutOfBoundsException( "negative length" );
+            }
+            int startVal = asText.length() - len;
+            return asText.substring( Math.max( 0, startVal ) );
+        }
+        else
+        {
+            throw notAString( "right", original );
+        }
+    }
+
     public static LongValue id( AnyValue item )
     {
         if ( item instanceof VirtualNodeValue )
