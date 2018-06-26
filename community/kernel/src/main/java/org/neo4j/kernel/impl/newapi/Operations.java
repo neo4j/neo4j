@@ -98,7 +98,6 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
-
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.schemaTokenLockingIds;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;

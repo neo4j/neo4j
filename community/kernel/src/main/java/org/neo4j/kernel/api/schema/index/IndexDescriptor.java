@@ -104,6 +104,12 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
         return providerDescriptor.getVersion();
     }
 
+    @Override
+    public String name()
+    {
+        return userSuppliedName.orElse( "Unnamed index" );
+    }
+
     public IndexProvider.Descriptor providerDescriptor()
     {
         return providerDescriptor;

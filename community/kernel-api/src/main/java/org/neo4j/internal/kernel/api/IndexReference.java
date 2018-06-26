@@ -60,6 +60,8 @@ public interface IndexReference extends IndexCapability
      */
     String providerVersion();
 
+    String name();
+
     /**
      * @param tokenNameLookup used for looking up names for token ids.
      * @return a user friendly description of what this index indexes.
@@ -126,6 +128,12 @@ public interface IndexReference extends IndexCapability
 
         @Override
         public String providerVersion()
+        {
+            return null;
+        }
+
+        @Override
+        public String name()
         {
             return null;
         }

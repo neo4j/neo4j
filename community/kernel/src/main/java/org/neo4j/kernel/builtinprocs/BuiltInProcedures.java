@@ -142,7 +142,7 @@ public class BuiltInProcedures
                     String state = schemaRead.indexGetState( index ).toString();
                     Map<String,String> providerDescriptorMap = indexProviderDescriptorMap( schemaRead.index( schema ) );
                     result.add( new IndexResult(
-                            description, tokenNames, propertyNames, state, type, providerDescriptorMap ) );
+                            description, index.name(), tokenNames, propertyNames, state, type, providerDescriptorMap ) );
                 }
                 catch ( IndexNotFoundKernelException e )
                 {
@@ -813,16 +813,18 @@ public class BuiltInProcedures
     public static class IndexResult
     {
         public final String description;
+        public final String indexName;
         public final List<String> tokenNames;
         public final List<String> properties;
         public final String state;
         public final String type;
         public final Map<String,String> provider;
 
-        private IndexResult( String description, List<String> tokenNames, List<String> properties, String state, String type,
+        private IndexResult( String description, String indexName, List<String> tokenNames, List<String> properties, String state, String type,
                 Map<String,String> provider )
         {
             this.description = description;
+            this.indexName = indexName;
             this.tokenNames = tokenNames;
             this.properties = properties;
             this.state = state;
