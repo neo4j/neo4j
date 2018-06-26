@@ -25,8 +25,8 @@ import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values._
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable._
+import org.opencypher.v9_0.util.CypherTypeException
 import org.opencypher.v9_0.util.symbols._
-import org.opencypher.v9_0.util.{CypherTypeException, ParameterWrongTypeException}
 
 abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(arg) {
 
@@ -55,17 +55,8 @@ case object asString extends (AnyValue => String) {
 
 case class ToStringFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = argument(m, state) match {
-    case v: IntegralValue => Values.stringValue(v.longValue().toString)
-    case v: FloatingPointValue => Values.stringValue(v.doubleValue().toString)
-    case v: TextValue => v
-    case v: BooleanValue => Values.stringValue(v.booleanValue().toString)
-    case v: TemporalValue[_,_] => Values.stringValue(v.toString)
-    case v: DurationValue => Values.stringValue(v.toString)
-    case v: PointValue => Values.stringValue(v.toString)
-    case v =>
-      throw new ParameterWrongTypeException("Expected a String, Number, Boolean, Temporal or Duration, got: " + v.toString)
-  }
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
+    CypherFunctions.toString(argument(m, state))
 
   override def rewrite(f: (Expression) => Expression): Expression = f(ToStringFunction(argument.rewrite(f)))
 }

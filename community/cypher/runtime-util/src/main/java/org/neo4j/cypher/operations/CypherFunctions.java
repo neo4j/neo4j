@@ -60,6 +60,7 @@ import static org.neo4j.values.storable.Values.TRUE;
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 
 /**
@@ -852,6 +853,23 @@ public final class CypherFunctions
         else
         {
             throw new ParameterWrongTypeException("Expected a String or Number, got: " + in.toString(), null);
+        }
+    }
+
+    public static TextValue toString( AnyValue in )
+    {
+        if ( in instanceof TextValue )
+        {
+            return (TextValue) in;
+        }
+        else if ( in instanceof Value )
+        {
+            return stringValue( ((Value) in).prettyPrint() );
+        }
+        else
+        {
+            throw new ParameterWrongTypeException("Expected a String, Number, Boolean, Temporal or Duration, got: " + in.toString(), null);
+
         }
     }
 
