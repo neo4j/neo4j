@@ -26,7 +26,7 @@ public class TransportThrottleException extends BoltConnectionFatality
 
     public TransportThrottleException( String message )
     {
-        super( message );
+        super( message, null );
     }
 
 }

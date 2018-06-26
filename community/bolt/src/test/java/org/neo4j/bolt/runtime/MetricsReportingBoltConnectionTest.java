@@ -69,7 +69,7 @@ public class MetricsReportingBoltConnectionTest
     {
         verifyConnectionClosed( machine ->
         {
-            throw new BoltConnectionAuthFatality( "auth failure" );
+            throw new BoltConnectionAuthFatality( "auth failure", new RuntimeException() );
         } );
     }
 
@@ -149,7 +149,7 @@ public class MetricsReportingBoltConnectionTest
         connection.start();
         connection.enqueue( machine ->
         {
-            throw new BoltConnectionAuthFatality( "some error" );
+            throw new BoltConnectionAuthFatality( "some error", new RuntimeException() );
         } );
         connection.processNextBatch();
 

@@ -72,7 +72,6 @@ import static org.neo4j.bolt.v1.runtime.MachineRoom.init;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.newMachine;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.newMachineWithTransaction;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.newMachineWithTransactionSPI;
-import static org.neo4j.test.assertion.Assert.assertException;
 
 public class BoltStateMachineTest
 {
@@ -440,8 +439,15 @@ public class BoltStateMachineTest
         machine.state = READY;
 
         // When & Then
-        assertException( () -> machine.run( "THIS WILL BE IGNORED", EMPTY_PARAMS, nullResponseHandler() ),
-                BoltConnectionAuthFatality.class, "Auth expired!" );
+        try
+        {
+            machine.run( "THIS WILL BE IGNORED", EMPTY_PARAMS, nullResponseHandler() );
+            fail( "Exception expected" );
+        }
+        catch ( BoltConnectionAuthFatality e )
+        {
+            assertEquals( "Auth expired!", e.getCause().getMessage() );
+        }
     }
 
     @SuppressWarnings( "unchecked" )
@@ -457,8 +463,15 @@ public class BoltStateMachineTest
         ((TransactionStateMachine) machine.statementProcessor()).ctx.currentResult = BoltResult.EMPTY;
 
         // When & Then
-        assertException( () -> machine.pullAll( responseHandler ),
-                BoltConnectionAuthFatality.class, "Auth expired!" );
+        try
+        {
+            machine.discardAll( responseHandler );
+            fail( "Exception expected" );
+        }
+        catch ( BoltConnectionAuthFatality e )
+        {
+            assertEquals( "Auth expired!", e.getCause().getMessage() );
+        }
     }
 
     @SuppressWarnings( "unchecked" )
@@ -472,10 +485,15 @@ public class BoltStateMachineTest
         BoltStateMachine machine = newMachine( STREAMING );
         // We assume the only implementation of statement processor is TransactionStateMachine
         ((TransactionStateMachine) machine.statementProcessor()).ctx.currentResult = BoltResult.EMPTY;
-
-        // When & Then
-        assertException( () -> machine.discardAll( responseHandler ),
-                BoltConnectionAuthFatality.class, "Auth expired!" );
+        try
+        {
+            machine.pullAll( responseHandler );
+            fail( "Exception expected" );
+        }
+        catch ( BoltConnectionAuthFatality e )
+        {
+            assertEquals( "Auth expired!", e.getCause().getMessage() );
+        }
     }
 
     @Test

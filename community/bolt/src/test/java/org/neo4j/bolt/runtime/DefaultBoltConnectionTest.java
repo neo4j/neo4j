@@ -272,7 +272,7 @@ public class DefaultBoltConnectionTest
 
         connection.enqueue( machine ->
         {
-            throw new BoltConnectionAuthFatality( "auth failure" );
+            throw new BoltConnectionAuthFatality( "auth failure", new RuntimeException() );
         } );
 
         connection.processNextBatch();

@@ -24,8 +24,8 @@ package org.neo4j.bolt.v1.runtime;
  */
 public class BoltConnectionFatality extends Exception
 {
-    protected BoltConnectionFatality( String message )
+    public BoltConnectionFatality( String message, Throwable cause )
     {
-        super( message );
+        super( message, cause );
     }
 }

@@ -736,10 +736,10 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         {
             if ( ExceptionUtils.indexOfType( t, AuthorizationExpiredException.class ) != -1 )
             {
-                throw new BoltConnectionAuthFatality( t.getMessage() );
+                throw new BoltConnectionAuthFatality( "Failed to process a bolt message", t );
             }
 
-            throw new BoltConnectionFatality( t.getMessage() );
+            throw new BoltConnectionFatality( "Failed to process a bolt message", t );
         }
 
         return State.FAILED;
