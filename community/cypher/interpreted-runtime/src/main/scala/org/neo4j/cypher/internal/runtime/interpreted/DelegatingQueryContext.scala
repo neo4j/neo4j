@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue}
+import org.neo4j.values.virtual.{ListValue, MapValue, NodeValue, RelationshipValue}
 import org.opencypher.v9_0.expressions.SemanticDirection
 
 import scala.collection.Iterator
@@ -135,6 +135,19 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def getNodesByLabel(id: Int): Iterator[NodeValue] = manyDbHits(inner.getNodesByLabel(id))
 
   override def getNodesByLabelPrimitive(id: Int): LongIterator = manyDbHits(inner.getNodesByLabelPrimitive(id))
+
+  override def nodeAsMap(id: Long): MapValue = {
+    val map = inner.nodeAsMap(id)
+    //one hit finding the node, then finding the properies
+    manyDbHits(1 + map.size())
+    map
+  }
+
+  override def relationshipAsMap(id: Long): MapValue = {
+    val map = inner.relationshipAsMap(id)
+    manyDbHits(1 + map.size())
+    map
+  }
 
   override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V =
     singleDbHit(inner.getOrCreateFromSchemaState(key, creator))

@@ -31,7 +31,7 @@ import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue}
+import org.neo4j.values.virtual.{ListValue, MapValue, NodeValue, RelationshipValue}
 import org.opencypher.v9_0.expressions.SemanticDirection
 
 trait QueryContextAdaptation {
@@ -98,6 +98,10 @@ trait QueryContextAdaptation {
   override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): scala.Iterator[RelationshipValue] = ???
 
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipIterator = ???
+
+  override def nodeAsMap(id: Long): MapValue = ???
+
+  override def relationshipAsMap(id: Long): MapValue = ???
 
   override def getRelationshipsCursor(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipSelectionCursor = ???
 

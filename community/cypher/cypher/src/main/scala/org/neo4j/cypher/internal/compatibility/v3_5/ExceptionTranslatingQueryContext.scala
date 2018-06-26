@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue}
+import org.neo4j.values.virtual.{ListValue, MapValue, NodeValue, RelationshipValue}
 import org.opencypher.v9_0.expressions.SemanticDirection
 
 import scala.collection.Iterator
@@ -112,6 +112,10 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getNodesByLabelPrimitive(id: Int): LongIterator =
     translateException(inner.getNodesByLabelPrimitive(id))
 
+
+  override def nodeAsMap(id: Long): MapValue = translateException(inner.nodeAsMap(id))
+
+  override def relationshipAsMap(id: Long): MapValue = translateException(inner.relationshipAsMap(id))
 
   override def nodeGetOutgoingDegree(node: Long): Int =
     translateException(inner.nodeGetOutgoingDegree(node))

@@ -55,7 +55,7 @@ import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.kernel.impl.util.{DefaultValueMapper, ValueUtils}
 import org.neo4j.values.storable.{TextValue, Value, Values, _}
-import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue, VirtualValues}
+import org.neo4j.values.virtual._
 import org.neo4j.values.{AnyValue, ValueMapper}
 import org.opencypher.v9_0.expressions.SemanticDirection
 import org.opencypher.v9_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
@@ -337,6 +337,39 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         else null
       }
       override protected def close(): Unit = cursor.close()
+    }
+  }
+
+
+  override def nodeAsMap(id: Long): MapValue = {
+    val nodes = nodeCursor
+    reads().singleNode(id, nodes)
+    if (!nodes.next() ) VirtualValues.EMPTY_MAP
+    else {
+      val props = propertyCursor
+      val tokens = tokenRead
+      nodes.properties(props)
+      val builder = new MapValueBuilder()
+      while (props.next()) {
+        builder.add(tokens.propertyKeyName(props.propertyKey()), props.propertyValue())
+      }
+      builder.build()
+    }
+  }
+
+  override def relationshipAsMap(id: Long): MapValue = {
+    val relationships = relationshipScanCursor
+    reads().singleRelationship(id, relationships)
+    if (!relationships.next() ) VirtualValues.EMPTY_MAP
+    else {
+      val props = propertyCursor
+      val tokens = tokenRead
+      relationships.properties(props)
+      val builder = new MapValueBuilder()
+      while (props.next()) {
+        builder.add(tokens.propertyKeyName(props.propertyKey()), props.propertyValue())
+      }
+      builder.build()
     }
   }
 

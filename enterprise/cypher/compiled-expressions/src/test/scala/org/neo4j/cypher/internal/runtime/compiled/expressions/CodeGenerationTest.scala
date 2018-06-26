@@ -622,6 +622,37 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
   }
 
+  test("properties function on node") {
+    val compiled = compile(function("properties", parameter("a")))
+    val mapValue = map(Array("prop"), Array(longValue(42)))
+    val node = nodeValue(1, EMPTY_TEXT_ARRAY, mapValue)
+    when(db.nodeAsMap(1)).thenReturn(mapValue)
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(node))) should equal(mapValue)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+  }
+
+  test("properties function on relationship") {
+    val compiled = compile(function("properties", parameter("a")))
+    val mapValue = map(Array("prop"), Array(longValue(42)))
+    val rel = relationshipValue(43,
+                                nodeValue(1, EMPTY_TEXT_ARRAY, EMPTY_MAP),
+                                nodeValue(2, EMPTY_TEXT_ARRAY, EMPTY_MAP),
+                                stringValue("R"), mapValue)
+    when(db.relationshipAsMap(43)).thenReturn(mapValue)
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(rel))) should equal(mapValue)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+  }
+
+  test("properties function on map") {
+    val compiled = compile(function("properties", parameter("a")))
+    val mapValue = map(Array("prop"), Array(longValue(42)))
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(mapValue))) should equal(mapValue)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+  }
+
   test("add numbers") {
     // Given
     val expression = add(literalInt(42), literalInt(10))

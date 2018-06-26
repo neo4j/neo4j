@@ -744,6 +744,26 @@ public final class CypherFunctions
         }
     }
 
+    public static MapValue properties( AnyValue in, DbAccess access )
+    {
+        if ( in instanceof VirtualNodeValue )
+        {
+            return access.nodeAsMap( ((VirtualNodeValue) in).id() );
+        }
+        else if ( in instanceof VirtualRelationshipValue )
+        {
+           return access.relationshipAsMap( ((VirtualRelationshipValue) in).id() );
+        }
+        else if ( in instanceof MapValue )
+        {
+            return (MapValue) in;
+        }
+        else
+        {
+            throw new CypherTypeException( format( "Expected a node, a relationship or a literal map but got %s", in ), null );
+        }
+    }
+
     public static IntegralValue size( AnyValue item )
     {
         if ( item instanceof PathValue )
