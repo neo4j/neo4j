@@ -479,6 +479,11 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
                                       DB_ACCESS)),
         nullable = in.nullable))
 
+    case functions.Type =>
+      compile(c.args.head).map(in => IntermediateExpression(
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, TextValue, AnyValue]("type"), in.ir)),
+        nullable = in.nullable))
+
     case functions.Last =>
       compile(c.args.head).map(in => IntermediateExpression(
         noValueCheck(in)(invokeStatic(method[CypherFunctions, AnyValue, AnyValue]("last"), in.ir)),

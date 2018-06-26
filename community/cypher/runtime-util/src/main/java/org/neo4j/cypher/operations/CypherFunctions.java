@@ -675,6 +675,18 @@ public final class CypherFunctions
         }
     }
 
+    public static TextValue type( AnyValue item )
+    {
+        if ( item instanceof RelationshipValue )
+        {
+            return ((RelationshipValue) item).type();
+        }
+        else
+        {
+            throw new ParameterWrongTypeException("Expected a Relationship, got: " + item, null );
+        }
+    }
+
     public static ListValue nodes( AnyValue in )
     {
         if ( in instanceof PathValue )
