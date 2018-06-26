@@ -72,7 +72,6 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends PropertyA
         if ( propertyUpdatesVisitor != null && containsAnyEntityToken( labelIds, labels ) )
         {
             // Notify the property update visitor
-            // TODO: reuse object instead? Better in terms of speed and GC?
             EntityUpdates.Builder updates = EntityUpdates.forEntity( node.getId() ).withTokens( labels );
 
             if ( hasRelevantProperty(node, updates) )

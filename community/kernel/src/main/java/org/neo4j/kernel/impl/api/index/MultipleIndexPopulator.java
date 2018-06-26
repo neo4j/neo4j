@@ -454,6 +454,7 @@ public class MultipleIndexPopulator implements IndexPopulator
 
                 try
                 {
+                    population.populator.includeSample( update );
                     updater.process( update );
                 }
                 catch ( Throwable t )

@@ -370,13 +370,50 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         switch ( descriptor.type() )
         {
         case GENERAL:
-            nonUniqueSampler.include( SamplingUtil.encodedStringValuesForSampling( (Object[]) update.values() ) );
+            updateNonUniqueSample( update );
             break;
         case UNIQUE:
-            uniqueSampler.increment( 1 );
+            updateUniqueSample( update );
             break;
         default:
             throw new IllegalArgumentException( "Unexpected index type " + descriptor.type() );
+        }
+    }
+
+    private void updateUniqueSample( IndexEntryUpdate<?> update )
+    {
+        switch ( update.updateMode() )
+        {
+        case ADDED:
+            uniqueSampler.increment( 1 );
+            break;
+        case REMOVED:
+            uniqueSampler.increment( -1 );
+            break;
+        case CHANGED:
+            break;
+        default:
+            throw new IllegalArgumentException( "Unsupported update mode type:" + update.updateMode() );
+        }
+    }
+
+    private void updateNonUniqueSample( IndexEntryUpdate<?> update )
+    {
+        String encodedValues = SamplingUtil.encodedStringValuesForSampling( (Object[]) update.values() );
+        switch ( update.updateMode() )
+        {
+        case ADDED:
+            nonUniqueSampler.include( encodedValues );
+            break;
+        case REMOVED:
+            nonUniqueSampler.exclude( encodedValues );
+            break;
+        case CHANGED:
+            nonUniqueSampler.exclude( SamplingUtil.encodedStringValuesForSampling( (Object[]) update.beforeValues() ) );
+            nonUniqueSampler.include( encodedValues );
+            break;
+        default:
+            throw new IllegalArgumentException( "Unsupported update mode type:" + update.updateMode() );
         }
     }
 
