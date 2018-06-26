@@ -57,24 +57,12 @@ public interface Locks
     void releaseSharedLabelLock( long... ids );
 
     /**
-     * Shared token locks are held when new tokens are created.
+     * Shared lock for the given special singleton resource.
      */
-    void acquireSharedTokenLock();
+    void acquireSharedSpecialSingletonLock( int singleton );
 
     /**
-     * Exclusive token locks are used to hold back the creation of new tokens.
-     *
-     * This is useful for when a lock on "all tokens" are needed.
+     * Exclusive lock for the given special singleton resource.
      */
-    void acquireExclusiveTokenLock();
-
-    /**
-     * Shared unlabelled node locks are taken when nodes are created without any label.
-     */
-    void acquireSharedUnlabelledNodeLock();
-
-    /**
-     * Exclusive unlabelled node locks are taken when "any label" indexes are dropped or created.
-     */
-    void acquireExclusiveUnlabelledNodeLock();
+    void acquireExclusiveSpecialSingletonLock( int singleton );
 }

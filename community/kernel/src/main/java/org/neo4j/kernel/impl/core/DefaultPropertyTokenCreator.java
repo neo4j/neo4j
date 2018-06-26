@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 
 public class DefaultPropertyTokenCreator extends IsolatedTransactionTokenCreator
 {
@@ -35,6 +36,7 @@ public class DefaultPropertyTokenCreator extends IsolatedTransactionTokenCreator
     @Override
     protected int createKey( Transaction transaction, String name ) throws IllegalTokenNameException
     {
+        transaction.locks().acquireSharedSpecialSingletonLock( ResourceTypes.SINGLETON_PROP_KEY_TOKEN_CREATE );
         return transaction.tokenWrite().propertyKeyCreateForName( name );
     }
 }

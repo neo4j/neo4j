@@ -50,7 +50,6 @@ abstract class IsolatedTransactionTokenCreator implements TokenCreator
         Kernel kernel = kernelSupplier.get();
         try ( Transaction tx = kernel.beginTransaction( Type.implicit, LoginContext.AUTH_DISABLED ) )
         {
-            tx.locks().acquireSharedTokenLock();
             int id = createKey( tx, name );
             tx.success();
             return id;
@@ -63,7 +62,6 @@ abstract class IsolatedTransactionTokenCreator implements TokenCreator
         Kernel kernel = kernelSupplier.get();
         try ( Transaction tx = kernel.beginTransaction( Type.implicit, LoginContext.AUTH_DISABLED ) )
         {
-            tx.locks().acquireSharedTokenLock();
             for ( int i = 0; i < ids.length; i++ )
             {
                 if ( filter.test( i ) )

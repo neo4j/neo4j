@@ -84,6 +84,10 @@ class ForsetiFalseDeadlockTest
         {
             for ( LockWaitStrategies waitStrategy : lockWaitStrategies )
             {
+                if ( waitStrategy == LockWaitStrategies.NO_WAIT )
+                {
+                    continue; // Skip NO_WAIT.
+                }
                 for ( LockType lockTypeAX : lockTypes )
                 {
                     for ( LockType lockTypeAY : lockTypes )

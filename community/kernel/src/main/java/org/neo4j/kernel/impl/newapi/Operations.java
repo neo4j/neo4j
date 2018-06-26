@@ -169,7 +169,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     public long nodeCreate()
     {
         ktx.assertOpen();
-        sharedSchemaLock( ResourceTypes.SPECIAL_SINGLETON, ResourceTypes.SINGLETON_UNLABELLED_NODE );
+        allStoreHolder.acquireSharedSpecialSingletonLock( ResourceTypes.SINGLETON_UNLABELLED_NODE );
         long nodeId = statement.reserveNode();
         ktx.txState().nodeDoCreate( nodeId );
         return nodeId;
@@ -1207,17 +1207,27 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
 
     private void exclusiveAnyEntityTokenSchema( SchemaDescriptor schema )
     {
+        boolean forNodes = schema.entityType() == EntityType.NODE;
         // After we get the exclusive token lock, no new tokens can be created. This allows us to grab a lock on all
         // the existing tokens, and be sure that we won't miss any updates.
-        allStoreHolder.acquireExclusiveTokenLock();
-        // We also need to coordinate with the creation of unlabelled nodes,
-        // since they are indexable by "any token" indexes.
-        allStoreHolder.acquireExclusiveUnlabelledNodeLock();
+        if ( forNodes )
+        {
+            allStoreHolder.acquireExclusiveSpecialSingletonLock( ResourceTypes.SINGLETON_LABEL_TOKEN_CREATE );
+            // We also need to coordinate with the creation of unlabelled nodes,
+            // since they are indexable by "any token" indexes.
+            allStoreHolder.acquireExclusiveSpecialSingletonLock( ResourceTypes.SINGLETON_UNLABELLED_NODE );
+        }
+        else
+        {
+            // We don't need the unlabelled node lock when the schema is for relationships.
+            // But we do need to prevent any new relationship type tokens from being allocated.
+            allStoreHolder.acquireExclusiveSpecialSingletonLock( ResourceTypes.SINGLETON_REL_TYPE_TOKEN_CREATE );
+        }
 
         ResourceType resourceType;
         long[] tokens;
         Iterator<NamedToken> itr;
-        if ( schema.entityType() == EntityType.NODE )
+        if ( forNodes )
         {
             resourceType = ResourceTypes.LABEL;
             tokens = new long[token.labelCount()];

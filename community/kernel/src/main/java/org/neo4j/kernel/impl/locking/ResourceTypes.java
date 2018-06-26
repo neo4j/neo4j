@@ -48,7 +48,7 @@ public enum ResourceTypes implements ResourceType
      * <p>
      * Each resource is given by a SINGLETON_* constant in this file.
      */
-    SPECIAL_SINGLETON( 8, LockWaitStrategies.INCREMENTAL_BACKOFF );
+    SPECIAL_SINGLETON( 8, LockWaitStrategies.NO_WAIT );
 
     private static final boolean useStrongHashing =
             FeatureToggles.flag( ResourceTypes.class, "useStrongHashing", false );
@@ -58,19 +58,22 @@ public enum ResourceTypes implements ResourceType
     private static final HashFunction indexEntryHash_4_x = HashFunction.incrementalXXH64();
 
     /**
-     * The SINGLETON_TOKEN_CREATE resource constant is used to coordinate the creation of new tokens, with locks taken
-     * by "any-token" indexes when they are created or dropped. These indexes need to lock all tokens of a particular
-     * type. To do this, they need to ensure that no new tokens are created concurrently with their critical section.
+     * The SINGLETON_*_TOKEN_CREATE resource constants are used to coordinate the creation of new tokens, with locks
+     * taken by "any-token" indexes for either relationships or nodes, when they are created or dropped.
+     * These indexes need to lock all tokens of a particular type. To do this, they need to ensure that no new tokens
+     * of the given type are created concurrently with their critical section.
      * Token creates take a shared lock on this resource, because token creation is internally synchronised and can be
      * allowed to happen in parallel. Meanwhile, dropping or creating "any token" indexes will take exclusive locks on
      * this resource to prevent new tokens from being allocated.
      */
-    public static final int SINGLETON_TOKEN_CREATE = 1;
+    public static final int SINGLETON_LABEL_TOKEN_CREATE = 1;
+    public static final int SINGLETON_REL_TYPE_TOKEN_CREATE = 2;
+    public static final int SINGLETON_PROP_KEY_TOKEN_CREATE = 3;
     /**
      * Nodes can be created without any labels, but would still be indexed by "any-token" node indexes. To coordinate
      * schema locking between these two cases, we use this special singleton lock.
      */
-    public static final int SINGLETON_UNLABELLED_NODE = 2;
+    public static final int SINGLETON_UNLABELLED_NODE = 4;
 
     static
     {

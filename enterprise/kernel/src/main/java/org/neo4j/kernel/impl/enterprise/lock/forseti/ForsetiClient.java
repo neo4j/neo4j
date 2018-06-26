@@ -254,6 +254,12 @@ public class ForsetiClient implements Locks.Client
                             // Success!
                             break;
                         }
+                        else
+                        {
+                            // Optimistically don't waste time waiting in this case. Just spin.
+                            clearAndCopyWaitList( existingLock );
+                            continue;
+                        }
                     }
 
                     // Someone holds an exclusive lock on this entity
@@ -271,7 +277,7 @@ public class ForsetiClient implements Locks.Client
                         waitEvent = tracer.waitForLock( false, resourceType, resourceId );
                     }
                     // And take note of who we are waiting for. This is used for deadlock detection.
-                    waitFor( existingLock, resourceType, resourceId, tries++ );
+                    waitFor( existingLock, resourceType, resourceId, false, tries++ );
                 }
 
                 // Make a local note about the fact that we now hold this lock
@@ -340,7 +346,7 @@ public class ForsetiClient implements Locks.Client
                     {
                         waitEvent = tracer.waitForLock( true, resourceType, resourceId );
                     }
-                    waitFor( existingLock, resourceType, resourceId, tries++ );
+                    waitFor( existingLock, resourceType, resourceId, true, tries++ );
                 }
 
                 heldLocks.put( resourceId, 1 );
@@ -932,7 +938,7 @@ public class ForsetiClient implements Locks.Client
                     {
                         waitEvent = tracer.waitForLock( true, resourceType, resourceId );
                     }
-                    waitFor( sharedLock, resourceType, resourceId, tries++ );
+                    waitFor( sharedLock, resourceType, resourceId, true, tries++ );
                 }
 
                 return true;
@@ -964,12 +970,11 @@ public class ForsetiClient implements Locks.Client
         waitListCheckPoint = waitList.checkPointAndPut( waitListCheckPoint, clientId );
     }
 
-    private void waitFor( ForsetiLockManager.Lock lock, ResourceType type, long resourceId, int tries )
+    private void waitFor( ForsetiLockManager.Lock lock, ResourceType type, long resourceId, boolean exclusive, int tries )
     {
         waitingForLock = lock;
-        clearWaitList();
-        lock.copyHolderWaitListsInto( waitList );
-        applyWaitStrategy( type, tries );
+        clearAndCopyWaitList( lock );
+        waitStrategies[type.typeId()].apply( tries, exclusive );
 
         int b = lock.detectDeadlock( id() );
         if ( b != -1 && deadlockResolutionStrategy.shouldAbort( this, clientById.apply( b ) ) )
@@ -1000,6 +1005,12 @@ public class ForsetiClient implements Locks.Client
                 }
             }
         }
+    }
+
+    private void clearAndCopyWaitList( ForsetiLockManager.Lock lock )
+    {
+        clearWaitList();
+        lock.copyHolderWaitListsInto( waitList );
     }
 
     private boolean isDeadlockReal( ForsetiLockManager.Lock lock, int tries )
@@ -1077,12 +1088,6 @@ public class ForsetiClient implements Locks.Client
     public int id()
     {
         return clientId;
-    }
-
-    private void applyWaitStrategy( ResourceType resourceType, int tries )
-    {
-        WaitStrategy<AcquireLockTimeoutException> waitStrategy = waitStrategies[resourceType.typeId()];
-        waitStrategy.apply( tries );
     }
 
     private void assertValid( long waitStartMillis, ResourceType resourceType, long resourceId )

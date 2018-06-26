@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.util.concurrent;
 
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
 
@@ -29,7 +30,7 @@ public enum LockWaitStrategies implements WaitStrategy<AcquireLockTimeoutExcepti
     SPIN
     {
         @Override
-        public void apply( long iteration ) throws AcquireLockTimeoutException
+        public void apply( long iteration, boolean exclusive ) throws AcquireLockTimeoutException
         {
             // TODO We can experiment with introducing branch mispredictions here, to create
             // TODO bubbles in the pipeline that'll allow hyper-threaded threads on the
@@ -42,7 +43,7 @@ public enum LockWaitStrategies implements WaitStrategy<AcquireLockTimeoutExcepti
     YIELD
     {
         @Override
-        public void apply( long iteration ) throws AcquireLockTimeoutException
+        public void apply( long iteration, boolean exclusive ) throws AcquireLockTimeoutException
         {
             Thread.yield();
         }
@@ -53,11 +54,11 @@ public enum LockWaitStrategies implements WaitStrategy<AcquireLockTimeoutExcepti
         private static final long multiplyUntilIteration = spinIterations + 2;
 
         @Override
-        public void apply( long iteration ) throws AcquireLockTimeoutException
+        public void apply( long iteration, boolean exclusive ) throws AcquireLockTimeoutException
         {
             if ( iteration < spinIterations )
             {
-                SPIN.apply( iteration );
+                SPIN.apply( iteration, exclusive );
                 return;
             }
 
@@ -77,6 +78,17 @@ public enum LockWaitStrategies implements WaitStrategy<AcquireLockTimeoutExcepti
                 Thread.interrupted();
                 throw new AcquireLockTimeoutException( e, "Interrupted while waiting.", Interrupted );
             }
+        }
+    },
+    NO_WAIT
+    {
+        @Override
+        public void apply( long iteration, boolean exclusive )
+                throws AcquireLockTimeoutException
+        {
+            // The NO_WAIT bail-out is a mix of deadlock and lock acquire timeout.
+            throw new AcquireLockTimeoutException( "Cannot acquire lock, and refusing to wait.",
+                    Status.Transaction.DeadlockDetected );
         }
     }
 }

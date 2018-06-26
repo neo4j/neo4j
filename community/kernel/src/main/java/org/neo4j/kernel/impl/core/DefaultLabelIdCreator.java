@@ -25,6 +25,7 @@ import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 
 public class DefaultLabelIdCreator extends IsolatedTransactionTokenCreator
 {
@@ -36,6 +37,7 @@ public class DefaultLabelIdCreator extends IsolatedTransactionTokenCreator
     @Override
     protected int createKey( Transaction transaction, String name ) throws IllegalTokenNameException, TooManyLabelsException
     {
+        transaction.locks().acquireSharedSpecialSingletonLock( ResourceTypes.SINGLETON_LABEL_TOKEN_CREATE );
         return transaction.tokenWrite().labelCreateForName( name );
     }
 }

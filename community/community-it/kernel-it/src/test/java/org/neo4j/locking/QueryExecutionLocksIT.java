@@ -499,31 +499,17 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public void acquireSharedTokenLock()
+        public void acquireSharedSpecialSingletonLock( int singleton )
         {
-            record( false, true, ResourceTypes.SPECIAL_SINGLETON, ResourceTypes.SINGLETON_TOKEN_CREATE );
-            delegate.acquireSharedTokenLock();
+            record( false, true, ResourceTypes.SPECIAL_SINGLETON, singleton );
+            delegate.acquireSharedSpecialSingletonLock( singleton );
         }
 
         @Override
-        public void acquireExclusiveTokenLock()
+        public void acquireExclusiveSpecialSingletonLock( int singleton )
         {
-            record( true, true, ResourceTypes.SPECIAL_SINGLETON, ResourceTypes.SINGLETON_TOKEN_CREATE );
-            delegate.acquireExclusiveTokenLock();
-        }
-
-        @Override
-        public void acquireSharedUnlabelledNodeLock()
-        {
-            record( false, true, ResourceTypes.SPECIAL_SINGLETON, ResourceTypes.SINGLETON_UNLABELLED_NODE );
-            delegate.acquireSharedUnlabelledNodeLock();
-        }
-
-        @Override
-        public void acquireExclusiveUnlabelledNodeLock()
-        {
-            record( true, true, ResourceTypes.SPECIAL_SINGLETON, ResourceTypes.SINGLETON_UNLABELLED_NODE );
-            delegate.acquireExclusiveUnlabelledNodeLock();
+            record( true, true, ResourceTypes.SPECIAL_SINGLETON, singleton );
+            delegate.acquireSharedSpecialSingletonLock( singleton );
         }
     }
 
