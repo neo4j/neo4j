@@ -304,10 +304,10 @@ public class BoltStateMachineV1 implements BoltStateMachine
         {
             if ( ExceptionUtils.indexOfType( cause, AuthorizationExpiredException.class ) != -1 )
             {
-                throw new BoltConnectionAuthFatality( cause.getMessage() );
+                throw new BoltConnectionAuthFatality( "Failed to process a bolt message", cause );
             }
 
-            throw new BoltConnectionFatality( cause.getMessage() );
+            throw new BoltConnectionFatality( "Failed to process a bolt message", cause );
         }
     }
 

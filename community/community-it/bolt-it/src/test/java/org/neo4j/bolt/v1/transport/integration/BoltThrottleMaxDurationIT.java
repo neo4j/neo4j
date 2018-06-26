@@ -58,12 +58,15 @@ import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.fail;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.test.matchers.CommonMatchers.matchesExceptionMessage;
 
 @RunWith( Parameterized.class )
@@ -163,12 +166,14 @@ public class BoltThrottleMaxDurationIT
         }
         catch ( ExecutionException e )
         {
-            assertThat( Exceptions.rootCause( e ), Matchers.instanceOf( SocketException.class ) );
+            assertThat( Exceptions.rootCause( e ), instanceOf( SocketException.class ) );
         }
 
-        logProvider.assertAtLeastOnce( AssertableLogProvider.inLog( Matchers.containsString( BoltConnection.class.getPackage().getName() ) ).error(
+        logProvider.assertAtLeastOnce( inLog( Matchers.containsString( BoltConnection.class.getPackage().getName() ) ).error(
                 startsWith( "Unexpected error detected in bolt session" ),
-                matchesExceptionMessage( containsString( "will be closed because the client did not consume outgoing buffers for " ) ) ) );
+                hasProperty( "cause",
+                        matchesExceptionMessage( containsString( "will be closed because the client did not consume outgoing buffers for " ) ) )
+        ) );
     }
 
 }
