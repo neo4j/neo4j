@@ -146,12 +146,11 @@ case class SubstringFunction(orig: Expression, start: Expression, length: Option
 case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Expression)
   extends NullInNullOutExpression(orig) {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
-    case t: TextValue =>
-      val searchVal = asString(search(m, state))
-      val replaceWithVal = asString(replaceWith(m, state))
-      if (searchVal == null || replaceWithVal == null) NO_VALUE else t.replace(searchVal, replaceWithVal)
-    case _ => StringFunction.notAString(value)
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
+      val searchVal = search(m, state)
+      val replaceWithVal = replaceWith(m, state)
+      if (searchVal == NO_VALUE || replaceWithVal == NO_VALUE) NO_VALUE
+      else CypherFunctions.replace(value, searchVal, replaceWithVal)
   }
 
   override def arguments = Seq(orig, search, replaceWith)

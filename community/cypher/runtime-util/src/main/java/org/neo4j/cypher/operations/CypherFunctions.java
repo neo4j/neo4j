@@ -500,6 +500,19 @@ public final class CypherFunctions
         }
     }
 
+
+    public static TextValue replace( AnyValue original, AnyValue search, AnyValue replaceWith )
+    {
+        if ( original instanceof TextValue )
+        {
+            return ((TextValue) original).replace( asString( search ), asString( replaceWith ) );
+        }
+        else
+        {
+            throw notAString( "replace", original );
+        }
+    }
+
     public static LongValue id( AnyValue item )
     {
         if ( item instanceof VirtualNodeValue )
@@ -688,7 +701,7 @@ public final class CypherFunctions
     {
         if ( !(value instanceof TextValue) )
         {
-            throw new CypherTypeException( format( "Expected %s to be an index key", value), null );
+            throw new CypherTypeException( format( "Expected %s to be a string", value), null );
         }
         return ((TextValue) value).stringValue();
     }

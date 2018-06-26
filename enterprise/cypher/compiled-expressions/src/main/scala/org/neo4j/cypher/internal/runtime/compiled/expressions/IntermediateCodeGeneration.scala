@@ -511,6 +511,17 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           noValueCheck(in)(invokeStatic(method[CypherFunctions, TextValue, AnyValue]("trim"), in.ir)), in.nullable)
       }
 
+    case functions.Replace =>
+      for {original <- compile(c.args(0))
+           search <- compile(c.args(1))
+           replaceWith <- compile(c.args(2))
+      } yield {
+        IntermediateExpression(
+          noValueCheck(original, search, replaceWith)(
+            invokeStatic(method[CypherFunctions, TextValue, AnyValue, AnyValue, AnyValue]("replace"),
+                         original.ir, search.ir, replaceWith.ir)), original.nullable || search.nullable || replaceWith.nullable)
+      }
+
     case functions.Point =>
       for (in <- compile(c.args.head)) yield {
         IntermediateExpression(
