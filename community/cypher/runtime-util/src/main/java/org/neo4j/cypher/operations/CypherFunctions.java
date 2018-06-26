@@ -23,6 +23,7 @@ import org.opencypher.v9_0.util.CypherTypeException;
 import org.opencypher.v9_0.util.InvalidArgumentException;
 import org.opencypher.v9_0.util.ParameterWrongTypeException;
 
+import java.math.BigDecimal;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.cypher.internal.runtime.DbAccess;
@@ -49,6 +50,7 @@ import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.Double.parseDouble;
+import static java.lang.Long.parseLong;
 import static java.lang.String.format;
 import static org.neo4j.values.storable.PointValue.ALLOWED_KEYS;
 import static org.neo4j.values.storable.Values.EMPTY_STRING;
@@ -66,6 +68,9 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 @SuppressWarnings( "unused" )
 public final class CypherFunctions
 {
+    private static final BigDecimal MAX_LONG = BigDecimal.valueOf( Long.MAX_VALUE );
+    private static final BigDecimal MIN_LONG = BigDecimal.valueOf( Long.MIN_VALUE );
+
     private CypherFunctions()
     {
         throw new UnsupportedOperationException( "Do not instantiate" );
@@ -803,6 +808,54 @@ public final class CypherFunctions
         else
         {
             throw new ParameterWrongTypeException("Expected a String or Number, got: " + in.toString(), null);
+        }
+    }
+
+    public static Value toInteger( AnyValue in )
+    {
+        if ( in instanceof IntegralValue )
+        {
+            return (IntegralValue) in;
+        }
+        else if ( in instanceof NumberValue )
+        {
+            return longValue( ((NumberValue) in).longValue() );
+        }
+        else if ( in instanceof TextValue )
+        {
+            return stringToLongValue( (TextValue) in );
+        }
+        else
+        {
+            throw new ParameterWrongTypeException("Expected a String or Number, got: " + in.toString(), null);
+        }
+    }
+
+    private static Value stringToLongValue( TextValue in )
+    {
+        try
+        {
+            return longValue( parseLong( in.stringValue() ) );
+        }
+
+        catch ( Exception e )
+        {
+            try
+            {
+                BigDecimal bigDecimal = new BigDecimal( in.stringValue() );
+                if ( bigDecimal.compareTo( MAX_LONG ) <= 0 && bigDecimal.compareTo( MIN_LONG ) >= 0 )
+                {
+                    return longValue( bigDecimal.longValue() );
+                }
+                else
+                {
+                    throw new CypherTypeException( format( "integer, %s, is too large", in.stringValue() ), null );
+                }
+            }
+            catch ( NumberFormatException ignore )
+            {
+                return NO_VALUE;
+            }
         }
     }
 
