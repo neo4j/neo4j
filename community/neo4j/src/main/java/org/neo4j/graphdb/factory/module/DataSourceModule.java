@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * Datasource module for {@link GraphDatabaseFacadeFactory}. This implements all the
@@ -94,6 +95,7 @@ public class DataSourceModule
         File storeDir = platformModule.storeDir;
         DiagnosticsManager diagnosticsManager = platformModule.diagnosticsManager;
         this.queryExecutor = queryExecutionEngineSupplier;
+        Monitors monitors = new Monitors();
 
         threadToTransactionBridge = deps.satisfyDependency( new ThreadToStatementContextBridge( platformModule.availabilityGuard ) );
 
@@ -138,11 +140,11 @@ public class DataSourceModule
                 editionModule.statementLocksFactory,
                 schemaWriteGuard,
                 transactionEventHandlers,
-                platformModule.monitors.newMonitor( IndexingService.Monitor.class ),
+                monitors.newMonitor( IndexingService.Monitor.class ),
                 fileSystem,
                 platformModule.transactionMonitor,
                 databaseHealth,
-                platformModule.monitors.newMonitor( LogFileCreationMonitor.class ),
+                monitors.newMonitor( LogFileCreationMonitor.class ),
                 editionModule.headerInformationFactory,
                 editionModule.commitProcessFactory,
                 autoIndexing,
@@ -150,7 +152,7 @@ public class DataSourceModule
                 explicitIndexProvider,
                 pageCache,
                 editionModule.constraintSemantics,
-                platformModule.monitors,
+                monitors,
                 platformModule.tracers,
                 procedures,
                 editionModule.ioLimiter,
