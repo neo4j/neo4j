@@ -565,6 +565,18 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
                                               original.ir, start.ir, len.ir)), original.nullable)
       }
 
+    case functions.ToLower =>
+      for (in <- compile(c.args.head)) yield {
+        IntermediateExpression(
+          noValueCheck(in)(invokeStatic(method[CypherFunctions, TextValue, AnyValue]("toLower"), in.ir)), in.nullable)
+      }
+
+    case functions.ToUpper =>
+      for (in <- compile(c.args.head)) yield {
+        IntermediateExpression(
+          noValueCheck(in)(invokeStatic(method[CypherFunctions, TextValue, AnyValue]("toUpper"), in.ir)), in.nullable)
+      }
+
     case functions.Point =>
       for (in <- compile(c.args.head)) yield {
         IntermediateExpression(

@@ -620,6 +620,30 @@ public final class CypherFunctions
         }
     }
 
+    public static TextValue toLower( AnyValue in )
+    {
+        if ( in instanceof TextValue )
+        {
+            return ((TextValue) in).toLower();
+        }
+        else
+        {
+            throw notAString( "toLower", in );
+        }
+    }
+
+    public static TextValue toUpper( AnyValue in )
+    {
+        if ( in instanceof TextValue )
+        {
+            return ((TextValue) in).toUpper();
+        }
+        else
+        {
+            throw notAString( "toUpper", in );
+        }
+    }
+
     public static LongValue id( AnyValue item )
     {
         if ( item instanceof VirtualNodeValue )

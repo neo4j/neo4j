@@ -72,20 +72,14 @@ case class ToStringFunction(argument: Expression) extends StringFunction(argumen
 
 case class ToLowerFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
-    case t: TextValue => t.toLower
-    case _ => StringFunction.notAString(value)
-  }
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = CypherFunctions.toLower(value)
 
   override def rewrite(f: (Expression) => Expression) = f(ToLowerFunction(argument.rewrite(f)))
 }
 
 case class ToUpperFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =value match {
-    case t: TextValue => t.toUpper
-    case _ => StringFunction.notAString(value)
-  }
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = CypherFunctions.toUpper(value)
 
   override def rewrite(f: (Expression) => Expression) = f(ToUpperFunction(argument.rewrite(f)))
 }
