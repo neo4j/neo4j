@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.opencypher.v9_0.util.ParameterWrongTypeException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values._
-import org.neo4j.values.storable.{DoubleValue, NumberValue, TextValue, Values}
 
 case class ToFloatFunction(a: Expression) extends NullInNullOutExpression(a) {
   def symbolTableDependencies: Set[String] = a.symbolTableDependencies
@@ -32,17 +31,6 @@ case class ToFloatFunction(a: Expression) extends NullInNullOutExpression(a) {
 
   def rewrite(f: (Expression) => Expression): Expression = f(ToFloatFunction(a.rewrite(f)))
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
-    case v: DoubleValue => v
-    case v: NumberValue => Values.doubleValue(v.doubleValue())
-    case v: TextValue =>
-      try {
-        Values.doubleValue(v.stringValue().toDouble)
-      } catch {
-        case _: NumberFormatException =>
-         Values.NO_VALUE
-      }
-    case v =>
-      throw new ParameterWrongTypeException("Expected a String or Number, got: " + v.toString)
-  }
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
+    CypherFunctions.toFloat(value)
 }

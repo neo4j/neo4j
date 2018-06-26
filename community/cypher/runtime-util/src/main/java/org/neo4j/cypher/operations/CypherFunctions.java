@@ -48,6 +48,7 @@ import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
+import static java.lang.Double.parseDouble;
 import static java.lang.String.format;
 import static org.neo4j.values.storable.PointValue.ALLOWED_KEYS;
 import static org.neo4j.values.storable.Values.EMPTY_STRING;
@@ -777,6 +778,34 @@ public final class CypherFunctions
             throw new ParameterWrongTypeException("Expected a Boolean or String, got: " + in.toString(), null);
         }
     }
+
+    public static Value toFloat( AnyValue in )
+    {
+        if ( in instanceof DoubleValue )
+        {
+            return (DoubleValue) in;
+        }
+        else if ( in instanceof NumberValue )
+        {
+            return doubleValue( ((NumberValue) in).doubleValue() );
+        }
+        else if ( in instanceof TextValue )
+        {
+            try
+            {
+                return doubleValue( parseDouble( ((TextValue) in).stringValue() ) );
+            }
+            catch ( NumberFormatException ignore )
+            {
+                return NO_VALUE;
+            }
+        }
+        else
+        {
+            throw new ParameterWrongTypeException("Expected a String or Number, got: " + in.toString(), null);
+        }
+    }
+
     private static ListValue extractKeys( DbAccess access, int[] keyIds )
     {
         String[] keysNames = new String[keyIds.length];
