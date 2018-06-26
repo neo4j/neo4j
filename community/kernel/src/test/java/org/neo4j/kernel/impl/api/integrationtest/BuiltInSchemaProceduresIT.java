@@ -55,21 +55,26 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
         // Node1: (:A:B {prop1:"Test", prop2:12})
         // Node2: (:B {prop1:true})
         // Node3: ()
+        // Node4: (:C {prop1: ["Test","Success"]}
 
         Transaction transaction = newTransaction( AnonymousContext.writeToken() );
         long nodeId1 = transaction.dataWrite().nodeCreate();
         long nodeId2 = transaction.dataWrite().nodeCreate();
         transaction.dataWrite().nodeCreate(); // Node3
+        long nodeId4 = transaction.dataWrite().nodeCreate();
         int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "A" );
         int labelId2 = transaction.tokenWrite().labelGetOrCreateForName( "B" );
+        int labelId3 = transaction.tokenWrite().labelGetOrCreateForName( "C" );
         int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
         int prop2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop2" );
         transaction.dataWrite().nodeSetProperty( nodeId1, prop1, Values.stringValue("Test") );
         transaction.dataWrite().nodeSetProperty( nodeId1, prop2, Values.intValue(12) );
         transaction.dataWrite().nodeSetProperty( nodeId2, prop1, Values.booleanValue( true ) );
+        transaction.dataWrite().nodeSetProperty( nodeId4, prop1, Values.stringArray( "Test","Success" ) );
         transaction.dataWrite().nodeAddLabel( nodeId1, labelId1 );
         transaction.dataWrite().nodeAddLabel( nodeId1, labelId2 );
         transaction.dataWrite().nodeAddLabel( nodeId2, labelId2 );
+        transaction.dataWrite().nodeAddLabel( nodeId4, labelId3 );
         commit();
 
         // When
@@ -81,6 +86,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                 equalTo( new Object[]{"Node", Arrays.asList( "A", "B" ), "prop1", "STRING"} ),
                 equalTo( new Object[]{"Node", Arrays.asList( "A", "B" ), "prop2", "INTEGER"} ),
                 equalTo( new Object[]{"Node", Arrays.asList( "B" ), "prop1", "BOOLEAN"} ),
+                equalTo( new Object[]{"Node", Arrays.asList( "C" ), "prop1", "STRINGARRAY"} ),
                 equalTo( new Object[]{"Node", Arrays.asList(), null, null} )) );
 
         // Just for printing out the result if needed
