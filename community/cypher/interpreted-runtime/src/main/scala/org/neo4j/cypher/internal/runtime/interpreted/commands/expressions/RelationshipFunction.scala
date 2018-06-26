@@ -19,17 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.opencypher.v9_0.util.SyntaxException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{PathValue, VirtualValues}
 
 case class RelationshipFunction(path: Expression) extends NullInNullOutExpression(path) {
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState) = value match {
-    case p: PathValue => VirtualValues.list(p.relationships():_*)
-    case x       => throw new SyntaxException("Expected " + path + " to be a path.")
-  }
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState) =
+    CypherFunctions.relationships(value)
 
   def rewrite(f: (Expression) => Expression) = f(RelationshipFunction(path.rewrite(f)))
 

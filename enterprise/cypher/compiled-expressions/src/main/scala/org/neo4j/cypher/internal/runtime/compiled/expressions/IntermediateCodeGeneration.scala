@@ -445,6 +445,10 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       compile(c.args.head).map(in => IntermediateExpression(
         noValueCheck(in)(invokeStatic(method[CypherFunctions, ListValue, AnyValue]("nodes"), in.ir)), in.nullable))
 
+    case functions.Relationships =>
+      compile(c.args.head).map(in => IntermediateExpression(
+        noValueCheck(in)(invokeStatic(method[CypherFunctions, ListValue, AnyValue]("relationships"), in.ir)), in.nullable))
+
     case functions.Exists =>
       c.arguments.head match {
         case property: Property =>

@@ -542,6 +542,18 @@ public final class CypherFunctions
         }
     }
 
+    public static ListValue relationships( AnyValue in )
+    {
+        if ( in instanceof PathValue )
+        {
+            return VirtualValues.list( ((PathValue) in).relationships() );
+        }
+        else
+        {
+            throw new CypherTypeException( format( "Expected %s to be a path.", in ), null );
+        }
+    }
+
     public static Value point( AnyValue in, DbAccess access )
     {
         if ( in instanceof VirtualNodeValue )
