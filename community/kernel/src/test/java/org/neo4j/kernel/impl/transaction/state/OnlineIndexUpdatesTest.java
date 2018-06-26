@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.Loaders;
@@ -73,8 +72,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterables.empty;
+import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
-import static org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
@@ -114,7 +113,7 @@ public class OnlineIndexUpdatesTest
         propertyStore = neoStores.getPropertyStore();
         scheduler = new CentralJobScheduler();
         indexingService =
-                IndexingServiceFactory.createIndexingService( Config.defaults(), scheduler, new DefaultIndexProviderMap( new InMemoryIndexProvider() ),
+                IndexingServiceFactory.createIndexingService( Config.defaults(), scheduler, new DefaultIndexProviderMap( EMPTY ),
                         new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores ), SchemaUtil.idTokenNameLookup, empty(),
                         NullLogProvider.getInstance(), IndexingService.NO_MONITOR, new DatabaseSchemaState( NullLogProvider.getInstance() ) );
         propertyPhysicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
@@ -150,7 +149,8 @@ public class OnlineIndexUpdatesTest
         propertyBlocks.setNodeId( nodeId );
         Command.PropertyCommand propertyCommand = new Command.PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), propertyBlocks );
 
-        StoreIndexDescriptor indexDescriptor = forSchema( SchemaDescriptorFactory.multiToken( new int[0], NODE, 1, 4, 6 ), PROVIDER_DESCRIPTOR ).withId( 0 );
+        StoreIndexDescriptor indexDescriptor =
+                forSchema( SchemaDescriptorFactory.multiToken( new int[0], NODE, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 0 );
         indexingService.createIndexes( indexDescriptor );
         indexingService.getIndexProxy( indexDescriptor.schema() ).awaitStoreScanCompleted();
 
@@ -180,7 +180,7 @@ public class OnlineIndexUpdatesTest
         Command.PropertyCommand propertyCommand = new Command.PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), propertyBlocks );
 
         StoreIndexDescriptor indexDescriptor =
-                forSchema( SchemaDescriptorFactory.multiToken( new int[0], RELATIONSHIP, 1, 4, 6 ), PROVIDER_DESCRIPTOR ).withId( 0 );
+                forSchema( SchemaDescriptorFactory.multiToken( new int[0], RELATIONSHIP, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 0 );
         indexingService.createIndexes( indexDescriptor );
         indexingService.getIndexProxy( indexDescriptor.schema() ).awaitStoreScanCompleted();
 
@@ -211,7 +211,7 @@ public class OnlineIndexUpdatesTest
                 new Command.PropertyCommand( recordAccess.getIfLoaded( nodePropertyId ).forReadingData(), nodePropertyBlocks );
 
         StoreIndexDescriptor nodeIndexDescriptor =
-                forSchema( SchemaDescriptorFactory.multiToken( new int[0], NODE, 1, 4, 6 ), PROVIDER_DESCRIPTOR ).withId( 0 );
+                forSchema( SchemaDescriptorFactory.multiToken( new int[0], NODE, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 0 );
         indexingService.createIndexes( nodeIndexDescriptor );
         indexingService.getIndexProxy( nodeIndexDescriptor.schema() ).awaitStoreScanCompleted();
 
@@ -229,7 +229,7 @@ public class OnlineIndexUpdatesTest
                 new Command.PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), relationshipPropertyBlocks );
 
         StoreIndexDescriptor relationshipIndexDescriptor =
-                forSchema( SchemaDescriptorFactory.multiToken( new int[0], RELATIONSHIP, 1, 4, 6 ), PROVIDER_DESCRIPTOR ).withId( 1 );
+                forSchema( SchemaDescriptorFactory.multiToken( new int[0], RELATIONSHIP, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 1 );
         indexingService.createIndexes( relationshipIndexDescriptor );
         indexingService.getIndexProxy( relationshipIndexDescriptor.schema() ).awaitStoreScanCompleted();
 
@@ -266,11 +266,11 @@ public class OnlineIndexUpdatesTest
         Command.PropertyCommand propertyCommand2 = new Command.PropertyCommand( recordAccess.getIfLoaded( propertyId2 ).forReadingData(), propertyBlocks2 );
 
         StoreIndexDescriptor indexDescriptor0 =
-                forSchema( SchemaDescriptorFactory.multiToken( new int[0], RELATIONSHIP, 1, 4, 6 ), PROVIDER_DESCRIPTOR ).withId( 0 );
+                forSchema( SchemaDescriptorFactory.multiToken( new int[0], RELATIONSHIP, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 0 );
         StoreIndexDescriptor indexDescriptor1 =
-                forSchema( SchemaDescriptorFactory.multiToken( new int[0], RELATIONSHIP, 2, 4, 6 ), PROVIDER_DESCRIPTOR ).withId( 1 );
+                forSchema( SchemaDescriptorFactory.multiToken( new int[0], RELATIONSHIP, 2, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 1 );
         StoreIndexDescriptor indexDescriptor2 =
-                forSchema( SchemaDescriptorFactory.multiToken( new int[]{1}, RELATIONSHIP, 1 ), PROVIDER_DESCRIPTOR ).withId( 2 );
+                forSchema( SchemaDescriptorFactory.multiToken( new int[]{1}, RELATIONSHIP, 1 ), EMPTY.getProviderDescriptor() ).withId( 2 );
         indexingService.createIndexes( indexDescriptor0, indexDescriptor1, indexDescriptor2 );
         indexingService.getIndexProxy( indexDescriptor0.schema() ).awaitStoreScanCompleted();
         indexingService.getIndexProxy( indexDescriptor1.schema() ).awaitStoreScanCompleted();
