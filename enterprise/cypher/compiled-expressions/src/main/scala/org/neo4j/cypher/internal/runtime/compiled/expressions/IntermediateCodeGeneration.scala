@@ -522,6 +522,12 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
                          original.ir, search.ir, replaceWith.ir)), original.nullable || search.nullable || replaceWith.nullable)
       }
 
+    case functions.Reverse =>
+      for (in <- compile(c.args.head)) yield {
+        IntermediateExpression(
+          noValueCheck(in)(invokeStatic(method[CypherFunctions, AnyValue, AnyValue]("reverse"), in.ir)), in.nullable)
+      }
+
     case functions.Point =>
       for (in <- compile(c.args.head)) yield {
         IntermediateExpression(

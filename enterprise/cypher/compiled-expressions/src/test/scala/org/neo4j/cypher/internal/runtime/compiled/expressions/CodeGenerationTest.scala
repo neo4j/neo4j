@@ -354,6 +354,16 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
                                          NO_VALUE))) should equal(NO_VALUE)
   }
 
+  test("reverse function") {
+    val compiled = compile(function("reverse", parameter("a")))
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(stringValue("PARIS")))) should equal(stringValue("SIRAP"))
+    val original = list(intValue(1), intValue(2), intValue(3))
+    val reversed = list(intValue(3), intValue(2), intValue(1))
+    compiled.evaluate(ctx, db, map(Array("a"), Array(original))) should equal(reversed)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+  }
+
   test("nodes function") {
     val compiled = compile(function("nodes", parameter("a")))
 

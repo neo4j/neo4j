@@ -513,6 +513,24 @@ public final class CypherFunctions
         }
     }
 
+    public static AnyValue reverse( AnyValue original )
+    {
+        if ( original instanceof TextValue )
+        {
+            return ((TextValue) original).reverse();
+        }
+        else if ( original instanceof ListValue )
+        {
+            return ((ListValue) original).reverse();
+        }
+        else
+        {
+            throw new CypherTypeException(
+                    "Expected a string or a list; consider converting it to a string with toString() or creating a list.",
+                    null );
+        }
+    }
+
     public static LongValue id( AnyValue item )
     {
         if ( item instanceof VirtualNodeValue )
