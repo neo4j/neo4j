@@ -159,7 +159,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     VirtualValues.list(labelArray: _*)
   }
 
-
   override def isLabelSetOnNode(label: Int, node: Long): Boolean = {
     if (label == StatementConstants.NO_SUCH_LABEL) false
     else {

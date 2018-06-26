@@ -38,6 +38,7 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.RelationshipValue;
@@ -46,6 +47,7 @@ import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.String.format;
+import static org.neo4j.values.storable.PointValue.ALLOWED_KEYS;
 import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.TRUE;
@@ -537,6 +539,75 @@ public final class CypherFunctions
         {
             throw new CypherTypeException( format( "Expected %s to be a path.", in ), null );
         }
+    }
+
+    public static Value point( AnyValue in, DbAccess access )
+    {
+        if ( in instanceof VirtualNodeValue )
+        {
+            return asPoint( access, (VirtualNodeValue) in );
+        }
+        else if ( in instanceof VirtualRelationshipValue )
+        {
+            return asPoint( access, (VirtualRelationshipValue) in );
+        }
+        else if ( in instanceof MapValue )
+        {
+            MapValue map = (MapValue) in;
+            if ( containsNull( map ) )
+            {
+                return NO_VALUE;
+            }
+            return PointValue.fromMap( map );
+        }
+        else
+        {
+            throw new CypherTypeException( format( "Expected a map but got %s", in ), null );
+        }
+    }
+
+    private static Value asPoint( DbAccess access, VirtualNodeValue nodeValue )
+    {
+        MapValueBuilder builder = new MapValueBuilder();
+        for ( String key : ALLOWED_KEYS )
+        {
+            Value value = access.nodeProperty( nodeValue.id(), key );
+            if ( value == NO_VALUE )
+            {
+                continue;
+            }
+            builder.add( key, value );
+        }
+
+        return PointValue.fromMap( builder.build() );
+    }
+
+    private static Value asPoint( DbAccess access, VirtualRelationshipValue relationshipValue )
+    {
+        MapValueBuilder builder = new MapValueBuilder();
+        for ( String key : ALLOWED_KEYS )
+        {
+            Value value = access.relationshipProperty( relationshipValue.id(), key );
+            if ( value == NO_VALUE )
+            {
+                continue;
+            }
+            builder.add( key, value );
+        }
+
+        return PointValue.fromMap( builder.build() );
+    }
+
+    private static boolean containsNull( MapValue map )
+    {
+        boolean[] hasNull = {false};
+        map.foreach( ( s, value ) -> {
+            if (value == NO_VALUE)
+            {
+                hasNull[0] = true;
+            }
+        } );
+        return hasNull[0];
     }
 
     private static AnyValue listAccess( SequenceValue container, AnyValue index )

@@ -35,10 +35,11 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast._
 import org.neo4j.cypher.internal.runtime.DbAccess
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_5.logical.plans.CoerceToPredicate
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian
 import org.neo4j.values.storable.LocalTimeValue.localTime
 import org.neo4j.values.storable.Values._
-import org.neo4j.values.storable.{DoubleValue, Values}
+import org.neo4j.values.storable.{DoubleValue, PointValue, Values}
 import org.neo4j.values.virtual.VirtualValues._
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue, VirtualValues}
 import org.opencypher.v9_0.ast.AstConstructionTestSupport
@@ -377,6 +378,47 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
     compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
     compiled.evaluate(ctx, db, map(Array("a"), Array(node))) should equal(labels)
+  }
+
+  test("points from node") {
+    val compiled = compile(function("point", parameter("a")))
+
+    val pointMap = map(Array("x", "y", "crs"),
+                       Array(doubleValue(1.0), doubleValue(2.0), stringValue("cartesian")))
+    val node = nodeValue(1, EMPTY_TEXT_ARRAY, pointMap)
+    when(db.nodeProperty(any[Long], any[String])).thenAnswer(new Answer[AnyValue] {
+      override def answer(in: InvocationOnMock): AnyValue = pointMap.get(in.getArgument[String](1))
+    })
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(node))) should equal(PointValue.fromMap(pointMap))
+  }
+
+  test("points from relationship") {
+    val compiled = compile(function("point", parameter("a")))
+
+    val pointMap = map(Array("x", "y", "crs"),
+                       Array(doubleValue(1.0), doubleValue(2.0), stringValue("cartesian")))
+    val rel = relationshipValue(43,
+                      nodeValue(1, EMPTY_TEXT_ARRAY, EMPTY_MAP),
+                      nodeValue(2, EMPTY_TEXT_ARRAY, EMPTY_MAP),
+                      stringValue("R"),pointMap)
+
+    when(db.relationshipProperty(any[Long], any[String])).thenAnswer(new Answer[AnyValue] {
+      override def answer(in: InvocationOnMock): AnyValue = pointMap.get(in.getArgument[String](1))
+    })
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(rel))) should equal(PointValue.fromMap(pointMap))
+  }
+
+  test("points from map") {
+    val compiled = compile(function("point", parameter("a")))
+
+    val pointMap = map(Array("x", "y", "crs"),
+                       Array(doubleValue(1.0), doubleValue(2.0), stringValue("cartesian")))
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(pointMap))) should equal(PointValue.fromMap(pointMap))
   }
 
   test("add numbers") {
