@@ -127,6 +127,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         }
     }
 
+    // todo is this simple lowest approach viable?
     void initValueAsLowest( ValueGroup valueGroup )
     {
         type = valueGroup == ValueGroup.UNKNOWN ? LOWEST_TYPE_BY_VALUE_GROUP : GenericLayout.TYPE_BY_GROUP[valueGroup.ordinal()];
@@ -142,6 +143,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         inclusion = LOW;
     }
 
+    // todo is this simple highest approach viable?
     void initValueAsHighest( ValueGroup valueGroup )
     {
         type = valueGroup == ValueGroup.UNKNOWN ? HIGHEST_TYPE_BY_VALUE_GROUP : GenericLayout.TYPE_BY_GROUP[valueGroup.ordinal()];

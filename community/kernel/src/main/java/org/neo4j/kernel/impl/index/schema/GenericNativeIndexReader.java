@@ -34,6 +34,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.HIGH;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.LOW;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 
 class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,NativeIndexValue>
 {
@@ -76,8 +77,8 @@ class GenericNativeIndexReader extends NativeIndexReader<CompositeGenericKey,Nat
                 break;
             case exact:
                 ExactPredicate exactPredicate = (ExactPredicate) predicate;
-                treeKeyFrom.initFromValue( i, exactPredicate.value(), LOW );
-                treeKeyTo.initFromValue( i, exactPredicate.value(), HIGH );
+                treeKeyFrom.initFromValue( i, exactPredicate.value(), NEUTRAL );
+                treeKeyTo.initFromValue( i, exactPredicate.value(), NEUTRAL );
                 break;
             case range:
                 RangePredicate<?> rangePredicate = (RangePredicate<?>) predicate;

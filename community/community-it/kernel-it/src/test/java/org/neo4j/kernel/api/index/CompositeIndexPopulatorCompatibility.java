@@ -104,11 +104,11 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
             withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p ->
             {
-                p.add( Arrays.asList(
-                        IndexEntryUpdate.add( nodeId1, descriptor.schema(), value1, value2 ),
-                        IndexEntryUpdate.add( nodeId2, descriptor.schema(), value1, value2 ) ) );
                 try
                 {
+                    p.add( Arrays.asList(
+                            IndexEntryUpdate.add( nodeId1, descriptor.schema(), value1, value2 ),
+                            IndexEntryUpdate.add( nodeId2, descriptor.schema(), value1, value2 ) ) );
                     TestNodePropertyAccessor propertyAccessor =
                             new TestNodePropertyAccessor( nodeId1, descriptor.schema(), value1, value2 );
                     propertyAccessor.addNode( nodeId2, descriptor.schema(), value1, value2 );
