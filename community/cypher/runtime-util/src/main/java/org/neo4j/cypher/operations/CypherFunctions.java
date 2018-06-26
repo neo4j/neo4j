@@ -754,6 +754,29 @@ public final class CypherFunctions
         }
     }
 
+    public static Value toBoolean( AnyValue in )
+    {
+        if ( in instanceof BooleanValue )
+        {
+            return (BooleanValue) in;
+        }
+        else if ( in instanceof TextValue )
+        {
+            switch ( ((TextValue) in).trim().stringValue().toLowerCase() )
+            {
+            case "true":
+                return TRUE;
+            case "false":
+                return FALSE;
+            default:
+                return NO_VALUE;
+            }
+        }
+        else
+        {
+            throw new ParameterWrongTypeException("Expected a Boolean or String, got: " + in.toString(), null);
+        }
+    }
     private static ListValue extractKeys( DbAccess access, int[] keyIds )
     {
         String[] keysNames = new String[keyIds.length];
