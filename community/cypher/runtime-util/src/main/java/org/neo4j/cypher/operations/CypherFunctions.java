@@ -49,6 +49,7 @@ import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.String.format;
 import static org.neo4j.values.storable.PointValue.ALLOWED_KEYS;
+import static org.neo4j.values.storable.Values.EMPTY_STRING;
 import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.TRUE;
@@ -550,6 +551,24 @@ public final class CypherFunctions
             throw notAString( "right", original );
         }
     }
+
+    public static ListValue split( AnyValue original, AnyValue separator )
+    {
+        if ( original instanceof TextValue )
+        {
+            TextValue asText = ((TextValue) original);
+            if ( asText.length() == 0 )
+            {
+                return VirtualValues.list( EMPTY_STRING );
+            }
+            return asText.split( asString( separator ) );
+        }
+        else
+        {
+            throw notAString( "split", original );
+        }
+    }
+
 
     public static LongValue id( AnyValue item )
     {

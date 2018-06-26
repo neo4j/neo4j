@@ -25,7 +25,6 @@ import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values._
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable._
-import org.neo4j.values.virtual.VirtualValues
 import org.opencypher.v9_0.util.symbols._
 import org.opencypher.v9_0.util.{CypherTypeException, ParameterWrongTypeException}
 
@@ -166,12 +165,9 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
 case class SplitFunction(orig: Expression, separator: Expression)
   extends NullInNullOutExpression(orig) {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
-    case t: TextValue if t.length() == 0  => VirtualValues.list(Values.EMPTY_STRING)
-    case t: TextValue =>
-      val separatorVal = asString(separator(m, state))
-      if (separatorVal == null) NO_VALUE else t.split(separatorVal)
-    case _ => StringFunction.notAString(value)
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
+    val sep = separator(m, state)
+    if (sep == NO_VALUE) NO_VALUE else CypherFunctions.split(value, sep)
   }
 
   override def arguments = Seq(orig, separator)

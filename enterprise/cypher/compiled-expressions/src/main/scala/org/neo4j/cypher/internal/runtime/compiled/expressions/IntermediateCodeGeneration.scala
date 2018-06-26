@@ -537,6 +537,15 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
                                         in.ir, len.ir)), in.nullable)
       }
 
+    case functions.Split =>
+      for {original <- compile(c.args(0))
+           sep <- compile(c.args(1))
+      } yield {
+        IntermediateExpression(
+          noValueCheck(original, sep)(invokeStatic(method[CypherFunctions, ListValue, AnyValue, AnyValue]("split"),
+                                                   original.ir, sep.ir)), original.nullable || sep.nullable)
+      }
+
     case functions.Point =>
       for (in <- compile(c.args.head)) yield {
         IntermediateExpression(
