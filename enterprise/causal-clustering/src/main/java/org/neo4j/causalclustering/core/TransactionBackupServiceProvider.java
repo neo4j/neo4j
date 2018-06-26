@@ -26,11 +26,9 @@ import io.netty.channel.ChannelInboundHandler;
 
 import java.util.Collection;
 import java.util.Optional;
-import java.util.function.Function;
 
 import org.neo4j.causalclustering.catchup.CatchupServerBuilder;
 import org.neo4j.causalclustering.catchup.CatchupServerHandler;
-import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.net.Server;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.causalclustering.protocol.handshake.ApplicationSupportedProtocols;
@@ -44,7 +42,6 @@ public class TransactionBackupServiceProvider
 {
     private final LogProvider logProvider;
     private final LogProvider userLogProvider;
-    private final TransactionBackupServiceAddressResolver transactionBackupServiceAddressResolver;
     private final ChannelInboundHandler parentHandler;
     private final ApplicationSupportedProtocols catchupProtocols;
     private final Collection<ModifierSupportedProtocols> supportedModifierProtocols;
@@ -63,14 +60,13 @@ public class TransactionBackupServiceProvider
         this.supportedModifierProtocols = supportedModifierProtocols;
         this.serverPipelineBuilderFactory = serverPipelineBuilderFactory;
         this.catchupServerHandler = catchupServerHandler;
-        this.transactionBackupServiceAddressResolver = new TransactionBackupServiceAddressResolver();
     }
 
     public Optional<Server> resolveIfBackupEnabled( Config config )
     {
         if ( config.get( OnlineBackupSettings.online_backup_enabled ) )
         {
-            ListenSocketAddress backupAddress = transactionBackupServiceAddressResolver.backupAddressForTxProtocol( config );
+            ListenSocketAddress backupAddress = HostnamePortAsListenAddress.resolve( config, OnlineBackupSettings.online_backup_server );
             logProvider.getLog( TransactionBackupServiceProvider.class ).info( "Binding backup service on address %s", backupAddress );
             return Optional.of( new CatchupServerBuilder( catchupServerHandler )
                     .serverHandler( parentHandler )
