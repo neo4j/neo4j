@@ -514,6 +514,26 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, map(Array("a"), Array(mapValue))) should equal(mapValue.keys())
   }
 
+  test("size function") {
+    val compiled = compile(function("size", parameter("a")))
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(stringValue("HELLO")))) should equal(intValue(5))
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(NO_VALUE, intValue(4)))) should equal(NO_VALUE)
+  }
+
+  test("length function") {
+    val compiled = compile(function("length", parameter("a")))
+    val nodes = Array(nodeValue(1, EMPTY_TEXT_ARRAY, EMPTY_MAP),
+                      nodeValue(2, EMPTY_TEXT_ARRAY, EMPTY_MAP),
+                      nodeValue(3, EMPTY_TEXT_ARRAY, EMPTY_MAP))
+    val rels = Array( relationshipValue(11, nodes(0), nodes(1), stringValue("R"), EMPTY_MAP),
+                      relationshipValue(12, nodes(1), nodes(2), stringValue("R"), EMPTY_MAP))
+    val path = VirtualValues.path(nodes, rels)
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(path))) should equal(intValue(2))
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(NO_VALUE, intValue(4)))) should equal(NO_VALUE)
+  }
+
   test("add numbers") {
     // Given
     val expression = add(literalInt(42), literalInt(10))

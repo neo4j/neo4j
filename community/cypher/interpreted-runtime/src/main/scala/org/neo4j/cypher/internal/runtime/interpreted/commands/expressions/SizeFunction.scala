@@ -19,23 +19,15 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.opencypher.v9_0.util.CypherTypeException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.ListSupport
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{TextValue, Values}
-import org.neo4j.values.virtual.PathValue
 
 case class SizeFunction(inner: Expression)
-  extends NullInNullOutExpression(inner)
-    with ListSupport {
+  extends NullInNullOutExpression(inner) {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
-    case _: PathValue => throw new CypherTypeException("SIZE cannot be used on paths")
-    case s: TextValue => Values.longValue(s.length())
-    case x => Values.longValue(makeTraversable(x).size())
-  }
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = CypherFunctions.size( value )
 
   def rewrite(f: (Expression) => Expression) = f(LengthFunction(inner.rewrite(f)))
 

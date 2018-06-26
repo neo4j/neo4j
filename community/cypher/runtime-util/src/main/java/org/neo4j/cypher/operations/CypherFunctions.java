@@ -53,6 +53,7 @@ import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.TRUE;
 import static org.neo4j.values.storable.Values.doubleValue;
+import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
 
 /**
@@ -646,6 +647,47 @@ public final class CypherFunctions
         else
         {
             throw new CypherTypeException( format( "Expected a node, a relationship or a literal map but got %s", in ), null );
+        }
+    }
+
+    public static IntegralValue size( AnyValue item )
+    {
+        if ( item instanceof PathValue )
+        {
+            throw new CypherTypeException( "SIZE cannot be used on paths", null );
+        }
+        else if ( item instanceof TextValue )
+        {
+            return intValue( ((TextValue) item).length() );
+        }
+        else if ( item instanceof SequenceValue )
+        {
+            return intValue( ((SequenceValue) item).length() );
+        }
+        else
+        {
+            return intValue( 1 );
+        }
+    }
+
+    //NOTE all usage except for paths is deprecated
+    public static IntegralValue length( AnyValue item )
+    {
+        if ( item instanceof PathValue )
+        {
+            return intValue( ((PathValue) item).size() );
+        }
+        else if ( item instanceof TextValue )
+        {
+            return intValue( ((TextValue) item).length() );
+        }
+        else if ( item instanceof SequenceValue )
+        {
+            return intValue( ((SequenceValue) item).length() );
+        }
+        else
+        {
+            return intValue( 1 );
         }
     }
 
