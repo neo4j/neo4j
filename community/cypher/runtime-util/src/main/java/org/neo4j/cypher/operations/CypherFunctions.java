@@ -28,6 +28,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
+import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.storable.IntegralValue;
@@ -56,6 +57,7 @@ import static org.neo4j.values.storable.Values.TRUE;
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 
 /**
  * This class contains static helper methods for the set of Cypher functions
@@ -434,6 +436,22 @@ public final class CypherFunctions
         }
     }
 
+    public static ListValue tail( AnyValue container )
+    {
+       if ( container instanceof ListValue )
+       {
+           return ((ListValue) container).tail();
+       }
+       else if ( container instanceof ArrayValue )
+       {
+           return VirtualValues.fromArray( (ArrayValue) container ).tail();
+       }
+       else
+       {
+           return EMPTY_LIST;
+       }
+    }
+
     public static AnyValue last( AnyValue container )
     {
         if ( container instanceof SequenceValue )
@@ -502,7 +520,6 @@ public final class CypherFunctions
         }
     }
 
-
     public static TextValue replace( AnyValue original, AnyValue search, AnyValue replaceWith )
     {
         if ( original instanceof TextValue )
@@ -537,7 +554,7 @@ public final class CypherFunctions
     {
         if ( original instanceof TextValue )
         {
-            TextValue asText = ((TextValue) original);
+            TextValue asText = (TextValue) original;
             int len = asInt( length );
             if ( len < 0 )
             {
@@ -556,7 +573,7 @@ public final class CypherFunctions
     {
         if ( original instanceof TextValue )
         {
-            TextValue asText = ((TextValue) original);
+            TextValue asText = (TextValue) original;
             if ( asText.length() == 0 )
             {
                 return VirtualValues.list( EMPTY_STRING );
@@ -573,7 +590,7 @@ public final class CypherFunctions
     {
         if ( original instanceof TextValue )
         {
-            TextValue asText = ((TextValue) original);
+            TextValue asText = (TextValue) original;
 
             return asText.substring( asInt( start ));
         }
@@ -587,7 +604,7 @@ public final class CypherFunctions
     {
         if ( original instanceof TextValue )
         {
-            TextValue asText = ((TextValue) original);
+            TextValue asText = (TextValue) original;
 
             return asText.substring( asInt( start ), asInt( length ));
         }

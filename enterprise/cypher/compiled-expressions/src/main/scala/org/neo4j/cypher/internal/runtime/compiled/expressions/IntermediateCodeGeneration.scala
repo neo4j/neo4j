@@ -589,6 +589,12 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           noValueCheck(in)(invokeStatic(method[CypherFunctions, IntegralValue, AnyValue]("length"), in.ir)), in.nullable)
       }
 
+    case functions.Tail =>
+      for (in <- compile(c.args.head)) yield {
+        IntermediateExpression(
+          noValueCheck(in)(invokeStatic(method[CypherFunctions, ListValue, AnyValue]("tail"), in.ir)), in.nullable)
+      }
+
     case _ => None
   }
 

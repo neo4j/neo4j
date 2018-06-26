@@ -831,6 +831,11 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
     }
 
+    public ListValue tail()
+    {
+        return slice( 1, size() );
+    }
+
     public ListValue drop( int n )
     {
         int size = size();

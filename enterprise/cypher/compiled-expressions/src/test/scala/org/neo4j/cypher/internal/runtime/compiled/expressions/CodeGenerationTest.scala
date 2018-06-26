@@ -559,6 +559,13 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(NO_VALUE, intValue(4)))) should equal(NO_VALUE)
   }
 
+  test("tail function") {
+    val compiled = compile(function("tail", parameter("a")))
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(list(intValue(1), intValue(2), intValue(3))))) should equal(list(intValue(2), intValue(3)))
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+  }
+
   test("add numbers") {
     // Given
     val expression = add(literalInt(42), literalInt(10))
