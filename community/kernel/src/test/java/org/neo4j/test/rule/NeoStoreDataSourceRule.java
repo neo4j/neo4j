@@ -63,6 +63,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex
 import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
+import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -104,26 +105,29 @@ public class NeoStoreDataSourceRule extends ExternalResource
         Monitors monitors = new Monitors();
 
         Dependencies mutableDependencies = new Dependencies( otherCustomOverriddenDependencies );
+
+        // Satisfy non-satisfied dependencies
         Config config = dependency( mutableDependencies, Config.class, deps -> Config.defaults() );
         LogService logService = dependency( mutableDependencies, LogService.class,
-                deps -> new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() ) );
+                deps -> new SimpleLogService( NullLogProvider.getInstance() ) );
         IdGeneratorFactory idGeneratorFactory = dependency( mutableDependencies, IdGeneratorFactory.class,
                 deps -> new DefaultIdGeneratorFactory( fs ) );
         IdTypeConfigurationProvider idConfigurationProvider = dependency( mutableDependencies,
                 IdTypeConfigurationProvider.class, deps -> new CommunityIdTypeConfigurationProvider() );
         DatabaseHealth databaseHealth = dependency( mutableDependencies, DatabaseHealth.class,
-                deps -> new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
-                        NullLogProvider.getInstance().getLog( DatabaseHealth.class ) ) );
+                deps -> new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() ) );
         SystemNanoClock clock = dependency( mutableDependencies, SystemNanoClock.class, deps -> Clocks.nanoClock() );
-        TransactionMonitor transactionMonitor =
-                dependency( mutableDependencies, TransactionMonitor.class, deps -> new TransactionStats() );
+        TransactionMonitor transactionMonitor = dependency( mutableDependencies, TransactionMonitor.class,
+                deps -> new TransactionStats() );
         AvailabilityGuard availabilityGuard = dependency( mutableDependencies, AvailabilityGuard.class,
-                deps -> new AvailabilityGuard( deps.resolveDependency( SystemNanoClock.class ),
-                        NullLog.getInstance() ) );
+                deps -> new AvailabilityGuard( deps.resolveDependency( SystemNanoClock.class ), NullLog.getInstance() ) );
+        dependency( mutableDependencies, DiagnosticsManager.class,
+                deps -> new DiagnosticsManager( NullLog.getInstance() ) );
+        dependency( mutableDependencies, IndexProvider.class, deps -> IndexProvider.EMPTY );
 
         dataSource = new NeoStoreDataSource( storeDir, config, idGeneratorFactory,
                 logService, mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ),
-                dependencyResolverForNoIndexProvider(),
+                mutableDependencies,
                 mockedTokenHolders(), locksFactory,
                 mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR,
                 fs, transactionMonitor, databaseHealth,
@@ -167,21 +171,5 @@ public class NeoStoreDataSourceRule extends ExternalResource
     protected void after( boolean successful )
     {
         shutdownAnyRunning();
-    }
-
-    private DependencyResolver dependencyResolverForNoIndexProvider()
-    {
-        return new DependencyResolver.Adapter()
-        {
-            @Override
-            public <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
-            {
-                if ( IndexProvider.class.isAssignableFrom( type ) )
-                {
-                    return type.cast( IndexProvider.EMPTY );
-                }
-                throw new IllegalArgumentException( type.toString() );
-            }
-        };
     }
 }

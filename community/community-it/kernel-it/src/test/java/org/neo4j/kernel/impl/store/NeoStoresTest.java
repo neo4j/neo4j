@@ -548,7 +548,7 @@ public class NeoStoresTest
     public void shouldNotReadNonRecordDataAsRecord() throws Exception
     {
         FileSystemAbstraction fileSystem = fs.get();
-        File neoStoreDir = new File( "/tmp/graph.db/neostore" ).getAbsoluteFile();
+        File neoStoreDir = dir.graphDbDir();
         StoreFactory factory = newStoreFactory( neoStoreDir, pageCache, fileSystem );
         long recordVersion = defaultStoreVersion();
         try ( NeoStores neoStores = factory.openAllNeoStores( true ) )
@@ -644,7 +644,7 @@ public class NeoStoresTest
     public void shouldThrowUnderlyingStorageExceptionWhenFailingToLoadStorage()
     {
         FileSystemAbstraction fileSystem = fs.get();
-        File neoStoreDir = new File( "/tmp/graph.db/neostore" ).getAbsoluteFile();
+        File neoStoreDir = dir.graphDbDir();
         StoreFactory factory = new StoreFactory(
                 neoStoreDir, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
                 LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
@@ -667,7 +667,7 @@ public class NeoStoresTest
     public void shouldAddUpgradeFieldsToTheNeoStoreIfNotPresent() throws IOException
     {
         FileSystemAbstraction fileSystem = fs.get();
-        File neoStoreDir = new File( "/tmp/graph.db/neostore" ).getAbsoluteFile();
+        File neoStoreDir = dir.graphDbDir();
         StoreFactory factory = newStoreFactory( neoStoreDir, pageCache, fileSystem );
         long recordVersion = defaultStoreVersion();
         try ( NeoStores neoStores = factory.openAllNeoStores( true ) )
