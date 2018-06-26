@@ -683,7 +683,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new ParameterWrongTypeException("Expected a Relationship, got: " + item, null );
+            throw new ParameterWrongTypeException( "Expected a Relationship, got: " + item, null );
         }
     }
 
@@ -837,7 +837,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new ParameterWrongTypeException("Expected a Boolean or String, got: " + in.toString(), null);
+            throw new ParameterWrongTypeException( "Expected a Boolean or String, got: " + in.toString(), null );
         }
     }
 
@@ -864,7 +864,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new ParameterWrongTypeException("Expected a String or Number, got: " + in.toString(), null);
+            throw new ParameterWrongTypeException( "Expected a String or Number, got: " + in.toString(), null );
         }
     }
 
@@ -884,7 +884,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new ParameterWrongTypeException("Expected a String or Number, got: " + in.toString(), null);
+            throw new ParameterWrongTypeException( "Expected a String or Number, got: " + in.toString(), null );
         }
     }
 
@@ -900,8 +900,8 @@ public final class CypherFunctions
         }
         else
         {
-            throw new ParameterWrongTypeException("Expected a String, Number, Boolean, Temporal or Duration, got: " + in.toString(), null);
-
+            throw new ParameterWrongTypeException(
+                    "Expected a String, Number, Boolean, Temporal or Duration, got: " + in.toString(), null );
         }
     }
 
