@@ -115,17 +115,12 @@ case class TrimFunction(argument: Expression) extends StringFunction(argument) {
 }
 
 case class SubstringFunction(orig: Expression, start: Expression, length: Option[Expression])
-  extends NullInNullOutExpression(orig) with NumericHelper {
+  extends NullInNullOutExpression(orig) {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
-      case text: TextValue =>
-        val startVal = asInt(start(m, state)).value()
-        length match {
-          case None => text.substring(startVal)
-          case Some(func) => text.substring(startVal, asInt(func(m, state)).value())
-        }
-      case _ => StringFunction.notAString(value)
-    }
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = length match {
+    case None => CypherFunctions.substring(value, start(m, state))
+    case Some(func) => CypherFunctions.substring(value, start(m, state), func(m, state))
+  }
 
   override def arguments = Seq(orig, start) ++ length
 

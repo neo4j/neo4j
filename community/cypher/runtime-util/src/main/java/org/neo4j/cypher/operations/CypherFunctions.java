@@ -569,6 +569,33 @@ public final class CypherFunctions
         }
     }
 
+    public static TextValue substring( AnyValue original, AnyValue start )
+    {
+        if ( original instanceof TextValue )
+        {
+            TextValue asText = ((TextValue) original);
+
+            return asText.substring( asInt( start ));
+        }
+        else
+        {
+            throw notAString( "substring", original );
+        }
+    }
+
+    public static TextValue substring( AnyValue original, AnyValue start, AnyValue length )
+    {
+        if ( original instanceof TextValue )
+        {
+            TextValue asText = ((TextValue) original);
+
+            return asText.substring( asInt( start ), asInt( length ));
+        }
+        else
+        {
+            throw notAString( "substring", original );
+        }
+    }
 
     public static LongValue id( AnyValue item )
     {

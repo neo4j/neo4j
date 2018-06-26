@@ -546,6 +546,25 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
                                                    original.ir, sep.ir)), original.nullable || sep.nullable)
       }
 
+    case functions.Substring if c.args.size == 2 =>
+      for {original <- compile(c.args(0))
+           start <- compile(c.args(1))
+      } yield {
+        IntermediateExpression(
+          noValueCheck(original)(invokeStatic(method[CypherFunctions, TextValue, AnyValue, AnyValue]("substring"),
+                                                   original.ir, start.ir)), original.nullable)
+      }
+
+    case functions.Substring  =>
+      for {original <- compile(c.args(0))
+           start <- compile(c.args(1))
+           len <- compile(c.args(2))
+      } yield {
+        IntermediateExpression(
+          noValueCheck(original)(invokeStatic(method[CypherFunctions, TextValue, AnyValue, AnyValue, AnyValue]("substring"),
+                                              original.ir, start.ir, len.ir)), original.nullable)
+      }
+
     case functions.Point =>
       for (in <- compile(c.args.head)) yield {
         IntermediateExpression(

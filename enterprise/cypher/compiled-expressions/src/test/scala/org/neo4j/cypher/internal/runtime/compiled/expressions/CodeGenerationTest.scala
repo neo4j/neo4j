@@ -381,6 +381,22 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("HELLO"), NO_VALUE))) should equal(NO_VALUE)
   }
 
+  test("substring function no length") {
+    val compiled = compile(function("substring", parameter("a"), parameter("b")))
+
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("HELLO"), intValue(1)))) should
+      equal(stringValue("ELLO"))
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(NO_VALUE, intValue(1)))) should equal(NO_VALUE)
+  }
+
+  test("substring function with length") {
+    val compiled = compile(function("substring", parameter("a"), parameter("b"), parameter("c")))
+
+    compiled.evaluate(ctx, db, map(Array("a", "b", "c"), Array(stringValue("HELLO"), intValue(1), intValue(2)))) should
+      equal(stringValue("EL"))
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(NO_VALUE, intValue(1)))) should equal(NO_VALUE)
+  }
+
   test("nodes function") {
     val compiled = compile(function("nodes", parameter("a")))
 
