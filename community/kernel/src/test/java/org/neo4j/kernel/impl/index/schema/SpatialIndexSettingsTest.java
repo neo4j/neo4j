@@ -37,12 +37,13 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
 import org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings;
 import org.neo4j.test.rule.PageCacheRule;
@@ -67,10 +68,10 @@ public class SpatialIndexSettingsTest
     private static final ConfiguredSpaceFillingCurveSettingsCache configuredSettings1 = new ConfiguredSpaceFillingCurveSettingsCache( config1 );
     private static final ConfiguredSpaceFillingCurveSettingsCache configuredSettings2 = new ConfiguredSpaceFillingCurveSettingsCache( config2 );
 
-    private SchemaIndexDescriptor schemaIndexDescriptor1;
-    private SchemaIndexDescriptor schemaIndexDescriptor2;
-    private LayoutTestUtil<SpatialSchemaKey,NativeSchemaValue> layoutUtil1;
-    private LayoutTestUtil<SpatialSchemaKey,NativeSchemaValue> layoutUtil2;
+    private StoreIndexDescriptor schemaIndexDescriptor1;
+    private StoreIndexDescriptor schemaIndexDescriptor2;
+    private LayoutTestUtil<SpatialIndexKey,NativeIndexValue> layoutUtil1;
+    private LayoutTestUtil<SpatialIndexKey,NativeIndexValue> layoutUtil2;
     private long indexId1 = 1;
     private long indexId2 = 2;
 
@@ -90,14 +91,14 @@ public class SpatialIndexSettingsTest
         pageCache = pageCacheRule.getPageCache( fs );
 
         // Define two indexes based on different labels and different configuredSettings
-        layoutUtil1 = createLayoutTestUtil( 42, configuredSettings1 );
-        layoutUtil2 = createLayoutTestUtil( 43, configuredSettings2 );
+        layoutUtil1 = createLayoutTestUtil( indexId1, 42, configuredSettings1 );
+        layoutUtil2 = createLayoutTestUtil( indexId2, 43, configuredSettings2 );
         schemaIndexDescriptor1 = layoutUtil1.indexDescriptor();
         schemaIndexDescriptor2 = layoutUtil2.indexDescriptor();
 
         // Create the two indexes as empty, based on differently configured configuredSettings above
-        createEmptyIndex( indexId1, schemaIndexDescriptor1, configuredSettings1 );
-        createEmptyIndex( indexId2, schemaIndexDescriptor2, configuredSettings2 );
+        createEmptyIndex( schemaIndexDescriptor1, configuredSettings1 );
+        createEmptyIndex( schemaIndexDescriptor2, configuredSettings2 );
     }
 
     @Test
@@ -105,7 +106,7 @@ public class SpatialIndexSettingsTest
     {
         // given
         SpatialIndexProvider provider = newSpatialIndexProvider( config1 );
-        addUpdates( provider, indexId1, schemaIndexDescriptor1, layoutUtil1 );
+        addUpdates( provider, schemaIndexDescriptor1, layoutUtil1 );
 
         // then
         verifySpatialSettings( indexFile( indexId1 ), configuredSettings1.forCRS( crs ) );
@@ -116,7 +117,7 @@ public class SpatialIndexSettingsTest
     {
         // given
         SpatialIndexProvider provider = newSpatialIndexProvider( config2 );
-        addUpdates( provider, indexId2, schemaIndexDescriptor2, layoutUtil2 );
+        addUpdates( provider, schemaIndexDescriptor2, layoutUtil2 );
 
         // then
         verifySpatialSettings( indexFile( indexId2 ), configuredSettings2.forCRS( crs ) );
@@ -127,8 +128,8 @@ public class SpatialIndexSettingsTest
     {
         // given
         SpatialIndexProvider provider = newSpatialIndexProvider( config2 );
-        addUpdates( provider, indexId1, schemaIndexDescriptor1, layoutUtil1 );
-        addUpdates( provider, indexId2, schemaIndexDescriptor2, layoutUtil2 );
+        addUpdates( provider, schemaIndexDescriptor1, layoutUtil1 );
+        addUpdates( provider, schemaIndexDescriptor2, layoutUtil2 );
 
         // then even though the provider was created with modified configuredSettings, only the second index should have them
         verifySpatialSettings( indexFile( indexId1 ), configuredSettings1.forCRS( crs ) );
@@ -141,16 +142,16 @@ public class SpatialIndexSettingsTest
         // given two indexes previously created with different configuredSettings
         Config config = configWithRange( -10, -10, 10, 10 );
         SpatialIndexProvider provider = newSpatialIndexProvider( config );
-        addUpdates( provider, indexId1, schemaIndexDescriptor1, layoutUtil1 );
-        addUpdates( provider, indexId2, schemaIndexDescriptor2, layoutUtil2 );
+        addUpdates( provider, schemaIndexDescriptor1, layoutUtil1 );
+        addUpdates( provider, schemaIndexDescriptor2, layoutUtil2 );
 
         // and when creating and populating a third index with a third set of configuredSettings
         long indexId3 = 3;
         ConfiguredSpaceFillingCurveSettingsCache settings3 = new ConfiguredSpaceFillingCurveSettingsCache( config );
-        SpatialLayoutTestUtil layoutUtil3 = createLayoutTestUtil( 44, settings3 );
-        SchemaIndexDescriptor schemaIndexDescriptor3 = layoutUtil3.indexDescriptor();
-        createEmptyIndex( indexId3, schemaIndexDescriptor3, provider );
-        addUpdates( provider, indexId3, schemaIndexDescriptor3, layoutUtil3 );
+        SpatialLayoutTestUtil layoutUtil3 = createLayoutTestUtil( indexId3, 44, settings3 );
+        StoreIndexDescriptor schemaIndexDescriptor3 = layoutUtil3.indexDescriptor();
+        createEmptyIndex( schemaIndexDescriptor3, provider );
+        addUpdates( provider, schemaIndexDescriptor3, layoutUtil3 );
 
         // Then all indexes should still have their own correct and different configuredSettings
         verifySpatialSettings( indexFile( indexId1 ), configuredSettings1.forCRS( crs ) );
@@ -163,9 +164,9 @@ public class SpatialIndexSettingsTest
         return new IndexSamplingConfig( Config.defaults() );
     }
 
-    private SpatialLayoutTestUtil createLayoutTestUtil( int labelId, ConfiguredSpaceFillingCurveSettingsCache configuredSettings )
+    private SpatialLayoutTestUtil createLayoutTestUtil( long indexId, int labelId, ConfiguredSpaceFillingCurveSettingsCache configuredSettings )
     {
-        return new SpatialLayoutTestUtil( SchemaIndexDescriptorFactory.forLabel( labelId, 666 ), configuredSettings.forCRS( crs ), crs );
+        return new SpatialLayoutTestUtil( TestIndexDescriptorFactory.forLabel( labelId, 666 ).withId( indexId ), configuredSettings.forCRS( crs ), crs );
     }
 
     private SpatialIndexProvider newSpatialIndexProvider( Config config )
@@ -173,19 +174,19 @@ public class SpatialIndexSettingsTest
         return new SpatialIndexProvider( pageCache, fs, directoriesByProvider( directory.graphDbDir() ), monitor, IMMEDIATE, false, config );
     }
 
-    private void addUpdates( SpatialIndexProvider provider, long indexId, SchemaIndexDescriptor schemaIndexDescriptor,
-            LayoutTestUtil<SpatialSchemaKey,NativeSchemaValue> layoutUtil ) throws IOException, IndexEntryConflictException
+    private void addUpdates( SpatialIndexProvider provider, StoreIndexDescriptor schemaIndexDescriptor,
+            LayoutTestUtil<SpatialIndexKey,NativeIndexValue> layoutUtil ) throws IOException, IndexEntryConflictException
     {
-        IndexAccessor accessor = provider.getOnlineAccessor( indexId, schemaIndexDescriptor, samplingConfig() );
+        IndexAccessor accessor = provider.getOnlineAccessor( schemaIndexDescriptor, samplingConfig() );
         try ( IndexUpdater updater = accessor.newUpdater( ONLINE ) )
         {
             // when
-            for ( IndexEntryUpdate<SchemaIndexDescriptor> update : layoutUtil.someUpdates() )
+            for ( IndexEntryUpdate<IndexDescriptor> update : layoutUtil.someUpdates() )
             {
                 updater.process( update );
             }
         }
-        accessor.force( IOLimiter.unlimited() );
+        accessor.force( IOLimiter.UNLIMITED );
         accessor.close();
     }
 
@@ -210,20 +211,20 @@ public class SpatialIndexSettingsTest
         return new File( new File( new File( directory.graphDbDir(), "schema" ), "index" ), "spatial-1.0" );
     }
 
-    private void createEmptyIndex( long indexId, SchemaIndexDescriptor schemaIndexDescriptor, ConfiguredSpaceFillingCurveSettingsCache configuredSettings )
+    private void createEmptyIndex( StoreIndexDescriptor schemaIndexDescriptor, ConfiguredSpaceFillingCurveSettingsCache configuredSettings )
             throws IOException
     {
-        SpatialIndexFiles.SpatialFileLayout fileLayout = makeIndexFile( indexId, configuredSettings ).getLayoutForNewIndex();
+        SpatialIndexFiles.SpatialFileLayout fileLayout = makeIndexFile( schemaIndexDescriptor.getId(), configuredSettings ).getLayoutForNewIndex();
         SpatialIndexPopulator.PartPopulator populator =
-                new SpatialIndexPopulator.PartPopulator( pageCache, fs, fileLayout, monitor, schemaIndexDescriptor, indexId, samplingConfig(),
+                new SpatialIndexPopulator.PartPopulator( pageCache, fs, fileLayout, monitor, schemaIndexDescriptor, samplingConfig(),
                         new StandardConfiguration() );
         populator.create();
         populator.close( true );
     }
 
-    private void createEmptyIndex( long indexId, SchemaIndexDescriptor schemaIndexDescriptor, SpatialIndexProvider provider ) throws IOException
+    private void createEmptyIndex( StoreIndexDescriptor schemaIndexDescriptor, SpatialIndexProvider provider ) throws IOException
     {
-        IndexPopulator populator = provider.getPopulator( indexId, schemaIndexDescriptor, samplingConfig() );
+        IndexPopulator populator = provider.getPopulator( schemaIndexDescriptor, samplingConfig() );
         populator.create();
         populator.close( true );
     }
@@ -233,7 +234,7 @@ public class SpatialIndexSettingsTest
         try
         {
             SpaceFillingCurveSettings settings =
-                    SpaceFillingCurveSettingsFactory.fromGBPTree( indexFile, pageCache, NativeSchemaIndexHeaderReader::readFailureMessage );
+                    SpaceFillingCurveSettingsFactory.fromGBPTree( indexFile, pageCache, NativeIndexHeaderReader::readFailureMessage );
             assertThat( "Should get correct results from header", settings, equalTo( expectedSettings ) );
         }
         catch ( IOException e )

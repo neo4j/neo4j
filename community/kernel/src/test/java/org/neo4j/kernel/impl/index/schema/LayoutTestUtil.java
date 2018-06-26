@@ -49,7 +49,12 @@ abstract class LayoutTestUtil<KEY extends NativeIndexKey<KEY>, VALUE extends Nat
 
     LayoutTestUtil( IndexDescriptor indexDescriptor )
     {
-        this.indexDescriptor = indexDescriptor.withId( 0 );
+        this( indexDescriptor.withId( 0 ) );
+    }
+
+    LayoutTestUtil( StoreIndexDescriptor indexDescriptor )
+    {
+        this.indexDescriptor = indexDescriptor;
     }
 
     abstract Layout<KEY,VALUE> createLayout();
