@@ -421,6 +421,46 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, map(Array("a"), Array(pointMap))) should equal(PointValue.fromMap(pointMap))
   }
 
+  test("keys on node") {
+    val compiled = compile(function("keys", parameter("a")))
+
+    val node = nodeValue(1, EMPTY_TEXT_ARRAY, EMPTY_MAP)
+    when(db.nodePropertyIds(1)).thenReturn(Array(1,2,3))
+    when(db.getPropertyKeyName(1)).thenReturn("A")
+    when(db.getPropertyKeyName(2)).thenReturn("B")
+    when(db.getPropertyKeyName(3)).thenReturn("C")
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(node))) should equal(Values.stringArray("A", "B", "C"))
+  }
+
+  test("keys on relationship") {
+    val compiled = compile(function("keys", parameter("a")))
+
+
+    val rel = relationshipValue(43,
+                                nodeValue(1, EMPTY_TEXT_ARRAY, EMPTY_MAP),
+                                nodeValue(2, EMPTY_TEXT_ARRAY, EMPTY_MAP),
+                                stringValue("R"), EMPTY_MAP)
+    when(db.relationshipPropertyIds(43)).thenReturn(Array(1,2,3))
+    when(db.getPropertyKeyName(1)).thenReturn("A")
+    when(db.getPropertyKeyName(2)).thenReturn("B")
+    when(db.getPropertyKeyName(3)).thenReturn("C")
+
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(rel))) should equal(Values.stringArray("A", "B", "C"))
+  }
+
+  test("keys on map") {
+    val compiled = compile(function("keys", parameter("a")))
+
+    val mapValue = map(Array("x", "y", "crs"),
+                       Array(doubleValue(1.0), doubleValue(2.0), stringValue("cartesian")))
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(mapValue))) should equal(mapValue.keys())
+  }
+
   test("add numbers") {
     // Given
     val expression = add(literalInt(42), literalInt(10))

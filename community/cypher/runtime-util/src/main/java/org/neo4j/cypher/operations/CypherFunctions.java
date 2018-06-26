@@ -36,6 +36,7 @@ import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
@@ -566,6 +567,36 @@ public final class CypherFunctions
         }
     }
 
+    public static ListValue keys( AnyValue in, DbAccess access )
+    {
+        if ( in instanceof VirtualNodeValue )
+        {
+            return extractKeys( access, access.nodePropertyIds( ((VirtualNodeValue) in).id() ) );
+        }
+        else if ( in instanceof VirtualRelationshipValue )
+        {
+            return extractKeys( access, access.relationshipPropertyIds( ((VirtualRelationshipValue) in).id() ) );
+        }
+        else if ( in instanceof MapValue )
+        {
+            return ((MapValue) in).keys();
+        }
+        else
+        {
+            throw new CypherTypeException( format( "Expected a node, a relationship or a literal map but got %s", in ), null );
+        }
+    }
+
+    private static ListValue extractKeys( DbAccess access, int[] keyIds )
+    {
+        String[] keysNames = new String[keyIds.length];
+        for ( int i = 0; i < keyIds.length; i++ )
+        {
+            keysNames[i] = access.getPropertyKeyName( keyIds[i] );
+        }
+        return VirtualValues.fromArray( Values.stringArray( keysNames ) );
+    }
+
     private static Value asPoint( DbAccess access, VirtualNodeValue nodeValue )
     {
         MapValueBuilder builder = new MapValueBuilder();
@@ -602,7 +633,7 @@ public final class CypherFunctions
     {
         boolean[] hasNull = {false};
         map.foreach( ( s, value ) -> {
-            if (value == NO_VALUE)
+            if ( value == NO_VALUE )
             {
                 hasNull[0] = true;
             }
@@ -686,10 +717,9 @@ public final class CypherFunctions
 
     private static CypherTypeException notAString( String method, AnyValue in )
     {
-        return  new CypherTypeException(
-                format("Expected a string value for `%s`, but got: %s; consider converting it to a string with toString().",
-                        method, in), null);
+        return new CypherTypeException(
+                format( "Expected a string value for `%s`, but got: %s; consider converting it to a string with " +
+                        "toString().",
+                        method, in ), null );
     }
-
-
 }

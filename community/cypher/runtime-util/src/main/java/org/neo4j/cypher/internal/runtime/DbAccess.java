@@ -37,6 +37,8 @@ public interface DbAccess
 
     Value nodeProperty( long node, String propertyKey );
 
+    int[] nodePropertyIds( long node );
+
     boolean nodeHasProperty( long node, int property );
 
     boolean nodeHasProperty( long node, String propertyKey );
@@ -44,6 +46,8 @@ public interface DbAccess
     Value relationshipProperty( long node, int property );
 
     Value relationshipProperty( long node, String propertyKey );
+
+    int[] relationshipPropertyIds( long node );
 
     boolean relationshipHasProperty( long node, int property );
 
@@ -72,4 +76,6 @@ public interface DbAccess
     NodeValue relationshipGetEndNode( RelationshipValue relationship );
 
     ListValue getLabelsForNode( long id );
+
+    String getPropertyKeyName( int token );
 }

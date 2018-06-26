@@ -406,10 +406,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         writes().nodeDelete(id)
     }
 
-    override def propertyKeyIds(id: Long): Iterator[Int] = {
+    override def propertyKeyIds(id: Long): Array[Int] = {
       val node = nodeCursor
       reads().singleNode(id, node)
-      if (!node.next()) Iterator.empty
+      if (!node.next()) Array.empty
       else {
         val property = propertyCursor
         val buffer = ArrayBuffer[Int]()
@@ -417,7 +417,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         while (property.next()) {
           buffer.append(property.propertyKey())
         }
-        buffer.iterator
+        buffer.toArray
       }
     }
 
@@ -517,10 +517,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         writes().relationshipDelete(id)
     }
 
-    override def propertyKeyIds(id: Long): Iterator[Int] = {
+    override def propertyKeyIds(id: Long): Array[Int] = {
       val relationship = relationshipScanCursor
       reads().singleRelationship(id, relationship)
-      if (!relationship.next()) Iterator.empty
+      if (!relationship.next()) Array.empty
       else {
         val buffer = ArrayBuffer[Int]()
         val property = propertyCursor
@@ -528,7 +528,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         while (property.next()) {
           buffer.append(property.propertyKey())
         }
-        buffer.iterator
+        buffer.toArray
       }
     }
 

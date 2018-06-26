@@ -307,7 +307,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
     override def hasProperty(id: Long, propertyKeyId: Int): Boolean =
       translateException(inner.hasProperty(id, propertyKeyId))
 
-    override def propertyKeyIds(id: Long): Iterator[Int] =
+    override def propertyKeyIds(id: Long): Array[Int] =
       translateException(inner.propertyKeyIds(id))
 
     override def removeProperty(id: Long, propertyKeyId: Int) =

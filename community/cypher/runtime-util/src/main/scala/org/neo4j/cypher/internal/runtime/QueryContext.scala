@@ -220,21 +220,25 @@ trait QueryContext extends TokenContext with DbAccess {
   override def nodeProperty(node: Long, property: String): Value =
     nodeOps.getProperty(node, transactionalContext.tokenRead.propertyKey(property))
 
+  override def nodePropertyIds(node: Long): Array[Int] = nodeOps.propertyKeyIds(node)
+
   override def nodeHasProperty(node: Long, property: Int): Boolean = nodeOps.hasProperty(node, property)
 
   override def nodeHasProperty(node: Long, property: String): Boolean =
     nodeOps.hasProperty(node, transactionalContext.tokenRead.propertyKey(property))
 
-  override def relationshipProperty(node: Long, property: Int): Value = relationshipOps.getProperty(node, property)
+  override def relationshipProperty(relationship: Long, property: Int): Value = relationshipOps.getProperty(relationship, property)
 
-  override def relationshipProperty(node: Long, property: String): Value =
-    relationshipOps.getProperty(node, transactionalContext.tokenRead.propertyKey(property))
+  override def relationshipProperty(relationship: Long, property: String): Value =
+    relationshipOps.getProperty(relationship, transactionalContext.tokenRead.propertyKey(property))
 
-  override def relationshipHasProperty(node: Long, property: Int): Boolean =
-    relationshipOps.hasProperty(node, property)
+  override def relationshipPropertyIds(relationship: Long): Array[Int] = relationshipOps.propertyKeyIds(relationship)
 
-  override def relationshipHasProperty(node: Long, property: String): Boolean =
-    relationshipOps.hasProperty(node, transactionalContext.tokenRead.propertyKey(property))
+  override def relationshipHasProperty(relationship: Long, property: Int): Boolean =
+    relationshipOps.hasProperty(relationship, property)
+
+  override def relationshipHasProperty(relationship: Long, property: String): Boolean =
+    relationshipOps.hasProperty(relationship, transactionalContext.tokenRead.propertyKey(property))
 
   override def nodeGetOutgoingDegree(node: Long, relationship: String): Int =
     nodeGetOutgoingDegree(node, transactionalContext.tokenRead.relationshipType(relationship))
@@ -257,7 +261,7 @@ trait Operations[T] {
 
   def hasProperty(obj: Long, propertyKeyId: Int): Boolean
 
-  def propertyKeyIds(obj: Long): Iterator[Int]
+  def propertyKeyIds(obj: Long): Array[Int]
 
   def getById(id: Long): T
 

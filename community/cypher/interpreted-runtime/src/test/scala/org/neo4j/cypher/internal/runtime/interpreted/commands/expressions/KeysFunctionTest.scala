@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
-import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.values.AnyValues
 import org.neo4j.values.storable.Values.stringValue
+import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues.{EMPTY_LIST, list}
-import org.neo4j.values.virtual.{ListValue, NodeValue}
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class KeysFunctionTest extends CypherFunSuite {
 
@@ -39,9 +39,7 @@ class KeysFunctionTest extends CypherFunSuite {
 
     val queryContext = mock[QueryContext]
 
-    val ops = mock[Operations[NodeValue]]
-    when(queryContext.nodeOps).thenReturn(ops)
-    when(ops.propertyKeyIds(node.getId)).thenReturn(Iterator(11, 12, 13))
+    when(queryContext.nodePropertyIds(node.getId)).thenReturn(Array(11, 12, 13))
 
     when(queryContext.getPropertyKeyName(11)).thenReturn("theProp1")
     when(queryContext.getPropertyKeyName(12)).thenReturn("OtherProp")
@@ -61,9 +59,7 @@ class KeysFunctionTest extends CypherFunSuite {
     // GIVEN
     val node = mock[Node]
     val queryContext = mock[QueryContext]
-    val ops = mock[Operations[NodeValue]]
-    when(queryContext.nodeOps).thenReturn(ops)
-    when(ops.propertyKeyIds(node.getId)).thenReturn(Iterator.empty)
+    when(queryContext.nodePropertyIds(node.getId)).thenReturn(Array.empty[Int])
 
 
     val state = QueryStateHelper.emptyWith(query = queryContext)

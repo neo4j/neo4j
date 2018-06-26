@@ -19,21 +19,16 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.opencypher.v9_0.util.CypherTypeException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.ListValue
 
 case class KeysFunction(expr: Expression) extends NullInNullOutExpression(expr) {
 
-  override def compute(value: AnyValue, ctx: ExecutionContext, state: QueryState): ListValue = value match {
-    case IsMap(map) => map(state.query).keys()
-
-    case x =>
-      throw new CypherTypeException(s"Expected $expr to be a node, a relationship, or a literal map, but it was ${x.getClass.getSimpleName}")
-  }
+  override def compute(value: AnyValue, ctx: ExecutionContext, state: QueryState): ListValue =
+    CypherFunctions.keys(value, state.query)
 
   def rewrite(f: (Expression) => Expression) = f(KeysFunction(expr.rewrite(f)))
 
