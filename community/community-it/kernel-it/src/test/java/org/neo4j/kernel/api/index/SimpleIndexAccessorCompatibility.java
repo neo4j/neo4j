@@ -133,9 +133,10 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     public void testIndexSeekByPrefixOnNonStrings() throws Exception
     {
         updateAndCommit( asList(
-                add( 1L, descriptor.schema(), "a" ),
-                add( 2L, descriptor.schema(), 2L ) ) );
-        assertThat( query( IndexQuery.stringPrefix( 1, "2" ) ), equalTo( EMPTY_LIST ) );
+                add( 1L, descriptor.schema(), "2a" ),
+                add( 2L, descriptor.schema(), 2L ),
+                add( 2L, descriptor.schema(), 20L ) ) );
+        assertThat( query( IndexQuery.stringPrefix( 1, "2" ) ), equalTo( singletonList( 1L ) ) );
     }
 
     @Test
