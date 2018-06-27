@@ -85,7 +85,7 @@ public class ProcedureJarLoader
         {
             try
             {
-                new ZipFile( new File( jarFile.getFile() ) );
+                new ZipFile( new File( jarFile.getFile() ) ).close();
             }
             catch ( IOException e )
             {
