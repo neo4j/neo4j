@@ -76,7 +76,7 @@ Function Uninstall-Neo4jServer
 
       Write-Output $result.exitCode
       } else {
-        Write-Verbose "Windows Service $Name does not exist"
+        Write-Verbose "Windows Service $ServiceName does not exist"
         Write-Host "Neo4j uninstalled"
         return 0
       }

@@ -76,7 +76,7 @@ Function Update-Neo4jServer
 
       Write-Output $result.exitCode
     } else {
-      Write-Host "Service update failed - service '$Name' not found"
+      Write-Host "Service update failed - service '$ServiceName' not found"
       Write-Output 1
     }
   }
