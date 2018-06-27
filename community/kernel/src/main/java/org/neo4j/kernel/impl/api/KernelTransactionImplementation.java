@@ -379,7 +379,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public AuthSubject subjectOrAnonymous()
     {
-        return securityContext == null ? AuthSubject.ANONYMOUS : securityContext.subject();
+        SecurityContext context = this.securityContext;
+        return context == null ? AuthSubject.ANONYMOUS : context.subject();
     }
 
     public void setMetaData( Map<String, Object> data )
