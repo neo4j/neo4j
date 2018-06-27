@@ -281,3 +281,16 @@ Feature: OrderByAcceptance
       | (:B)  |
       | (:B)  |
     And no side effects
+
+  Scenario: ORDER BY on nested map missing property
+    Given an empty graph
+    When executing query:
+      """
+      WITH {key: 'foo'} AS m
+      RETURN m.key
+      ORDER BY m.other.name
+      """
+    Then the result should be, in order:
+      | m.key |
+      | 'foo' |
+    And no side effects

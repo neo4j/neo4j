@@ -624,6 +624,10 @@ public abstract class CompiledConversionUtils
     @SuppressWarnings( "unchecked" )
     public static Object mapGetProperty( Object object, String key )
     {
+        if ( object == NO_VALUE )
+        {
+            return NO_VALUE;
+        }
         if ( object instanceof MapValue )
         {
             MapValue map = (MapValue) object;
