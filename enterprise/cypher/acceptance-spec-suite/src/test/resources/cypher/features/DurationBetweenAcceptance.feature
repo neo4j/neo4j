@@ -23,6 +23,25 @@
 
 Feature: DurationBetweenAcceptance
 
+  Scenario Outline: Should split between boundaries correctly
+    Given any graph
+    When executing query:
+    """
+    WITH duration.between(<d1>, <d2>) AS dur
+    RETURN dur, dur.days, dur.seconds, dur.nanosecondsOfSecond
+    """
+    Then the result should be:
+      | dur   | dur.days | dur.seconds | dur.nanosecondsOfSecond |
+      | <dur> | <days>   | <seconds>   | <nanos>                 |
+    Examples:
+      | d1                                                   | d2                                                   | dur                | days | seconds | nanos     |
+      | localdatetime('2018-01-01T12:00')                    | localdatetime('2018-01-02T10:00')                    | 'PT22H'            | 0    | 79200   | 0         |
+      | localdatetime('2018-01-02T10:00')                    | localdatetime('2018-01-01T12:00')                    | 'PT-22H'           | 0    | -79200  | 0         |
+      | localdatetime('2018-01-01T10:00:00.2')               | localdatetime('2018-01-02T10:00:00.1')               | 'PT23H59M59.9S'    | 0    | 86399   | 900000000 |
+      | localdatetime('2018-01-02T10:00:00.1')               | localdatetime('2018-01-01T10:00:00.2')               | 'PT-23H-59M-59.9S' | 0    | -86400  | 100000000 |
+      | datetime('2017-10-28T23:00+02:00[Europe/Stockholm]') | datetime('2017-10-29T04:00+01:00[Europe/Stockholm]') | 'PT6H'             | 0    | 21600   | 0         |
+      | datetime('2017-10-29T04:00+01:00[Europe/Stockholm]') | datetime('2017-10-28T23:00+02:00[Europe/Stockholm]') | 'PT-6H'            | 0    | -21600  | 0         |
+
   Scenario: Should compute duration between two temporals
     Given an empty graph
     When executing query:
@@ -81,7 +100,7 @@ Feature: DurationBetweenAcceptance
       | 'PT0S' |
       | 'PT-5H-10M-32.142S' |
       | 'PT-5H-10M-32.142S' |
-      | 'P11M3DT-21H-40M-36.143S' |
+      | 'P11M2DT2H19M23.857S' |
       | 'P2YT4M45.999S' |
       | 'P1YT59M55.999S' |
       | 'PT-5H-10M-36.143S' |
