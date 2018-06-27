@@ -142,6 +142,15 @@ class ProceduresAcceptanceTest extends ExecutionEngineFunSuite with CypherCompar
     result.toList should equal(List(Map("name" -> "Clint Eastwood")))
   }
 
+  test("should use correct temporal types") {
+    registerTestProcedures()
+
+    val result =innerExecuteDeprecated(
+      "CALL org.neo4j.time(localtime.statement())")
+
+    result.toList should be(empty) // and not crash
+  }
+
   private def registerTestProcedures(): Unit = {
     graph.getDependencyResolver.resolveDependency(classOf[Procedures]).registerProcedure(classOf[TestProcedure])
   }
