@@ -1,3 +1,21 @@
+# Copyright (c) 2002-2018 "Neo Technology,"
+# Network Engine for Objects in Lund AB [http://neotechnology.com]
+#
+# This file is part of Neo4j.
+#
+# Neo4j is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path).Replace(".Tests.", ".")
 $common = Join-Path (Split-Path -Parent $here) 'Common.ps1'
@@ -21,7 +39,9 @@ InModuleScope Neo4j-Management {
     }
     # Mock Neo4j environment
     Mock Get-Neo4jEnv { $global:mockNeo4jHome } -ParameterFilter { $Name -eq 'NEO4J_HOME' }
+    Mock Confirm-JavaVersion { $true }
     Mock Start-Process { throw "Should not call Start-Process mock" }
+    Mock Invoke-ExternalCommand { throw "Should not call Invoke-ExternalCommand mock" }
 
     Context "Invalid or missing specified neo4j installation" {
       $serverObject = global:New-InvalidNeo4jInstall
@@ -46,16 +66,17 @@ InModuleScope Neo4j-Management {
       }
     }
 
-    Context "Start service succesfully but not running" {
-      Mock Start-Service { throw "Wrong Service name" }
-      Mock Start-Service -Verifiable { @{ Status = 'Start Pending'} } -ParameterFilter { $Name -eq $global:mockServiceName }
+    Context "Start service failed" {
+      Mock Get-Service { return 'service' }
+      Mock Invoke-ExternalCommand { throw "Should not invoke" }
+      Mock Invoke-ExternalCommand -Verifiable { @{ exitCode = 1; capturedOutput = 'failed to start' } } -ParameterFilter { $Command -like '*prunsrv*.exe' }
 
       $serverObject = global:New-MockNeo4jInstall
 
       $result = Start-Neo4jServer -Service -Neo4jServer $serverObject
 
-      It "result is 2" {
-        $result | Should Be 2
+      It "result is 1" {
+        $result | Should Be 1
       }
 
       It "calls verified mocks" {
@@ -64,8 +85,9 @@ InModuleScope Neo4j-Management {
     }
 
     Context "Start service succesfully" {
-      Mock Start-Service { throw "Wrong Service name" }
-      Mock Start-Service -Verifiable { @{ Status = 'Running'} } -ParameterFilter { $Name -eq $global:mockServiceName }
+      Mock Get-Service { return 'service' }
+      Mock Invoke-ExternalCommand { throw "Should not invoke" }
+      Mock Invoke-ExternalCommand -Verifiable { @{ exitCode = 0 } } -ParameterFilter { $Command -like '*prunsrv*.exe' }
 
       $serverObject = global:New-MockNeo4jInstall
 

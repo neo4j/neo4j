@@ -134,21 +134,30 @@ Function Get-Neo4jServer
 
     # Set process level environment variables
     #  These should mirror the same paths in neo4j-shared.sh
-    (@{'NEO4J_DATA'    = @{'config_var' = 'dbms.directories.data';    'default' = (Join-Path $Neo4jHome 'data')}
+    $dirSettings = @{'NEO4J_DATA'    = @{'config_var' = 'dbms.directories.data';    'default' = (Join-Path $Neo4jHome 'data')}
        'NEO4J_LIB'     = @{'config_var' = 'dbms.directories.lib';     'default' = (Join-Path $Neo4jHome 'lib')}
        'NEO4J_LOGS'    = @{'config_var' = 'dbms.directories.logs';    'default' = (Join-Path $Neo4jHome 'logs')}
        'NEO4J_PLUGINS' = @{'config_var' = 'dbms.directories.plugins'; 'default' = (Join-Path $Neo4jHome 'plugins')}
        'NEO4J_RUN'     = @{'config_var' = 'dbms.directories.run';     'default' = (Join-Path $Neo4jHome 'run')}
-    }).GetEnumerator() | % {
-      $setting = (Get-Neo4jSetting -ConfigurationFile 'neo4j.conf' -Name $_.Value.config_var -Neo4jServer $serverObject)
-      $value = $_.Value.default
-      if ($setting -ne $null) { $value = $setting.Value }
-      if ($value -ne $null) {
-        if (![System.IO.Path]::IsPathRooted($value)) {
-          $value = (Join-Path -Path $Neo4jHome -ChildPath $value)
+    }
+    foreach($name in $dirSettings.Keys)
+    {
+        $definition = $dirSettings[$name]
+        $configured = (Get-Neo4jSetting -ConfigurationFile 'neo4j.conf' -Name $definition['config_var'] -Neo4jServer $serverObject)
+        $value = $definition['default']
+        if ($configured -ne $null) { $value = $configured.Value }
+        
+        if ($value -ne $null) {
+          if (-Not (Test-Path $value -IsValid)) {
+            throw "'$value' is not a valid path entry on this system."
+          }
+
+          $absolutePathRegex = '(^\\|^/|^[A-Za-z]:)'
+          if (-Not ($value -match $absolutePathRegex)) {
+            $value = (Join-Path -Path $Neo4jHome -ChildPath $value)
+          }
         }
-      }
-      Set-Neo4jEnv $_.Name $value
+        Set-Neo4jEnv $name $value
     }
 
     # Set log dir on server object

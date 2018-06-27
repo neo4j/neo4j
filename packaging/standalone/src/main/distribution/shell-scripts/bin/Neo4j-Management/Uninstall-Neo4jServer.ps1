@@ -55,41 +55,31 @@ Function Uninstall-Neo4jServer
 
   Process
   {
-    $Name = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
-
-    $service = Get-Service -Name $Name -ComputerName '.' -ErrorAction 'SilentlyContinue'
-    if ($service -eq $null) 
+    $ServiceName = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
+    $Found = Get-Service -Name $ServiceName -ComputerName '.' -ErrorAction 'SilentlyContinue'
+    if ($Found)
     {
-      Write-Verbose "Windows Service $Name does not exist"
-      Write-Host "Neo4j uninstalled"
-      return 0
-    }
+      $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $Neo4jServer -ForServerUninstall
+      if ($prunsrv -eq $null) { throw "Could not determine the command line for PRUNSRV" }
 
-    if ($service.State -ne 'Stopped') {
-      Write-Host "Stopping the Neo4j service"
-      Stop-Service -ServiceName $Name -ErrorAction 'Stop' | Out-Null
-    }
+      Write-Verbose "Uninstalling Neo4j service"
+      $result = Invoke-ExternalCommand -Command $prunsrv.cmd -CommandArgs $prunsrv.args
 
-    $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $Neo4jServer -ForServerUninstall
-    if ($prunsrv -eq $null) { throw "Could not determine the command line for PRUNSRV" }
-
-    Write-Verbose "Uninstalling Neo4j as a service with command line $($prunsrv.cmd) $($prunsrv.args)"
-    $stdError = New-Neo4jTempFile -Prefix 'stderr'
-    $result = (Start-Process -FilePath $prunsrv.cmd -ArgumentList $prunsrv.args -Wait -NoNewWindow -PassThru -WorkingDirectory $Neo4jServer.Home -RedirectStandardError $stdError)
-    Write-Verbose "Returned exit code $($result.ExitCode)"
-
-    Write-Output $result.ExitCode
-
-    # Process the output
-    if ($result.ExitCode -eq 0) {
-      Write-Host "Neo4j service uninstalled"
-    } else {
-      Write-Host "Neo4j service did not uninstall"
-      # Write out STDERR if it did not uninstall
-      Get-Content -Path $stdError -ErrorAction 'SilentlyContinue' | ForEach-Object -Process {
-        Write-Host $_
+      # Process the output
+      if ($result.exitCode -eq 0) {
+        Write-Host "Neo4j service uninstalled"
+      } else {
+        Write-Host "Neo4j service did not uninstall"
+        # Write out STDERR if it did not uninstall
+        Write-Host $result.capturedOutput
       }
-    }
+
+      Write-Output $result.exitCode
+      } else {
+        Write-Verbose "Windows Service $Name does not exist"
+        Write-Host "Neo4j uninstalled"
+        return 0
+      }
   }
   
   End

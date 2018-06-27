@@ -53,7 +53,7 @@ Function Invoke-Neo4jImport
     # The powershell command line interpeter converts comma delimited strings into a System.Object[] array
     # Search the CommandArgs array and convert anything that's System.Object[] back to a string type
     for($index = 0; $index -lt $CommandArgs.Length; $index++) {
-      if ($CommandArgs[$index].GetType().ToString() -eq 'System.Object[]') {
+      if ($CommandArgs[$index] -is [array]) {
         [string]$CommandArgs[$index] = $CommandArgs[$index] -join ',' 
       }
     }

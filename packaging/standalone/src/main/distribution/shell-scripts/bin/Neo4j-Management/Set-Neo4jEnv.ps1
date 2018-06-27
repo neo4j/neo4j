@@ -59,7 +59,7 @@ Function Set-Neo4jEnv
   }
 
   Process {
-    [Environment]::SetEnvironmentVariable($Name, $Value, "Process")
+    Set-Item -Path Env:$Name -Value $Value
   }
 
   End

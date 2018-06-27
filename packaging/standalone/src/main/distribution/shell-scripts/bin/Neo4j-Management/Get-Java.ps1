@@ -83,7 +83,7 @@ Function Get-Java
     {
       $javaPath = $EnvJavaHome
       # Modify the java path if a JRE install is detected
-      if (Test-Path -Path "$javaPath\bin\javac.exe") { $javaPath = "$javaPath\jre" }
+      if (Test-Path -Path "$javaPath\jre\bin\java.exe") { $javaPath = "$javaPath\jre" }
     }
 
     # Attempt to find Java in registry

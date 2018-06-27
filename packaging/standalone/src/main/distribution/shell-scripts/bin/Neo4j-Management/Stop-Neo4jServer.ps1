@@ -56,19 +56,32 @@ Function Stop-Neo4jServer
 
   Process
   {
-    $ServiceName = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
+      $ServiceName = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
+      $Found = Get-Service -Name $ServiceName -ComputerName '.' -ErrorAction 'SilentlyContinue'
+      if ($Found)
+      {
+        $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $Neo4jServer -ForServerStop
+        if ($prunsrv -eq $null) { throw "Could not determine the command line for PRUNSRV" }
 
-    Write-Verbose "Stopping the service.  This can take some time..."
-    $result = Stop-Service -Name $ServiceName -PassThru -ErrorAction Stop
-    
-    if ($result.Status -eq 'Stopped') {
-      Write-Host "Neo4j windows service stopped"
-      return 0
-    }
-    else {
-      Write-Host "Neo4j windows was sent the Stop command but is currently $($result.Status)"
-      return 2
-    }
+        Write-Verbose "Stopping Neo4j service"
+        $result = Invoke-ExternalCommand -Command $prunsrv.cmd -CommandArgs $prunsrv.args
+
+        # Process the output
+        if ($result.exitCode -eq 0) {
+          Write-Host "Neo4j service stopped"
+        } else {
+          Write-Host "Neo4j service did not stop"
+          # Write out STDERR if it did not stop
+          Write-Host $result.capturedOutput
+        }
+
+        Write-Output $result.exitCode
+      }
+      else 
+      {
+        Write-Host "Service stop failed - service '$ServiceName' not found"
+        Write-Output 1
+      }
   }
   
   End

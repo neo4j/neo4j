@@ -82,17 +82,30 @@ Function Start-Neo4jServer
     if ($PsCmdlet.ParameterSetName -eq 'WindowsService')
     {
       $ServiceName = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
+      $Found = Get-Service -Name $ServiceName -ComputerName '.' -ErrorAction 'SilentlyContinue'
+      if ($Found)
+      {
+        $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $Neo4jServer -ForServerStart
+        if ($prunsrv -eq $null) { throw "Could not determine the command line for PRUNSRV" }
 
-      Write-Verbose "Starting the service.  This can take some time..."
-      $result = Start-Service -Name $ServiceName -PassThru -ErrorAction Stop
-      
-      if ($result.Status -eq 'Running') {
-        Write-Host "Neo4j windows service started"
-        return 0
-      }
-      else {
-        Write-Host "Neo4j windows was started but is not running"
-        return 2
+        Write-Verbose "Starting Neo4j as a service"
+        $result = Invoke-ExternalCommand -Command $prunsrv.cmd -CommandArgs $prunsrv.args
+
+        # Process the output
+        if ($result.exitCode -eq 0) {
+          Write-Host "Neo4j service started"
+        } else {
+          Write-Host "Neo4j service did not start"
+          # Write out STDERR if it did not start
+          Write-Host $result.capturedOutput
+        }
+
+        Write-Output $result.exitCode
+      } 
+      else
+      {
+        Write-Host "Service start failed - service '$ServiceName' not found"
+        Write-Output 1
       }
     }
   }

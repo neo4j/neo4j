@@ -73,11 +73,6 @@ Function Invoke-Neo4jUtility
     Write-Verbose "Neo4j Version is '$($thisServer.ServerVersion)'"
     Write-Verbose "Neo4j Database Mode is '$($thisServer.DatabaseMode)'"
 
-    # Check if we have administrative rights; If the current user's token contains the Administrators Group SID (S-1-5-32-544)
-    if (-not [bool](([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups -match "S-1-5-32-544")) {
-      Write-Warning "This command does not appear to be running with administrative rights.  Some commands may fail e.g. Start/Stop"
-    }
-
     $GetJavaParams = @{}
     switch ($Command.Trim().ToLower())
     {

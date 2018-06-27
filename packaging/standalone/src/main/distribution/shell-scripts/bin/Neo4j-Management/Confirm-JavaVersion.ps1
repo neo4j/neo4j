@@ -51,20 +51,16 @@ Function Confirm-JavaVersion
   }
   
   Process {
-    $stdError = New-Neo4jTempFile -Prefix 'stderr'
-    
-    # Run Java with redirection
-    $args = @('-version')
-    Write-Verbose "Executing $Path $args"
-    $result = Start-Process -FilePath $Path -ArgumentList $args -NoNewWindow -Wait -RedirectStandardError $stdError -PassThru
+    $result = Invoke-ExternalCommand -Command $Path -CommandArgs @('-version')
 
     # Check the output
-    if ($result.ExitCode -ne 0) {
-      Write-Verbose "Java returned exit code $($result.ExitCode)"
+    if ($result.exitCode -ne 0) {
       Write-Warning "Unable to determine Java Version"
+      Write-Host $result.capturedOutput
       return $true
     }    
-    if (-not (Test-Path -Path $stdError)) {
+
+    if ($result.capturedOutput.Count -eq 0) {
       Write-Verbose "Java did not output version information"
       Write-Warning "Unable to determine Java Version"
       return $true
@@ -74,10 +70,7 @@ Function Confirm-JavaVersion
                     "* Please see https://neo4j.com/docs/ for Neo4j installation instructions."
 
     # Read the contents of the redirected output
-    $content = (Get-Content -Path $stdError) -join "`n`r"
-
-    # Remove the temp file
-    Remove-Item -Path $stdError -Force | Out-Null
+    $content = $result.capturedOutput -join "`n`r"
     
     # Use a simple regular expression to extract the java version
     Write-Verbose "Java version response: $content"

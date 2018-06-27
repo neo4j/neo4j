@@ -1,3 +1,21 @@
+# Copyright (c) 2002-2018 "Neo Technology,"
+# Network Engine for Objects in Lund AB [http://neotechnology.com]
+#
+# This file is part of Neo4j.
+#
+# Neo4j is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path).Replace(".Tests.", ".")
 $common = Join-Path (Split-Path -Parent $here) 'Common.ps1'
@@ -75,6 +93,18 @@ InModuleScope Neo4j-Management {
         $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $serverObject -ForServerUninstall
 
         $prunsrv.args -join ' ' | Should Match ([regex]::Escape("//DS//$($global:mockServiceName)"))
+      }
+
+      It "return //ES/xxx argument on service start" {
+        $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $serverObject -ForServerStart
+
+        $prunsrv.args -join ' ' | Should Match ([regex]::Escape("//ES//$($global:mockServiceName)"))
+      }
+
+      It "return //SS/xxx argument on service stop" {
+        $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $serverObject -ForServerStop
+
+        $prunsrv.args -join ' ' | Should Match ([regex]::Escape("//SS//$($global:mockServiceName)"))
       }
 
       It "return //TS/xxx argument on service run console" {
