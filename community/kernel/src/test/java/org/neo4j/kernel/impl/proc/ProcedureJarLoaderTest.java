@@ -25,12 +25,17 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
+import java.util.zip.ZipException;
 
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
@@ -38,11 +43,13 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
 import static java.util.stream.Collectors.toList;
+import static junit.framework.TestCase.fail;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
@@ -202,14 +209,51 @@ public class ProcedureJarLoaderTest
         jarloader.loadProcedures( jar );
     }
 
-    public URL createJarFor( Class<?> ... targets ) throws IOException
+    @Test
+    public void shouldLogHelpfullyWhenPluginJarIsCorrupt() throws Exception
+    {
+        // given
+        URL theJar = createJarFor( ClassWithOneProcedure.class, ClassWithAnotherProcedure.class, ClassWithNoProcedureAtAll.class );
+        corruptJar( theJar );
+        AssertableLogProvider logProvider = new AssertableLogProvider( true );
+
+        ProcedureJarLoader jarloader = new ProcedureJarLoader(
+                new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry(), NullLog.getInstance(), ProcedureAllowedConfig.DEFAULT ),
+                logProvider.getLog( ProcedureJarLoader.class ) );
+
+        // when
+        try
+        {
+            jarloader.loadProceduresFromDir( new File( theJar.getFile() ).getParentFile() );
+            fail("Should have logged and thrown exception.");
+        }
+        catch ( ZipException expected )
+        {
+            // then
+            logProvider.assertContainsLogCallContaining( String.format( "Plugin jar file: %s corrupted. Please reinstall.", theJar.getFile() ) );
+        }
+    }
+
+    private void corruptJar( URL jar ) throws IOException, URISyntaxException
+    {
+        long fileLength = new File( jar.getFile() ).length();
+        byte[] bytes = Files.readAllBytes( Paths.get( jar.toURI() ) );
+        for ( long i = fileLength/2; i < fileLength; i++ )
+        {
+            bytes[(int)i]= 0;
+        }
+
+        Files.write( Paths.get( jar.getPath() ), bytes );
+    }
+
+    private URL createJarFor( Class<?> ... targets ) throws IOException
     {
         return new JarBuilder().createJarFor( tmpdir.newFile( new Random().nextInt() + ".jar" ), targets );
     }
 
     public static class Output
     {
-        public long someNumber = 1337;
+        public long someNumber = 1337; // Public because needed by a mapper
 
         public Output()
         {
