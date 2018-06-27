@@ -23,6 +23,7 @@
 package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.File;
+import java.net.ConnectException;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
@@ -134,10 +135,23 @@ public class StoreCopyClient
                 StoreCopyFinishedResponse response = catchUpClient.makeBlockingRequest( address, request, copyHandler );
                 successful = successfulRequest( response, request );
             }
-            catch ( CatchUpClientException | CatchupAddressResolutionException e )
+            catch ( CatchUpClientException e )
             {
-                log.warn( format( "Request failed exceptionally '%s'.", request ), e );
                 successful = false;
+                Throwable cause = e.getCause();
+                if ( cause instanceof ConnectException )
+                {
+                    log.warn( cause.getMessage() );
+                }
+                else
+                {
+                    log.warn( format( "Request failed exceptionally '%s'.", request ), e );
+                }
+            }
+            catch ( CatchupAddressResolutionException e )
+            {
+                successful = false;
+                log.warn( "Unable to resolve address for '%s'. %s", request, e.getMessage() );
             }
             if ( !successful )
             {
