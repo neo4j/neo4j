@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan => LogicalPlanV
 import org.neo4j.cypher.internal.v3_3.logical.{plans => plansV3_3}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{FieldSignature, ProcedureAccessMode, QualifiedName, LogicalPlan => LogicalPlanv3_5}
 import org.neo4j.cypher.internal.v3_5.logical.{plans => plansv3_5}
-import org.opencypher.v9_0.expressions.{Expression => Expressionv3_5, LabelName => LabelNamev3_5, RelTypeName => RelTypeNamev3_5, SemanticDirection => SemanticDirectionv3_5}
+import org.opencypher.v9_0.expressions.{PropertyKeyName, Expression => Expressionv3_5, LabelName => LabelNamev3_5, RelTypeName => RelTypeNamev3_5, SemanticDirection => SemanticDirectionv3_5}
 import org.opencypher.v9_0.util.Rewritable.RewritableAny
 import org.opencypher.v9_0.util.attribution.{IdGen, SequentialIdGen}
 import org.opencypher.v9_0.util.symbols.CypherType
@@ -134,6 +134,14 @@ object LogicalPlanConverter {
             children(0).asInstanceOf[Set[String]],
             children(1).asInstanceOf[LogicalPlanv3_5],
             children(2).asInstanceOf[LogicalPlanv3_5]
+          )(ids.convertId(plan))
+
+        case (plan: plansV3_3.SetRelationshipPropery, children: Seq[AnyRef]) =>
+          plansv3_5.SetRelationshipProperty(
+            children(0).asInstanceOf[LogicalPlanv3_5],
+            children(1).asInstanceOf[String],
+            children(2).asInstanceOf[PropertyKeyName],
+            children(3).asInstanceOf[Expressionv3_5]
           )(ids.convertId(plan))
 
         case (plan: plansV3_3.LogicalPlan, children: Seq[AnyRef]) =>

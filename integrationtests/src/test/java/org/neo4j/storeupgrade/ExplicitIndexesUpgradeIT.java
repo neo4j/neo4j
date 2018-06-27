@@ -172,7 +172,7 @@ public class ExplicitIndexesUpgradeIT
 
     private IntFunction<Object> stringValues()
     {
-        return value -> "value value " + value;
+        return value -> "value balue " + value;
     }
 
     private Factory<Node> readNodes( final GraphDatabaseService db )
