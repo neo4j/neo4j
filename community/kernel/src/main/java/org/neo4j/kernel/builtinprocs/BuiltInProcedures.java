@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
+import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
@@ -192,6 +193,21 @@ public class BuiltInProcedures
             indexProcedures.resampleOutdatedIndexes();
         }
     }
+
+    @Procedure( name = "db.schemaAsTable", mode = Mode.READ )  // I am open about a better name for this. Something like db.propertySchema maybe?
+    @Description( "Show the schema of the data in tabular form." )
+    public Stream<SchemaInfoResult> schemaAsTable()
+    {
+        return new SchemaCalculator( tx ).calculateTabularResultStream();
+    }
+
+    // TODO: Next step -> graph with more info then db.schema currently has
+//    @Procedure( value = "db.schema.graph", mode = Mode.READ )
+//    @Description( "Show the schema of the data." ) // old description
+//    public Stream<SchemaProcedure.GraphResult> schemaAsGraph()
+//    {
+//        return new SchemaCalculator( db, tx ).calculateGraphResultStream();
+//    }
 
     @Description( "Show the schema of the data." )
     @Procedure( name = "db.schema", mode = READ )

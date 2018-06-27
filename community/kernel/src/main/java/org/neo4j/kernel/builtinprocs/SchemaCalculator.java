@@ -76,20 +76,20 @@ public class SchemaCalculator
         this.ktx = ktx;
     }
 
-    public Stream<BuiltInSchemaProcedures.SchemaInfoResult> calculateTabularResultStream()
+    public Stream<SchemaInfoResult> calculateTabularResultStream()
     {
         calculateSchema();
 
-        List<BuiltInSchemaProcedures.SchemaInfoResult> results = new ArrayList<>();
+        List<SchemaInfoResult> results = new ArrayList<>();
         results.addAll( produceResultsForNodes() );
         results.addAll( produceResultsForRelationships() );
 
         return results.stream();
     }
 
-    private List<BuiltInSchemaProcedures.SchemaInfoResult> produceResultsForRelationships()
+    private List<SchemaInfoResult> produceResultsForRelationships()
     {
-        List<BuiltInSchemaProcedures.SchemaInfoResult> results = new ArrayList<>();
+        List<SchemaInfoResult> results = new ArrayList<>();
         for ( Integer typeId : relationshipTypeIdToPropertyKeysMapping.keySet() )
         {
             // lookup typ name
@@ -99,7 +99,7 @@ public class SchemaCalculator
             Set<Integer> propertyIds = relationshipTypeIdToPropertyKeysMapping.get( typeId );
             if ( propertyIds.size() == 0 )
             {
-                results.add( new BuiltInSchemaProcedures.SchemaInfoResult( RELATIONSHIP, Collections.singletonList( name ), null, null ) );
+                results.add( new SchemaInfoResult( RELATIONSHIP, Collections.singletonList( name ), null, null ) );
             }
             else
             {
@@ -108,7 +108,7 @@ public class SchemaCalculator
                     // lookup propId name and valueGroup
                     String propName = propertyIdToPropertylNameMapping.get( propId );
                     ValueTypeDecider valueTypeDecider = relationshipTypeIdANDPropertyTypeIdToValueTypeMapping.get( Pair.of( typeId, propId ) );
-                    results.add( new BuiltInSchemaProcedures.SchemaInfoResult( RELATIONSHIP, Collections.singletonList( name ), propName,
+                    results.add( new SchemaInfoResult( RELATIONSHIP, Collections.singletonList( name ), propName,
                             valueTypeDecider.getCypherTypeString() ) );
                 }
             }
@@ -116,9 +116,9 @@ public class SchemaCalculator
         return results;
     }
 
-    private List<BuiltInSchemaProcedures.SchemaInfoResult> produceResultsForNodes()
+    private List<SchemaInfoResult> produceResultsForNodes()
     {
-        List<BuiltInSchemaProcedures.SchemaInfoResult> results = new ArrayList<>();
+        List<SchemaInfoResult> results = new ArrayList<>();
         for ( LabelSet labelSet : labelSetToPropertyKeysMapping.keySet() )
         {
             // lookup label names and produce list of names
@@ -133,7 +133,7 @@ public class SchemaCalculator
             Set<Integer> propertyIds = labelSetToPropertyKeysMapping.get( labelSet );
             if ( propertyIds.size() == 0 )
             {
-                results.add( new BuiltInSchemaProcedures.SchemaInfoResult( NODE, labelNames, null, null ) );
+                results.add( new SchemaInfoResult( NODE, labelNames, null, null ) );
             }
             else
             {
@@ -142,7 +142,7 @@ public class SchemaCalculator
                     // lookup propId name and valueGroup
                     String propName = propertyIdToPropertylNameMapping.get( propId );
                     ValueTypeDecider valueTypeDecider = labelSetANDNodePropertyKeyIdToValueTypeMapping.get( Pair.of( labelSet, propId ) );
-                    results.add( new BuiltInSchemaProcedures.SchemaInfoResult( NODE, labelNames, propName, valueTypeDecider.getCypherTypeString() ) );
+                    results.add( new SchemaInfoResult( NODE, labelNames, propName, valueTypeDecider.getCypherTypeString() ) );
                 }
             }
         }
@@ -222,7 +222,7 @@ public class SchemaCalculator
             {
                 // we can and need to skip this if we found the empty set
                 oldPropertyKeySet.removeAll( propertyIds );
-                oldPropertyKeySet.forEach( ( id ) -> {
+                oldPropertyKeySet.forEach( id -> {
                     Pair<Integer,Integer> key = Pair.of( typeId, id );
                     relationshipTypeIdANDPropertyTypeIdToValueTypeMapping.get( key ).setNullable();
                 } );
@@ -264,7 +264,7 @@ public class SchemaCalculator
             {
                 // we can and need (!) to skip this if we found the empty set
                 oldPropertyKeySet.removeAll( propertyIds );
-                oldPropertyKeySet.forEach( ( id ) -> {
+                oldPropertyKeySet.forEach( id -> {
                     Pair<LabelSet,Integer> key = Pair.of( labels, id );
                     labelSetANDNodePropertyKeyIdToValueTypeMapping.get( key ).setNullable();
                 } );
