@@ -26,6 +26,7 @@ import java.io.File;
 import java.util.Map;
 
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
@@ -61,12 +62,12 @@ public class HighlyAvailableGraphDatabase extends GraphDatabaseFacade
 
     public HighAvailabilityMemberState getInstanceState()
     {
-        return getDependencyResolver().resolveDependency( HighAvailabilityMemberStateMachine.class ).getCurrentState();
+        return resolveDatabaseDependency( HighAvailabilityMemberStateMachine.class ).getCurrentState();
     }
 
     public String role()
     {
-        return getDependencyResolver().resolveDependency( ClusterMembers.class ).getCurrentMemberRole();
+        return resolveDatabaseDependency( ClusterMembers.class ).getCurrentMemberRole();
     }
 
     public boolean isMaster()
@@ -77,5 +78,10 @@ public class HighlyAvailableGraphDatabase extends GraphDatabaseFacade
     public File getStoreDirectory()
     {
         return getStoreDir();
+    }
+
+    private <T> T resolveDatabaseDependency( Class<T> clazz )
+    {
+        return getDependencyResolver().resolveDependency( NeoStoreDataSource.class ).getDependencyResolver().resolveDependency( clazz );
     }
 }

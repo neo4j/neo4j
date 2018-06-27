@@ -100,13 +100,20 @@ public class SchemaIndexHaIT
     @Rule
     public ClusterRule clusterRule = new ClusterRule();
 
+    private static final IndexProvider.Descriptor CONTROLLED_PROVIDER_DESCRIPTOR = new IndexProvider.Descriptor( "controlled", "1.0" );
+    private static final Predicate<GraphDatabaseService> IS_MASTER =
+            item -> item instanceof HighlyAvailableGraphDatabase && ((HighlyAvailableGraphDatabase) item).isMaster();
+
+    private final String key = "key";
+    private final Label label = label( "label" );
+
     @Test
     public void creatingIndexOnMasterShouldHaveSlavesBuildItAsWell() throws Throwable
     {
         // GIVEN
         ManagedCluster cluster = clusterRule.startCluster();
         HighlyAvailableGraphDatabase master = cluster.getMaster();
-        Map<Object, Node> data = createSomeData( master );
+        Map<Object,Node> data = createSomeData( master );
 
         // WHEN
         IndexDefinition index = createIndex( master );
@@ -144,7 +151,7 @@ public class SchemaIndexHaIT
         HighlyAvailableGraphDatabase firstMaster = cluster.getMaster();
 
         // where the master gets some data created as well as an index
-        Map<Object, Node> data = createSomeData( firstMaster );
+        Map<Object,Node> data = createSomeData( firstMaster );
         createIndex( firstMaster );
         //dbFactory.awaitPopulationStarted( firstMaster );
         dbFactory.triggerFinish( firstMaster );
@@ -173,7 +180,7 @@ public class SchemaIndexHaIT
             tx.success();
         }
         // FINALLY: let all db's finish
-        for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
+        for ( HighlyAvailableGraphDatabase db: cluster.getAllMembers() )
         {
             dbFactory.triggerFinish( db );
         }
@@ -192,7 +199,7 @@ public class SchemaIndexHaIT
         // GIVEN
         ControlledGraphDatabaseFactory dbFactory = new ControlledGraphDatabaseFactory( IS_MASTER );
 
-        ManagedCluster cluster = clusterRule.withDbFactory( dbFactory ).startCluster( );
+        ManagedCluster cluster = clusterRule.withDbFactory( dbFactory ).startCluster();
 
         try
         {
@@ -205,7 +212,7 @@ public class SchemaIndexHaIT
 
             // And I create an index on the master, and wait for population to start
             HighlyAvailableGraphDatabase master = cluster.getMaster();
-            Map<Object, Node> data = createSomeData(master);
+            Map<Object,Node> data = createSomeData( master );
             createIndex( master );
             dbFactory.awaitPopulationStarted( master );
 
@@ -235,7 +242,7 @@ public class SchemaIndexHaIT
         }
         finally
         {
-            for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
+            for ( HighlyAvailableGraphDatabase db: cluster.getAllMembers() )
             {
                 dbFactory.triggerFinish( db );
             }
@@ -267,7 +274,7 @@ public class SchemaIndexHaIT
 
         // And I create an index on the master, and wait for population to start
         HighlyAvailableGraphDatabase master = cluster.getMaster();
-        Map<Object, Node> data = createSomeData(master);
+        Map<Object,Node> data = createSomeData( master );
         createIndex( master );
         dbFactory.awaitPopulationStarted( master );
 
@@ -295,11 +302,10 @@ public class SchemaIndexHaIT
         }
     }
 
-    private void proceedAsNormalWithIndexPopulationOnAllSlavesExcept( ControlledGraphDatabaseFactory dbFactory,
-                                                                      ManagedCluster cluster,
-                                                                      HighlyAvailableGraphDatabase slaveToIgnore )
+    private void proceedAsNormalWithIndexPopulationOnAllSlavesExcept( ControlledGraphDatabaseFactory dbFactory, ManagedCluster cluster,
+            HighlyAvailableGraphDatabase slaveToIgnore )
     {
-        for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
+        for ( HighlyAvailableGraphDatabase db: cluster.getAllMembers() )
         {
             if ( db != slaveToIgnore && db.getInstanceState() == HighAvailabilityMemberState.SLAVE )
             {
@@ -309,8 +315,7 @@ public class SchemaIndexHaIT
     }
 
     @SuppressWarnings( "ResultOfMethodCallIgnored" )
-    private ClusterManager.RepairKit bringSlaveOfflineAndRemoveStoreFiles( ManagedCluster cluster,
-            HighlyAvailableGraphDatabase slave ) throws IOException
+    private ClusterManager.RepairKit bringSlaveOfflineAndRemoveStoreFiles( ManagedCluster cluster, HighlyAvailableGraphDatabase slave ) throws IOException
     {
         ClusterManager.RepairKit slaveDown = cluster.shutdown( slave );
 
@@ -320,17 +325,11 @@ public class SchemaIndexHaIT
         return slaveDown;
     }
 
-    private static final Predicate<GraphDatabaseService> IS_MASTER =
-            item -> item instanceof HighlyAvailableGraphDatabase && ((HighlyAvailableGraphDatabase) item).isMaster();
-
-    private final String key = "key";
-    private final Label label = label( "label" );
-
-    private Map<Object, Node> createSomeData( GraphDatabaseService db )
+    private Map<Object,Node> createSomeData( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Map<Object, Node> result = new HashMap<>();
+            Map<Object,Node> result = new HashMap<>();
             for ( int i = 0; i < 10; i++ )
             {
                 Node node = db.createNode( label );
@@ -353,10 +352,9 @@ public class SchemaIndexHaIT
         }
     }
 
-    private static void awaitIndexOnline( IndexDefinition index, ManagedCluster cluster,
-            Map<Object, Node> expectedDdata ) throws InterruptedException
+    private static void awaitIndexOnline( IndexDefinition index, ManagedCluster cluster, Map<Object,Node> expectedDdata ) throws InterruptedException
     {
-        for ( GraphDatabaseService db : cluster.getAllMembers() )
+        for ( GraphDatabaseService db: cluster.getAllMembers() )
         {
             awaitIndexOnline( index, db, expectedDdata );
         }
@@ -364,7 +362,7 @@ public class SchemaIndexHaIT
 
     private static IndexDefinition reHomedIndexDefinition( GraphDatabaseService db, IndexDefinition definition )
     {
-        for ( IndexDefinition candidate : db.schema().getIndexes() )
+        for ( IndexDefinition candidate: db.schema().getIndexes() )
         {
             if ( candidate.equals( definition ) )
             {
@@ -374,8 +372,7 @@ public class SchemaIndexHaIT
         throw new NoSuchElementException( "New database doesn't have requested index" );
     }
 
-    private static void awaitIndexOnline( IndexDefinition requestedIndex, GraphDatabaseService db,
-            Map<Object, Node> expectedData ) throws InterruptedException
+    private static void awaitIndexOnline( IndexDefinition requestedIndex, GraphDatabaseService db, Map<Object,Node> expectedData ) throws InterruptedException
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -396,10 +393,9 @@ public class SchemaIndexHaIT
         }
     }
 
-    private static void assertIndexContents( IndexDefinition index, GraphDatabaseService db,
-            Map<Object, Node> expectedData )
+    private static void assertIndexContents( IndexDefinition index, GraphDatabaseService db, Map<Object,Node> expectedData )
     {
-        for ( Map.Entry<Object, Node> entry : expectedData.entrySet() )
+        for ( Map.Entry<Object,Node> entry: expectedData.entrySet() )
         {
             assertEquals( asSet( entry.getValue() ),
                     asUniqueSet( db.findNodes( index.getLabel(), Iterables.single( index.getPropertyKeys() ), entry.getKey() ) ) );
@@ -442,16 +438,14 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
-                throws IndexEntryConflictException, IOException
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
         {
             delegate.add( updates );
             latch.startAndWaitForAllToStartAndFinish();
         }
 
         @Override
-        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
-                throws IndexEntryConflictException, IOException
+        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException, IOException
         {
             delegate.verifyDeferredConstraints( nodePropertyAccessor );
         }
@@ -465,7 +459,7 @@ public class SchemaIndexHaIT
         @Override
         public void close( boolean populationCompletedSuccessfully ) throws IOException
         {
-            delegate.close(populationCompletedSuccessfully);
+            delegate.close( populationCompletedSuccessfully );
             assertTrue( "Expected population to succeed :(", populationCompletedSuccessfully );
             latch.finish();
         }
@@ -488,9 +482,6 @@ public class SchemaIndexHaIT
             return delegate.sampleResult();
         }
     }
-
-    private static final IndexProvider.Descriptor CONTROLLED_PROVIDER_DESCRIPTOR =
-            new IndexProvider.Descriptor( "controlled", "1.0" );
 
     private static class ControlledIndexProvider extends IndexProvider
     {
@@ -554,8 +545,7 @@ public class SchemaIndexHaIT
         private final Map<GraphDatabaseService,IndexProvider> perDbIndexProvider;
         private final Predicate<GraphDatabaseService> injectLatchPredicate;
 
-        ControllingIndexProviderFactory( Map<GraphDatabaseService,IndexProvider> perDbIndexProvider,
-                Predicate<GraphDatabaseService> injectLatchPredicate )
+        ControllingIndexProviderFactory( Map<GraphDatabaseService,IndexProvider> perDbIndexProvider, Predicate<GraphDatabaseService> injectLatchPredicate )
         {
             super( CONTROLLED_PROVIDER_DESCRIPTOR.getKey() );
             this.perDbIndexProvider = perDbIndexProvider;
@@ -573,8 +563,8 @@ public class SchemaIndexHaIT
             OperationalMode operationalMode = context.databaseInfo().operationalMode;
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = deps.recoveryCleanupWorkCollector();
 
-            FusionIndexProvider fusionIndexProvider = NativeLuceneFusionIndexProviderFactory20
-                    .create( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
+            FusionIndexProvider fusionIndexProvider =
+                    NativeLuceneFusionIndexProviderFactory20.create( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
 
             if ( injectLatchPredicate.test( deps.db() ) )
             {
@@ -630,4 +620,4 @@ public class SchemaIndexHaIT
             }
         }
     }
- }
+}

@@ -432,7 +432,7 @@ public class HighlyAvailableEditionModule
                         resolveDatabaseDependency( dependencies, CheckPointer.class ),
                         resolveDatabaseDependency( dependencies, TransactionIdStore.class ),
                         resolveDatabaseDependency( dependencies, LogicalTransactionStore.class ),
-                        platformModule.dependencies.resolveDependency( NeoStoreDataSource.class ),
+                        dependencies.resolveDependency( NeoStoreDataSource.class ),
                         logging.getInternalLogProvider() );
 
         final Factory<ConversationSPI> conversationSPIFactory =

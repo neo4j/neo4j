@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -59,7 +59,7 @@ import static org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSetting
  * @deprecated This will be moved to an internal package in the future.
  */
 @Deprecated
-public class OnlineBackupKernelExtension implements Lifecycle
+public class OnlineBackupKernelExtension extends LifecycleAdapter
 {
     private Object startBindingListener;
     private Object bindingListener;
@@ -112,14 +112,9 @@ public class OnlineBackupKernelExtension implements Lifecycle
     }
 
     @Override
-    public void init()
-    {
-    }
-
-    @Override
     public void start()
     {
-        if ( config.<Boolean>get( OnlineBackupSettings.online_backup_enabled ) )
+        if ( config.get( OnlineBackupSettings.online_backup_enabled ) )
         {
             try
             {
@@ -141,11 +136,12 @@ public class OnlineBackupKernelExtension implements Lifecycle
                 }
                 catch ( NoClassDefFoundError | UnsatisfiedDependencyException e )
                 {
-                    // Not running HA
+                    e.printStackTrace();
                 }
             }
             catch ( Throwable t )
             {
+                t.printStackTrace();
                 throw new RuntimeException( t );
             }
         }
@@ -172,14 +168,9 @@ public class OnlineBackupKernelExtension implements Lifecycle
             }
             catch ( NoClassDefFoundError | UnsatisfiedDependencyException e )
             {
-                // Not running HA
+                e.printStackTrace();
             }
         }
-    }
-
-    @Override
-    public void shutdown()
-    {
     }
 
     private class StartBindingListener extends ClusterMemberListener.Adapter

@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -54,8 +55,10 @@ public class DefaultMasterImplSPITest
     public void flushStoreFilesWithCorrectCheckpointTriggerName() throws IOException
     {
         CheckPointer checkPointer = mock( CheckPointer.class );
+        StoreCopyCheckPointMutex mutex = new StoreCopyCheckPointMutex();
 
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
+        when( dataSource.getStoreCopyCheckPointMutex() ).thenReturn( mutex );
         when( dataSource.listStoreFiles( anyBoolean() ) ).thenReturn( Iterators.emptyResourceIterator() );
 
         DefaultMasterImplSPI master = new DefaultMasterImplSPI( mock( GraphDatabaseAPI.class, RETURNS_MOCKS ),
