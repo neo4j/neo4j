@@ -58,7 +58,6 @@ import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.TRUE;
 import static org.neo4j.values.storable.Values.doubleValue;
-import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
@@ -784,15 +783,15 @@ public final class CypherFunctions
         }
         else if ( item instanceof TextValue )
         {
-            return intValue( ((TextValue) item).length() );
+            return longValue( ((TextValue) item).length() );
         }
         else if ( item instanceof SequenceValue )
         {
-            return intValue( ((SequenceValue) item).length() );
+            return longValue( ((SequenceValue) item).length() );
         }
         else
         {
-            return intValue( 1 );
+            return longValue( 1 );
         }
     }
 
@@ -801,19 +800,19 @@ public final class CypherFunctions
     {
         if ( item instanceof PathValue )
         {
-            return intValue( ((PathValue) item).size() );
+            return longValue( ((PathValue) item).size() );
         }
         else if ( item instanceof TextValue )
         {
-            return intValue( ((TextValue) item).length() );
+            return longValue( ((TextValue) item).length() );
         }
         else if ( item instanceof SequenceValue )
         {
-            return intValue( ((SequenceValue) item).length() );
+            return longValue( ((SequenceValue) item).length() );
         }
         else
         {
-            return intValue( 1 );
+            return longValue( 1 );
         }
     }
 
