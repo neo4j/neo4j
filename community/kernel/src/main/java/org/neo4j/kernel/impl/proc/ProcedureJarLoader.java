@@ -55,13 +55,6 @@ public class ProcedureJarLoader
         this.log = log;
     }
 
-    // TODO: delete me and change the tests
-    Callables loadProcedures( URL jar ) throws Exception
-    {
-        return loadProcedures( jar, new URLClassLoader( new URL[]{jar}, this.getClass().getClassLoader() ),
-                new Callables() );
-    }
-
     public Callables loadProceduresFromDir( File root ) throws IOException, KernelException
     {
         if ( !root.exists() )

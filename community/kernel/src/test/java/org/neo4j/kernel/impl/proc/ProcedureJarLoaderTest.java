@@ -76,7 +76,7 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithOneProcedure.class );
 
         // When
-        List<CallableProcedure> procedures = jarloader.loadProcedures( jar ).procedures();
+        List<CallableProcedure> procedures = jarloader.loadProceduresFromDir( parentDir( jar ) ).procedures();
 
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
@@ -94,7 +94,7 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithProcedureWithArgument.class );
 
         // When
-        List<CallableProcedure> procedures = jarloader.loadProcedures( jar ).procedures();
+        List<CallableProcedure> procedures = jarloader.loadProceduresFromDir( parentDir( jar ) ).procedures();
 
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
@@ -115,7 +115,7 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithOneProcedure.class, ClassWithAnotherProcedure.class, ClassWithNoProcedureAtAll.class );
 
         // When
-        List<CallableProcedure> procedures = jarloader.loadProcedures( jar ).procedures();
+        List<CallableProcedure> procedures = jarloader.loadProceduresFromDir( parentDir( jar ) ).procedures();
 
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
@@ -143,7 +143,7 @@ public class ProcedureJarLoaderTest
                                  "And then define your procedure as returning `Stream<Output>`." ));
 
         // When
-        jarloader.loadProcedures( jar );
+        jarloader.loadProceduresFromDir( parentDir( jar ) );
     }
 
     @Test
@@ -175,7 +175,7 @@ public class ProcedureJarLoaderTest
                                  "that you define and not a Stream<?>." ));
 
         // When
-        jarloader.loadProcedures( jar );
+        jarloader.loadProceduresFromDir( parentDir( jar ) );
     }
 
     @Test
@@ -190,7 +190,7 @@ public class ProcedureJarLoaderTest
                                  "that you define and not a raw Stream." ));
 
         // When
-        jarloader.loadProcedures( jar );
+        jarloader.loadProceduresFromDir( parentDir( jar ) );
     }
 
     @Test
@@ -206,7 +206,7 @@ public class ProcedureJarLoaderTest
                                  ".kernel.impl.proc.ProcedureJarLoaderTest$Output>."));
 
         // When
-        jarloader.loadProcedures( jar );
+        jarloader.loadProceduresFromDir( parentDir( jar ) );
     }
 
     @Test
@@ -224,7 +224,7 @@ public class ProcedureJarLoaderTest
         // when
         try
         {
-            jarloader.loadProceduresFromDir( new File( theJar.getFile() ).getParentFile() );
+            jarloader.loadProceduresFromDir( parentDir( theJar ) );
             fail("Should have logged and thrown exception.");
         }
         catch ( ZipException expected )
@@ -232,6 +232,11 @@ public class ProcedureJarLoaderTest
             // then
             logProvider.assertContainsLogCallContaining( String.format( "Plugin jar file: %s corrupted. Please reinstall.", theJar.getFile() ) );
         }
+    }
+
+    private File parentDir( URL jar )
+    {
+        return new File( jar.getFile() ).getParentFile();
     }
 
     private void corruptJar( URL jar ) throws IOException, URISyntaxException
