@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.neo4j.helpers.collection.Iterators.asList;
@@ -117,7 +118,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                 procs().procedureCallRead( procs().procedureGet( procedureName( "db", "schemaAsTable" ) ).id(), new Object[0] );
 
         // Then
-        assertThat( asList( stream ), containsInAnyOrder(
+        assertThat( asList( stream ), contains(
                 equalTo( new Object[]{"Node", Arrays.asList("A"), "prop1", "STRING"} )) );
 
         // Just for printing out the result if needed
@@ -156,7 +157,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
         assertThat( asList( stream ), containsInAnyOrder(
                 equalTo( new Object[]{"Node", Arrays.asList(), "prop1", "STRING"} ),
                 equalTo( new Object[]{"Node", Arrays.asList(), "prop2", "NUMBER"} ),
-                equalTo( new Object[]{"Node", Arrays.asList(), "prop3", "ANY_VALUE"} ) ) );
+                equalTo( new Object[]{"Node", Arrays.asList(), "prop3", "ANY"} ) ) );
 
         // Just for printing out the result if needed
         //printStream( stream );
@@ -268,9 +269,65 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
                 equalTo( new Object[]{"Node", Arrays.asList(), null, null} ),
-                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop1", "STRING"} ),
-                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop2", "NUMBER"} ),
-                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop3", "ANY_VALUE"} ) ) );
+                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop1", "STRING?"} ),
+                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop2", "NUMBER?"} ),
+                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop3", "ANY?"} ) ) );
+
+        // Just for printing out the result if needed
+        //printStream( stream );
+    }
+
+    @Test
+    public void testSchemaTableWithNullableProperties() throws Throwable
+    {
+        // Given
+
+        // Node1: (:A{prop1:"Test", prop2: 12, prop3: true})
+        // Node2: (:A{prop1:"Test2", prop3: false})
+        // Node3: (:A{prop1:"Test3", prop2: 42})
+        // Node4: (:B{prop1:"Test4", prop2: 21})
+        // Node5: (:B)
+
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        long nodeId1 = transaction.dataWrite().nodeCreate();
+        long nodeId2 = transaction.dataWrite().nodeCreate();
+        long nodeId3 = transaction.dataWrite().nodeCreate();
+        long nodeId4 = transaction.dataWrite().nodeCreate();
+        long nodeId5 = transaction.dataWrite().nodeCreate();
+        int labelA = transaction.tokenWrite().labelGetOrCreateForName( "A" );
+        int labelB = transaction.tokenWrite().labelGetOrCreateForName( "B" );
+        transaction.dataWrite().nodeAddLabel( nodeId1, labelA );
+        transaction.dataWrite().nodeAddLabel( nodeId2, labelA );
+        transaction.dataWrite().nodeAddLabel( nodeId3, labelA );
+        transaction.dataWrite().nodeAddLabel( nodeId4, labelB );
+        transaction.dataWrite().nodeAddLabel( nodeId5, labelB );
+        int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
+        int prop2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop2" );
+        int prop3 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop3" );
+        transaction.dataWrite().nodeSetProperty( nodeId1, prop1, Values.stringValue("Test") );
+        transaction.dataWrite().nodeSetProperty( nodeId2, prop1, Values.stringValue("Test2") );
+        transaction.dataWrite().nodeSetProperty( nodeId3, prop1, Values.stringValue("Test3") );
+        transaction.dataWrite().nodeSetProperty( nodeId1, prop2, Values.intValue( 12 ) );
+        transaction.dataWrite().nodeSetProperty( nodeId3, prop2, Values.intValue( 42 ) );
+        transaction.dataWrite().nodeSetProperty( nodeId1, prop3, Values.booleanValue( true ) );
+        transaction.dataWrite().nodeSetProperty( nodeId2, prop3, Values.booleanValue( false ) );
+
+        transaction.dataWrite().nodeSetProperty( nodeId4, prop1, Values.stringValue( "Test4" ) );
+        transaction.dataWrite().nodeSetProperty( nodeId4, prop2, Values.intValue( 21 ) );
+
+        commit();
+
+        // When
+        RawIterator<Object[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "schemaAsTable" ) ).id(), new Object[0] );
+
+        // Then
+        assertThat( asList( stream ), containsInAnyOrder(
+                equalTo( new Object[]{"Node", Arrays.asList( "A" ), "prop1", "STRING"} ),
+                equalTo( new Object[]{"Node", Arrays.asList( "A" ), "prop2", "INTEGER?"} ),
+                equalTo( new Object[]{"Node", Arrays.asList( "A" ), "prop3", "BOOLEAN?"} ),
+                equalTo( new Object[]{"Node", Arrays.asList( "B" ), "prop1", "STRING?"} ),
+                equalTo( new Object[]{"Node", Arrays.asList( "B" ), "prop2", "INTEGER?"} ) ) );
 
         // Just for printing out the result if needed
         //printStream( stream );

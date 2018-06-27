@@ -46,7 +46,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-import static org.neo4j.kernel.builtinprocs.SchemaCalculator.ValueStatus.ANY_VALUE;
+import static org.neo4j.kernel.builtinprocs.SchemaCalculator.ValueStatus.ANY;
 import static org.neo4j.kernel.builtinprocs.SchemaCalculator.ValueStatus.VALUE;
 import static org.neo4j.kernel.builtinprocs.SchemaCalculator.ValueStatus.VALUE_GROUP;
 
@@ -63,7 +63,9 @@ public class SchemaCalculator
     private Map<Pair<Integer,Integer>,ValueTypeDecider> relationshipTypeIdANDPropertyTypeIdToValueTypeMapping;
 
     private final Set<Integer> emptyPropertyIdSet = Collections.unmodifiableSet( Collections.emptySet() );
-    private final String ANYVALUE = "ANY_VALUE";
+    private final String ANYVALUE = "ANY";
+    private final String NULLABLE = "?";
+    private final String NULLABLE_ANYVALUE = ANYVALUE + NULLABLE;
     private final String NODE = "Node";
     private final String RELATIONSHIP = "Relationship";
 
@@ -154,7 +156,9 @@ public class SchemaCalculator
         throw new NotImplementedException();
     }
 
-    private void calculateSchema() //TODO: Parallelize this: (Nodes | Rels) and/or more
+    //TODO: Parallelize this: (Nodes | Rels) and/or more
+    //TODO: If we would have this schema information in the count store (or somewhere), this could be super fast
+    private void calculateSchema()
     {
         // this one does most of the work
         try ( Statement ignore = ktx.acquireStatement() )
@@ -212,6 +216,18 @@ public class SchemaCalculator
             propertyCursor.close();
 
             Set<Integer> oldPropertyKeySet = relationshipTypeIdToPropertyKeysMapping.getOrDefault( typeId, emptyPropertyIdSet );
+
+            // find out which old properties we did not visited and mark them as nullable
+            if ( !(oldPropertyKeySet == emptyPropertyIdSet) )
+            {
+                // we can and need to skip this if we found the empty set
+                oldPropertyKeySet.removeAll( propertyIds );
+                oldPropertyKeySet.forEach( ( id ) -> {
+                    Pair<Integer,Integer> key = Pair.of( typeId, id );
+                    relationshipTypeIdANDPropertyTypeIdToValueTypeMapping.get( key ).setNullable();
+                } );
+            }
+
             propertyIds.addAll( oldPropertyKeySet );
             relationshipTypeIdToPropertyKeysMapping.put( typeId, propertyIds );
         }
@@ -242,6 +258,18 @@ public class SchemaCalculator
             propertyCursor.close();
 
             Set<Integer> oldPropertyKeySet = labelSetToPropertyKeysMapping.getOrDefault( labels, emptyPropertyIdSet );
+
+            // find out which old properties we did not visited and mark them as nullable
+            if ( !(oldPropertyKeySet == emptyPropertyIdSet) )
+            {
+                // we can and need (!) to skip this if we found the empty set
+                oldPropertyKeySet.removeAll( propertyIds );
+                oldPropertyKeySet.forEach( ( id ) -> {
+                    Pair<LabelSet,Integer> key = Pair.of( labels, id );
+                    labelSetANDNodePropertyKeyIdToValueTypeMapping.get( key ).setNullable();
+                } );
+            }
+
             propertyIds.addAll( oldPropertyKeySet );
             labelSetToPropertyKeysMapping.put( labels, propertyIds );
         }
@@ -276,27 +304,42 @@ public class SchemaCalculator
         private Value concreteValue;
         private ValueGroup valueGroup;
         private ValueStatus valueStatus;
+        private Boolean isNullable = false;
+        private String nullableSuffix = "";
 
         ValueTypeDecider( Value v )
         {
+            if ( v == null )
+            {
+                throw new IllegalArgumentException();
+            }
             this.concreteValue = v;
             this.valueGroup = v.valueGroup();
             this.valueStatus = VALUE;
         }
 
+        private void setNullable( )
+        {
+                isNullable = true;
+                nullableSuffix = NULLABLE;
+        }
+
         /*
         This method translates an ValueTypeDecider into the correct String
         */
-        String getCypherTypeString( )
+        String getCypherTypeString()
         {
             switch ( valueStatus )
             {
             case VALUE:
-                return concreteValue.getTypeName().toUpperCase();
+                return isNullable ? concreteValue.getTypeName().toUpperCase() + nullableSuffix
+                                  : concreteValue.getTypeName().toUpperCase();
             case VALUE_GROUP:
-                return valueGroup.name();
-            case ANY_VALUE:
-                return ANYVALUE;
+                return isNullable ? valueGroup.name() + nullableSuffix
+                                  : valueGroup.name();
+            case ANY:
+                return isNullable ? NULLABLE_ANYVALUE
+                                  : ANYVALUE;
             default:
                 throw new IllegalStateException( "Did not recognize ValueStatus" );
             }
@@ -306,7 +349,7 @@ public class SchemaCalculator
         This method is needed to handle conflicting property values and sets valueStatus accordingly to:
          A) VALUE if current and new value match on class level
          B) VALUE_GROUP, if at least the ValueGroups of the current and new values match
-         C) ANY_VALUE, if nothing matches
+         C) ANY, if nothing matches
         */
         void compareAndPutValueType( Value newValue )
         {
@@ -330,7 +373,7 @@ public class SchemaCalculator
                     else
                     {
                         // Not same valueGroup -> update to AnyValue
-                        valueStatus = ANY_VALUE;
+                        valueStatus = ANY;
                     }
                 }
                 break;
@@ -338,10 +381,10 @@ public class SchemaCalculator
                 if ( !valueGroup.equals( newValue.valueGroup() ) )
                 {
                     // not same valueGroup -> update to AnyValue
-                    valueStatus = ANY_VALUE;
+                    valueStatus = ANY;
                 }
                 break;
-            case ANY_VALUE:
+            case ANY:
                 // DO nothing, cannot go higher
                 break;
             default:
@@ -354,6 +397,6 @@ public class SchemaCalculator
     {
         VALUE,
         VALUE_GROUP,
-        ANY_VALUE
+        ANY
     }
 }
