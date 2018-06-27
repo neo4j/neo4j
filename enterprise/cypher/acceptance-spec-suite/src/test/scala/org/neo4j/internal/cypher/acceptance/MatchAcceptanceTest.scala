@@ -989,4 +989,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val result = executeWith(Configs.Interpreted, "RETURN REDUCE(s = 0, p in [5,8,2,9] + [1,2] | s + p) as num")
     result.toList should be(List(Map("num" -> 27)))
   }
+
+  test("should handle 3 inegualties without choking in planning") {
+    executeWith(Configs.Interpreted, "MATCH (a:A) WHERE a.prop < 1 AND a.prop <=1 AND a.prop >=1 RETURN a.prop") shouldBe empty
+  }
 }
