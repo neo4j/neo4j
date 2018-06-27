@@ -334,7 +334,7 @@ class ByteCodeVerifier implements ByteCodeChecker, CodeGeneratorOption
 
         Verifier( ClassNode clazz, AssignmentChecker check )
         {
-            super( Type.getObjectType( clazz.name ), superClass( clazz ), interfaces( clazz ),
+            super( Opcodes.ASM6, Type.getObjectType( clazz.name ), superClass( clazz ), interfaces( clazz ),
                     isInterfaceNode( clazz ) );
             this.check = check;
         }
