@@ -276,6 +276,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     // Then
     result.toList should equal(
       List(Map("description" -> "INDEX ON :A(prop)",
+        "indexName" -> "Unnamed index",
         "tokenNames" -> List("A"),
         "properties" -> List("prop"),
         "state" -> "ONLINE",
@@ -311,6 +312,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     // Then
     listResult.toList should equal(
       List(Map("description" -> "INDEX ON :Person(name)",
+        "indexName" -> "Unnamed index",
         "tokenNames" -> List("Person"),
         "properties" -> List("name"),
         "state" -> "ONLINE",
@@ -339,6 +341,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
 
     listResult.toList should equal(
       List(Map("description" -> "INDEX ON :Person(name)",
+        "indexName" -> "index_25",
         "tokenNames" -> List("Person"),
         "properties" -> List( "name" ),
         "state" -> "ONLINE",
@@ -367,6 +370,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
 
     listResult.toList should equal(
       List(Map("description" -> "INDEX ON :Person(name)",
+        "indexName" -> "index_25",
         "tokenNames" -> List("Person"),
         "properties" -> List( "name" ),
         "state" -> "ONLINE",

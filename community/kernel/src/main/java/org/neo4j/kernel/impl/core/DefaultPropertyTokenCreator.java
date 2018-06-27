@@ -36,7 +36,7 @@ public class DefaultPropertyTokenCreator extends IsolatedTransactionTokenCreator
     @Override
     protected int createKey( Transaction transaction, String name ) throws IllegalTokenNameException
     {
-        transaction.locks().acquireSharedSpecialSingletonLock( ResourceTypes.SINGLETON_PROP_KEY_TOKEN_CREATE );
+        transaction.locks().acquireSharedTokenCreateLock( ResourceTypes.TOKEN_CREATE_PROP_KEY );
         return transaction.tokenWrite().propertyKeyCreateForName( name );
     }
 }

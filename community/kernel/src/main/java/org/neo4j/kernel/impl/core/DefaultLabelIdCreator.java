@@ -37,7 +37,7 @@ public class DefaultLabelIdCreator extends IsolatedTransactionTokenCreator
     @Override
     protected int createKey( Transaction transaction, String name ) throws IllegalTokenNameException, TooManyLabelsException
     {
-        transaction.locks().acquireSharedSpecialSingletonLock( ResourceTypes.SINGLETON_LABEL_TOKEN_CREATE );
+        transaction.locks().acquireSharedTokenCreateLock( ResourceTypes.TOKEN_CREATE_LABEL );
         return transaction.tokenWrite().labelCreateForName( name );
     }
 }

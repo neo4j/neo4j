@@ -254,12 +254,6 @@ public class ForsetiClient implements Locks.Client
                             // Success!
                             break;
                         }
-                        else
-                        {
-                            // Optimistically don't waste time waiting in this case. Just spin.
-                            clearAndCopyWaitList( existingLock );
-                            continue;
-                        }
                     }
 
                     // Someone holds an exclusive lock on this entity

@@ -1211,7 +1211,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         // the existing tokens, and be sure that we won't miss any updates.
         if ( forNodes )
         {
-            allStoreHolder.acquireExclusiveSpecialSingletonLock( ResourceTypes.SINGLETON_LABEL_TOKEN_CREATE );
+            allStoreHolder.acquireExclusiveTokenCreateLock( ResourceTypes.TOKEN_CREATE_LABEL );
             // We also need to coordinate with the creation of unlabelled nodes,
             // since they are indexable by "any token" indexes.
             allStoreHolder.acquireExclusiveSpecialSingletonLock( ResourceTypes.SINGLETON_UNLABELLED_NODE );
@@ -1220,7 +1220,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         {
             // We don't need the unlabelled node lock when the schema is for relationships.
             // But we do need to prevent any new relationship type tokens from being allocated.
-            allStoreHolder.acquireExclusiveSpecialSingletonLock( ResourceTypes.SINGLETON_REL_TYPE_TOKEN_CREATE );
+            allStoreHolder.acquireExclusiveTokenCreateLock( ResourceTypes.TOKEN_CREATE_REL_TYPE );
         }
 
         ResourceType resourceType;

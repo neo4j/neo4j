@@ -36,7 +36,7 @@ public class DefaultRelationshipTypeCreator extends IsolatedTransactionTokenCrea
     @Override
     protected int createKey( Transaction transaction, String name ) throws IllegalTokenNameException
     {
-        transaction.locks().acquireSharedSpecialSingletonLock( ResourceTypes.SINGLETON_REL_TYPE_TOKEN_CREATE );
+        transaction.locks().acquireSharedTokenCreateLock( ResourceTypes.TOKEN_CREATE_REL_TYPE );
         return transaction.tokenWrite().relationshipTypeCreateForName( name );
     }
 }

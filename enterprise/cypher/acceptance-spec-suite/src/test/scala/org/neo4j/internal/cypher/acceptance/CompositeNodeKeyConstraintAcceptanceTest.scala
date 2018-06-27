@@ -221,7 +221,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     // then
     failWithError(Configs.AbsolutelyAll - Configs.Before3_3AndRule,
       "CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS NODE KEY",
-      List("There already exists an index for label 'Person' on properties 'firstname' and 'lastname'. " +
+      List("There already exists an index :Person(firstname, lastname). " +
                   "A constraint cannot be created until the index has been dropped."))
   }
 
@@ -233,7 +233,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     failWithError(
       Configs.AbsolutelyAll - Configs.Before3_3AndRule,
       "CREATE INDEX ON :Person(firstname, lastname)",
-      List("Label 'Person' and properties 'firstname' and 'lastname' have a unique constraint defined on them, " +
+      List("There is a uniqueness constraint on :Person(firstname, lastname), " +
                   "so an index is already created that matches this."))
   }
 
