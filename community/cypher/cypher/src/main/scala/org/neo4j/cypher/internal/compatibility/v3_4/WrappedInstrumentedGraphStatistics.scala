@@ -25,12 +25,12 @@ import org.neo4j.cypher.internal.util.v3_4.{Cardinality => CardinalityV3_4, Labe
 import org.opencypher.v9_0.util.{LabelId, PropertyKeyId, RelTypeId}
 
 /**
-  * This class will act as a v3.3 InstrumentedGraphStatistics, but will update instead a map of values
+  * This class will act as a v3.4 InstrumentedGraphStatistics, but will update instead a map of values
   * for 3.4 so that the query plan cache can still work. It extends the original InstrumentedGraphStatistics
-  * so that existing 3.3 code will see it as the same type. However it overrides all behaviour in that class.
+  * so that existing 3.4 code will see it as the same type. However it overrides all behaviour in that class.
   *
-  * @param innerV3_4 - the inner 3.3 graph statistics used by the planner to make the plans
-  * @param snapshotv3_5 - the 3.4 version of the graph statistics snapshot used to remember what was used by the planner
+  * @param innerV3_4 - the inner 3.4 graph statistics used by the planner to make the plans
+  * @param snapshotv3_5 - the 3.5 version of the graph statistics snapshot used to remember what was used by the planner
   */
 class WrappedInstrumentedGraphStatistics(innerV3_4: GraphStatisticsV3_4, snapshotv3_5: MutableGraphStatisticsSnapshot) extends InstrumentedGraphStatisticsV3_4(innerV3_4, new MutableGraphStatisticsSnapshotV3_4()) {
   override def nodesWithLabelCardinality(labelId: Option[LabelIdV3_4]): CardinalityV3_4 =

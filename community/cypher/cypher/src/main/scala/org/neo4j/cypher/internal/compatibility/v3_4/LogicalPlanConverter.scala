@@ -76,7 +76,7 @@ object LogicalPlanConverter {
     *                      converted to which new expressions. This is because the new semantic table must have the
     *                      same objects (object identity) as keys, and thus we can't simply convert the old
     *                      expressions again when we convert the semantic table.
-    * @param isImportant
+    * @param seenBySemanticTable
     *                    Not all expressions have been _seen_ by the semantic table. An expression is not important
     *                    if it has not been seen. Then we won't stick it in the expressionMap
     */
@@ -87,7 +87,7 @@ object LogicalPlanConverter {
                                     cardinalities3_5: CardinalitiesV3_5,
                                     ids: IdConverter,
                                     val expressionMap: MutableExpressionMapping3To4 = new mutable.HashMap[(ExpressionV3_4, InputPositionV3_4), Expressionv3_5],
-                                    val isImportant: ExpressionV3_4 => Boolean = _ => true)
+                                    val seenBySemanticTable: ExpressionV3_4 => Boolean = _ => true)
     extends RewriterWithArgs {
 
     override def apply(v1: (AnyRef, Seq[AnyRef])): AnyRef = rewriter.apply(v1)
@@ -213,7 +213,7 @@ object LogicalPlanConverter {
         case (_: utilv3_4.ExhaustiveShortestPathForbiddenException, _) => new utilv3_5.ExhaustiveShortestPathForbiddenException
 
         case (spp: irV3_4.ShortestPathPattern, children: Seq[AnyRef]) =>
-          val sp3_4 = convertASTNode[expressionsv3_5.ShortestPaths](spp.expr, expressionMap, solveds3_4, cardinalities3_4, solveds3_5, cardinalities3_5, ids, isImportant)
+          val sp3_4 = convertASTNode[expressionsv3_5.ShortestPaths](spp.expr, expressionMap, solveds3_4, cardinalities3_4, solveds3_5, cardinalities3_5, ids, seenBySemanticTable)
           irv3_5.ShortestPathPattern(children(0).asInstanceOf[Option[String]], children(1).asInstanceOf[irv3_5.PatternRelationship], children(2).asInstanceOf[Boolean])(sp3_4)
 
         case (expressionsv3_4.NilPathStep, _) => expressionsv3_5.NilPathStep
@@ -279,7 +279,7 @@ object LogicalPlanConverter {
             cardinalities3_5.set(plan3_5.id, helpers.as3_5(cardinalities3_4.get(plan.id)))
           }
         // Save Mapping from 3.4 expression to 3.5 expression
-        case e: ExpressionV3_4 if isImportant(e) => expressionMap += (((e, e.position), rewritten.asInstanceOf[Expressionv3_5]))
+        case e: ExpressionV3_4 if seenBySemanticTable(e) => expressionMap += (((e, e.position), rewritten.asInstanceOf[Expressionv3_5]))
         case _ =>
       }
       rewritten
@@ -297,8 +297,8 @@ object LogicalPlanConverter {
                                                solveds3_5: SolvedsV3_5,
                                                cardinalities3_5: CardinalitiesV3_5,
                                                idConverter: IdConverter,
-                                               isImportant: ExpressionV3_4 => Boolean = _ => true): (LogicalPlanv3_5, ExpressionMapping4To5) = {
-    val rewriter = new LogicalPlanRewriter(solveds3_4, cardinalities3_4, solveds3_5, cardinalities3_5, idConverter, isImportant = isImportant)
+                                               seenBySemanticTable: ExpressionV3_4 => Boolean = _ => true): (LogicalPlanv3_5, ExpressionMapping4To5) = {
+    val rewriter = new LogicalPlanRewriter(solveds3_4, cardinalities3_4, solveds3_5, cardinalities3_5, idConverter, seenBySemanticTable = seenBySemanticTable)
     val planv3_5 = new RewritableAny[LogicalPlanV3_4](logicalPlan).rewrite(rewriter, Seq.empty).asInstanceOf[T]
     (planv3_5, rewriter.expressionMap.toMap)
   }
@@ -327,7 +327,7 @@ object LogicalPlanConverter {
                                                     solveds3_5: SolvedsV3_5,
                                                     cardinalities3_5: CardinalitiesV3_5,
                                                     idConverter: IdConverter,
-                                                    isImportant: ExpressionV3_4 => Boolean): T = {
+                                                    seenBySemanticTable: ExpressionV3_4 => Boolean): T = {
     new RewritableAny[utilv3_4.ASTNode](ast)
       .rewrite(new LogicalPlanRewriter(solveds3_4,
                                        cardinalities3_4,
@@ -335,7 +335,7 @@ object LogicalPlanConverter {
                                        cardinalities3_5,
                                        idConverter,
                                        expressionMap,
-                                       isImportant), Seq.empty)
+                                       seenBySemanticTable), Seq.empty)
       .asInstanceOf[T]
   }
 

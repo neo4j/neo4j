@@ -190,7 +190,7 @@ object helpers {
                                  solveds3_5: SolvedsV3_5,
                                  cardinalities3_5: CardinalitiesV3_5): (LogicalPlanv3_5, SemanticTablev3_5) = {
 
-    def isImportant(expression: ExpressionV3_4) : Boolean =
+    def seenBySemanticTable(expression: ExpressionV3_4) : Boolean =
       logicalPlanState.maybeSemanticTable.exists(_.seen(expression))
 
     val idConverter = new MaxIdConverter
@@ -202,7 +202,7 @@ object helpers {
         solveds3_5,
         cardinalities3_5,
         idConverter,
-        isImportant
+        seenBySemanticTable
       )
 
     val maybeTable = logicalPlanState.maybeSemanticTable

@@ -25,19 +25,22 @@ package org.neo4j.cypher.internal.javacompat;
 import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.test.rule.EnterpriseDatabaseRule;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 public class ExecutionResultTest

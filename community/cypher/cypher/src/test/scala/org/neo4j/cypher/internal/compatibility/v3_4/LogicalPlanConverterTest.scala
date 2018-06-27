@@ -195,7 +195,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     convert[PathExpression](p3_4b) should be(p3_5b)
   }
 
-  test("should not save expression mappings if isImportant always returns false") {
+  test("should not save expression mappings if seenBySemanticTable always returns false") {
     val var3_4 = expressionsv3_4.Variable("n")(pos3_4)
     val a3_4 = plansV3_4.AllNodesScan("n", Set.empty)
     val l3_4 = plansV3_4.Limit(a3_4, var3_4, plansV3_4.IncludeTies)
@@ -203,7 +203,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     expressionMapping(l3_4, expr => false) shouldBe empty
   }
 
-  test("should save expression mappings if isImportant always returns true") {
+  test("should save expression mappings if seenBySemanticTable always returns true") {
     val var3_4 = expressionsv3_4.Variable("n")(pos3_4)
     val a3_4 = plansV3_4.AllNodesScan("n", Set.empty)
     val l3_4 = plansV3_4.Limit(a3_4, var3_4, plansV3_4.IncludeTies)
@@ -517,7 +517,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     * Given a plan and a lambda deciding which expressions are important, returns the expression mapping
     */
   private def expressionMapping(input: plansV3_4.LogicalPlan,
-                                isImportant: expressionsv3_4.Expression => Boolean): ExpressionMapping4To5 = {
+                                seenBySemanticTable: expressionsv3_4.Expression => Boolean): ExpressionMapping4To5 = {
     val solveds = new SolvedsV3_4
     val cardinalities = new CardinalitiesV3_4
     assignAttributesRecursivelyWithDefaultValues(input, solveds, cardinalities)
@@ -527,7 +527,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
                                             new SolvedsV3_5,
                                             new CardinalitiesV3_5,
                                             new MaxIdConverter,
-                                            isImportant
+                                            seenBySemanticTable
                                           )._2
   }
 
