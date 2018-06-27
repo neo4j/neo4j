@@ -990,7 +990,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.toList should be(List(Map("num" -> 27)))
   }
 
-  test("should handle 3 inegualties without choking in planning") {
+  test("should handle 3 inequalities without choking in planning") {
     executeWith(Configs.Interpreted, "MATCH (a:A) WHERE a.prop < 1 AND a.prop <=1 AND a.prop >=1 RETURN a.prop") shouldBe empty
   }
 }
