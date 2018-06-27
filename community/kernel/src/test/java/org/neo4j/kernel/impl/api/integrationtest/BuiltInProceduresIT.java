@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.internal.Version;
 
 import static java.util.Collections.singletonList;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -311,7 +311,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         //let indexes come online
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexOnline( db.schema().getIndexes().iterator().next(), 20, SECONDS );
+            db.schema().awaitIndexesOnline( 2, MINUTES );
             tx.success();
         }
 
