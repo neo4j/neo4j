@@ -896,7 +896,14 @@ public final class CypherFunctions
         }
         else if ( in instanceof Value )
         {
-            return stringValue( ((Value) in).prettyPrint() );
+            if ( in instanceof PointValue )
+            {
+                return stringValue( in.toString() );
+            }
+            else
+            {
+                return stringValue( ((Value) in).prettyPrint() );
+            }
         }
         else
         {
@@ -989,11 +996,13 @@ public final class CypherFunctions
 
     private static AnyValue listAccess( SequenceValue container, AnyValue index )
     {
-        if ( !(index instanceof IntegralValue) )
+        NumberValue number = asNumberValue( index );
+        if ( !(number instanceof IntegralValue) )
         {
-            throw new CypherTypeException( format( "Expected %s to be an integer", index), null );
+            throw new CypherTypeException( format( "Cannot index a list using an non-integer number, got %s", number ),
+                    null );
         }
-        long idx = ((IntegralValue) index).longValue();
+        long idx = number.longValue();
         if ( idx > Integer.MAX_VALUE || idx < Integer.MIN_VALUE )
         {
             throw new InvalidArgumentException(
@@ -1022,9 +1031,20 @@ public final class CypherFunctions
     {
         if ( !(value instanceof TextValue) )
         {
-            throw new CypherTypeException( format( "Expected %s to be a string", value), null );
+            throw new CypherTypeException( format( "Expected %s to be a %s, but it was a %s", value,
+                    TextValue.class.getName(), value.getClass().getName()), null );
         }
         return ((TextValue) value).stringValue();
+    }
+
+    private static NumberValue asNumberValue( AnyValue value )
+    {
+        if ( !(value instanceof NumberValue) )
+        {
+            throw new CypherTypeException( format( "Expected %s to be a %s, but it was a %s", value,
+                    NumberValue.class.getName(), value.getClass().getName() ), null );
+        }
+        return (NumberValue) value;
     }
 
     private static Value calculateDistance( PointValue p1, PointValue p2 )
@@ -1053,7 +1073,7 @@ public final class CypherFunctions
 
     private static int asInt( AnyValue value )
     {
-       return (int) asLong( value );
+        return (int) asLong( value );
     }
 
     private static CypherTypeException needsNumbers( String method )
