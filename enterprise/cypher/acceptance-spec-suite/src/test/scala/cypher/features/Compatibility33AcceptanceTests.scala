@@ -22,25 +22,28 @@
  */
 package cypher.features
 
-import java.io.File
-import java.net.URI
+import java.util
 
+import cypher.features.ScenarioTestHelper.{createTests, printComputedBlacklist}
+import org.junit.Ignore
+import org.junit.jupiter.api.Assertions.fail
+import org.junit.jupiter.api.{DynamicTest, TestFactory}
 import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
-import org.opencypher.tools.tck.api.{CypherTCK, Scenario}
 
 @RunWith(classOf[JUnitPlatform])
-class AcceptanceTests extends BaseFeatureTest {
+class Compatibility33AcceptanceTests extends BaseAcceptanceTest {
 
-  // these two should be empty on commit!
-  // Use a substring match, for example "UnwindAcceptance"
-  override val featureToRun = ""
-  override val scenarioToRun = ""
+  // If you want to only run a specific feature or scenario, go to the BaseAcceptanceTest
 
-  val featuresURI: URI = getClass.getResource("/cypher/features").toURI
+  @TestFactory
+  def runCompatibility33(): util.Collection[DynamicTest] = {
+    createTests(scenarios, Compatibility33TestConfig)
+  }
 
-  override val scenarios: Seq[Scenario] = {
-    val all = CypherTCK.parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios)
-    filterScenarios(all)
+  @Ignore
+  def generateBlacklistCompatibility33(): Unit = {
+    printComputedBlacklist(scenarios, Compatibility33TestConfig)
+    fail("Do not forget to add @ignore to this method")
   }
 }

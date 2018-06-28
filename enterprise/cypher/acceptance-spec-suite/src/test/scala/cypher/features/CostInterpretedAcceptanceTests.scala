@@ -22,21 +22,28 @@
  */
 package cypher.features
 
-import org.opencypher.tools.tck.api.Scenario
+import java.util
 
-abstract class BaseFeatureTest {
+import cypher.features.ScenarioTestHelper.{createTests, printComputedBlacklist}
+import org.junit.Ignore
+import org.junit.jupiter.api.Assertions.fail
+import org.junit.jupiter.api.{DynamicTest, TestFactory}
+import org.junit.platform.runner.JUnitPlatform
+import org.junit.runner.RunWith
 
-  def filterScenarios(allScenarios: Seq[Scenario], featureToRun: String, scenarioToRun: String): Seq[Scenario] = {
-    if (featureToRun.nonEmpty) {
-      val filteredFeature = allScenarios.filter(s => s.featureName.contains(featureToRun))
-      if (scenarioToRun.nonEmpty) {
-        filteredFeature.filter(s => s.name.contains(scenarioToRun))
-      } else
-        filteredFeature
-    } else if (scenarioToRun.nonEmpty) {
-      allScenarios.filter(s => s.name.contains(scenarioToRun))
-    } else
-      allScenarios
+@RunWith(classOf[JUnitPlatform])
+class CostInterpretedAcceptanceTests extends BaseAcceptanceTest {
+
+  // If you want to only run a specific feature or scenario, go to the BaseAcceptanceTest
+
+  @TestFactory
+  def runCostInterpreted(): util.Collection[DynamicTest] = {
+    createTests(scenarios, CostInterpretedTestConfig)
   }
 
+  @Ignore
+  def generateBlacklistCostInterpreted(): Unit = {
+    printComputedBlacklist(scenarios, CostInterpretedTestConfig)
+    fail("Do not forget to add @ignore to this method")
+  }
 }
