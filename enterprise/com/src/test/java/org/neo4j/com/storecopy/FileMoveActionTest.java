@@ -54,11 +54,11 @@ public class FileMoveActionTest
         PageCache pageCache = aPageCache();
 
         // and
-        File pageCacheFile = testDirectory.file( "page-cache-file" );
+        File pageCacheFile = new File( "page-cache-file" );
         pageCache.map( pageCacheFile, 100, StandardOpenOption.CREATE );
 
         // when
-        File targetRename = testDirectory.file( "target" );
+        File targetRename = new File( "target" );
         FileMoveAction.moveViaPageCache( pageCacheFile, pageCache ).move( targetRename );
 
         // then
