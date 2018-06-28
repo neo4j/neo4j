@@ -19,9 +19,11 @@
  */
 package org.neo4j.bolt.v1.messaging.message;
 
+import java.io.IOException;
+
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageHandler;
 
 public interface ResponseMessage
 {
-    <E extends Exception> void dispatch( BoltResponseMessageHandler<E> consumer ) throws E;
+    void dispatch( BoltResponseMessageHandler consumer ) throws IOException;
 }

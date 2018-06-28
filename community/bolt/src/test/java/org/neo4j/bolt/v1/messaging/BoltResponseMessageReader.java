@@ -41,7 +41,7 @@ public class BoltResponseMessageReader
         this.unpacker = unpacker;
     }
 
-    public <E extends Exception> void read( BoltResponseMessageHandler<E> handler ) throws IOException, E
+    public void read( BoltResponseMessageHandler handler ) throws IOException
     {
         try
         {

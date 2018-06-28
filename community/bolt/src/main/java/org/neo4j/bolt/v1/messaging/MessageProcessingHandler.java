@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -44,13 +43,12 @@ class MessageProcessingHandler implements BoltResponseHandler
 
     protected final Log log;
     protected final BoltConnection connection;
-    protected final BoltResponseMessageHandler<IOException> handler;
+    protected final BoltResponseMessageHandler handler;
 
     private Neo4jError error;
     private boolean ignored;
 
-    MessageProcessingHandler( BoltResponseMessageHandler<IOException> handler, BoltConnection connection,
-            Log logger )
+    MessageProcessingHandler( BoltResponseMessageHandler handler, BoltConnection connection, Log logger )
     {
         this.handler = handler;
         this.connection = connection;
@@ -121,7 +119,7 @@ class MessageProcessingHandler implements BoltResponseHandler
         metadata.clear();
     }
 
-    private void publishError( BoltResponseMessageHandler<IOException> out, Neo4jError error )
+    private void publishError( BoltResponseMessageHandler out, Neo4jError error )
     {
         try
         {

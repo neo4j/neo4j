@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.v1.messaging.message;
 
+import java.io.IOException;
+
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageHandler;
 import org.neo4j.cypher.result.QueryResult;
 
@@ -32,7 +34,7 @@ public class RecordMessage implements ResponseMessage
     }
 
     @Override
-    public <E extends Exception> void dispatch( BoltResponseMessageHandler<E> consumer ) throws E
+    public void dispatch( BoltResponseMessageHandler consumer ) throws IOException
     {
         consumer.onRecord( value );
     }

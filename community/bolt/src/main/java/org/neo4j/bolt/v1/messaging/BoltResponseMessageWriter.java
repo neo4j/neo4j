@@ -40,7 +40,7 @@ import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
 /**
  * Writer for Bolt request messages to be sent to a {@link Neo4jPack.Packer}.
  */
-public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOException>
+public class BoltResponseMessageWriter implements BoltResponseMessageHandler
 {
     private final PackOutput output;
     private final Neo4jPack.Packer packer;

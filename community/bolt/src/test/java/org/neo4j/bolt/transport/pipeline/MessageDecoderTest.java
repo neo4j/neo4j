@@ -350,7 +350,7 @@ public class MessageDecoderTest
     public void shouldLogContentOfTheMessageOnIOError() throws Exception
     {
         BoltConnection connection = mock( BoltConnection.class );
-        BoltResponseMessageHandler<IOException> responseMessageHandler = mock( BoltResponseMessageHandler.class );
+        BoltResponseMessageHandler responseMessageHandler = mock( BoltResponseMessageHandler.class );
 
         BoltRequestMessageReader requestMessageReader = new BoltRequestMessageReaderV1( connection, responseMessageHandler,
                 NullBoltMessageLogger.getInstance(), NullLogService.getInstance() );

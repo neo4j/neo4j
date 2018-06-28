@@ -19,8 +19,6 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
-import java.io.IOException;
-
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.cypher.result.QueryResult;
@@ -29,7 +27,7 @@ import org.neo4j.values.AnyValue;
 
 class ResultHandler extends MessageProcessingHandler
 {
-    ResultHandler( BoltResponseMessageHandler<IOException> handler, BoltConnection connection, Log log )
+    ResultHandler( BoltResponseMessageHandler handler, BoltConnection connection, Log log )
     {
         super( handler, connection, log );
     }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -39,7 +38,7 @@ import org.neo4j.logging.Log;
 
 public class BoltRequestMessageReaderV1 extends BoltRequestMessageReader
 {
-    public BoltRequestMessageReaderV1( BoltConnection connection, BoltResponseMessageHandler<IOException> responseMessageHandler,
+    public BoltRequestMessageReaderV1( BoltConnection connection, BoltResponseMessageHandler responseMessageHandler,
             BoltMessageLogger messageLogger, LogService logService )
     {
         super( connection,
@@ -48,7 +47,7 @@ public class BoltRequestMessageReaderV1 extends BoltRequestMessageReader
                 messageLogger );
     }
 
-    private static List<RequestMessageDecoder> buildUnpackers( BoltConnection connection, BoltResponseMessageHandler<IOException> responseMessageHandler,
+    private static List<RequestMessageDecoder> buildUnpackers( BoltConnection connection, BoltResponseMessageHandler responseMessageHandler,
             BoltMessageLogger messageLogger, LogService logService )
     {
         BoltResponseHandler initHandler = newSimpleResponseHandler( connection, responseMessageHandler, logService );
@@ -67,7 +66,7 @@ public class BoltRequestMessageReaderV1 extends BoltRequestMessageReader
     }
 
     private static BoltResponseHandler newSimpleResponseHandler( BoltConnection connection,
-            BoltResponseMessageHandler<IOException> responseMessageHandler, LogService logService )
+            BoltResponseMessageHandler responseMessageHandler, LogService logService )
     {
         return new MessageProcessingHandler( responseMessageHandler, connection, internalLog( logService ) );
     }

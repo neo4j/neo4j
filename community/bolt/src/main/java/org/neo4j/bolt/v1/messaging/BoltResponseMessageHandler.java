@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
+import java.io.IOException;
+
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.virtual.MapValue;
@@ -26,21 +28,18 @@ import org.neo4j.values.virtual.MapValue;
 /**
  * Interface defining simple handler methods for each defined
  * Bolt response message.
- *
- * @param <E> an exception that may be thrown by each handler method
  */
-// todo: remove generic exception
-public interface BoltResponseMessageHandler<E extends Exception>
+public interface BoltResponseMessageHandler
 {
-    void onSuccess( MapValue metadata ) throws E;
+    void onSuccess( MapValue metadata ) throws IOException;
 
-    void onRecord( QueryResult.Record item ) throws E;
+    void onRecord( QueryResult.Record item ) throws IOException;
 
-    void onIgnored() throws E;
+    void onIgnored() throws IOException;
 
-    void onFailure( Status status, String errorMessage ) throws E;
+    void onFailure( Status status, String errorMessage ) throws IOException;
 
-    default void onFatal( Status status, String errorMessage ) throws E
+    default void onFatal( Status status, String errorMessage ) throws IOException
     {
         onFailure( status, errorMessage );
     }

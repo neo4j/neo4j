@@ -21,8 +21,6 @@ package org.neo4j.bolt.v1.messaging;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.v1.runtime.spi.ImmutableRecord;
@@ -40,7 +38,7 @@ class ResultHandlerTest
     @Test
     void shouldPullTheResult() throws Exception
     {
-        BoltResponseMessageHandler<IOException> responseMessageHandler = mock( BoltResponseMessageHandler.class );
+        BoltResponseMessageHandler responseMessageHandler = mock( BoltResponseMessageHandler.class );
         ResultHandler handler = new ResultHandler( responseMessageHandler, mock( BoltConnection.class ), NullLog.getInstance() );
 
         ImmutableRecord record1 = new ImmutableRecord( values( "a", "b", "c" ) );
@@ -58,7 +56,7 @@ class ResultHandlerTest
     @Test
     void shouldDiscardTheResult() throws Exception
     {
-        BoltResponseMessageHandler<IOException> responseMessageHandler = mock( BoltResponseMessageHandler.class );
+        BoltResponseMessageHandler responseMessageHandler = mock( BoltResponseMessageHandler.class );
         ResultHandler handler = new ResultHandler( responseMessageHandler, mock( BoltConnection.class ), NullLog.getInstance() );
 
         ImmutableRecord record1 = new ImmutableRecord( values( "a", "b", "c" ) );

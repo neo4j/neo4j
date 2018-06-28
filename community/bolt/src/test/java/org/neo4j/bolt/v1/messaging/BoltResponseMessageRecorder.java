@@ -31,7 +31,7 @@ import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.virtual.MapValue;
 
-public class BoltResponseMessageRecorder implements BoltResponseMessageHandler<RuntimeException>
+public class BoltResponseMessageRecorder implements BoltResponseMessageHandler
 {
     private final List<ResponseMessage> messages = new ArrayList<>();
 

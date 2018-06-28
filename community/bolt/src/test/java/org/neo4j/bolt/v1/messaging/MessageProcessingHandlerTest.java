@@ -21,8 +21,6 @@ package org.neo4j.bolt.v1.messaging;
 
 import org.junit.Test;
 
-import java.io.IOException;
-
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.v1.packstream.PackOutputClosedException;
@@ -49,7 +47,7 @@ public class MessageProcessingHandlerTest
     public void shouldCallHaltOnUnexpectedFailures() throws Exception
     {
         // Given
-        BoltResponseMessageHandler<IOException> msgHandler = newResponseHandlerMock();
+        BoltResponseMessageHandler msgHandler = newResponseHandlerMock();
         doThrow( new RuntimeException( "Something went horribly wrong" ) ).when( msgHandler ).onSuccess(
                 any( MapValue.class ) );
 
@@ -134,8 +132,7 @@ public class MessageProcessingHandlerTest
             throws Exception
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        BoltResponseMessageHandler<IOException> responseHandler =
-                newResponseHandlerMock( error.isFatal(), errorDuringWrite );
+        BoltResponseMessageHandler responseHandler = newResponseHandlerMock( error.isFatal(), errorDuringWrite );
 
         MessageProcessingHandler handler =
                 new MessageProcessingHandler( responseHandler, mock( BoltConnection.class ),
@@ -147,10 +144,9 @@ public class MessageProcessingHandlerTest
         return logProvider;
     }
 
-    private static BoltResponseMessageHandler<IOException> newResponseHandlerMock( boolean fatalError, Throwable error )
-            throws Exception
+    private static BoltResponseMessageHandler newResponseHandlerMock( boolean fatalError, Throwable error ) throws Exception
     {
-        BoltResponseMessageHandler<IOException> handler = newResponseHandlerMock();
+        BoltResponseMessageHandler handler = newResponseHandlerMock();
         if ( fatalError )
         {
             doThrow( error ).when( handler ).onFatal( any( Status.class ), anyString() );
@@ -163,7 +159,7 @@ public class MessageProcessingHandlerTest
     }
 
     @SuppressWarnings( "unchecked" )
-    private static BoltResponseMessageHandler<IOException> newResponseHandlerMock()
+    private static BoltResponseMessageHandler newResponseHandlerMock()
     {
         return mock( BoltResponseMessageHandler.class );
     }
