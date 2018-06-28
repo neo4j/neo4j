@@ -23,48 +23,42 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
-import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
-import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
+import org.neo4j.bolt.BoltProtocol;
+import org.neo4j.bolt.v1.BoltProtocolV1;
+import org.neo4j.bolt.v1.runtime.BoltStateMachineFactory;
+import org.neo4j.bolt.v2.BoltProtocolV2;
 import org.neo4j.kernel.impl.logging.LogService;
 
 public class DefaultBoltProtocolPipelineInstallerFactory implements BoltProtocolPipelineInstallerFactory
 {
     private final BoltConnectionFactory connectionFactory;
-    private final TransportThrottleGroup throttleGroup;
     private final LogService logService;
+    private final BoltStateMachineFactory stateMachineFactory;
 
-    public DefaultBoltProtocolPipelineInstallerFactory( BoltConnectionFactory connectionFactory, TransportThrottleGroup throttleGroup,
+    public DefaultBoltProtocolPipelineInstallerFactory( BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory,
             LogService logService )
     {
         this.connectionFactory = connectionFactory;
-        this.throttleGroup = throttleGroup;
+        this.stateMachineFactory = stateMachineFactory;
         this.logService = logService;
     }
 
     @Override
     public BoltProtocolPipelineInstaller create( long protocolVersion, BoltChannel channel )
     {
-        if ( protocolVersion == Neo4jPackV1.VERSION )
+        BoltProtocol boltProtocol;
+        if ( protocolVersion == BoltProtocolV1.VERSION )
         {
-            return newProtocolPipelineInstaller( channel, new Neo4jPackV1() );
+            boltProtocol = new BoltProtocolV1( channel, connectionFactory, stateMachineFactory, logService );
         }
-        else if ( protocolVersion == Neo4jPackV2.VERSION )
+        else if ( protocolVersion == BoltProtocolV2.VERSION )
         {
-            return newProtocolPipelineInstaller( channel, new Neo4jPackV2() );
+            boltProtocol = new BoltProtocolV2( channel, connectionFactory, stateMachineFactory, logService );
         }
         else
         {
             return null;
         }
-    }
-
-    private BoltProtocolPipelineInstaller newProtocolPipelineInstaller( BoltChannel channel, Neo4jPack neo4jPack )
-    {
-        return new DefaultBoltProtocolPipelineInstaller( channel, newBoltConnection( channel ), neo4jPack, logService );
-    }
-
-    private BoltConnection newBoltConnection( BoltChannel channel )
-    {
-        return connectionFactory.newConnection( channel );
+        return new DefaultBoltProtocolPipelineInstaller( channel, boltProtocol, logService );
     }
 }

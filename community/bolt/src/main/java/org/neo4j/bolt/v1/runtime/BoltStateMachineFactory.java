@@ -17,18 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.runtime;
+package org.neo4j.bolt.v1.runtime;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.runtime.BoltStateMachine;
 
-public interface BoltConnectionFactory
+/**
+ * Factory class for Bolt runtime environments.
+ */
+public interface BoltStateMachineFactory
 {
     /**
-     * Create a new connection bound to the specified channel
+     * Generate a new state machine.
      *
-     * @param channel the underlying channel
-     * @return the newly created connection instance
+     * @param boltChannel channel over which Bolt massages can be exchanged
+     * @return new {@link BoltStateMachine} instance
      */
-    BoltConnection newConnection( BoltChannel channel, BoltStateMachine boltStateMachine );
-
+    BoltStateMachine newStateMachine( long protocolVersion, BoltChannel boltChannel );
 }

@@ -31,9 +31,11 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.BoltProtocol;
 import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
+import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.SynchronousBoltConnection;
@@ -55,6 +57,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.bolt.v1.BoltProtocolV1.createBoltMessageRouter;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 /**
@@ -136,9 +139,41 @@ public class FragmentedMessageDeliveryTest
         BoltChannel boltChannel = newBoltChannel( channel );
 
         BoltStateMachine machine = mock( BoltStateMachine.class );
-        DefaultBoltProtocolPipelineInstaller protocol = new DefaultBoltProtocolPipelineInstaller( boltChannel,
-                new SynchronousBoltConnection( machine ), neo4jPack,
-                NullLogService.getInstance() );
+        SynchronousBoltConnection boltConnection = new SynchronousBoltConnection( machine );
+        NullLogService logging = NullLogService.getInstance();
+        BoltProtocol boltProtocol = new BoltProtocol()
+        {
+            @Override
+            public Neo4jPack neo4jPack()
+            {
+                return neo4jPack;
+            }
+
+            @Override
+            public BoltMessageRouter messageRouter()
+            {
+                return createBoltMessageRouter( boltChannel, neo4jPack, boltConnection, logging, null );
+            }
+
+            @Override
+            public BoltStateMachine stateMachine()
+            {
+                return machine;
+            }
+
+            @Override
+            public BoltConnection connection()
+            {
+                return boltConnection;
+            }
+
+            @Override
+            public long version()
+            {
+                return -1;
+            }
+        };
+        DefaultBoltProtocolPipelineInstaller protocol = new DefaultBoltProtocolPipelineInstaller( boltChannel, boltProtocol, logging );
 
         protocol.install();
 
@@ -201,5 +236,4 @@ public class FragmentedMessageDeliveryTest
         when( boltChannel.log() ).thenReturn( NullBoltMessageLogger.getInstance() );
         return boltChannel;
     }
-
 }

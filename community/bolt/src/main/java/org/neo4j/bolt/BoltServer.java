@@ -41,8 +41,8 @@ import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.NettyServer.ProtocolInitializer;
 import org.neo4j.bolt.transport.SocketTransport;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
-import org.neo4j.bolt.v1.runtime.BoltFactory;
-import org.neo4j.bolt.v1.runtime.BoltFactoryImpl;
+import org.neo4j.bolt.v1.runtime.BoltStateMachineFactory;
+import org.neo4j.bolt.v1.runtime.BoltStateMachineFactoryImpl;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ListenSocketAddress;
@@ -118,18 +118,18 @@ public class BoltServer extends LifecycleAdapter
 
         TransportThrottleGroup throttleGroup = new TransportThrottleGroup( config, clock );
 
-        BoltFactory boltFactory = createBoltFactory( authentication );
         BoltSchedulerProvider boltSchedulerProvider =
                 life.add( new ExecutorBoltSchedulerProvider( config, new CachedThreadPoolExecutorFactory( log ), jobScheduler, logService ) );
         BoltConnectionFactory boltConnectionFactory =
-                createConnectionFactory( config, boltFactory, boltSchedulerProvider, throttleGroup, logService, clock );
+                createConnectionFactory( config, boltSchedulerProvider, throttleGroup, logService, clock );
+        BoltStateMachineFactory boltStateMachineFactory = createBoltFactory( authentication, clock );
 
-        BoltProtocolPipelineInstallerFactory handlerFactory = createHandlerFactory( boltConnectionFactory, throttleGroup );
+        BoltProtocolPipelineInstallerFactory boltProtocolInstaller = createBoltProtocolInstallerFactory( boltConnectionFactory, boltStateMachineFactory );
 
         if ( !config.enabledBoltConnectors().isEmpty() && !config.get( GraphDatabaseSettings.disconnected ) )
         {
             NettyServer server = new NettyServer( jobScheduler.threadFactory( boltNetworkIO ),
-                    createConnectors( handlerFactory, throttleGroup, boltLogging, log ), connectorPortRegister, userLog );
+                    createConnectors( boltProtocolInstaller, throttleGroup, boltLogging, log ), connectorPortRegister, userLog );
             life.add( server );
             log.info( "Bolt server loaded" );
         }
@@ -143,10 +143,10 @@ public class BoltServer extends LifecycleAdapter
         life.shutdown(); // stop and shutdown the nested lifecycle
     }
 
-    private BoltConnectionFactory createConnectionFactory( Config config, BoltFactory boltFactory, BoltSchedulerProvider schedulerProvider,
+    private BoltConnectionFactory createConnectionFactory( Config config, BoltSchedulerProvider schedulerProvider,
             TransportThrottleGroup throttleGroup, LogService logService, Clock clock )
     {
-        return new DefaultBoltConnectionFactory( boltFactory, schedulerProvider, throttleGroup, logService, clock,
+        return new DefaultBoltConnectionFactory( schedulerProvider, throttleGroup, logService, clock,
                 new BoltConnectionReadLimiter( logService.getInternalLog( BoltConnectionReadLimiter.class ),
                         config.get( GraphDatabaseSettings.bolt_inbound_message_throttle_low_water_mark ),
                         config.get( GraphDatabaseSettings.bolt_inbound_message_throttle_high_water_mark ) ), monitors );
@@ -225,14 +225,15 @@ public class BoltServer extends LifecycleAdapter
                 dependencyResolver.resolveDependency( UserManagerSupplier.class ) );
     }
 
-    private BoltProtocolPipelineInstallerFactory createHandlerFactory( BoltConnectionFactory connectionFactory, TransportThrottleGroup throttleGroup )
+    private BoltProtocolPipelineInstallerFactory createBoltProtocolInstallerFactory( BoltConnectionFactory connectionFactory,
+            BoltStateMachineFactory stateMachineFactory )
     {
-        return new DefaultBoltProtocolPipelineInstallerFactory( connectionFactory, throttleGroup, logService );
+        return new DefaultBoltProtocolPipelineInstallerFactory( connectionFactory, stateMachineFactory, logService );
     }
 
-    private BoltFactory createBoltFactory( Authentication authentication )
+    private BoltStateMachineFactory createBoltFactory( Authentication authentication, Clock clock )
     {
         BoltConnectionTracker connectionTracker = dependencyResolver.resolveDependency( BoltConnectionTracker.class );
-        return new BoltFactoryImpl( db, usageData, availabilityGuard, authentication, connectionTracker, config, logService );
+        return new BoltStateMachineFactoryImpl( db, usageData, availabilityGuard, authentication, connectionTracker, clock, config, logService );
     }
 }

@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.udc.UsageData;
 
-public class BoltFactoryImpl implements BoltFactory
+public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
 {
     private final GraphDatabaseAPI db;
     private final UsageData usageData;
@@ -44,9 +44,10 @@ public class BoltFactoryImpl implements BoltFactory
     private final Authentication authentication;
     private final BoltConnectionTracker connectionTracker;
     private final Config config;
+    private final Clock clock;
 
-    public BoltFactoryImpl( GraphDatabaseAPI db, UsageData usageData, AvailabilityGuard availabilityGuard,
-            Authentication authentication, BoltConnectionTracker connectionTracker, Config config, LogService logging )
+    public BoltStateMachineFactoryImpl( GraphDatabaseAPI db, UsageData usageData, AvailabilityGuard availabilityGuard,
+            Authentication authentication, BoltConnectionTracker connectionTracker, Clock clock, Config config, LogService logging )
     {
         this.db = db;
         this.usageData = usageData;
@@ -55,10 +56,16 @@ public class BoltFactoryImpl implements BoltFactory
         this.authentication = authentication;
         this.connectionTracker = connectionTracker;
         this.config = config;
+        this.clock = clock;
     }
 
     @Override
-    public BoltStateMachine newMachine( BoltChannel boltChannel, Clock clock )
+    public BoltStateMachine newStateMachine( long protocolVersion, BoltChannel boltChannel )
+    {
+        return newStateMachineV1( boltChannel );
+    }
+
+    private BoltStateMachine newStateMachineV1( BoltChannel boltChannel )
     {
         TransactionStateMachineSPI transactionSPI = createTxSpi( clock );
         BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( boltChannel, usageData, logging, authentication, connectionTracker, transactionSPI );
@@ -69,7 +76,6 @@ public class BoltFactoryImpl implements BoltFactory
     {
         long bookmarkReadyTimeout = config.get( GraphDatabaseSettings.bookmark_ready_timeout ).toMillis();
         Duration txAwaitDuration = Duration.ofMillis( bookmarkReadyTimeout );
-
         return new org.neo4j.bolt.v1.runtime.TransactionStateMachineSPI( db, availabilityGuard, txAwaitDuration, clock );
     }
 }

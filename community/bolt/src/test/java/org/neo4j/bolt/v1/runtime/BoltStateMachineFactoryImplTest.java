@@ -19,7 +19,8 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
-import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Clock;
 
@@ -41,30 +42,31 @@ import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class BoltFactoryImplTest
+public class BoltStateMachineFactoryImplTest
 {
     private static final Clock CLOCK = Clock.systemUTC();
     private static final BoltChannel CHANNEL = mock( BoltChannel.class );
 
-    @Test
-    public void shouldCreateBoltStateMachines()
+    @ParameterizedTest
+    @ValueSource( longs = {1, 2} )
+    public void shouldCreateBoltStateMachines( long protocolVersion )
     {
-        BoltFactoryImpl factory = newBoltFactory();
+        BoltStateMachineFactoryImpl factory = newBoltFactory();
 
-        BoltStateMachine boltStateMachine = factory.newMachine( CHANNEL, CLOCK );
+        BoltStateMachine boltStateMachine = factory.newStateMachine( protocolVersion, CHANNEL );
 
         assertNotNull( boltStateMachine );
     }
 
-    private static BoltFactoryImpl newBoltFactory()
+    private static BoltStateMachineFactoryImpl newBoltFactory()
     {
         return newBoltFactory( newDbMock() );
     }
 
-    private static BoltFactoryImpl newBoltFactory( GraphDatabaseAPI db )
+    private static BoltStateMachineFactoryImpl newBoltFactory( GraphDatabaseAPI db )
     {
-        return new BoltFactoryImpl( db, new UsageData( new OnDemandJobScheduler() ), new AvailabilityGuard( CLOCK, NullLog.getInstance() ),
-                mock( Authentication.class ), BoltConnectionTracker.NOOP, Config.defaults(), NullLogService.getInstance() );
+        return new BoltStateMachineFactoryImpl( db, new UsageData( new OnDemandJobScheduler() ), new AvailabilityGuard( CLOCK, NullLog.getInstance() ),
+                mock( Authentication.class ), BoltConnectionTracker.NOOP, CLOCK, Config.defaults(), NullLogService.getInstance() );
     }
 
     private static GraphDatabaseAPI newDbMock()

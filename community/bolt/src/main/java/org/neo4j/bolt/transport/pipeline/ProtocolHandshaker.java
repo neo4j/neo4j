@@ -38,7 +38,7 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
     private static final int HANDSHAKE_BUFFER_SIZE = 5 * Integer.BYTES;
 
     private final BoltChannel boltChannel;
-    private final BoltProtocolPipelineInstallerFactory handlerFactory;
+    private final BoltProtocolPipelineInstallerFactory boltProtocolInstallerFactory;
     private final Log log;
     private final boolean encryptionRequired;
     private final boolean encrypted;
@@ -46,10 +46,10 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
     private ByteBuf handshakeBuffer;
     private BoltProtocolPipelineInstaller protocol;
 
-    public ProtocolHandshaker( BoltProtocolPipelineInstallerFactory handlerFactory, BoltChannel boltChannel, LogProvider logging, boolean encryptionRequired,
-            boolean encrypted )
+    public ProtocolHandshaker( BoltProtocolPipelineInstallerFactory boltProtocolInstallerFactory, BoltChannel boltChannel, LogProvider logging,
+            boolean encryptionRequired, boolean encrypted )
     {
-        this.handlerFactory = handlerFactory;
+        this.boltProtocolInstallerFactory = boltProtocolInstallerFactory;
         this.boltChannel = boltChannel;
         this.log = logging.getLog( getClass() );
         this.encryptionRequired = encryptionRequired;
@@ -168,7 +168,7 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
         {
             final long suggestion = handshakeBuffer.getInt( (i + 1) * Integer.BYTES ) & 0xFFFFFFFFL;
 
-            protocol = handlerFactory.create( suggestion, boltChannel );
+            protocol = boltProtocolInstallerFactory.create( suggestion, boltChannel );
             if ( protocol != null )
             {
                 boltChannel.log().serverEvent( "HANDSHAKE", () -> format( "0x%02X", suggestion ) );

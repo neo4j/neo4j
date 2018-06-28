@@ -23,8 +23,7 @@ import io.netty.channel.ChannelPipeline;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
-import org.neo4j.bolt.messaging.Neo4jPack;
-import org.neo4j.bolt.runtime.BoltConnection;
+import org.neo4j.bolt.BoltProtocol;
 import org.neo4j.bolt.transport.pipeline.ChunkDecoder;
 import org.neo4j.bolt.transport.pipeline.HouseKeeper;
 import org.neo4j.bolt.transport.pipeline.MessageAccumulator;
@@ -42,16 +41,14 @@ import org.neo4j.kernel.impl.logging.LogService;
 public class DefaultBoltProtocolPipelineInstaller implements BoltProtocolPipelineInstaller
 {
     private final BoltChannel boltChannel;
-    private final Neo4jPack neo4jPack;
     private final LogService logging;
+    private final BoltProtocol boltProtocol;
 
-    private final BoltConnection connection;
 
-    public DefaultBoltProtocolPipelineInstaller( BoltChannel boltChannel, BoltConnection connection, Neo4jPack neo4jPack, LogService logging )
+    public DefaultBoltProtocolPipelineInstaller( BoltChannel boltChannel, BoltProtocol boltProtocol, LogService logging )
     {
         this.boltChannel = boltChannel;
-        this.connection = connection;
-        this.neo4jPack = neo4jPack;
+        this.boltProtocol = boltProtocol;
         this.logging = logging;
     }
 
@@ -62,14 +59,14 @@ public class DefaultBoltProtocolPipelineInstaller implements BoltProtocolPipelin
 
         pipeline.addLast( new ChunkDecoder() );
         pipeline.addLast( new MessageAccumulator() );
-        pipeline.addLast( new MessageDecoder( neo4jPack, newRequestMessageReader(), logging ) );
-        pipeline.addLast( new HouseKeeper( connection, logging ) );
+        pipeline.addLast( new MessageDecoder( boltProtocol.neo4jPack(), boltProtocol.messageRouter(), logging ) );
+        pipeline.addLast( new HouseKeeper( boltProtocol.connection(), logging ) );
     }
 
     @Override
     public long version()
     {
-        return neo4jPack.version();
+        return boltProtocol.version();
     }
 
     private BoltRequestMessageReader newRequestMessageReader()

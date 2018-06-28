@@ -99,7 +99,7 @@ public class ResetFuzzTest
     private final Clock clock = Clock.systemUTC();
     private final BoltStateMachine machine = new BoltStateMachineV1( new FuzzStubSPI(), mock( BoltChannel.class ), clock );
     private final BoltConnectionFactory connectionFactory =
-            new DefaultBoltConnectionFactory( ( boltChannel, clock ) -> machine, boltSchedulerProvider, TransportThrottleGroup.NO_THROTTLE,
+            new DefaultBoltConnectionFactory( boltSchedulerProvider, TransportThrottleGroup.NO_THROTTLE,
                     NullLogService.getInstance(), clock, null, monitors );
     private BoltChannel boltChannel;
 
@@ -124,7 +124,7 @@ public class ResetFuzzTest
     {
         // given
         life.start();
-        BoltConnection boltConnection = connectionFactory.newConnection( boltChannel );
+        BoltConnection boltConnection = connectionFactory.newConnection( boltChannel, machine );
         boltConnection.enqueue( machine -> machine.process( new Init( "ResetFuzzTest/0.0", emptyMap() ), nullResponseHandler() ) );
 
         // Test random combinations of messages within a small budget of testing time.

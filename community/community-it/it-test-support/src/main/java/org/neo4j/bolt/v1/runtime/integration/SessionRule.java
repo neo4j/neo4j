@@ -36,7 +36,8 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
-import org.neo4j.bolt.v1.runtime.BoltFactoryImpl;
+import org.neo4j.bolt.v1.runtime.BoltStateMachineFactoryImpl;
+import org.neo4j.bolt.v2.BoltProtocolV2;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -54,7 +55,7 @@ import org.neo4j.udc.UsageData;
 class SessionRule implements TestRule
 {
     private GraphDatabaseAPI gdb;
-    private BoltFactoryImpl boltFactory;
+    private BoltStateMachineFactoryImpl boltFactory;
     private LinkedList<BoltStateMachine> runningMachines = new LinkedList<>();
     private boolean authEnabled;
 
@@ -72,12 +73,13 @@ class SessionRule implements TestRule
                 DependencyResolver resolver = gdb.getDependencyResolver();
                 Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ),
                         resolver.resolveDependency( UserManagerSupplier.class ) );
-                boltFactory = new BoltFactoryImpl(
+                boltFactory = new BoltStateMachineFactoryImpl(
                                         gdb,
                                         new UsageData( null ),
                                         resolver.resolveDependency( AvailabilityGuard.class ),
                                         authentication,
                                         BoltConnectionTracker.NOOP,
+                                        Clock.systemUTC(),
                                         Config.defaults(),
                                         NullLogService.getInstance()
                                     );
@@ -112,16 +114,11 @@ class SessionRule implements TestRule
 
     BoltStateMachine newMachine( BoltChannel boltChannel )
     {
-        return newMachine( boltChannel, Clock.systemUTC() );
-    }
-
-    BoltStateMachine newMachine( BoltChannel boltChannel, Clock clock )
-    {
         if ( boltFactory == null )
         {
             throw new IllegalStateException( "Cannot access test environment before test is running." );
         }
-        BoltStateMachine connection = boltFactory.newMachine( boltChannel, clock );
+        BoltStateMachine connection = boltFactory.newStateMachine( BoltProtocolV2.VERSION, boltChannel );
         runningMachines.add( connection );
         return connection;
     }

@@ -21,17 +21,23 @@ package org.neo4j.bolt.transport;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
-import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
-import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
+import org.neo4j.bolt.runtime.BoltStateMachine;
+import org.neo4j.bolt.v1.BoltProtocolV1;
+import org.neo4j.bolt.v1.runtime.BoltStateMachineFactory;
+import org.neo4j.bolt.v2.BoltProtocolV2;
 import org.neo4j.kernel.impl.logging.NullLogService;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -42,24 +48,13 @@ public class DefaultBoltProtocolPipelineInstallerFactoryTest
     private static final String CONNECTOR = "default";
 
     @Test
-    public void shouldCreateV1Handler()
-    {
-        testHandlerCreation( Neo4jPackV1.VERSION );
-    }
-
-    @Test
-    public void shouldCreateV2Handler()
-    {
-        testHandlerCreation( Neo4jPackV2.VERSION );
-    }
-
-    @Test
     public void shouldCreateNothingForUnknownProtocolVersion()
     {
         int protocolVersion = 42;
         BoltChannel channel = mock( BoltChannel.class );
-        BoltProtocolPipelineInstallerFactory factory = new DefaultBoltProtocolPipelineInstallerFactory( mock( BoltConnectionFactory.class ),
-                TransportThrottleGroup.NO_THROTTLE, NullLogService.getInstance() );
+        BoltProtocolPipelineInstallerFactory factory =
+                new DefaultBoltProtocolPipelineInstallerFactory( mock( BoltConnectionFactory.class ), mock( BoltStateMachineFactory.class ),
+                        NullLogService.getInstance() );
 
         BoltProtocolPipelineInstaller handler = factory.create( protocolVersion, channel );
 
@@ -67,27 +62,32 @@ public class DefaultBoltProtocolPipelineInstallerFactoryTest
         assertNull( handler );
     }
 
-    private static void testHandlerCreation( long protocolVersion )
+    @ParameterizedTest( name = "V{0}" )
+    @ValueSource( longs = {BoltProtocolV1.VERSION, BoltProtocolV2.VERSION} )
+    public void shouldCreateBoltProtocolInstaller( long protocolVersion )
     {
         EmbeddedChannel channel = new EmbeddedChannel();
-
         BoltChannel boltChannel = BoltChannel.open( CONNECTOR, channel, NullBoltMessageLogger.getInstance() );
+
+        BoltStateMachineFactory stateMachineFactory = mock( BoltStateMachineFactory.class );
+        BoltStateMachine stateMachine = mock( BoltStateMachine.class );
+        when( stateMachineFactory.newStateMachine( protocolVersion, boltChannel ) ).thenReturn( stateMachine );
+
         BoltConnectionFactory connectionFactory = mock( BoltConnectionFactory.class );
-
         BoltConnection connection = mock( BoltConnection.class );
-        when( connectionFactory.newConnection( boltChannel ) ).thenReturn( connection );
+        when( connectionFactory.newConnection( boltChannel, stateMachine ) ).thenReturn( connection );
 
-        BoltProtocolPipelineInstallerFactory factory = new DefaultBoltProtocolPipelineInstallerFactory( connectionFactory,
-                TransportThrottleGroup.NO_THROTTLE, NullLogService.getInstance() );
+        BoltProtocolPipelineInstallerFactory factory =
+                new DefaultBoltProtocolPipelineInstallerFactory( connectionFactory, stateMachineFactory, NullLogService.getInstance() );
 
-        BoltProtocolPipelineInstaller handler = factory.create( protocolVersion, boltChannel );
+        BoltProtocolPipelineInstaller installer = factory.create( protocolVersion, boltChannel );
 
-        handler.install();
+        installer.install();
 
         // handler with correct version is created
-        assertEquals( protocolVersion, handler.version() );
+        assertEquals( protocolVersion, installer.version() );
         // it uses the expected worker
-        verify( connectionFactory ).newConnection( boltChannel );
+        verify( connectionFactory ).newConnection( eq( boltChannel ), any( BoltStateMachine.class ) );
 
         // and halts this same worker when closed
         verify( connection, never() ).stop();

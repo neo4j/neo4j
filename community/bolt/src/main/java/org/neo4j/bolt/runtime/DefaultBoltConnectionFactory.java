@@ -23,14 +23,12 @@ import java.time.Clock;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
-import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.transport.ChunkedOutput;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.monitoring.Monitors;
 
 public class DefaultBoltConnectionFactory implements BoltConnectionFactory
 {
-    private final BoltFactory machineFactory;
     private final BoltSchedulerProvider schedulerProvider;
     private final TransportThrottleGroup throttleGroup;
     private final LogService logService;
@@ -39,11 +37,9 @@ public class DefaultBoltConnectionFactory implements BoltConnectionFactory
     private final Monitors monitors;
     private final BoltConnectionMetricsMonitor metricsMonitor;
 
-    public DefaultBoltConnectionFactory( BoltFactory machineFactory, BoltSchedulerProvider schedulerProvider, TransportThrottleGroup throttleGroup,
-            LogService logService, Clock clock,
-            BoltConnectionQueueMonitor queueMonitor, Monitors monitors )
+    public DefaultBoltConnectionFactory( BoltSchedulerProvider schedulerProvider, TransportThrottleGroup throttleGroup,
+            LogService logService, Clock clock, BoltConnectionQueueMonitor queueMonitor, Monitors monitors )
     {
-        this.machineFactory = machineFactory;
         this.schedulerProvider = schedulerProvider;
         this.throttleGroup = throttleGroup;
         this.logService = logService;
@@ -54,7 +50,7 @@ public class DefaultBoltConnectionFactory implements BoltConnectionFactory
     }
 
     @Override
-    public BoltConnection newConnection( BoltChannel channel )
+    public BoltConnection newConnection( BoltChannel channel, BoltStateMachine stateMachine )
     {
         BoltScheduler scheduler = schedulerProvider.get( channel );
         BoltConnectionQueueMonitor connectionQueueMonitor =
@@ -64,13 +60,12 @@ public class DefaultBoltConnectionFactory implements BoltConnectionFactory
         BoltConnection connection;
         if ( monitors.hasListeners( BoltConnectionMetricsMonitor.class ) )
         {
-            connection = new MetricsReportingBoltConnection( channel, chunkedOutput, machineFactory.newMachine( channel, clock ), logService, scheduler,
-                    connectionQueueMonitor,
-                            metricsMonitor, clock );
+            connection = new MetricsReportingBoltConnection( channel, chunkedOutput, stateMachine, logService, scheduler,
+                    connectionQueueMonitor, metricsMonitor, clock );
         }
         else
         {
-            connection = new DefaultBoltConnection( channel, chunkedOutput, machineFactory.newMachine( channel, clock ), logService, scheduler,
+            connection = new DefaultBoltConnection( channel, chunkedOutput, stateMachine, logService, scheduler,
                     connectionQueueMonitor );
         }
 

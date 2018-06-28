@@ -17,24 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime;
+package org.neo4j.bolt;
 
-import java.time.Clock;
-
-import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltStateMachine;
+import org.neo4j.bolt.v1.messaging.BoltMessageRouter;
+import org.neo4j.bolt.v1.messaging.Neo4jPack;
 
-/**
- * Factory class for Bolt runtime environments.
- */
-public interface BoltFactory
+public interface BoltProtocol
 {
-    /**
-     * Generate a new state machine.
-     *
-     * @param boltChannel channel over which Bolt massages can be exchanged
-     * @param clock used to keep track of execution times
-     * @return new {@link BoltStateMachine} instance
-     */
-    BoltStateMachine newMachine( BoltChannel boltChannel, Clock clock );
+    Neo4jPack neo4jPack();
+
+    BoltMessageRouter messageRouter();
+
+    BoltStateMachine stateMachine();
+
+    BoltConnection connection();
+
+    long version();
 }
