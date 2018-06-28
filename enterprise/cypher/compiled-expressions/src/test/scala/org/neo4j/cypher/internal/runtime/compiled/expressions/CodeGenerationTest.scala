@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.runtime.DbAccess
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_5.logical.plans.CoerceToPredicate
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian
+import org.neo4j.values.storable.CoordinateReferenceSystem.{Cartesian, WGS84}
 import org.neo4j.values.storable.LocalTimeValue.localTime
 import org.neo4j.values.storable.Values._
 import org.neo4j.values.storable.{DoubleValue, PointValue, Values}
@@ -46,7 +46,7 @@ import org.opencypher.v9_0.ast.AstConstructionTestSupport
 import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.util.{CypherTypeException, symbols}
+import org.opencypher.v9_0.util.{CypherTypeException, InvalidArgumentException, symbols}
 
 class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -231,6 +231,10 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, map(keys,
                                    Array(pointValue(Cartesian, 0.0, 0.0),
                                          NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(keys,
+                                   Array(pointValue(Cartesian, 0.0, 0.0),
+                                         pointValue(WGS84, 1.0, 1.0)))) should equal(NO_VALUE)
+
   }
 
   test("startNode") {
@@ -290,6 +294,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val listValue = list(stringValue("hello"), intValue(42))
 
     compiled.evaluate(ctx, db, map(Array("a"), Array(listValue))) should equal(stringValue("hello"))
+    compiled.evaluate(ctx, db, map(Array("a"), Array(EMPTY_LIST))) should equal(NO_VALUE)
     compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
   }
 
@@ -298,6 +303,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val listValue = list(intValue(42), stringValue("hello"))
 
     compiled.evaluate(ctx, db, map(Array("a"), Array(listValue))) should equal(stringValue("hello"))
+    compiled.evaluate(ctx, db, map(Array("a"), Array(EMPTY_LIST))) should equal(NO_VALUE)
     compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
   }
 
@@ -306,7 +312,11 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("HELLO"), intValue(4)))) should
       equal(stringValue("HELL"))
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("HELLO"), intValue(17)))) should
+      equal(stringValue("HELLO"))
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(NO_VALUE, intValue(4)))) should equal(NO_VALUE)
+
+    an[IndexOutOfBoundsException] should be thrownBy compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("HELLO"), intValue(-1))))
   }
 
   test("ltrim function") {
@@ -379,6 +389,10 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
       equal(list(stringValue("HE"), stringValue("O")))
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(NO_VALUE, stringValue("LL")))) should equal(NO_VALUE)
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("HELLO"), NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("HELLO"), EMPTY_STRING))) should
+      equal(list(stringValue("H"), stringValue("E"), stringValue("L"), stringValue("L"), stringValue("O")))
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(EMPTY_STRING, stringValue("LL")))) should equal(list(EMPTY_STRING))
+
   }
 
   test("substring function no length") {
@@ -1128,10 +1142,13 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("containerIndex on list") {
     val listValue = list(longValue(42), stringValue("hello"), intValue(42))
-    val compiled = compile(containerIndex(parameter("a"), literalInt(1)))
+    val compiled = compile(containerIndex(parameter("a"), parameter("b")))
 
-    compiled.evaluate(ctx, db, map(Array("a"), Array(listValue))) should equal(stringValue("hello"))
-    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(listValue, intValue(1)))) should equal(stringValue("hello"))
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(listValue, intValue(-1)))) should equal(intValue(42))
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(listValue, intValue(3)))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(NO_VALUE, intValue(1)))) should equal(NO_VALUE)
+    an [InvalidArgumentException] should be thrownBy compiled.evaluate(ctx, db, map(Array("a", "b"), Array(listValue, longValue(Int.MaxValue + 1L))))
   }
 
   private def compile(e: Expression) =
