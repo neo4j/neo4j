@@ -25,12 +25,17 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
+import java.util.zip.ZipException;
 
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
@@ -41,6 +46,7 @@ import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Context;
@@ -49,6 +55,7 @@ import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.UserFunction;
 
 import static java.util.stream.Collectors.toList;
+import static junit.framework.TestCase.fail;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
@@ -83,7 +90,7 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithOneProcedure.class );
 
         // When
-        List<CallableProcedure> procedures = jarloader.loadProcedures( jar ).procedures();
+        List<CallableProcedure> procedures = jarloader.loadProceduresFromDir( parentDir( jar ) ).procedures();
 
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
@@ -101,7 +108,7 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithProcedureWithArgument.class );
 
         // When
-        List<CallableProcedure> procedures = jarloader.loadProcedures( jar ).procedures();
+        List<CallableProcedure> procedures = jarloader.loadProceduresFromDir( parentDir( jar ) ).procedures();
 
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
@@ -122,7 +129,7 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithOneProcedure.class, ClassWithAnotherProcedure.class, ClassWithNoProcedureAtAll.class );
 
         // When
-        List<CallableProcedure> procedures = jarloader.loadProcedures( jar ).procedures();
+        List<CallableProcedure> procedures = jarloader.loadProceduresFromDir( parentDir( jar ) ).procedures();
 
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
@@ -150,7 +157,7 @@ public class ProcedureJarLoaderTest
                                  "And then define your procedure as returning `Stream<Output>`." ));
 
         // When
-        jarloader.loadProcedures( jar );
+        jarloader.loadProceduresFromDir( parentDir( jar ) );
     }
 
     @Test
@@ -182,7 +189,7 @@ public class ProcedureJarLoaderTest
                                  "that you define and not a Stream<?>." ));
 
         // When
-        jarloader.loadProcedures( jar );
+        jarloader.loadProceduresFromDir( parentDir( jar ) );
     }
 
     @Test
@@ -197,7 +204,7 @@ public class ProcedureJarLoaderTest
                                  "that you define and not a raw Stream." ));
 
         // When
-        jarloader.loadProcedures( jar );
+        jarloader.loadProceduresFromDir( parentDir( jar ) );
     }
 
     @Test
@@ -213,7 +220,7 @@ public class ProcedureJarLoaderTest
                                  ".kernel.impl.proc.ProcedureJarLoaderTest$Output>."));
 
         // When
-        jarloader.loadProcedures( jar );
+        jarloader.loadProceduresFromDir( parentDir( jar ) );
     }
 
     @Test
@@ -223,7 +230,7 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithUnsafeComponent.class );
 
         // When
-        jarloader.loadProcedures( jar );
+        jarloader.loadProceduresFromDir( parentDir( jar ) );
 
         // Then
         verify( log ).warn( notAvailableMessage( "org.neo4j.kernel.impl.proc.unsafeProcedure" ) );
@@ -237,7 +244,7 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithUnsafeConfiguredComponent.class );
 
         // When
-        ProcedureJarLoader.Callables callables = jarloader.loadProcedures( jar );
+        ProcedureJarLoader.Callables callables = jarloader.loadProceduresFromDir( parentDir( jar ) );
         List<CallableUserFunction> functions = callables.functions();
         List<CallableProcedure> procedures = callables.procedures();
 
@@ -259,14 +266,55 @@ public class ProcedureJarLoaderTest
         assertThat( functions.get( 0 ).apply( new BasicContext(), new Object[0] ), equalTo( 7331L ) );
     }
 
-    public URL createJarFor( Class<?> ... targets ) throws IOException
+    public void shouldLogHelpfullyWhenPluginJarIsCorrupt() throws Exception
+    {
+        // given
+        URL theJar = createJarFor( ClassWithOneProcedure.class, ClassWithAnotherProcedure.class, ClassWithNoProcedureAtAll.class );
+        corruptJar( theJar );
+        AssertableLogProvider logProvider = new AssertableLogProvider( true );
+
+        ProcedureJarLoader jarloader = new ProcedureJarLoader(
+                new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry(), new ComponentRegistry(), NullLog.getInstance(),ProcedureConfig.DEFAULT ),
+                logProvider.getLog( ProcedureJarLoader.class ) );
+
+        // when
+        try
+        {
+            jarloader.loadProceduresFromDir( parentDir( theJar ) );
+            fail("Should have logged and thrown exception.");
+        }
+        catch ( ZipException expected )
+        {
+            // then
+            logProvider.assertContainsLogCallContaining( String.format( "Plugin jar file: %s corrupted. Please reinstall.", theJar.getFile() ) );
+        }
+    }
+
+    private File parentDir( URL jar )
+    {
+        return new File( jar.getFile() ).getParentFile();
+    }
+
+    private void corruptJar( URL jar ) throws IOException, URISyntaxException
+    {
+        long fileLength = new File( jar.getFile() ).length();
+        byte[] bytes = Files.readAllBytes( Paths.get( jar.toURI() ) );
+        for ( long i = fileLength/2; i < fileLength; i++ )
+        {
+            bytes[(int)i]= 0;
+        }
+
+        Files.write( Paths.get( jar.getPath() ), bytes );
+    }
+
+    private URL createJarFor( Class<?> ... targets ) throws IOException
     {
         return new JarBuilder().createJarFor( tmpdir.newFile( new Random().nextInt() + ".jar" ), targets );
     }
 
     public static class Output
     {
-        public long someNumber = 1337;
+        public long someNumber = 1337; // Public because needed by a mapper
 
         public Output()
         {
