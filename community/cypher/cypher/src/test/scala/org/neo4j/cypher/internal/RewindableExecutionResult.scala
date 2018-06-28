@@ -40,7 +40,7 @@ class RewindableExecutionResult(val columns: Array[String],
                                 val notifications: Iterable[Notification]) {
 
   def columnAs[T](column: String): Iterator[T] = result.iterator.map(row => row(column).asInstanceOf[T])
-  def toList: Seq[Map[String, AnyRef]] = result
+  def toList: List[Map[String, AnyRef]] = result.toList
   def toSet: Set[Map[String, AnyRef]] = result.toSet
   def size: Long = result.size
   def head(str: String): AnyRef = result.head(str)

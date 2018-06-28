@@ -69,11 +69,15 @@ trait InternalExecutionResult extends QueryResult {
     }
   }
 
-  def close(success: Boolean): Unit = close()
+  def isClosed: Boolean
+
+  def close(reason: CloseReason): Unit
+
+  override def close(): Unit = close(Success)
 
   def closeOnError(t: Throwable): Throwable = {
     try {
-      close(success = false)
+      close(Error(t))
     } catch {
       case thrownDuringClose: Throwable =>
         try {
@@ -85,3 +89,9 @@ trait InternalExecutionResult extends QueryResult {
     t
   }
 }
+
+sealed trait CloseReason
+case object Success extends CloseReason
+case object Failure extends CloseReason
+case class Error(t: Throwable) extends CloseReason
+

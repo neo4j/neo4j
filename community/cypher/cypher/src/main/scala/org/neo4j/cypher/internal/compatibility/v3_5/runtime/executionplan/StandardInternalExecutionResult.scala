@@ -71,14 +71,20 @@ class StandardInternalExecutionResult(context: QueryContext,
       }
   }
 
+  private val noRows = runtimeResult.isExhausted // OBS: check before materialization
+
   /**
     * By policy we materialize the result directly unless it's a read only query.
     */
   if (queryType != READ_ONLY) {
     materializeResult()
-    if (queryType == WRITE || queryType == SCHEMA_WRITE) { // .. and if we do not return any rows, we also close all resources
-      close(true)
-    }
+  }
+
+  /**
+    * ...and if we do not return any rows, we close all resources.
+    */
+  if (noRows || queryType == WRITE || queryType == SCHEMA_WRITE) {
+    close(Success)
   }
 
   /*
@@ -87,14 +93,10 @@ class StandardInternalExecutionResult(context: QueryContext,
 
   protected def isOpen: Boolean = !isClosed
 
-  protected def isClosed: Boolean = taskCloser.isClosed
+  override def isClosed: Boolean = taskCloser.isClosed
 
-  override def close(): Unit = {
-    close(success = true)
-  }
-
-  override def close(success: Boolean): Unit = {
-    taskCloser.close(success = success)
+  override def close(reason: CloseReason): Unit = {
+    taskCloser.close(reason == Success)
   }
 
   /*
@@ -183,12 +185,11 @@ class StandardInternalExecutionResult(context: QueryContext,
       while (rowCursor.next()) {
         visitor.visit(rowCursor)
       }
-      close(success = true)
+      close(Success)
     } else if (isOpen) {
       runtimeResult.accept(visitor)
-      close(success = true)
-    } else
-      throw new IllegalStateException("Unable to accept visitors after resources have been closed.")
+      close(Success)
+    }
   }
 
   class MaterializedResultCursor extends QueryResult.Record {

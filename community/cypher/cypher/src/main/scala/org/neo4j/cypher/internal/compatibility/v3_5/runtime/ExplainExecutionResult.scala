@@ -51,7 +51,9 @@ case class ExplainExecutionResult(fieldNames: Array[String],
 
   override def javaColumnAs[T](column: String): ResourceIterator[T] = Iterators.emptyResourceIterator()
 
-  override def close(): Unit = {}
+  override def isClosed: Boolean = true
+
+  override def close(reason: CloseReason): Unit = {}
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = {}
   override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {}

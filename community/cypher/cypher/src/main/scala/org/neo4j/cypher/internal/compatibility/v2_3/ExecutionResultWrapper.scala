@@ -190,7 +190,9 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult,
     PlanDescriptionImpl(Id.INVALID_ID, name, children, arguments, planDescription.identifiers)
   }
 
-  override def close(): Unit = inner.close()
+  override def isClosed: Boolean = !inner.hasNext
+
+  override def close(reason: CloseReason): Unit = inner.close()
 
   def queryType: InternalQueryType = inner.executionType.queryType() match {
     case QueryExecutionType.QueryType.READ_ONLY => READ_ONLY

@@ -59,6 +59,9 @@ class ClosingExecutionResult(val query: ExecutingQuery, val inner: InternalExecu
 
   private val monitor = OnlyOnceQueryExecutionMonitor(innerMonitor)
 
+  if (inner.isClosed)
+    monitor.endSuccess(query)
+
   override def javaIterator: graphdb.ResourceIterator[java.util.Map[String, AnyRef]] = {
     safely {
       val innerIterator = inner.javaIterator
@@ -120,9 +123,14 @@ class ClosingExecutionResult(val query: ExecutingQuery, val inner: InternalExecu
       inner.executionPlanDescription()
     }
 
-  override def close(): Unit = runSafely({
-    inner.close()
-  })(t => monitor.endSuccess(query))
+  override def close(reason: CloseReason): Unit = runSafely({
+    inner.close(reason)
+    reason match {
+      case Success => monitor.endSuccess(query)
+      case Failure => monitor.endFailure(query, null)
+      case Error(t) => monitor.endFailure(query, t)
+    }
+  })(t => monitor.endFailure(query, t))
 
   override def queryType: InternalQueryType = safely { inner.queryType }
 
@@ -149,12 +157,14 @@ class ClosingExecutionResult(val query: ExecutingQuery, val inner: InternalExecu
   private def safelyAndClose[T](body: => T): T =
     runSafely({
       val x = body
-      close(true)
+      close(Success)
       x
     })(closeOnError)
 
   private def closeIfEmpty(iterator: java.util.Iterator[_]): Unit =
     if (!iterator.hasNext) {
-      close()
+      close(Success)
     }
+
+  override def isClosed: Boolean = inner.isClosed
 }

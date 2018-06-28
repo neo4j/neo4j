@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection => SemanticDir
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.runtime.planDescription.{Argument, Children, NoChildren, PlanDescriptionImpl, SingleChild, TwoChildren, InternalPlanDescription => InternalPlanDescription3_4}
-import org.neo4j.cypher.internal.runtime.{ExplainMode, NormalMode, ProfileMode, QueryStatistics, InternalExecutionResult => InternalExecutionResult3_5}
+import org.neo4j.cypher.internal.runtime.{CloseReason, ExplainMode, NormalMode, ProfileMode, QueryStatistics, InternalExecutionResult => InternalExecutionResult3_5}
 import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.cypher.result.QueryResult.Record
@@ -165,7 +165,9 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult3_1,
     case symbols3_1.ListType(t) => symbolsv3_5.ListType(lift(t))
   }
 
-  override def close(): Unit = inner.close()
+  override def isClosed: Boolean = !inner.hasNext
+
+  override def close(reason: CloseReason): Unit = inner.close()
 
   override def queryType: internal.runtime.InternalQueryType = inner.executionType match {
       case READ_ONLY => internal.runtime.READ_ONLY
