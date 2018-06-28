@@ -301,9 +301,9 @@ public class ProcedureJarLoaderTest
     {
         long fileLength = new File( jar.getFile() ).length();
         byte[] bytes = Files.readAllBytes( Paths.get( jar.toURI() ) );
-        for ( long i = fileLength/2; i < fileLength; i++ )
+        for ( long i = fileLength / 2; i < fileLength; i++ )
         {
-            bytes[(int)i]= 0;
+            bytes[(int) i] = 0;
         }
 
         Files.write( Paths.get( jar.getPath() ), bytes );
