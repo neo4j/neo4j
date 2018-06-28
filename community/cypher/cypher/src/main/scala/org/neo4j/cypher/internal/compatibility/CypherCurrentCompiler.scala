@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.query.{CompilerInfo, ExplicitIndexUsage, SchemaIndex
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.values.virtual.MapValue
+import org.opencypher.v9_0.frontend.PlannerName
 import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
 import org.opencypher.v9_0.util.{InternalNotification, TaskCloser}
 
@@ -104,12 +105,16 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       logicalPlanResult.reusability,
       logicalPlanResult.paramNames,
       logicalPlanResult.extractedParams,
-      buildCompilerInfo(logicalPlan, executionPlan3_5.runtimeName),
+      buildCompilerInfo(logicalPlan, planState.plannerName, executionPlan3_5.runtimeName),
+      planState.plannerName,
       queryType)
   }
 
-  private def buildCompilerInfo(logicalPlan: LogicalPlan, runtimeName: RuntimeName): CompilerInfo =
-    new CompilerInfo(planner.name.name, runtimeName.name, logicalPlan.indexUsage.map {
+  private def buildCompilerInfo(logicalPlan: LogicalPlan,
+                                plannerName: PlannerName,
+                                runtimeName: RuntimeName): CompilerInfo =
+
+    new CompilerInfo(plannerName.name, runtimeName.name, logicalPlan.indexUsage.map {
       case SchemaIndexSeekUsage(identifier, labelId, label, propertyKeys) => new SchemaIndexUsage(identifier, labelId, label, propertyKeys: _*)
       case SchemaIndexScanUsage(identifier, labelId, label, propertyKey) => new SchemaIndexUsage(identifier, labelId, label, propertyKey)
       case ExplicitNodeIndexUsage(identifier, index) => new ExplicitIndexUsage(identifier, "NODE", index)
@@ -148,6 +153,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                         override val paramNames: Seq[String],
                                         override val extractedParams: MapValue,
                                         override val compilerInfo: CompilerInfo,
+                                        plannerName: PlannerName,
                                         queryType: InternalQueryType) extends ExecutableQuery {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
@@ -169,7 +175,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         val queryContext = getQueryContext(transactionalContext)
 
         val planDescriptionBuilder =
-          new PlanDescriptionBuilder(logicalPlan, planner.name, readOnly, cardinalities, executionPlan.runtimeName)
+          new PlanDescriptionBuilder(logicalPlan, plannerName, readOnly, cardinalities, executionPlan.runtimeName)
 
         val taskCloser = new TaskCloser
         taskCloser.addTask(queryContext.transactionalContext.close)
