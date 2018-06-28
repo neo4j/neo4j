@@ -92,11 +92,6 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     tracer.rowsOf(id2) should equal(2)
   }
 
-  def single[T](seq: Seq[T]): T = {
-    seq.size should equal(1)
-    seq.head
-  }
-
   test("should profile hash join") {
     //given
     val database = new TestGraphDatabaseFactory().newImpermanentDatabase()
@@ -116,12 +111,12 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
 
       // when
       val result = compileAndProfile(plan, graphDb)
-      val description = result.executionPlanDescription()
+      val queryProfile = result.queryProfile()
 
       // then
-      val hashJoin = single(description.find("NodeHashJoin"))
-      hashJoin.arguments should contain(DbHits(0))
-      hashJoin.arguments should contain(Rows(2))
+      val hashJoin = queryProfile.operatorProfile(join.id.x)
+      hashJoin.dbHits() should equal(0)
+      hashJoin.rows() should equal(2)
     } finally {
       database.shutdown()
     }

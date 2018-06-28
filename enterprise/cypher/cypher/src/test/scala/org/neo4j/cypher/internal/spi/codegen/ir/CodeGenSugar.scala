@@ -40,7 +40,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContex
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.spi.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
-import org.neo4j.cypher.result.QueryProfile
+import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
+import org.neo4j.cypher.result.{QueryProfile, QueryResult, RuntimeResult}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -68,12 +69,7 @@ trait CodeGenSugar extends MockitoSugar with LogicalPlanConstructionTestSupport 
       .generate(plan, context, semanticTable, CostBasedPlannerName.default, readOnly = true, new StubCardinalities)
   }
 
-  def compileAndProfile(plan: LogicalPlan, graphDb: GraphDatabaseQueryService): RewindableExecutionResult = {
-    profileCompiled(compile(plan), graphDb)
-  }
-
-  def profileCompiled(plan: CompiledPlan,
-                      graphDb: GraphDatabaseQueryService): RewindableExecutionResult = {
+  def compileAndProfile(plan: LogicalPlan, graphDb: GraphDatabaseQueryService): RuntimeResult = {
     val tx = graphDb.beginTransaction(Type.explicit, AnonymousContext.read())
     var transactionalContext: TransactionalContextWrapper = null
     try {
@@ -81,12 +77,15 @@ trait CodeGenSugar extends MockitoSugar with LogicalPlanConstructionTestSupport 
       val contextFactory = Neo4jTransactionalContextFactory.create(graphDb, locker)
       transactionalContext = TransactionalContextWrapper(
         contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, tx,
-                                  "no query text exists for this test", EMPTY_MAP))
+          "no query text exists for this test", EMPTY_MAP))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(mock[IndexSearchMonitor])
       val tracer = Some(new ProfilingTracer(queryContext.transactionalContext.kernelStatisticProvider))
-      val result = plan.executionResultBuilder(queryContext, ProfileMode, tracer, EMPTY_MAP)
+      val result = compile(plan).executionResultBuilder(queryContext, ProfileMode, tracer, EMPTY_MAP)
+      result.accept(new QueryResultVisitor[Exception] {
+        override def visit(row: QueryResult.Record): Boolean = true
+      })
       tx.success()
-      RewindableExecutionResult(result, queryContext)
+      result
     } finally {
       transactionalContext.close(true)
       tx.close()
