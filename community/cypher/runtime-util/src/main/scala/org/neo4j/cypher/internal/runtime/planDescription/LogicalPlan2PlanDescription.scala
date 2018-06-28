@@ -105,6 +105,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val signature = Signature(call.qualifiedName, call.callArguments, call.callResultTypes)
         PlanDescriptionImpl(id, "ProcedureCall", NoChildren, Seq(signature), variables)
 
+      case StandAloneProcedureCall(signature, args, resultSymbols, callResultIndices) =>
+        val signatureDesc = Signature(signature.name, Seq.empty, resultSymbols)
+        PlanDescriptionImpl(id, "ProcedureCall", NoChildren, Seq(signatureDesc), resultSymbols.map(_._1).toSet)
+
       case RelationshipCountFromCountStore(ident, startLabel, typeNames, endLabel, _) =>
         val exp = CountRelationshipsExpression(ident, startLabel.map(_.name), typeNames.map(_.name),
                                                endLabel.map(_.name))
@@ -113,10 +117,43 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case _: UndirectedRelationshipByIdSeek =>
         PlanDescriptionImpl(id, "UndirectedRelationshipByIdSeek", NoChildren, Seq.empty, variables)
 
+      case _: CreateIndex =>
+        PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq.empty, variables)
+
+      case _: DropIndex =>
+        PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq.empty, variables)
+
+      case _: CreateUniquePropertyConstraint =>
+        PlanDescriptionImpl(id, "CreateUniquePropertyConstraint", NoChildren, Seq.empty, variables)
+
+      case _: CreateNodeKeyConstraint =>
+        PlanDescriptionImpl(id, "CreateNodeKeyConstraint", NoChildren, Seq.empty, variables)
+
+      case _: CreateNodePropertyExistenceConstraint =>
+        PlanDescriptionImpl(id, "CreateNodePropertyExistenceConstraint", NoChildren, Seq.empty, variables)
+
+      case _: CreateRelationshipPropertyExistenceConstraint =>
+        PlanDescriptionImpl(id, "CreateRelationshipPropertyExistenceConstraint", NoChildren, Seq.empty, variables)
+
+      case _: DropUniquePropertyConstraint =>
+        PlanDescriptionImpl(id, "DropUniquePropertyConstraint", NoChildren, Seq.empty, variables)
+
+      case _: DropNodeKeyConstraint =>
+        PlanDescriptionImpl(id, "DropNodeKeyConstraint", NoChildren, Seq.empty, variables)
+
+      case _: DropNodePropertyExistenceConstraint =>
+        PlanDescriptionImpl(id, "DropNodePropertyExistenceConstraint", NoChildren, Seq.empty, variables)
+
+      case _: DropRelationshipPropertyExistenceConstraint =>
+        PlanDescriptionImpl(id, "DropRelationshipPropertyExistenceConstraint", NoChildren, Seq.empty, variables)
+
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 
-    result.addArgument(EstimatedRows(cardinalities.get(plan.id).amount))
+    if (cardinalities.isDefinedAt(plan.id))
+      result.addArgument(EstimatedRows(cardinalities.get(plan.id).amount))
+    else
+      result
   }
 
   override protected def build(plan: LogicalPlan, source: InternalPlanDescription): InternalPlanDescription = {

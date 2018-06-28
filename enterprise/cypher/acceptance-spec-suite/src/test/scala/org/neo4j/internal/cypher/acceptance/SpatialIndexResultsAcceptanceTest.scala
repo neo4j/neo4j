@@ -216,9 +216,10 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 40.7, longitude: -35.78, crs: 'WGS-84'})")
 
     val configuration = TestConfiguration(Versions(Versions.V3_4, Versions.v3_5, Versions.Default), Planners(Planners.Cost, Planners.Default), Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.Default))
+    val query = "MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point"
+
     // When
-    val result = executeWith(configuration,
-      "MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point",
+    val result = executeWith(configuration + Configs.Cost3_1, query,
       planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should includeSomewhere
           .aPlan("Projection").containingArgumentRegex("\\{point : .*\\}".r)

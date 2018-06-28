@@ -48,13 +48,7 @@ import scala.collection.JavaConverters._
 
 object ExecutionResultWrapper {
 
-  def unapply(v: Any): Option[(InternalExecutionResult, PlannerName, RuntimeName, Set[org.neo4j.graphdb.Notification], Option[v2_3.InputPosition])] = v match {
-    case closing: ClosingExecutionResult => unapply(closing.inner)
-    case wrapper: ExecutionResultWrapper => Some((wrapper.inner, wrapper.planner, wrapper.runtime, wrapper.preParsingNotifications, wrapper.offset))
-    case _ => None
-  }
-
-   def asKernelNotification(offset : Option[v2_3.InputPosition])(notification: InternalNotification): org.neo4j.graphdb.Notification = notification match {
+  def asKernelNotification(offset : Option[v2_3.InputPosition])(notification: InternalNotification): org.neo4j.graphdb.Notification = notification match {
     case CartesianProductNotification(pos, variables) =>
       NotificationCode.CARTESIAN_PRODUCT.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.cartesianProduct(variables.asJava))
     case LegacyPlannerNotification =>
@@ -100,16 +94,15 @@ object ExecutionResultWrapper {
 
 }
 
-class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: PlannerName, val runtime: RuntimeName,
+class ExecutionResultWrapper(val inner: InternalExecutionResult,
+                             val planner: PlannerName,
+                             val runtime: RuntimeName,
                              val preParsingNotifications: Set[org.neo4j.graphdb.Notification],
                              val offset : Option[v2_3.InputPosition])
   extends internal.runtime.InternalExecutionResult {
 
-  override def planDescriptionRequested: Boolean = inner.planDescriptionRequested
-
-  override def javaIterator: ResourceIterator[util.Map[String, Any]] = inner.javaIterator
-
-  override def columnAs[T](column: String): Iterator[Nothing] = inner.columnAs(column)
+  override def javaIterator: ResourceIterator[util.Map[String, AnyRef]] =
+    inner.javaIterator.asInstanceOf[ResourceIterator[util.Map[String, AnyRef]]]
 
   def queryStatistics(): QueryStatistics = {
     val i = inner.queryStatistics()
@@ -197,10 +190,6 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
     PlanDescriptionImpl(Id.INVALID_ID, name, children, arguments, planDescription.identifiers)
   }
 
-  override def hasNext: Boolean = inner.hasNext
-
-  override def next(): Map[String, Any] = inner.next()
-
   override def close(): Unit = inner.close()
 
   def queryType: InternalQueryType = inner.executionType.queryType() match {
@@ -220,9 +209,6 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
     else if (et.isProfiled) internal.runtime.ProfileMode
     else internal.runtime.NormalMode
   }
-
-  override def withNotifications(notification: Notification*): internal.runtime.InternalExecutionResult =
-    new ExecutionResultWrapper(inner, planner, runtime, preParsingNotifications ++ notification, offset)
 
   override def fieldNames(): Array[String] = inner.columns.toArray
 

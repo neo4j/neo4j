@@ -28,7 +28,7 @@ import org.neo4j.codegen.bytecode.ByteCode
 import org.neo4j.codegen.source.SourceCode
 import org.neo4j.codegen.{CodeGenerationStrategy, CodeGenerator, Expression, MethodDeclaration}
 import org.neo4j.cypher.internal.codegen.QueryExecutionTracer
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{Completable, Provider}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.Provider
 import org.opencypher.v9_0.frontend.helpers._
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.runtime.compiled.codegen.CodeGenContext
@@ -235,7 +235,6 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
         description = body.field(typeRef[Provider[InternalPlanDescription]], "description"),
         tracer = body.field(typeRef[QueryExecutionTracer], "tracer"),
         params = body.field(typeRef[util.Map[String, Object]], "params"),
-        closeable = body.field(typeRef[Completable], "closeable"),
         queryContext = body.field(typeRef[QueryContext], "queryContext"),
         skip = body.field(typeRef[Boolean], "skip"),
         cursors = body.field(typeRef[CursorFactory], "cursors"),

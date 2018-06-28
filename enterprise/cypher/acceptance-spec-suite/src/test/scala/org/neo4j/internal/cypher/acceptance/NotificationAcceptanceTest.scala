@@ -644,14 +644,14 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
     val query = "EXPLAIN CYPHER runtime=slotted START n=node(0) RETURN n"
     val result = innerExecuteDeprecated(query, Map.empty)
     val notifications = result.notifications
-    notifications should contain(RUNTIME_UNSUPPORTED.notification(new graphdb.InputPosition(31,1,32)))
+    notifications should contain(RUNTIME_UNSUPPORTED.notification(graphdb.InputPosition.empty))
   }
 
   test("should warn when using CREATE UNIQUE in newer runtimes") {
     val query = "EXPLAIN CYPHER runtime=slotted MATCH (root { name: 'root' }) CREATE UNIQUE (root)-[:LOVES]-(someone) RETURN someone"
     val result = innerExecuteDeprecated(query, Map.empty)
     val notifications = result.notifications
-    notifications should contain(RUNTIME_UNSUPPORTED.notification(new graphdb.InputPosition(61,1,62)))
+    notifications should contain(RUNTIME_UNSUPPORTED.notification(graphdb.InputPosition.empty))
   }
 
   test("should warn when using contains on an index with SLOW_CONTAINS limitation") {

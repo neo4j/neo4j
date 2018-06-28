@@ -20,18 +20,14 @@
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrapping._
-import org.opencypher.v9_0.frontend.PlannerName
-import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.interpreted.{CSVResources, ExecutionContext}
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
-import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, LogicalPlan2PlanDescription}
-import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, _}
-import org.opencypher.v9_0.util.{CypherException, ProfilerStatisticsNotReadyException, TaskCloser}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.values.virtual.MapValue
+import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
+import org.opencypher.v9_0.util.{CypherException, TaskCloser}
 
 import scala.collection.mutable
 
@@ -66,79 +62,38 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
       exceptionDecorator = newDecorator
     }
 
-    override def build(planType: ExecutionMode,
-                       params: MapValue,
+    override def build(params: MapValue,
                        notificationLogger: InternalNotificationLogger,
-                       plannerName: PlannerName,
-                       runtimeName: RuntimeName,
                        readOnly: Boolean,
-                       cardinalities: Cardinalities): InternalExecutionResult = {
+                       queryProfile: QueryProfile): RuntimeResult = {
       taskCloser.addTask(queryContext.transactionalContext.close)
       taskCloser.addTask(queryContext.resources.close)
       val state = createQueryState(params)
       try {
-        createResults(state, planType, notificationLogger, plannerName, runtimeName, readOnly, cardinalities)
+        createResults(state, notificationLogger, readOnly, queryProfile)
       }
       catch {
         case e: CypherException =>
           taskCloser.close(success = false)
           throw exceptionDecorator(e)
-        case (t: Throwable) =>
+        case t: Throwable =>
           taskCloser.close(success = false)
           throw t
       }
     }
 
-    private def createResults(state: QueryState, planType: ExecutionMode,
+    private def createResults(state: QueryState,
                               notificationLogger: InternalNotificationLogger,
-                              plannerName: PlannerName,
-                              runtimeName: RuntimeName,
                               readOnly: Boolean,
-                              cardinalities: Cardinalities): InternalExecutionResult = {
-      val queryType: InternalQueryType = getQueryType
-      val planDescription =
-        () => LogicalPlan2PlanDescription(logicalPlan, plannerName, readOnly, cardinalities)
-          .addArgument(Runtime(runtimeName.toTextOutput))
-          .addArgument(RuntimeImpl(runtimeName.name))
-      if (planType == ExplainMode) {
-        //close all statements
-        taskCloser.close(success = true)
-        ExplainExecutionResult(columns.toArray, planDescription(), queryType,
-                               notificationLogger.notifications.map(asKernelNotification(notificationLogger.offset)))
-      } else {
-        val results = pipe.createResults(state)
-        val resultIterator = buildResultIterator(results, readOnly)
-        val verifyProfileReady = () => {
-          val isResultReady = resultIterator.wasMaterialized
-          if (!isResultReady) {
-            taskCloser.close(success = false)
-            throw new ProfilerStatisticsNotReadyException()
-          }
-        }
-        val descriptor = buildDescriptor(planDescription, verifyProfileReady)
-        new PipeExecutionResult(resultIterator, columns.toArray, state, descriptor, planType, queryType)
-      }
+                              queryProfile: QueryProfile): RuntimeResult = {
+      val results = pipe.createResults(state)
+      val resultIterator = buildResultIterator(results, readOnly)
+      new PipeExecutionResult(resultIterator, columns.toArray, state, queryProfile)
     }
 
-    protected def queryContext = maybeQueryContext.get
+    protected def queryContext: QueryContext = maybeQueryContext.get
 
-    protected def buildResultIterator(results: Iterator[ExecutionContext], readOnly: Boolean): ResultIterator
-
-    private def buildDescriptor(planDescription: () => InternalPlanDescription, verifyProfileReady: () => Unit): () => InternalPlanDescription =
-      pipeDecorator.decorate(planDescription, verifyProfileReady)
-  }
-
-  private def getQueryType = {
-    val queryType =
-      if (pipe.isInstanceOf[IndexOperationPipe] || pipe.isInstanceOf[ConstraintOperationPipe])
-        SCHEMA_WRITE
-      else if (readOnly)
-        READ_ONLY
-      else if (columns.isEmpty)
-        WRITE
-      else
-        READ_WRITE
-    queryType
+    protected def buildResultIterator(results: Iterator[ExecutionContext], readOnly: Boolean): IteratorBasedResult
   }
 }
 
@@ -148,19 +103,16 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
                                                     logicalPlan: LogicalPlan)
   extends BaseExecutionResultBuilderFactory(pipe, readOnly, columns, logicalPlan) {
 
-  override def create(): ExecutionResultBuilder =
-    new InterpretedExecutionWorkflowBuilder()
+  override def create(): ExecutionResultBuilder = InterpretedExecutionWorkflowBuilder()
 
   case class InterpretedExecutionWorkflowBuilder() extends BaseExecutionWorkflowBuilder {
-    override def createQueryState(params: MapValue) = {
+    override def createQueryState(params: MapValue): QueryState = {
       new QueryState(queryContext, externalResource, params, pipeDecorator,
         triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
     }
 
-    override def buildResultIterator(results: Iterator[ExecutionContext], readOnly: Boolean): ResultIterator = {
-      val closingIterator = new ClosingIterator(results, taskCloser, exceptionDecorator)
-      val resultIterator = if (!readOnly) closingIterator.toEager else closingIterator
-      resultIterator
+    override def buildResultIterator(results: Iterator[ExecutionContext], readOnly: Boolean): IteratorBasedResult = {
+      IteratorBasedResult(results)
     }
   }
 }

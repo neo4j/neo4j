@@ -21,16 +21,16 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan
 
 import java.io.PrintWriter
 
-import org.neo4j.cypher.internal.runtime.QueryStatistics
+import org.neo4j.graphdb.QueryStatistics
 
 import scala.collection.Map
 
 /**
  * Creates formatted tabular output.
  */
-object formatOutput extends ((PrintWriter, List[String], Seq[Map[String, String]], QueryStatistics) => Unit) {
+object formatOutput extends ((PrintWriter, Seq[String], Seq[Map[String, String]], QueryStatistics) => Unit) {
 
-  def apply(writer: PrintWriter, columns: List[String],
+  def apply(writer: PrintWriter, columns: Seq[String],
             result: Seq[Map[String, String]], queryStatistics: QueryStatistics) {
 
     def makeSize(txt: String, wantedSize: Int): String = {

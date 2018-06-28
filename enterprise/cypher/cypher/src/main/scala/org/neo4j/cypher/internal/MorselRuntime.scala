@@ -26,28 +26,21 @@ import org.neo4j.cypher.internal.compatibility.CypherRuntime
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotAllocation.PhysicalPlan
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.StandardInternalExecutionResult.IterateByAccepting
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{StandardInternalExecutionResult, ExecutionPlan => ExecutionPlan_V35}
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrapping.asKernelNotification
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{ExecutionPlan => ExecutionPlan_V35}
 import org.neo4j.cypher.internal.compiler.v3_5.ExperimentalFeatureNotification
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.parallel._
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
-import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, LogicalPlan2PlanDescription}
+import org.neo4j.cypher.internal.runtime.parallel.SchedulerTracer
 import org.neo4j.cypher.internal.runtime.slotted.expressions.{CompiledExpressionConverter, SlottedExpressionConverters}
 import org.neo4j.cypher.internal.runtime.vectorized.expressions.MorselExpressionConverters
 import org.neo4j.cypher.internal.runtime.vectorized.{Dispatcher, Pipeline, PipelineBuilder}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
-import org.neo4j.graphdb.Notification
+import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
+import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.ast.semantics.SemanticTable
-import org.opencypher.v9_0.frontend.PlannerName
-import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
-import org.opencypher.v9_0.util.TaskCloser
 
 object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
   override def compileToExecutable(state: LogicalPlanState, context: EnterpriseRuntimeContext): ExecutionPlan_V35 = {
@@ -68,16 +61,12 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
         ExperimentalFeatureNotification("use the morsel runtime at your own peril, " +
                                       "not recommended to be run on production systems"))
 
-      VectorizedExecutionPlan(state.plannerName,
-                              operators,
-                              physicalPlan.slotConfigurations,
-                              logicalPlan,
-                              fieldNames,
-                              dispatcher,
-                              context.notificationLogger,
-                              context.readOnly,
-                              state.cardinalities,
-                              tracer)
+    VectorizedExecutionPlan(operators,
+                            physicalPlan.slotConfigurations,
+                            logicalPlan,
+                            fieldNames,
+                            dispatcher,
+                            tracer)
   }
 
   private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan, semanticTable: SemanticTable) = {
@@ -87,68 +76,55 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
     (logicalPlan, physicalPlan)
   }
 
-  case class VectorizedExecutionPlan(plannerUsed: PlannerName,
-                                     operators: Pipeline,
+  case class VectorizedExecutionPlan(operators: Pipeline,
                                      slots: SlotConfigurations,
                                      logicalPlan: LogicalPlan,
                                      fieldNames: Array[String],
                                      dispatcher: Dispatcher,
-                                     notificationLogger: InternalNotificationLogger,
-                                     readOnly: Boolean,
-                                     cardinalities: Cardinalities,
                                      schedulerTracer: SchedulerTracer) extends ExecutionPlan_V35 {
-    override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult = {
-      val taskCloser = new TaskCloser
-      taskCloser.addTask(queryContext.transactionalContext.close)
-      taskCloser.addTask(queryContext.resources.close)
-      val planDescription =
-        () => LogicalPlan2PlanDescription(logicalPlan, plannerUsed, readOnly, cardinalities)
-          .addArgument(Runtime(MorselRuntimeName.toTextOutput))
-          .addArgument(RuntimeImpl(MorselRuntimeName.name))
 
-      if (planType == ExplainMode) {
-        //close all statements
-        taskCloser.close(success = true)
-        ExplainExecutionResult(fieldNames, planDescription(), READ_ONLY,
-          notificationLogger.notifications.map(asKernelNotification(notificationLogger.offset)))
-      } else new VectorizedOperatorExecutionResult(operators,
-                                                   logicalPlan,
-                                                   planDescription,
-                                                   queryContext,
-                                                   params,
-                                                   fieldNames,
-                                                   taskCloser,
-                                                   dispatcher,
-                                                   schedulerTracer)
+    override def run(queryContext: QueryContext,
+                     doProfile: Boolean,
+                     params: MapValue): RuntimeResult = {
+
+      new VectorizedRuntimeResult(operators,
+                                  logicalPlan,
+                                  queryContext,
+                                  params,
+                                  fieldNames,
+                                  dispatcher,
+                                  schedulerTracer)
     }
 
     override def runtimeName: RuntimeName = MorselRuntimeName
   }
 
-  class VectorizedOperatorExecutionResult(operators: Pipeline,
-                                          logicalPlan: LogicalPlan,
-                                          executionPlanBuilder: () => InternalPlanDescription,
-                                          queryContext: QueryContext,
-                                          params: MapValue,
-                                          override val fieldNames: Array[String],
-                                          taskCloser: TaskCloser,
-                                          dispatcher: Dispatcher,
-                                          schedulerTracer: SchedulerTracer) extends StandardInternalExecutionResult(queryContext, ProcedureRuntimeName, Some(taskCloser)) with IterateByAccepting {
+  class VectorizedRuntimeResult(operators: Pipeline,
+                                logicalPlan: LogicalPlan,
+                                queryContext: QueryContext,
+                                params: MapValue,
+                                override val fieldNames: Array[String],
+                                dispatcher: Dispatcher,
+                                schedulerTracer: SchedulerTracer) extends RuntimeResult {
 
+    private var isDone = false
 
-    override def accept[E <: Exception](visitor: QueryResultVisitor[E]): Unit =
-      dispatcher.execute(operators, queryContext, params, taskCloser, schedulerTracer)(visitor)
+    override def accept[E <: Exception](visitor: QueryResultVisitor[E]): Unit = {
+      dispatcher.execute(operators, queryContext, params, schedulerTracer)(visitor)
+      isDone = true
+    }
 
     override def queryStatistics(): runtime.QueryStatistics = queryContext.getOptStatistics.getOrElse(QueryStatistics())
 
-    override def executionPlanDescription(): InternalPlanDescription = executionPlanBuilder()
+    override def isIterable: Boolean = false
 
-    override def queryType: InternalQueryType = READ_ONLY
+    override def asIterator(): ResourceIterator[java.util.Map[String, AnyRef]] =
+      throw new UnsupportedOperationException("The Morsel runtime is not iterable")
 
-    override def executionMode: ExecutionMode = NormalMode
+    override def isExhausted: Boolean = isDone
 
-    override def notifications: Iterable[Notification] = Iterable.empty[Notification]
+    override def close(): Unit = {}
 
-    override def withNotifications(notification: Notification*): InternalExecutionResult = this
+    override def queryProfile(): QueryProfile = QueryProfile.NONE
   }
 }

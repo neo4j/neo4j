@@ -76,7 +76,7 @@ abstract class BasePlanner[STATEMENT <: AnyRef, PARSED_STATE <: AnyRef](
     }
 
   protected def createReusabilityState(logicalPlanState: LogicalPlanState,
-                                     planContext: PlanContext): ReusabilityState = {
+                                       planContext: PlanContext): ReusabilityState = {
 
     if (ProcedureCallOrSchemaCommandRuntime
       .logicalToExecutable

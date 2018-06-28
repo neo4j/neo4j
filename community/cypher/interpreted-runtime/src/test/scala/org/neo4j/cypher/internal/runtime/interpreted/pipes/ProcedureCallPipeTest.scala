@@ -117,8 +117,6 @@ class ProcedureCallPipeTest
 
   class FakeQueryContext(id: Int, result: Seq[Any] => Iterator[Array[AnyRef]],
                          expectedAccessMode: ProcedureAccessMode) extends QueryContext with QueryContextAdaptation {
-    override def isGraphKernelResultValue(v: Any): Boolean = false
-
     override def callReadOnlyProcedure(id: Int, args: Seq[Any], allowed: Array[String]) = {
       expectedAccessMode should equal(ProcedureReadOnlyAccess(emptyStringArray))
       doIt(id, args, allowed)

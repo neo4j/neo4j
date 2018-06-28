@@ -834,10 +834,10 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
       val query = s"RETURN duration('P1Y1M') $op duration('P1Y30D')"
       withClue(s"Executing $query") {
         /**
-          *  Version 3.3 returns null instead due to running with 3.4 runtime
-          *  SyntaxException come from the 3.4 planner and IncomparableValuesException from earlier runtimes
+          *  Version 3.3 returns null instead due to running with 3.5 runtime
+          *  SyntaxException come from the 3.5 planner and IncomparableValuesException from earlier runtimes
           */
-        failWithError(Configs.Version3_5 + Configs.Procs - Configs.AllRulePlanners, query, Seq("Type mismatch"))
+        failWithError(Configs.Version3_5 + Configs.DefaultProcs - Configs.AllRulePlanners, query, Seq("Type mismatch"))
       }
     }
   }

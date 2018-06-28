@@ -33,7 +33,7 @@ import org.neo4j.codegen.MethodDeclaration.Builder
 import org.neo4j.codegen.MethodReference._
 import org.neo4j.codegen._
 import org.neo4j.cypher.internal.codegen.{PrimitiveNodeStream, PrimitiveRelationshipStream, QueryExecutionTracer}
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{Completable, Provider}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.Provider
 import org.opencypher.v9_0.frontend.helpers.using
 import org.neo4j.cypher.internal.javacompat.ResultRowImpl
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
@@ -283,11 +283,6 @@ object Templates {
       generate.returns(schemaRead)
     }
   }
-
-  def setCompletable(classHandle: ClassHandle) = MethodTemplate.method(typeRef[Unit], "setCompletable",
-                                                                               param[Completable]("closeable")).
-    put(self(classHandle), typeRef[Completable], "closeable", load("closeable", typeRef[Completable])).
-    build()
 
   def executionMode(classHandle: ClassHandle) = MethodTemplate.method(typeRef[ExecutionMode], "executionMode").
     returns(get(self(classHandle), typeRef[ExecutionMode], "executionMode")).

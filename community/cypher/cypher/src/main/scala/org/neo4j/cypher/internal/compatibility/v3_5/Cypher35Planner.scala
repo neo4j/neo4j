@@ -108,12 +108,10 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
 
   override def parseAndPlan(preParsedQuery: PreParsedQuery,
                             tracer: CompilationPhaseTracer,
-                            preParsingNotifications: Set[Notification],
+                            notificationLogger: InternalNotificationLogger,
                             transactionalContext: TransactionalContext,
                             params: MapValue
                            ): LogicalPlanResult = {
-
-    val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
 
     runSafely {
       val syntacticQuery =
@@ -146,7 +144,7 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
 
       checkForSchemaChanges(planContext)
 
-      // If the query is not cached we want to do the full planning + creating executable plan
+      // If the query is not cached we want to do the full planning
       def createPlan(): CacheableLogicalPlan = {
         val logicalPlanState = planner.planPreparedQuery(preparedQuery, context)
         notification.LogicalPlanNotifications
@@ -184,7 +182,7 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
 }
 
 private[v3_5] class Parser3_5(planner: v3_5.CypherPlanner[PlannerContext],
-                              notificationLogger: RecordingNotificationLogger,
+                              notificationLogger: InternalNotificationLogger,
                               offset: InputPosition,
                               tracer: CompilationPhaseTracer
                              ) extends Parser[BaseState] {

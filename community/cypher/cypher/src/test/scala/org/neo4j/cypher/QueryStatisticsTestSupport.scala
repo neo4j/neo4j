@@ -19,99 +19,50 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, QueryStatistics}
-import org.neo4j.kernel.api.query.ExecutingQuery
-import org.neo4j.kernel.impl.query.QueryExecutionMonitor
+import org.neo4j.cypher.internal.RewindableExecutionResult
+import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.scalatest.Assertions
 import org.scalatest.mock.MockitoSugar
 
 trait QueryStatisticsTestSupport extends MockitoSugar {
   self: Assertions =>
 
-  implicit class QueryStatisticsAssertions(expected: QueryStatistics) {
-    def apply(actual: QueryStatistics) {
-      assertResult(expected)(actual)
-    }
-
-    def apply(actual: InternalExecutionResult) {
-      implicit val monitor: QueryExecutionMonitor = new QueryExecutionMonitor {
-        override def endSuccess(query: ExecutingQuery){}
-
-        override def endFailure(query: ExecutingQuery, throwable: Throwable){}
-      }
-      apply(actual.queryStatistics())
-    }
-  }
-
-  def assertStats(
-                   result: InternalExecutionResult,
-                   nodesCreated: Int = 0,
-                   relationshipsCreated: Int = 0,
-                   propertiesWritten: Int = 0,
-                   nodesDeleted: Int = 0,
-                   relationshipsDeleted: Int = 0,
-                   labelsAdded: Int = 0,
-                   labelsRemoved: Int = 0,
-                   indexesAdded: Int = 0,
-                   indexesRemoved: Int = 0,
-                   uniqueConstraintsAdded: Int = 0,
-                   uniqueConstraintsRemoved: Int = 0,
-                   existenceConstraintsAdded: Int = 0,
-                   existenceConstraintsRemoved: Int = 0,
-                   nodekeyConstraintsAdded: Int = 0,
-                   nodekeyConstraintsRemoved: Int = 0
+  def assertStats(result: RewindableExecutionResult,
+                  nodesCreated: Int = 0,
+                  relationshipsCreated: Int = 0,
+                  propertiesWritten: Int = 0,
+                  nodesDeleted: Int = 0,
+                  relationshipsDeleted: Int = 0,
+                  labelsAdded: Int = 0,
+                  labelsRemoved: Int = 0,
+                  indexesAdded: Int = 0,
+                  indexesRemoved: Int = 0,
+                  uniqueConstraintsAdded: Int = 0,
+                  uniqueConstraintsRemoved: Int = 0,
+                  existenceConstraintsAdded: Int = 0,
+                  existenceConstraintsRemoved: Int = 0,
+                  nodekeyConstraintsAdded: Int = 0,
+                  nodekeyConstraintsRemoved: Int = 0
   ): Unit = {
-    assertStatsResult(
-      nodesCreated,
-      relationshipsCreated,
-      propertiesWritten,
-      nodesDeleted,
-      relationshipsDeleted,
-      labelsAdded,
-      labelsRemoved,
-      indexesAdded,
-      indexesRemoved,
-      uniqueConstraintsAdded,
-      uniqueConstraintsRemoved,
-      existenceConstraintsAdded,
-      existenceConstraintsRemoved,
-      nodekeyConstraintsAdded,
-      nodekeyConstraintsRemoved
-    )(result)
-  }
+    val expected =
+      QueryStatistics(
+        nodesCreated,
+        relationshipsCreated,
+        propertiesWritten,
+        nodesDeleted,
+        relationshipsDeleted,
+        labelsAdded,
+        labelsRemoved,
+        indexesAdded,
+        indexesRemoved,
+        uniqueConstraintsAdded,
+        uniqueConstraintsRemoved,
+        existenceConstraintsAdded,
+        existenceConstraintsRemoved,
+        nodekeyConstraintsAdded,
+        nodekeyConstraintsRemoved
+      )
 
-  // This api is more in line with scala test assertions which prefer the expectation before the actual
-  def assertStatsResult(nodesCreated: Int = 0,
-                        relationshipsCreated: Int = 0,
-                        propertiesWritten: Int = 0,
-                        nodesDeleted: Int = 0,
-                        relationshipsDeleted: Int = 0,
-                        labelsAdded: Int = 0,
-                        labelsRemoved: Int = 0,
-                        indexesAdded: Int = 0,
-                        indexesRemoved: Int = 0,
-                        uniqueConstraintsAdded: Int = 0,
-                        uniqueConstraintsRemoved: Int = 0,
-                        existenceConstraintsAdded: Int = 0,
-                        existenceConstraintsRemoved: Int = 0,
-                        nodekeyConstraintsAdded: Int = 0,
-                        nodekeyConstraintsRemoved: Int = 0
-                       ): QueryStatisticsAssertions =
-    QueryStatistics(
-      nodesCreated,
-      relationshipsCreated,
-      propertiesWritten,
-      nodesDeleted,
-      relationshipsDeleted,
-      labelsAdded,
-      labelsRemoved,
-      indexesAdded,
-      indexesRemoved,
-      uniqueConstraintsAdded,
-      uniqueConstraintsRemoved,
-      existenceConstraintsAdded,
-      existenceConstraintsRemoved,
-      nodekeyConstraintsAdded,
-      nodekeyConstraintsRemoved
-    )
+    assertResult(expected)(result.queryStatistics())
+  }
 }

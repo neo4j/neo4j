@@ -22,4 +22,9 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan;
 public interface Provider<T>
 {
     T get();
+
+    static <N> Provider<N> NULL()
+    {
+        return () -> null;
+    }
 }

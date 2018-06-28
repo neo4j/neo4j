@@ -23,11 +23,9 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{CompiledRuntimeName, InterpretedRuntimeName, RuntimeName, SlottedRuntimeName}
-import org.neo4j.cypher.internal.compiler.v3_5._
-import org.opencypher.v9_0.frontend.PlannerName
 import org.neo4j.cypher.internal.planner.v3_5.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName}
 import org.neo4j.graphdb.ExecutionPlanDescription
-import org.neo4j.values.virtual.VirtualValues
+import org.opencypher.v9_0.frontend.PlannerName
 
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -164,9 +162,9 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
           val runtimeString = runtime.map("runtime=" + _.name).getOrElse("")
           s"CYPHER $version $plannerString $runtimeString"
       }
-      val result = profile(s"$prepend $query")
-      result.dumpToString()
-      result.executionPlanDescription()
+      val result = executeOfficial(s"$prepend PROFILE $query")
+      result.resultAsString()
+      result.getExecutionPlanDescription()
     }
   }
 }

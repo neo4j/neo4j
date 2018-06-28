@@ -470,7 +470,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     else cursor.isDense
   }
 
-  override def asObject(value: AnyValue): Any = value.map(valueMapper)
+  override def asObject(value: AnyValue): AnyRef = value.map(valueMapper)
 
   class NodeOperations extends BaseOperations[NodeValue] {
 
@@ -1028,8 +1028,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
     }
   }
-
-  override def isGraphKernelResultValue(v: Any): Boolean = v.isInstanceOf[PropertyContainer] || v.isInstanceOf[Path]
 
   private def buildPathFinder(depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
                               filters: Seq[KernelPredicate[PropertyContainer]]): ShortestPath = {

@@ -32,7 +32,7 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     // given
     val node = createLabeledNode("Person")
     val result = executeWith(Configs.All + Configs.Morsel, "WITH {param} as p RETURN p", params = Map("param" -> Array(node)))
-    val outputP = result.next.get("p").get
+    val outputP = result.head("p")
     outputP should equal(Array(node))
   }
 
@@ -45,7 +45,7 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with CypherC
         | RETURN ANY(n IN collect(distinct node) WHERE n IN nodes1) as exists """.stripMargin
 
     val r = executeWith(Configs.Interpreted - Configs.Version2_3, query)
-    r.next().apply("exists") should equal(false)
+    r.toList should equal(List(Map("exists" -> false)))
   }
 
   test("should not erase the type of an empty array sent as parameter") {

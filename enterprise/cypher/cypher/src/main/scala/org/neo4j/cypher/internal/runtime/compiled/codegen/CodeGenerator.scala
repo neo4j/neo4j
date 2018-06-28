@@ -26,25 +26,26 @@ import java.time.Clock
 import java.util
 
 import org.neo4j.cypher.internal.codegen.QueryExecutionTracer
+import org.neo4j.cypher.internal.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.CompiledRuntimeName
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.Provider
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.executionplan.{GeneratedQuery, GeneratedQueryExecution}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
-import org.neo4j.cypher.internal.runtime.compiled.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.runtime.compiled.codegen.ir._
 import org.neo4j.cypher.internal.runtime.compiled.codegen.spi.{CodeStructure, CodeStructureResult}
 import org.neo4j.cypher.internal.runtime.compiled.{CompiledExecutionResult, CompiledPlan, RunnablePlan}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, LogicalPlan2PlanDescription}
-import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext, compiled}
+import org.neo4j.cypher.internal.runtime.{ExecutionMode, QueryContext, compiled}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, ProduceResult}
+import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.frontend.PlannerName
+import org.opencypher.v9_0.util.Eagerly
 import org.opencypher.v9_0.util.attribution.Id
-import org.opencypher.v9_0.util.{Eagerly, TaskCloser}
 
 class CodeGenerator(val structure: CodeStructure[GeneratedQuery],
                     clock: Clock,
@@ -82,14 +83,18 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery],
         }
 
         val builder = new RunnablePlan {
-          def apply(queryContext: QueryContext, execMode: ExecutionMode,
-                    descriptionProvider: DescriptionProvider, params: MapValue,
-                    closer: TaskCloser): InternalExecutionResult = {
-            val (provider, tracer) = descriptionProvider(description)
-            val execution: GeneratedQueryExecution = query.query.execute(queryContext, execMode, provider,
+          def apply(queryContext: QueryContext,
+                    execMode: ExecutionMode,
+                    tracer: Option[ProfilingTracer],
+                    params: MapValue): RuntimeResult = {
+            val explodingProvider =
+              new Provider[InternalPlanDescription] {
+                override def get(): InternalPlanDescription = ???
+              }
+
+            val execution: GeneratedQueryExecution = query.query.execute(queryContext, execMode, explodingProvider,
                                                                          tracer.getOrElse(QueryExecutionTracer.NONE),params)
-            closer.addTask(queryContext.resources.close)
-            new CompiledExecutionResult(closer, queryContext, execution, provider)
+            new CompiledExecutionResult(queryContext, execution, tracer.getOrElse(QueryProfile.NONE))
           }
         }
 

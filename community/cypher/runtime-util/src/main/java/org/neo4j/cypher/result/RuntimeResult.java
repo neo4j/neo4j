@@ -17,16 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan
+package org.neo4j.cypher.result;
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RuntimeName
-import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.values.virtual.MapValue
+import org.neo4j.cypher.internal.runtime.QueryStatistics;
+import org.neo4j.graphdb.ResourceIterator;
 
-abstract class ExecutionPlan {
+/**
+ * The result API of a Cypher runtime
+ */
+public interface RuntimeResult extends AutoCloseable
+{
+    String[] fieldNames();
 
-  def run(queryContext: QueryContext, doProfile: Boolean, params: MapValue): RuntimeResult
+    boolean isIterable();
 
-  def runtimeName: RuntimeName
+    ResourceIterator<java.util.Map<String, Object>> asIterator();
+
+    boolean isExhausted();
+
+    <E extends Exception> void accept( QueryResult.QueryResultVisitor<E> visitor )
+            throws E;
+
+    QueryStatistics queryStatistics();
+
+    QueryProfile queryProfile();
+
+    @Override
+    void close();
 }

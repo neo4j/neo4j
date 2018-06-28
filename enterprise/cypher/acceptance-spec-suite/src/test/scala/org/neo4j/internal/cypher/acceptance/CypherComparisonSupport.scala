@@ -24,15 +24,12 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPointv3_1, GeographicPoint => GeographicPointv3_1}
-import org.neo4j.cypher.internal.runtime.InternalExecutionResult
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.runtime.planDescription.{Argument, InternalPlanDescription}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Planner => IPDPlanner, PlannerVersion => IPDPlannerVersion, Runtime => IPDRuntime, RuntimeVersion => IPDRuntimeVersion}
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}
-import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
 import org.opencypher.v9_0.util.Eagerly
 import org.opencypher.v9_0.util.test_helpers.CypherTestSupport
 import org.scalatest.Assertions
@@ -54,7 +51,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
   /**
     * Get rid of Arrays and java.util.Map to make it easier to compare results by equality.
     */
-  implicit class RichInternalExecutionResults(res: InternalExecutionResult) {
+  implicit class RichInternalExecutionResults(res: RewindableExecutionResult) {
     def toComparableResultWithOptions(replaceNaNs: Boolean): Seq[Map[String, Any]] = res.toList.toComparableSeq(replaceNaNs)
 
     def toComparableResult: Seq[Map[String, Any]] = res.toList.toComparableSeq(replaceNaNs = false)
@@ -68,8 +65,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
     def toComparableSeq(replaceNaNs: Boolean): Seq[Map[String, Any]] = {
       def convert(v: Any): Any = v match {
-        case p: GeographicPointv3_1 => Values.pointValue(CoordinateReferenceSystem.get(p.crs.url), p.longitude, p.latitude)
-        case p: CartesianPointv3_1 => Values.pointValue(CoordinateReferenceSystem.get(p.crs.url), p.x, p.y)
         case a: Array[_] => a.toList.map(convert)
         case m: Map[_, _] =>
           Eagerly.immutableMapValues(m, convert)
@@ -104,9 +99,9 @@ trait CypherComparisonSupport extends CypherTestSupport {
     for (thisScenario <- scenariosToExecute) {
       val expectedToFailWithSpecificMessage = expectedSpecificFailureFromEffective.containsScenario(thisScenario)
 
-      val tryResult: Try[InternalExecutionResult] = Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params))
+      val tryResult: Try[RewindableExecutionResult] = Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params))
       tryResult match {
-        case (Success(_)) =>
+        case Success(_) =>
           if (expectedToFailWithSpecificMessage) {
             fail("Unexpectedly Succeeded in " + thisScenario.name)
           }
@@ -134,14 +129,53 @@ trait CypherComparisonSupport extends CypherTestSupport {
     possibleErrors == Seq.empty || (actualError != null && possibleErrors.exists(s => actualError.replaceAll("\\r", "").contains(s.replaceAll("\\r", ""))))
   }
 
+  protected def dumpToString(expectSucceed: TestConfiguration,
+                             query: String,
+                             params: Map[String, Any] = Map.empty): String = {
+
+    val paramValue = asMapValue(params)
+
+    case class DumpResult(maybeResult:Try[String], scenario: TestScenario)
+
+    val results: Seq[DumpResult] =
+      Configs.AbsolutelyAll.scenarios.toSeq.map {
+        scenario => {
+          val queryText = s"CYPHER ${scenario.preparserOptions} $query"
+          val txContext = graph.transactionalContext(query = queryText -> params)
+          val maybeResult =
+            Try(eengine.execute(queryText, paramValue, txContext).resultAsString())
+          DumpResult(maybeResult, scenario)
+        }
+      }
+
+    val (corrects, incorrects) = results.partition(t => expectSucceed.containsScenario(t.scenario))
+    val reference = corrects.head.maybeResult.get
+    for (correct <- corrects) {
+      withClue(s"Failed with scenario '${correct.scenario.preparserOptions}'") {
+        correct.maybeResult.get should equal(reference)
+      }
+    }
+    for (incorrect <- incorrects) {
+      withClue(s"Unexpectedly succeeded with scenario '${incorrect.scenario.preparserOptions}'") {
+        incorrect.maybeResult match {
+          case Success(result) =>
+            result should not equal reference
+          case Failure(error) =>
+            // expected
+        }
+      }
+    }
+    reference
+  }
+
   protected def executeWith(expectSucceed: TestConfiguration,
                             query: String,
                             expectedDifferentResults: TestConfiguration = Configs.Empty,
                             planComparisonStrategy: PlanComparisonStrategy = DoNotComparePlans,
-                            resultAssertionInTx: Option[InternalExecutionResult => Unit] = None,
+                            resultAssertionInTx: Option[RewindableExecutionResult => Unit] = None,
                             executeBefore: () => Unit = () => {},
                             executeExpectedFailures: Boolean = true,
-                            params: Map[String, Any] = Map.empty): InternalExecutionResult = {
+                            params: Map[String, Any] = Map.empty): RewindableExecutionResult = {
     // Never consider Morsel even if test requests it
     val expectSucceedEffective = expectSucceed - Configs.Morsel
 
@@ -222,7 +256,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
                               expectedToSucceed: Boolean,
                               executeBefore: () => Unit,
                               params: Map[String, Any],
-                              resultAssertionInTx: Option[InternalExecutionResult => Unit],
+                              resultAssertionInTx: Option[RewindableExecutionResult => Unit],
                               executeExpectedFailures: Boolean,
                               rollback: Boolean = true) = {
 
@@ -262,10 +296,10 @@ trait CypherComparisonSupport extends CypherTestSupport {
   }
 
   @deprecated("Rewrite to use executeWith instead")
-  protected def assertResultsSameDeprecated(result1: InternalExecutionResult, result2: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false): Unit =
+  protected def assertResultsSameDeprecated(result1: RewindableExecutionResult, result2: RewindableExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false): Unit =
     assertResultsSame(result1, result2, queryText, errorMsg, replaceNaNs)
 
-  private def assertResultsSame(result1: InternalExecutionResult, result2: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false): Unit = {
+  private def assertResultsSame(result1: RewindableExecutionResult, result2: RewindableExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false): Unit = {
     withClue(errorMsg) {
       if (queryText.toLowerCase contains "order by") {
         result1.toComparableResultWithOptions(replaceNaNs) should contain theSameElementsInOrderAs result2.toComparableResultWithOptions(replaceNaNs)
@@ -275,7 +309,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
     }
   }
 
-  private def assertResultsNotSame(result1: InternalExecutionResult, result2: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false): Unit = {
+  private def assertResultsNotSame(result1: RewindableExecutionResult, result2: RewindableExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false): Unit = {
     withClue(errorMsg) {
       if (queryText.toLowerCase contains "order by") {
         result1.toComparableResultWithOptions(replaceNaNs) shouldNot contain theSameElementsInOrderAs result2.toComparableResultWithOptions(replaceNaNs)
@@ -285,19 +319,19 @@ trait CypherComparisonSupport extends CypherTestSupport {
     }
   }
 
-  // Should this really be deprecated? We have real use cases where we want to get the InternalExecutionResult
+  // Should this really be deprecated? We have real use cases where we want to get the RewindableExecutionResult
   // But do NOT want comparison support, for example see the query statistics support used in CompositeNodeKeyAcceptanceTests
   @deprecated("Rewrite to use executeWith instead")
-  protected def innerExecuteDeprecated(queryText: String, params: Map[String, Any] = Map.empty): InternalExecutionResult =
+  protected def innerExecuteDeprecated(queryText: String, params: Map[String, Any] = Map.empty): RewindableExecutionResult =
     innerExecute(queryText, params)
 
-  private def innerExecute(queryText: String, params: Map[String, Any]): InternalExecutionResult = {
+  private def innerExecute(queryText: String, params: Map[String, Any]): RewindableExecutionResult = {
     val innerResult: Result = eengine.execute(queryText, asMapValue(params), graph.transactionalContext(query = queryText -> params))
     RewindableExecutionResult(innerResult)
   }
 
-  def evaluateTo(expected: Seq[Map[String, Any]]): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
-    override def apply(actual: InternalExecutionResult): MatchResult = {
+  def evaluateTo(expected: Seq[Map[String, Any]]): Matcher[RewindableExecutionResult] = new Matcher[RewindableExecutionResult] {
+    override def apply(actual: RewindableExecutionResult): MatchResult = {
       MatchResult(
         matches = actual.toComparableResult == expected.toComparableSeq(replaceNaNs = false),
         rawFailureMessage = s"Results differ: ${actual.toComparableResult} did not equal to $expected",
@@ -440,17 +474,17 @@ object CypherComparisonSupport {
 
 
   sealed trait PlanComparisonStrategy extends Assertions {
-    def compare(expectSucceed: TestConfiguration, scenario: TestScenario, result: InternalExecutionResult): Unit
+    def compare(expectSucceed: TestConfiguration, scenario: TestScenario, result: RewindableExecutionResult): Unit
   }
 
   case object DoNotComparePlans extends PlanComparisonStrategy {
-    override def compare(expectSucceed: TestConfiguration, scenario: TestScenario, result: InternalExecutionResult): Unit = {}
+    override def compare(expectSucceed: TestConfiguration, scenario: TestScenario, result: RewindableExecutionResult): Unit = {}
   }
 
-  case class ComparePlansWithPredicate(predicate: (InternalPlanDescription) => Boolean,
+  case class ComparePlansWithPredicate(predicate: InternalPlanDescription => Boolean,
                                        expectPlansToFailPredicate: TestConfiguration = TestConfiguration.empty,
                                        predicateFailureMessage: String = "") extends PlanComparisonStrategy {
-    override def compare(expectSucceed: TestConfiguration, scenario: TestScenario, result: InternalExecutionResult): Unit = {
+    override def compare(expectSucceed: TestConfiguration, scenario: TestScenario, result: RewindableExecutionResult): Unit = {
       val comparePlans = expectSucceed - expectPlansToFailPredicate
       if (comparePlans.containsScenario(scenario)) {
         if (!predicate(result.executionPlanDescription())) {
@@ -464,9 +498,9 @@ object CypherComparisonSupport {
     }
   }
 
-  case class ComparePlansWithAssertion(assertion: (InternalPlanDescription) => Unit,
+  case class ComparePlansWithAssertion(assertion: InternalPlanDescription => Unit,
                                        expectPlansToFail: TestConfiguration = TestConfiguration.empty) extends PlanComparisonStrategy {
-    override def compare(expectSucceed: TestConfiguration, scenario: TestScenario, result: InternalExecutionResult): Unit = {
+    override def compare(expectSucceed: TestConfiguration, scenario: TestScenario, result: RewindableExecutionResult): Unit = {
       val comparePlans = expectSucceed - expectPlansToFail
       if (comparePlans.containsScenario(scenario)) {
         withClue(s"plan for ${scenario.name}\n") {
@@ -502,7 +536,7 @@ object CypherComparisonSupport {
 
     def preparserOptions: String = List(version.name, planner.preparserOption, runtime.preparserOption).mkString(" ")
 
-    def checkResultForSuccess(query: String, internalExecutionResult: InternalExecutionResult): Unit = {
+    def checkResultForSuccess(query: String, internalExecutionResult: RewindableExecutionResult): Unit = {
       val (reportedRuntime: String, reportedPlanner: String, reportedVersion: String, reportedPlannerVersion: String) = extractConfiguration(internalExecutionResult)
       if (!runtime.acceptedRuntimeNames.contains(reportedRuntime))
         fail(s"did not use ${runtime.acceptedRuntimeNames} runtime - instead $reportedRuntime was used. Scenario $name")
@@ -514,7 +548,7 @@ object CypherComparisonSupport {
         fail(s"did not use ${version.acceptedPlannerVersionNames} planner version - instead $reportedPlannerVersion was used. Scenario $name")
     }
 
-    def checkResultForFailure(query: String, internalExecutionResult: Try[InternalExecutionResult]): Unit = {
+    def checkResultForFailure(query: String, internalExecutionResult: Try[RewindableExecutionResult]): Unit = {
       internalExecutionResult match {
         case Failure(_) => // not unexpected
         case Success(result) =>
@@ -528,8 +562,10 @@ object CypherComparisonSupport {
       }
     }
 
-    private def extractConfiguration(result: InternalExecutionResult): (String, String, String, String) = {
-      val arguments = result.executionPlanDescription().arguments
+    private def extractConfiguration(result: RewindableExecutionResult): (String, String, String, String) =
+      extractConfiguration(result.executionPlanDescription().arguments)
+
+    private def extractConfiguration(arguments: Seq[Argument]): (String, String, String, String) = {
       val reportedRuntime = arguments.collectFirst {
         case IPDRuntime(reported) => reported
       }
@@ -591,6 +627,8 @@ object CypherComparisonSupport {
 
   object Configs {
 
+    def Default: TestConfiguration = TestConfiguration(Versions.Default, Planners.Default, Runtimes.Default)
+
     def Compiled: TestConfiguration = TestConfiguration(Versions.v3_5, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode))
 
     def Morsel: TestConfiguration = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Morsel))
@@ -639,7 +677,14 @@ object CypherComparisonSupport {
     def BackwardsCompatibility: TestConfiguration = TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
       TestScenario(Versions.V3_4, Planners.Cost, Runtimes.Default)
 
-    def Procs: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.ProcedureOrSchema)
+    def DefaultProcs: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.ProcedureOrSchema)
+
+    def Procs: TestConfiguration =
+      TestConfiguration(
+        Versions(Versions.Default, Versions.V3_4, Versions.v3_5),
+        Planners(Planners.Default, Planners.Cost),
+        Runtimes(Runtimes.Default, Runtimes.ProcedureOrSchema)
+      )
 
     /**
       * Handy configs for things not supported in older versions
@@ -657,7 +702,7 @@ object CypherComparisonSupport {
     If you are unsure what you need, this is a good start. It's not really all scenarios, but this is testing all
     interesting scenarios.
      */
-    def All: TestConfiguration = AbsolutelyAll - Procs
+    def All: TestConfiguration = AbsolutelyAll - DefaultProcs
 
     /**
       * These are all configurations that will be executed even if not explicitly expected to succeed or fail.

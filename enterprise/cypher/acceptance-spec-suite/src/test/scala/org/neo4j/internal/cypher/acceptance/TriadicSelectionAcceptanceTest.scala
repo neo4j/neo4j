@@ -82,7 +82,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite with Cypher
         |CREATE (a)-[:FRIEND]->(b), (b)-[:FRIEND]->(c), (c)-[:FRIEND]->(a)""".stripMargin)
 
     // when
-    val result: InternalExecutionResult = executeWith(configs, QUERY, planComparisonStrategy = usesTriadic)
+    val result = executeWith(configs, QUERY, planComparisonStrategy = usesTriadic)
 
     // then
     result should be(empty)

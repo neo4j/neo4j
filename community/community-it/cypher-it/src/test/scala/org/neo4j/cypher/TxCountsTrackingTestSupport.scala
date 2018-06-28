@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.runtime.InternalExecutionResult
+import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 
 trait TxCountsTrackingTestSupport extends CypherTestSupport {
   self: CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport =>
 
-  def executeAndTrackTxCounts(queryText: String, params: (String, Any)*): (InternalExecutionResult, TxCounts) = {
+  def executeAndTrackTxCounts(queryText: String, params: (String, Any)*): (RewindableExecutionResult, TxCounts) = {
     val (result, txCounts) = prepareAndTrackTxCounts(execute(queryText, params: _*))
     (result, txCounts)
   }

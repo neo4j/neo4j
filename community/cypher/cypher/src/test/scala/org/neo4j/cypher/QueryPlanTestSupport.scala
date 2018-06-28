@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.runtime.InternalExecutionResult
 import org.neo4j.cypher.planmatching.{CountInTree, ExactPlan, PlanInTree, PlanMatcher}
+import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 trait QueryPlanTestSupport {
@@ -66,10 +66,10 @@ trait QueryPlanTestSupport {
     def apply(name: String): PlanMatcher = haveAsRoot.aPlan(name)
   }
 
-  def haveCount(count: Int): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
-    override def apply(result: InternalExecutionResult): MatchResult = {
+  def haveCount(count: Int): Matcher[RewindableExecutionResult] = new Matcher[RewindableExecutionResult] {
+    override def apply(result: RewindableExecutionResult): MatchResult = {
       MatchResult(
-        matches = count == result.toList.length,
+        matches = count == result.size,
         rawFailureMessage = s"Result should have $count rows",
         rawNegatedFailureMessage = s"Result should not have $count rows")
     }

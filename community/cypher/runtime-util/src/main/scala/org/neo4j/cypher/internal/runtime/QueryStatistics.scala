@@ -52,7 +52,7 @@ case class QueryStatistics(@BeanProperty nodesCreated: Int = 0,
   @BeanProperty
   val constraintsRemoved: Int = uniqueConstraintsRemoved + existenceConstraintsRemoved + nodekeyConstraintsRemoved
 
-  def containsUpdates: Boolean =
+  override def containsUpdates: Boolean =
     nodesCreated > 0 ||
       relationshipsCreated > 0 ||
       propertiesSet > 0 ||

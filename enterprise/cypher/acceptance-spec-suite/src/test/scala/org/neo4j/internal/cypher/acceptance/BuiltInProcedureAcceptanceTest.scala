@@ -58,8 +58,9 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     relate(d1, neo, "PART_OF", "Hallo")
 
     // When
-    val query = "CALL db.schema()"
-    val result = executeWith(Configs.Procs, query).toList
+    // we cannot assert on the results because on each call
+    // the generated virtual nodes will have different IDs
+    val result = executeWith(Configs.Procs, "CALL db.schema()", expectedDifferentResults = Configs.Procs).toList
 
     // Then
     result.size should equal(1)
@@ -305,7 +306,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
         "status" -> "index created"))
     )
 
-    executeWith(Configs.Procs, "CALL db.awaitIndexes(10)")
+    graph.execute("CALL db.awaitIndexes(10)")
 
     // when
     val listResult = executeWith(Configs.Procs, "CALL db.indexes()")
@@ -336,7 +337,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
         "status" -> "uniqueness constraint online"))
     )
 
-    executeWith(Configs.Procs, "CALL db.awaitIndexes(10)")
+    graph.execute("CALL db.awaitIndexes(10)")
 
     // when
     val listResult = executeWith(Configs.Procs, "CALL db.indexes()")
@@ -366,7 +367,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
         "status" -> "node key constraint online"))
     )
 
-    executeWith(Configs.Procs, "CALL db.awaitIndexes(10)")
+    graph.execute("CALL db.awaitIndexes(10)")
 
     // when
     val listResult = executeWith(Configs.Procs, "CALL db.indexes()")

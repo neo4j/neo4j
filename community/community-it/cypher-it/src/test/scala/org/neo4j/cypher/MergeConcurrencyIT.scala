@@ -60,7 +60,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     execute("match (a:Label) with a.id as id, count(*) as c where c > 1 return *") shouldBe empty
     execute("match (a)-[r1]->(b)<-[r2]-(a) where r1 <> r2 return *") shouldBe empty
 
-    val details = "\n" + execute("match (a)-[r]->(b) return a.id, b.id, id(a), id(r), id(b)").dumpToString()
+    val details = "\n" + graph.execute("match (a)-[r]->(b) return a.id, b.id, id(a), id(r), id(b)").resultAsString()
 
     assert(execute(s"match p=(:Label {id:1})-[*..1000]->({id:$nodeCount}) return 1").size === 1, details)
   }

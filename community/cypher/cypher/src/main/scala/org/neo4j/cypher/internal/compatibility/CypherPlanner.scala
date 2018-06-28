@@ -25,19 +25,19 @@ import org.neo4j.cypher.internal.{PreParsedQuery, ReusabilityState}
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.frontend.PlannerName
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
+import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, InternalNotificationLogger}
 
 /**
-  * Cypher planner, which parses and plans pre-parsed queries into a logical plan.
+  * Cypher planner, which parses and plans a [[PreParsedQuery]] into a [[LogicalPlanResult]].
   */
 trait CypherPlanner {
 
   /**
     * Compile pre-parsed query into a logical plan.
     *
-    * @param preParsedQuery pre-parsed query to convert
-    * @param tracer tracer to which events of the parsing and planning are reported
-    * @param preParsingNotifications notifications from pre-parsing
+    * @param preParsedQuery       pre-parsed query to convert
+    * @param tracer               tracer to which events of the parsing and planning are reported
+    * @param notifications notifications from pre-parsing
     * @param transactionalContext transactional context to use during parsing and planning
     * @throws CypherException public cypher exceptions on compilation problems
     * @return a logical plan result
@@ -45,7 +45,7 @@ trait CypherPlanner {
   @throws[org.neo4j.cypher.CypherException]
   def parseAndPlan(preParsedQuery: PreParsedQuery,
                    tracer: CompilationPhaseTracer,
-                   preParsingNotifications: Set[org.neo4j.graphdb.Notification],
+                   notifications: InternalNotificationLogger,
                    transactionalContext: TransactionalContext,
                    params: MapValue
                   ): LogicalPlanResult

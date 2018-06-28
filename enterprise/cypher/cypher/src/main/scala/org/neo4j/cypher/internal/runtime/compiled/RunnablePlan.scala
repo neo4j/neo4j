@@ -20,16 +20,23 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.internal.cypher.acceptance
+package org.neo4j.cypher.internal.runtime.compiled
 
-import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
+import org.neo4j.cypher.internal.codegen.profiling.ProfilingTracer
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.Provider
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.runtime.{ExecutionMode, QueryContext}
+import org.neo4j.cypher.result.RuntimeResult
+import org.neo4j.values.virtual.MapValue
 
-class UpdateReportingAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
-  test("creating a node gets reported as such") {
-    val output = dumpToString(Configs.UpdateConf + Configs.DefaultProcs, "create (:A)")
+case class CompiledPlan(updating: Boolean,
+                        planDescription: Provider[InternalPlanDescription],
+                        columns: Seq[String],
+                        executionResultBuilder: RunnablePlan)
 
-    output should include("Nodes created: 1")
-    output should include("Labels added: 1")
-  }
+trait RunnablePlan {
+  def apply(queryContext: QueryContext,
+            execMode: ExecutionMode,
+            tracer: Option[ProfilingTracer],
+            params: MapValue): RuntimeResult
 }

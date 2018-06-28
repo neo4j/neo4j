@@ -25,8 +25,9 @@ import org.neo4j.cypher.CypherExecutionMode
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrapping.{asKernelNotification => asKernelNotification3_5}
 import org.neo4j.cypher.internal.compiler.v3_1
-import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{InternalExecutionResult, ExecutionPlan => ExecutionPlan_v3_1}
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{ExecutionPlan => ExecutionPlan_v3_1, InternalExecutionResult => InternalExecutionResult3_1}
 import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_1.{InfoLogger, ExplainMode => ExplainModev3_1, NormalMode => NormalModev3_1, ProfileMode => ProfileModev3_1, _}
 import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition => InputPosition3_1}
@@ -43,7 +44,8 @@ import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
-import org.opencypher.v9_0.{frontend => v3_5}
+import org.opencypher.v9_0.frontend.phases
+import org.opencypher.v9_0.util.InternalNotification
 
 import scala.collection.mutable
 
@@ -89,12 +91,18 @@ trait Cypher31Compiler extends CachingPlanner[PreparedQuerySyntax] with Compiler
       }
       exceptionHandler.runSafely {
         val innerParams = typeConversions.asPrivateMap(params)
-        val innerResult: InternalExecutionResult = inner
-          .run(queryContext(transactionalContext), innerExecutionMode, innerParams)
-        new ExecutionResult(
-          new ClosingExecutionResult(
+        val innerResult: InternalExecutionResult3_1 =
+          inner.run(queryContext(transactionalContext), innerExecutionMode, innerParams)
+        new ExecutionResult( // javacompat
+          new ClosingExecutionResult( // closing
             transactionalContext.executingQuery(),
-            new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed, preParsingNotifications, Some(offSet)),
+            new ExecutionResultWrapper( // 3.5 wrapping
+              innerResult, // 3.1
+              inner.plannerUsed,
+              inner.runtimeUsed,
+              preParsingNotifications,
+              Some(offSet)
+            ),
             exceptionHandler.runSafely)
         )
       }
@@ -123,8 +131,8 @@ trait Cypher31Compiler extends CachingPlanner[PreparedQuerySyntax] with Compiler
   }
 
   override def compile(preParsedQuery: PreParsedQuery,
-                       tracer: v3_5.phases.CompilationPhaseTracer,
-                       preParsingNotifications: Set[org.neo4j.graphdb.Notification],
+                       tracer: phases.CompilationPhaseTracer,
+                       preParsingNotifications: Set[InternalNotification],
                        transactionalContext: TransactionalContext,
                        params: MapValue
                       ): ExecutableQuery = {
@@ -147,7 +155,7 @@ trait Cypher31Compiler extends CachingPlanner[PreparedQuerySyntax] with Compiler
 
       new Cypher31ExecutableQuery(
         executionPlan3_1,
-        preParsingNotifications,
+        preParsingNotifications.map(asKernelNotification3_5(None)),
         position3_1,
         Seq.empty[String],
         ValueConversion.asValues(extractedParameters))

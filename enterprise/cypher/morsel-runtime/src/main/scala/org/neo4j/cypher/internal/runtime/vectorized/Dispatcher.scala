@@ -26,14 +26,12 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.parallel.{Scheduler, SchedulerTracer, SingleThreadScheduler}
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.values.virtual.MapValue
-import org.opencypher.v9_0.util.TaskCloser
 
 class Dispatcher(morselSize: Int, scheduler: Scheduler) {
 
   def execute[E <: Exception](operators: Pipeline,
                               queryContext: QueryContext,
                               params: MapValue,
-                              taskCloser: TaskCloser,
                               schedulerTracer: SchedulerTracer)
                              (visitor: QueryResultVisitor[E]): Unit = {
     val leaf = getLeaf(operators)
@@ -42,14 +40,8 @@ class Dispatcher(morselSize: Int, scheduler: Scheduler) {
     val initialTask = leaf.init(MorselExecutionContext.EMPTY, queryContext, state)
     val queryExecution = scheduler.execute(initialTask, schedulerTracer)
     val maybeError = queryExecution.await()
-    maybeError match {
-      case Some(error) =>
-        taskCloser.close(false)
-        throw error
-
-      case None =>
-        taskCloser.close(true)
-    }
+    if (maybeError.isDefined)
+      throw maybeError.get
   }
 
   private def getLeaf(pipeline: Pipeline): StreamingPipeline = {

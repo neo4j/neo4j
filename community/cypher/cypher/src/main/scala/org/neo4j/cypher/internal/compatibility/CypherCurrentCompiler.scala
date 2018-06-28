@@ -22,10 +22,13 @@ package org.neo4j.cypher.internal.compatibility
 import org.neo4j.cypher.exceptionHandler.runSafely
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility.v3_5.ExceptionTranslatingQueryContext
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RuntimeName
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{ExecutionPlan => ExecutionPlan_v3_5}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{StandardInternalExecutionResult, ExecutionPlan => ExecutionPlan_v3_5}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrapping.asKernelNotification
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.profiler.PlanDescriptionBuilder
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{ExplainExecutionResult, RuntimeName}
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.runtime.{ExecutableQuery => _, _}
@@ -36,13 +39,14 @@ import org.neo4j.kernel.api.query.{CompilerInfo, ExplicitIndexUsage, SchemaIndex
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.values.virtual.MapValue
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
+import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
+import org.opencypher.v9_0.util.{InternalNotification, TaskCloser}
 
 import scala.collection.JavaConverters._
 
 /**
-  * Composite compiler, which uses a CypherPlanner and CypherRuntime to compile
-  * a preparsed query into a CacheableExecutableQuery.
+  * Composite [[Compiler]], which uses a [[CypherPlanner]] and [[CypherRuntime]] to compile
+  * a preparsed query into a [[ExecutableQuery]].
   *
   * @param planner the planner
   * @param runtime the runtime
@@ -57,7 +61,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                                            ) extends org.neo4j.cypher.internal.Compiler {
 
   /**
-    * Compile pre-parsed query into executable query.
+    * Compile [[PreParsedQuery]] into [[ExecutableQuery]].
     *
     * @param preParsedQuery          pre-parsed query to convert
     * @param tracer                  compilation tracer to which events of the compilation process are reported
@@ -68,12 +72,15 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     */
   override def compile(preParsedQuery: PreParsedQuery,
                        tracer: CompilationPhaseTracer,
-                       preParsingNotifications: Set[Notification],
+                       preParsingNotifications: Set[InternalNotification],
                        transactionalContext: TransactionalContext,
-                       params: MapValue): ExecutableQuery = {
+                       params: MapValue
+                      ): ExecutableQuery = {
+
+    val planningNotificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
 
     val logicalPlanResult =
-      planner.parseAndPlan(preParsedQuery, tracer, preParsingNotifications, transactionalContext, params)
+      planner.parseAndPlan(preParsedQuery, tracer, planningNotificationLogger, transactionalContext, params)
 
     val planState = logicalPlanResult.logicalPlanState
     val logicalPlan = planState.logicalPlan
@@ -88,15 +95,20 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     val executionPlan3_5 = runtime.compileToExecutable(planState, runtimeContext)
 
     new CypherExecutableQuery(
+      logicalPlan,
+      runtimeContext.readOnly,
+      logicalPlanResult.logicalPlanState.cardinalities,
       executionPlan3_5,
-      preParsingNotifications,
+      preParsingNotifications.map(asKernelNotification(None)),
+      planningNotificationLogger.notifications.map(asKernelNotification(planningNotificationLogger.offset)),
       logicalPlanResult.reusability,
       logicalPlanResult.paramNames,
       logicalPlanResult.extractedParams,
-      buildCompilerInfo(logicalPlan, executionPlan3_5.runtimeName))
+      buildCompilerInfo(logicalPlan, executionPlan3_5.runtimeName),
+      queryType)
   }
 
-  def buildCompilerInfo(logicalPlan: LogicalPlan, runtimeName: RuntimeName): CompilerInfo =
+  private def buildCompilerInfo(logicalPlan: LogicalPlan, runtimeName: RuntimeName): CompilerInfo =
     new CompilerInfo(planner.name.name, runtimeName.name, logicalPlan.indexUsage.map {
       case SchemaIndexSeekUsage(identifier, labelId, label, propertyKeys) => new SchemaIndexUsage(identifier, labelId, label, propertyKeys: _*)
       case SchemaIndexScanUsage(identifier, labelId, label, propertyKey) => new SchemaIndexUsage(identifier, labelId, label, propertyKey)
@@ -126,16 +138,21 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       case _ => Array()
     }
 
-  protected class CypherExecutableQuery(inner: ExecutionPlan_v3_5,
-                                        preParsingNotifications: Set[org.neo4j.graphdb.Notification],
+  protected class CypherExecutableQuery(logicalPlan: LogicalPlan,
+                                        readOnly: Boolean,
+                                        cardinalities: Cardinalities,
+                                        executionPlan: ExecutionPlan_v3_5,
+                                        preParsingNotifications: Set[Notification],
+                                        planningNotifications: Set[Notification],
                                         reusabilityState: ReusabilityState,
                                         override val paramNames: Seq[String],
                                         override val extractedParams: MapValue,
-                                        override val compilerInfo: CompilerInfo) extends ExecutableQuery {
+                                        override val compilerInfo: CompilerInfo,
+                                        queryType: InternalQueryType) extends ExecutableQuery {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
 
-    private def queryContext(transactionalContext: TransactionalContext) = {
+    private def getQueryContext(transactionalContext: TransactionalContext) = {
       val ctx = new TransactionBoundQueryContext(TransactionalContextWrapper(transactionalContext))(searchMonitor)
       new ExceptionTranslatingQueryContext(ctx)
     }
@@ -149,14 +166,44 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       }
       runSafely {
 
-        val context = queryContext(transactionalContext)
+        val queryContext = getQueryContext(transactionalContext)
 
-        val innerResult: InternalExecutionResult = inner.run(context, innerExecutionMode, params)
-        new ExecutionResult(new ClosingExecutionResult(
-          transactionalContext.executingQuery(),
-          innerResult.withNotifications(preParsingNotifications.toSeq: _*),
-          runSafely
-        )(kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])))
+        val planDescriptionBuilder =
+          new PlanDescriptionBuilder(logicalPlan, planner.name, readOnly, cardinalities, executionPlan.runtimeName)
+
+        val taskCloser = new TaskCloser
+        taskCloser.addTask(queryContext.transactionalContext.close)
+        taskCloser.addTask(queryContext.resources.close)
+
+        val internalExecutionResult =
+          if (innerExecutionMode == ExplainMode) {
+            taskCloser.close(success = true)
+            val columns = columnNames(logicalPlan)
+
+            ExplainExecutionResult(columns,
+                                   planDescriptionBuilder.explain(),
+                                   queryType,
+                                   preParsingNotifications ++ planningNotifications)
+          } else {
+
+            val doProfile = innerExecutionMode == ProfileMode
+            val runtimeResult = executionPlan.run(queryContext, doProfile, params)
+
+            new StandardInternalExecutionResult(queryContext,
+                                                executionPlan.runtimeName,
+                                                runtimeResult,
+                                                taskCloser,
+                                                queryType,
+                                                preParsingNotifications,
+                                                innerExecutionMode,
+                                                planDescriptionBuilder)
+          }
+
+        new ExecutionResult(
+          new ClosingExecutionResult(
+            transactionalContext.executingQuery(),
+            internalExecutionResult,
+            runSafely)(kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])))
       }
     }
 

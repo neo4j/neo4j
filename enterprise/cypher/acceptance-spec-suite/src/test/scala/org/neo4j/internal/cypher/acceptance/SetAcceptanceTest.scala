@@ -54,7 +54,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     // when
     executeWith(Configs.UpdateConf, "MATCH (n) SET n.prop = tofloat(n.prop)")
 
-    executeWith(Configs.All, "MATCH (n) RETURN n.prop").next()("n.prop") shouldBe a[java.lang.Double]
+    executeWith(Configs.All, "MATCH (n) RETURN n.prop").head("n.prop") shouldBe a[java.lang.Double]
   }
 
   test("should be able to force a type change of a relationship property") {
@@ -64,7 +64,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     // when
     executeWith(Configs.UpdateConf, "MATCH ()-[r]->() SET r.prop = tofloat(r.prop)")
 
-    executeWith(Configs.All, "MATCH ()-[r]->() RETURN r.prop").next()("r.prop") shouldBe a[java.lang.Double]
+    executeWith(Configs.All, "MATCH ()-[r]->() RETURN r.prop").head("r.prop") shouldBe a[java.lang.Double]
   }
 
   test("should be able to set property to collection") {

@@ -19,23 +19,22 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_1
 
-import java.util.Collections
-
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_1.{CRS, Coordinate, Geometry, Point}
 import org.neo4j.cypher.internal.frontend.v3_1.helpers.Eagerly
 import org.neo4j.graphdb.spatial
+import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
 
 import scala.collection.JavaConverters._
 
 object typeConversions extends RuntimeTypeConverter {
-  override def asPublicType = {
+  override def asPublicType: Any => Any = {
     case point: Point => asPublicPoint(point)
-    case geometry: Geometry => asPublicGeometry(geometry)
+    case geometry: Geometry => throw new IllegalStateException("There are no non-point geometries in 3.1")
     case other => other
   }
 
-  override def asPrivateType = {
+  override def asPrivateType: Any => Any = {
     case map: Map[_, _] => asPrivateMap(map.asInstanceOf[Map[String, Any]])
     case seq: Seq[_] => seq.map(asPrivateType)
     case javaMap: java.util.Map[_, _] => Eagerly.immutableMapValues(javaMap.asScala, asPrivateType)
@@ -46,32 +45,8 @@ object typeConversions extends RuntimeTypeConverter {
     case value => value
   }
 
-  private def asPublicPoint(point: Point) = new spatial.Point {
-    override def getGeometryType = "Point"
-
-    override def getCRS: spatial.CRS = asPublicCRS(point.crs)
-
-    override def getCoordinates: java.util.List[spatial.Coordinate] = Collections
-      .singletonList(new spatial.Coordinate(point.coordinate.values: _*))
-  }
-
-  private def asPublicGeometry(geometry: Geometry) = new spatial.Geometry {
-    override def getGeometryType: String = geometry.geometryType
-
-    override def getCRS: spatial.CRS = asPublicCRS(geometry.crs)
-
-    override def getCoordinates = geometry.coordinates.map { c =>
-      new spatial.Coordinate(c.values: _*)
-    }.toIndexedSeq.asJava
-  }
-
-  private def asPublicCRS(crs: CRS) = new spatial.CRS {
-    override def getType: String = crs.name
-
-    override def getHref: String = crs.url
-
-    override def getCode: Int = crs.code
-  }
+  private def asPublicPoint(point: Point): org.neo4j.graphdb.spatial.Point =
+    Values.pointValue(CoordinateReferenceSystem.get(point.crs.url), point.coordinate.values:_*)
 
   def asPrivateMap(incoming: Map[String, Any]): Map[String, Any] =
     Eagerly.immutableMapValues[String,Any, Any](incoming, asPrivateType)

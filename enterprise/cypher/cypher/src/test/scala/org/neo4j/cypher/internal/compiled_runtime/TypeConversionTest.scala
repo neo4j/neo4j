@@ -22,7 +22,7 @@
  */
 package org.neo4j.cypher.internal.compiled_runtime
 
-import org.neo4j.cypher.internal.runtime.InternalExecutionResult
+import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.{CypherTypeException, ExecutionEngineFunSuite}
 
 class TypeConversionTest extends ExecutionEngineFunSuite {
@@ -45,6 +45,6 @@ class TypeConversionTest extends ExecutionEngineFunSuite {
     result.toList should equal(List(Map("x" -> x)))
   }
 
-  override def execute(q: String, params: (String, Any)*): InternalExecutionResult =
+  override def execute(q: String, params: (String, Any)*): RewindableExecutionResult =
     super.execute(s"cypher runtime=compiled $q", params:_*)
 }

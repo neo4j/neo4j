@@ -205,6 +205,6 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
                                             mutable.Map("existing1" -> RelTypeId(1),
                                                         "existing2" -> RelTypeId(2),
                                                         "existing3" -> RelTypeId(3)))
-    PipeExecutionBuilderContext(semanticTable, readOnly = true, mock[Cardinalities])
+    PipeExecutionBuilderContext(semanticTable, readOnly = true)
   }
 }

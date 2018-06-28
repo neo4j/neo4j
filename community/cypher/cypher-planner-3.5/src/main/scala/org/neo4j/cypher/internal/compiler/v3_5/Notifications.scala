@@ -25,6 +25,12 @@ case class SuboptimalIndexForConstainsQueryNotification(label: String, propertyK
 
 case class SuboptimalIndexForEndsWithQueryNotification(label: String, propertyKeys: Seq[String]) extends InternalNotification
 
+case object StartUnavailableFallback extends InternalNotification
+
+case class CreateUniqueUnavailableFallback(position: InputPosition) extends InternalNotification
+
+case object RulePlannerUnavailableFallbackNotification extends InternalNotification
+
 case object PlannerUnsupportedNotification extends InternalNotification
 
 case object RuntimeUnsupportedNotification extends InternalNotification

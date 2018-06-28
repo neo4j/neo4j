@@ -41,8 +41,8 @@ class SameQueryStressTest extends ExecutionEngineFunSuite {
     test(s"concurrent query execution in $runtime") {
 
       // Given
-      execute(TestGraph.movies)
-      val expected = execute(lookup).dumpToString()
+      graph.execute(TestGraph.movies)
+      val expected = graph.execute(lookup).resultAsString()
 
       // When
       val nThreads = 10
@@ -52,7 +52,7 @@ class SameQueryStressTest extends ExecutionEngineFunSuite {
           executor.submit(new Callable[Array[String]] {
             override def call(): Array[String] = {
               (for (j <- 1 to 1000) yield {
-                execute(lookup).dumpToString()
+                graph.execute(lookup).resultAsString()
               }).toArray
             }
           })

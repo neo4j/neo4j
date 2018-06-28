@@ -25,6 +25,7 @@ import org.neo4j.cypher.CypherExecutionMode
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v2_3.helpers.as2_3
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrapping.{asKernelNotification => asKernelNotification3_5}
 import org.neo4j.cypher.internal.compiler.v2_3
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{EntityAccessor, ExecutionPlan => ExecutionPlan_v2_3}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{PlanContext, QueryContext}
@@ -45,6 +46,7 @@ import org.neo4j.logging.Log
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
+import org.opencypher.v9_0.util.InternalNotification
 
 import scala.collection.mutable
 
@@ -92,7 +94,13 @@ trait Cypher23Compiler extends CachingPlanner[PreparedQuery] with Compiler {
         new ExecutionResult(
           new ClosingExecutionResult(
             query,
-            new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed, preParsingNotifications, Some(offSet)),
+            new ExecutionResultWrapper(
+              innerResult,
+              inner.plannerUsed,
+              inner.runtimeUsed,
+              preParsingNotifications,
+              Some(offSet)
+            ),
             exceptionHandler.runSafely)
         )
       }
@@ -122,7 +130,7 @@ trait Cypher23Compiler extends CachingPlanner[PreparedQuery] with Compiler {
 
   override def compile(preParsedQuery: PreParsedQuery,
                        tracer: CompilationPhaseTracer,
-                       preParsingNotifications: Set[org.neo4j.graphdb.Notification],
+                       preParsingNotifications: Set[InternalNotification],
                        transactionalContext: TransactionalContext,
                        params: MapValue
                       ): ExecutableQuery = {
@@ -143,7 +151,7 @@ trait Cypher23Compiler extends CachingPlanner[PreparedQuery] with Compiler {
       executionPlan2_3.notifications(planContext).foreach(notificationLogger += _)
       new Cypher23ExecutableQuery(
         executionPlan2_3,
-        preParsingNotifications,
+        preParsingNotifications.map(asKernelNotification3_5(None)),
         position2_3,
         Seq.empty[String],
         ValueConversion.asValues(extractedParameters))

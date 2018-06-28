@@ -19,27 +19,22 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan
 
-import org.opencypher.v9_0.util.CypherException
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RuntimeName
-import org.opencypher.v9_0.frontend.PlannerName
-import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeDecorator
-import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext}
+import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.values.virtual.MapValue
+import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
+import org.opencypher.v9_0.util.CypherException
 
 trait ExecutionResultBuilder {
   def setQueryContext(context: QueryContext)
   def setLoadCsvPeriodicCommitObserver(batchRowCount: Long)
   def setPipeDecorator(newDecorator: PipeDecorator)
   def setExceptionDecorator(newDecorator: CypherException => CypherException)
-  def build(planType: ExecutionMode,
-            params: MapValue,
+  def build(params: MapValue,
             notificationLogger: InternalNotificationLogger,
-            plannerName: PlannerName,
-            runtimeName: RuntimeName,
             readOnly: Boolean,
-            cardinalities: Cardinalities): InternalExecutionResult
+            queryProfile: QueryProfile): RuntimeResult
 }
 
 trait ExecutionResultBuilderFactory {

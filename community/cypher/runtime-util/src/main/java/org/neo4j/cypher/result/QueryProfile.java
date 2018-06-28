@@ -17,16 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan
+package org.neo4j.cypher.result;
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RuntimeName
-import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.values.virtual.MapValue
+/**
+ * Profile of a query execution.
+ */
+public interface QueryProfile
+{
+    /**
+     * Get profile for specific operator.
+     *
+     * Note: the operator should really be type as an [[org.opencypher.v9_0.util.attribution.Id]],
+     * but this is not possible because of a bug with scala `AnyVal`s and inheritance.
+     *
+     * See https://github.com/lampepfl/dotty/issues/1169 for a discussion of the same issue in Dotty.
+     *
+     * @param operatorId operator id
+     */
+    OperatorProfile operatorProfile( int operatorId );
 
-abstract class ExecutionPlan {
-
-  def run(queryContext: QueryContext, doProfile: Boolean, params: MapValue): RuntimeResult
-
-  def runtimeName: RuntimeName
+    QueryProfile NONE = operatorId -> OperatorProfile.NONE;
 }

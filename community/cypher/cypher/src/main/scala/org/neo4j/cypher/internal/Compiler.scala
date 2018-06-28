@@ -23,6 +23,7 @@ import org.neo4j.cypher.CypherException
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
+import org.opencypher.v9_0.util.InternalNotification
 
 /**
   * Cypher compiler, which compiles pre-parsed queries into executable queries.
@@ -30,19 +31,19 @@ import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
 trait Compiler {
 
   /**
-    * Compile pre-parsed query into executable query.
+    * Compile [[PreParsedQuery]] into [[ExecutableQuery]].
     *
-    * @param preParsedQuery pre-parsed query to convert
-    * @param tracer compilation tracer to which events of the compilation process are reported
+    * @param preParsedQuery          pre-parsed query to convert
+    * @param tracer                  compilation tracer to which events of the compilation process are reported
     * @param preParsingNotifications notifications from pre-parsing
-    * @param transactionalContext transactional context to use during compilation (in logical and physical planning)
+    * @param transactionalContext    transactional context to use during compilation (in logical and physical planning)
     * @throws CypherException public cypher exceptions on compilation problems
     * @return a compiled and executable query
     */
   @throws[org.neo4j.cypher.CypherException]
   def compile(preParsedQuery: PreParsedQuery,
               tracer: CompilationPhaseTracer,
-              preParsingNotifications: Set[org.neo4j.graphdb.Notification],
+              preParsingNotifications: Set[InternalNotification],
               transactionalContext: TransactionalContext,
               params: MapValue
              ): ExecutableQuery

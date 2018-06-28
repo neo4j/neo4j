@@ -19,24 +19,27 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers
 
+import org.neo4j.cypher.internal.runtime.{QueryTransactionalContext, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
-import org.neo4j.cypher.internal.runtime.{QueryContext, RuntimeScalaValueConverter}
+import org.neo4j.graphdb.Result.ResultRow
 import org.neo4j.graphdb.{Entity, Node, Path, Relationship}
+import org.neo4j.internal.kernel.api.{PropertyCursor, Transaction}
 
-import scala.collection.Map
+import scala.collection.mutable.ArrayBuffer
 
 // Converts scala runtime values to human readable text
 //
 // Main use: Printing results when using ExecutionEngine
 //
-class RuntimeTextValueConverter(scalaValues: RuntimeScalaValueConverter)(implicit context: QueryContext) {
+class RuntimeTextValueConverter(scalaValues: RuntimeScalaValueConverter,
+                                txContext: QueryTransactionalContext) {
 
   def asTextValue(a: Any): String = {
     val scalaValue = scalaValues.asShallowScalaValue(a)
     scalaValue match {
       case node: Node => s"Node[${node.getId}]${props(node)}"
       case relationship: Relationship => s":${relationship.getType.name()}[${relationship.getId}]${props(relationship)}"
-      case path: Path => path.toString
+      case path: Path => pathAsTextValue(path)
       case map: Map[_, _] => makeString(map)
       case opt: Option[_] => opt.map(asTextValue).getOrElse("None")
       case array: Array[_] => array.map(elem => asTextValue(elem)).mkString("[", ",", "]")
@@ -50,18 +53,93 @@ class RuntimeTextValueConverter(scalaValues: RuntimeScalaValueConverter)(implici
 
   private def makeString(m: Map[_, _]) = m.map { case (k, v) => s"$k -> ${asTextValue(v)}" }.mkString("{", ", ", "}")
 
+  def dumpRowToString(columns: Array[String], row: ResultRow): Map[String, String] = {
+    val map = Map.newBuilder[String, String]
+    for (c <- columns) {
+      map += c -> asTextValue(row.get(c))
+    }
+    map.result()
+  }
+
+  def pathAsTextValue(path: Path): String = {
+    val nodes = path.nodes().iterator()
+    val relationships = path.relationships().iterator()
+    val tx = txContext.transaction
+    val sb = new StringBuilder
+
+    def formatNode(n: Node) = {
+      val isDeleted = tx.dataRead().nodeDeletedInTransaction(n.getId)
+      val deletedString = if (isDeleted) ",deleted" else ""
+      sb ++= s"(${n.getId}$deletedString)"
+    }
+
+    def formatRelationship(leftNode: Node, r: Relationship) = {
+      val isDeleted = tx.dataRead().relationshipDeletedInTransaction(r.getId)
+      val deletedString = if (isDeleted) ",deleted" else ""
+      if (r.getStartNode != leftNode)
+        sb += '<'
+      sb ++= s"-[${r.getId}:${r.getType}$deletedString]-"
+      if (r.getEndNode != leftNode)
+        sb += '>'
+    }
+
+    var n = nodes.next()
+    formatNode(n)
+    while (relationships.hasNext) {
+      val r = relationships.next()
+      formatRelationship(n, r)
+      n = nodes.next()
+      formatNode(n)
+    }
+
+    sb.result()
+  }
+
   private def props(n: Node): String = {
-    val ops = context.nodeOps
-    val properties = if (isVirtualEntityHack(n)) Array.empty else ops.propertyKeyIds(n.getId)
-    val keyValStrings = properties.map(pkId => s"${context.getPropertyKeyName(pkId)}:${asTextValue(ops.getProperty(n.getId, pkId).asObject())}")
-    keyValStrings.mkString("{", ",", "}")
+    val tx = txContext.transaction
+    if (tx.dataRead().nodeDeletedInTransaction(n.getId)) {
+      return "{deleted}"
+    }
+
+    if (!isVirtualEntityHack(n)) {
+      val nodeCursor = tx.cursors().allocateNodeCursor()
+      val propertyCursor = tx.cursors().allocatePropertyCursor()
+      tx.dataRead().singleNode(n.getId, nodeCursor)
+      if (nodeCursor.next()) {
+        nodeCursor.properties(propertyCursor)
+        return propertiesAsTextValue(propertyCursor)
+      }
+    }
+    "{}"
   }
 
   private def props(r: Relationship): String = {
-    val ops = context.relationshipOps
-    val properties = if (isVirtualEntityHack(r)) Array.empty else ops.propertyKeyIds(r.getId)
-    val keyValStrings = properties.map(pkId => s"${context.getPropertyKeyName(pkId)}:${asTextValue(ops.getProperty(r.getId, pkId).asObject())}")
-    keyValStrings.mkString("{", ",", "}")
+    val tx = txContext.transaction
+    if (tx.dataRead().relationshipDeletedInTransaction(r.getId)) {
+      return "{deleted}"
+    }
+
+    if (!isVirtualEntityHack(r)) {
+      val relationshipCursor = tx.cursors().allocateRelationshipScanCursor()
+      val propertyCursor = tx.cursors().allocatePropertyCursor()
+      tx.dataRead().singleRelationship(r.getId, relationshipCursor)
+      if (relationshipCursor.next()) {
+        relationshipCursor.properties(propertyCursor)
+        return propertiesAsTextValue(propertyCursor)
+      }
+    }
+    "{}"
+  }
+
+  private def propertiesAsTextValue(propertyCursor: PropertyCursor): String = {
+    val keyValues = new ArrayBuffer[String]
+    val tokenRead = txContext.transaction.tokenRead()
+    while (propertyCursor.next()) {
+      val key = tokenRead.propertyKeyName(propertyCursor.propertyKey())
+      val value = asTextValue(propertyCursor.propertyValue().asObject())
+      keyValues.append(s"$key:$value")
+    }
+    keyValues.mkString("{", ",", "}")
   }
 
   private def isVirtualEntityHack(entity:Entity): Boolean = entity.getId < 0

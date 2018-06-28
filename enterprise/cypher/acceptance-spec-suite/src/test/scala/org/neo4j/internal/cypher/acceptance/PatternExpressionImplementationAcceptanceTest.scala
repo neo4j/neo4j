@@ -80,7 +80,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     val rel4 = relate(start2, d)
 
     val result = executeWith(Configs.Interpreted, "match (n) return case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p")
-      .map(_.mapValues {
+      .toList.map(_.mapValues {
         case l: Seq[Any] => l.toSet
         case x => x
       }).toSet
@@ -132,7 +132,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     val rel4 = relate(start2, d)
 
     val result = executeWith(Configs.Interpreted, "match (n) with case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p, count(n) as c return p, c")
-      .map(_.mapValues {
+      .toList.map(_.mapValues {
         case l: Seq[Any] => l.toSet
         case x => x
       }).toSet

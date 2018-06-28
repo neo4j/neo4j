@@ -23,7 +23,6 @@
 package org.neo4j.cypher.internal.executionplan;
 
 import org.neo4j.cypher.internal.runtime.ExecutionMode;
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.Completable;
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription;
 import org.neo4j.cypher.result.QueryResult;
 
@@ -36,6 +35,4 @@ public interface GeneratedQueryExecution
     InternalPlanDescription executionPlanDescription();
 
     String[] fieldNames();
-
-    void setCompletable( Completable completable );
 }

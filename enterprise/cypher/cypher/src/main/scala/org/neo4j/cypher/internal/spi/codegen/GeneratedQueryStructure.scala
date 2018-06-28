@@ -33,7 +33,7 @@ import org.neo4j.codegen.source.SourceCode.SOURCECODE
 import org.neo4j.codegen.source.{SourceCode, SourceVisitor}
 import org.neo4j.codegen.{CodeGenerator, Parameter, TypeReference, _}
 import org.neo4j.cypher.internal.codegen.{PrimitiveNodeStream, PrimitiveRelationshipStream, QueryExecutionTracer}
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{Completable, Provider}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.Provider
 import org.neo4j.cypher.internal.executionplan.{GeneratedQuery, GeneratedQueryExecution}
 import org.opencypher.v9_0.frontend.helpers.using
 import org.neo4j.cypher.internal.javacompat.ResultRecord
@@ -161,9 +161,6 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       val structure = new GeneratedMethodStructure(fields, codeBlock, new AuxGenerator(conf.packageName, generator), onClose =
         Seq((success: Boolean) => (block: CodeBlock) => {
           block.expression(invoke(block.self(), methodReference(block.owner(), TypeReference.VOID, "closeCursors")))
-          val target = Expression.get(block.self(), fields.closeable)
-          val reference = method[Completable, Unit]("completed", typeRef[Boolean])
-          block.expression(invoke(target, reference, Expression.constant(success)))
         }))
       codeBlock.assign(typeRef[ResultRecord], "row",
                        invoke(newInstance(typeRef[ResultRecord]),
@@ -185,7 +182,6 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     Templates.relationshipScanCursor(clazz, fields)
     Templates.propertyCursor(clazz, fields)
     Templates.closeCursors(clazz, fields)
-    clazz.generate(Templates.setCompletable(clazz.handle()))
     clazz.generate(Templates.executionMode(clazz.handle()))
     clazz.generate(Templates.executionPlanDescription(clazz.handle()))
     clazz.generate(Templates.FIELD_NAMES)
@@ -207,7 +203,6 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       description = clazz.field(typeRef[Provider[InternalPlanDescription]], "description"),
       tracer = clazz.field(typeRef[QueryExecutionTracer], "tracer"),
       params = clazz.field(typeRef[MapValue], "params"),
-      closeable = clazz.field(typeRef[Completable], "closeable"),
       queryContext = clazz.field(typeRef[QueryContext], "queryContext"),
       skip = clazz.field(typeRef[Boolean], "skip"),
       cursors = clazz.field(typeRef[CursorFactory], "cursors"),

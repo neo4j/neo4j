@@ -98,7 +98,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
 
   test("point function should not work with NaN or infinity") {
     for(invalidDouble <- Seq(Double.NaN, Double.PositiveInfinity, Double.NegativeInfinity)) {
-      failWithError(Configs.DefaultInterpreted + Configs.SlottedInterpreted + Configs.Version3_4 + Configs.Procs,
+      failWithError((Configs.Interpreted - Configs.Version2_3) + Configs.Procs,
         "RETURN point({x: 2.3, y: $v}) as point", List("Cannot create a point with non-finite coordinate values"), params = Map(("v", invalidDouble)))
     }
   }

@@ -24,7 +24,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
 
-class SerializationAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
+class SerializationAcceptanceTest extends ExecutionEngineFunSuite {
 
   // serialization of deleted entities
 
@@ -34,9 +34,9 @@ class SerializationAcceptanceTest extends ExecutionEngineFunSuite with QueryStat
     val query = "MATCH (n) DELETE n RETURN n"
 
     graph.inTx {
-      val result = execute(query)
+      val result = graph.execute(query).resultAsString()
 
-      result.dumpToString() should include("Node[0]{deleted}")
+      result should include("Node[0]{deleted}")
     }
   }
 
@@ -46,9 +46,9 @@ class SerializationAcceptanceTest extends ExecutionEngineFunSuite with QueryStat
     val query = "MATCH (n) RETURN n"
 
     graph.inTx {
-      val result = execute(query)
+      val result = graph.execute(query).resultAsString()
 
-      result.dumpToString() should not include "deleted"
+      result should not include "deleted"
     }
   }
 
@@ -58,9 +58,9 @@ class SerializationAcceptanceTest extends ExecutionEngineFunSuite with QueryStat
     val query = "MATCH ()-[r]->() RETURN r"
 
     graph.inTx {
-      val result = execute(query)
+      val result = graph.execute(query).resultAsString()
 
-      result.dumpToString() should not include "deleted"
+      result should not include "deleted"
     }
   }
 
@@ -70,9 +70,9 @@ class SerializationAcceptanceTest extends ExecutionEngineFunSuite with QueryStat
     val query = "MATCH ()-[r]->() DELETE r RETURN r"
 
     graph.inTx {
-      val result = execute(query)
+      val result = graph.execute(query).resultAsString()
 
-      result.dumpToString() should include(":T[0]{deleted}")
+      result should include(":T[0]{deleted}")
     }
   }
 
@@ -82,11 +82,11 @@ class SerializationAcceptanceTest extends ExecutionEngineFunSuite with QueryStat
     val query = "MATCH (a)-[r]->(b) DELETE a, r, b RETURN *"
 
     graph.inTx {
-      val result = execute(query)
+      val result = graph.execute(query).resultAsString()
 
-      result.dumpToString() should include(":T[0]{deleted}")
-      result.dumpToString() should include("Node[0]{deleted}")
-      result.dumpToString() should include("Node[1]{deleted}")
+      result should include(":T[0]{deleted}")
+      result should include("Node[0]{deleted}")
+      result should include("Node[1]{deleted}")
     }
   }
 
@@ -96,11 +96,11 @@ class SerializationAcceptanceTest extends ExecutionEngineFunSuite with QueryStat
     val query = "MATCH p=(a)-[r]->(b) DELETE p RETURN p"
 
     graph.inTx {
-      val result = execute(query)
+      val result = graph.execute(query).resultAsString()
 
-      result.dumpToString() should include(":T[0]{deleted}")
-      result.dumpToString() should include("Node[0]{deleted}")
-      result.dumpToString() should include("Node[1]{deleted}")
+      result should include("[0:T,deleted]")
+      result should include("(0,deleted)")
+      result should include("(1,deleted)")
     }
   }
 
@@ -110,11 +110,11 @@ class SerializationAcceptanceTest extends ExecutionEngineFunSuite with QueryStat
     val query = "MATCH p=(a)-[r]->(b) DELETE a, r RETURN p"
 
     graph.inTx {
-      val result = execute(query)
+      val result = graph.execute(query).resultAsString()
 
-      result.dumpToString() should include(":T[0]{deleted}")
-      result.dumpToString() should include("Node[0]{deleted}")
-      result.dumpToString() should not include("Node[1]{deleted}")
+      result should include("[0:T,deleted]")
+      result should include("(0,deleted)")
+      result should not include "(1,deleted)"
     }
   }
 
@@ -124,11 +124,11 @@ class SerializationAcceptanceTest extends ExecutionEngineFunSuite with QueryStat
     val query = "MATCH p=(a)-[r]->(b) DELETE r RETURN p"
 
     graph.inTx {
-      val result = execute(query)
+      val result = graph.execute(query).resultAsString()
 
-      result.dumpToString() should include(":T[0]{deleted}")
-      result.dumpToString() should not include("Node[0]{deleted}")
-      result.dumpToString() should not include("Node[1]{deleted}")
+      result should include("[0:T,deleted]")
+      result should not include "(0,deleted)"
+      result should not include "(1,deleted)"
     }
   }
 

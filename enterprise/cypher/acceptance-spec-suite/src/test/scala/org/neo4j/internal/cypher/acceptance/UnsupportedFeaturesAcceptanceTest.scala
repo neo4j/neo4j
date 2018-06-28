@@ -28,7 +28,7 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import scala.language.postfixOps
 
 class UnsupportedFeaturesAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
-  val configs = Configs.Version3_5 + Configs.Procs - Configs.AllRulePlanners
+  val configs = Configs.Version3_5 + Configs.DefaultProcs - Configs.AllRulePlanners
 
   test("from graph") {
     val query = "FROM GRAPH foo.bar MATCH (a)-->() RETURN a"

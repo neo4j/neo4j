@@ -17,12 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan
+package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
-/**
-  * This trait is used to signal up the abstraction levels that running a query is completed, either
-  * because the results have been exhausted, or because a failure has terminated the execution of the query.
-  */
-trait Completable {
-  def completed(success: Boolean): Unit
-}
+import org.neo4j.cypher.result.QueryResult
+import org.neo4j.values.AnyValue
+
+case class IteratorBasedResult(mapIterator: Iterator[collection.Map[String, AnyValue]],
+                               recordIterator: Option[Iterator[QueryResult.Record]] = None)

@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v3_5
 
 import org.neo4j.cypher.internal.compiler.v3_5.phases._
-import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.frontend.phases.{BaseState, Condition, Phase}
-import org.opencypher.v9_0.ast.semantics.{SemanticCheckResult, SemanticState}
-import org.opencypher.v9_0.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.v3_5.logical.plans
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, ResolvedCall}
+import org.opencypher.v9_0.ast._
+import org.opencypher.v9_0.ast.semantics.{SemanticCheckResult, SemanticState}
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
+import org.opencypher.v9_0.frontend.phases.{BaseState, Condition, Phase}
+import org.opencypher.v9_0.util.attribution.SequentialIdGen
 
 /**
   * This planner takes on queries that requires no planning such as procedures and schema commands

@@ -33,13 +33,13 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
       "where id(zero) = 0 AND id(one) = 1 AND id(two) = 2 AND id(three) = 3 AND id(four) = 4 AND id(five) = 5 AND id(six) = 6 AND id(seven) = 7 AND id(eight) = 8 AND id(nine) = 9 " +
       "return zero, one, two, three, four, five, six, seven, eight, nine"
 
-    val result = execute(q)
+    assert(execute(q).columns === columns)
 
-    assert( result.columns === columns )
     val regex = "zero.*one.*two.*three.*four.*five.*six.*seven.*eight.*nine"
     val pattern = Pattern.compile(regex)
 
-    assertTrue( "Columns did not appear in the expected order: \n" + result.dumpToString(), pattern.matcher(result.dumpToString()).find() )
+    val stringDump = graph.execute(q).resultAsString()
+    assertTrue( "Columns did not appear in the expected order: \n" + stringDump, pattern.matcher(stringDump).find() )
   }
 
   test("correctLabelStatisticsForCreate") {

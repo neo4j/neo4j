@@ -279,14 +279,11 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
                                  allowed: Array[String]): UserDefinedAggregator =
     singleDbHit(inner.aggregateFunction(name, allowed))
 
-  override def isGraphKernelResultValue(v: Any): Boolean =
-    inner.isGraphKernelResultValue(v)
-
   override def detachDeleteNode(node: Long): Int = manyDbHits(inner.detachDeleteNode(node))
 
   override def assertSchemaWritesAllowed(): Unit = inner.assertSchemaWritesAllowed()
 
-  override def asObject(value: AnyValue): Any = inner.asObject(value)
+  override def asObject(value: AnyValue): AnyRef = inner.asObject(value)
 }
 
 class DelegatingOperations[T](protected val inner: Operations[T]) extends Operations[T] {

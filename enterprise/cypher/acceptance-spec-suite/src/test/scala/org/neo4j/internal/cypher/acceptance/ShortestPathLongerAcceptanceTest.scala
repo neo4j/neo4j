@@ -25,7 +25,7 @@ package org.neo4j.internal.cypher.acceptance
 import java.util
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.cypher.internal.runtime.InternalExecutionResult
+import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.DataMonitor
@@ -711,7 +711,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
     dprintln()
   }
 
-  private def evaluateShortestPathResults(results: InternalExecutionResult, startMs: Long, pathLength: Int, expectedNodes: Set[Node]): Unit = {
+  private def evaluateShortestPathResults(results: RewindableExecutionResult, startMs: Long, pathLength: Int, expectedNodes: Set[Node]): Unit = {
     val duration = System.currentTimeMillis() - startMs
     dprintln(results.executionPlanDescription())
 
@@ -735,7 +735,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
   private def dprintln() = if (VERBOSE) println
   private def dprint(s: Any) = if (VERBOSE) print(s)
 
-  private def evaluateAllShortestPathResults(results: InternalExecutionResult, identifier: String, startMs: Long, expectedPathCount: Int, expectedNodes: Set[Set[Node]]): Unit = {
+  private def evaluateAllShortestPathResults(results: RewindableExecutionResult, identifier: String, startMs: Long, expectedPathCount: Int, expectedNodes: Set[Set[Node]]): Unit = {
     val resultList = results.toList
     val duration = System.currentTimeMillis() - startMs
     dprintln(results.executionPlanDescription())

@@ -199,9 +199,6 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
                                  allowed: Array[String]): UserDefinedAggregator =
     translateException(inner.aggregateFunction(name, allowed))
 
-  override def isGraphKernelResultValue(v: Any): Boolean =
-    translateException(inner.isGraphKernelResultValue(v))
-
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T =
     inner.withAnyOpenQueryContext(qc =>
       translateException(
@@ -265,7 +262,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def nodeIsDense(node: Long) =
     translateException(inner.nodeIsDense(node))
 
-  override def asObject(value: AnyValue) =
+  override def asObject(value: AnyValue): AnyRef =
     translateException(inner.asObject(value))
 
   override def variableLengthPathExpand(realNode: Long, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]) =

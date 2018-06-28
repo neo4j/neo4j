@@ -46,14 +46,13 @@ import org.neo4j.cypher.internal.spi.v3_4.{ExceptionTranslatingPlanContext => Ex
 import org.neo4j.cypher.internal.util.{v3_4 => utilV3_4}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, Parameter}
 import org.neo4j.cypher.{CypherPlannerOption, CypherUpdateStrategy, CypherVersion}
-import org.neo4j.graphdb.Notification
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.frontend.PlannerName
-import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, RecordingNotificationLogger => RecordingNotificationLoggerv3_5}
+import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, InternalNotificationLogger => InternalNotificationLoggerv3_5}
 import org.opencypher.v9_0.util.attribution.SequentialIdGen
 
 case class Cypher34Planner(configv3_5: CypherPlannerConfiguration,
@@ -117,7 +116,7 @@ case class Cypher34Planner(configv3_5: CypherPlannerConfiguration,
 
   override def parseAndPlan(preParsedQuery: PreParsedQuery,
                             tracer: CompilationPhaseTracer,
-                            preParsingNotifications: Set[Notification],
+                            notificationLoggerv3_5: InternalNotificationLoggerv3_5,
                             transactionalContext: TransactionalContext,
                             params: MapValue
                            ): LogicalPlanResult = {
@@ -125,7 +124,6 @@ case class Cypher34Planner(configv3_5: CypherPlannerConfiguration,
     val inputPositionV3_4 = as3_4(preParsedQuery.offset)
     val inputPositionv3_5 = preParsedQuery.offset
     val notificationLoggerV3_4 = new RecordingNotificationLoggerV3_4(Some(inputPositionV3_4))
-    val notificationLoggerv3_5 = new RecordingNotificationLoggerv3_5(Some(inputPositionv3_5))
 
     runSafely {
       val syntacticQuery =

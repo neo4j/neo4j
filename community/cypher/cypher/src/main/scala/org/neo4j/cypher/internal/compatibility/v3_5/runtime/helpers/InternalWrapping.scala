@@ -29,6 +29,12 @@ import scala.collection.JavaConverters._
 object InternalWrapping {
 
   def asKernelNotification(offset: Option[InputPosition])(notification: InternalNotification) = notification match {
+    case StartUnavailableFallback =>
+      NotificationCode.START_UNAVAILABLE_FALLBACK.notification(graphdb.InputPosition.empty)
+    case CreateUniqueUnavailableFallback(pos) =>
+      NotificationCode.CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification(pos.withOffset(offset).asInputPosition)
+    case RulePlannerUnavailableFallbackNotification =>
+      NotificationCode.RULE_PLANNER_UNAVAILABLE_FALLBACK.notification(graphdb.InputPosition.empty)
     case DeprecatedStartNotification(pos, message) =>
       NotificationCode.START_DEPRECATED.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.message("START", message))
     case CartesianProductNotification(pos, variables) =>

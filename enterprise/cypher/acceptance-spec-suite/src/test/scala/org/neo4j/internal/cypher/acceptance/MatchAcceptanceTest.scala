@@ -156,8 +156,6 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     val result = executeWith(Configs.Interpreted, query)
     result.size should be(0)
-    result.hasNext should be(false)
-
   }
 
   // Not TCK material -- only one integer type
@@ -589,8 +587,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |RETURN project.p""".stripMargin
 
     //WHEN
-    val first = executeWith(Configs.UpdateConf, query).length
-    val second = executeWith(Configs.UpdateConf, query).length
+    val first = executeWith(Configs.UpdateConf, query).size
+    val second = executeWith(Configs.UpdateConf, query).size
     val check = executeWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
@@ -624,8 +622,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     //WHEN
 
-    val first = executeWith(Configs.UpdateConf, query).length
-    val second = executeWith(Configs.UpdateConf, query).length
+    val first = executeWith(Configs.UpdateConf, query).size
+    val second = executeWith(Configs.UpdateConf, query).size
     val check = executeWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN

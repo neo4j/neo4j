@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.compatibility
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.ExecutionPlan
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.procs.{ProcedureCallExecutionPlan, PureSideEffectExecutionPlan}
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrapping.asKernelNotification
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.procs.{ProcedureCallExecutionPlan, SchemaWriteExecutionPlan}
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
@@ -29,7 +28,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{Community
 import org.neo4j.cypher.internal.runtime.{InternalQueryType, ProcedureCallMode, QueryContext, SCHEMA_WRITE}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, RelTypeName}
-import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
 
 /**
@@ -43,7 +41,7 @@ object ProcedureCallOrSchemaCommandRuntime extends CypherRuntime[RuntimeContext]
         s"Plan is not a procedure call or schema command: ${unknownPlan.getClass.getSimpleName}")
     }
 
-    logicalToExecutable.applyOrElse(state.maybeLogicalPlan.get, throwCantCompile)(context.notificationLogger)
+    logicalToExecutable.applyOrElse(state.maybeLogicalPlan.get, throwCantCompile)
   }
 
   def queryType(logicalPlan: LogicalPlan): Option[InternalQueryType] =
@@ -55,78 +53,77 @@ object ProcedureCallOrSchemaCommandRuntime extends CypherRuntime[RuntimeContext]
       }
     } else None
 
-  val logicalToExecutable: PartialFunction[LogicalPlan, InternalNotificationLogger => ExecutionPlan] = {
+  val logicalToExecutable: PartialFunction[LogicalPlan, ExecutionPlan] = {
     // Global call: CALL foo.bar.baz("arg1", 2)
     case StandAloneProcedureCall(signature, args, types, indices) =>
       val converters = new ExpressionConverters(CommunityExpressionConverter)
-      logger => ProcedureCallExecutionPlan(signature, args, types, indices,
-        logger.notifications.map(asKernelNotification(logger.offset)), converters)
+      ProcedureCallExecutionPlan(signature, args, types, indices, converters)
 
     // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
     case CreateNodeKeyConstraint(_, label, props) =>
-      logger => PureSideEffectExecutionPlan("CreateNodeKeyConstraint", SCHEMA_WRITE, ctx => {
-        val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
-        ctx.createNodeKeyConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))
-      })
+      SchemaWriteExecutionPlan("CreateNodeKeyConstraint", ctx => {
+              val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
+              ctx.createNodeKeyConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))
+            })
 
     // DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
     case DropNodeKeyConstraint(label, props) =>
-      logger => PureSideEffectExecutionPlan("DropNodeKeyConstraint", SCHEMA_WRITE, ctx => {
-        val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
-        ctx.dropNodeKeyConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))
-      })
+      SchemaWriteExecutionPlan("DropNodeKeyConstraint", ctx => {
+              val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
+              ctx.dropNodeKeyConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))
+            })
 
     // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
     // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
     case CreateUniquePropertyConstraint(_, label, props) =>
-      logger => PureSideEffectExecutionPlan("CreateUniqueConstraint", SCHEMA_WRITE, ctx => {
-        val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
-        ctx.createUniqueConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))
-      })
+      SchemaWriteExecutionPlan("CreateUniqueConstraint", ctx => {
+              val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
+              ctx.createUniqueConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))
+            })
 
     // DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
     // DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
     case DropUniquePropertyConstraint(label, props) =>
-      logger => PureSideEffectExecutionPlan("DropUniqueConstraint", SCHEMA_WRITE, ctx => {
-        val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
-        ctx.dropUniqueConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))
-      })
+      SchemaWriteExecutionPlan("DropUniqueConstraint", ctx => {
+              val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
+              ctx.dropUniqueConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))
+            })
 
     // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
     case CreateNodePropertyExistenceConstraint(label, prop) =>
-      logger => PureSideEffectExecutionPlan("CreateNodePropertyExistenceConstraint", SCHEMA_WRITE, ctx => {
-        (ctx.createNodePropertyExistenceConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
-      })
+      SchemaWriteExecutionPlan("CreateNodePropertyExistenceConstraint", ctx => {
+              (ctx.createNodePropertyExistenceConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
+            })
 
     // DROP CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
     case DropNodePropertyExistenceConstraint(label, prop) =>
-      logger => PureSideEffectExecutionPlan("DropNodePropertyExistenceConstraint", SCHEMA_WRITE, ctx => {
-        (ctx.dropNodePropertyExistenceConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
-      })
+      SchemaWriteExecutionPlan("DropNodePropertyExistenceConstraint", ctx => {
+              (ctx.dropNodePropertyExistenceConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
+            })
 
     // CREATE CONSTRAINT ON ()-[r:R]-() ASSERT r.prop EXISTS
     case CreateRelationshipPropertyExistenceConstraint(relType, prop) =>
-      logger => PureSideEffectExecutionPlan("CreateRelationshipPropertyExistenceConstraint", SCHEMA_WRITE, ctx => {
-        (ctx.createRelationshipPropertyExistenceConstraint _).tupled(typeProp(ctx)(relType, prop.propertyKey))
-      })
+      SchemaWriteExecutionPlan("CreateRelationshipPropertyExistenceConstraint", ctx => {
+              (ctx.createRelationshipPropertyExistenceConstraint _).tupled(typeProp(ctx)(relType, prop.propertyKey))
+            })
 
     // DROP CONSTRAINT ON ()-[r:R]-() ASSERT r.prop EXISTS
     case DropRelationshipPropertyExistenceConstraint(relType, prop) =>
-      logger => PureSideEffectExecutionPlan("DropRelationshipPropertyExistenceConstraint", SCHEMA_WRITE, ctx => {
-        (ctx.dropRelationshipPropertyExistenceConstraint _).tupled(typeProp(ctx)(relType, prop.propertyKey))
-      })
+      SchemaWriteExecutionPlan("DropRelationshipPropertyExistenceConstraint", ctx => {
+              (ctx.dropRelationshipPropertyExistenceConstraint _).tupled(typeProp(ctx)(relType, prop.propertyKey))
+            })
 
     // CREATE INDEX ON :LABEL(prop)
     case CreateIndex(label, props) =>
-      logger => PureSideEffectExecutionPlan("CreateIndex", SCHEMA_WRITE, ctx => {
-        ctx.addIndexRule(IndexDescriptor(labelToId(ctx)(label), propertiesToIds(ctx)(props)))
-      })
+      SchemaWriteExecutionPlan("CreateIndex", ctx => {
+              ctx.addIndexRule(IndexDescriptor(labelToId(ctx)(label), propertiesToIds(ctx)(props)))
+            })
 
     // DROP INDEX ON :LABEL(prop)
     case DropIndex(label, props) =>
-      logger => PureSideEffectExecutionPlan("DropIndex", SCHEMA_WRITE, ctx => {
-        ctx.dropIndexRule(IndexDescriptor(labelToId(ctx)(label), propertiesToIds(ctx)(props)))
-      })
+      SchemaWriteExecutionPlan("DropIndex", ctx => {
+              ctx.dropIndexRule(IndexDescriptor(labelToId(ctx)(label), propertiesToIds(ctx)(props)))
+            })
   }
 
   implicit private def labelToId(ctx: QueryContext)(label: LabelName): LabelId =

@@ -124,7 +124,7 @@ class ProfilingTracerTest extends CypherFunSuite {
 
     event.close()
 
-    val information = tracer.get(operatorId)
+    val information = tracer.operatorProfile(operatorId.x)
     information.pageCacheHits() should equal(100)
   }
 
@@ -144,7 +144,7 @@ class ProfilingTracerTest extends CypherFunSuite {
 
     event.close()
 
-    val information = tracer.get(operatorId)
+    val information = tracer.operatorProfile(operatorId.x)
     information.pageCacheMisses() should equal(17)
   }
 

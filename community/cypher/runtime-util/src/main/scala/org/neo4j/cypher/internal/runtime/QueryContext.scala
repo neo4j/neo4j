@@ -168,7 +168,7 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def nodeIsDense(node: Long): Boolean
 
-  def asObject(value: AnyValue): Any
+  def asObject(value: AnyValue): AnyRef
 
   // Legacy dependency between kernel and compiler
   def variableLengthPathExpand(realNode: Long, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]): Iterator[Path]
@@ -204,10 +204,6 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def aggregateFunction(id: Int, allowed: Array[String]): UserDefinedAggregator
   def aggregateFunction(name: QualifiedName, allowed: Array[String]): UserDefinedAggregator
-
-    // Check if a runtime value is a node, relationship, path or some such value returned from
-  // other query context values by calling down to the underlying database
-  def isGraphKernelResultValue(v: Any): Boolean
 
   def detachDeleteNode(id: Long): Int
 

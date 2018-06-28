@@ -22,11 +22,16 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.runtime.planDescription.{Argument, InternalPlanDescription}
 import org.neo4j.cypher.internal.runtime.{CreateTempFileTestSupport, InternalExecutionResult}
 import org.neo4j.cypher.internal.runtime.{CreateTempFileTestSupport, ProfileMode}
+import org.neo4j.cypher.internal.runtime.{CreateTempFileTestSupport, ProfileMode}
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows, Signature}
+import org.neo4j.cypher.internal.runtime.planDescription.{Argument, InternalPlanDescription}
+import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
 import org.neo4j.cypher.{ExecutionEngineFunSuite, ProfilerStatisticsNotReadyException, TxCounts}
 import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{Configs, TestConfiguration}
@@ -340,7 +345,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("should support profiling optional match and with") {
     createLabeledNode(Map("x" -> 1), "Label")
-    val executionResult: InternalExecutionResult = profileWithExecute(Configs.Interpreted, "match (n) optional match (n)--(m) with n, m where m is null return n.x as A")
+    val executionResult = profileWithExecute(Configs.Interpreted, "match (n) optional match (n)--(m) with n, m where m is null return n.x as A")
     val result = executionResult.toList.head
     result("A") should equal(1)
   }
@@ -651,11 +656,11 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     result.executionPlanDescription() should includeSomewhere.aPlan("Filter").withDBHits(14)
   }
 
-  type Planner = (String, Map[String, Any]) => InternalExecutionResult
+  type Planner = (String, Map[String, Any]) => RewindableExecutionResult
 
-  def profileWithPlanner(planner: Planner, q: String, params: Map[String, Any]): InternalExecutionResult = {
+  def profileWithPlanner(planner: Planner, q: String, params: Map[String, Any]): RewindableExecutionResult = {
     val result = planner("profile " + q, params)
-    assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
+    result.executionMode should equal(ProfileMode)
 
     val planDescription: InternalPlanDescription = result.executionPlanDescription()
     planDescription.flatten.foreach {
@@ -668,9 +673,9 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     result
   }
 
-  def profileWithExecute(configuration: TestConfiguration, q: String): InternalExecutionResult = {
+  def profileWithExecute(configuration: TestConfiguration, q: String): RewindableExecutionResult = {
     val result = executeWith(configuration, "profile " + q)
-    assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
+    result.executionMode should equal(ProfileMode)
 
     val planDescription: InternalPlanDescription = result.executionPlanDescription()
     planDescription.flatten.foreach {
@@ -683,9 +688,9 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     result
   }
 
-  override def profile(q: String, params: (String, Any)*): InternalExecutionResult = fail("Don't use profile all together in ProfilerAcceptanceTest")
+  override def profile(q: String, params: (String, Any)*): RewindableExecutionResult = fail("Don't use profile all together in ProfilerAcceptanceTest")
 
-  def legacyProfile(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(innerExecuteDeprecated, q, params.toMap)
+  def legacyProfile(q: String, params: (String, Any)*): RewindableExecutionResult = profileWithPlanner(innerExecuteDeprecated, q, params.toMap)
 
   private def getArgument[A <: Argument](plan: InternalPlanDescription)(implicit manifest: ClassTag[A]): A = plan.arguments.collectFirst {
     case x: A => x

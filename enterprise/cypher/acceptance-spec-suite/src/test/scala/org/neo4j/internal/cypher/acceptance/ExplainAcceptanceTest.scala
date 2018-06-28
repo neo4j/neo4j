@@ -23,6 +23,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.internal.runtime.{ExplainMode, NormalMode}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 class ExplainAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
@@ -31,7 +32,7 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
     createNode()
     val result = executeWith(Configs.All + Configs.Morsel, "match (n) return n")
 
-    result.planDescriptionRequested should equal(false)
+    result.executionMode should equal(NormalMode)
     result shouldNot be(empty)
   }
 
@@ -39,7 +40,7 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
     createNode()
     val result = executeWith(Configs.All + Configs.Morsel, "explain match (n) return n")
 
-    result.planDescriptionRequested should equal(true)
+    result.executionMode should equal(ExplainMode)
     result should be(empty)
   }
 
@@ -73,7 +74,6 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
 
     val result = executeWith(Configs.Interpreted, query)
     val plan = result.executionPlanDescription().toString
-    result.close()
 
     plan.toString should include("NestedPlanExpression(VarExpand-Argument)")
   }

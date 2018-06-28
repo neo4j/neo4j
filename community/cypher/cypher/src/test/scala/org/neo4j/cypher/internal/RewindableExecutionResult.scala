@@ -19,98 +19,91 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.exceptionHandler
-import org.neo4j.cypher.internal.compatibility.ClosingExecutionResult
-import org.neo4j.cypher.internal.compatibility.v2_3.{ExecutionResultWrapper => ExecutionResultWrapperFor2_3, exceptionHandler => exceptionHandlerFor2_3}
-import org.neo4j.cypher.internal.compatibility.v3_1.{ExecutionResultWrapper => ExecutionResultWrapperFor3_1, exceptionHandler => exceptionHandlerFor3_1}
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan._
-import org.neo4j.cypher.internal.compiler.{v2_3, v3_1}
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.graphdb.{QueryExecutionType, Result}
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
+import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
+import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
+import org.neo4j.graphdb.{Notification, Result}
+
+import scala.collection.mutable.ArrayBuffer
+
+/**
+  * Helper class to ease asserting on cypher results from scala.
+  */
+class RewindableExecutionResult(val columns: Array[String],
+                                result: Seq[Map[String, AnyRef]],
+                                val executionMode: ExecutionMode,
+                                planDescription: InternalPlanDescription,
+                                statistics: QueryStatistics,
+                                val notifications: Iterable[Notification]) {
+
+  def columnAs[T](column: String): Iterator[T] = result.iterator.map(row => row(column).asInstanceOf[T])
+  def toList: Seq[Map[String, AnyRef]] = result
+  def toSet: Set[Map[String, AnyRef]] = result.toSet
+  def size: Long = result.size
+  def head(str: String): AnyRef = result.head(str)
+
+  def executionPlanDescription(): InternalPlanDescription = planDescription
+
+  def executionPlanString(): String = planDescription.toString
+
+  def queryStatistics(): QueryStatistics = statistics
+
+  def isEmpty: Boolean = result.isEmpty
+}
 
 object RewindableExecutionResult {
 
-  private def eagerize(inner: InternalExecutionResult): InternalExecutionResult =
-    inner match {
-      case other: PipeExecutionResult =>
-        exceptionHandler.runSafely {
-          new PipeExecutionResult(other.result.toEager, other.columns.toArray, other.state, other.executionPlanBuilder,
-                                  other.executionMode, READ_WRITE)
-        }
-      case other: StandardInternalExecutionResult =>
-        exceptionHandler.runSafely {
-          other.toEagerResultForTestingOnly()
-        }
+  val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
 
-      case _ =>
-        inner
-    }
-
-  private def eagerize(inner: v2_3.executionplan.InternalExecutionResult): v2_3.executionplan.InternalExecutionResult = {
-    inner match {
-      case other: v2_3.PipeExecutionResult =>
-        exceptionHandlerFor2_3.runSafely {
-          new v2_3.PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder,
-            other.executionMode, QueryExecutionType.QueryType.READ_WRITE)
-        }
-      case other: v2_3.ExplainExecutionResult =>
-        v2_3.ExplainExecutionResult(other.columns, other.executionPlanDescription, other.executionType.queryType(), other.notifications)
-      case _ =>
-        inner
-    }
-  }
-
-  private def eagerize(inner: v3_1.executionplan.InternalExecutionResult): v3_1.executionplan.InternalExecutionResult = {
-    inner match {
-      case other: v3_1.PipeExecutionResult =>
-        exceptionHandlerFor3_1.runSafely {
-          new v3_1.PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder,
-            other.executionMode, v3_1.executionplan.READ_WRITE)
-        }
-      case other: v3_1.ExplainExecutionResult =>
-        v3_1.ExplainExecutionResult(other.columns, other.executionPlanDescription, other.executionType, other.notifications)
-      case _ =>
-        inner
-    }
-  }
-
-  private class CachingExecutionResultWrapperFor3_1(inner: v3_1.executionplan.InternalExecutionResult,
-                                                    planner: v3_1.PlannerName,
-                                                    runtime: v3_1.RuntimeName,
-                                                    preParsingNotification: Set[org.neo4j.graphdb.Notification],
-                                                    offset: Option[frontend.v3_1.InputPosition])
-    extends ExecutionResultWrapperFor3_1(inner, planner, runtime, preParsingNotification, offset) {
-    val cache: List[Map[String, Any]] = inner.toList
-    override val toList: List[Map[String, Any]] = cache
-  }
-
-  private class CachingExecutionResultWrapperFor2_3(inner: v2_3.executionplan.InternalExecutionResult,
-                                                    planner: v2_3.PlannerName,
-                                                    runtime: v2_3.RuntimeName,
-                                                    preParsingNotification: Set[org.neo4j.graphdb.Notification],
-                                                    offset: Option[frontend.v2_3.InputPosition])
-    extends ExecutionResultWrapperFor2_3(inner, planner, runtime, preParsingNotification, offset) {
-    val cache: List[Map[String, Any]] = inner.toList
-    override val toList: List[Map[String, Any]] = cache
-  }
-
-  def apply(in: Result): InternalExecutionResult = {
+  def apply(in: Result): RewindableExecutionResult = {
     val internal = in.asInstanceOf[ExecutionResult].internalExecutionResult
-      .asInstanceOf[ClosingExecutionResult].inner
     apply(internal)
   }
 
-  def apply(internal: InternalExecutionResult) : InternalExecutionResult = {
-    internal match {
-      case ExecutionResultWrapperFor3_1(inner, planner, runtime, preParsingNotification, offset) =>
-        val wrapper = new CachingExecutionResultWrapperFor3_1(eagerize(inner), planner, runtime, preParsingNotification, offset)
-        exceptionHandlerFor3_1.runSafely(wrapper)
-      case ExecutionResultWrapperFor2_3(inner, planner, runtime, preParsingNotification, offset) =>
-        val wrapper = new CachingExecutionResultWrapperFor2_3(eagerize(inner), planner, runtime, preParsingNotification, offset)
-        exceptionHandlerFor2_3.runSafely(wrapper)
-      case _ => exceptionHandler.runSafely(eagerize(internal))
-    }
+  def apply(runtimeResult: RuntimeResult, queryContext: QueryContext): RewindableExecutionResult = {
+    val result = new ArrayBuffer[Map[String, AnyRef]]()
+    val columns = runtimeResult.fieldNames()
+
+    runtimeResult.accept(new QueryResultVisitor[Exception] {
+      override def visit(row: QueryResult.Record): Boolean = {
+        val map = new java.util.HashMap[String, AnyRef]()
+        val values = row.fields()
+        for (i <- columns.indices) {
+          map.put(columns(i), queryContext.asObject(values(i)))
+        }
+        result += scalaValues.asDeepScalaMap(map).asInstanceOf[Map[String, AnyRef]]
+        true
+      }
+    })
+
+    new RewindableExecutionResult(columns, result, NormalMode, null, runtimeResult.queryStatistics(), Seq.empty)
+  }
+
+  def apply(internal: InternalExecutionResult) : RewindableExecutionResult = {
+    val result = new ArrayBuffer[Map[String, AnyRef]]()
+    val columns = internal.fieldNames()
+
+    internal.accept(new ResultVisitor[Exception] {
+      override def visit(row: ResultRow): Boolean = {
+        val map = new java.util.HashMap[String, AnyRef]()
+        for (c <- columns) {
+          map.put(c, row.get(c))
+        }
+        result += scalaValues.asDeepScalaMap(map).asInstanceOf[Map[String, AnyRef]]
+        true
+      }
+    })
+
+    new RewindableExecutionResult(
+      columns,
+      result.toList,
+      internal.executionMode,
+      internal.executionPlanDescription(),
+      internal.queryStatistics(),
+      internal.notifications
+    )
   }
 }

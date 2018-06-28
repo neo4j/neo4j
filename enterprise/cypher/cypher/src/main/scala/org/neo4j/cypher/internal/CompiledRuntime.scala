@@ -24,22 +24,17 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compatibility.CypherRuntime
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{Provider, ExecutionPlan => ExecutionPlanv3_5}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{ExecutionPlan => ExecutionPlanv3_5}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrapping.asKernelNotification
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{CompiledRuntimeName, ExplainExecutionResult, RuntimeName}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{CompiledRuntimeName, RuntimeName}
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.runtime.compiled.ExecutionPlanBuilder.DescriptionProvider
-import org.neo4j.cypher.internal.runtime.compiled.codegen.{CodeGenConfiguration, CodeGenerator}
 import org.neo4j.cypher.internal.runtime.compiled.CompiledPlan
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.v3_5.logical.plans.IndexUsage
+import org.neo4j.cypher.internal.runtime.compiled.codegen.{CodeGenConfiguration, CodeGenerator}
+import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.Notification
 import org.neo4j.values.virtual.MapValue
-import org.opencypher.v9_0.frontend.PlannerName
-import org.opencypher.v9_0.util.TaskCloser
 
 object CompiledRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
 
@@ -70,44 +65,17 @@ object CompiledRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
                               val notifications: Set[Notification]) extends ExecutionPlanv3_5 {
 
     override def run(queryContext: QueryContext,
-                     executionMode: ExecutionMode, params: MapValue): InternalExecutionResult = {
-      val taskCloser = new TaskCloser
-      taskCloser.addTask(queryContext.transactionalContext.close)
-      try {
-        if (executionMode == ExplainMode) {
-          //close all statements
-          taskCloser.close(success = true)
-          ExplainExecutionResult(compiled.columns.toArray, compiled.planDescription.get(), READ_ONLY, notifications)
-        } else
-          compiled.executionResultBuilder(queryContext, executionMode, createTracer(executionMode, queryContext), params, taskCloser)
-      } catch {
-        case t: Throwable =>
-          taskCloser.close(success = false)
-          throw t
-      }
+                     doProfile: Boolean,
+                     params: MapValue): RuntimeResult = {
+
+      val executionMode = if (doProfile) ProfileMode else NormalMode
+      val tracer =
+        if (doProfile) Some(new ProfilingTracer(queryContext.transactionalContext.kernelStatisticProvider))
+        else None
+
+      compiled.executionResultBuilder(queryContext, executionMode, tracer, params)
     }
 
     override val runtimeName: RuntimeName = CompiledRuntimeName
-  }
-
-  private def createTracer(mode: ExecutionMode, queryContext: QueryContext): DescriptionProvider = mode match {
-    case ProfileMode =>
-      val tracer = new ProfilingTracer(queryContext.transactionalContext.kernelStatisticProvider)
-      (description: Provider[InternalPlanDescription]) =>
-        (new Provider[InternalPlanDescription] {
-
-          override def get(): InternalPlanDescription = description.get().map {
-            plan: InternalPlanDescription =>
-              val data = tracer.get(plan.id)
-              plan.
-                addArgument(Arguments.DbHits(data.dbHits())).
-                addArgument(Arguments.PageCacheHits(data.pageCacheHits())).
-                addArgument(Arguments.PageCacheMisses(data.pageCacheMisses())).
-                addArgument(Arguments.PageCacheHitRatio(data.pageCacheHitRatio())).
-                addArgument(Arguments.Rows(data.rows())).
-                addArgument(Arguments.Time(data.time()))
-          }
-        }, Some(tracer))
-    case _ => (description: Provider[InternalPlanDescription]) => (description, None)
   }
 }

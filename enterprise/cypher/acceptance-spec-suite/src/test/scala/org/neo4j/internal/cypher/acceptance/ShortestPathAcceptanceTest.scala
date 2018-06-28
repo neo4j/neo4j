@@ -648,8 +648,6 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
     result.toSet should equal(Set(
       Map("n" -> a2.getId, "c" -> 4), Map("n" -> a3.getId, "c" -> 4)
     ))
-
-    result.close()
   }
 
   test("should work with path expression with 2 repeating bound relationships") {

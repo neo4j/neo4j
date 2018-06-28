@@ -79,7 +79,7 @@ object SlottedRuntime extends CypherRuntime[EnterpriseRuntimeContext] with Debug
 
       val pipeBuilderFactory = SlottedPipeBuilder.Factory(physicalPlan)
       val executionPlanBuilder = new PipeExecutionPlanBuilder(expressionConverters = converters, pipeBuilderFactory = pipeBuilderFactory)
-      val pipeBuildContext = PipeExecutionBuilderContext(state.semanticTable(), context.readOnly, state.cardinalities)
+      val pipeBuildContext = PipeExecutionBuilderContext(state.semanticTable(), context.readOnly)
       val pipe = executionPlanBuilder.build(logicalPlan)(pipeBuildContext, context.tokenContext)
       val periodicCommitInfo = state.periodicCommit.map(x => PeriodicCommitInfo(x.batchSize))
       val columns = state.statement().returnColumns
@@ -99,10 +99,8 @@ object SlottedRuntime extends CypherRuntime[EnterpriseRuntimeContext] with Debug
         periodicCommitInfo,
         resultBuilderFactory,
         context.notificationLogger,
-        state.plannerName,
         SlottedRuntimeName,
-        context.readOnly,
-        state.cardinalities)
+        context.readOnly)
     }
     catch {
       case e: CypherException =>

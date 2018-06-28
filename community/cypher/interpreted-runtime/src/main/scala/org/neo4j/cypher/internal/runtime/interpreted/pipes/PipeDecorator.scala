@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 
 /*
 A PipeDecorator is used to instrument calls between Pipes, and between a Pipe and the graph
@@ -29,8 +28,6 @@ trait PipeDecorator {
   def decorate(pipe: Pipe, state: QueryState): QueryState
 
   def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext]
-
-  def decorate(plan: () => InternalPlanDescription, verifyProfileReady: () => Unit): () => InternalPlanDescription
 
   /*
    * Returns the inner decorator of this decorator. The inner decorator is used for nested expressions
@@ -41,8 +38,6 @@ trait PipeDecorator {
 
 object NullPipeDecorator extends PipeDecorator {
   def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = iter
-
-  def decorate(plan: () => InternalPlanDescription, verifyProfileReady: () => Unit): () => InternalPlanDescription = plan
 
   def decorate(pipe: Pipe, state: QueryState): QueryState = state
 

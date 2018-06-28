@@ -89,7 +89,6 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
     arguments.find( _.isInstanceOf[PageCacheMisses]) shouldBe defined
     result.columnAs[Long]("id").toList should equal(List("1","2","3","4","5"))
     val afterTxId = txIdStore.getLastClosedTransactionId
-    result.close()
 
     afterTxId should equal(beforeTxId + 5)
   }

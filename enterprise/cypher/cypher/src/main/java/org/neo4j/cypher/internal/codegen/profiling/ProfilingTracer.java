@@ -22,30 +22,19 @@
  */
 package org.neo4j.cypher.internal.codegen.profiling;
 
+import org.opencypher.v9_0.util.attribution.Id;
+
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.cypher.internal.runtime.compiled.codegen.QueryExecutionEvent;
-import org.neo4j.cypher.internal.planner.v3_5.spi.KernelStatisticProvider;
-import org.opencypher.v9_0.util.attribution.Id;
 import org.neo4j.cypher.internal.codegen.QueryExecutionTracer;
-import org.neo4j.helpers.MathUtil;
+import org.neo4j.cypher.internal.planner.v3_5.spi.KernelStatisticProvider;
+import org.neo4j.cypher.internal.runtime.compiled.codegen.QueryExecutionEvent;
+import org.neo4j.cypher.result.OperatorProfile;
+import org.neo4j.cypher.result.QueryProfile;
 
-public class ProfilingTracer implements QueryExecutionTracer
+public class ProfilingTracer implements QueryExecutionTracer, QueryProfile
 {
-    public interface ProfilingInformation
-    {
-        long time();
-        long dbHits();
-        long rows();
-        long pageCacheHits();
-        long pageCacheMisses();
-        default double pageCacheHitRatio()
-        {
-            return MathUtil.portion( pageCacheHits(), pageCacheMisses() );
-        }
-    }
-
     public interface Clock
     {
         long nanoTime();
@@ -57,7 +46,7 @@ public class ProfilingTracer implements QueryExecutionTracer
 
     private final Clock clock;
     private final KernelStatisticProvider statisticProvider;
-    private final Map<Id, Data> data = new HashMap<>();
+    private final Map<Integer, Data> data = new HashMap<>();
 
     public ProfilingTracer( KernelStatisticProvider statisticProvider )
     {
@@ -70,7 +59,7 @@ public class ProfilingTracer implements QueryExecutionTracer
         this.statisticProvider = statisticProvider;
     }
 
-    public ProfilingInformation get( Id query )
+    public OperatorProfile operatorProfile( int query )
     {
         Data value = data.get( query );
         return value == null ? ZERO : value;
@@ -78,27 +67,27 @@ public class ProfilingTracer implements QueryExecutionTracer
 
     public long timeOf( Id query )
     {
-        return get( query ).time();
+        return operatorProfile( query.x() ).time();
     }
 
     public long dbHitsOf( Id query )
     {
-        return get( query ).dbHits();
+        return operatorProfile( query.x() ).dbHits();
     }
 
     public long rowsOf( Id query )
     {
-        return get( query ).rows();
+        return operatorProfile( query.x() ).rows();
     }
 
     @Override
     public QueryExecutionEvent executeOperator( Id queryId )
     {
-        Data queryData = this.data.get( queryId );
-        if ( queryData == null && queryId != null )
+        Data queryData = this.data.get( queryId.x() );
+        if ( queryData == null )
         {
             queryData = new Data();
-            this.data.put( queryId, queryData );
+            this.data.put( queryId.x(), queryData );
         }
         return new ExecutionEvent( clock, statisticProvider, queryData );
     }
@@ -145,7 +134,7 @@ public class ProfilingTracer implements QueryExecutionTracer
         }
     }
 
-    private static class Data implements ProfilingInformation
+    private static class Data implements OperatorProfile
     {
         private long time;
         private long hits;

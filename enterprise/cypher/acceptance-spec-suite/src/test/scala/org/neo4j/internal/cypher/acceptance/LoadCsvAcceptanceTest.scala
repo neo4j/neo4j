@@ -44,7 +44,7 @@ class LoadCsvAcceptanceTest
   extends ExecutionEngineFunSuite with BeforeAndAfterAll
   with QueryStatisticsTestSupport with CreateTempFileTestSupport with CypherComparisonSupport with RunWithConfigTestSupport {
 
-  val expectedToFail = Configs.AbsolutelyAll - Configs.Compiled - Configs.Cost2_3
+  private val expectedToFail = Configs.AbsolutelyAll - Configs.Compiled - Configs.Cost2_3
 
   def csvUrls(f: PrintWriter => Unit) = Seq(
     createCSVTempFileURL(f),
@@ -68,7 +68,8 @@ class LoadCsvAcceptanceTest
           | CREATE (order:Order{orderID: row.OrderId})
           | CREATE (user)-[acc:ORDERED]->(order)
           | RETURN count(*)""".stripMargin
-    )
+    ).resultAsString()
+
     graph.createIndex("User", "userID")
 
     // when & then
@@ -133,8 +134,6 @@ class LoadCsvAcceptanceTest
     val filePathForQuery = path.normalize().toUri
     val result = execute(s"LOAD CSV FROM '$filePathForQuery' AS line CREATE (a {name: line[0]}) RETURN a.name")
     assertStats(result, nodesCreated = 1, propertiesWritten = 1)
-
-    result.close()
 
     assert(Files.deleteIfExists(path))
   }
@@ -583,7 +582,6 @@ class LoadCsvAcceptanceTest
 
     val result = executeWith(Configs.UpdateConf, query)
     result.columnAs("c").toList should equal(List(0))
-    result.close()
   }
 
   test("empty headers file should not throw") {

@@ -1345,7 +1345,7 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (m1:Two), (m2:Two), (n) MERGE (q) ON MATCH SET q:Two RETURN count(*) AS c"
 
-    val result: InternalExecutionResult = executeWith(Configs.UpdateConf, query,
+    val result = executeWith(Configs.UpdateConf, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     assertStats(result, labelsAdded = 1)
     result.toList should equal(List(Map("c" -> 36)))
@@ -1357,7 +1357,7 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (m1:Two), (m2:Two), (n) MERGE (q:Three) ON MATCH SET q:Two RETURN count(*) AS c"
 
-    val result: InternalExecutionResult = executeWith(Configs.UpdateConf, query,
+    val result = executeWith(Configs.UpdateConf, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     assertStats(result, labelsAdded = 2, nodesCreated = 1)
     result.toList should equal(List(Map("c" -> 12)))
@@ -1369,7 +1369,7 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (a:Two), (b) MERGE (q {p: 1}) RETURN count(*) AS c"
 
-    val result: InternalExecutionResult = executeWith(Configs.UpdateConf, query,
+    val result = executeWith(Configs.UpdateConf, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     assertStats(result, nodesCreated = 1, propertiesWritten = 1)
     result.toList should equal(List(Map("c" -> 6)))
@@ -1381,7 +1381,7 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (m1:Two), (m2:Two) MERGE (q) ON MATCH SET q:One RETURN count(*) AS c"
 
-    val result: InternalExecutionResult = executeWith(Configs.UpdateConf, query,
+    val result = executeWith(Configs.UpdateConf, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
     assertStats(result, labelsAdded = 3)
     result.toList should equal(List(Map("c" -> 12)))
@@ -1393,7 +1393,7 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (m1:Two), (m2:Two), (n) MERGE (q) ON CREATE SET q:Two RETURN count(*) AS c"
 
-    val result: InternalExecutionResult = executeWith(Configs.UpdateConf, query,
+    val result = executeWith(Configs.UpdateConf, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     assertStats(result, labelsAdded = 0)
     result.toList should equal(List(Map("c" -> 36)))
@@ -1823,7 +1823,7 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (m1:Two), (m2:Two), (n) SET n:Two RETURN count(*) AS c"
 
-    val result: InternalExecutionResult = executeWith(Configs.UpdateConf, query,
+    val result = executeWith(Configs.UpdateConf, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     assertStats(result, labelsAdded = 1)
     result.toList should equal(List(Map("c" -> 12)))

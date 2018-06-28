@@ -113,9 +113,6 @@ trait QueryContextAdaptation {
 
   override def dropNodeKeyConstraint(descriptor: IndexDescriptor): Unit = ???
 
-  // Check if a runtime value is a node, relationship, path or some such value returned from
-  override def isGraphKernelResultValue(v: Any): Boolean = ???
-
   override def transactionalContext: QueryTransactionalContext = ???
 
   override def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]): scala.Iterator[Path] = ???

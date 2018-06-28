@@ -134,16 +134,16 @@ trait ExecutionEngineHelper {
       case x => ValueUtils.of(x)
     }
 
-  def execute(q: String, params: (String, Any)*): InternalExecutionResult =
+  def execute(q: String, params: (String, Any)*): RewindableExecutionResult =
     RewindableExecutionResult(eengine.execute(q, asMapValue(params.toMap), graph.transactionalContext(query = q -> params.toMap)))
 
-  def execute(q: String, params: Map[String, Any]): InternalExecutionResult =
+  def execute(q: String, params: Map[String, Any]): RewindableExecutionResult =
     RewindableExecutionResult(eengine.execute(q, asMapValue(params), graph.transactionalContext(query = q -> params.toMap)))
 
   def executeOfficial(q: String, params: (String, Any)*): Result =
     eengine.execute(q, asMapValue(params.toMap), graph.transactionalContext(query = q -> params.toMap))
 
-  def profile(q: String, params: (String, Any)*): InternalExecutionResult =
+  def profile(q: String, params: (String, Any)*): RewindableExecutionResult =
     RewindableExecutionResult(eengine.profile(q, asMapValue(params.toMap), graph.transactionalContext(query = q -> params.toMap)))
 
   def executeScalar[T](q: String, params: (String, Any)*): T = {
@@ -159,7 +159,7 @@ trait ExecutionEngineHelper {
         val value: Any = m.head._2
         value.asInstanceOf[T]
       }
-    case _ => throw new ScalarFailureException(s"expected to get a single row back")
+    case x => throw new ScalarFailureException(s"expected to get a single row back, got: $x")
   }
 
   protected class ScalarFailureException(msg: String) extends RuntimeException(msg)

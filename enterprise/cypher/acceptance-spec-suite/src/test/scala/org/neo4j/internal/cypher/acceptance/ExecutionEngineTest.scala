@@ -130,10 +130,9 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate(n1, n2, "KNOWS")
     relate(n1, n3, "KNOWS")
 
-    val result = executeWith(Configs.All + Configs.Morsel,
+    dumpToString(Configs.AbsolutelyAll + Configs.Morsel,
       s"match (node)-[rel:KNOWS]->(x) where id(node) = ${n1.getId} return x, node"
     )
-    result.dumpToString()
   }
 
   test("should Find Nodes By Exact Index Lookup") {
@@ -406,7 +405,7 @@ order by a.COL1""".format(a, b))
   test("shouldToStringArraysPrettily") {
     createNode("foo" -> Array("one", "two"))
 
-    val string = executeWith(Configs.All + Configs.Morsel,  """match (n) where id(n) = 0 return n.foo""").dumpToString()
+    val string = dumpToString(Configs.AbsolutelyAll + Configs.Morsel,  """match (n) where id(n) = 0 return n.foo""")
 
     string should include("""["one","two"]""")
   }
@@ -477,8 +476,8 @@ order by a.COL1""".format(a, b))
   test("shouldReturnASimplePath") {
     val errorMessage = List("Index `missingIndex` does not exist")
 
-    val conf = startConf + Configs.Procs
-    val conf2 = Configs.AllRulePlanners + Configs.DefaultInterpreted + Configs.Procs
+    val conf = startConf + Configs.DefaultProcs
+    val conf2 = Configs.AllRulePlanners + Configs.DefaultInterpreted + Configs.DefaultProcs
     failWithError(conf, "start a=node:missingIndex(key='value') return a", errorMessage)
     failWithError(conf, "start a=node:missingIndex('value') return a", errorMessage)
     failWithError(conf2, "start a=relationship:missingIndex(key='value') return a", errorMessage)
@@ -725,9 +724,15 @@ order by a.COL1""".format(a, b))
     val labelName = "Person"
     val propertyKeys = Seq("name")
 
-    val testconfiguration = TestConfiguration(Versions(V3_1, v3_5, Versions.Default), Planners.Default, Runtimes(ProcedureOrSchema, Runtimes.Default)) + Configs.Rule2_3
+    val testConfiguration =
+      TestConfiguration(
+        Versions(V3_1, v3_5, Versions.Default),
+        Planners.Default,
+        Runtimes(ProcedureOrSchema, Runtimes.Default)
+      ) + Configs.Rule2_3 + Configs.Cost3_4
+
     // WHEN
-    executeWith(testconfiguration, s"""CREATE INDEX ON :$labelName(${propertyKeys.reduce(_ ++ "," ++ _)})""")
+    executeWith(testConfiguration, s"""CREATE INDEX ON :$labelName(${propertyKeys.reduce(_ ++ "," ++ _)})""")
 
     // THEN
     graph.inTx {

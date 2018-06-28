@@ -23,49 +23,40 @@ import java.io.PrintWriter
 import java.util
 import java.util.Collections
 
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, ResourceIterator}
 import org.neo4j.helpers.collection.Iterators
 
 case class ExplainExecutionResult(fieldNames: Array[String],
-                                  executionPlanDescription: InternalPlanDescription,
+                                  planDescription: InternalPlanDescription,
                                   queryType: InternalQueryType,
                                   notifications: Set[Notification])
   extends InternalExecutionResult {
 
-  def javaIterator: ResourceIterator[util.Map[String, Any]] = Iterators.emptyResourceIterator()
-  def columnAs[T](column: String) = Iterator.empty
+  override def javaIterator: ResourceIterator[util.Map[String, AnyRef]] = Iterators.emptyResourceIterator()
   override def javaColumns: util.List[String] = Collections.emptyList()
 
-  def queryStatistics() = QueryStatistics()
+  override def queryStatistics() = QueryStatistics()
 
-  def dumpToString(writer: PrintWriter) {
-    writer.print(dumpToString)
-  }
+  override def dumpToString(writer: PrintWriter): Unit = writer.print(dumpToString)
 
-  val dumpToString: String =
+  override val dumpToString: String =
      """+--------------------------------------------+
        || No data returned, and nothing was changed. |
        |+--------------------------------------------+
        |""".stripMargin
 
-  def javaColumnAs[T](column: String): ResourceIterator[T] = Iterators.emptyResourceIterator()
+  override def javaColumnAs[T](column: String): ResourceIterator[T] = Iterators.emptyResourceIterator()
 
-  def planDescriptionRequested = true
-
-  def close() {}
-
-  def next() = Iterator.empty.next()
-
-  def hasNext = false
+  override def close(): Unit = {}
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = {}
   override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {}
 
   override def executionMode: ExecutionMode = ExplainMode
 
-  override def withNotifications(added: Notification*): InternalExecutionResult = copy(notifications = notifications ++ added)
+  override def executionPlanDescription(): InternalPlanDescription = planDescription
 }

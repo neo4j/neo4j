@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.planner.v3_5.spi.{IDPPlannerName, PlanContext, 
 import org.neo4j.cypher.internal.queryReduction.DDmin.Oracle
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted._
-import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, NormalMode}
 import org.neo4j.cypher.internal.spi.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.internal.{CommunityRuntimeFactory, EnterpriseRuntimeContextCreator, MasterCompiler, RewindableExecutionResult}
 import org.neo4j.cypher.{CypherRuntimeOption, GraphIcing}
@@ -113,21 +112,21 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
   private val rewriting = PreparatoryRewriting andThen
     SemanticAnalysis(warn = true).adds(BaseContains[SemanticState])
 
-  def evaluate(query: String, executeBefore: Option[String] = None, enterprise: Boolean = false): InternalExecutionResult = {
+  def evaluate(query: String, executeBefore: Option[String] = None, enterprise: Boolean = false): RewindableExecutionResult = {
     val parsingBaseState = queryToParsingBaseState(query, enterprise)
     val statement = parsingBaseState.statement()
     produceResult(query, statement, parsingBaseState, executeBefore, enterprise)
   }
 
-  def reduceQuery(query: String, executeBefore: Option[String] = None, enterprise: Boolean = false)(test: Oracle[Try[InternalExecutionResult]]): String = {
-    val oracle: Oracle[Try[(String, InternalExecutionResult)]] = (tryTuple) => {
+  def reduceQuery(query: String, executeBefore: Option[String] = None, enterprise: Boolean = false)(test: Oracle[Try[RewindableExecutionResult]]): String = {
+    val oracle: Oracle[Try[(String, RewindableExecutionResult)]] = (tryTuple) => {
       val tryResult = tryTuple.map(_._2)
       test(tryResult)
     }
     reduceQueryWithCurrentQueryText(query, executeBefore, enterprise)(oracle)
   }
 
-  def reduceQueryWithCurrentQueryText(query: String, executeBefore: Option[String] = None, enterprise: Boolean = false)(test: Oracle[Try[(String, InternalExecutionResult)]]): String = {
+  def reduceQueryWithCurrentQueryText(query: String, executeBefore: Option[String] = None, enterprise: Boolean = false)(test: Oracle[Try[(String, RewindableExecutionResult)]]): String = {
     val parsingBaseState = queryToParsingBaseState(query, enterprise)
     val statement = parsingBaseState.statement()
 
@@ -153,7 +152,7 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
                             statement: Statement,
                             parsingBaseState: BaseState,
                             executeBefore: Option[String],
-                            enterprise: Boolean): InternalExecutionResult = {
+                            enterprise: Boolean): RewindableExecutionResult = {
     val explicitTx = graph.beginTransaction(Transaction.Type.explicit, LoginContext.AUTH_DISABLED)
     val implicitTx = graph.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
     try {
@@ -176,7 +175,7 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
                           parsingBaseState: BaseState,
                           implicitTx: InternalTransaction,
                           enterprise: Boolean
-                         ): InternalExecutionResult = {
+                         ): RewindableExecutionResult = {
     val neo4jtxContext = contextFactory.newContext(EMBEDDED_CONNECTION, implicitTx, query, EMPTY_MAP)
     val txContextWrapper = TransactionalContextWrapper(neo4jtxContext)
     val planContext = TransactionBoundPlanContext(txContextWrapper, devNullLogger)
@@ -206,7 +205,8 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
 
     val queryContext = new TransactionBoundQueryContext(txContextWrapper)(CypherReductionSupport.searchMonitor)
 
-    RewindableExecutionResult(executionPlan.run(queryContext, NormalMode, ValueConversion.asValues(baseState.extractedParams())))
+    val runtimeResult = executionPlan.run(queryContext, doProfile = false, ValueConversion.asValues(baseState.extractedParams()))
+    RewindableExecutionResult(runtimeResult, queryContext)
   }
 
   private def createContext(query: String, metricsFactory: CachedMetricsFactory,

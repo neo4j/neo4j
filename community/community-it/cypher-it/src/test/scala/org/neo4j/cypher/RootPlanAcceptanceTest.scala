@@ -160,9 +160,9 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
           val runtimeString = runtime.map("runtime=" + _.name).getOrElse("")
           s"CYPHER $version $plannerString $runtimeString"
       }
-      val result = profile(s"$prepend $query")
-      result.dumpToString()
-      result.executionPlanDescription()
+      val result = executeOfficial(s"$prepend PROFILE $query")
+      result.resultAsString()
+      result.getExecutionPlanDescription()
     }
   }
 }

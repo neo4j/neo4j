@@ -23,7 +23,6 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.cypher.internal.runtime.InternalExecutionResult
 
 class MergeIntoPlanningAcceptanceTest extends ExecutionEngineFunSuite{
 
@@ -34,7 +33,7 @@ class MergeIntoPlanningAcceptanceTest extends ExecutionEngineFunSuite{
 
     //when
     val update = execute("""MATCH (a {name:'A'}), (b {name:'B'})
-      |MERGE (a)-[r:TYPE]->(b) ON CREATE SET r.name = 'foo'""".stripMargin)
+                           |MERGE (a)-[r:TYPE]->(b) ON CREATE SET r.name = 'foo'""".stripMargin)
 
     //then
     update.executionPlanDescription() should includeSomewhere.aPlan("Expand(Into)")
@@ -100,7 +99,4 @@ class MergeIntoPlanningAcceptanceTest extends ExecutionEngineFunSuite{
     //then
     update.executionPlanDescription() should includeSomewhere.aPlan("Expand(Into)")
   }
-
-  //MERGE INTO is only used by the rule planner
-  override def execute(q: String, params: (String, Any)*): InternalExecutionResult= super.execute(s"$q", params:_*)
 }

@@ -85,7 +85,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
 
     // when
     val tracer = new ProfilingTracer(transactionalContext.kernelStatisticProvider)
-    newInstance(compiled, queryContext = queryContext, provider = provider, queryExecutionTracer = tracer).size
+    newInstance(compiled, queryContext = queryContext, tracer = Some(tracer)).size
 
     // then
     tracer.dbHitsOf(id1) should equal(3)
@@ -115,7 +115,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
       val plan = plans.ProduceResult(projection, List("foo"))
 
       // when
-      val result = compileAndExecute(plan, graphDb, mode = ProfileMode)
+      val result = compileAndProfile(plan, graphDb)
       val description = result.executionPlanDescription()
 
       // then
