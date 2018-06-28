@@ -74,7 +74,6 @@ public interface FileMoveAction
                 Path resolvedPath = toDir.toPath().resolve( relativePath );
                 Files.createDirectories( resolvedPath.getParent() );
                 Files.copy( originalPath, resolvedPath, copyOptions );
-                Files.delete( originalPath );
             }
 
             @Override

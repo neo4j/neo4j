@@ -126,7 +126,7 @@ public class FileMoveProvider
         File base = basePath; // Capture effectively-final base path snapshot.
         Stream<File> files = listing.stream().filter( this::isFile );
         Stream<File> dirs = listing.stream().filter( this::isDirectory );
-        Stream<FileMoveAction> moveFiles = files.map( f -> moveFileCorrectly( f, base ) );
+        Stream<FileMoveAction> moveFiles = files.map( f -> copyFileCorrectly( f, base ) );
         Stream<FileMoveAction> traverseDirectories = dirs.flatMap( d -> traverseForMoving( d, base ) );
         return Stream.concat( moveFiles, traverseDirectories );
     }
@@ -171,7 +171,7 @@ public class FileMoveProvider
      * contains the logic for handling files between
      * the 2 systems
      */
-    private FileMoveAction moveFileCorrectly( File fileToMove, File basePath )
+    private FileMoveAction copyFileCorrectly( File fileToMove, File basePath )
     {
         if ( fileMoveActionInformer.shouldBeManagedByPageCache( fileToMove.getName() ) )
         {
