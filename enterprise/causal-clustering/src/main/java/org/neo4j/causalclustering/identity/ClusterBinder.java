@@ -184,11 +184,11 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
         boolean success = topologyService.setClusterId( localClusterId, dbName );
         if ( !success )
         {
-            throw new BindingException( "Failed to publish: " + localClusterId );
+            throw new BindingException( format( "Failed to publish %s for database name %s", localClusterId, dbName ) );
         }
         else
         {
-            log.info( "Published: " + localClusterId );
+            log.info( "Published %s for database name %s", localClusterId, dbName );
         }
     }
 }

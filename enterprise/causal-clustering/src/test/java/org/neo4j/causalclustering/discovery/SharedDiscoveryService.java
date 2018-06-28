@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.logging.Log;
 
 public final class SharedDiscoveryService
 {
@@ -152,12 +153,15 @@ public final class SharedDiscoveryService
         }
     }
 
-    boolean casClusterId( ClusterId clusterId, String dbName )
+    boolean casClusterId( ClusterId clusterId, String dbName, Log log )
     {
+        log.debug( "Current state of ClusterIdDBNames map: %s", clusterIdDbNames );
         ClusterId previousId = clusterIdDbNames.putIfAbsent( dbName, clusterId );
 
+        log.debug( "Return from putIfAbsent: %s", previousId );
         boolean success = previousId == null || previousId.equals( clusterId );
 
+        log.debug( "Update of cluster id for database name %s to %s was a success? %s", dbName, clusterId, success );
         if ( success )
         {
             notifyCoreClients();

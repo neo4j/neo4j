@@ -43,6 +43,7 @@ import org.neo4j.causalclustering.helpers.CausalClusteringTestHelpers;
 import org.neo4j.causalclustering.scenarios.DiscoveryServiceType;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
+import org.neo4j.management.CausalClustering;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.VerboseTimeout;
 
@@ -174,6 +175,7 @@ public class ClusterRule extends ExternalResource
 
         withInstanceCoreParam( CausalClusteringSettings.database, coreDBMap::get );
         withInstanceCoreParam( CausalClusteringSettings.minimum_core_cluster_size_at_formation, minCoresSettingsMap::get );
+        withInstanceCoreParam( CausalClusteringSettings.minimum_core_cluster_size_at_runtime, minCoresSettingsMap::get );
         withInstanceReadReplicaParam( CausalClusteringSettings.database, rrDBMap::get );
         return this;
     }
