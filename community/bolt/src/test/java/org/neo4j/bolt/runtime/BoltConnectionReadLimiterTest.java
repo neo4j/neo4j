@@ -26,7 +26,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
-import org.neo4j.bolt.v1.messaging.Init;
+import org.neo4j.bolt.v1.messaging.message.Init;
 import org.neo4j.bolt.v1.runtime.Job;
 import org.neo4j.logging.Log;
 

@@ -19,6 +19,9 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.neo4j.bolt.v1.messaging.message.FailureMessage;
 import org.neo4j.bolt.v1.messaging.message.IgnoredMessage;
 import org.neo4j.bolt.v1.messaging.message.RecordMessage;
@@ -28,8 +31,10 @@ import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.virtual.MapValue;
 
-public class BoltResponseMessageRecorder extends MessageRecorder<ResponseMessage> implements BoltResponseMessageHandler<RuntimeException>
+public class BoltResponseMessageRecorder implements BoltResponseMessageHandler<RuntimeException>
 {
+    private final List<ResponseMessage> messages = new ArrayList<>();
+
     @Override
     public void onSuccess( MapValue metadata )
     {
@@ -43,7 +48,7 @@ public class BoltResponseMessageRecorder extends MessageRecorder<ResponseMessage
     }
 
     @Override
-    public void onIgnored() throws RuntimeException
+    public void onIgnored()
     {
         messages.add( new IgnoredMessage() );
     }
@@ -54,4 +59,8 @@ public class BoltResponseMessageRecorder extends MessageRecorder<ResponseMessage
         messages.add( new FailureMessage( status, errorMessage ) );
     }
 
+    public List<ResponseMessage> asList()
+    {
+        return messages;
+    }
 }

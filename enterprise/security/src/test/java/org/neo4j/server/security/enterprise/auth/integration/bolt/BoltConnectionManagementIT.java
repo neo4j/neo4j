@@ -37,7 +37,10 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
-import org.neo4j.bolt.v1.messaging.message.ResetMessage;
+import org.neo4j.bolt.v1.messaging.message.Init;
+import org.neo4j.bolt.v1.messaging.message.PullAll;
+import org.neo4j.bolt.v1.messaging.message.Reset;
+import org.neo4j.bolt.v1.messaging.message.Run;
 import org.neo4j.bolt.v1.runtime.spi.ImmutableRecord;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
@@ -63,9 +66,6 @@ import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
-import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
-import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgIgnored;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
@@ -146,8 +146,8 @@ public class BoltConnectionManagementIT
     {
         // When
         admin.send( util.chunk(
-                run( "CALL dbms.listConnections() YIELD username, connectionCount" ),
-                pullAll() ) );
+                new Run( "CALL dbms.listConnections() YIELD username, connectionCount" ),
+                PullAll.INSTANCE ) );
 
         // Then
         Map<String, Long> result = collectConnectionResult( admin, 1 );
@@ -162,8 +162,8 @@ public class BoltConnectionManagementIT
         // When
         authenticate( user, "Igor", "123", null );
         admin.send( util.chunk(
-                run( "CALL dbms.listConnections() YIELD username, connectionCount" ),
-                pullAll() ) );
+                new Run( "CALL dbms.listConnections() YIELD username, connectionCount" ),
+                PullAll.INSTANCE ) );
 
         // Then
         Map<String, Long> result = collectConnectionResult( admin, 2 );
@@ -180,8 +180,8 @@ public class BoltConnectionManagementIT
         // When
         authenticate( user, "Igor", "123", null );
         user.send( util.chunk(
-                run( "CALL dbms.listConnections() YIELD username, connectionCount" ),
-                pullAll() ) );
+                new Run( "CALL dbms.listConnections() YIELD username, connectionCount" ),
+                PullAll.INSTANCE ) );
 
         // Then
         assertThat( user, util.eventuallyReceives(
@@ -196,8 +196,8 @@ public class BoltConnectionManagementIT
         // When
         authenticate( user, "Igor", "123", null );
         admin.send( util.chunk(
-                run( "CALL dbms.terminateConnectionsForUser( 'Igor' ) YIELD username, connectionCount" ),
-                pullAll() ) );
+                new Run( "CALL dbms.terminateConnectionsForUser( 'Igor' ) YIELD username, connectionCount" ),
+                PullAll.INSTANCE ) );
 
         // Then
         Map<String, Long> terminationResult = collectConnectionResult( admin, 1 );
@@ -205,8 +205,8 @@ public class BoltConnectionManagementIT
         assertTrue( terminationResult.get( "Igor" ) == 1L );
 
         admin.send( util.chunk(
-                run( "CALL dbms.listConnections() YIELD username, connectionCount" ),
-                pullAll() ) );
+                new Run( "CALL dbms.listConnections() YIELD username, connectionCount" ),
+                PullAll.INSTANCE ) );
         Map<String, Long> listResult = collectConnectionResult( admin, 1 );
         assertTrue( listResult.containsKey( "neo4j" ) );
         assertTrue( listResult.get( "neo4j" ) == 1L );
@@ -219,8 +219,8 @@ public class BoltConnectionManagementIT
     {
         // When
         admin.send( util.chunk(
-                run( "CALL dbms.terminateConnectionsForUser( 'Igor' ) YIELD username, connectionCount" ),
-                pullAll() ) );
+                new Run( "CALL dbms.terminateConnectionsForUser( 'Igor' ) YIELD username, connectionCount" ),
+                PullAll.INSTANCE ) );
 
         // Then
         Map<String, Long> terminationResult = collectConnectionResult( admin, 1 );
@@ -233,8 +233,8 @@ public class BoltConnectionManagementIT
     {
         // When
         admin.send( util.chunk(
-                run( "CALL dbms.terminateConnectionsForUser( 'NonExistentUser' ) YIELD username, connectionCount" ),
-                pullAll() ) );
+                new Run( "CALL dbms.terminateConnectionsForUser( 'NonExistentUser' ) YIELD username, connectionCount" ),
+                PullAll.INSTANCE ) );
 
         // Then
         assertThat( admin, util.eventuallyReceives( msgFailure( Status.General.InvalidArguments,
@@ -302,8 +302,8 @@ public class BoltConnectionManagementIT
     {
         // Given
         conn.send( util.chunk(
-                run( "CALL dbms.terminateConnectionsForUser( '" + username + "' ) YIELD username, connectionCount" ),
-                pullAll() ) );
+                new Run( "CALL dbms.terminateConnectionsForUser( '" + username + "' ) YIELD username, connectionCount" ),
+                PullAll.INSTANCE ) );
 
         // Then
         verifyConnectionHasTerminated( conn );
@@ -312,8 +312,8 @@ public class BoltConnectionManagementIT
     private void assertTerminateOwnConnections( TransportConnection conn1, TransportConnection conn2, String username ) throws Exception
     {
         conn1.send( util.chunk(
-                run( "CALL dbms.terminateConnectionsForUser( '" + username + "' ) YIELD username, connectionCount" ),
-                pullAll() ) );
+                new Run( "CALL dbms.terminateConnectionsForUser( '" + username + "' ) YIELD username, connectionCount" ),
+                PullAll.INSTANCE ) );
 
         // Then
         verifyConnectionHasTerminated( conn1 );
@@ -323,8 +323,8 @@ public class BoltConnectionManagementIT
     private void assertFailTerminateConnectionForUser( TransportConnection client, String username ) throws Exception
     {
         client.send( util.chunk(
-                run( "CALL dbms.terminateConnectionsForUser( '" + username + "' ) YIELD username, connectionCount" ),
-                pullAll() ) );
+                new Run( "CALL dbms.terminateConnectionsForUser( '" + username + "' ) YIELD username, connectionCount" ),
+                PullAll.INSTANCE ) );
 
         // Then
         assertThat( client, util.eventuallyReceives(
@@ -332,7 +332,7 @@ public class BoltConnectionManagementIT
                 msgIgnored()
         ) );
 
-        client.send( util.chunk( ResetMessage.reset() ) );
+        client.send( util.chunk( Reset.INSTANCE ) );
         assertThat( client, util.eventuallyReceives( msgSuccess() ) );
     }
 
@@ -350,7 +350,7 @@ public class BoltConnectionManagementIT
         client.connect( address )
                 .send( util.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( util.chunk(
-                        init( "TestClient/1.1", authToken ) ) );
+                        new Init( "TestClient/1.1", authToken ) ) );
 
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, util.eventuallyReceives( msgSuccess() ) );
@@ -359,8 +359,8 @@ public class BoltConnectionManagementIT
     private void createNewUser( TransportConnection client, String username, String password ) throws Exception
     {
         client.send( util.chunk(
-                run( "CALL dbms.security.createUser( '" + username + "', '" + password + "', false )" ),
-                pullAll() ) );
+                new Run( "CALL dbms.security.createUser( '" + username + "', '" + password + "', false )" ),
+                PullAll.INSTANCE ) );
         assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 

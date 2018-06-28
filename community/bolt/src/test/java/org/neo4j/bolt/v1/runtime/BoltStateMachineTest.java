@@ -26,21 +26,21 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionAuthFatality;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.Neo4jError;
-import org.neo4j.bolt.runtime.StateMachineMessage;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
-import org.neo4j.bolt.v1.messaging.AckFailure;
-import org.neo4j.bolt.v1.messaging.DiscardAll;
-import org.neo4j.bolt.v1.messaging.Init;
-import org.neo4j.bolt.v1.messaging.PullAll;
-import org.neo4j.bolt.v1.messaging.Reset;
-import org.neo4j.bolt.v1.messaging.Run;
+import org.neo4j.bolt.v1.messaging.message.AckFailure;
+import org.neo4j.bolt.v1.messaging.message.DiscardAll;
+import org.neo4j.bolt.v1.messaging.message.Init;
+import org.neo4j.bolt.v1.messaging.message.PullAll;
+import org.neo4j.bolt.v1.messaging.message.Reset;
+import org.neo4j.bolt.v1.messaging.message.Run;
 import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
@@ -87,13 +87,13 @@ public class BoltStateMachineTest
     @Test
     public void allStateTransitionsShouldSendExactlyOneResponseToTheClient() throws Exception
     {
-        List<StateMachineMessage> messages = Arrays.asList( new Init( USER_AGENT, emptyMap() ),
+        List<RequestMessage> messages = Arrays.asList( new Init( USER_AGENT, emptyMap() ),
                 AckFailure.INSTANCE,
                 Reset.INSTANCE,
                 new Run( "RETURN 1", EMPTY_PARAMS ),
                 DiscardAll.INSTANCE, PullAll.INSTANCE );
 
-        for ( StateMachineMessage message : messages )
+        for ( RequestMessage message: messages )
         {
             verifyOneResponse( ( machine, recorder ) -> machine.process( message, recorder ) );
         }

@@ -30,7 +30,7 @@ import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StatementProcessor;
-import org.neo4j.bolt.v1.messaging.Reset;
+import org.neo4j.bolt.v1.messaging.message.Reset;
 import org.neo4j.bolt.v1.runtime.BoltStateMachineV1;
 import org.neo4j.bolt.v1.runtime.ReadyState;
 import org.neo4j.cypher.result.QueryResult;

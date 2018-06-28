@@ -30,8 +30,8 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
-import org.neo4j.bolt.v1.messaging.message.RequestMessage;
+import org.neo4j.bolt.messaging.Neo4jPack;
+import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.function.Predicates;

@@ -34,7 +34,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.AbstractBoltTransportsTest;
-import org.neo4j.bolt.v1.messaging.message.InitMessage;
+import org.neo4j.bolt.v1.messaging.message.Init;
+import org.neo4j.bolt.v1.messaging.message.PullAll;
+import org.neo4j.bolt.v1.messaging.message.Run;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
@@ -46,8 +48,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
-import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
-import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 
 /**
@@ -99,14 +99,14 @@ public class ConcurrentAccessIT extends AbstractBoltTransportsTest
     {
         return new Callable<Void>()
         {
-            private final byte[] init = util.chunk( InitMessage.init( "TestClient", emptyMap() ) );
+            private final byte[] init = util.chunk( new Init( "TestClient", emptyMap() ) );
             private final byte[] createAndRollback = util.chunk(
-                    run( "BEGIN" ), pullAll(),
-                    run( "CREATE (n)" ), pullAll(),
-                    run( "ROLLBACK" ), pullAll() );
+                    new Run( "BEGIN" ), PullAll.INSTANCE,
+                    new Run( "CREATE (n)" ), PullAll.INSTANCE,
+                    new Run( "ROLLBACK" ), PullAll.INSTANCE );
 
             private final byte[] matchAll = util.chunk(
-                    run( "MATCH (n) RETURN n" ), pullAll() );
+                    new Run( "MATCH (n) RETURN n" ), PullAll.INSTANCE );
 
             @Override
             public Void call() throws Exception

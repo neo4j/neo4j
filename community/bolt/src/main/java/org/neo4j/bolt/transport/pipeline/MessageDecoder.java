@@ -23,11 +23,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-import org.neo4j.bolt.runtime.Neo4jError;
-import org.neo4j.bolt.v1.messaging.BoltIOException;
-import org.neo4j.bolt.v1.messaging.BoltRequestMessageHandler;
-import org.neo4j.bolt.v1.messaging.BoltRequestMessageReader;
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
+import org.neo4j.bolt.messaging.BoltRequestMessageReader;
+import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.packstream.ByteBufInput;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
@@ -37,15 +34,15 @@ import static io.netty.buffer.ByteBufUtil.hexDump;
 public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf>
 {
     private final ByteBufInput input;
+    private final Neo4jPack.Unpacker unpacker;
     private final BoltRequestMessageReader reader;
-    private final BoltRequestMessageHandler messageHandler;
     private final Log log;
 
-    public MessageDecoder( Neo4jPack pack, BoltRequestMessageHandler messageHandler, LogService logService )
+    public MessageDecoder( Neo4jPack pack, BoltRequestMessageReader reader, LogService logService )
     {
         this.input = new ByteBufInput();
-        this.reader = new BoltRequestMessageReader( pack.newUnpacker( input ) );
-        this.messageHandler = messageHandler;
+        this.unpacker = pack.newUnpacker( input );
+        this.reader = reader;
         this.log = logService.getInternalLog( getClass() );
     }
 
@@ -56,19 +53,7 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf>
         byteBuf.markReaderIndex();
         try
         {
-            reader.read( messageHandler );
-        }
-        catch ( BoltIOException ex )
-        {
-            if ( ex.causesFailureMessage() )
-            {
-                messageHandler.onExternalError( Neo4jError.from( ex ) );
-            }
-            else
-            {
-                logMessageOnError( byteBuf );
-                throw ex;
-            }
+            reader.read( unpacker );
         }
         catch ( Throwable error )
         {

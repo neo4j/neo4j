@@ -24,17 +24,17 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.MutableConnectionState;
 import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.runtime.StateMachineMessage;
-import org.neo4j.bolt.v1.messaging.AckFailure;
-import org.neo4j.bolt.v1.messaging.DiscardAll;
-import org.neo4j.bolt.v1.messaging.Init;
-import org.neo4j.bolt.v1.messaging.Interrupt;
-import org.neo4j.bolt.v1.messaging.PullAll;
-import org.neo4j.bolt.v1.messaging.Reset;
-import org.neo4j.bolt.v1.messaging.Run;
+import org.neo4j.bolt.v1.messaging.message.AckFailure;
+import org.neo4j.bolt.v1.messaging.message.DiscardAll;
+import org.neo4j.bolt.v1.messaging.message.Init;
+import org.neo4j.bolt.v1.messaging.message.Interrupt;
+import org.neo4j.bolt.v1.messaging.message.PullAll;
+import org.neo4j.bolt.v1.messaging.message.Reset;
+import org.neo4j.bolt.v1.messaging.message.Run;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
@@ -123,10 +123,10 @@ class InterruptedStateTest
     @Test
     void shouldIgnoreMessagesOtherThanInterruptAndReset() throws Exception
     {
-        List<StateMachineMessage> messages = asList( AckFailure.INSTANCE, PullAll.INSTANCE, DiscardAll.INSTANCE,
+        List<RequestMessage> messages = asList( AckFailure.INSTANCE, PullAll.INSTANCE, DiscardAll.INSTANCE,
                 new Run( "RETURN 1", EMPTY_MAP ), new Init( "Driver", emptyMap() ) );
 
-        for ( StateMachineMessage message : messages )
+        for ( RequestMessage message: messages )
         {
             connectionState.resetPendingFailedAndIgnored();
 

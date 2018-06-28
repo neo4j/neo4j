@@ -39,6 +39,9 @@ import java.util.function.Consumer;
 
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
+import org.neo4j.bolt.v1.messaging.message.Init;
+import org.neo4j.bolt.v1.messaging.message.PullAll;
+import org.neo4j.bolt.v1.messaging.message.Run;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
@@ -61,9 +64,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.fail;
-import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
-import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
-import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -140,7 +140,7 @@ public class BoltThrottleMaxDurationIT
         client.connect( address )
                 .send( util.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( util.chunk(
-                        init( "TestClient/1.1", emptyMap() ) ) );
+                        new Init( "TestClient/1.1", emptyMap() ) ) );
 
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, util.eventuallyReceives( msgSuccess() ) );
@@ -150,8 +150,8 @@ public class BoltThrottleMaxDurationIT
             for ( int i = 0; i < numberOfRunDiscardPairs; i++ )
             {
                 client.send( util.chunk(
-                        run( "RETURN $data as data", ValueUtils.asMapValue( singletonMap( "data", largeString ) ) ),
-                        pullAll()
+                        new Run( "RETURN $data as data", ValueUtils.asMapValue( singletonMap( "data", largeString ) ) ),
+                        PullAll.INSTANCE
                 ) );
             }
 

@@ -17,11 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.messaging.message;
+package org.neo4j.bolt.messaging;
 
-import org.neo4j.bolt.v1.messaging.BoltRequestMessageHandler;
+import java.io.IOException;
 
-public interface RequestMessage
+import org.neo4j.bolt.runtime.BoltResponseHandler;
+
+public interface RequestMessageDecoder
 {
-    void dispatch( BoltRequestMessageHandler consumer );
+    int signature();
+
+    BoltResponseHandler resonseHandler();
+
+    RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException;
 }

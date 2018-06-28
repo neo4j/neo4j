@@ -17,35 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.messaging;
+package org.neo4j.bolt.v1.messaging.message;
 
-import java.io.IOException;
+import org.neo4j.bolt.messaging.RequestMessage;
 
-import org.neo4j.kernel.api.exceptions.Status;
-
-public class BoltIOException extends IOException implements Status.HasStatus
+public class Interrupt implements RequestMessage
 {
-    private final Status status;
+    public static final Interrupt INSTANCE = new Interrupt();
 
-    public BoltIOException( Status status, String message, Throwable cause )
+    private Interrupt()
     {
-        super( message, cause );
-        this.status = status;
-    }
-
-    public BoltIOException( Status status, String message )
-    {
-        this( status, message, null );
     }
 
     @Override
-    public Status status()
+    public boolean safeToProcessInAnyState()
     {
-        return status;
+        return false;
     }
 
-    public boolean causesFailureMessage()
+    @Override
+    public String toString()
     {
-        return status != Status.Request.InvalidFormat;
+        return "INTERRUPT";
     }
 }

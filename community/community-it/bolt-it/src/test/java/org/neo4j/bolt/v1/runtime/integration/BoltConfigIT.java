@@ -23,7 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.bolt.AbstractBoltTransportsTest;
-import org.neo4j.bolt.v1.messaging.message.InitMessage;
+import org.neo4j.bolt.v1.messaging.message.Init;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.helpers.HostnamePort;
@@ -77,7 +77,7 @@ public class BoltConfigIT extends AbstractBoltTransportsTest
     {
         client.connect( address )
                 .send( util.defaultAcceptedVersions() )
-                .send( util.chunk( InitMessage.init( "TestClient/1.1", emptyMap() ) ) );
+                .send( util.chunk( new Init( "TestClient/1.1", emptyMap() ) ) );
         assertThat( client, util.eventuallyReceivesSelectedProtocolVersion() );
     }
 }

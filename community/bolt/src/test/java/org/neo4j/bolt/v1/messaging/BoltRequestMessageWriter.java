@@ -21,21 +21,18 @@ package org.neo4j.bolt.v1.messaging;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Map;
 
-import org.neo4j.bolt.runtime.Neo4jError;
-import org.neo4j.bolt.v1.messaging.message.RequestMessage;
+import org.neo4j.bolt.messaging.Neo4jPack;
+import org.neo4j.bolt.messaging.RequestMessage;
+import org.neo4j.bolt.v1.messaging.message.AckFailure;
+import org.neo4j.bolt.v1.messaging.message.DiscardAll;
+import org.neo4j.bolt.v1.messaging.message.Init;
+import org.neo4j.bolt.v1.messaging.message.PullAll;
+import org.neo4j.bolt.v1.messaging.message.Reset;
+import org.neo4j.bolt.v1.messaging.message.Run;
 import org.neo4j.kernel.impl.util.ValueUtils;
-import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.ACK_FAILURE;
-import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.DISCARD_ALL;
-import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.INIT;
-import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.PULL_ALL;
-import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.RESET;
-import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.RUN;
-
-public class BoltRequestMessageWriter implements BoltRequestMessageHandler
+public class BoltRequestMessageWriter
 {
     private final Neo4jPack.Packer packer;
 
@@ -46,18 +43,44 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler
 
     public BoltRequestMessageWriter write( RequestMessage message ) throws IOException
     {
-        message.dispatch( this );
+        if ( message instanceof Init )
+        {
+            writeInit( (Init) message );
+        }
+        else if ( message instanceof AckFailure )
+        {
+            writeAckFailure();
+        }
+        else if ( message instanceof Reset )
+        {
+            writeReset();
+        }
+        else if ( message instanceof Run )
+        {
+            writeRun( (Run) message );
+        }
+        else if ( message instanceof DiscardAll )
+        {
+            writeDiscardAll();
+        }
+        else if ( message instanceof PullAll )
+        {
+            writePullAll();
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Unknown message: " + message );
+        }
         return this;
     }
 
-    @Override
-    public void onInit( String clientName, Map<String,Object> credentials )
+    private void writeInit( Init message )
     {
         try
         {
-            packer.packStructHeader( 2, INIT.signature() );
-            packer.pack( clientName );
-            packer.pack( ValueUtils.asMapValue( credentials ) );
+            packer.packStructHeader( 2, Init.SIGNATURE );
+            packer.pack( message.userAgent() );
+            packer.pack( ValueUtils.asMapValue( message.authToken() ) );
         }
         catch ( IOException e )
         {
@@ -65,12 +88,11 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler
         }
     }
 
-    @Override
-    public void onAckFailure()
+    private void writeAckFailure()
     {
         try
         {
-            packer.packStructHeader( 0, ACK_FAILURE.signature() );
+            packer.packStructHeader( 0, AckFailure.SIGNATURE );
         }
         catch ( IOException e )
         {
@@ -78,12 +100,11 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler
         }
     }
 
-    @Override
-    public void onReset()
+    private void writeReset()
     {
         try
         {
-            packer.packStructHeader( 0, RESET.signature() );
+            packer.packStructHeader( 0, Reset.SIGNATURE );
         }
         catch ( IOException e )
         {
@@ -91,14 +112,13 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler
         }
     }
 
-    @Override
-    public void onRun( String statement, MapValue params )
+    private void writeRun( Run message )
     {
         try
         {
-            packer.packStructHeader( 2, RUN.signature() );
-            packer.pack( statement );
-            packer.pack( params );
+            packer.packStructHeader( 2, Run.SIGNATURE );
+            packer.pack( message.statement() );
+            packer.pack( message.params() );
         }
         catch ( IOException e )
         {
@@ -106,12 +126,11 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler
         }
     }
 
-    @Override
-    public void onDiscardAll()
+    private void writeDiscardAll()
     {
         try
         {
-            packer.packStructHeader( 0, DISCARD_ALL.signature() );
+            packer.packStructHeader( 0, DiscardAll.SIGNATURE );
         }
         catch ( IOException e )
         {
@@ -119,12 +138,11 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler
         }
     }
 
-    @Override
-    public void onPullAll()
+    private void writePullAll()
     {
         try
         {
-            packer.packStructHeader( 0, PULL_ALL.signature() );
+            packer.packStructHeader( 0, PullAll.SIGNATURE );
         }
         catch ( IOException e )
         {
@@ -142,11 +160,5 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler
         {
             throw new UncheckedIOException( e );
         }
-    }
-
-    @Override
-    public void onExternalError( Neo4jError error )
-    {
-        //ignore
     }
 }

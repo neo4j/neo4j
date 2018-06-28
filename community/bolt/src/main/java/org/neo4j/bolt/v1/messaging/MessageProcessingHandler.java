@@ -40,7 +40,7 @@ class MessageProcessingHandler implements BoltResponseHandler
     // Errors that are expected when the client disconnects mid-operation
     private static final Set<Status> CLIENT_MID_OP_DISCONNECT_ERRORS = new HashSet<>( Arrays.asList(
             Status.Transaction.Terminated, Status.Transaction.LockClientStopped ) );
-    protected final MapValueBuilder metadata = new MapValueBuilder(  );
+    private final MapValueBuilder metadata = new MapValueBuilder();
 
     protected final Log log;
     protected final BoltConnection connection;

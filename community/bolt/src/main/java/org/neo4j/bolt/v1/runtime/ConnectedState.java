@@ -21,14 +21,14 @@ package org.neo4j.bolt.v1.runtime;
 
 import java.util.Map;
 
+import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltQuerySource;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.runtime.StateMachineMessage;
 import org.neo4j.bolt.runtime.StatementProcessor;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
-import org.neo4j.bolt.v1.messaging.Init;
+import org.neo4j.bolt.v1.messaging.message.Init;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.api.security.AuthToken.PRINCIPAL;
@@ -47,7 +47,7 @@ public class ConnectedState implements BoltStateMachineState
     private BoltStateMachineState failedState;
 
     @Override
-    public BoltStateMachineState process( StateMachineMessage message, StateMachineContext context ) throws BoltConnectionFatality
+    public BoltStateMachineState process( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
     {
         assertInitialized();
         if ( message instanceof Init )

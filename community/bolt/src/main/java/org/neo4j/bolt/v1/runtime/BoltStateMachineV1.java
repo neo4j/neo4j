@@ -24,6 +24,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import java.time.Clock;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionAuthFatality;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
@@ -34,10 +35,9 @@ import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.MutableConnectionState;
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.runtime.StateMachineMessage;
 import org.neo4j.bolt.runtime.StatementProcessor;
 import org.neo4j.bolt.v1.messaging.BoltStateMachineV1Context;
-import org.neo4j.bolt.v1.messaging.Interrupt;
+import org.neo4j.bolt.v1.messaging.message.Interrupt;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -81,7 +81,7 @@ public class BoltStateMachineV1 implements BoltStateMachine
     }
 
     @Override
-    public void process( StateMachineMessage message, BoltResponseHandler handler ) throws BoltConnectionFatality
+    public void process( RequestMessage message, BoltResponseHandler handler ) throws BoltConnectionFatality
     {
         before( handler );
         try
@@ -137,7 +137,7 @@ public class BoltStateMachineV1 implements BoltStateMachine
         }
     }
 
-    private BoltStateMachineState nextState( StateMachineMessage message, StateMachineContext context ) throws BoltConnectionFatality
+    private BoltStateMachineState nextState( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
     {
         BoltStateMachineState newState = state.process( message, context );
         if ( newState == null )

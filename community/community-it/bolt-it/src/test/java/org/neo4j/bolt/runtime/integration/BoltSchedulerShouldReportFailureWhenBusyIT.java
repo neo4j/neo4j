@@ -34,6 +34,9 @@ import java.util.function.Consumer;
 
 import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.runtime.BoltConnection;
+import org.neo4j.bolt.v1.messaging.message.DiscardAll;
+import org.neo4j.bolt.v1.messaging.message.Init;
+import org.neo4j.bolt.v1.messaging.message.Run;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -49,9 +52,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.isA;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
-import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
-import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
@@ -119,7 +119,7 @@ public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTran
         {
             connection3 = connectAndPerformBoltHandshake( newConnection() );
 
-            connection3.send( util.chunk( init( "TestClient/1.1", emptyMap() ) ) );
+            connection3.send( util.chunk( new Init( "TestClient/1.1", emptyMap() ) ) );
             assertThat( connection3, util.eventuallyReceives(
                     msgFailure( Status.Request.NoThreadsAvailable, "There are no available threads to serve this request at the moment" ) ) );
 
@@ -182,12 +182,12 @@ public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTran
     {
         connectAndPerformBoltHandshake( connection );
 
-        connection.send( util.chunk( init( "TestClient/1.1", emptyMap() ) ) );
+        connection.send( util.chunk( new Init( "TestClient/1.1", emptyMap() ) ) );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         SECONDS.sleep( sleepSeconds ); // sleep a bit to allow worker thread return back to the pool
 
-        connection.send( util.chunk( run( "UNWIND RANGE (1, 100) AS x RETURN x" ) ) );
+        connection.send( util.chunk( new Run( "UNWIND RANGE (1, 100) AS x RETURN x" ) ) );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
     }
 
@@ -200,7 +200,7 @@ public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTran
 
     private void exitStreaming( TransportConnection connection ) throws Exception
     {
-        connection.send( util.chunk( discardAll() ) );
+        connection.send( util.chunk( DiscardAll.INSTANCE ) );
 
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
     }

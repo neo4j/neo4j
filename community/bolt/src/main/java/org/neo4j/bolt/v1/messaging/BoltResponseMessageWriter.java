@@ -22,6 +22,7 @@ package org.neo4j.bolt.v1.messaging;
 import java.io.IOException;
 
 import org.neo4j.bolt.logging.BoltMessageLogger;
+import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.function.ThrowingAction;

@@ -19,45 +19,27 @@
  */
 package org.neo4j.bolt.v1.messaging.message;
 
-import org.neo4j.bolt.v1.messaging.BoltRequestMessageHandler;
+import org.neo4j.bolt.messaging.RequestMessage;
 
-public class AckFailureMessage implements RequestMessage
+public class AckFailure implements RequestMessage
 {
-    private static final AckFailureMessage INSTANCE = new AckFailureMessage();
+    public static final byte SIGNATURE = 0x0E;
 
-    /**
-     * Factory method for obtaining ACK_FAILURE messages.
-     */
-    public static AckFailureMessage ackFailure()
-    {
-        return INSTANCE;
-    }
+    public static final AckFailure INSTANCE = new AckFailure();
 
-    private AckFailureMessage()
+    private AckFailure()
     {
     }
 
     @Override
-    public void dispatch( BoltRequestMessageHandler consumer )
+    public boolean safeToProcessInAnyState()
     {
-        consumer.onAckFailure();
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        return this == o || !(o == null || getClass() != o.getClass());
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return 1;
+        return true;
     }
 
     @Override
     public String toString()
     {
-        return "AckFailureMessage{}";
+        return "ACK_FAILURE";
     }
 }

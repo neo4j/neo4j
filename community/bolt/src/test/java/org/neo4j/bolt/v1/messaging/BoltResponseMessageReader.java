@@ -21,6 +21,8 @@ package org.neo4j.bolt.v1.messaging;
 
 import java.io.IOException;
 
+import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.v1.packstream.PackStream;
 import org.neo4j.kernel.api.exceptions.Status;

@@ -17,34 +17,42 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.messaging;
+package org.neo4j.bolt.v1.messaging.message;
 
-import java.util.Map;
 import java.util.Objects;
 
-import org.neo4j.bolt.runtime.StateMachineMessage;
+import org.neo4j.bolt.messaging.RequestMessage;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Objects.requireNonNull;
 
-public class Init implements StateMachineMessage
+public class Run implements RequestMessage
 {
-    private final String userAgent;
-    private final Map<String,Object> authToken;
+    public static final byte SIGNATURE = 0x10;
 
-    public Init( String userAgent, Map<String,Object> authToken )
+    private final String statement;
+    private final MapValue params;
+
+    public Run( String statement )
     {
-        this.userAgent = requireNonNull( userAgent );
-        this.authToken = requireNonNull( authToken );
+        this( statement, VirtualValues.EMPTY_MAP );
     }
 
-    public String userAgent()
+    public Run( String statement, MapValue params )
     {
-        return userAgent;
+        this.statement = requireNonNull( statement );
+        this.params = requireNonNull( params );
     }
 
-    public Map<String,Object> authToken()
+    public String statement()
     {
-        return authToken;
+        return statement;
+    }
+
+    public MapValue params()
+    {
+        return params;
     }
 
     @Override
@@ -64,20 +72,20 @@ public class Init implements StateMachineMessage
         {
             return false;
         }
-        Init that = (Init) o;
-        return Objects.equals( userAgent, that.userAgent ) &&
-               Objects.equals( authToken, that.authToken );
+        Run that = (Run) o;
+        return Objects.equals( statement, that.statement ) &&
+               Objects.equals( params, that.params );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( userAgent, authToken );
+        return Objects.hash( statement, params );
     }
 
     @Override
     public String toString()
     {
-        return "INIT " + userAgent + ' ' + authToken;
+        return "RUN " + statement + ' ' + params;
     }
 }

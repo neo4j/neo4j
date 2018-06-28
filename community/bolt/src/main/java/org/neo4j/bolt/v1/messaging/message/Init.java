@@ -20,26 +20,23 @@
 package org.neo4j.bolt.v1.messaging.message;
 
 import java.util.Map;
+import java.util.Objects;
 
-import org.neo4j.bolt.v1.messaging.BoltRequestMessageHandler;
+import org.neo4j.bolt.messaging.RequestMessage;
 
-public class InitMessage implements RequestMessage
+import static java.util.Objects.requireNonNull;
+
+public class Init implements RequestMessage
 {
-    /**
-     * Factory method for obtaining INIT messages.
-     */
-    public static InitMessage init( String userAgent, Map<String, Object> authToken )
-    {
-        return new InitMessage( userAgent, authToken );
-    }
+    public static final byte SIGNATURE = 0x01;
 
     private final String userAgent;
-    private final Map<String, Object> authToken;
+    private final Map<String,Object> authToken;
 
-    private InitMessage( String userAgent, Map<String, Object> authToken )
+    public Init( String userAgent, Map<String,Object> authToken )
     {
-        this.userAgent = userAgent;
-        this.authToken = authToken;
+        this.userAgent = requireNonNull( userAgent );
+        this.authToken = requireNonNull( authToken );
     }
 
     public String userAgent()
@@ -47,10 +44,15 @@ public class InitMessage implements RequestMessage
         return userAgent;
     }
 
-    @Override
-    public void dispatch( BoltRequestMessageHandler consumer )
+    public Map<String,Object> authToken()
     {
-        consumer.onInit( userAgent, authToken );
+        return authToken;
+    }
+
+    @Override
+    public boolean safeToProcessInAnyState()
+    {
+        return false;
     }
 
     @Override
@@ -64,24 +66,20 @@ public class InitMessage implements RequestMessage
         {
             return false;
         }
-
-        InitMessage that = (InitMessage) o;
-
-        return !(userAgent != null ? !userAgent.equals( that.userAgent ) : that.userAgent != null);
-
+        Init that = (Init) o;
+        return Objects.equals( userAgent, that.userAgent ) &&
+               Objects.equals( authToken, that.authToken );
     }
 
     @Override
     public int hashCode()
     {
-        return userAgent != null ? userAgent.hashCode() : 0;
+        return Objects.hash( userAgent, authToken );
     }
 
     @Override
     public String toString()
     {
-        return "InitMessage{" +
-               "userAgent='" + userAgent + '\'' +
-               '}';
+        return "INIT " + userAgent + ' ' + authToken;
     }
 }

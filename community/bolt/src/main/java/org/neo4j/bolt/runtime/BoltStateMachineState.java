@@ -19,9 +19,11 @@
  */
 package org.neo4j.bolt.runtime;
 
+import org.neo4j.bolt.messaging.RequestMessage;
+
 public interface BoltStateMachineState
 {
-    BoltStateMachineState process( StateMachineMessage message, StateMachineContext context ) throws BoltConnectionFatality;
+    BoltStateMachineState process( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality;
 
     String name();
 }

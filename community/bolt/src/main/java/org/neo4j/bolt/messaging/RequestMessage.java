@@ -17,18 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.messaging;
+package org.neo4j.bolt.messaging;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public abstract class MessageRecorder<T>
+public interface RequestMessage
 {
-    protected List<T> messages = new ArrayList<>();
-
-    public List<T> asList()
-    {
-        return messages;
-    }
-
+    boolean safeToProcessInAnyState();
 }

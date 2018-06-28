@@ -23,7 +23,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -35,7 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltConnectionDescriptor;
-import org.neo4j.bolt.logging.NullBoltMessageLogger;
+import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BoltSchedulerProvider;
@@ -50,24 +49,19 @@ import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.testing.RecordedBoltResponse;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
-import org.neo4j.bolt.v1.messaging.BoltMessageRouter;
-import org.neo4j.bolt.v1.messaging.BoltResponseMessageHandler;
-import org.neo4j.bolt.v1.messaging.Init;
-import org.neo4j.bolt.v1.messaging.Reset;
-import org.neo4j.bolt.v1.messaging.message.RequestMessage;
-import org.neo4j.cypher.result.QueryResult;
+import org.neo4j.bolt.v1.messaging.message.DiscardAll;
+import org.neo4j.bolt.v1.messaging.message.Init;
+import org.neo4j.bolt.v1.messaging.message.PullAll;
+import org.neo4j.bolt.v1.messaging.message.Reset;
+import org.neo4j.bolt.v1.messaging.message.Run;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
-import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLog;
-import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
@@ -80,9 +74,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
-import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
-import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
-import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 public class ResetFuzzTest
 {
@@ -112,9 +104,9 @@ public class ResetFuzzTest
     private BoltChannel boltChannel;
 
     private final List<List<RequestMessage>> sequences = asList(
-            asList( run( "test", map() ), discardAll() ),
-            asList( run( "test", map() ), pullAll() ),
-            singletonList( run( "test", map() ) )
+            asList( new Run( "test", EMPTY_MAP ), DiscardAll.INSTANCE ),
+            asList( new Run( "test", EMPTY_MAP ), PullAll.INSTANCE ),
+            singletonList( new Run( "test", EMPTY_MAP ) )
     );
 
     private final List<RequestMessage> sent = new LinkedList<>();
@@ -135,38 +127,13 @@ public class ResetFuzzTest
         BoltConnection boltConnection = connectionFactory.newConnection( boltChannel );
         boltConnection.enqueue( machine -> machine.process( new Init( "ResetFuzzTest/0.0", emptyMap() ), nullResponseHandler() ) );
 
-        NullBoltMessageLogger boltLogger = NullBoltMessageLogger.getInstance();
-        BoltMessageRouter router = new BoltMessageRouter(
-                NullLog.getInstance(), boltLogger, boltConnection, new BoltResponseMessageHandler<IOException>()
-        {
-            @Override
-            public void onRecord( QueryResult.Record item )
-            {
-            }
-
-            @Override
-            public void onIgnored()
-            {
-            }
-
-            @Override
-            public void onFailure( Status status, String errorMessage )
-            {
-            }
-
-            @Override
-            public void onSuccess( MapValue metadata )
-            {
-            }
-        } );
-
         // Test random combinations of messages within a small budget of testing time.
         long deadline = System.currentTimeMillis() + 2 * 1000;
 
         // when
         while ( System.currentTimeMillis() < deadline )
         {
-            dispatchRandomSequenceOfMessages( router );
+            dispatchRandomSequenceOfMessages( boltConnection );
             assertSchedulerWorks( boltConnection );
         }
     }
@@ -194,19 +161,14 @@ public class ResetFuzzTest
         }
     }
 
-    private void dispatchRandomSequenceOfMessages( BoltMessageRouter messageHandler )
+    private void dispatchRandomSequenceOfMessages( BoltConnection connection )
     {
         List<RequestMessage> sequence = sequences.get( rand.nextInt( sequences.size() ) );
-        for ( RequestMessage message : sequence )
+        for ( RequestMessage message: sequence )
         {
             sent.add( message );
-            message.dispatch( messageHandler );
+            connection.enqueue( stateMachine -> stateMachine.process( message, nullResponseHandler() ) );
         }
-    }
-
-    private MapValue map( Object... keyValues )
-    {
-        return ValueUtils.asMapValue( MapUtil.map( keyValues ) );
     }
 
     @After

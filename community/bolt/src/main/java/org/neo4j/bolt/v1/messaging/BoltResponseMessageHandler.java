@@ -29,6 +29,7 @@ import org.neo4j.values.virtual.MapValue;
  *
  * @param <E> an exception that may be thrown by each handler method
  */
+// todo: remove generic exception
 public interface BoltResponseMessageHandler<E extends Exception>
 {
     void onSuccess( MapValue metadata ) throws E;

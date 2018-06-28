@@ -20,9 +20,9 @@
 package org.neo4j.bolt.transport;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -60,7 +60,7 @@ public class DefaultBoltProtocolPipelineInstallerFactory implements BoltProtocol
 
     private BoltProtocolPipelineInstaller newProtocolPipelineInstaller( BoltChannel channel, Neo4jPack neo4jPack )
     {
-        return new DefaultBoltProtocolPipelineInstaller( channel, newBoltConnection( channel ), neo4jPack, throttleGroup, logService );
+        return new DefaultBoltProtocolPipelineInstaller( channel, newBoltConnection( channel ), neo4jPack, logService );
     }
 
     private BoltConnection newBoltConnection( BoltChannel channel )

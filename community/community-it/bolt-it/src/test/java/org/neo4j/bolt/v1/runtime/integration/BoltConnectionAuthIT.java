@@ -25,8 +25,8 @@ import org.junit.Test;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
-import org.neo4j.bolt.v1.messaging.Init;
-import org.neo4j.bolt.v1.messaging.Run;
+import org.neo4j.bolt.v1.messaging.message.Init;
+import org.neo4j.bolt.v1.messaging.message.Run;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.internal.Version;
 

@@ -43,10 +43,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
+import org.neo4j.bolt.v1.messaging.message.Init;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
-import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -65,6 +65,7 @@ import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Mode;
@@ -91,7 +92,6 @@ import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
@@ -621,7 +621,7 @@ public abstract class ProcedureInteractionTestBase<S>
         Map<String,Object> authToken = map( "principal", username, "credentials", password, "scheme", "basic" );
 
         connection.connect( address ).send( util.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( util.chunk( init( "TestClient/1.1", authToken ) ) );
+                .send( util.chunk( new Init( "TestClient/1.1", authToken ) ) );
 
         assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );

@@ -17,44 +17,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.messaging.message;
+package org.neo4j.bolt.messaging;
 
-import org.neo4j.bolt.v1.messaging.BoltRequestMessageHandler;
+import java.io.IOException;
 
-public class PullAllMessage implements RequestMessage
+import org.neo4j.kernel.api.exceptions.Status;
+
+public class BoltIOException extends IOException implements Status.HasStatus
 {
-    private static final PullAllMessage INSTANCE = new PullAllMessage();
+    private final Status status;
 
-    public static PullAllMessage pullAll()
+    public BoltIOException( Status status, String message, Throwable cause )
     {
-        return INSTANCE;
+        super( message, cause );
+        this.status = status;
     }
 
-    private PullAllMessage()
+    public BoltIOException( Status status, String message )
     {
-    }
-
-    @Override
-    public void dispatch( BoltRequestMessageHandler consumer )
-    {
-        consumer.onPullAll();
+        this( status, message, null );
     }
 
     @Override
-    public boolean equals( Object obj )
+    public Status status()
     {
-        return obj instanceof PullAllMessage;
+        return status;
     }
 
-    @Override
-    public int hashCode()
+    public boolean causesFailureMessage()
     {
-        return 1;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "PullAllMessage{}";
+        return status != Status.Request.InvalidFormat;
     }
 }

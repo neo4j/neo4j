@@ -31,6 +31,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import org.neo4j.bolt.v1.messaging.message.PullAll;
+import org.neo4j.bolt.v1.messaging.message.Run;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.security.enterprise.auth.plugin.TestCacheableAuthPlugin;
@@ -40,8 +42,6 @@ import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
-import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -211,12 +211,12 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
 
         // When
         client.send( util.chunk(
-                run( "CALL dbms.security.clearAuthCache()" ), pullAll() ) );
+                new Run( "CALL dbms.security.clearAuthCache()" ), PullAll.INSTANCE ) );
         assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
 
         // Then
         client.send( util.chunk(
-                run( "MATCH (n) RETURN n" ), pullAll() ) );
+                new Run( "MATCH (n) RETURN n" ), PullAll.INSTANCE ) );
         assertThat( client, util.eventuallyReceives(
                 msgFailure( Status.Security.AuthorizationExpired,
                         "Plugin 'plugin-TestCacheableAdminAuthPlugin' authorization info expired." ) ) );
@@ -232,7 +232,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCacheableAdminAuthPlugin" ) );
 
         client.send( util.chunk(
-                run( "CALL dbms.security.clearAuthCache() MATCH (n) RETURN n" ), pullAll() ) );
+                new Run( "CALL dbms.security.clearAuthCache() MATCH (n) RETURN n" ), PullAll.INSTANCE ) );
 
         // Then
         assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
@@ -258,7 +258,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
 
         // Then
         client.send( util.chunk(
-                run( "MATCH (n) RETURN n" ), pullAll() ) );
+                new Run( "MATCH (n) RETURN n" ), PullAll.INSTANCE ) );
         assertThat( client, util.eventuallyReceives(
                 msgFailure( Status.Security.AuthorizationExpired,
                         "Plugin 'plugin-TestCombinedAuthPlugin' authorization info expired: " +

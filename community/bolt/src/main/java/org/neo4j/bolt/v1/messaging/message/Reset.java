@@ -19,45 +19,27 @@
  */
 package org.neo4j.bolt.v1.messaging.message;
 
-import org.neo4j.bolt.v1.messaging.BoltRequestMessageHandler;
+import org.neo4j.bolt.messaging.RequestMessage;
 
-public class DiscardAllMessage implements RequestMessage
+public class Reset implements RequestMessage
 {
-    private static final DiscardAllMessage INSTANCE = new DiscardAllMessage();
+    public static final byte SIGNATURE = 0x0F;
 
-    /**
-     * Factory method for obtaining DISCARD_ALL messages.
-     */
-    public static DiscardAllMessage discardAll()
-    {
-        return INSTANCE;
-    }
+    public static final Reset INSTANCE = new Reset();
 
-    private DiscardAllMessage()
+    private Reset()
     {
     }
 
     @Override
-    public void dispatch( BoltRequestMessageHandler consumer )
+    public boolean safeToProcessInAnyState()
     {
-        consumer.onDiscardAll();
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        return this == o || !(o == null || getClass() != o.getClass());
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return 1;
+        return true;
     }
 
     @Override
     public String toString()
     {
-        return "DiscardAllMessage{}";
+        return "RESET";
     }
 }

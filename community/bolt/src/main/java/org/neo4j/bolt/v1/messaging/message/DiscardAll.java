@@ -17,9 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.runtime;
+package org.neo4j.bolt.v1.messaging.message;
 
-public interface StateMachineMessage
+import org.neo4j.bolt.messaging.RequestMessage;
+
+public class DiscardAll implements RequestMessage
 {
-    boolean safeToProcessInAnyState();
+    public static final byte SIGNATURE = 0x2F;
+
+    public static final DiscardAll INSTANCE = new DiscardAll();
+
+    private DiscardAll()
+    {
+    }
+
+    @Override
+    public boolean safeToProcessInAnyState()
+    {
+        return false;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "DISCARD_ALL";
+    }
 }

@@ -17,27 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.messaging;
+package org.neo4j.bolt.v1.messaging.message;
 
-import org.neo4j.bolt.runtime.StateMachineMessage;
+import org.neo4j.bolt.messaging.RequestMessage;
 
-public class Reset implements StateMachineMessage
+public class PullAll implements RequestMessage
 {
-    public static final Reset INSTANCE = new Reset();
+    public static final byte SIGNATURE = 0x3F;
 
-    private Reset()
+    public static final PullAll INSTANCE = new PullAll();
+
+    private PullAll()
     {
     }
 
     @Override
     public boolean safeToProcessInAnyState()
     {
-        return true;
+        return false;
     }
 
     @Override
     public String toString()
     {
-        return "RESET";
+        return "PULL_ALL";
     }
 }

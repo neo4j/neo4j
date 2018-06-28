@@ -30,6 +30,9 @@ import java.util.function.Consumer;
 
 import org.neo4j.bolt.runtime.BoltConnectionReadLimiter;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
+import org.neo4j.bolt.v1.messaging.message.DiscardAll;
+import org.neo4j.bolt.v1.messaging.message.Init;
+import org.neo4j.bolt.v1.messaging.message.Run;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.collection.RawIterator;
@@ -55,9 +58,6 @@ import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.anything;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
-import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
-import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 
@@ -110,7 +110,7 @@ public class BoltChannelAutoReadLimiterIT
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
-                        init( "TestClient/1.1", emptyMap() ) ) );
+                        new Init( "TestClient/1.1", emptyMap() ) ) );
 
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
@@ -119,8 +119,8 @@ public class BoltChannelAutoReadLimiterIT
         for ( int i = 0; i < numberOfRunDiscardPairs; i++ )
         {
             connection.send( util.chunk(
-                    run( "CALL boltissue.sleep( $data )", ValueUtils.asMapValue( singletonMap( "data", largeString ) ) ),
-                    discardAll() ) );
+                    new Run( "CALL boltissue.sleep( $data )", ValueUtils.asMapValue( singletonMap( "data", largeString ) ) ),
+                    DiscardAll.INSTANCE ) );
         }
 
         // expect

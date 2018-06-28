@@ -22,15 +22,15 @@ package org.neo4j.bolt.transport;
 import io.netty.channel.ChannelPipeline;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.messaging.BoltRequestMessageReader;
+import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.transport.pipeline.ChunkDecoder;
 import org.neo4j.bolt.transport.pipeline.HouseKeeper;
 import org.neo4j.bolt.transport.pipeline.MessageAccumulator;
 import org.neo4j.bolt.transport.pipeline.MessageDecoder;
-import org.neo4j.bolt.v1.messaging.BoltMessageRouter;
-import org.neo4j.bolt.v1.messaging.BoltRequestMessageHandler;
+import org.neo4j.bolt.v1.messaging.BoltRequestMessageReaderV1;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter;
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.kernel.impl.logging.LogService;
 
 /**
@@ -43,30 +43,26 @@ public class DefaultBoltProtocolPipelineInstaller implements BoltProtocolPipelin
 {
     private final BoltChannel boltChannel;
     private final Neo4jPack neo4jPack;
-    private final BoltResponseMessageWriter responseWriter;
-    private final BoltRequestMessageHandler messageHandler;
     private final LogService logging;
 
     private final BoltConnection connection;
 
-    public DefaultBoltProtocolPipelineInstaller( BoltChannel boltChannel, BoltConnection connection, Neo4jPack neo4jPack, TransportThrottleGroup throttleGroup,
-            LogService logging )
+    public DefaultBoltProtocolPipelineInstaller( BoltChannel boltChannel, BoltConnection connection, Neo4jPack neo4jPack, LogService logging )
     {
         this.boltChannel = boltChannel;
         this.connection = connection;
         this.neo4jPack = neo4jPack;
-        this.responseWriter = new BoltResponseMessageWriter( neo4jPack, connection.output(), logging, boltChannel.log() );
-        this.messageHandler = new BoltMessageRouter( logging.getInternalLog( getClass() ), boltChannel.log(), connection, responseWriter );
         this.logging = logging;
     }
 
+    @Override
     public void install()
     {
         ChannelPipeline pipeline = boltChannel.rawChannel().pipeline();
 
         pipeline.addLast( new ChunkDecoder() );
         pipeline.addLast( new MessageAccumulator() );
-        pipeline.addLast( new MessageDecoder( neo4jPack, messageHandler, logging ) );
+        pipeline.addLast( new MessageDecoder( neo4jPack, newRequestMessageReader(), logging ) );
         pipeline.addLast( new HouseKeeper( connection, logging ) );
     }
 
@@ -74,5 +70,11 @@ public class DefaultBoltProtocolPipelineInstaller implements BoltProtocolPipelin
     public long version()
     {
         return neo4jPack.version();
+    }
+
+    private BoltRequestMessageReader newRequestMessageReader()
+    {
+        BoltResponseMessageWriter responseMessageWriter = new BoltResponseMessageWriter( neo4jPack, connection.output(), logging, boltChannel.log() );
+        return new BoltRequestMessageReaderV1( connection, responseMessageWriter, boltChannel.log(), logging );
     }
 }

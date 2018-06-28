@@ -25,19 +25,19 @@ import org.junit.jupiter.api.Test;
 import java.time.Clock;
 import java.util.List;
 
+import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.MutableConnectionState;
 import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.runtime.StateMachineMessage;
 import org.neo4j.bolt.runtime.StatementMetadata;
 import org.neo4j.bolt.runtime.StatementProcessor;
-import org.neo4j.bolt.v1.messaging.AckFailure;
-import org.neo4j.bolt.v1.messaging.DiscardAll;
-import org.neo4j.bolt.v1.messaging.Interrupt;
-import org.neo4j.bolt.v1.messaging.PullAll;
-import org.neo4j.bolt.v1.messaging.Reset;
-import org.neo4j.bolt.v1.messaging.Run;
+import org.neo4j.bolt.v1.messaging.message.AckFailure;
+import org.neo4j.bolt.v1.messaging.message.DiscardAll;
+import org.neo4j.bolt.v1.messaging.message.Interrupt;
+import org.neo4j.bolt.v1.messaging.message.PullAll;
+import org.neo4j.bolt.v1.messaging.message.Reset;
+import org.neo4j.bolt.v1.messaging.message.Run;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 
 import static java.util.Arrays.asList;
@@ -174,9 +174,9 @@ class ReadyStateTest
     @Test
     void shouldNotProcessUnsupportedMessages() throws Exception
     {
-        List<StateMachineMessage> unsupportedMessages = asList( PullAll.INSTANCE, DiscardAll.INSTANCE, AckFailure.INSTANCE );
+        List<RequestMessage> unsupportedMessages = asList( PullAll.INSTANCE, DiscardAll.INSTANCE, AckFailure.INSTANCE );
 
-        for ( StateMachineMessage message : unsupportedMessages )
+        for ( RequestMessage message: unsupportedMessages )
         {
             assertNull( state.process( message, context ) );
         }

@@ -32,19 +32,16 @@ import java.util.List;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.logging.NullBoltMessageLogger;
+import org.neo4j.bolt.messaging.Neo4jPack;
+import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BoltStateMachine;
-import org.neo4j.bolt.runtime.StateMachineMessage;
 import org.neo4j.bolt.runtime.SynchronousBoltConnection;
 import org.neo4j.bolt.transport.DefaultBoltProtocolPipelineInstaller;
-import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
-import org.neo4j.bolt.v1.messaging.Run;
-import org.neo4j.bolt.v1.messaging.message.RequestMessage;
-import org.neo4j.bolt.v1.messaging.message.RunMessage;
+import org.neo4j.bolt.v1.messaging.message.Run;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -83,7 +80,7 @@ public class FragmentedMessageDeliveryTest
     private int chunkSize = 16;
 
     // Only test one message for now. This can be parameterized later to test lots of different ones
-    private RequestMessage[] messages = new RequestMessage[]{RunMessage.run( "Mjölnir" )};
+    private RequestMessage[] messages = new RequestMessage[]{new Run( "Mjölnir" )};
 
     @Parameter
     public Neo4jPack neo4jPack;
@@ -140,7 +137,7 @@ public class FragmentedMessageDeliveryTest
 
         BoltStateMachine machine = mock( BoltStateMachine.class );
         DefaultBoltProtocolPipelineInstaller protocol = new DefaultBoltProtocolPipelineInstaller( boltChannel,
-                new SynchronousBoltConnection( machine ), neo4jPack, TransportThrottleGroup.NO_THROTTLE,
+                new SynchronousBoltConnection( machine ), neo4jPack,
                 NullLogService.getInstance() );
 
         protocol.install();
@@ -154,7 +151,7 @@ public class FragmentedMessageDeliveryTest
         // Then the session should've received the specified messages, and the protocol should be in a nice clean state
         try
         {
-            StateMachineMessage run = new Run( "Mjölnir", EMPTY_MAP );
+            RequestMessage run = new Run( "Mjölnir", EMPTY_MAP );
             verify( machine ).process( eq( run ), any( BoltResponseHandler.class ) );
         }
         catch ( AssertionError e )

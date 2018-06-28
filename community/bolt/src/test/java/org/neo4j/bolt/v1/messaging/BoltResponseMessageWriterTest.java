@@ -25,6 +25,7 @@ import org.mockito.InOrder;
 import java.io.IOException;
 
 import org.neo4j.bolt.logging.NullBoltMessageLogger;
+import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.logging.NullLogService;

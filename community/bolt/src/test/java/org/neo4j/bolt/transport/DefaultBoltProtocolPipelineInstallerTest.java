@@ -32,12 +32,12 @@ import java.util.Map;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.logging.NullBoltMessageLogger;
+import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.transport.pipeline.ChunkDecoder;
 import org.neo4j.bolt.transport.pipeline.HouseKeeper;
 import org.neo4j.bolt.transport.pipeline.MessageAccumulator;
 import org.neo4j.bolt.transport.pipeline.MessageDecoder;
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -76,7 +76,7 @@ public class DefaultBoltProtocolPipelineInstallerTest
     {
         // When
         DefaultBoltProtocolPipelineInstaller protocol =
-                new DefaultBoltProtocolPipelineInstaller( newBoltChannel( channel ), mock( BoltConnection.class ), pack, TransportThrottleGroup.NO_THROTTLE,
+                new DefaultBoltProtocolPipelineInstaller( newBoltChannel( channel ), mock( BoltConnection.class ), pack,
                         NullLogService.getInstance() );
         // Then
         assertEquals( pack.version(), protocol.version() );
@@ -87,7 +87,7 @@ public class DefaultBoltProtocolPipelineInstallerTest
     {
         // Given
         DefaultBoltProtocolPipelineInstaller protocol =
-                new DefaultBoltProtocolPipelineInstaller( newBoltChannel( channel ), mock( BoltConnection.class ), pack, TransportThrottleGroup.NO_THROTTLE,
+                new DefaultBoltProtocolPipelineInstaller( newBoltChannel( channel ), mock( BoltConnection.class ), pack,
                         NullLogService.getInstance() );
         // When
         protocol.install();

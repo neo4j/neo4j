@@ -19,12 +19,13 @@
  */
 package org.neo4j.bolt.runtime;
 
+import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 
 public interface BoltStateMachine extends ManagedBoltStateMachine, AutoCloseable
 {
-    void process( StateMachineMessage message, BoltResponseHandler handler ) throws BoltConnectionFatality;
+    void process( RequestMessage message, BoltResponseHandler handler ) throws BoltConnectionFatality;
 
     boolean shouldStickOnThread();
 

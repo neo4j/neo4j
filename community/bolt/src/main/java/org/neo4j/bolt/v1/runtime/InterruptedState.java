@@ -19,12 +19,12 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
+import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.runtime.StateMachineMessage;
-import org.neo4j.bolt.v1.messaging.Interrupt;
-import org.neo4j.bolt.v1.messaging.Reset;
+import org.neo4j.bolt.v1.messaging.message.Interrupt;
+import org.neo4j.bolt.v1.messaging.message.Reset;
 
 import static org.neo4j.util.Preconditions.checkState;
 
@@ -40,7 +40,7 @@ public class InterruptedState implements BoltStateMachineState
     private BoltStateMachineState failedState;
 
     @Override
-    public BoltStateMachineState process( StateMachineMessage message, StateMachineContext context ) throws BoltConnectionFatality
+    public BoltStateMachineState process( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
     {
         assertInitialized();
         if ( message instanceof Interrupt )

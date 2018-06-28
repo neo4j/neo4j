@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;

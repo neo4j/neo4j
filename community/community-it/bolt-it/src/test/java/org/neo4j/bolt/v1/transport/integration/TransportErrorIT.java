@@ -27,12 +27,11 @@ import java.util.Arrays;
 
 import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
+import org.neo4j.bolt.v1.messaging.message.Run;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.packstream.PackStream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.RUN;
-import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 
@@ -51,7 +50,7 @@ public class TransportErrorIT extends AbstractBoltTransportsTest
     public void shouldHandleIncorrectFraming() throws Throwable
     {
         // Given I have a message that gets truncated in the chunking, so part of it is missing
-        byte[] truncated = serialize( util.getNeo4jPack(), run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ) );
+        byte[] truncated = serialize( util.getNeo4jPack(), new Run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ) );
         truncated = Arrays.copyOf(truncated, truncated.length - 12);
 
         // When
@@ -71,7 +70,7 @@ public class TransportErrorIT extends AbstractBoltTransportsTest
         final RecordingByteChannel rawData = new RecordingByteChannel();
         final PackStream.Packer packer = new PackStream.Packer( new BufferedChannelOutput( rawData ) );
 
-        packer.packStructHeader( 2, RUN.signature() );
+        packer.packStructHeader( 2, Run.SIGNATURE );
         packer.pack( "RETURN 1" );
         packer.pack( 1234 ); // Should've been a map
         packer.flush();
@@ -119,7 +118,7 @@ public class TransportErrorIT extends AbstractBoltTransportsTest
         final BufferedChannelOutput out = new BufferedChannelOutput( rawData );
         final PackStream.Packer packer = new PackStream.Packer( out );
 
-        packer.packStructHeader( 2, RUN.signature() );
+        packer.packStructHeader( 2, Run.SIGNATURE );
         out.writeByte( PackStream.RESERVED_C7 ); // Invalid marker byte
         out.flush();
 
