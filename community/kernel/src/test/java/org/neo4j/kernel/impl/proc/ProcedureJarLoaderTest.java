@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
@@ -297,14 +298,14 @@ public class ProcedureJarLoaderTest
 
     private void corruptJar( URL jar ) throws IOException, URISyntaxException
     {
-        long fileLength = new File( jar.getFile() ).length();
+        File jarFile = new File( jar.getFile() );
+        long fileLength = jarFile.length();
         byte[] bytes = Files.readAllBytes( Paths.get( jar.toURI() ) );
         for ( long i = fileLength / 2; i < fileLength; i++ )
         {
             bytes[(int) i] = 0;
         }
-
-        Files.write( Paths.get( jar.getPath() ), bytes );
+        Files.write( jarFile.toPath(), bytes );
     }
 
     private URL createJarFor( Class<?> ... targets ) throws IOException
