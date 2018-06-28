@@ -399,7 +399,8 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       else {
         val tempVariable = nextVariableName()
 
-        //AnyValue tempVariable = arg0;
+        // This loop will generate:
+        // AnyValue tempVariable = arg0;
         //if (tempVariable == NO_VALUE) {
         //  tempVariable = arg1;
         //  if ( tempVariable == NO_VALUE) {
@@ -408,13 +409,13 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         //}
         def loop(expressions: List[IntermediateExpression]): IntermediateRepresentation = expressions match {
           case Nil => throw new InternalException("we should never exhaust this loop")
-          case e :: Nil => assign(tempVariable, e.ir)
-          case hd :: tl =>
+          case expression :: Nil => assign(tempVariable, expression.ir)
+          case expression :: tail =>
             //tempVariable = hd; if (tempVariable == NO_VALUE){[continue with tail]}
-            if (hd.nullable) block(assign(tempVariable, hd.ir),
-                                 condition(equal(load(tempVariable), noValue))(loop(tl)))
+            if (expression.nullable) block(assign(tempVariable, expression.ir),
+                                 condition(equal(load(tempVariable), noValue))(loop(tail)))
             // WHOAH[Keanu Reeves voice] if not nullable we don't even need to generate code for the coming expressions,
-            else assign(tempVariable, hd.ir)
+            else assign(tempVariable, expression.ir)
         }
         val repr = block(declare[AnyValue](tempVariable),
                           assign(tempVariable, noValue),
