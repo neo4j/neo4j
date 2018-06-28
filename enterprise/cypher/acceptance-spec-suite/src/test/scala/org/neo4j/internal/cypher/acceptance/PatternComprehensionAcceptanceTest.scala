@@ -300,7 +300,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
         |    WHERE NOT (user)-[:REVIEWED]->(:Movie)-[:BY]->(director) | id(b)] AS bonus
       """.stripMargin
 
-    val result = executeWith(expectedToSucceedRestricted, query)
+    val result = executeWith(expectedToSucceedRestricted, query, Configs.Cost3_3) // should be fixed in next release of 3.3
     result.toList should equal(List(
       Map("bonus" -> List())
     ))
