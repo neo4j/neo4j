@@ -24,10 +24,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{CoercedPredicate, Predicate}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.symbols.TypeSafe
-import org.opencypher.v9_0.util.symbols.CypherType
-import org.opencypher.v9_0.util.{CypherTypeException, InternalException}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{NumberValue, Values}
+import org.opencypher.v9_0.util.symbols.CypherType
+import org.opencypher.v9_0.util.{CypherTypeException, InternalException}
 
 abstract class Expression extends TypeSafe with AstNode[Expression] {
 
@@ -114,8 +114,6 @@ abstract class Arithmetics(left: Expression, right: Expression) extends Expressi
   def arguments = Seq(left, right)
 }
 
-trait ExpressionWInnerExpression extends Expression {
-  def inner:Expression
-  def myType:CypherType
-  def expectedInnerType:CypherType
+trait ExtendedExpression extends Expression {
+  def legacy: Expression
 }

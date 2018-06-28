@@ -280,6 +280,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
     //slotted operations
     case ReferenceFromSlot(offset, name) =>
       Some(IntermediateExpression(getRefAt(offset), slots.get(name).forall(_.nullable) ))
+
     case IdFromSlot(offset) =>
       Some(IntermediateExpression(invokeStatic(method[Values, LongValue, Long]("longValue"), getLongAt(offset)),
                                   nullable = false))

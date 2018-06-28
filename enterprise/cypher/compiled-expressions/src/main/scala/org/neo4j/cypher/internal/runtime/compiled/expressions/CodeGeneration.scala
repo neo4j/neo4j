@@ -47,7 +47,7 @@ import org.opencypher.v9_0.frontend.helpers.using
   */
 object CodeGeneration {
 
-  private val DEBUG = false
+  private val DEBUG = true
   private val VALUES = classOf[Values]
   private val LONG = classOf[LongValue]
   private val DOUBLE = classOf[DoubleValue]

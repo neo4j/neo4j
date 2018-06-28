@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.compiled.expressions.{CodeGeneration, CompiledExpression, IntermediateCodeGeneration}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, RandFunction}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, ExtendedExpression, RandFunction}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.logging.Log
 import org.neo4j.values.AnyValue
@@ -56,7 +56,7 @@ class CompiledExpressionConverter(log: Log, slots: SlotConfiguration) extends Ex
   }
 }
 
-case class CompileWrappingExpression(ce: CompiledExpression, legacy: Expression) extends Expression {
+case class CompileWrappingExpression(ce: CompiledExpression, legacy: Expression) extends ExtendedExpression {
 
   override def rewrite(f: Expression => Expression): Expression = f(this)
 
@@ -64,6 +64,8 @@ case class CompileWrappingExpression(ce: CompiledExpression, legacy: Expression)
 
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue =
     ce.evaluate(ctx, state.query, state.params)
+
+
 
   override def symbolTableDependencies: Set[String] = legacy.symbolTableDependencies
 
