@@ -180,7 +180,7 @@ public class SchemaIndexHaIT
             tx.success();
         }
         // FINALLY: let all db's finish
-        for ( HighlyAvailableGraphDatabase db: cluster.getAllMembers() )
+        for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
             dbFactory.triggerFinish( db );
         }
@@ -242,7 +242,7 @@ public class SchemaIndexHaIT
         }
         finally
         {
-            for ( HighlyAvailableGraphDatabase db: cluster.getAllMembers() )
+            for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
             {
                 dbFactory.triggerFinish( db );
             }
@@ -305,7 +305,7 @@ public class SchemaIndexHaIT
     private void proceedAsNormalWithIndexPopulationOnAllSlavesExcept( ControlledGraphDatabaseFactory dbFactory, ManagedCluster cluster,
             HighlyAvailableGraphDatabase slaveToIgnore )
     {
-        for ( HighlyAvailableGraphDatabase db: cluster.getAllMembers() )
+        for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
             if ( db != slaveToIgnore && db.getInstanceState() == HighAvailabilityMemberState.SLAVE )
             {
@@ -354,7 +354,7 @@ public class SchemaIndexHaIT
 
     private static void awaitIndexOnline( IndexDefinition index, ManagedCluster cluster, Map<Object,Node> expectedDdata ) throws InterruptedException
     {
-        for ( GraphDatabaseService db: cluster.getAllMembers() )
+        for ( GraphDatabaseService db : cluster.getAllMembers() )
         {
             awaitIndexOnline( index, db, expectedDdata );
         }
@@ -362,7 +362,7 @@ public class SchemaIndexHaIT
 
     private static IndexDefinition reHomedIndexDefinition( GraphDatabaseService db, IndexDefinition definition )
     {
-        for ( IndexDefinition candidate: db.schema().getIndexes() )
+        for ( IndexDefinition candidate : db.schema().getIndexes() )
         {
             if ( candidate.equals( definition ) )
             {
@@ -395,7 +395,7 @@ public class SchemaIndexHaIT
 
     private static void assertIndexContents( IndexDefinition index, GraphDatabaseService db, Map<Object,Node> expectedData )
     {
-        for ( Map.Entry<Object,Node> entry: expectedData.entrySet() )
+        for ( Map.Entry<Object,Node> entry : expectedData.entrySet() )
         {
             assertEquals( asSet( entry.getValue() ),
                     asUniqueSet( db.findNodes( index.getLabel(), Iterables.single( index.getPropertyKeys() ), entry.getKey() ) ) );
