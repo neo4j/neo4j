@@ -289,6 +289,44 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
     ))
   }
 
+  test("bug found where NOT predicate in pattern comprehension wasn't planned properly 1") {
+    val query =
+      """
+        |CREATE (bonus:Bonus)-[:FOR]->(movie:Movie)-[:BY]->(director:Director),
+        |   (user:User)-[:REVIEWED]->(movie1:Movie)-[:BY]->(director)
+        |WITH user, movie, director
+        |RETURN
+        |  [(b:Bonus)-[:FOR]->(movie)
+        |    WHERE NOT (user)-[:REVIEWED]->(:Movie)-[:BY]->(director) | id(b)] AS bonus
+      """.stripMargin
+
+    val result = executeWith(expectedToSucceedRestricted, query)
+    result.toList should equal(List(
+      Map("bonus" -> List())
+    ))
+    result.executionPlanDescription() should useOperators("AntiSemiApply", "RollUpApply")
+  }
+
+  test("bug found where NOT predicate in pattern comprehension wasn't planned properly 2") {
+    // In the original bug, the following query was the alternative that worked.
+    // This test is to make sure it will in the future as well
+    val query =
+    """
+      |CREATE (bonus:Bonus)-[:FOR]->(movie:Movie)-[:BY]->(director:Director),
+      |     (user:User)-[:REVIEWED]->(movie1:Movie)-[:BY]->(director)
+      |WITH user, movie, director
+      |RETURN
+      |  [(b:Bonus)-[:FOR]->(movie)
+      |    WHERE size([(user)-[r:REVIEWED]->(:Movie)-[:BY]->(director) | r]) = 0 | id(b)] AS bonus
+    """.stripMargin
+
+    val result = executeWith(expectedToSucceedRestricted, query)
+    result.toList should equal(List(
+      Map("bonus" -> List())
+    ))
+    result.executionPlanDescription() should useOperators("RollUpApply")
+  }
+
   test("using pattern comprehension as grouping key") {
     val n1 = createLabeledNode("START")
     val n2 = createLabeledNode("START")
