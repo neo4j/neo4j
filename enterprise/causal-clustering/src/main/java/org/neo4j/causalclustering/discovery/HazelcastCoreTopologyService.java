@@ -257,7 +257,7 @@ public class HazelcastCoreTopologyService implements CoreTopologyService, Lifecy
         {
             try
             {
-                hazelcastInstance.getLifecycleService().terminate();
+                hazelcastInstance.getLifecycleService().shutdown();
             }
             catch ( Throwable e )
             {
