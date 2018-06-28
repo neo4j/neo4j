@@ -249,7 +249,7 @@ public class HazelcastCoreTopologyService implements CoreTopologyService, Lifecy
             try
             {
                 hazelcastInstance.getCluster().removeMembershipListener( membershipRegistrationId );
-                hazelcastInstance.getLifecycleService().terminate();
+                hazelcastInstance.getLifecycleService().shutdown();
             }
             catch ( Throwable e )
             {
