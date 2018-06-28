@@ -57,11 +57,11 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 
 import static java.util.stream.Collectors.toList;
-import static junit.framework.TestCase.fail;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
