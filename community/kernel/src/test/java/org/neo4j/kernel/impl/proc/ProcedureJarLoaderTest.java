@@ -274,7 +274,8 @@ public class ProcedureJarLoaderTest
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
 
         ProcedureJarLoader jarloader = new ProcedureJarLoader(
-                new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry(), new ComponentRegistry(), NullLog.getInstance(),ProcedureConfig.DEFAULT ),
+                new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry(), new ComponentRegistry(), NullLog.getInstance(),
+                        ProcedureConfig.DEFAULT ),
                 logProvider.getLog( ProcedureJarLoader.class ) );
 
         // when
