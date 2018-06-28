@@ -32,10 +32,12 @@ import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.DoubleValue;
+import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -893,16 +895,17 @@ public final class CypherFunctions
         {
             return (TextValue) in;
         }
-        else if ( in instanceof Value )
+        else if ( in instanceof NumberValue )
         {
-            if ( in instanceof PointValue )
-            {
-                return stringValue( in.toString() );
-            }
-            else
-            {
-                return stringValue( ((Value) in).prettyPrint() );
-            }
+            return stringValue( ((NumberValue) in).prettyPrint() );
+        }
+        else if ( in instanceof BooleanValue )
+        {
+            return stringValue( ((BooleanValue) in).prettyPrint() );
+        }
+        else if ( in instanceof TemporalValue || in instanceof DurationValue || in instanceof PointValue )
+        {
+            return stringValue( in.toString() );
         }
         else
         {

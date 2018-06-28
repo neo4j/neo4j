@@ -46,7 +46,7 @@ import org.opencypher.v9_0.ast.AstConstructionTestSupport
 import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.util.{CypherTypeException, InvalidArgumentException, symbols}
+import org.opencypher.v9_0.util.{CypherTypeException, InvalidArgumentException, ParameterWrongTypeException, symbols}
 
 class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -644,7 +644,14 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, map(Array("a"), Array(doubleValue(3.2)))) should equal(stringValue("3.2"))
     compiled.evaluate(ctx, db, map(Array("a"), Array(Values.TRUE))) should equal(stringValue("true"))
     compiled.evaluate(ctx, db, map(Array("a"), Array(stringValue("hello")))) should equal(stringValue("hello"))
+    compiled.evaluate(ctx, db, map(Array("a"), Array(pointValue(Cartesian, 0.0, 0.0)))) should
+      equal(stringValue("point({x: 0.0, y: 0.0, crs: 'cartesian'})"))
+    compiled.evaluate(ctx, db, map(Array("a"), Array(durationValue(Duration.ofHours(3))))) should
+      equal(stringValue("PT3H"))
+    compiled.evaluate(ctx, db, map(Array("a"), Array(temporalValue(localTime(20, 0, 0, 0))))) should
+      equal(stringValue("20:00:00"))
     compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
+    a [ParameterWrongTypeException] should be thrownBy compiled.evaluate(ctx, db, map(Array("a"), Array(intArray(Array(1,2,3)))))
   }
 
   test("properties function on node") {
