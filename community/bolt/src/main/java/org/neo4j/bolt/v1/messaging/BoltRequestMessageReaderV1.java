@@ -43,11 +43,11 @@ public class BoltRequestMessageReaderV1 extends BoltRequestMessageReader
     {
         super( connection,
                 newSimpleResponseHandler( connection, responseMessageHandler, logService ),
-                buildUnpackers( connection, responseMessageHandler, messageLogger, logService ),
+                buildDecoders( connection, responseMessageHandler, messageLogger, logService ),
                 messageLogger );
     }
 
-    private static List<RequestMessageDecoder> buildUnpackers( BoltConnection connection, BoltResponseMessageHandler responseMessageHandler,
+    private static List<RequestMessageDecoder> buildDecoders( BoltConnection connection, BoltResponseMessageHandler responseMessageHandler,
             BoltMessageLogger messageLogger, LogService logService )
     {
         BoltResponseHandler initHandler = newSimpleResponseHandler( connection, responseMessageHandler, logService );

@@ -27,7 +27,7 @@ public interface RequestMessageDecoder
 {
     int signature();
 
-    BoltResponseHandler resonseHandler();
+    BoltResponseHandler responseHandler();
 
     RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException;
 }

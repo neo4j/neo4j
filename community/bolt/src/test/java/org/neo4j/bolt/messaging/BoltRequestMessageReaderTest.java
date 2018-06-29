@@ -148,7 +148,7 @@ class BoltRequestMessageReaderTest
         }
 
         @Override
-        public BoltResponseHandler resonseHandler()
+        public BoltResponseHandler responseHandler()
         {
             return responseHandler;
         }

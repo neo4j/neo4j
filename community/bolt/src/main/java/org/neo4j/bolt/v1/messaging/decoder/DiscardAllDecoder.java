@@ -46,7 +46,7 @@ public class DiscardAllDecoder implements RequestMessageDecoder
     }
 
     @Override
-    public BoltResponseHandler resonseHandler()
+    public BoltResponseHandler responseHandler()
     {
         return responseHandler;
     }

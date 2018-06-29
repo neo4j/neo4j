@@ -45,7 +45,7 @@ class PullAllDecoderTest
     @Test
     void shouldReturnConnectResponseHandler()
     {
-        assertEquals( responseHandler, decoder.resonseHandler() );
+        assertEquals( responseHandler, decoder.responseHandler() );
     }
 
     @Test

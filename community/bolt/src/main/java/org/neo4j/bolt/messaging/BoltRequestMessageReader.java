@@ -88,9 +88,9 @@ public abstract class BoltRequestMessageReader
             }
 
             RequestMessage message = decoder.decode( unpacker );
-            BoltResponseHandler resonseHandler = decoder.resonseHandler();
+            BoltResponseHandler responseHandler = decoder.responseHandler();
 
-            connection.enqueue( stateMachine -> stateMachine.process( message, resonseHandler ) );
+            connection.enqueue( stateMachine -> stateMachine.process( message, responseHandler ) );
         }
         catch ( PackStream.PackStreamException e )
         {
