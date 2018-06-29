@@ -22,6 +22,7 @@
  */
 package org.neo4j.cypher.internal.runtime.parallel
 
+import java.util
 import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue, Executors}
 import java.util.concurrent.atomic.AtomicLong
 
@@ -94,14 +95,12 @@ class SimpleSchedulerTest extends CypherFunSuite {
 
     val s = new SimpleScheduler( Executors.newFixedThreadPool( 64 ) )
 
-    var output = new ConcurrentLinkedQueue[Int]()
-    val method: ArrayBuffer[Int] => Unit =
-      arrayBuffer => {
-        for (x <- arrayBuffer)
-          output.add(x)
-      }
+    var output = new ArrayBuffer[Int]
+    val aggregator = Aggregator(buffer => {
+                                  for (x <- buffer)
+                                    output += x
+                                })
 
-    val aggregator = Aggregator(method)
     val tasks = SubTasker(List(
       PushToEager(List(1,2,3), aggregator),
       PushToEager(List(4,5,6), aggregator)))
@@ -114,11 +113,11 @@ class SimpleSchedulerTest extends CypherFunSuite {
 
   // HELPER TASKS
 
-  case class Aggregator(method: ArrayBuffer[Int] => Unit) extends Task {
+  case class Aggregator(method: util.Collection[Int] => Unit) extends Task {
 
-    val buffer = new ArrayBuffer[Int]
+    val buffer = new ConcurrentLinkedQueue[Int]
 
-    override def executeWorkUnit(): Seq[Task] ={
+    override def executeWorkUnit(): Seq[Task] = {
       method(buffer)
       buffer.clear()
       Nil
@@ -133,7 +132,7 @@ class SimpleSchedulerTest extends CypherFunSuite {
 
     override def executeWorkUnit(): Seq[Task] = {
       if (resultSequence.hasNext)
-        eager.buffer.append(resultSequence.next())
+        eager.buffer.add(resultSequence.next())
 
       if (canContinue) Nil
       else List(eager)
