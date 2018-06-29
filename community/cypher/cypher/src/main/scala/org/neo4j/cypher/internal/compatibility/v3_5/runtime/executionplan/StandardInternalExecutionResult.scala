@@ -183,7 +183,7 @@ class StandardInternalExecutionResult(context: QueryContext,
     if (isMaterialized) {
       val rowCursor = new MaterializedResultCursor
       while (rowCursor.next()) {
-        visitor.visit(rowCursor)
+        visitor.visit(rowCursor.record())
       }
       close(Success)
     } else if (isOpen) {
@@ -192,13 +192,16 @@ class StandardInternalExecutionResult(context: QueryContext,
     }
   }
 
-  class MaterializedResultCursor extends QueryResult.Record {
+  class MaterializedResultCursor {
     private var i = -1
     def next(): Boolean = {
       i += 1
       i < materializedResult.size()
     }
-    override def fields(): Array[AnyValue] = materializedResult.get(i)
+
+    def record(): QueryResult.Record = MaterializedRecord(materializedResult.get(i))
+
+    case class MaterializedRecord(override val fields: Array[AnyValue]) extends QueryResult.Record
   }
 
   /*
