@@ -25,6 +25,7 @@ import org.apache.commons.io.FileUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,12 +51,14 @@ import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.LogTimeZone;
 import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.Iterables.append;
 import static org.neo4j.io.file.Files.createOrOpenAsOutputStream;
@@ -144,7 +147,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
             config.put( ServerSettings.third_party_packages.name(), toStringForThirdPartyPackageProperty( extensions.toList() ) );
             config.put( GraphDatabaseSettings.store_internal_log_path.name(), internalLogFile.getAbsolutePath() );
 
-            final FormattedLogProvider userLogProvider = FormattedLogProvider.toOutputStream( logOutputStream );
+            FormattedLogProvider userLogProvider = FormattedLogProvider.withZoneId( logZoneIdFrom( config ) ).toOutputStream( logOutputStream );
             GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
             Iterable<KernelExtensionFactory<?>> kernelExtensions =
                     append( new Neo4jHarnessExtensions( procedures ), dependencies.kernelExtensions() );
@@ -275,6 +278,12 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
             propertyString += jaxRsPackage.getPackageName() + "=" + jaxRsPackage.getMountPoint();
             return propertyString;
         }
+    }
+
+    private static ZoneId logZoneIdFrom( Map<String,String> config )
+    {
+        String dbTimeZone = config.getOrDefault( db_timezone.name(), db_timezone.getDefaultValue() );
+        return LogTimeZone.valueOf( dbTimeZone ).getZoneId();
     }
 
     /**
