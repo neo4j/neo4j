@@ -181,7 +181,7 @@
             <rules>
               <evaluateBeanshell>
                 <message>Maven module has to be in a "groupId" beginning with "org.neo4j"</message>
-                <condition>String s = "${project.groupId}"; s.startsWith("org.neo4j")</condition>
+		<condition>{String s = "${project.groupId}"; s.startsWith("org.neo4j");}</condition>
               </evaluateBeanshell>
               <requireFilesDontExist>
                 <message>You are not allowed to have classes in "com" package</message>
