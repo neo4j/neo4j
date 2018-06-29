@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.runtime.compiled.codegen.ir._
 import org.neo4j.cypher.internal.runtime.compiled.codegen.spi.{CodeStructure, CodeStructureResult}
 import org.neo4j.cypher.internal.runtime.compiled.{CompiledExecutionResult, CompiledPlan, RunnablePlan}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
-import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, LogicalPlan2PlanDescription}
+import org.neo4j.cypher.internal.runtime.planDescription.{Argument, InternalPlanDescription, LogicalPlan2PlanDescription}
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, QueryContext, compiled}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, ProduceResult}
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
@@ -96,6 +96,8 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery],
                                                                          tracer.getOrElse(QueryExecutionTracer.NONE),params)
             new CompiledExecutionResult(queryContext, execution, tracer.getOrElse(QueryProfile.NONE))
           }
+
+          def metadata: Seq[Argument] = query.code
         }
 
         compiled.CompiledPlan(updating = false, description, res.columns, builder)

@@ -24,7 +24,7 @@ package org.neo4j.cypher.internal.runtime.compiled
 
 import org.neo4j.cypher.internal.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.Provider
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.runtime.planDescription.{Argument, InternalPlanDescription}
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, QueryContext}
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.values.virtual.MapValue
@@ -39,4 +39,6 @@ trait RunnablePlan {
             execMode: ExecutionMode,
             tracer: Option[ProfilingTracer],
             params: MapValue): RuntimeResult
+
+  def metadata: Seq[Argument]
 }

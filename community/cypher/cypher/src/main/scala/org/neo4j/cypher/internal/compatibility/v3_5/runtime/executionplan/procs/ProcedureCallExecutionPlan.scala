@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, ParameterExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, QueryState}
+import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.cypher.internal.v3_5.logical.plans.ProcedureSignature
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.values.virtual.MapValue
@@ -85,5 +86,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
   }
 
   override def runtimeName: RuntimeName = ProcedureRuntimeName
+
+  override def metadata: Seq[Argument] = Nil
 }
 

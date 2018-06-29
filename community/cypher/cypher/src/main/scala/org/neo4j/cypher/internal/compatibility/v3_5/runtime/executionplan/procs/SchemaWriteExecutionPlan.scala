@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
+import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.values.virtual.MapValue
 
@@ -47,4 +48,6 @@ case class SchemaWriteExecutionPlan(name: String, schemaWrite: QueryContext => U
   }
 
   override def runtimeName: RuntimeName = ProcedureRuntimeName
+
+  override def metadata: Seq[Argument] = Nil
 }

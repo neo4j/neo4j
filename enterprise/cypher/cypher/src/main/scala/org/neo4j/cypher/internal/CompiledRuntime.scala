@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.compiled.CompiledPlan
 import org.neo4j.cypher.internal.runtime.compiled.codegen.{CodeGenConfiguration, CodeGenerator}
+import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.Notification
 import org.neo4j.values.virtual.MapValue
@@ -77,5 +78,7 @@ object CompiledRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
     }
 
     override val runtimeName: RuntimeName = CompiledRuntimeName
+
+    override def metadata: Seq[Argument] = compiled.executionResultBuilder.metadata
   }
 }

@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeExecutionBuilderContext
+import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
@@ -85,5 +86,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
                     readOnly,
                     profileInformation)
     }
+
+    override def metadata: Seq[Argument] = Nil
   }
 }

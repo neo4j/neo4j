@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RuntimeName
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.values.virtual.MapValue
 
@@ -29,4 +30,6 @@ abstract class ExecutionPlan {
   def run(queryContext: QueryContext, doProfile: Boolean, params: MapValue): RuntimeResult
 
   def runtimeName: RuntimeName
+
+  def metadata: Seq[Argument]
 }

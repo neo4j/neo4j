@@ -571,6 +571,7 @@ public class PropertyLevelSecurityIT
         try ( InternalTransaction tx = db.beginTransaction( explicit, subject ) )
         {
             result = db.execute( tx, query, ValueUtils.asMapValue( params ) );
+            result.resultAsString();
             tx.success();
         }
         return result;

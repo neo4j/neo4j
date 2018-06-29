@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RuntimeName
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
-import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, LogicalPlan2PlanDescription}
+import org.neo4j.cypher.internal.runtime.planDescription.{Argument, InternalPlanDescription, LogicalPlan2PlanDescription}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.cypher.result.QueryProfile
 import org.opencypher.v9_0.frontend.PlannerName
@@ -32,12 +32,17 @@ class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
                              plannerName: PlannerName,
                              readOnly: Boolean,
                              cardinalities: Cardinalities,
-                             runtimeName: RuntimeName) {
+                             runtimeName: RuntimeName,
+                             metadata: Seq[Argument]) {
 
-  def explain(): InternalPlanDescription =
-    LogicalPlan2PlanDescription(logicalPlan, plannerName, readOnly, cardinalities)
-      .addArgument(Runtime(runtimeName.toTextOutput))
-      .addArgument(RuntimeImpl(runtimeName.name))
+  def explain(): InternalPlanDescription = {
+    val description =
+      LogicalPlan2PlanDescription(logicalPlan, plannerName, readOnly, cardinalities)
+        .addArgument(Runtime(runtimeName.toTextOutput))
+        .addArgument(RuntimeImpl(runtimeName.name))
+
+    metadata.foldLeft(description)((plan, metadata) => plan.addArgument(metadata))
+  }
 
   def profile(queryProfile: QueryProfile): InternalPlanDescription = {
 

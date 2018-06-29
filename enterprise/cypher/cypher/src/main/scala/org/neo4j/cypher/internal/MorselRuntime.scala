@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.parallel.SchedulerTracer
+import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.cypher.internal.runtime.slotted.expressions.{CompiledExpressionConverter, SlottedExpressionConverters}
 import org.neo4j.cypher.internal.runtime.vectorized.expressions.MorselExpressionConverters
 import org.neo4j.cypher.internal.runtime.vectorized.{Dispatcher, Pipeline, PipelineBuilder}
@@ -59,7 +60,7 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
 
       context.notificationLogger.log(
         ExperimentalFeatureNotification("use the morsel runtime at your own peril, " +
-                                      "not recommended to be run on production systems"))
+                                        "not recommended to be run on production systems"))
 
     VectorizedExecutionPlan(operators,
                             physicalPlan.slotConfigurations,
@@ -97,6 +98,8 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
     }
 
     override def runtimeName: RuntimeName = MorselRuntimeName
+
+    override def metadata: Seq[Argument] = Nil
   }
 
   class VectorizedRuntimeResult(operators: Pipeline,

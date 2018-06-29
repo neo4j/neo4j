@@ -175,7 +175,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         val queryContext = getQueryContext(transactionalContext)
 
         val planDescriptionBuilder =
-          new PlanDescriptionBuilder(logicalPlan, plannerName, readOnly, cardinalities, executionPlan.runtimeName)
+          new PlanDescriptionBuilder(logicalPlan, plannerName, readOnly, cardinalities, executionPlan.runtimeName, executionPlan.metadata)
 
         val taskCloser = new TaskCloser
         taskCloser.addTask(queryContext.transactionalContext.close)
