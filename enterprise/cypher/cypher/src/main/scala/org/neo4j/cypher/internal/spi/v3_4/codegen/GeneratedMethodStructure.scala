@@ -785,8 +785,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def iteratorFrom(iterable: Expression) =
     invoke(method[CompiledConversionUtils, JIterator[_]]("iteratorFrom", typeRef[Object]), iterable)
 
-  override def iteratorNext(iterator: Expression) =
-    invoke(iterator, method[JIterator[_], Object]("next"))
+  override def iteratorNext(iterator: Expression, codeGenType: CodeGenType) =
+    Expression.cast(lowerType(codeGenType), invoke(iterator, method[JIterator[_], Object]("next")))
 
   override def iteratorHasNext(iterator: Expression) =
     invoke(iterator, method[JIterator[_], Boolean]("hasNext"))

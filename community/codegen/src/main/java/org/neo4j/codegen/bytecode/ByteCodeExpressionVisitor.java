@@ -532,7 +532,10 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     public void cast( TypeReference type, Expression expression )
     {
         expression.accept( this );
-        methodVisitor.visitTypeInsn( CHECKCAST, byteCodeName( type ) );
+        if ( !type.equals( expression.type() ) )
+        {
+            methodVisitor.visitTypeInsn( CHECKCAST, byteCodeName( type ) );
+        }
     }
 
     @Override

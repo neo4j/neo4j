@@ -86,7 +86,7 @@ trait MethodStructure[E] {
   def declareIterator(name: String): Unit
   def declareIterator(name: String, codeGenType: CodeGenType): Unit
   def iteratorFrom(iterable: E): E
-  def iteratorNext(iterator: E): E
+  def iteratorNext(iterator: E, codeGenType: CodeGenType): E
   def iteratorHasNext(iterator: E): E
 
   def toSet(value: E): E
