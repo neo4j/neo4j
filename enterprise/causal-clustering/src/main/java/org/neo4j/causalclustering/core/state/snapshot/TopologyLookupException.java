@@ -37,9 +37,4 @@ public class TopologyLookupException extends Exception
     {
         super( format( "Cannot find the target member %s socket address", memberId ) );
     }
-
-    public TopologyLookupException( String message )
-    {
-        super( message );
-    }
 }
