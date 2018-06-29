@@ -125,19 +125,20 @@ public class StoreCopyClient
             TerminationCondition terminationCondition ) throws StoreCopyFailedException
     {
         TimeoutStrategy.Timeout timeout = backOffStrategy.newTimeout();
-        boolean successful;
-        do
+        while ( true )
         {
             try
             {
                 AdvertisedSocketAddress address = addressProvider.secondary();
                 log.info( format( "Sending request '%s' to '%s'", request, address ) );
                 StoreCopyFinishedResponse response = catchUpClient.makeBlockingRequest( address, request, copyHandler );
-                successful = successfulRequest( response, request );
+                if ( successfulRequest( response, request ) )
+                {
+                    break;
+                }
             }
             catch ( CatchUpClientException e )
             {
-                successful = false;
                 Throwable cause = e.getCause();
                 if ( cause instanceof ConnectException )
                 {
@@ -150,16 +151,11 @@ public class StoreCopyClient
             }
             catch ( CatchupAddressResolutionException e )
             {
-                successful = false;
                 log.warn( "Unable to resolve address for '%s'. %s", request, e.getMessage() );
             }
-            if ( !successful )
-            {
-                terminationCondition.assertContinue();
-            }
+            terminationCondition.assertContinue();
             awaitAndIncrementTimeout( timeout );
         }
-        while ( !successful );
     }
 
     private void awaitAndIncrementTimeout( TimeoutStrategy.Timeout timeout ) throws StoreCopyFailedException
