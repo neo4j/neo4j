@@ -196,7 +196,7 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.Tra
 public class HighlyAvailableEditionModule
         extends EditionModule
 {
-    private HighAvailabilityMemberStateMachine memberStateMachine;
+    public HighAvailabilityMemberStateMachine memberStateMachine;
     public ClusterMembers members;
     private TokenHolders tokenHolders;
 

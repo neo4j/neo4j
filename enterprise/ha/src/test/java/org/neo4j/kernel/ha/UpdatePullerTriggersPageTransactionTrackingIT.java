@@ -141,15 +141,19 @@ public class UpdatePullerTriggersPageTransactionTrackingIT
         @Override
         protected GraphDatabaseFacadeFactory newHighlyAvailableFacadeFactory()
         {
-            return new CustomFacadeFactory();
+            return new CustomFacadeFactory( this );
         }
     }
 
     private class CustomFacadeFactory extends GraphDatabaseFacadeFactory
     {
-        CustomFacadeFactory()
+        CustomFacadeFactory( CustomHighlyAvailableGraphDatabase customHighlyAvailableGraphDatabase )
         {
-            super( DatabaseInfo.HA, HighlyAvailableEditionModule::new );
+            super( DatabaseInfo.HA, platformModule ->
+            {
+                customHighlyAvailableGraphDatabase.module = new HighlyAvailableEditionModule( platformModule );
+                return customHighlyAvailableGraphDatabase.module;
+            } );
         }
 
         @Override
@@ -159,8 +163,7 @@ public class UpdatePullerTriggersPageTransactionTrackingIT
         }
 
         @Override
-        protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
-                GraphDatabaseFacade graphDatabaseFacade )
+        protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
         {
             return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
             {

@@ -101,7 +101,7 @@ public class OnlineBackupKernelExtension extends LifecycleAdapter
         }, monitors, logProvider );
     }
 
-    public OnlineBackupKernelExtension( Config config, GraphDatabaseAPI graphDatabaseAPI, BackupProvider provider,
+    private OnlineBackupKernelExtension( Config config, GraphDatabaseAPI graphDatabaseAPI, BackupProvider provider,
                                         Monitors monitors, LogProvider logProvider )
     {
         this.config = config;

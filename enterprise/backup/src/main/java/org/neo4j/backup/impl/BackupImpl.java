@@ -100,7 +100,7 @@ public class BackupImpl implements TheBackupInterface
         }
     }
 
-    private String getBackupIdentifier()
+    private static String getBackupIdentifier()
     {
         return Thread.currentThread().getName();
     }
