@@ -19,16 +19,24 @@
  */
 package org.neo4j.bolt.transport;
 
+import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.BoltProtocol;
+
 /**
- * Implementations install related channel handlers into the given channel pipeline that facilitates the
- * protocol to play.
+ * Represents a component that instantiates Bolt protocol handlers.
+ *
+ * @see BoltProtocolPipelineInstaller
  */
-public interface BoltProtocolPipelineInstaller
+@FunctionalInterface
+public interface BoltProtocolFactory
 {
-
-    void install();
-
-    /** Used for version negotiation */
-    long version();
-
+    /**
+     * Instantiate a handler for Bolt protocol with the specified version. Return {@code null} when handler for the
+     * given version can't be instantiated.
+     *
+     * @param protocolVersion the version as negotiated by the initial handshake.
+     * @param channel the channel representing network connection from the client.
+     * @return new protocol handler when given protocol version is known and valid, {@code null} otherwise.
+     */
+    BoltProtocol create( long protocolVersion, BoltChannel channel );
 }

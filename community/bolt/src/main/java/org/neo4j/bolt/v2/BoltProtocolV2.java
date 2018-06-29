@@ -20,9 +20,9 @@
 package org.neo4j.bolt.v2;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.v1.BoltProtocolV1;
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.runtime.BoltStateMachineFactory;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
 import org.neo4j.kernel.impl.logging.LogService;

@@ -23,9 +23,12 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
+import java.util.function.Function;
+
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.packstream.ByteBufInput;
+import org.neo4j.bolt.v1.packstream.PackInput;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 
@@ -38,10 +41,10 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf>
     private final BoltRequestMessageReader reader;
     private final Log log;
 
-    public MessageDecoder( Neo4jPack pack, BoltRequestMessageReader reader, LogService logService )
+    public MessageDecoder( Function<PackInput, Neo4jPack.Unpacker> unpackProvider, BoltRequestMessageReader reader, LogService logService )
     {
         this.input = new ByteBufInput();
-        this.unpacker = pack.newUnpacker( input );
+        this.unpacker = unpackProvider.apply( input );
         this.reader = reader;
         this.log = logService.getInternalLog( getClass() );
     }

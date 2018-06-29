@@ -20,22 +20,20 @@
 package org.neo4j.bolt.transport;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.messaging.Neo4jPack;
-import org.neo4j.bolt.runtime.BoltConnection;
-import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.BoltProtocol;
+import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.bolt.v1.runtime.BoltStateMachineFactory;
 import org.neo4j.bolt.v2.BoltProtocolV2;
 import org.neo4j.kernel.impl.logging.LogService;
 
-public class DefaultBoltProtocolPipelineInstallerFactory implements BoltProtocolPipelineInstallerFactory
+public class DefaultBoltProtocolFactory implements BoltProtocolFactory
 {
     private final BoltConnectionFactory connectionFactory;
     private final LogService logService;
     private final BoltStateMachineFactory stateMachineFactory;
 
-    public DefaultBoltProtocolPipelineInstallerFactory( BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory,
+    public DefaultBoltProtocolFactory( BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory,
             LogService logService )
     {
         this.connectionFactory = connectionFactory;
@@ -44,21 +42,19 @@ public class DefaultBoltProtocolPipelineInstallerFactory implements BoltProtocol
     }
 
     @Override
-    public BoltProtocolPipelineInstaller create( long protocolVersion, BoltChannel channel )
+    public BoltProtocol create( long protocolVersion, BoltChannel channel )
     {
-        BoltProtocol boltProtocol;
         if ( protocolVersion == BoltProtocolV1.VERSION )
         {
-            boltProtocol = new BoltProtocolV1( channel, connectionFactory, stateMachineFactory, logService );
+            return new BoltProtocolV1( channel, connectionFactory, stateMachineFactory, logService );
         }
         else if ( protocolVersion == BoltProtocolV2.VERSION )
         {
-            boltProtocol = new BoltProtocolV2( channel, connectionFactory, stateMachineFactory, logService );
+            return new BoltProtocolV2( channel, connectionFactory, stateMachineFactory, logService );
         }
         else
         {
             return null;
         }
-        return new DefaultBoltProtocolPipelineInstaller( channel, boltProtocol, logService );
     }
 }

@@ -30,10 +30,10 @@ import org.junit.rules.ExpectedException;
 import java.util.NoSuchElementException;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.BoltProtocol;
 import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.logging.NullBoltMessageLogger;
-import org.neo4j.bolt.transport.BoltProtocolPipelineInstaller;
-import org.neo4j.bolt.transport.BoltProtocolPipelineInstallerFactory;
+import org.neo4j.bolt.transport.BoltProtocolFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
@@ -62,8 +62,8 @@ public class ProtocolHandshakerTest
         try ( BoltChannel boltChannel = BoltChannel.open( connector, channel, messageLogger ) )
         {
             // Given
-            BoltProtocolPipelineInstaller handler = newHandler( 1 );
-            BoltProtocolPipelineInstallerFactory handlerFactory = newHandlerFactory( 1, handler );
+            BoltProtocol protocol = newBoltProtocol( 1 );
+            BoltProtocolFactory handlerFactory = newProtocolFactory( 1, protocol );
             EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true ) );
 
             // When
@@ -83,7 +83,7 @@ public class ProtocolHandshakerTest
             channel.pipeline().remove( ProtocolHandshaker.class );
 
             assertTrue( channel.isActive() );
-            verify( handler ).install();
+            verify( protocol ).install();
         }
     }
 
@@ -93,8 +93,8 @@ public class ProtocolHandshakerTest
         try ( BoltChannel boltChannel = BoltChannel.open( connector, channel, messageLogger ) )
         {
             // Given
-            BoltProtocolPipelineInstaller handler = newHandler( 1 );
-            BoltProtocolPipelineInstallerFactory handlerFactory = newHandlerFactory( 1, handler );
+            BoltProtocol protocol = newBoltProtocol( 1 );
+            BoltProtocolFactory handlerFactory = newProtocolFactory( 1, protocol );
             EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true ) );
 
             // When
@@ -118,7 +118,7 @@ public class ProtocolHandshakerTest
             channel.pipeline().remove( ProtocolHandshaker.class );
 
             assertTrue( channel.isActive() );
-            verify( handler ).install();
+            verify( protocol ).install();
         }
     }
 
@@ -128,8 +128,8 @@ public class ProtocolHandshakerTest
         try ( BoltChannel boltChannel = BoltChannel.open( connector, channel, messageLogger ) )
         {
             // Given
-            BoltProtocolPipelineInstaller handler = newHandler( 1 );
-            BoltProtocolPipelineInstallerFactory handlerFactory = newHandlerFactory( 1, handler );
+            BoltProtocol protocol = newBoltProtocol( 1 );
+            BoltProtocolFactory handlerFactory = newProtocolFactory( 1, protocol );
             EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true ) );
 
             // When
@@ -153,7 +153,7 @@ public class ProtocolHandshakerTest
             channel.pipeline().remove( ProtocolHandshaker.class );
 
             assertTrue( channel.isActive() );
-            verify( handler ).install();
+            verify( protocol ).install();
         }
     }
 
@@ -165,8 +165,8 @@ public class ProtocolHandshakerTest
             long maxVersionNumber = 4_294_967_295L;
 
             // Given
-            BoltProtocolPipelineInstaller handler = newHandler( maxVersionNumber );
-            BoltProtocolPipelineInstallerFactory handlerFactory = newHandlerFactory( maxVersionNumber, handler );
+            BoltProtocol protocol = newBoltProtocol( maxVersionNumber );
+            BoltProtocolFactory handlerFactory = newProtocolFactory( maxVersionNumber, protocol );
             EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true ) );
 
             // When
@@ -186,7 +186,7 @@ public class ProtocolHandshakerTest
             channel.pipeline().remove( ProtocolHandshaker.class );
 
             assertTrue( channel.isActive() );
-            verify( handler ).install();
+            verify( protocol ).install();
         }
     }
 
@@ -196,8 +196,8 @@ public class ProtocolHandshakerTest
         try ( BoltChannel boltChannel = BoltChannel.open( connector, channel, messageLogger ) )
         {
             // Given
-            BoltProtocolPipelineInstaller handler = newHandler( 1 );
-            BoltProtocolPipelineInstallerFactory handlerFactory = newHandlerFactory( 1, handler );
+            BoltProtocol protocol = newBoltProtocol( 1 );
+            BoltProtocolFactory handlerFactory = newProtocolFactory( 1, protocol );
             EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true ) );
 
             // When
@@ -214,7 +214,7 @@ public class ProtocolHandshakerTest
             assertByteBufEquals( Unpooled.buffer().writeInt( 0 ), channel.readOutbound() );
 
             assertFalse( channel.isActive() );
-            verify( handler, never() ).install();
+            verify( protocol, never() ).install();
         }
     }
 
@@ -224,8 +224,8 @@ public class ProtocolHandshakerTest
         try ( BoltChannel boltChannel = BoltChannel.open( connector, channel, messageLogger ) )
         {
             // Given
-            BoltProtocolPipelineInstaller handler = newHandler( 1 );
-            BoltProtocolPipelineInstallerFactory handlerFactory = newHandlerFactory( 1, handler );
+            BoltProtocol protocol = newBoltProtocol( 1 );
+            BoltProtocolFactory handlerFactory = newProtocolFactory( 1, protocol );
             EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true ) );
 
             // When
@@ -240,7 +240,7 @@ public class ProtocolHandshakerTest
             // Then
             assertEquals( 0, channel.outboundMessages().size() );
             assertFalse( channel.isActive() );
-            verify( handler, never() ).install();
+            verify( protocol, never() ).install();
         }
     }
 
@@ -250,8 +250,8 @@ public class ProtocolHandshakerTest
         try ( BoltChannel boltChannel = BoltChannel.open( connector, channel, messageLogger ) )
         {
             // Given
-            BoltProtocolPipelineInstaller handler = newHandler( 1 );
-            BoltProtocolPipelineInstallerFactory handlerFactory = newHandlerFactory( 1, handler );
+            BoltProtocol protocol = newBoltProtocol( 1 );
+            BoltProtocolFactory handlerFactory = newProtocolFactory( 1, protocol );
             EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, true, false ) );
 
             // When
@@ -266,21 +266,21 @@ public class ProtocolHandshakerTest
             // Then
             assertEquals( 0, channel.outboundMessages().size() );
             assertFalse( channel.isActive() );
-            verify( handler, never() ).install();
+            verify( protocol, never() ).install();
         }
     }
 
-    private static BoltProtocolPipelineInstaller newHandler( long version )
+    private static BoltProtocol newBoltProtocol( long version )
     {
-        BoltProtocolPipelineInstaller handler = mock( BoltProtocolPipelineInstaller.class );
+        BoltProtocol handler = mock( BoltProtocol.class );
 
         when( handler.version() ).thenReturn( version );
 
         return handler;
     }
 
-    private static BoltProtocolPipelineInstallerFactory newHandlerFactory( long version, BoltProtocolPipelineInstaller handler )
+    private static BoltProtocolFactory newProtocolFactory( long version, BoltProtocol protocol )
     {
-        return ( givenVersion, channel ) -> version == givenVersion ? handler : null;
+        return ( givenVersion, channel ) -> version == givenVersion ? protocol : null;
     }
 }

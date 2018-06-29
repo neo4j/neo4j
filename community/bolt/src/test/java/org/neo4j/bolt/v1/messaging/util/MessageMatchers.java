@@ -309,7 +309,7 @@ public class MessageMatchers
     {
         RecordingByteChannel rawData = new RecordingByteChannel();
         BufferedChannelOutput output = new BufferedChannelOutput( rawData );
-        BoltResponseMessageWriter writer = new BoltResponseMessageWriter( neo4jPack, output,
+        BoltResponseMessageWriter writer = new BoltResponseMessageWriter( neo4jPack::newPacker, output,
                 NullLogService.getInstance(), NullBoltMessageLogger.getInstance() );
 
         for ( ResponseMessage message : messages )

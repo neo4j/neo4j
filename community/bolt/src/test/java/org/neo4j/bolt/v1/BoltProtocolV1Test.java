@@ -17,15 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.transport;
+package org.neo4j.bolt.v1;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.After;
 import org.junit.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -33,24 +31,24 @@ import java.util.Map;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
 import org.neo4j.bolt.logging.NullBoltMessageLogger;
-import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltConnection;
+import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.transport.pipeline.ChunkDecoder;
 import org.neo4j.bolt.transport.pipeline.HouseKeeper;
 import org.neo4j.bolt.transport.pipeline.MessageAccumulator;
 import org.neo4j.bolt.transport.pipeline.MessageDecoder;
-import org.neo4j.bolt.v1.BoltProtocolV1;
-import org.neo4j.bolt.v2.BoltProtocolV2;
+import org.neo4j.bolt.v1.runtime.BoltStateMachineFactory;
 import org.neo4j.kernel.impl.logging.NullLogService;
 
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class DefaultBoltProtocolPipelineInstallerTest
+public class BoltProtocolV1Test
 {
     private final EmbeddedChannel channel = new EmbeddedChannel();
 
@@ -60,31 +58,17 @@ public class DefaultBoltProtocolPipelineInstallerTest
         channel.finishAndReleaseAll();
     }
 
-    @ParameterizedTest( name = "V{0}" )
-    @ValueSource( longs = {BoltProtocolV1.VERSION, BoltProtocolV2.VERSION, 12345, -1} )
-    public void shouldReportCorrectVersion( long version )
-    {
-        // When
-        BoltProtocol boltProtocol = mock( BoltProtocol.class );
-        when( boltProtocol.version() ).thenReturn( version );
-        DefaultBoltProtocolPipelineInstaller installer =
-                new DefaultBoltProtocolPipelineInstaller( newBoltChannel( channel ), boltProtocol, NullLogService.getInstance() );
-        // Then
-        assertEquals( boltProtocol.version(), installer.version() );
-        assertEquals( version, installer.version() );
-    }
-
     @Test
     public void shouldInstallChannelHandlersInCorrectOrder()
     {
         // Given
-        BoltProtocol boltProtocol = mock( BoltProtocol.class );
-        when( boltProtocol.neo4jPack() ).thenReturn( mock( Neo4jPack.class ) );
-        DefaultBoltProtocolPipelineInstaller installer =
-                new DefaultBoltProtocolPipelineInstaller( newBoltChannel( channel ), boltProtocol, NullLogService.getInstance() );
+        BoltChannel boltChannel = newBoltChannel( channel );
+        BoltConnectionFactory connectionFactory = mock( BoltConnectionFactory.class );
+        when( connectionFactory.newConnection( eq( boltChannel ), any() ) ).thenReturn( mock( BoltConnection.class ) );
+        BoltProtocol boltProtocol = new BoltProtocolV1( boltChannel, connectionFactory, mock( BoltStateMachineFactory.class ), NullLogService.getInstance() );
 
         // When
-        installer.install();
+        boltProtocol.install();
 
         Iterator<Map.Entry<String,ChannelHandler>> handlers = channel.pipeline().iterator();
         assertThat( handlers.next().getValue(), instanceOf( ChunkDecoder.class ) );

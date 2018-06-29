@@ -34,8 +34,8 @@ import org.neo4j.bolt.runtime.DefaultBoltConnectionFactory;
 import org.neo4j.bolt.runtime.ExecutorBoltSchedulerProvider;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
-import org.neo4j.bolt.transport.BoltProtocolPipelineInstallerFactory;
-import org.neo4j.bolt.transport.DefaultBoltProtocolPipelineInstallerFactory;
+import org.neo4j.bolt.transport.BoltProtocolFactory;
+import org.neo4j.bolt.transport.DefaultBoltProtocolFactory;
 import org.neo4j.bolt.transport.Netty4LoggerFactory;
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.NettyServer.ProtocolInitializer;
@@ -124,7 +124,7 @@ public class BoltServer extends LifecycleAdapter
                 createConnectionFactory( config, boltSchedulerProvider, throttleGroup, logService, clock );
         BoltStateMachineFactory boltStateMachineFactory = createBoltFactory( authentication, clock );
 
-        BoltProtocolPipelineInstallerFactory boltProtocolInstaller = createBoltProtocolInstallerFactory( boltConnectionFactory, boltStateMachineFactory );
+        BoltProtocolFactory boltProtocolInstaller = createBoltProtocolInstallerFactory( boltConnectionFactory, boltStateMachineFactory );
 
         if ( !config.enabledBoltConnectors().isEmpty() && !config.get( GraphDatabaseSettings.disconnected ) )
         {
@@ -152,7 +152,7 @@ public class BoltServer extends LifecycleAdapter
                         config.get( GraphDatabaseSettings.bolt_inbound_message_throttle_high_water_mark ) ), monitors );
     }
 
-    private Map<BoltConnector,ProtocolInitializer> createConnectors( BoltProtocolPipelineInstallerFactory handlerFactory,
+    private Map<BoltConnector,ProtocolInitializer> createConnectors( BoltProtocolFactory handlerFactory,
             TransportThrottleGroup throttleGroup, BoltMessageLogging boltLogging, Log log )
     {
         return config.enabledBoltConnectors()
@@ -160,7 +160,7 @@ public class BoltServer extends LifecycleAdapter
                 .collect( toMap( identity(), connector -> createProtocolInitializer( connector, handlerFactory, throttleGroup, boltLogging, log ) ) );
     }
 
-    private ProtocolInitializer createProtocolInitializer( BoltConnector connector, BoltProtocolPipelineInstallerFactory handlerFactory,
+    private ProtocolInitializer createProtocolInitializer( BoltConnector connector, BoltProtocolFactory handlerFactory,
             TransportThrottleGroup throttleGroup, BoltMessageLogging boltLogging, Log log )
     {
         SslContext sslCtx;
@@ -225,10 +225,10 @@ public class BoltServer extends LifecycleAdapter
                 dependencyResolver.resolveDependency( UserManagerSupplier.class ) );
     }
 
-    private BoltProtocolPipelineInstallerFactory createBoltProtocolInstallerFactory( BoltConnectionFactory connectionFactory,
+    private BoltProtocolFactory createBoltProtocolInstallerFactory( BoltConnectionFactory connectionFactory,
             BoltStateMachineFactory stateMachineFactory )
     {
-        return new DefaultBoltProtocolPipelineInstallerFactory( connectionFactory, stateMachineFactory, logService );
+        return new DefaultBoltProtocolFactory( connectionFactory, stateMachineFactory, logService );
     }
 
     private BoltStateMachineFactory createBoltFactory( Authentication authentication, Clock clock )

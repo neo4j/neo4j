@@ -20,6 +20,7 @@
 package org.neo4j.bolt.v1.transport.socket;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.After;
 import org.junit.Test;
@@ -33,13 +34,15 @@ import java.util.List;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
 import org.neo4j.bolt.logging.NullBoltMessageLogger;
+import org.neo4j.bolt.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.SynchronousBoltConnection;
-import org.neo4j.bolt.transport.DefaultBoltProtocolPipelineInstaller;
+import org.neo4j.bolt.transport.pipeline.ChunkDecoder;
+import org.neo4j.bolt.transport.pipeline.MessageAccumulator;
+import org.neo4j.bolt.transport.pipeline.MessageDecoder;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
@@ -57,7 +60,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.bolt.v1.BoltProtocolV1.createBoltMessageRouter;
+import static org.neo4j.bolt.v1.BoltProtocolV1.createBoltMessageReaderV1;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 /**
@@ -141,30 +144,18 @@ public class FragmentedMessageDeliveryTest
         BoltStateMachine machine = mock( BoltStateMachine.class );
         SynchronousBoltConnection boltConnection = new SynchronousBoltConnection( machine );
         NullLogService logging = NullLogService.getInstance();
+        BoltRequestMessageReader messageReader = createBoltMessageReaderV1( boltChannel, neo4jPack, boltConnection, logging );
         BoltProtocol boltProtocol = new BoltProtocol()
         {
             @Override
-            public Neo4jPack neo4jPack()
+            public void install()
             {
-                return neo4jPack;
-            }
+                ChannelPipeline pipeline = boltChannel.rawChannel().pipeline();
 
-            @Override
-            public BoltMessageRouter messageRouter()
-            {
-                return createBoltMessageRouter( boltChannel, neo4jPack, boltConnection, logging, null );
-            }
+                pipeline.addLast( new ChunkDecoder() );
+                pipeline.addLast( new MessageAccumulator() );
 
-            @Override
-            public BoltStateMachine stateMachine()
-            {
-                return machine;
-            }
-
-            @Override
-            public BoltConnection connection()
-            {
-                return boltConnection;
+                pipeline.addLast( new MessageDecoder( neo4jPack::newUnpacker, messageReader, logging ) );
             }
 
             @Override
@@ -173,9 +164,8 @@ public class FragmentedMessageDeliveryTest
                 return -1;
             }
         };
-        DefaultBoltProtocolPipelineInstaller protocol = new DefaultBoltProtocolPipelineInstaller( boltChannel, boltProtocol, logging );
 
-        protocol.install();
+        boltProtocol.install();
 
         // When data arrives split up according to the current permutation
         for ( ByteBuf fragment : fragments )

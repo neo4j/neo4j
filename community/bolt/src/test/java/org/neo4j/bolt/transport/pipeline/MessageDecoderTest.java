@@ -359,7 +359,7 @@ public class MessageDecoderTest
         Log log = mock( Log.class );
         when( logService.getInternalLog( MessageDecoder.class ) ).thenReturn( log );
 
-        channel = new EmbeddedChannel( new MessageDecoder( packerUnderTest, requestMessageReader, logService ) );
+        channel = new EmbeddedChannel( new MessageDecoder( packerUnderTest::newUnpacker, requestMessageReader, logService ) );
 
         byte invalidMessageSignature = Byte.MAX_VALUE;
         byte[] messageBytes = packMessageWithSignature( invalidMessageSignature );
@@ -387,7 +387,7 @@ public class MessageDecoderTest
         Log log = mock( Log.class );
         when( logService.getInternalLog( MessageDecoder.class ) ).thenReturn( log );
 
-        channel = new EmbeddedChannel( new MessageDecoder( packerUnderTest, requestMessageReader, logService ) );
+        channel = new EmbeddedChannel( new MessageDecoder( packerUnderTest::newUnpacker, requestMessageReader, logService ) );
 
         byte[] messageBytes = packMessageWithSignature( Run.SIGNATURE );
 
@@ -449,7 +449,7 @@ public class MessageDecoderTest
     {
         BoltRequestMessageReader reader = new BoltRequestMessageReaderV1( connection, mock( BoltResponseMessageHandler.class ),
                 NullBoltMessageLogger.getInstance(), NullLogService.getInstance() );
-        return new MessageDecoder( packerUnderTest, reader, NullLogService.getInstance() );
+        return new MessageDecoder( packerUnderTest::newUnpacker, reader, NullLogService.getInstance() );
     }
 
     private static void assertMessageHexDumpLogged( Log logMock, byte[] messageBytes )

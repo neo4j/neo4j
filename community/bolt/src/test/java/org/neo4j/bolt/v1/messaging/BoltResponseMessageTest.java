@@ -231,7 +231,7 @@ public class BoltResponseMessageTest
         BoltResponseMessageReader reader = new BoltResponseMessageReader(
                 neo4jPack.newUnpacker( new BufferedChannelInput( 16 ).reset( channel ) ) );
         BufferedChannelOutput output = new BufferedChannelOutput( channel );
-        BoltResponseMessageWriter writer = new BoltResponseMessageWriter( neo4jPack, output,
+        BoltResponseMessageWriter writer = new BoltResponseMessageWriter( neo4jPack::newPacker, output,
                 NullLogService.getInstance(), NullBoltMessageLogger.getInstance() );
 
         msg.dispatch( writer );

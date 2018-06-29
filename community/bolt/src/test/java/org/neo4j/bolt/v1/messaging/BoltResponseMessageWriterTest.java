@@ -39,7 +39,6 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.IGNORED;
 import static org.neo4j.values.storable.DateValue.date;
 import static org.neo4j.values.storable.Values.intValue;
@@ -189,14 +188,6 @@ public class BoltResponseMessageWriterTest
 
     private static BoltResponseMessageWriter newWriter( PackOutput output, Neo4jPack.Packer packer )
     {
-        Neo4jPack neo4jPack = newNeo4jPackMock( output, packer );
-        return new BoltResponseMessageWriter( neo4jPack, output, NullLogService.getInstance(), NullBoltMessageLogger.getInstance() );
-    }
-
-    private static Neo4jPack newNeo4jPackMock( PackOutput output, Neo4jPack.Packer packer )
-    {
-        Neo4jPack neo4jPack = mock( Neo4jPack.class );
-        when( neo4jPack.newPacker( output ) ).thenReturn( packer );
-        return neo4jPack;
+        return new BoltResponseMessageWriter( out -> packer, output, NullLogService.getInstance(), NullBoltMessageLogger.getInstance() );
     }
 }

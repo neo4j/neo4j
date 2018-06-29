@@ -52,10 +52,10 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     private final boolean isEncrypted;
     private final LogProvider logging;
     private final BoltMessageLogging boltLogging;
-    private final BoltProtocolPipelineInstallerFactory handlerFactory;
+    private final BoltProtocolFactory handlerFactory;
 
     TransportSelectionHandler( String connector, SslContext sslCtx, boolean encryptionRequired, boolean isEncrypted, LogProvider logging,
-            BoltProtocolPipelineInstallerFactory handlerFactory, BoltMessageLogging boltLogging )
+            BoltProtocolFactory handlerFactory, BoltMessageLogging boltLogging )
     {
         this.connector = connector;
         this.sslCtx = sslCtx;

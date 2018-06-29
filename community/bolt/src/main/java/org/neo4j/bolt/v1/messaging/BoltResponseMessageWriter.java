@@ -20,6 +20,7 @@
 package org.neo4j.bolt.v1.messaging;
 
 import java.io.IOException;
+import java.util.function.Function;
 
 import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.messaging.Neo4jPack;
@@ -47,10 +48,11 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler
     private final BoltMessageLogger messageLogger;
     private final Log log;
 
-    public BoltResponseMessageWriter( Neo4jPack neo4jPack, PackOutput output, LogService logService, BoltMessageLogger messageLogger )
+    public BoltResponseMessageWriter( Function<PackOutput,Neo4jPack.Packer> packerProvider, PackOutput output, LogService logService,
+            BoltMessageLogger messageLogger )
     {
         this.output = output;
-        this.packer = neo4jPack.newPacker( output );
+        this.packer = packerProvider.apply( output );
         this.messageLogger = messageLogger;
         this.log = logService.getInternalLog( getClass() );
     }

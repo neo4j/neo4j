@@ -25,6 +25,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.BoltProtocol;
 import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
@@ -43,7 +44,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class DefaultBoltProtocolPipelineInstallerFactoryTest
+public class DefaultBoltProtocolFactoryTest
 {
     private static final String CONNECTOR = "default";
 
@@ -52,19 +53,19 @@ public class DefaultBoltProtocolPipelineInstallerFactoryTest
     {
         int protocolVersion = 42;
         BoltChannel channel = mock( BoltChannel.class );
-        BoltProtocolPipelineInstallerFactory factory =
-                new DefaultBoltProtocolPipelineInstallerFactory( mock( BoltConnectionFactory.class ), mock( BoltStateMachineFactory.class ),
+        BoltProtocolFactory factory =
+                new DefaultBoltProtocolFactory( mock( BoltConnectionFactory.class ), mock( BoltStateMachineFactory.class ),
                         NullLogService.getInstance() );
 
-        BoltProtocolPipelineInstaller handler = factory.create( protocolVersion, channel );
+        BoltProtocol protocol = factory.create( protocolVersion, channel );
 
         // handler is not created
-        assertNull( handler );
+        assertNull( protocol );
     }
 
     @ParameterizedTest( name = "V{0}" )
     @ValueSource( longs = {BoltProtocolV1.VERSION, BoltProtocolV2.VERSION} )
-    public void shouldCreateBoltProtocolInstaller( long protocolVersion )
+    public void shouldCreateBoltProtocol( long protocolVersion )
     {
         EmbeddedChannel channel = new EmbeddedChannel();
         BoltChannel boltChannel = BoltChannel.open( CONNECTOR, channel, NullBoltMessageLogger.getInstance() );
@@ -77,15 +78,15 @@ public class DefaultBoltProtocolPipelineInstallerFactoryTest
         BoltConnection connection = mock( BoltConnection.class );
         when( connectionFactory.newConnection( boltChannel, stateMachine ) ).thenReturn( connection );
 
-        BoltProtocolPipelineInstallerFactory factory =
-                new DefaultBoltProtocolPipelineInstallerFactory( connectionFactory, stateMachineFactory, NullLogService.getInstance() );
+        BoltProtocolFactory factory =
+                new DefaultBoltProtocolFactory( connectionFactory, stateMachineFactory, NullLogService.getInstance() );
 
-        BoltProtocolPipelineInstaller installer = factory.create( protocolVersion, boltChannel );
+        BoltProtocol protocol = factory.create( protocolVersion, boltChannel );
 
-        installer.install();
+        protocol.install();
 
         // handler with correct version is created
-        assertEquals( protocolVersion, installer.version() );
+        assertEquals( protocolVersion, protocol.version() );
         // it uses the expected worker
         verify( connectionFactory ).newConnection( eq( boltChannel ), any( BoltStateMachine.class ) );
 

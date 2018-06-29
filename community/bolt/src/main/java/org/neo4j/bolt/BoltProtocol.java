@@ -19,20 +19,10 @@
  */
 package org.neo4j.bolt;
 
-import org.neo4j.bolt.runtime.BoltConnection;
-import org.neo4j.bolt.runtime.BoltStateMachine;
-import org.neo4j.bolt.v1.messaging.BoltMessageRouter;
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
-
 public interface BoltProtocol
 {
-    Neo4jPack neo4jPack();
-
-    BoltMessageRouter messageRouter();
-
-    BoltStateMachine stateMachine();
-
-    BoltConnection connection();
-
+    /** Used to install protocol components */
+    void install();
+    /** Used for version negotiation */
     long version();
 }

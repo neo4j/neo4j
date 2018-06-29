@@ -25,8 +25,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.transport.BoltProtocolPipelineInstaller;
-import org.neo4j.bolt.transport.BoltProtocolPipelineInstallerFactory;
+import org.neo4j.bolt.BoltProtocol;
+import org.neo4j.bolt.transport.BoltProtocolFactory;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -38,18 +38,18 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
     private static final int HANDSHAKE_BUFFER_SIZE = 5 * Integer.BYTES;
 
     private final BoltChannel boltChannel;
-    private final BoltProtocolPipelineInstallerFactory boltProtocolInstallerFactory;
+    private final BoltProtocolFactory boltProtocolFactory;
     private final Log log;
     private final boolean encryptionRequired;
     private final boolean encrypted;
 
     private ByteBuf handshakeBuffer;
-    private BoltProtocolPipelineInstaller protocol;
+    private BoltProtocol protocol;
 
-    public ProtocolHandshaker( BoltProtocolPipelineInstallerFactory boltProtocolInstallerFactory, BoltChannel boltChannel, LogProvider logging,
+    public ProtocolHandshaker( BoltProtocolFactory boltProtocolFactory, BoltChannel boltChannel, LogProvider logging,
             boolean encryptionRequired, boolean encrypted )
     {
-        this.boltProtocolInstallerFactory = boltProtocolInstallerFactory;
+        this.boltProtocolFactory = boltProtocolFactory;
         this.boltChannel = boltChannel;
         this.log = logging.getLog( getClass() );
         this.encryptionRequired = encryptionRequired;
@@ -168,7 +168,7 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
         {
             final long suggestion = handshakeBuffer.getInt( (i + 1) * Integer.BYTES ) & 0xFFFFFFFFL;
 
-            protocol = boltProtocolInstallerFactory.create( suggestion, boltChannel );
+            protocol = boltProtocolFactory.create( suggestion, boltChannel );
             if ( protocol != null )
             {
                 boltChannel.log().serverEvent( "HANDSHAKE", () -> format( "0x%02X", suggestion ) );

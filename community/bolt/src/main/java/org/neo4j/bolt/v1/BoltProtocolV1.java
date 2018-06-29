@@ -19,35 +19,63 @@
  */
 package org.neo4j.bolt.v1;
 
+import io.netty.channel.ChannelPipeline;
+
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
+import org.neo4j.bolt.messaging.BoltRequestMessageReader;
+import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BoltStateMachine;
-import org.neo4j.bolt.v1.messaging.BoltMessageRouter;
+import org.neo4j.bolt.transport.pipeline.ChunkDecoder;
+import org.neo4j.bolt.transport.pipeline.HouseKeeper;
+import org.neo4j.bolt.transport.pipeline.MessageAccumulator;
+import org.neo4j.bolt.transport.pipeline.MessageDecoder;
+import org.neo4j.bolt.v1.messaging.BoltRequestMessageReaderV1;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter;
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.runtime.BoltStateMachineFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 
+/**
+ * Bolt protocol V1. It hosts all the components that are specific to BoltV1
+ */
 public class BoltProtocolV1 implements BoltProtocol
 {
     public static final long VERSION = 1;
 
     private final Neo4jPack neo4jPack;
-    private final BoltMessageRouter messageRouter;
-    private final BoltStateMachine stateMachine;
-
     private final BoltConnection connection;
+    private final BoltRequestMessageReader messageReader;
 
-    public BoltProtocolV1( BoltChannel channel, BoltConnectionFactory connectionFactory, BoltStateMachineFactory machineFactory, LogService logging )
+    private final BoltChannel channel;
+    private final LogService logging;
+
+    public BoltProtocolV1( BoltChannel channel, BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory, LogService logging )
     {
-        this.neo4jPack = createPack();
-        this.stateMachine = machineFactory.newStateMachine( version(), channel );
+        this.channel = channel;
+        this.logging = logging;
+
+        BoltStateMachine stateMachine = stateMachineFactory.newStateMachine( version(), channel );
         this.connection = connectionFactory.newConnection( channel, stateMachine );
-        // TODO: Require the refacoring result of router, writer, reader.
-        this.messageRouter = createBoltMessageRouter( channel, neo4jPack, connection, logging, this.getClass() );
+
+        this.neo4jPack = createPack();
+        this.messageReader = createBoltMessageReaderV1( channel, neo4jPack, connection, logging );
+    }
+
+    /**
+     * Install chunker, packstream, message reader, message handler, message encoder for protocol v1
+     */
+    @Override
+    public void install()
+    {
+        ChannelPipeline pipeline = channel.rawChannel().pipeline();
+
+        pipeline.addLast( new ChunkDecoder() );
+        pipeline.addLast( new MessageAccumulator() );
+        pipeline.addLast( new MessageDecoder( neo4jPack::newUnpacker, messageReader, logging ) );
+        pipeline.addLast( new HouseKeeper( connection, logging ) );
     }
 
     protected Neo4jPack createPack()
@@ -56,39 +84,14 @@ public class BoltProtocolV1 implements BoltProtocol
     }
 
     @Override
-    public Neo4jPack neo4jPack()
-    {
-        return this.neo4jPack;
-    }
-
-    @Override
-    public BoltMessageRouter messageRouter()
-    {
-        return this.messageRouter;
-    }
-
-    @Override
-    public BoltStateMachine stateMachine()
-    {
-        return this.stateMachine;
-    }
-
-    @Override
     public long version()
     {
         return VERSION;
     }
 
-    @Override
-    public BoltConnection connection()
+    public static BoltRequestMessageReader createBoltMessageReaderV1( BoltChannel channel, Neo4jPack neo4jPack, BoltConnection connection, LogService logging )
     {
-        return this.connection;
-    }
-
-    public static BoltMessageRouter createBoltMessageRouter( BoltChannel channel, Neo4jPack neo4jPack, BoltConnection connection, LogService logging,
-            Class loggingClass )
-    {
-        BoltResponseMessageWriter responseWriter = new BoltResponseMessageWriter( neo4jPack, connection.output(), logging, channel.log() );
-        return new BoltMessageRouter( logging.getInternalLog( loggingClass ), channel.log(), connection, responseWriter );
+        BoltResponseMessageWriter responseWriter = new BoltResponseMessageWriter( neo4jPack::newPacker, connection.output(), logging, channel.log() );
+        return new BoltRequestMessageReaderV1( connection, responseWriter, channel.log(), logging );
     }
 }
