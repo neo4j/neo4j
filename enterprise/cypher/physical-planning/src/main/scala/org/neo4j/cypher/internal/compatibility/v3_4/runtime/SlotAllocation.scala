@@ -58,7 +58,7 @@ object SlotAllocation {
                           argumentSizes: ArgumentSizes)
 
   /**
-    * Allocate slot for every operator in the logical plan tree {@code lp}.
+    * Allocate slot for every operator in the logical plan tree `lp`.
     *
     * @param lp the logical plan to process.
     * @return the slot configurations of every operator.
@@ -245,7 +245,7 @@ object SlotAllocation {
   }
 
   /**
-    * Compute the slot configuration of a leaf logical plan operator {@code lp}.
+    * Compute the slot configuration of a leaf logical plan operator `lp`.
     *
     * @param lp the operator to compute slots for.
     * @param nullable true if new slots are nullable
@@ -290,7 +290,7 @@ object SlotAllocation {
     }
 
   /**
-    * Compute the slot configuration of a single source logical plan operator {@code lp}.
+    * Compute the slot configuration of a single source logical plan operator `lp`.
     *
     * @param lp the operator to compute slots for.
     * @param nullable true if new slots are nullable
@@ -502,7 +502,7 @@ object SlotAllocation {
     }
 
   /**
-    * Compute the slot configuration of a branching logical plan operator {@code lp}.
+    * Compute the slot configuration of a branching logical plan operator `lp`.
     *
     * @param lp the operator to compute slots for.
     * @param nullable true if new slots are nullable
@@ -655,9 +655,9 @@ object SlotAllocation {
       case ForeachApply(_, _, variableName, listExpression) =>
         // The slot for the iteration variable of foreach needs to be available as an argument on the rhs of the apply
         // so we allocate it on the lhs (even though its value will not be needed after the foreach is done)
-        val typeSpec = semanticTable.getActualTypeFor(listExpression)
-        val listOfNodes = typeSpec.contains(ListType(CTNode))
-        val listOfRels = typeSpec.contains(ListType(CTRelationship))
+        val maybeTypeSpec = semanticTable.getActualTypeFor(listExpression)
+        val listOfNodes = maybeTypeSpec.exists(_.contains(ListType(CTNode)))
+        val listOfRels = maybeTypeSpec.exists(_.contains(ListType(CTRelationship)))
 
         (listOfNodes, listOfRels) match {
           case (true, false) => lhs.newLong(variableName, true, CTNode)
