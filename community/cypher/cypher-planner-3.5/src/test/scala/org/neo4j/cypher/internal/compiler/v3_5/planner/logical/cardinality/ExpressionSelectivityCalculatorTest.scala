@@ -90,6 +90,30 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     result.factor should equal(0.015)
   }
 
+  test("should handle three inequalities without choking on division") {
+    implicit val semanticTable = SemanticTable()
+    semanticTable.resolvedLabelNames.put("Person", index.label)
+
+    val n_is_Person = Predicate(Set("n"), HasLabels(varFor("n"), Seq(LabelName("Person") _)) _)
+    val n_prop: Property = Property(varFor("n"), PropertyKeyName("prop")_)_
+    val greaterThan3AndGreaterThanOrEqualTo3AndLessThan4 = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), n_prop, NonEmptyList(
+      GreaterThan(n_prop, SignedDecimalIntegerLiteral("3")_)_,
+      GreaterThanOrEqual(n_prop, SignedDecimalIntegerLiteral("3")_)_,
+      LessThan(n_prop, SignedDecimalIntegerLiteral("4")_)_
+    )))
+
+    implicit val selections = Selections(Set(n_is_Person, greaterThan3AndGreaterThanOrEqualTo3AndLessThan4))
+
+    val stats = mock[GraphStatistics]
+    when(stats.nodesAllCardinality()).thenReturn(2000.0)
+    when(stats.nodesWithLabelCardinality(Some(index.label))).thenReturn(1000.0)
+    val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
+
+    val result = calculator(greaterThan3AndGreaterThanOrEqualTo3AndLessThan4.expr)
+
+    result.factor should be > 0.0
+  }
+
   test("Should optimize selectivity with respect to prefix length for STARTS WITH predicates") {
     implicit val semanticTable = SemanticTable()
     semanticTable.resolvedLabelNames.put("A", index.label)
