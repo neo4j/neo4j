@@ -990,7 +990,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.toList should be(List(Map("num" -> 27)))
   }
 
+  //TODO support 3.4 when updating dep
   test("should handle 3 inequalities without choking in planning") {
-    executeWith(Configs.Interpreted, "MATCH (a:A) WHERE a.prop < 1 AND a.prop <=1 AND a.prop >=1 RETURN a.prop") shouldBe empty
+    executeWith(Configs.Interpreted - Configs.Version3_4, "MATCH (a:A) WHERE a.prop < 1 AND a.prop <=1 AND a.prop >=1 RETURN a.prop") shouldBe empty
   }
 }

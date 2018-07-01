@@ -281,3 +281,30 @@ Feature: OrderByAcceptance
       | (:B)  |
       | (:B)  |
     And no side effects
+
+  Scenario: ORDER BY on nested map missing property
+    Given an empty graph
+    When executing query:
+      """
+      WITH {key: 'foo'} AS m
+      RETURN m.key
+      ORDER BY m.other.name
+      """
+    Then the result should be, in order:
+      | m.key |
+      | 'foo' |
+    And no side effects
+
+  Scenario: ORDER BY on maps
+    Given an empty graph
+    When executing query:
+      """
+      UNWIND [{k1: {k2: 'A'}}, {k1: {k2: 'B'}}, {k1: {k2: 'C'}}] AS m
+      RETURN m.k1.k2 ORDER BY m.k1.k2
+      """
+    Then the result should be, in order:
+      | m.k1.k2 |
+      | 'A' |
+      | 'B' |
+      | 'C' |
+    And no side effects
