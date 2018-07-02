@@ -26,7 +26,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.{Map, mutable}
 
 object renderAsTreeTable extends (InternalPlanDescription => String) {
-  private val UNNAMED_PATTERN = """  (UNNAMED|FRESHID|AGGREGATION)\d+"""
+  val UNNAMED_PATTERN = """  (UNNAMED|FRESHID|AGGREGATION)\d+"""
   val OPERATOR = "Operator"
   private val ESTIMATED_ROWS = "Estimated Rows"
   private val ROWS = "Rows"
