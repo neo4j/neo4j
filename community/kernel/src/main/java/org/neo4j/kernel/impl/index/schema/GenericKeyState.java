@@ -39,6 +39,8 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
+import static java.lang.Integer.min;
+import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.kernel.impl.index.schema.DurationIndexKey.AVG_DAY_SECONDS;
 import static org.neo4j.kernel.impl.index.schema.DurationIndexKey.AVG_MONTH_SECONDS;
 import static org.neo4j.kernel.impl.index.schema.GenericLayout.HIGHEST_TYPE_BY_VALUE_GROUP;
@@ -56,6 +58,9 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 
 class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 {
+    // TODO figure out in a future-proof way
+    private static final int BIGGEST_REASONABLE_ARRAY_LENGTH = PAGE_SIZE / 2 / Integer.SIZE;
+
     private static final long TRUE = 1;
     private static final long FALSE = 0;
     private static final int TYPE_ID_SIZE = Byte.BYTES;
@@ -76,7 +81,6 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     // boolean:               long0
     // number:                long0 (value), long1 (number type)
     // TODO spatial
-    // TODO arrays of all types ^^^
 
     // for non-array values
     private long long0;
@@ -232,31 +236,58 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
                     this.long0, this.long1,
                     that.long0, that.long1 );
         case ZONED_DATE_TIME_ARRAY:
-            return compareZonedDateTimeArray( that );
+            return compareArrays( that, ( o1, o2, i ) -> compareZonedDateTime(
+                    o1.long0Array[i], o1.long1Array[i], o1.long2Array[i], o1.long3Array[i],
+                    o2.long0Array[i], o2.long1Array[i], o2.long2Array[i], o2.long3Array[i] ) );
         case LOCAL_DATE_TIME_ARRAY:
-            break;
+            return compareArrays( that, ( o1, o2, i ) -> compareLocalDateTime(
+                    o1.long0Array[i], o1.long1Array[i],
+                    o2.long0Array[i], o2.long1Array[i] ) );
         case DATE_ARRAY:
-            break;
+            return compareArrays( that, ( o1, o2, i ) -> compareDate(
+                    o1.long0Array[i],
+                    o2.long0Array[i] ) );
         case ZONED_TIME_ARRAY:
-            break;
+            return compareArrays( that, ( o1, o2, i ) -> compareZonedTime(
+                    o1.long0Array[i], o1.long1Array[i],
+                    o2.long0Array[i], o2.long1Array[i] ) );
         case LOCAL_TIME_ARRAY:
-            break;
+            return compareArrays( that, ( o1, o2, i ) -> compareLocalTime(
+                    o1.long0Array[i],
+                    o2.long0Array[i] ) );
         case DURATION_ARRAY:
-            break;
+            return compareArrays( that, ( o1, o2, i ) -> compareDuration(
+                    o1.long0Array[i], o1.long1Array[i], o1.long2Array[i], o1.long3Array[i],
+                    o2.long0Array[i], o2.long1Array[i], o2.long2Array[i], o2.long3Array[i] ) );
         case TEXT_ARRAY:
-            break;
+            return compareArrays( that, ( o1, o2, i ) -> compareText(
+                    o1.byteArrayArray[i], o1.long0Array[i], o1.long2Array[i], o1.long3Array[i],
+                    o2.byteArrayArray[i], o2.long0Array[i], o2.long2Array[i], o2.long3Array[i] ) );
         case BOOLEAN_ARRAY:
-            break;
+            return compareArrays( that, ( o1, o2, i ) -> compareBoolean(
+                    o1.long0Array[i],
+                    o2.long0Array[i] ) );
         case NUMBER_ARRAY:
-            break;
+            return compareArrays( that, ( o1, o2, i ) -> compareNumber(
+                    o1.long0Array[i], o1.long1Array[i],
+                    o2.long0Array[i], o2.long1Array[i] ) );
         default:
             throw new IllegalArgumentException( "Unknown type " + type );
         }
     }
 
-    private int compareZonedDateTimeArray( GenericKeyState other )
+    private int compareArrays( GenericKeyState that, ArrayElementComparator comparator )
     {
+        int i = 0;
+        int x = 0;
+        int length = min( this.arrayLength, that.arrayLength );
 
+        while ( x == 0 && i < length )
+        {
+            x = comparator.compare( this, that, i );
+        }
+
+        return x == 0 ? this.arrayLength - that.arrayLength : x;
     }
 
     private void copyByteArrayFromIfExists( GenericKeyState key, int targetLength )
@@ -389,25 +420,29 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     }
 
     @Override
-    protected void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws RuntimeException
+    protected void writeDateTime( long epochSecondUTC, int nano, String zoneId )
+    {
+        writeDateTime( epochSecondUTC, nano, TimeZones.map( zoneId ) );
+    }
+
+    protected void writeDateTime( long epochSecondUTC, int nano, short zoneId ) throws RuntimeException
     {
         if ( !isArray )
         {
             type = Type.ZONED_DATE_TIME;
             long0 = epochSecondUTC;
             long1 = nano;
-            long2 = TimeZones.map( zoneId );
+            long2 = zoneId;
             long3 = 0;
         }
         else
         {
             long0Array[currentArrayOffset] = epochSecondUTC;
             long1Array[currentArrayOffset] = nano;
-            long2Array[currentArrayOffset] = TimeZones.map( zoneId );
+            long2Array[currentArrayOffset] = zoneId;
             long3Array[currentArrayOffset] = 0;
             currentArrayOffset++;
-        }
-    }
+        }    }
 
     @Override
     public void writeBoolean( boolean value ) throws RuntimeException
@@ -523,15 +558,16 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     @Override
     public void writeString( String value ) throws RuntimeException
     {
+        byte[] encoded = UTF8.encode( value );
         if ( !isArray )
         {
             type = Type.TEXT;
-            byteArray = UTF8.encode( value );
+            byteArray = encoded;
             long0 = byteArray.length;
         }
         else
         {
-            byteArrayArray[currentArrayOffset] = UTF8.encode( value );
+            byteArrayArray[currentArrayOffset] = encoded;
             long0Array[currentArrayOffset] = byteArray.length;
             currentArrayOffset++;
         }
@@ -806,62 +842,95 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         }
     }
 
-    void write( PageCursor cursor )
+    void put( PageCursor cursor )
     {
         cursor.putByte( type.typeId );
         switch ( type )
         {
         case ZONED_DATE_TIME:
-            writeZonedDateTime( cursor );
+            putZonedDateTime( cursor );
             break;
         case LOCAL_DATE_TIME:
-            writeLocalDateTime( cursor );
+            putLocalDateTime( cursor );
             break;
         case DATE:
-            writeDate( cursor );
+            putDate( cursor );
             break;
         case ZONED_TIME:
-            writeZonedTime( cursor );
+            putZonedTime( cursor );
             break;
         case LOCAL_TIME:
-            writeLocalTime( cursor );
+            putLocalTime( cursor );
             break;
         case DURATION:
-            writeDuration( cursor );
+            putDuration( cursor );
             break;
         case TEXT:
-            writeText( cursor );
+            putText( cursor );
             break;
         case BOOLEAN:
-            writeBoolean( cursor );
+            putBoolean( cursor );
             break;
         case NUMBER:
-            writeNumber( cursor );
+            putNumber( cursor );
+            break;
+        case ZONED_DATE_TIME_ARRAY:
+            putZonedDateTimeArray( cursor, c -> putZoned
+            break;
+        case LOCAL_DATE_TIME_ARRAY:
+            break;
+        case DATE_ARRAY:
+            break;
+        case ZONED_TIME_ARRAY:
+            break;
+        case LOCAL_TIME_ARRAY:
+            break;
+        case DURATION_ARRAY:
+            break;
+        case TEXT_ARRAY:
+            break;
+        case BOOLEAN_ARRAY:
+            break;
+        case NUMBER_ARRAY:
             break;
         default:
             throw new IllegalArgumentException( "Unknown type " + type );
         }
     }
 
-    private void writeNumber( PageCursor cursor )
+    interface ArrayElementWriter
+    {
+        void write( PageCursor cursor, int i );
+    }
+
+    private void putZonedDateTimeArray( PageCursor cursor, ArrayElementWriter writer )
+    {
+        cursor.putInt( arrayLength );
+        for ( int i = 0; i < arrayLength; i++ )
+        {
+            writer.write( cursor, i );
+        }
+    }
+
+    private void putNumber( PageCursor cursor )
     {
         cursor.putByte( (byte) long1 );
         cursor.putLong( long0 );
     }
 
-    private void writeBoolean( PageCursor cursor )
+    private void putBoolean( PageCursor cursor )
     {
         cursor.putByte( (byte) long0 );
     }
 
-    private void writeText( PageCursor cursor )
+    private void putText( PageCursor cursor )
     {
         // TODO short/int weird asymmetry ey?
         cursor.putShort( (short) long0 );
         cursor.putBytes( byteArray, 0, (int) long0 );
     }
 
-    private void writeDuration( PageCursor cursor )
+    private void putDuration( PageCursor cursor )
     {
         cursor.putLong( long0 );
         cursor.putInt( (int) long1 );
@@ -869,29 +938,29 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         cursor.putLong( long3 );
     }
 
-    private void writeLocalTime( PageCursor cursor )
+    private void putLocalTime( PageCursor cursor )
     {
         cursor.putLong( long0 );
     }
 
-    private void writeZonedTime( PageCursor cursor )
+    private void putZonedTime( PageCursor cursor )
     {
         cursor.putLong( long0 );
         cursor.putInt( (int) long1 );
     }
 
-    private void writeDate( PageCursor cursor )
+    private void putDate( PageCursor cursor )
     {
         cursor.putLong( long0 );
     }
 
-    private void writeLocalDateTime( PageCursor cursor )
+    private void putLocalDateTime( PageCursor cursor )
     {
         cursor.putLong( long1 );
         cursor.putInt( (int) long0 );
     }
 
-    private void writeZonedDateTime( PageCursor cursor )
+    private void putZonedDateTime( PageCursor cursor )
     {
         cursor.putLong( long0 );
         cursor.putInt( (int) long1 );
@@ -972,44 +1041,89 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         switch ( type )
         {
         case ZONED_DATE_TIME_ARRAY:
-            long0Array = ensureBigEnough( long0Array, size );
-            long1Array = ensureBigEnough( long1Array, size );
-            long2Array = ensureBigEnough( long2Array, size );
-            long3Array = ensureBigEnough( long3Array, size );
+            initializeZonedDateTimeArray( size );
             break;
         case LOCAL_DATE_TIME_ARRAY:
-            long0Array = ensureBigEnough( long0Array, size );
-            long1Array = ensureBigEnough( long1Array, size );
+            initializeLocalDateTimeArray( size );
             break;
         case DATE_ARRAY:
-            long0Array = ensureBigEnough( long0Array, size );
+            initializeDateArray( size );
             break;
         case ZONED_TIME_ARRAY:
-            long0Array = ensureBigEnough( long0Array, size );
-            long1Array = ensureBigEnough( long1Array, size );
+            initializeZonedTimeArray( size );
             break;
         case LOCAL_TIME_ARRAY:
-            long0Array = ensureBigEnough( long0Array, size );
+            initializeLocalTimeArray( size );
             break;
         case DURATION_ARRAY:
-            long0Array = ensureBigEnough( long0Array, size );
-            long1Array = ensureBigEnough( long1Array, size );
-            long2Array = ensureBigEnough( long2Array, size );
-            long3Array = ensureBigEnough( long3Array, size );
+            initializeDurationArray( size );
             break;
         case TEXT_ARRAY:
-            long0Array = ensureBigEnough( long0Array, size );
-            // plain long1 for bytesDereferenced
-            byteArrayArray = ensureBigEnough( byteArrayArray, size );
+            initializeTextArray( size );
             break;
         case BOOLEAN_ARRAY:
-            long0Array = ensureBigEnough( long0Array, size );
+            initializeBooleanArray( size );
             break;
         case NUMBER_ARRAY:
-            long0Array = ensureBigEnough( long0Array, size );
-            // plain long1 for number type
+            initializeNumberArray( size );
             break;
         }
+    }
+
+    private void initializeNumberArray( int size )
+    {
+        long0Array = ensureBigEnough( long0Array, size );
+        // plain long1 for number type
+    }
+
+    private void initializeBooleanArray( int size )
+    {
+        long0Array = ensureBigEnough( long0Array, size );
+    }
+
+    private void initializeTextArray( int size )
+    {
+        long0Array = ensureBigEnough( long0Array, size );
+        // plain long1 for bytesDereferenced
+        byteArrayArray = ensureBigEnough( byteArrayArray, size );
+    }
+
+    private void initializeDurationArray( int size )
+    {
+        long0Array = ensureBigEnough( long0Array, size );
+        long1Array = ensureBigEnough( long1Array, size );
+        long2Array = ensureBigEnough( long2Array, size );
+        long3Array = ensureBigEnough( long3Array, size );
+    }
+
+    private void initializeLocalTimeArray( int size )
+    {
+        long0Array = ensureBigEnough( long0Array, size );
+    }
+
+    private void initializeZonedTimeArray( int size )
+    {
+        long0Array = ensureBigEnough( long0Array, size );
+        long1Array = ensureBigEnough( long1Array, size );
+    }
+
+    private void initializeDateArray( int size )
+    {
+        long0Array = ensureBigEnough( long0Array, size );
+    }
+
+    private void initializeLocalDateTimeArray( int size )
+    {
+        long0Array = ensureBigEnough( long0Array, size );
+        long1Array = ensureBigEnough( long1Array, size );
+    }
+
+    private void initializeZonedDateTimeArray( int size )
+    {
+        long0Array = ensureBigEnough( long0Array, size );
+        long1Array = ensureBigEnough( long1Array, size );
+        long2Array = ensureBigEnough( long2Array, size );
+        long3Array = ensureBigEnough( long3Array, size );
     }
 
     private byte[][] ensureBigEnough( byte[][] array, int targetLength )
@@ -1116,9 +1230,135 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         case NUMBER:
             readNumber( cursor );
             break;
+        case ZONED_DATE_TIME_ARRAY:
+            readArray( cursor, ArrayType.ZONED_DATE_TIME, this::readZonedDateTime );
+            break;
+        case LOCAL_DATE_TIME_ARRAY:
+            readArray( cursor, ArrayType.LOCAL_DATE_TIME, this::readLocalDateTime );
+            break;
+        case DATE_ARRAY:
+            readArray( cursor, ArrayType.DATE, this::readDate );
+            break;
+        case ZONED_TIME_ARRAY:
+            readArray( cursor, ArrayType.ZONED_DATE_TIME, this::readZonedDateTime );
+            break;
+        case LOCAL_TIME_ARRAY:
+            readArray( cursor, ArrayType.LOCAL_TIME, this::readLocalTime );
+            break;
+        case DURATION_ARRAY:
+            readArray( cursor, ArrayType.DURATION, this::readDuration );
+            break;
+        case TEXT_ARRAY:
+            readTextArray( cursor, size );
+            break;
+        case BOOLEAN_ARRAY:
+            readArray( cursor, ArrayType.BOOLEAN, this::readBoolean );
+            break;
+        case NUMBER_ARRAY:
+            readNumberArray( cursor );
+            break;
         default:
             throw new IllegalArgumentException( "Unknown type " + type );
         }
+    }
+
+    private void readNumberArray( PageCursor cursor )
+    {
+        if ( setArrayLengthWhenReading( cursor ) )
+        {
+            long1 = cursor.getByte(); // number type, like: byte, int, short a.s.o.
+            initializeNumberArray( arrayLength );
+            ArrayType numberType = arrayTypeOf( (byte) long1 );
+            if ( numberType == null )
+            {
+                initializeToDummyValue();
+                return;
+            }
+
+            beginArray( arrayLength, numberType );
+            for ( int i = 0; i < arrayLength; i++ )
+            {
+                long0Array[i] = cursor.getLong();
+            }
+            endArray();
+        }
+    }
+
+    private ArrayType arrayTypeOf( byte numberType )
+    {
+        switch ( numberType )
+        {
+        case RawBits.BYTE:
+            return ArrayType.BYTE;
+        case RawBits.SHORT:
+            return ArrayType.SHORT;
+        case RawBits.INT:
+            return ArrayType.INT;
+        case RawBits.LONG:
+            return ArrayType.LONG;
+        case RawBits.FLOAT:
+            return ArrayType.FLOAT;
+        case RawBits.DOUBLE:
+            return ArrayType.DOUBLE;
+        }
+        // bad read, hopefully
+        return null;
+    }
+
+    private void readTextArray( PageCursor cursor, int maxSize )
+    {
+        if ( setArrayLengthWhenReading( cursor ) )
+        {
+            initializeTextArray( arrayLength );
+            beginArray( arrayLength, ArrayType.STRING );
+            for ( int i = 0; i < arrayLength; i++ )
+            {
+                short bytesLength = cursor.getShort();
+                if ( bytesLength <= 0 || bytesLength > maxSize )
+                {
+                    initializeToDummyValue();
+                    return;
+                }
+                // long1 == text byte[] have been handed out to a UTF8StringValue and so must not be overwritten with next value
+                if ( booleanOf( long1 ) || byteArrayArray[i] == null || byteArrayArray[i].length < bytesLength )
+                {
+                    long1 = FALSE;
+
+                    // allocate a bit more than required so that there's a higher chance that this byte[] instance
+                    // can be used for more keys than just this one
+                    byteArrayArray[i] = new byte[bytesLength + bytesLength / 2];
+                }
+                long0Array[i] = bytesLength;
+                cursor.getBytes( byteArrayArray[i], 0, bytesLength );
+            }
+            endArray();
+        }
+    }
+
+    private void readArray( PageCursor cursor, ArrayType type, ArrayElementReader reader )
+    {
+        if ( setArrayLengthWhenReading( cursor ) )
+        {
+            beginArray( arrayLength, type );
+            for ( int i = 0; i < arrayLength; i++ )
+            {
+                reader.readFrom( cursor );
+            }
+            endArray();
+        }
+    }
+
+    private boolean setArrayLengthWhenReading( PageCursor cursor )
+    {
+        arrayLength = cursor.getInt();
+        if ( arrayLength < 0 || arrayLength >= BIGGEST_REASONABLE_ARRAY_LENGTH )
+        {
+            initializeToDummyValue();
+            return false;
+        }
+
+        isArray = true;
+        return true;
     }
 
     void initializeToDummyValue()
@@ -1137,11 +1377,12 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 
     private void readBoolean( PageCursor cursor )
     {
-        long0 = cursor.getByte();
+        writeBoolean( cursor.getByte() == TRUE );
     }
 
     private void readText( PageCursor cursor, int maxSize )
     {
+        // For performance reasons cannot be redirected to writeString, due to byte[] reuse
         short bytesLength = cursor.getShort();
         if ( bytesLength <= 0 || bytesLength > maxSize )
         {
@@ -1154,48 +1395,46 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 
     private void readDuration( PageCursor cursor )
     {
-        long0 = cursor.getLong();
-        long1 = cursor.getInt();
-        long2 = cursor.getLong();
-        long3 = cursor.getLong();
+        // TODO unify order
+        long totalAvgSeconds = cursor.getLong();
+        int nanosOfSecond = cursor.getInt();
+        long months = cursor.getLong();
+        long days = cursor.getLong();
+        writeDuration( months, days, totalAvgSeconds, nanosOfSecond );
     }
 
     private void readLocalTime( PageCursor cursor )
     {
-        long0 = cursor.getLong();
+        writeLocalTime( cursor.getLong() );
     }
 
     private void readZonedTime( PageCursor cursor )
     {
-        long0 = cursor.getLong();
-        long1 = cursor.getInt();
+        writeTime( cursor.getLong(), cursor.getInt() );
     }
 
     private void readDate( PageCursor cursor )
     {
-        long0 = cursor.getLong();
+        writeDate( cursor.getLong() );
     }
 
     private void readLocalDateTime( PageCursor cursor )
     {
-        long1 = cursor.getLong();
-        long0 = cursor.getInt();
+        writeLocalDateTime( cursor.getLong(), cursor.getInt() );
     }
 
     private void readZonedDateTime( PageCursor cursor )
     {
-        long0 = cursor.getLong();
-        long1 = cursor.getInt();
+        long epochSecondUTC = cursor.getLong();
+        int nanoOfSecond = cursor.getInt();
         int encodedZone = cursor.getInt();
         if ( isZoneId( encodedZone ) )
         {
-            long2 = asZoneId( encodedZone );
-            long3 = 0;
+            writeDateTime( epochSecondUTC, nanoOfSecond, asZoneId( encodedZone ) );
         }
         else
         {
-            long2 = -1;
-            long3 = asZoneOffset( encodedZone );
+            writeDateTime( epochSecondUTC, nanoOfSecond, asZoneOffset( encodedZone ) );
         }
     }
 
@@ -1203,5 +1442,17 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     {
         value.writeTo( this );
         this.inclusion = inclusion;
+    }
+
+    @FunctionalInterface
+    interface ArrayElementComparator
+    {
+        int compare( GenericKeyState o1, GenericKeyState o2, int i );
+    }
+
+    @FunctionalInterface
+    interface ArrayElementReader
+    {
+        void readFrom( PageCursor cursor );
     }
 }

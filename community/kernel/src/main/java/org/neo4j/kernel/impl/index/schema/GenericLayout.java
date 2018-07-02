@@ -33,6 +33,8 @@ class GenericLayout extends IndexLayout<CompositeGenericKey>
     static final Comparator<Type> TYPE_COMPARATOR = comparing( t -> t.valueGroup );
     private final int numberOfSlots;
 
+    // Order doesn't matter since it's each Type's ValueGroup that matters and will be used for comparison
+    // Order doesn't matter since it's each Type's ValueGroup that matters and will be used for comparison
     enum Type
     {
         ZONED_DATE_TIME( ValueGroup.ZONED_DATE_TIME, (byte) 0 ),
@@ -44,6 +46,7 @@ class GenericLayout extends IndexLayout<CompositeGenericKey>
         TEXT( ValueGroup.TEXT, (byte) 6 ),
         BOOLEAN( ValueGroup.BOOLEAN, (byte) 7 ),
         NUMBER( ValueGroup.NUMBER, (byte) 8 ),
+        // TODO SPATIAL
 
         ZONED_DATE_TIME_ARRAY( ValueGroup.ZONED_DATE_TIME_ARRAY, (byte) 9 ),
         LOCAL_DATE_TIME_ARRAY( ValueGroup.LOCAL_DATE_TIME_ARRAY, (byte) 10 ),
@@ -54,6 +57,7 @@ class GenericLayout extends IndexLayout<CompositeGenericKey>
         TEXT_ARRAY( ValueGroup.TEXT_ARRAY, (byte) 15 ),
         BOOLEAN_ARRAY( ValueGroup.BOOLEAN_ARRAY, (byte) 16 ),
         NUMBER_ARRAY( ValueGroup.NUMBER_ARRAY, (byte) 17 );
+        // TODO SPATIAL_ARRAY
 
         private final ValueGroup valueGroup;
         final byte typeId;

@@ -142,7 +142,7 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
         cursor.putLong( getEntityId() );
         for ( GenericKeyState state : states )
         {
-            state.write( cursor );
+            state.put( cursor );
         }
     }
 
