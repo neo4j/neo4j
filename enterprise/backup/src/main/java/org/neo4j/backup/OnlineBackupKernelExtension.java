@@ -112,7 +112,7 @@ public class OnlineBackupKernelExtension extends LifecycleAdapter
     }
 
     @Override
-    public void start()
+    public synchronized void start()
     {
         if ( config.get( OnlineBackupSettings.online_backup_enabled ) )
         {
@@ -148,7 +148,7 @@ public class OnlineBackupKernelExtension extends LifecycleAdapter
     }
 
     @Override
-    public void stop() throws Throwable
+    public synchronized void stop() throws Throwable
     {
         if ( server != null )
         {

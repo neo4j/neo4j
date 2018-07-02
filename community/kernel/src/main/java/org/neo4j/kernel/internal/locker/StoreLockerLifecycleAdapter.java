@@ -31,13 +31,13 @@ public class StoreLockerLifecycleAdapter extends LifecycleAdapter
     }
 
     @Override
-    public void start()
+    public synchronized void start()
     {
         storeLocker.checkLock();
     }
 
     @Override
-    public void stop() throws Throwable
+    public synchronized void stop() throws Throwable
     {
         storeLocker.close();
     }
