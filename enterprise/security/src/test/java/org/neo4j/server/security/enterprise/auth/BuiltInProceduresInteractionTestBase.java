@@ -50,6 +50,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.enterprise.builtinprocs.QueryId;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -530,8 +531,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 "CALL dbms.listQueries() YIELD query, queryId " +
                 "WITH query, queryId WHERE query = '" + query2 + "'" +
                 "CALL dbms.killQuery(queryId) YIELD queryId AS killedId " +
-                "RETURN 1",
-                itr -> assertThat( itr.hasNext(), equalTo( true ) ) );
+                        "RETURN 1",
+                itr -> assertThat( Iterators.count( itr ), equalTo( 1L ) ) ); // consume iterator so resources are closed
 
         tx2.closeAndAssertSomeTermination();
 
@@ -595,9 +596,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 "WITH * WHERE query CONTAINS 'Hello' CALL dbms.killQuery(id) YIELD username " +
                 "RETURN count(username) AS count, username",
                 emptyMap(),
-                r ->
-                {
-                }
+                Iterators::count // consume result to flush any errors
         );
 
         assertThat( result, containsString( "Explicitly terminated by the user." ) );
