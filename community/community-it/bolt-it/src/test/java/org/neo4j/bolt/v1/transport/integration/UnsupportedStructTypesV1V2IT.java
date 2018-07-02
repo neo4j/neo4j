@@ -28,8 +28,8 @@ import java.util.Collections;
 
 import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.messaging.Neo4jPack;
-import org.neo4j.bolt.v1.messaging.message.Init;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -64,7 +64,7 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest
         connection.connect( address ).send( util.defaultAcceptedVersions() );
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
 
-        connection.send( util.chunk( 64, createMsgWithNullKey( Init.SIGNATURE ) ) );
+        connection.send( util.chunk( 64, createMsgWithNullKey( InitMessage.SIGNATURE ) ) );
 
         assertThat( connection, util.eventuallyReceives(
                 msgFailure( Status.Request.Invalid, "Value `null` is not supported as key in maps, must be a non-nullable string." ) ) );
@@ -77,7 +77,7 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest
         connection.connect( address ).send( util.defaultAcceptedVersions() );
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
 
-        connection.send( util.chunk( 64, createMsgWithDuplicateKey( Init.SIGNATURE ) ) );
+        connection.send( util.chunk( 64, createMsgWithDuplicateKey( InitMessage.SIGNATURE ) ) );
 
         assertThat( connection, util.eventuallyReceives( msgFailure( Status.Request.Invalid, "Duplicate map key `key1`." ) ) );
         assertThat( connection, eventuallyDisconnects() );
@@ -88,10 +88,10 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest
     {
         connection.connect( address ).send( util.defaultAcceptedVersions() );
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        connection.send( util.chunk( new Init( USER_AGENT, Collections.emptyMap() ) ) );
+        connection.send( util.chunk( new InitMessage( USER_AGENT, Collections.emptyMap() ) ) );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
-        connection.send( util.chunk( 64, createMsgWithNullKey( Run.SIGNATURE ) ) );
+        connection.send( util.chunk( 64, createMsgWithNullKey( RunMessage.SIGNATURE ) ) );
 
         assertThat( connection, util.eventuallyReceives(
                 msgFailure( Status.Request.Invalid, "Value `null` is not supported as key in maps, must be a non-nullable string." ) ) );
@@ -103,10 +103,10 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest
     {
         connection.connect( address ).send( util.defaultAcceptedVersions() );
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        connection.send( util.chunk( new Init( USER_AGENT, Collections.emptyMap() ) ) );
+        connection.send( util.chunk( new InitMessage( USER_AGENT, Collections.emptyMap() ) ) );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
-        connection.send( util.chunk( 64, createMsgWithDuplicateKey( Run.SIGNATURE ) ) );
+        connection.send( util.chunk( 64, createMsgWithDuplicateKey( RunMessage.SIGNATURE ) ) );
 
         assertThat( connection, util.eventuallyReceives( msgFailure( Status.Request.Invalid, "Duplicate map key `key1`." ) ) );
         assertThat( connection, eventuallyDisconnects() );
@@ -145,7 +145,7 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest
     {
         connection.connect( address ).send( util.defaultAcceptedVersions() );
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        connection.send( util.chunk( new Init( USER_AGENT, Collections.emptyMap() ) ) );
+        connection.send( util.chunk( new InitMessage( USER_AGENT, Collections.emptyMap() ) ) );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         connection.send( util.chunk( 64, createMsg( (byte)'A' ) ) );
@@ -158,10 +158,10 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest
     {
         connection.connect( address ).send( util.defaultAcceptedVersions() );
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        connection.send( util.chunk( new Init( USER_AGENT, Collections.emptyMap() ) ) );
+        connection.send( util.chunk( new InitMessage( USER_AGENT, Collections.emptyMap() ) ) );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
-        connection.send( util.chunk( 64, createMsgWithUnknownValue( Run.SIGNATURE ) ) );
+        connection.send( util.chunk( 64, createMsgWithUnknownValue( RunMessage.SIGNATURE ) ) );
 
         assertThat( connection, eventuallyDisconnects() );
     }
@@ -170,7 +170,7 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest
     {
         connection.connect( address ).send( util.defaultAcceptedVersions() );
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        connection.send( util.chunk( new Init( USER_AGENT, Collections.emptyMap() ) ) );
+        connection.send( util.chunk( new InitMessage( USER_AGENT, Collections.emptyMap() ) ) );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         connection.send( util.chunk( 64, createRunWithV1Value( value ) ) );
@@ -185,7 +185,7 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest
         PackedOutputArray out = new PackedOutputArray();
         Neo4jPack.Packer packer = neo4jPack.newPacker( out );
 
-        packer.packStructHeader( 2, Run.SIGNATURE );
+        packer.packStructHeader( 2, RunMessage.SIGNATURE );
         packer.pack( "RETURN $x" );
         packer.packMapHeader( 1 );
         packer.pack( "x" );

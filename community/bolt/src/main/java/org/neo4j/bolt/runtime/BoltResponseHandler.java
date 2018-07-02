@@ -40,5 +40,4 @@ public interface BoltResponseHandler
 
     /** Called when the operation is completed. */
     void onFinish();
-
 }

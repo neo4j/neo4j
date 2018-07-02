@@ -37,7 +37,7 @@ import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.runtime.StatementProcessor;
 import org.neo4j.bolt.v1.messaging.BoltStateMachineV1Context;
-import org.neo4j.bolt.v1.messaging.message.Interrupt;
+import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -105,7 +105,7 @@ public class BoltStateMachineV1 implements BoltStateMachine
         }
         else if ( connectionState.isInterrupted() )
         {
-            state = nextState( Interrupt.INSTANCE, context );
+            state = nextState( InterruptSignal.INSTANCE, context );
         }
         connectionState.setResponseHandler( handler );
     }

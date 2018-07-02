@@ -27,48 +27,49 @@ import org.neo4j.bolt.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.bolt.v1.messaging.decoder.AckFailureDecoder;
-import org.neo4j.bolt.v1.messaging.decoder.DiscardAllDecoder;
-import org.neo4j.bolt.v1.messaging.decoder.InitDecoder;
-import org.neo4j.bolt.v1.messaging.decoder.PullAllDecoder;
-import org.neo4j.bolt.v1.messaging.decoder.ResetDecoder;
-import org.neo4j.bolt.v1.messaging.decoder.RunDecoder;
+import org.neo4j.bolt.v1.messaging.decoder.AckFailureMessageDecoder;
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
+import org.neo4j.bolt.v1.messaging.decoder.DiscardAllMessageDecoder;
+import org.neo4j.bolt.v1.messaging.decoder.InitMessageDecoder;
+import org.neo4j.bolt.v1.messaging.decoder.PullAllMessageDecoder;
+import org.neo4j.bolt.v1.messaging.decoder.ResetMessageDecoder;
+import org.neo4j.bolt.v1.messaging.decoder.RunMessageDecoder;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 
 public class BoltRequestMessageReaderV1 extends BoltRequestMessageReader
 {
-    public BoltRequestMessageReaderV1( BoltConnection connection, BoltResponseMessageHandler responseMessageHandler,
+    public BoltRequestMessageReaderV1( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter,
             BoltMessageLogger messageLogger, LogService logService )
     {
         super( connection,
-                newSimpleResponseHandler( connection, responseMessageHandler, logService ),
-                buildDecoders( connection, responseMessageHandler, messageLogger, logService ),
+                newSimpleResponseHandler( connection, responseMessageWriter, logService ),
+                buildDecoders( connection, responseMessageWriter, messageLogger, logService ),
                 messageLogger );
     }
 
-    private static List<RequestMessageDecoder> buildDecoders( BoltConnection connection, BoltResponseMessageHandler responseMessageHandler,
+    private static List<RequestMessageDecoder> buildDecoders( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter,
             BoltMessageLogger messageLogger, LogService logService )
     {
-        BoltResponseHandler initHandler = newSimpleResponseHandler( connection, responseMessageHandler, logService );
-        BoltResponseHandler runHandler = newSimpleResponseHandler( connection, responseMessageHandler, logService );
-        BoltResponseHandler resultHandler = new ResultHandler( responseMessageHandler, connection, internalLog( logService ) );
-        BoltResponseHandler defaultHandler = newSimpleResponseHandler( connection, responseMessageHandler, logService );
+        BoltResponseHandler initHandler = newSimpleResponseHandler( connection, responseMessageWriter, logService );
+        BoltResponseHandler runHandler = newSimpleResponseHandler( connection, responseMessageWriter, logService );
+        BoltResponseHandler resultHandler = new ResultHandler( responseMessageWriter, connection, internalLog( logService ) );
+        BoltResponseHandler defaultHandler = newSimpleResponseHandler( connection, responseMessageWriter, logService );
 
         return Arrays.asList(
-                new InitDecoder( initHandler, messageLogger ),
-                new AckFailureDecoder( defaultHandler, messageLogger ),
-                new ResetDecoder( connection, defaultHandler, messageLogger ),
-                new RunDecoder( runHandler, messageLogger ),
-                new DiscardAllDecoder( resultHandler, messageLogger ),
-                new PullAllDecoder( resultHandler, messageLogger )
+                new InitMessageDecoder( initHandler, messageLogger ),
+                new AckFailureMessageDecoder( defaultHandler, messageLogger ),
+                new ResetMessageDecoder( connection, defaultHandler, messageLogger ),
+                new RunMessageDecoder( runHandler, messageLogger ),
+                new DiscardAllMessageDecoder( resultHandler, messageLogger ),
+                new PullAllMessageDecoder( resultHandler, messageLogger )
         );
     }
 
     private static BoltResponseHandler newSimpleResponseHandler( BoltConnection connection,
-            BoltResponseMessageHandler responseMessageHandler, LogService logService )
+            BoltResponseMessageWriter responseMessageWriter, LogService logService )
     {
-        return new MessageProcessingHandler( responseMessageHandler, connection, internalLog( logService ) );
+        return new MessageProcessingHandler( responseMessageWriter, connection, internalLog( logService ) );
     }
 
     private static Log internalLog( LogService logService )

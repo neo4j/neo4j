@@ -28,13 +28,13 @@ import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.MutableConnectionState;
 import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.v1.messaging.message.AckFailure;
-import org.neo4j.bolt.v1.messaging.message.DiscardAll;
-import org.neo4j.bolt.v1.messaging.message.Init;
-import org.neo4j.bolt.v1.messaging.message.Interrupt;
-import org.neo4j.bolt.v1.messaging.message.PullAll;
-import org.neo4j.bolt.v1.messaging.message.Reset;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
+import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
+import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
+import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
+import org.neo4j.bolt.v1.messaging.request.ResetMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
@@ -70,20 +70,20 @@ class InterruptedStateTest
     {
         InterruptedState state = new InterruptedState();
 
-        assertThrows( IllegalStateException.class, () -> state.process( Reset.INSTANCE, context ) );
+        assertThrows( IllegalStateException.class, () -> state.process( ResetMessage.INSTANCE, context ) );
 
         state.setReadyState( readyState );
-        assertThrows( IllegalStateException.class, () -> state.process( Reset.INSTANCE, context ) );
+        assertThrows( IllegalStateException.class, () -> state.process( ResetMessage.INSTANCE, context ) );
 
         state.setReadyState( null );
         state.setFailedState( failedState );
-        assertThrows( IllegalStateException.class, () -> state.process( Reset.INSTANCE, context ) );
+        assertThrows( IllegalStateException.class, () -> state.process( ResetMessage.INSTANCE, context ) );
     }
 
     @Test
     void shouldProcessInterruptMessage() throws Exception
     {
-        BoltStateMachineState newState = state.process( Interrupt.INSTANCE, context );
+        BoltStateMachineState newState = state.process( InterruptSignal.INSTANCE, context );
 
         assertEquals( state, newState ); // remains in interrupted state
     }
@@ -96,7 +96,7 @@ class InterruptedStateTest
         assertTrue( connectionState.isInterrupted() );
         assertFalse( connectionState.hasPendingIgnore() );
 
-        BoltStateMachineState newState = state.process( Reset.INSTANCE, context );
+        BoltStateMachineState newState = state.process( ResetMessage.INSTANCE, context );
 
         assertEquals( state, newState ); // remains in interrupted state
         assertTrue( connectionState.hasPendingIgnore() );
@@ -106,7 +106,7 @@ class InterruptedStateTest
     void shouldProcessResetMessage() throws Exception
     {
         when( context.resetMachine() ).thenReturn( true ); // reset successful
-        BoltStateMachineState newState = state.process( Reset.INSTANCE, context );
+        BoltStateMachineState newState = state.process( ResetMessage.INSTANCE, context );
 
         assertEquals( readyState, newState );
     }
@@ -115,7 +115,7 @@ class InterruptedStateTest
     void shouldHandleFailureDuringResetMessageProcessing() throws Exception
     {
         when( context.resetMachine() ).thenReturn( false ); // reset failed
-        BoltStateMachineState newState = state.process( Reset.INSTANCE, context );
+        BoltStateMachineState newState = state.process( ResetMessage.INSTANCE, context );
 
         assertEquals( failedState, newState );
     }
@@ -123,8 +123,8 @@ class InterruptedStateTest
     @Test
     void shouldIgnoreMessagesOtherThanInterruptAndReset() throws Exception
     {
-        List<RequestMessage> messages = asList( AckFailure.INSTANCE, PullAll.INSTANCE, DiscardAll.INSTANCE,
-                new Run( "RETURN 1", EMPTY_MAP ), new Init( "Driver", emptyMap() ) );
+        List<RequestMessage> messages = asList( AckFailureMessage.INSTANCE, PullAllMessage.INSTANCE, DiscardAllMessage.INSTANCE,
+                new RunMessage( "RETURN 1", EMPTY_MAP ), new InitMessage( "Driver", emptyMap() ) );
 
         for ( RequestMessage message: messages )
         {

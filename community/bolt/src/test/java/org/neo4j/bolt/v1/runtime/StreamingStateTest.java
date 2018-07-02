@@ -29,13 +29,13 @@ import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.MutableConnectionState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.runtime.StatementProcessor;
-import org.neo4j.bolt.v1.messaging.message.AckFailure;
-import org.neo4j.bolt.v1.messaging.message.DiscardAll;
-import org.neo4j.bolt.v1.messaging.message.Init;
-import org.neo4j.bolt.v1.messaging.message.Interrupt;
-import org.neo4j.bolt.v1.messaging.message.PullAll;
-import org.neo4j.bolt.v1.messaging.message.Reset;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
+import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
+import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
+import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
+import org.neo4j.bolt.v1.messaging.request.ResetMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 
 import static java.util.Arrays.asList;
@@ -76,18 +76,18 @@ class StreamingStateTest
     {
         StreamingState state = new StreamingState();
 
-        assertThrows( IllegalStateException.class, () -> state.process( PullAll.INSTANCE, context ) );
+        assertThrows( IllegalStateException.class, () -> state.process( PullAllMessage.INSTANCE, context ) );
 
         state.setReadyState( readyState );
-        assertThrows( IllegalStateException.class, () -> state.process( PullAll.INSTANCE, context ) );
+        assertThrows( IllegalStateException.class, () -> state.process( PullAllMessage.INSTANCE, context ) );
 
         state.setReadyState( null );
         state.setInterruptedState( interruptedState );
-        assertThrows( IllegalStateException.class, () -> state.process( PullAll.INSTANCE, context ) );
+        assertThrows( IllegalStateException.class, () -> state.process( PullAllMessage.INSTANCE, context ) );
 
         state.setInterruptedState( null );
         state.setFailedState( failedState );
-        assertThrows( IllegalStateException.class, () -> state.process( PullAll.INSTANCE, context ) );
+        assertThrows( IllegalStateException.class, () -> state.process( PullAllMessage.INSTANCE, context ) );
     }
 
     @Test
@@ -96,7 +96,7 @@ class StreamingStateTest
         StatementProcessor statementProcessor = mock( StatementProcessor.class );
         connectionState.setStatementProcessor( statementProcessor );
 
-        BoltStateMachineState nextState = state.process( PullAll.INSTANCE, context );
+        BoltStateMachineState nextState = state.process( PullAllMessage.INSTANCE, context );
 
         assertEquals( readyState, nextState );
         verify( statementProcessor ).streamResult( any() );
@@ -111,7 +111,7 @@ class StreamingStateTest
         doThrow( error ).when( statementProcessor ).streamResult( any() );
         connectionState.setStatementProcessor( statementProcessor );
 
-        BoltStateMachineState nextState = state.process( PullAll.INSTANCE, context );
+        BoltStateMachineState nextState = state.process( PullAllMessage.INSTANCE, context );
 
         assertEquals( failedState, nextState );
         verify( context ).handleFailure( error, true );
@@ -126,7 +126,7 @@ class StreamingStateTest
         doThrow( error ).when( statementProcessor ).streamResult( any() );
         connectionState.setStatementProcessor( statementProcessor );
 
-        BoltStateMachineState nextState = state.process( PullAll.INSTANCE, context );
+        BoltStateMachineState nextState = state.process( PullAllMessage.INSTANCE, context );
 
         assertEquals( failedState, nextState );
         verify( context ).handleFailure( error, false );
@@ -138,7 +138,7 @@ class StreamingStateTest
         StatementProcessor statementProcessor = mock( StatementProcessor.class );
         connectionState.setStatementProcessor( statementProcessor );
 
-        BoltStateMachineState nextState = state.process( DiscardAll.INSTANCE, context );
+        BoltStateMachineState nextState = state.process( DiscardAllMessage.INSTANCE, context );
 
         assertEquals( readyState, nextState );
         verify( statementProcessor ).streamResult( any() );
@@ -153,7 +153,7 @@ class StreamingStateTest
         doThrow( error ).when( statementProcessor ).streamResult( any() );
         connectionState.setStatementProcessor( statementProcessor );
 
-        BoltStateMachineState nextState = state.process( DiscardAll.INSTANCE, context );
+        BoltStateMachineState nextState = state.process( DiscardAllMessage.INSTANCE, context );
 
         assertEquals( failedState, nextState );
         verify( context ).handleFailure( error, true );
@@ -168,7 +168,7 @@ class StreamingStateTest
         doThrow( error ).when( statementProcessor ).streamResult( any() );
         connectionState.setStatementProcessor( statementProcessor );
 
-        BoltStateMachineState nextState = state.process( DiscardAll.INSTANCE, context );
+        BoltStateMachineState nextState = state.process( DiscardAllMessage.INSTANCE, context );
 
         assertEquals( failedState, nextState );
         verify( context ).handleFailure( error, false );
@@ -179,7 +179,7 @@ class StreamingStateTest
     {
         when( context.resetMachine() ).thenReturn( true ); // reset successful
 
-        BoltStateMachineState newState = state.process( Reset.INSTANCE, context );
+        BoltStateMachineState newState = state.process( ResetMessage.INSTANCE, context );
 
         assertEquals( readyState, newState );
     }
@@ -189,7 +189,7 @@ class StreamingStateTest
     {
         when( context.resetMachine() ).thenReturn( false ); // reset failed
 
-        BoltStateMachineState newState = state.process( Reset.INSTANCE, context );
+        BoltStateMachineState newState = state.process( ResetMessage.INSTANCE, context );
 
         assertEquals( failedState, newState );
     }
@@ -197,7 +197,7 @@ class StreamingStateTest
     @Test
     void shouldProcessInterruptMessage() throws Exception
     {
-        BoltStateMachineState newState = state.process( Interrupt.INSTANCE, context );
+        BoltStateMachineState newState = state.process( InterruptSignal.INSTANCE, context );
 
         assertEquals( interruptedState, newState );
     }
@@ -205,9 +205,10 @@ class StreamingStateTest
     @Test
     void shouldNotProcessUnsupportedMessages() throws Exception
     {
-        List<RequestMessage> unsupportedMessages = asList( AckFailure.INSTANCE, new Run( "RETURN 1", EMPTY_MAP ), new Init( "Driver 2.5", emptyMap() ) );
+        List<RequestMessage> unsupportedMessages =
+                asList( AckFailureMessage.INSTANCE, new RunMessage( "RETURN 1", EMPTY_MAP ), new InitMessage( "Driver 2.5", emptyMap() ) );
 
-        for ( RequestMessage message: unsupportedMessages )
+        for ( RequestMessage message : unsupportedMessages )
         {
             assertNull( state.process( message, context ) );
         }

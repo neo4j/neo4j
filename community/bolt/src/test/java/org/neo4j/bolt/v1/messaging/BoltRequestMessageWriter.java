@@ -24,12 +24,12 @@ import java.io.UncheckedIOException;
 
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.v1.messaging.message.AckFailure;
-import org.neo4j.bolt.v1.messaging.message.DiscardAll;
-import org.neo4j.bolt.v1.messaging.message.Init;
-import org.neo4j.bolt.v1.messaging.message.PullAll;
-import org.neo4j.bolt.v1.messaging.message.Reset;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
+import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
+import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
+import org.neo4j.bolt.v1.messaging.request.ResetMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.kernel.impl.util.ValueUtils;
 
 public class BoltRequestMessageWriter
@@ -43,27 +43,27 @@ public class BoltRequestMessageWriter
 
     public BoltRequestMessageWriter write( RequestMessage message ) throws IOException
     {
-        if ( message instanceof Init )
+        if ( message instanceof InitMessage )
         {
-            writeInit( (Init) message );
+            writeInit( (InitMessage) message );
         }
-        else if ( message instanceof AckFailure )
+        else if ( message instanceof AckFailureMessage )
         {
             writeAckFailure();
         }
-        else if ( message instanceof Reset )
+        else if ( message instanceof ResetMessage )
         {
             writeReset();
         }
-        else if ( message instanceof Run )
+        else if ( message instanceof RunMessage )
         {
-            writeRun( (Run) message );
+            writeRun( (RunMessage) message );
         }
-        else if ( message instanceof DiscardAll )
+        else if ( message instanceof DiscardAllMessage )
         {
             writeDiscardAll();
         }
-        else if ( message instanceof PullAll )
+        else if ( message instanceof PullAllMessage )
         {
             writePullAll();
         }
@@ -74,11 +74,11 @@ public class BoltRequestMessageWriter
         return this;
     }
 
-    private void writeInit( Init message )
+    private void writeInit( InitMessage message )
     {
         try
         {
-            packer.packStructHeader( 2, Init.SIGNATURE );
+            packer.packStructHeader( 2, InitMessage.SIGNATURE );
             packer.pack( message.userAgent() );
             packer.pack( ValueUtils.asMapValue( message.authToken() ) );
         }
@@ -92,7 +92,7 @@ public class BoltRequestMessageWriter
     {
         try
         {
-            packer.packStructHeader( 0, AckFailure.SIGNATURE );
+            packer.packStructHeader( 0, AckFailureMessage.SIGNATURE );
         }
         catch ( IOException e )
         {
@@ -104,7 +104,7 @@ public class BoltRequestMessageWriter
     {
         try
         {
-            packer.packStructHeader( 0, Reset.SIGNATURE );
+            packer.packStructHeader( 0, ResetMessage.SIGNATURE );
         }
         catch ( IOException e )
         {
@@ -112,11 +112,11 @@ public class BoltRequestMessageWriter
         }
     }
 
-    private void writeRun( Run message )
+    private void writeRun( RunMessage message )
     {
         try
         {
-            packer.packStructHeader( 2, Run.SIGNATURE );
+            packer.packStructHeader( 2, RunMessage.SIGNATURE );
             packer.pack( message.statement() );
             packer.pack( message.params() );
         }
@@ -130,7 +130,7 @@ public class BoltRequestMessageWriter
     {
         try
         {
-            packer.packStructHeader( 0, DiscardAll.SIGNATURE );
+            packer.packStructHeader( 0, DiscardAllMessage.SIGNATURE );
         }
         catch ( IOException e )
         {
@@ -142,7 +142,7 @@ public class BoltRequestMessageWriter
     {
         try
         {
-            packer.packStructHeader( 0, PullAll.SIGNATURE );
+            packer.packStructHeader( 0, PullAllMessage.SIGNATURE );
         }
         catch ( IOException e )
         {

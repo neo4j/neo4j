@@ -28,7 +28,7 @@ import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.runtime.StatementProcessor;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
-import org.neo4j.bolt.v1.messaging.message.Init;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.api.security.AuthToken.PRINCIPAL;
@@ -50,9 +50,9 @@ public class ConnectedState implements BoltStateMachineState
     public BoltStateMachineState process( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
     {
         assertInitialized();
-        if ( message instanceof Init )
+        if ( message instanceof InitMessage )
         {
-            return processInitMessage( (Init) message, context );
+            return processInitMessage( (InitMessage) message, context );
         }
         return null;
     }
@@ -73,7 +73,7 @@ public class ConnectedState implements BoltStateMachineState
         this.failedState = failedState;
     }
 
-    private BoltStateMachineState processInitMessage( Init message, StateMachineContext context ) throws BoltConnectionFatality
+    private BoltStateMachineState processInitMessage( InitMessage message, StateMachineContext context ) throws BoltConnectionFatality
     {
         String userAgent = message.userAgent();
         Map<String,Object> authToken = message.authToken();

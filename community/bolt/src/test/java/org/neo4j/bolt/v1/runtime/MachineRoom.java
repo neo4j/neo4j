@@ -27,9 +27,9 @@ import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
 import org.neo4j.bolt.security.auth.AuthenticationException;
-import org.neo4j.bolt.v1.messaging.message.DiscardAll;
-import org.neo4j.bolt.v1.messaging.message.Init;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
@@ -93,14 +93,14 @@ public class MachineRoom
 
     private static BoltStateMachine init( BoltStateMachine machine, String owner ) throws AuthenticationException, BoltConnectionFatality
     {
-        machine.process( new Init( USER_AGENT, owner == null ? emptyMap() : singletonMap( AuthToken.PRINCIPAL, owner ) ), nullResponseHandler() );
+        machine.process( new InitMessage( USER_AGENT, owner == null ? emptyMap() : singletonMap( AuthToken.PRINCIPAL, owner ) ), nullResponseHandler() );
         return machine;
     }
 
     private static void runBegin( BoltStateMachine machine ) throws BoltConnectionFatality
     {
-        machine.process( new Run( "BEGIN", EMPTY_PARAMS ), nullResponseHandler() );
-        machine.process( DiscardAll.INSTANCE, nullResponseHandler() );
+        machine.process( new RunMessage( "BEGIN", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( DiscardAllMessage.INSTANCE, nullResponseHandler() );
         assertThat( machine, hasTransaction() );
     }
 

@@ -46,14 +46,14 @@ import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.runtime.SynchronousBoltConnection;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageReaderV1;
-import org.neo4j.bolt.v1.messaging.BoltResponseMessageHandler;
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
-import org.neo4j.bolt.v1.messaging.message.AckFailure;
-import org.neo4j.bolt.v1.messaging.message.DiscardAll;
-import org.neo4j.bolt.v1.messaging.message.Init;
-import org.neo4j.bolt.v1.messaging.message.PullAll;
-import org.neo4j.bolt.v1.messaging.message.Reset;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
+import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
+import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
+import org.neo4j.bolt.v1.messaging.request.ResetMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
 import org.neo4j.helpers.collection.MapUtil;
@@ -123,10 +123,10 @@ public class MessageDecoderTest
         String userAgent = "Test/User Agent 1.0";
         Map<String, Object> authToken = MapUtil.map( "scheme", "basic", "principal", "user", "credentials", "password" );
 
-        channel.writeInbound( Unpooled.wrappedBuffer( serialize( packerUnderTest, new Init( userAgent, authToken ) ) ) );
+        channel.writeInbound( Unpooled.wrappedBuffer( serialize( packerUnderTest, new InitMessage( userAgent, authToken ) ) ) );
         channel.finishAndReleaseAll();
 
-        verify( stateMachine ).process( eq( new Init( userAgent, authToken ) ), any() );
+        verify( stateMachine ).process( eq( new InitMessage( userAgent, authToken ) ), any() );
     }
 
     @Test
@@ -136,10 +136,10 @@ public class MessageDecoderTest
         SynchronousBoltConnection connection = new SynchronousBoltConnection( stateMachine );
         channel = new EmbeddedChannel( newDecoder( connection ) );
 
-        channel.writeInbound( Unpooled.wrappedBuffer( serialize( packerUnderTest, AckFailure.INSTANCE ) ) );
+        channel.writeInbound( Unpooled.wrappedBuffer( serialize( packerUnderTest, AckFailureMessage.INSTANCE ) ) );
         channel.finishAndReleaseAll();
 
-        verify( stateMachine ).process( eq( AckFailure.INSTANCE ), any() );
+        verify( stateMachine ).process( eq( AckFailureMessage.INSTANCE ), any() );
     }
 
     @Test
@@ -149,10 +149,10 @@ public class MessageDecoderTest
         SynchronousBoltConnection connection = new SynchronousBoltConnection( stateMachine );
         channel = new EmbeddedChannel( newDecoder( connection ) );
 
-        channel.writeInbound( Unpooled.wrappedBuffer( serialize( packerUnderTest, Reset.INSTANCE ) ) );
+        channel.writeInbound( Unpooled.wrappedBuffer( serialize( packerUnderTest, ResetMessage.INSTANCE ) ) );
         channel.finishAndReleaseAll();
 
-        verify( stateMachine ).process( eq( Reset.INSTANCE ), any() );
+        verify( stateMachine ).process( eq( ResetMessage.INSTANCE ), any() );
     }
 
     @Test
@@ -165,10 +165,10 @@ public class MessageDecoderTest
         String statement = "RETURN 1";
         MapValue parameters = ValueUtils.asMapValue( MapUtil.map( "param1", 1, "param2", "2", "param3", true, "param4", 5.0 ) );
 
-        channel.writeInbound( Unpooled.wrappedBuffer( serialize( packerUnderTest, new Run( statement, parameters ) ) ) );
+        channel.writeInbound( Unpooled.wrappedBuffer( serialize( packerUnderTest, new RunMessage( statement, parameters ) ) ) );
         channel.finishAndReleaseAll();
 
-        verify( stateMachine ).process( eq( new Run( statement, parameters ) ), any() );
+        verify( stateMachine ).process( eq( new RunMessage( statement, parameters ) ), any() );
     }
 
     @Test
@@ -178,10 +178,10 @@ public class MessageDecoderTest
         SynchronousBoltConnection connection = new SynchronousBoltConnection( stateMachine );
         channel = new EmbeddedChannel( newDecoder( connection ) );
 
-        channel.writeInbound( Unpooled.wrappedBuffer( serialize( packerUnderTest, DiscardAll.INSTANCE ) ) );
+        channel.writeInbound( Unpooled.wrappedBuffer( serialize( packerUnderTest, DiscardAllMessage.INSTANCE ) ) );
         channel.finishAndReleaseAll();
 
-        verify( stateMachine ).process( eq( DiscardAll.INSTANCE ), any() );
+        verify( stateMachine ).process( eq( DiscardAllMessage.INSTANCE ), any() );
     }
 
     @Test
@@ -191,10 +191,10 @@ public class MessageDecoderTest
         SynchronousBoltConnection connection = new SynchronousBoltConnection( stateMachine );
         channel = new EmbeddedChannel( newDecoder( connection ) );
 
-        channel.writeInbound( Unpooled.wrappedBuffer( serialize( packerUnderTest, PullAll.INSTANCE ) ) );
+        channel.writeInbound( Unpooled.wrappedBuffer( serialize( packerUnderTest, PullAllMessage.INSTANCE ) ) );
         channel.finishAndReleaseAll();
 
-        verify( stateMachine ).process( eq( PullAll.INSTANCE ), any() );
+        verify( stateMachine ).process( eq( PullAllMessage.INSTANCE ), any() );
     }
 
     @Test
@@ -207,7 +207,7 @@ public class MessageDecoderTest
         String userAgent = "Test/User Agent 1.0";
         Map<String,Object> authToken = MapUtil.map( "scheme", "basic", null, "user", "credentials", "password" );
 
-        channel.writeInbound( Unpooled.wrappedBuffer( serialize( packerUnderTest, new Init( userAgent, authToken ) ) ) );
+        channel.writeInbound( Unpooled.wrappedBuffer( serialize( packerUnderTest, new InitMessage( userAgent, authToken ) ) ) );
         channel.finishAndReleaseAll();
 
         verify( stateMachine ).handleExternalFailure(
@@ -224,7 +224,7 @@ public class MessageDecoderTest
         // Generate INIT message with duplicate keys
         PackedOutputArray out = new PackedOutputArray();
         Neo4jPack.Packer packer = packerUnderTest.newPacker( out );
-        packer.packStructHeader( 2, Init.SIGNATURE );
+        packer.packStructHeader( 2, InitMessage.SIGNATURE );
         packer.pack( "Test/User Agent 1.0" );
         packer.packMapHeader( 3 );
         packer.pack( "scheme" );
@@ -330,7 +330,7 @@ public class MessageDecoderTest
     {
         PackedOutputArray out = new PackedOutputArray();
         Neo4jPack.Packer packer = packerUnderTest.newPacker( out );
-        packer.packStructHeader( 2, Run.SIGNATURE );
+        packer.packStructHeader( 2, RunMessage.SIGNATURE );
         packer.pack( "RETURN $x" );
         packer.packMapHeader( 1 );
         packer.pack( "x" );
@@ -350,7 +350,7 @@ public class MessageDecoderTest
     public void shouldLogContentOfTheMessageOnIOError() throws Exception
     {
         BoltConnection connection = mock( BoltConnection.class );
-        BoltResponseMessageHandler responseMessageHandler = mock( BoltResponseMessageHandler.class );
+        BoltResponseMessageWriter responseMessageHandler = mock( BoltResponseMessageWriter.class );
 
         BoltRequestMessageReader requestMessageReader = new BoltRequestMessageReaderV1( connection, responseMessageHandler,
                 NullBoltMessageLogger.getInstance(), NullLogService.getInstance() );
@@ -389,7 +389,7 @@ public class MessageDecoderTest
 
         channel = new EmbeddedChannel( new MessageDecoder( packerUnderTest::newUnpacker, requestMessageReader, logService ) );
 
-        byte[] messageBytes = packMessageWithSignature( Run.SIGNATURE );
+        byte[] messageBytes = packMessageWithSignature( RunMessage.SIGNATURE );
 
         try
         {
@@ -419,7 +419,7 @@ public class MessageDecoderTest
         SynchronousBoltConnection connection = new SynchronousBoltConnection( stateMachine );
         channel = new EmbeddedChannel( newDecoder( connection ) );
 
-        channel.writeInbound( Unpooled.wrappedBuffer( serialize( packerForSerialization, new Run( statement, parameters ) ) ) );
+        channel.writeInbound( Unpooled.wrappedBuffer( serialize( packerForSerialization, new RunMessage( statement, parameters ) ) ) );
         channel.finishAndReleaseAll();
 
         verify( stateMachine ).handleExternalFailure( eq( Neo4jError.from( Status.Statement.TypeError, expectedMessage ) ), any() );
@@ -447,7 +447,7 @@ public class MessageDecoderTest
 
     private MessageDecoder newDecoder( BoltConnection connection )
     {
-        BoltRequestMessageReader reader = new BoltRequestMessageReaderV1( connection, mock( BoltResponseMessageHandler.class ),
+        BoltRequestMessageReader reader = new BoltRequestMessageReaderV1( connection, mock( BoltResponseMessageWriter.class ),
                 NullBoltMessageLogger.getInstance(), NullLogService.getInstance() );
         return new MessageDecoder( packerUnderTest::newUnpacker, reader, NullLogService.getInstance() );
     }

@@ -30,7 +30,7 @@ import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StatementProcessor;
-import org.neo4j.bolt.v1.messaging.message.Reset;
+import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.runtime.BoltStateMachineV1;
 import org.neo4j.bolt.v1.runtime.ReadyState;
 import org.neo4j.cypher.result.QueryResult;
@@ -295,7 +295,7 @@ public class BoltMatchers
                 final BoltResponseRecorder recorder = new BoltResponseRecorder();
                 try
                 {
-                    machine.process( Reset.INSTANCE, recorder );
+                    machine.process( ResetMessage.INSTANCE, recorder );
                     return recorder.responseCount() == 1 && inState( ReadyState.class ).matches( item );
                 }
                 catch ( BoltConnectionFatality boltConnectionFatality )

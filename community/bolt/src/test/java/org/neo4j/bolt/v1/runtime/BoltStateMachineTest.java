@@ -35,12 +35,12 @@ import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
-import org.neo4j.bolt.v1.messaging.message.AckFailure;
-import org.neo4j.bolt.v1.messaging.message.DiscardAll;
-import org.neo4j.bolt.v1.messaging.message.Init;
-import org.neo4j.bolt.v1.messaging.message.PullAll;
-import org.neo4j.bolt.v1.messaging.message.Reset;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
+import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
+import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
+import org.neo4j.bolt.v1.messaging.request.ResetMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
@@ -87,11 +87,11 @@ public class BoltStateMachineTest
     @Test
     public void allStateTransitionsShouldSendExactlyOneResponseToTheClient() throws Exception
     {
-        List<RequestMessage> messages = Arrays.asList( new Init( USER_AGENT, emptyMap() ),
-                AckFailure.INSTANCE,
-                Reset.INSTANCE,
-                new Run( "RETURN 1", EMPTY_PARAMS ),
-                DiscardAll.INSTANCE, PullAll.INSTANCE );
+        List<RequestMessage> messages = Arrays.asList( new InitMessage( USER_AGENT, emptyMap() ),
+                AckFailureMessage.INSTANCE,
+                ResetMessage.INSTANCE,
+                new RunMessage( "RETURN 1", EMPTY_PARAMS ),
+                DiscardAllMessage.INSTANCE, PullAllMessage.INSTANCE );
 
         for ( RequestMessage message: messages )
         {
@@ -113,7 +113,7 @@ public class BoltStateMachineTest
         machine.markFailed( Neo4jError.from( new RuntimeException() ) );
 
         // When RESET occurs
-        machine.process( Reset.INSTANCE, nullResponseHandler() );
+        machine.process( ResetMessage.INSTANCE, nullResponseHandler() );
 
         // Then the transaction should have been rolled back...
         assertThat( machine, hasNoTransaction() );
@@ -156,7 +156,7 @@ public class BoltStateMachineTest
         final BoltStateMachine machine = newMachineWithTransaction();
 
         // ...and an open result
-        machine.process( new Run( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( new RunMessage( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() );
 
         // Then
         assertThat( machine, canReset() );
@@ -169,7 +169,7 @@ public class BoltStateMachineTest
         final BoltStateMachine machine = init( newMachine() );
 
         // ...and an open result
-        machine.process( new Run( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( new RunMessage( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() );
 
         // Then
         assertThat( machine, canReset() );
@@ -183,7 +183,7 @@ public class BoltStateMachineTest
         machine.markFailed( Neo4jError.from( new RuntimeException() ) );
 
         // When
-        machine.process( new Run( "ROLLBACK", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( new RunMessage( "ROLLBACK", EMPTY_PARAMS ), nullResponseHandler() );
 
         // Then
         assertThat( machine, inState( FailedState.class ) );
@@ -197,7 +197,7 @@ public class BoltStateMachineTest
         machine.markFailed( Neo4jError.from( new RuntimeException() ) );
 
         // When
-        machine.process( AckFailure.INSTANCE, nullResponseHandler() );
+        machine.process( AckFailureMessage.INSTANCE, nullResponseHandler() );
 
         // Then
         assertThat( machine, inState( ReadyState.class ) );
@@ -213,7 +213,7 @@ public class BoltStateMachineTest
         machine.markFailed( Neo4jError.from( new RuntimeException() ) );
 
         // When the failure is acknowledged
-        machine.process( AckFailure.INSTANCE, nullResponseHandler() );
+        machine.process( AckFailureMessage.INSTANCE, nullResponseHandler() );
 
         // Then the transaction should still be open
         assertThat( machine, hasTransaction() );
@@ -231,7 +231,7 @@ public class BoltStateMachineTest
 
         // When and interrupt and reset occurs
         machine.interrupt();
-        machine.process( Reset.INSTANCE, nullResponseHandler() );
+        machine.process( ResetMessage.INSTANCE, nullResponseHandler() );
 
         // Then the machine should remain closed
         assertThat( machine, isClosed() );
@@ -248,9 +248,9 @@ public class BoltStateMachineTest
 
         // ...and
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( new Run( "RETURN 1", EMPTY_PARAMS ), recorder );
-        machine.process( Reset.INSTANCE, recorder );
-        machine.process( new Run( "RETURN 1", EMPTY_PARAMS ), recorder );
+        machine.process( new RunMessage( "RETURN 1", EMPTY_PARAMS ), recorder );
+        machine.process( ResetMessage.INSTANCE, recorder );
+        machine.process( new RunMessage( "RETURN 1", EMPTY_PARAMS ), recorder );
 
         // Then
         assertThat( recorder.nextResponse(), wasIgnored() );
@@ -270,9 +270,9 @@ public class BoltStateMachineTest
 
         // ...and
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( new Run( "RETURN 1", EMPTY_PARAMS ), recorder );
-        machine.process( Reset.INSTANCE, recorder );
-        machine.process( new Run( "RETURN 1", EMPTY_PARAMS ), recorder );
+        machine.process( new RunMessage( "RETURN 1", EMPTY_PARAMS ), recorder );
+        machine.process( ResetMessage.INSTANCE, recorder );
+        machine.process( new RunMessage( "RETURN 1", EMPTY_PARAMS ), recorder );
 
         // Then
         assertThat( recorder.nextResponse(), wasIgnored() );
@@ -281,8 +281,8 @@ public class BoltStateMachineTest
 
         // But when
         recorder.reset();
-        machine.process( Reset.INSTANCE, recorder );
-        machine.process( new Run( "RETURN 1", EMPTY_PARAMS ), recorder );
+        machine.process( ResetMessage.INSTANCE, recorder );
+        machine.process( new RunMessage( "RETURN 1", EMPTY_PARAMS ), recorder );
 
         // Then
         assertThat( recorder.nextResponse(), succeeded() );
@@ -296,7 +296,7 @@ public class BoltStateMachineTest
         BoltStateMachine machine = init( newMachine() );
 
         // ...and a result ready to be retrieved...
-        machine.process( new Run( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( new RunMessage( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() );
 
         // ...and a handler guaranteed to break
         BoltResponseRecorder recorder = new BoltResponseRecorder()
@@ -309,7 +309,7 @@ public class BoltStateMachineTest
         };
 
         // When we pull using that handler
-        machine.process( PullAll.INSTANCE, recorder );
+        machine.process( PullAllMessage.INSTANCE, recorder );
 
         // Then the breakage should surface as a FAILURE
         assertThat( recorder.nextResponse(), failedWithStatus( Status.General.UnknownError ) );
@@ -325,8 +325,8 @@ public class BoltStateMachineTest
         BoltStateMachine machine = init( newMachine() );
 
         // Given there is a running transaction
-        machine.process( new Run( "BEGIN", EMPTY_PARAMS ), nullResponseHandler() );
-        machine.process( DiscardAll.INSTANCE, nullResponseHandler() );
+        machine.process( new RunMessage( "BEGIN", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( DiscardAllMessage.INSTANCE, nullResponseHandler() );
 
         // And given that transaction will fail to roll back
         TransactionStateMachine txMachine = txStateMachine( machine );
@@ -335,8 +335,8 @@ public class BoltStateMachineTest
                 when( txMachine.ctx.currentTransaction ).close();
 
         // When
-        machine.process( new Run( "ROLLBACK", EMPTY_PARAMS ), nullResponseHandler() );
-        machine.process( DiscardAll.INSTANCE, nullResponseHandler() );
+        machine.process( new RunMessage( "ROLLBACK", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( DiscardAllMessage.INSTANCE, nullResponseHandler() );
 
         // Then
         assertThat( machine, inState( FailedState.class ) );
@@ -349,12 +349,12 @@ public class BoltStateMachineTest
         BoltStateMachine machine = init( newMachine() );
 
         // Given there is a running transaction
-        machine.process( new Run( "BEGIN", EMPTY_PARAMS ), nullResponseHandler() );
-        machine.process( DiscardAll.INSTANCE, nullResponseHandler() );
+        machine.process( new RunMessage( "BEGIN", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( DiscardAllMessage.INSTANCE, nullResponseHandler() );
 
         // When
-        machine.process( new Run( "BEGIN", EMPTY_PARAMS ), nullResponseHandler() );
-        machine.process( DiscardAll.INSTANCE, nullResponseHandler() );
+        machine.process( new RunMessage( "BEGIN", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( DiscardAllMessage.INSTANCE, nullResponseHandler() );
 
         // Then
         assertThat( machine, inState( FailedState.class ) );
@@ -368,13 +368,13 @@ public class BoltStateMachineTest
         machine.markFailed( Neo4jError.from( new RuntimeException() ) );
 
         // Then no RUN...
-        machine.process( new Run( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() );
+        machine.process( new RunMessage( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() );
         assertThat( machine, inState( FailedState.class ) );
         // ...DISCARD_ALL...
-        machine.process( DiscardAll.INSTANCE, nullResponseHandler() );
+        machine.process( DiscardAllMessage.INSTANCE, nullResponseHandler() );
         assertThat( machine, inState( FailedState.class ) );
         // ...or PULL_ALL should be possible
-        machine.process( PullAll.INSTANCE, nullResponseHandler() );
+        machine.process( PullAllMessage.INSTANCE, nullResponseHandler() );
         assertThat( machine, inState( FailedState.class ) );
     }
 
@@ -389,13 +389,13 @@ public class BoltStateMachineTest
         machine.markFailed( Neo4jError.from( new RuntimeException() ) );
 
         // When I RESET...
-        machine.process( Reset.INSTANCE, recorder );
+        machine.process( ResetMessage.INSTANCE, recorder );
 
         // ...successfully
         assertThat( recorder.nextResponse(), succeeded() );
 
         // Then if I RUN a statement...
-        machine.process( new Run( "RETURN 1", EMPTY_PARAMS ), recorder );
+        machine.process( new RunMessage( "RETURN 1", EMPTY_PARAMS ), recorder );
 
         // ...everything should be fine again
         assertThat( recorder.nextResponse(), succeeded() );
@@ -410,7 +410,7 @@ public class BoltStateMachineTest
         // When
         try
         {
-            machine.process( new Run( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() );
+            machine.process( new RunMessage( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() );
             fail( "Failed to fail fatally" );
         }
 
@@ -434,7 +434,7 @@ public class BoltStateMachineTest
         // When & Then
         try
         {
-            machine.process( new Run( "THIS WILL BE IGNORED", EMPTY_PARAMS ), nullResponseHandler() );
+            machine.process( new RunMessage( "THIS WILL BE IGNORED", EMPTY_PARAMS ), nullResponseHandler() );
             fail( "Exception expected" );
         }
         catch ( BoltConnectionAuthFatality e )
@@ -452,14 +452,14 @@ public class BoltStateMachineTest
         doThrow( new AuthorizationExpiredException( "Auth expired!" ) ).when( responseHandler )
                 .onRecords( any(), anyBoolean() );
         BoltStateMachine machine = init( newMachine() );
-        machine.process( new Run( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() ); // move to streaming state
+        machine.process( new RunMessage( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() ); // move to streaming state
         // We assume the only implementation of statement processor is TransactionStateMachine
         txStateMachine( machine ).ctx.currentResult = BoltResult.EMPTY;
 
         // When & Then
         try
         {
-            machine.process( PullAll.INSTANCE, responseHandler );
+            machine.process( PullAllMessage.INSTANCE, responseHandler );
             fail( "Exception expected" );
         }
         catch ( BoltConnectionAuthFatality e )
@@ -477,14 +477,14 @@ public class BoltStateMachineTest
         doThrow( new AuthorizationExpiredException( "Auth expired!" ) ).when( responseHandler )
                 .onRecords( any(), anyBoolean() );
         BoltStateMachine machine = init( newMachine() );
-        machine.process( new Run( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() ); // move to streaming state
+        machine.process( new RunMessage( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() ); // move to streaming state
         // We assume the only implementation of statement processor is TransactionStateMachine
         txStateMachine( machine ).ctx.currentResult = BoltResult.EMPTY;
 
         // When & Then
         try
         {
-            machine.process( DiscardAll.INSTANCE, responseHandler );
+            machine.process( DiscardAllMessage.INSTANCE, responseHandler );
             fail( "Exception expected" );
         }
         catch ( BoltConnectionAuthFatality e )
@@ -558,25 +558,25 @@ public class BoltStateMachineTest
     @Test
     public void shouldInvokeResponseHandlerOnNextInitMessageOnMarkFailedIfNoHandler() throws Exception
     {
-        testMarkFailedOnNextMessage( ( machine, handler ) -> machine.process( new Init( "Test/1.0", emptyMap() ), handler ) );
+        testMarkFailedOnNextMessage( ( machine, handler ) -> machine.process( new InitMessage( "Test/1.0", emptyMap() ), handler ) );
     }
 
     @Test
     public void shouldInvokeResponseHandlerOnNextRunMessageOnMarkFailedIfNoHandler() throws Exception
     {
-        testMarkFailedOnNextMessage( ( machine, handler ) -> machine.process( new Run( "RETURN 1", VirtualValues.EMPTY_MAP ), handler ) );
+        testMarkFailedOnNextMessage( ( machine, handler ) -> machine.process( new RunMessage( "RETURN 1", VirtualValues.EMPTY_MAP ), handler ) );
     }
 
     @Test
     public void shouldInvokeResponseHandlerOnNextPullAllMessageOnMarkFailedIfNoHandler() throws Exception
     {
-        testMarkFailedOnNextMessage( ( machine, handler ) -> machine.process( PullAll.INSTANCE, handler ) );
+        testMarkFailedOnNextMessage( ( machine, handler ) -> machine.process( PullAllMessage.INSTANCE, handler ) );
     }
 
     @Test
     public void shouldInvokeResponseHandlerOnNextDiscardAllMessageOnMarkFailedIfNoHandler() throws Exception
     {
-        testMarkFailedOnNextMessage( ( machine, handler ) -> machine.process( DiscardAll.INSTANCE, handler ) );
+        testMarkFailedOnNextMessage( ( machine, handler ) -> machine.process( DiscardAllMessage.INSTANCE, handler ) );
     }
 
     @Test
@@ -590,7 +590,7 @@ public class BoltStateMachineTest
         machine.markFailed( error );
 
         // When
-        machine.process( Reset.INSTANCE, responseHandler );
+        machine.process( ResetMessage.INSTANCE, responseHandler );
 
         // Expect
         assertNull( pendingError( machine ) );
@@ -611,7 +611,7 @@ public class BoltStateMachineTest
         machine.markFailed( error );
 
         // When
-        machine.process( AckFailure.INSTANCE, responseHandler );
+        machine.process( AckFailureMessage.INSTANCE, responseHandler );
 
         // Expect
         assertNull( pendingError( machine ) );
@@ -645,26 +645,26 @@ public class BoltStateMachineTest
     @Test
     public void shouldInvokeResponseHandlerOnNextInitMessageOnMarkFailedIfAlreadyFailedAndNoHandler() throws Exception
     {
-        testMarkFailedShouldYieldIgnoredIfAlreadyFailed( ( machine, handler ) -> machine.process( new Init( "Test/1.0", emptyMap() ), handler ) );
+        testMarkFailedShouldYieldIgnoredIfAlreadyFailed( ( machine, handler ) -> machine.process( new InitMessage( "Test/1.0", emptyMap() ), handler ) );
     }
 
     @Test
     public void shouldInvokeResponseHandlerOnNextRunMessageOnMarkFailedIfAlreadyFailedAndNoHandler() throws Exception
     {
         testMarkFailedShouldYieldIgnoredIfAlreadyFailed(
-                ( machine, handler ) -> machine.process( new Run( "RETURN 1", VirtualValues.EMPTY_MAP ), handler ) );
+                ( machine, handler ) -> machine.process( new RunMessage( "RETURN 1", VirtualValues.EMPTY_MAP ), handler ) );
     }
 
     @Test
     public void shouldInvokeResponseHandlerOnNextPullAllMessageOnMarkFailedIfAlreadyFailedAndNoHandler() throws Exception
     {
-        testMarkFailedShouldYieldIgnoredIfAlreadyFailed( ( machine, handler ) -> machine.process( PullAll.INSTANCE, handler ) );
+        testMarkFailedShouldYieldIgnoredIfAlreadyFailed( ( machine, handler ) -> machine.process( PullAllMessage.INSTANCE, handler ) );
     }
 
     @Test
     public void shouldInvokeResponseHandlerOnNextDiscardAllMessageOnMarkFailedIfAlreadyFailedAndNoHandler() throws Exception
     {
-        testMarkFailedShouldYieldIgnoredIfAlreadyFailed( ( machine, handler ) -> machine.process( DiscardAll.INSTANCE, handler ) );
+        testMarkFailedShouldYieldIgnoredIfAlreadyFailed( ( machine, handler ) -> machine.process( DiscardAllMessage.INSTANCE, handler ) );
     }
 
     @Test
@@ -679,7 +679,7 @@ public class BoltStateMachineTest
         machine.markFailed( error );
 
         // When
-        machine.process( Reset.INSTANCE, responseHandler );
+        machine.process( ResetMessage.INSTANCE, responseHandler );
 
         // Expect
         assertNull( pendingError( machine ) );
@@ -701,7 +701,7 @@ public class BoltStateMachineTest
         machine.markFailed( error );
 
         // When
-        machine.process( AckFailure.INSTANCE, responseHandler );
+        machine.process( AckFailureMessage.INSTANCE, responseHandler );
 
         // Expect
         assertNull( pendingError( machine ) );
@@ -739,13 +739,13 @@ public class BoltStateMachineTest
     {
         BoltStateMachineV1SPI spi = mock( BoltStateMachineV1SPI.class, RETURNS_MOCKS );
         BoltStateMachine machine = init( newMachine( spi ) );
-        machine.process( new Run( "RETURN 42", EMPTY_PARAMS ), nullResponseHandler() ); // move to streaming state
+        machine.process( new RunMessage( "RETURN 42", EMPTY_PARAMS ), nullResponseHandler() ); // move to streaming state
         txStateMachine( machine ).ctx.currentResult = BoltResult.EMPTY;
 
         BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
 
         machine.terminate();
-        machine.process( PullAll.INSTANCE, responseHandler );
+        machine.process( PullAllMessage.INSTANCE, responseHandler );
 
         verify( spi, never() ).reportError( any() );
         assertThat( machine, not( inState( FailedState.class ) ) );

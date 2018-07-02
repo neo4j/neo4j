@@ -24,9 +24,9 @@ import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.runtime.StatementMetadata;
-import org.neo4j.bolt.v1.messaging.message.Interrupt;
-import org.neo4j.bolt.v1.messaging.message.Reset;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
+import org.neo4j.bolt.v1.messaging.request.ResetMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
@@ -52,15 +52,15 @@ public class ReadyState implements BoltStateMachineState
     public BoltStateMachineState process( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
     {
         assertInitialized();
-        if ( message instanceof Run )
+        if ( message instanceof RunMessage )
         {
-            return processRunMessage( (Run) message, context );
+            return processRunMessage( (RunMessage) message, context );
         }
-        if ( message instanceof Reset )
+        if ( message instanceof ResetMessage )
         {
             return processResetMessage( context );
         }
-        if ( message instanceof Interrupt )
+        if ( message instanceof InterruptSignal )
         {
             return interruptedState;
         }
@@ -88,7 +88,7 @@ public class ReadyState implements BoltStateMachineState
         this.failedState = failedState;
     }
 
-    private BoltStateMachineState processRunMessage( Run message, StateMachineContext context ) throws BoltConnectionFatality
+    private BoltStateMachineState processRunMessage( RunMessage message, StateMachineContext context ) throws BoltConnectionFatality
     {
         String statement = message.statement();
         MapValue params = message.params();

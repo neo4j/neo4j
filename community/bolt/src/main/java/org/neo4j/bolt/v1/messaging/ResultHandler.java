@@ -21,13 +21,15 @@ package org.neo4j.bolt.v1.messaging;
 
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResult;
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
+import org.neo4j.bolt.v1.messaging.response.RecordMessage;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.logging.Log;
 import org.neo4j.values.AnyValue;
 
 class ResultHandler extends MessageProcessingHandler
 {
-    ResultHandler( BoltResponseMessageHandler handler, BoltConnection connection, Log log )
+    ResultHandler( BoltResponseMessageWriter handler, BoltConnection connection, Log log )
     {
         super( handler, connection, log );
     }
@@ -42,7 +44,7 @@ class ResultHandler extends MessageProcessingHandler
             {
                 if ( pull )
                 {
-                    handler.onRecord( record );
+                    messageWriter.write( new RecordMessage( record ) );
                 }
             }
 

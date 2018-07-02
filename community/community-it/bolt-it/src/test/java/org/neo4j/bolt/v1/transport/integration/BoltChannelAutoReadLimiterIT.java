@@ -30,9 +30,9 @@ import java.util.function.Consumer;
 
 import org.neo4j.bolt.runtime.BoltConnectionReadLimiter;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
-import org.neo4j.bolt.v1.messaging.message.DiscardAll;
-import org.neo4j.bolt.v1.messaging.message.Init;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.collection.RawIterator;
@@ -110,7 +110,7 @@ public class BoltChannelAutoReadLimiterIT
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
-                        new Init( "TestClient/1.1", emptyMap() ) ) );
+                        new InitMessage( "TestClient/1.1", emptyMap() ) ) );
 
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
@@ -119,8 +119,8 @@ public class BoltChannelAutoReadLimiterIT
         for ( int i = 0; i < numberOfRunDiscardPairs; i++ )
         {
             connection.send( util.chunk(
-                    new Run( "CALL boltissue.sleep( $data )", ValueUtils.asMapValue( singletonMap( "data", largeString ) ) ),
-                    DiscardAll.INSTANCE ) );
+                    new RunMessage( "CALL boltissue.sleep( $data )", ValueUtils.asMapValue( singletonMap( "data", largeString ) ) ),
+                    DiscardAllMessage.INSTANCE ) );
         }
 
         // expect

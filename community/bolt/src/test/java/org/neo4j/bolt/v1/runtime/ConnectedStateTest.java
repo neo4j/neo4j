@@ -31,13 +31,13 @@ import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.MutableConnectionState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
-import org.neo4j.bolt.v1.messaging.message.AckFailure;
-import org.neo4j.bolt.v1.messaging.message.DiscardAll;
-import org.neo4j.bolt.v1.messaging.message.Init;
-import org.neo4j.bolt.v1.messaging.message.Interrupt;
-import org.neo4j.bolt.v1.messaging.message.PullAll;
-import org.neo4j.bolt.v1.messaging.message.Reset;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
+import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
+import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
+import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
+import org.neo4j.bolt.v1.messaging.request.ResetMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -60,7 +60,7 @@ class ConnectedStateTest
 {
     private static final String USER_AGENT = "Driver 2.0";
     private static final Map<String,Object> AUTH_TOKEN = map( PRINCIPAL, "neo4j", CREDENTIALS, "password" );
-    private static final Init INIT_MESSAGE = new Init( USER_AGENT, AUTH_TOKEN );
+    private static final InitMessage INIT_MESSAGE = new InitMessage( USER_AGENT, AUTH_TOKEN );
 
     private final ConnectedState state = new ConnectedState();
 
@@ -181,8 +181,8 @@ class ConnectedStateTest
     @Test
     void shouldNotProcessUnsupportedMessage() throws Exception
     {
-        List<RequestMessage> unsupportedMessages = asList( AckFailure.INSTANCE, DiscardAll.INSTANCE, Interrupt.INSTANCE,
-                PullAll.INSTANCE, Reset.INSTANCE, new Run( "RETURN 1", EMPTY_MAP ) );
+        List<RequestMessage> unsupportedMessages = asList( AckFailureMessage.INSTANCE, DiscardAllMessage.INSTANCE, InterruptSignal.INSTANCE,
+                PullAllMessage.INSTANCE, ResetMessage.INSTANCE, new RunMessage( "RETURN 1", EMPTY_MAP ) );
 
         for ( RequestMessage message: unsupportedMessages )
         {

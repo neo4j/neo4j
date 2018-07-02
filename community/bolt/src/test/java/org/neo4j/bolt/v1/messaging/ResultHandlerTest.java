@@ -21,16 +21,21 @@ package org.neo4j.bolt.v1.messaging;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
+import org.neo4j.bolt.messaging.ResponseMessage;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResult;
+import org.neo4j.bolt.v1.messaging.response.RecordMessage;
+import org.neo4j.bolt.v1.messaging.response.SuccessMessage;
 import org.neo4j.bolt.v1.runtime.spi.ImmutableRecord;
 import org.neo4j.cypher.result.QueryResult.Record;
 import org.neo4j.logging.NullLog;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.neo4j.values.storable.Values.values;
 
 class ResultHandlerTest
@@ -38,8 +43,8 @@ class ResultHandlerTest
     @Test
     void shouldPullTheResult() throws Exception
     {
-        BoltResponseMessageHandler responseMessageHandler = mock( BoltResponseMessageHandler.class );
-        ResultHandler handler = new ResultHandler( responseMessageHandler, mock( BoltConnection.class ), NullLog.getInstance() );
+        BoltResponseMessageRecorder messageWriter = new BoltResponseMessageRecorder();
+        ResultHandler handler = new ResultHandler( messageWriter, mock( BoltConnection.class ), NullLog.getInstance() );
 
         ImmutableRecord record1 = new ImmutableRecord( values( "a", "b", "c" ) );
         ImmutableRecord record2 = new ImmutableRecord( values( "1", "2", "3" ) );
@@ -48,16 +53,18 @@ class ResultHandlerTest
         handler.onRecords( result, true );
         handler.onFinish();
 
-        verify( responseMessageHandler ).onRecord( record1 );
-        verify( responseMessageHandler ).onRecord( record2 );
-        verify( responseMessageHandler ).onSuccess( any() );
+        List<ResponseMessage> messages = messageWriter.asList();
+        assertThat( messages.size(), equalTo( 3 ) );
+        assertThat( messages.get( 0 ), equalTo( new RecordMessage( record1 ) ) );
+        assertThat( messages.get( 1 ), equalTo( new RecordMessage( record2 ) ) );
+        assertThat( messages.get( 2 ), instanceOf( SuccessMessage.class ) );
     }
 
     @Test
     void shouldDiscardTheResult() throws Exception
     {
-        BoltResponseMessageHandler responseMessageHandler = mock( BoltResponseMessageHandler.class );
-        ResultHandler handler = new ResultHandler( responseMessageHandler, mock( BoltConnection.class ), NullLog.getInstance() );
+        BoltResponseMessageRecorder messageWriter = new BoltResponseMessageRecorder();
+        ResultHandler handler = new ResultHandler( messageWriter, mock( BoltConnection.class ), NullLog.getInstance() );
 
         ImmutableRecord record1 = new ImmutableRecord( values( "a", "b", "c" ) );
         ImmutableRecord record2 = new ImmutableRecord( values( "1", "2", "3" ) );
@@ -66,8 +73,9 @@ class ResultHandlerTest
         handler.onRecords( result, false );
         handler.onFinish();
 
-        verify( responseMessageHandler, never() ).onRecord( any() );
-        verify( responseMessageHandler ).onSuccess( any() );
+        List<ResponseMessage> messages = messageWriter.asList();
+        assertThat( messages.size(), equalTo( 1 ) );
+        assertThat( messages.get( 0 ), instanceOf( SuccessMessage.class ) );
     }
 
     private static class TestBoltResult implements BoltResult

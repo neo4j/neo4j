@@ -30,9 +30,9 @@ import org.junit.runners.Parameterized.Parameter;
 import java.time.ZoneOffset;
 import java.util.List;
 
-import org.neo4j.bolt.v1.messaging.message.Init;
-import org.neo4j.bolt.v1.messaging.message.PullAll;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
+import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
@@ -109,7 +109,7 @@ public class BoltV2TransportIT
     {
         connection.connect( address )
                 .send( util.acceptedVersions( 2, 0, 0, 0 ) )
-                .send( util.chunk( new Init( USER_AGENT, emptyMap() ) ) );
+                .send( util.chunk( new InitMessage( USER_AGENT, emptyMap() ) ) );
 
         assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 2} ) );
     }
@@ -119,7 +119,7 @@ public class BoltV2TransportIT
     {
         connection.connect( address )
                 .send( util.acceptedVersions( 2, 1, 0, 0 ) )
-                .send( util.chunk( new Init( USER_AGENT, emptyMap() ) ) );
+                .send( util.chunk( new InitMessage( USER_AGENT, emptyMap() ) ) );
 
         assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 2} ) );
     }
@@ -275,8 +275,8 @@ public class BoltV2TransportIT
         negotiateBoltV2();
 
         connection.send( util.chunk(
-                new Run( "CREATE (n:Node {value: $value}) RETURN 42", map( new String[]{"value"}, new AnyValue[]{value} ) ),
-                PullAll.INSTANCE ) );
+                new RunMessage( "CREATE (n:Node {value: $value}) RETURN 42", map( new String[]{"value"}, new AnyValue[]{value} ) ),
+                PullAllMessage.INSTANCE ) );
 
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
@@ -290,8 +290,8 @@ public class BoltV2TransportIT
         negotiateBoltV2();
 
         connection.send( util.chunk(
-                new Run( query ),
-                PullAll.INSTANCE ) );
+                new RunMessage( query ),
+                PullAllMessage.INSTANCE ) );
 
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
@@ -305,8 +305,8 @@ public class BoltV2TransportIT
         negotiateBoltV2();
 
         connection.send( util.chunk(
-                new Run( "RETURN $value", map( new String[]{"value"}, new AnyValue[]{value} ) ),
-                PullAll.INSTANCE ) );
+                new RunMessage( "RETURN $value", map( new String[]{"value"}, new AnyValue[]{value} ) ),
+                PullAllMessage.INSTANCE ) );
 
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
@@ -319,7 +319,7 @@ public class BoltV2TransportIT
     {
         connection.connect( address )
                 .send( util.acceptedVersions( 2, 0, 0, 0 ) )
-                .send( util.chunk( new Init( USER_AGENT, emptyMap() ) ) );
+                .send( util.chunk( new InitMessage( USER_AGENT, emptyMap() ) ) );
 
         assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 2} ) );
     }

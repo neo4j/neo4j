@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
-import org.neo4j.bolt.v1.messaging.message.Init;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
@@ -621,7 +621,7 @@ public abstract class ProcedureInteractionTestBase<S>
         Map<String,Object> authToken = map( "principal", username, "credentials", password, "scheme", "basic" );
 
         connection.connect( address ).send( util.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( util.chunk( new Init( "TestClient/1.1", authToken ) ) );
+                .send( util.chunk( new InitMessage( "TestClient/1.1", authToken ) ) );
 
         assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );

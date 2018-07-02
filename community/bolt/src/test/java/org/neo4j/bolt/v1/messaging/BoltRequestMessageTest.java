@@ -35,13 +35,14 @@ import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.SynchronousBoltConnection;
-import org.neo4j.bolt.v1.messaging.message.AckFailure;
-import org.neo4j.bolt.v1.messaging.message.DiscardAll;
-import org.neo4j.bolt.v1.messaging.message.Init;
-import org.neo4j.bolt.v1.messaging.message.PullAll;
-import org.neo4j.bolt.v1.messaging.message.RecordMessage;
-import org.neo4j.bolt.v1.messaging.message.Reset;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
+import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
+import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
+import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
+import org.neo4j.bolt.v1.messaging.response.RecordMessage;
+import org.neo4j.bolt.v1.messaging.request.ResetMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -79,12 +80,12 @@ public class BoltRequestMessageTest
     @Test
     public void shouldHandleCommonMessages() throws Throwable
     {
-        assertSerializes( new Init( "MyClient/1.0", map( "scheme", "basic" ) ) );
-        assertSerializes( AckFailure.INSTANCE );
-        assertSerializes( Reset.INSTANCE );
-        assertSerializes( new Run( "CREATE (n) RETURN åäö" ) );
-        assertSerializes( DiscardAll.INSTANCE );
-        assertSerializes( PullAll.INSTANCE );
+        assertSerializes( new InitMessage( "MyClient/1.0", map( "scheme", "basic" ) ) );
+        assertSerializes( AckFailureMessage.INSTANCE );
+        assertSerializes( ResetMessage.INSTANCE );
+        assertSerializes( new RunMessage( "CREATE (n) RETURN åäö" ) );
+        assertSerializes( DiscardAllMessage.INSTANCE );
+        assertSerializes( PullAllMessage.INSTANCE );
     }
 
     @Test
@@ -94,7 +95,7 @@ public class BoltRequestMessageTest
         MapValue parameters = ValueUtils.asMapValue( map( "n", 12L ) );
 
         // When
-        Run msg = serializeAndDeserialize( new Run( "asd", parameters ) );
+        RunMessage msg = serializeAndDeserialize( new RunMessage( "asd", parameters ) );
 
         // Then
         MapValue params = msg.params();
@@ -165,7 +166,7 @@ public class BoltRequestMessageTest
             }
         } ).when( stateMachine ).process( any(), any() );
         BoltRequestMessageReader reader = new BoltRequestMessageReaderV1( new SynchronousBoltConnection( stateMachine ),
-                mock( BoltResponseMessageHandler.class ), NullBoltMessageLogger.getInstance(), NullLogService.getInstance() );
+                mock( BoltResponseMessageWriter.class ), NullBoltMessageLogger.getInstance(), NullLogService.getInstance() );
 
         byte[] bytes = channel.getBytes();
         String serialized = HexPrinter.hex( bytes );

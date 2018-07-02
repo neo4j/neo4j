@@ -32,12 +32,12 @@ import org.neo4j.bolt.runtime.MutableConnectionState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.runtime.StatementMetadata;
 import org.neo4j.bolt.runtime.StatementProcessor;
-import org.neo4j.bolt.v1.messaging.message.AckFailure;
-import org.neo4j.bolt.v1.messaging.message.DiscardAll;
-import org.neo4j.bolt.v1.messaging.message.Interrupt;
-import org.neo4j.bolt.v1.messaging.message.PullAll;
-import org.neo4j.bolt.v1.messaging.message.Reset;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
+import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
+import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
+import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
+import org.neo4j.bolt.v1.messaging.request.ResetMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 
 import static java.util.Arrays.asList;
@@ -79,18 +79,18 @@ class ReadyStateTest
     {
         ReadyState state = new ReadyState();
 
-        assertThrows( IllegalStateException.class, () -> state.process( PullAll.INSTANCE, context ) );
+        assertThrows( IllegalStateException.class, () -> state.process( PullAllMessage.INSTANCE, context ) );
 
         state.setStreamingState( streamingState );
-        assertThrows( IllegalStateException.class, () -> state.process( PullAll.INSTANCE, context ) );
+        assertThrows( IllegalStateException.class, () -> state.process( PullAllMessage.INSTANCE, context ) );
 
         state.setStreamingState( null );
         state.setInterruptedState( interruptedState );
-        assertThrows( IllegalStateException.class, () -> state.process( PullAll.INSTANCE, context ) );
+        assertThrows( IllegalStateException.class, () -> state.process( PullAllMessage.INSTANCE, context ) );
 
         state.setInterruptedState( null );
         state.setFailedState( failedState );
-        assertThrows( IllegalStateException.class, () -> state.process( PullAll.INSTANCE, context ) );
+        assertThrows( IllegalStateException.class, () -> state.process( PullAllMessage.INSTANCE, context ) );
     }
 
     @Test
@@ -105,7 +105,7 @@ class ReadyStateTest
         BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
         connectionState.setResponseHandler( responseHandler );
 
-        BoltStateMachineState nextState = state.process( new Run( "RETURN 1", EMPTY_MAP ), context );
+        BoltStateMachineState nextState = state.process( new RunMessage( "RETURN 1", EMPTY_MAP ), context );
 
         assertEquals( streamingState, nextState );
         verify( statementProcessor ).run( "RETURN 1", EMPTY_MAP );
@@ -122,7 +122,7 @@ class ReadyStateTest
         when( statementProcessor.run( any(), any() ) ).thenThrow( error );
         connectionState.setStatementProcessor( statementProcessor );
 
-        BoltStateMachineState nextState = state.process( new Run( "RETURN 1", EMPTY_MAP ), context );
+        BoltStateMachineState nextState = state.process( new RunMessage( "RETURN 1", EMPTY_MAP ), context );
 
         assertEquals( failedState, nextState );
         verify( context ).handleFailure( error, true );
@@ -137,7 +137,7 @@ class ReadyStateTest
         when( statementProcessor.run( any(), any() ) ).thenThrow( error );
         connectionState.setStatementProcessor( statementProcessor );
 
-        BoltStateMachineState nextState = state.process( new Run( "RETURN 1", EMPTY_MAP ), context );
+        BoltStateMachineState nextState = state.process( new RunMessage( "RETURN 1", EMPTY_MAP ), context );
 
         assertEquals( failedState, nextState );
         verify( context ).handleFailure( error, false );
@@ -148,7 +148,7 @@ class ReadyStateTest
     {
         when( context.resetMachine() ).thenReturn( true ); // reset successful
 
-        BoltStateMachineState newState = state.process( Reset.INSTANCE, context );
+        BoltStateMachineState newState = state.process( ResetMessage.INSTANCE, context );
 
         assertEquals( state, newState );
     }
@@ -158,7 +158,7 @@ class ReadyStateTest
     {
         when( context.resetMachine() ).thenReturn( false ); // reset failed
 
-        BoltStateMachineState newState = state.process( Reset.INSTANCE, context );
+        BoltStateMachineState newState = state.process( ResetMessage.INSTANCE, context );
 
         assertEquals( failedState, newState );
     }
@@ -166,7 +166,7 @@ class ReadyStateTest
     @Test
     void shouldProcessInterruptMessage() throws Exception
     {
-        BoltStateMachineState newState = state.process( Interrupt.INSTANCE, context );
+        BoltStateMachineState newState = state.process( InterruptSignal.INSTANCE, context );
 
         assertEquals( interruptedState, newState );
     }
@@ -174,7 +174,7 @@ class ReadyStateTest
     @Test
     void shouldNotProcessUnsupportedMessages() throws Exception
     {
-        List<RequestMessage> unsupportedMessages = asList( PullAll.INSTANCE, DiscardAll.INSTANCE, AckFailure.INSTANCE );
+        List<RequestMessage> unsupportedMessages = asList( PullAllMessage.INSTANCE, DiscardAllMessage.INSTANCE, AckFailureMessage.INSTANCE );
 
         for ( RequestMessage message: unsupportedMessages )
         {

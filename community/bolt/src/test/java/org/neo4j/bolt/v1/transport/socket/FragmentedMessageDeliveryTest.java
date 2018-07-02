@@ -42,7 +42,7 @@ import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -81,7 +81,7 @@ public class FragmentedMessageDeliveryTest
     private int chunkSize = 16;
 
     // Only test one message for now. This can be parameterized later to test lots of different ones
-    private RequestMessage[] messages = new RequestMessage[]{new Run( "Mjölnir" )};
+    private RequestMessage[] messages = new RequestMessage[]{new RunMessage( "Mjölnir" )};
 
     @Parameter
     public Neo4jPack neo4jPack;
@@ -151,7 +151,7 @@ public class FragmentedMessageDeliveryTest
         // Then the session should've received the specified messages, and the protocol should be in a nice clean state
         try
         {
-            RequestMessage run = new Run( "Mjölnir", EMPTY_MAP );
+            RequestMessage run = new RunMessage( "Mjölnir", EMPTY_MAP );
             verify( machine ).process( eq( run ), any( BoltResponseHandler.class ) );
         }
         catch ( AssertionError e )

@@ -49,11 +49,11 @@ import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.testing.RecordedBoltResponse;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
-import org.neo4j.bolt.v1.messaging.message.DiscardAll;
-import org.neo4j.bolt.v1.messaging.message.Init;
-import org.neo4j.bolt.v1.messaging.message.PullAll;
-import org.neo4j.bolt.v1.messaging.message.Reset;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
+import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
+import org.neo4j.bolt.v1.messaging.request.ResetMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
@@ -104,9 +104,9 @@ public class ResetFuzzTest
     private BoltChannel boltChannel;
 
     private final List<List<RequestMessage>> sequences = asList(
-            asList( new Run( "test", EMPTY_MAP ), DiscardAll.INSTANCE ),
-            asList( new Run( "test", EMPTY_MAP ), PullAll.INSTANCE ),
-            singletonList( new Run( "test", EMPTY_MAP ) )
+            asList( new RunMessage( "test", EMPTY_MAP ), DiscardAllMessage.INSTANCE ),
+            asList( new RunMessage( "test", EMPTY_MAP ), PullAllMessage.INSTANCE ),
+            singletonList( new RunMessage( "test", EMPTY_MAP ) )
     );
 
     private final List<RequestMessage> sent = new LinkedList<>();
@@ -125,7 +125,7 @@ public class ResetFuzzTest
         // given
         life.start();
         BoltConnection boltConnection = connectionFactory.newConnection( boltChannel, machine );
-        boltConnection.enqueue( machine -> machine.process( new Init( "ResetFuzzTest/0.0", emptyMap() ), nullResponseHandler() ) );
+        boltConnection.enqueue( machine -> machine.process( new InitMessage( "ResetFuzzTest/0.0", emptyMap() ), nullResponseHandler() ) );
 
         // Test random combinations of messages within a small budget of testing time.
         long deadline = System.currentTimeMillis() + 2 * 1000;
@@ -141,7 +141,7 @@ public class ResetFuzzTest
     private void assertSchedulerWorks( BoltConnection connection ) throws InterruptedException
     {
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        connection.enqueue( machine -> machine.process( Reset.INSTANCE, recorder ) );
+        connection.enqueue( machine -> machine.process( ResetMessage.INSTANCE, recorder ) );
 
         try
         {

@@ -31,11 +31,11 @@ import java.util.Map;
 
 import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
-import org.neo4j.bolt.v1.messaging.message.AckFailure;
-import org.neo4j.bolt.v1.messaging.message.DiscardAll;
-import org.neo4j.bolt.v1.messaging.message.Init;
-import org.neo4j.bolt.v1.messaging.message.PullAll;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
+import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
+import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -105,9 +105,9 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
-                        new Init( "TestClient/1.1", emptyMap() ),
-                        new Run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ),
-                        PullAll.INSTANCE ) );
+                        new InitMessage( "TestClient/1.1", emptyMap() ),
+                        new RunMessage( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ),
+                        PullAllMessage.INSTANCE ) );
 
         // Then
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
@@ -130,9 +130,9 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
-                        new Init( "TestClient/1.1", emptyMap() ),
-                        new Run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ),
-                        DiscardAll.INSTANCE ) );
+                        new InitMessage( "TestClient/1.1", emptyMap() ),
+                        new RunMessage( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ),
+                        DiscardAllMessage.INSTANCE ) );
 
         // Then
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
@@ -151,9 +151,9 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
-                        new Init( "TestClient/1.1", emptyMap() ),
-                        new Run( "QINVALID" ),
-                        PullAll.INSTANCE ) );
+                        new InitMessage( "TestClient/1.1", emptyMap() ),
+                        new RunMessage( "QINVALID" ),
+                        PullAllMessage.INSTANCE ) );
 
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives(
@@ -164,7 +164,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                                        " ^" ) ), msgIgnored() ) );
 
         // When
-        connection.send( util.chunk( AckFailure.INSTANCE, new Run( "RETURN 1" ), PullAll.INSTANCE ) );
+        connection.send( util.chunk( AckFailureMessage.INSTANCE, new RunMessage( "RETURN 1" ), PullAllMessage.INSTANCE ) );
 
         // Then
         assertThat( connection, util.eventuallyReceives(
@@ -181,9 +181,9 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
-                        new Init( "TestClient/1.1", emptyMap() ),
-                        new Run( "CREATE (n:Test {age: 2}) RETURN n.age AS age" ),
-                        PullAll.INSTANCE ) );
+                        new InitMessage( "TestClient/1.1", emptyMap() ),
+                        new RunMessage( "CREATE (n:Test {age: 2}) RETURN n.age AS age" ),
+                        PullAllMessage.INSTANCE ) );
 
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         Matcher<Map<? extends String,?>> ageMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "age" ) ) );
@@ -195,8 +195,8 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
 
         // When
         connection.send( util.chunk(
-                new Run( "CALL db.labels() YIELD label" ),
-                PullAll.INSTANCE ) );
+                new RunMessage( "CALL db.labels() YIELD label" ),
+                PullAllMessage.INSTANCE ) );
 
         // Then
         Matcher<Map<? extends String,?>> entryFieldsMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "label" ) ) );
@@ -215,9 +215,9 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
-                        new Init( "TestClient/1.1", emptyMap() ),
-                        new Run( "CREATE (n:Test) DELETE n RETURN n" ),
-                        PullAll.INSTANCE ) );
+                        new InitMessage( "TestClient/1.1", emptyMap() ),
+                        new RunMessage( "CREATE (n:Test) DELETE n RETURN n" ),
+                        PullAllMessage.INSTANCE ) );
 
         // Then
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
@@ -247,9 +247,9 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
-                        new Init( "TestClient/1.1", emptyMap() ),
-                        new Run( "CREATE ()-[r:T {prop: 42}]->() DELETE r RETURN r" ),
-                        PullAll.INSTANCE ) );
+                        new InitMessage( "TestClient/1.1", emptyMap() ),
+                        new RunMessage( "CREATE ()-[r:T {prop: 42}]->() DELETE r RETURN r" ),
+                        PullAllMessage.INSTANCE ) );
 
         // Then
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
@@ -281,9 +281,9 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
-                        new Init( "TestClient/1.1", emptyMap() ),
-                        new Run( "CREATE (n)" ),
-                        PullAll.INSTANCE ) );
+                        new InitMessage( "TestClient/1.1", emptyMap() ),
+                        new RunMessage( "CREATE (n)" ),
+                        PullAllMessage.INSTANCE ) );
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
@@ -293,8 +293,8 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
         // When
         connection.send(
                 util.chunk(
-                        new Run( "RETURN 1" ),
-                        PullAll.INSTANCE ) );
+                        new RunMessage( "RETURN 1" ),
+                        PullAllMessage.INSTANCE ) );
 
         // Then
         Matcher<Map<? extends String,?>> typeMatcher = hasEntry( is( "type" ), equalTo( "r" ) );
@@ -311,9 +311,9 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
-                        new Init( "TestClient/1.1", emptyMap() ),
-                        new Run( "EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)" ),
-                        PullAll.INSTANCE ) );
+                        new InitMessage( "TestClient/1.1", emptyMap() ),
+                        new RunMessage( "EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)" ),
+                        PullAllMessage.INSTANCE ) );
 
         // Then
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
@@ -341,9 +341,9 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
-                        new Init( "TestClient/1.1", emptyMap() ),
-                        new Run( "RETURN point({x:13, y:37, crs:'cartesian'}) as p" ),
-                        PullAll.INSTANCE ) );
+                        new InitMessage( "TestClient/1.1", emptyMap() ),
+                        new RunMessage( "RETURN point({x:13, y:37, crs:'cartesian'}) as p" ),
+                        PullAllMessage.INSTANCE ) );
 
         // Then
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
@@ -378,9 +378,9 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
-                        new Init( "TestClient/1.1", emptyMap() ),
-                        new Run( "RETURN {p}", ValueUtils.asMapValue( params ) ),
-                        PullAll.INSTANCE ) );
+                        new InitMessage( "TestClient/1.1", emptyMap() ),
+                        new RunMessage( "RETURN {p}", ValueUtils.asMapValue( params ) ),
+                        PullAllMessage.INSTANCE ) );
 
         // Then
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
@@ -390,7 +390,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                         "Value `null` is not supported as key in maps, must be a non-nullable string." ),
                 msgIgnored() ) );
 
-        connection.send( util.chunk( AckFailure.INSTANCE, new Run( "RETURN 1" ), PullAll.INSTANCE ) );
+        connection.send( util.chunk( AckFailureMessage.INSTANCE, new RunMessage( "RETURN 1" ), PullAllMessage.INSTANCE ) );
 
         // Then
         assertThat( connection, util.eventuallyReceives(
@@ -407,9 +407,9 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
-                        new Init( "TestClient/1.1", emptyMap() ),
-                        new Run( "DROP INDEX on :Movie12345(id)" ),
-                        PullAll.INSTANCE ) );
+                        new InitMessage( "TestClient/1.1", emptyMap() ),
+                        new RunMessage( "DROP INDEX on :Movie12345(id)" ),
+                        PullAllMessage.INSTANCE ) );
 
         // Then
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );

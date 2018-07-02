@@ -31,8 +31,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.neo4j.bolt.v1.messaging.message.PullAll;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.security.enterprise.auth.plugin.TestCacheableAuthPlugin;
@@ -211,12 +211,12 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
 
         // When
         client.send( util.chunk(
-                new Run( "CALL dbms.security.clearAuthCache()" ), PullAll.INSTANCE ) );
+                new RunMessage( "CALL dbms.security.clearAuthCache()" ), PullAllMessage.INSTANCE ) );
         assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
 
         // Then
         client.send( util.chunk(
-                new Run( "MATCH (n) RETURN n" ), PullAll.INSTANCE ) );
+                new RunMessage( "MATCH (n) RETURN n" ), PullAllMessage.INSTANCE ) );
         assertThat( client, util.eventuallyReceives(
                 msgFailure( Status.Security.AuthorizationExpired,
                         "Plugin 'plugin-TestCacheableAdminAuthPlugin' authorization info expired." ) ) );
@@ -232,7 +232,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCacheableAdminAuthPlugin" ) );
 
         client.send( util.chunk(
-                new Run( "CALL dbms.security.clearAuthCache() MATCH (n) RETURN n" ), PullAll.INSTANCE ) );
+                new RunMessage( "CALL dbms.security.clearAuthCache() MATCH (n) RETURN n" ), PullAllMessage.INSTANCE ) );
 
         // Then
         assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
@@ -258,7 +258,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
 
         // Then
         client.send( util.chunk(
-                new Run( "MATCH (n) RETURN n" ), PullAll.INSTANCE ) );
+                new RunMessage( "MATCH (n) RETURN n" ), PullAllMessage.INSTANCE ) );
         assertThat( client, util.eventuallyReceives(
                 msgFailure( Status.Security.AuthorizationExpired,
                         "Plugin 'plugin-TestCombinedAuthPlugin' authorization info expired: " +

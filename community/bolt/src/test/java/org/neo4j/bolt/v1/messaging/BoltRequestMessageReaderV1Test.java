@@ -27,12 +27,13 @@ import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.SynchronousBoltConnection;
-import org.neo4j.bolt.v1.messaging.message.AckFailure;
-import org.neo4j.bolt.v1.messaging.message.DiscardAll;
-import org.neo4j.bolt.v1.messaging.message.Init;
-import org.neo4j.bolt.v1.messaging.message.PullAll;
-import org.neo4j.bolt.v1.messaging.message.Reset;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
+import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
+import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
+import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
+import org.neo4j.bolt.v1.messaging.request.ResetMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.values.AnyValue;
@@ -51,37 +52,37 @@ public class BoltRequestMessageReaderV1Test
     @Test
     void shouldDecodeInitMessage() throws Exception
     {
-        testMessageDecoding( new Init( "My driver", map( "one", 1L, "two", 2L ) ) );
+        testMessageDecoding( new InitMessage( "My driver", map( "one", 1L, "two", 2L ) ) );
     }
 
     @Test
     void shouldDecodeAckFailureMessage() throws Exception
     {
-        testMessageDecoding( AckFailure.INSTANCE );
+        testMessageDecoding( AckFailureMessage.INSTANCE );
     }
 
     @Test
     void shouldDecodeResetMessage() throws Exception
     {
-        testMessageDecoding( Reset.INSTANCE );
+        testMessageDecoding( ResetMessage.INSTANCE );
     }
 
     @Test
     void shouldDecodeRunMessage() throws Exception
     {
-        testMessageDecoding( new Run( "RETURN $answer", map( new String[]{"answer"}, new AnyValue[]{stringValue( "42" )} ) ) );
+        testMessageDecoding( new RunMessage( "RETURN $answer", map( new String[]{"answer"}, new AnyValue[]{stringValue( "42" )} ) ) );
     }
 
     @Test
     void shouldDecodeDiscardAllMessage() throws Exception
     {
-        testMessageDecoding( DiscardAll.INSTANCE );
+        testMessageDecoding( DiscardAllMessage.INSTANCE );
     }
 
     @Test
     void shouldDecodePullAllMessage() throws Exception
     {
-        testMessageDecoding( PullAll.INSTANCE );
+        testMessageDecoding( PullAllMessage.INSTANCE );
     }
 
     private static void testMessageDecoding( RequestMessage message ) throws Exception
@@ -102,6 +103,6 @@ public class BoltRequestMessageReaderV1Test
     private static BoltRequestMessageReader newReader( BoltStateMachine stateMachine )
     {
         return new BoltRequestMessageReaderV1( new SynchronousBoltConnection( stateMachine ),
-                mock( BoltResponseMessageHandler.class ), NullBoltMessageLogger.getInstance(), NullLogService.getInstance() );
+                mock( BoltResponseMessageWriter.class ), NullBoltMessageLogger.getInstance(), NullLogService.getInstance() );
     }
 }

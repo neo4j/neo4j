@@ -27,12 +27,12 @@ import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.MutableConnectionState;
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.v1.messaging.message.AckFailure;
-import org.neo4j.bolt.v1.messaging.message.DiscardAll;
-import org.neo4j.bolt.v1.messaging.message.Interrupt;
-import org.neo4j.bolt.v1.messaging.message.PullAll;
-import org.neo4j.bolt.v1.messaging.message.Reset;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
+import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
+import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
+import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
+import org.neo4j.bolt.v1.messaging.request.ResetMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -67,20 +67,20 @@ class FailedStateTest
     {
         FailedState state = new FailedState();
 
-        assertThrows( IllegalStateException.class, () -> state.process( AckFailure.INSTANCE, context ) );
+        assertThrows( IllegalStateException.class, () -> state.process( AckFailureMessage.INSTANCE, context ) );
 
         state.setReadyState( readyState );
-        assertThrows( IllegalStateException.class, () -> state.process( AckFailure.INSTANCE, context ) );
+        assertThrows( IllegalStateException.class, () -> state.process( AckFailureMessage.INSTANCE, context ) );
 
         state.setReadyState( null );
         state.setInterruptedState( interruptedState );
-        assertThrows( IllegalStateException.class, () -> state.process( AckFailure.INSTANCE, context ) );
+        assertThrows( IllegalStateException.class, () -> state.process( AckFailureMessage.INSTANCE, context ) );
     }
 
     @Test
     void shouldProcessRunMessage() throws Exception
     {
-        BoltStateMachineState newState = state.process( new Run( "RETURN 1", EMPTY_MAP ), context );
+        BoltStateMachineState newState = state.process( new RunMessage( "RETURN 1", EMPTY_MAP ), context );
 
         assertEquals( state, newState ); // remains in failed state
         assertTrue( connectionState.hasPendingIgnore() );
@@ -89,7 +89,7 @@ class FailedStateTest
     @Test
     void shouldProcessPullAllMessage() throws Exception
     {
-        BoltStateMachineState newState = state.process( PullAll.INSTANCE, context );
+        BoltStateMachineState newState = state.process( PullAllMessage.INSTANCE, context );
 
         assertEquals( state, newState ); // remains in failed state
         assertTrue( connectionState.hasPendingIgnore() );
@@ -98,7 +98,7 @@ class FailedStateTest
     @Test
     void shouldProcessDiscardAllMessage() throws Exception
     {
-        BoltStateMachineState newState = state.process( DiscardAll.INSTANCE, context );
+        BoltStateMachineState newState = state.process( DiscardAllMessage.INSTANCE, context );
 
         assertEquals( state, newState ); // remains in failed state
         assertTrue( connectionState.hasPendingIgnore() );
@@ -110,7 +110,7 @@ class FailedStateTest
         connectionState.markIgnored();
         assertTrue( connectionState.hasPendingIgnore() );
 
-        BoltStateMachineState newState = state.process( AckFailure.INSTANCE, context );
+        BoltStateMachineState newState = state.process( AckFailureMessage.INSTANCE, context );
 
         assertEquals( readyState, newState );
         assertFalse( connectionState.hasPendingIgnore() );
@@ -123,7 +123,7 @@ class FailedStateTest
         connectionState.markFailed( error );
         assertEquals( error, connectionState.getPendingError() );
 
-        BoltStateMachineState newState = state.process( AckFailure.INSTANCE, context );
+        BoltStateMachineState newState = state.process( AckFailureMessage.INSTANCE, context );
 
         assertEquals( readyState, newState );
         assertNull( connectionState.getPendingError() );
@@ -136,7 +136,7 @@ class FailedStateTest
         connectionState.markIgnored();
         assertTrue( connectionState.hasPendingIgnore() );
 
-        BoltStateMachineState newState = state.process( Reset.INSTANCE, context );
+        BoltStateMachineState newState = state.process( ResetMessage.INSTANCE, context );
 
         assertEquals( readyState, newState );
         assertFalse( connectionState.hasPendingIgnore() );
@@ -150,7 +150,7 @@ class FailedStateTest
         connectionState.markFailed( error );
         assertEquals( error, connectionState.getPendingError() );
 
-        BoltStateMachineState newState = state.process( Reset.INSTANCE, context );
+        BoltStateMachineState newState = state.process( ResetMessage.INSTANCE, context );
 
         assertEquals( readyState, newState );
         assertNull( connectionState.getPendingError() );
@@ -161,7 +161,7 @@ class FailedStateTest
     {
         when( context.resetMachine() ).thenReturn( false ); // reset failed
 
-        BoltStateMachineState newState = state.process( Reset.INSTANCE, context );
+        BoltStateMachineState newState = state.process( ResetMessage.INSTANCE, context );
 
         assertEquals( state, newState ); // remains in failed state
     }
@@ -169,7 +169,7 @@ class FailedStateTest
     @Test
     void shouldProcessInterruptMessage() throws Exception
     {
-        BoltStateMachineState newState = state.process( Interrupt.INSTANCE, context );
+        BoltStateMachineState newState = state.process( InterruptSignal.INSTANCE, context );
 
         assertEquals( interruptedState, newState );
     }

@@ -23,8 +23,8 @@ import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.v1.messaging.message.Interrupt;
-import org.neo4j.bolt.v1.messaging.message.Reset;
+import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
+import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 
 import static org.neo4j.util.Preconditions.checkState;
 
@@ -43,11 +43,11 @@ public class InterruptedState implements BoltStateMachineState
     public BoltStateMachineState process( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
     {
         assertInitialized();
-        if ( message instanceof Interrupt )
+        if ( message instanceof InterruptSignal )
         {
             return this;
         }
-        else if ( message instanceof Reset )
+        else if ( message instanceof ResetMessage )
         {
             if ( context.connectionState().decrementInterruptCounter() > 0 )
             {

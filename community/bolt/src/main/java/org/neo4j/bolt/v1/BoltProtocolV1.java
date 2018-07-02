@@ -33,7 +33,7 @@ import org.neo4j.bolt.transport.pipeline.HouseKeeper;
 import org.neo4j.bolt.transport.pipeline.MessageAccumulator;
 import org.neo4j.bolt.transport.pipeline.MessageDecoder;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageReaderV1;
-import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter;
+import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriterV1;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.runtime.BoltStateMachineFactory;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -91,7 +91,7 @@ public class BoltProtocolV1 implements BoltProtocol
 
     public static BoltRequestMessageReader createBoltMessageReaderV1( BoltChannel channel, Neo4jPack neo4jPack, BoltConnection connection, LogService logging )
     {
-        BoltResponseMessageWriter responseWriter = new BoltResponseMessageWriter( neo4jPack, connection.output(), logging, channel.log() );
+        BoltResponseMessageWriterV1 responseWriter = new BoltResponseMessageWriterV1( neo4jPack, connection.output(), logging, channel.log() );
         return new BoltRequestMessageReaderV1( connection, responseWriter, channel.log(), logging );
     }
 }

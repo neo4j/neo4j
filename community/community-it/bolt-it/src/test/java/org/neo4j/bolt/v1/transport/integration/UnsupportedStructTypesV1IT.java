@@ -39,8 +39,8 @@ import java.util.List;
 
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
-import org.neo4j.bolt.v1.messaging.message.Init;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
@@ -158,7 +158,7 @@ public class UnsupportedStructTypesV1IT
     {
         connection.connect( address ).send( util.defaultAcceptedVersions() );
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-        connection.send( util.chunk( new Init( USER_AGENT, Collections.emptyMap() ) ) );
+        connection.send( util.chunk( new InitMessage( USER_AGENT, Collections.emptyMap() ) ) );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         connection.send( util.chunk( 64, createRunWithV2Value( value ) ) );
@@ -173,7 +173,7 @@ public class UnsupportedStructTypesV1IT
         PackedOutputArray out = new PackedOutputArray();
         Neo4jPack.Packer packer = new Neo4jPackV2().newPacker( out );
 
-        packer.packStructHeader( 2, Run.SIGNATURE );
+        packer.packStructHeader( 2, RunMessage.SIGNATURE );
         packer.pack( "RETURN $x" );
         packer.packMapHeader( 1 );
         packer.pack( "x" );

@@ -29,7 +29,7 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
-import org.neo4j.bolt.v1.messaging.message.Init;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
@@ -92,7 +92,7 @@ public class BoltMetricsIT
         conn = new SocketConnection()
                 .connect( new HostnamePort( "localhost", port ) )
                 .send( util.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( util.chunk( new Init( "TestClient",
+                .send( util.chunk( new InitMessage( "TestClient",
                         map("scheme", "basic", "principal", "neo4j", "credentials", "neo4j") ) ) );
 
         // Then

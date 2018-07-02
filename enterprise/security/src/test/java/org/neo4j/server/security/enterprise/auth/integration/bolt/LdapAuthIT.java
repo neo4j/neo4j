@@ -57,9 +57,9 @@ import javax.naming.directory.DirContext;
 import javax.naming.directory.ModificationItem;
 import javax.naming.ldap.LdapContext;
 
-import org.neo4j.bolt.v1.messaging.message.Init;
-import org.neo4j.bolt.v1.messaging.message.PullAll;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
+import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
@@ -286,8 +286,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         // When
         assertAuth( "smith", "abc123" );
         client.send( util.chunk(
-                new Run( "CALL dbms.showCurrentUser()" ),
-                PullAll.INSTANCE ) );
+                new RunMessage( "CALL dbms.showCurrentUser()" ),
+                PullAllMessage.INSTANCE ) );
 
         // Then
         // Assuming showCurrentUser has fields username, roles, flags
@@ -357,12 +357,12 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
 
         // When
         client.send( util.chunk(
-                new Run( "CALL dbms.security.clearAuthCache()" ), PullAll.INSTANCE ) );
+                new RunMessage( "CALL dbms.security.clearAuthCache()" ), PullAllMessage.INSTANCE ) );
         assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
 
         // Then
         client.send( util.chunk(
-                new Run( "MATCH (n) RETURN n" ), PullAll.INSTANCE ) );
+                new RunMessage( "MATCH (n) RETURN n" ), PullAllMessage.INSTANCE ) );
         assertThat( client, util.eventuallyReceives(
                 msgFailure( Status.Security.AuthorizationExpired, "LDAP authorization info expired." ) ) );
 
@@ -378,7 +378,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         assertAuth( "neo4j", "abc123" );
 
         client.send( util.chunk(
-                new Run( "CALL dbms.security.clearAuthCache() MATCH (n) RETURN n" ), PullAll.INSTANCE ) );
+                new RunMessage( "CALL dbms.security.clearAuthCache() MATCH (n) RETURN n" ), PullAllMessage.INSTANCE ) );
 
         // Then
         assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
@@ -654,7 +654,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
 
     private void assertAllowedReadProcedure() throws IOException
     {
-        client.send( util.chunk( new Run( "CALL test.allowedReadProcedure()" ), PullAll.INSTANCE ) );
+        client.send( util.chunk( new RunMessage( "CALL test.allowedReadProcedure()" ), PullAllMessage.INSTANCE ) );
 
         // Then
         assertThat( client, util.eventuallyReceives(
@@ -1201,19 +1201,19 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         adminClient.connect( address )
                 .send( util.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( util.chunk(
-                        new Init( "TestClient/1.1", authToken ) ) );
+                        new InitMessage( "TestClient/1.1", authToken ) ) );
         assertThat( adminClient, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( adminClient, util.eventuallyReceives( msgSuccess() ) );
 
         // Clear auth cache
-        adminClient.send( util.chunk( new Run( "CALL dbms.security.clearAuthCache()" ), PullAll.INSTANCE ) );
+        adminClient.send( util.chunk( new RunMessage( "CALL dbms.security.clearAuthCache()" ), PullAllMessage.INSTANCE ) );
         assertThat( adminClient, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
     private void assertLdapAuthorizationTimeout() throws IOException
     {
         // When
-        client.send( util.chunk( new Run( "MATCH (n) RETURN n" ), PullAll.INSTANCE ) );
+        client.send( util.chunk( new RunMessage( "MATCH (n) RETURN n" ), PullAllMessage.INSTANCE ) );
 
         // Then
         assertThat( client, util.eventuallyReceives(
@@ -1225,7 +1225,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     private void assertLdapAuthorizationFailed() throws IOException
     {
         // When
-        client.send( util.chunk( new Run( "MATCH (n) RETURN n" ), PullAll.INSTANCE ) );
+        client.send( util.chunk( new RunMessage( "MATCH (n) RETURN n" ), PullAllMessage.INSTANCE ) );
 
         // Then
         assertThat( client, util.eventuallyReceives(
@@ -1239,7 +1239,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         client.connect( address )
                 .send( util.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( util.chunk(
-                        new Init( "TestClient/1.1", authToken ) ) );
+                        new InitMessage( "TestClient/1.1", authToken ) ) );
 
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, util.eventuallyReceives( msgFailure( Status.Security.AuthProviderTimeout, message ) ) );
@@ -1252,7 +1252,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         client.connect( address )
                 .send( util.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( util.chunk(
-                        new Init( "TestClient/1.1", authToken ) ) );
+                        new InitMessage( "TestClient/1.1", authToken ) ) );
 
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, util.eventuallyReceives( msgFailure( Status.Security.AuthProviderFailed, message ) ) );
@@ -1264,7 +1264,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     {
         assertAuth( "neo4j", "abc123" );
 
-        client.send( util.chunk( new Run( "CALL dbms.security.clearAuthCache()" ), PullAll.INSTANCE ) );
+        client.send( util.chunk( new RunMessage( "CALL dbms.security.clearAuthCache()" ), PullAllMessage.INSTANCE ) );
 
         assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }

@@ -36,12 +36,12 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
-import org.neo4j.bolt.v1.messaging.message.AckFailure;
-import org.neo4j.bolt.v1.messaging.message.DiscardAll;
-import org.neo4j.bolt.v1.messaging.message.Init;
-import org.neo4j.bolt.v1.messaging.message.PullAll;
-import org.neo4j.bolt.v1.messaging.message.Reset;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
+import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
+import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
+import org.neo4j.bolt.v1.messaging.request.ResetMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -86,17 +86,17 @@ public class TransactionIT
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
+        machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         // When
-        machine.process( new Run( "BEGIN", EMPTY_MAP ), recorder );
-        machine.process( DiscardAll.INSTANCE, nullResponseHandler() );
+        machine.process( new RunMessage( "BEGIN", EMPTY_MAP ), recorder );
+        machine.process( DiscardAllMessage.INSTANCE, nullResponseHandler() );
 
-        machine.process( new Run( "CREATE (n:InTx)", EMPTY_MAP ), recorder );
-        machine.process( DiscardAll.INSTANCE, nullResponseHandler() );
+        machine.process( new RunMessage( "CREATE (n:InTx)", EMPTY_MAP ), recorder );
+        machine.process( DiscardAllMessage.INSTANCE, nullResponseHandler() );
 
-        machine.process( new Run( "COMMIT", EMPTY_MAP ), recorder );
-        machine.process( DiscardAll.INSTANCE, nullResponseHandler() );
+        machine.process( new RunMessage( "COMMIT", EMPTY_MAP ), recorder );
+        machine.process( DiscardAllMessage.INSTANCE, nullResponseHandler() );
 
         // Then
         assertThat( recorder.nextResponse(), succeeded() );
@@ -110,17 +110,17 @@ public class TransactionIT
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
+        machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         // When
-        machine.process( new Run( "BEGIN", EMPTY_MAP ), recorder );
-        machine.process( DiscardAll.INSTANCE, nullResponseHandler() );
+        machine.process( new RunMessage( "BEGIN", EMPTY_MAP ), recorder );
+        machine.process( DiscardAllMessage.INSTANCE, nullResponseHandler() );
 
-        machine.process( new Run( "CREATE (n:InTx)", EMPTY_MAP ), recorder );
-        machine.process( DiscardAll.INSTANCE, nullResponseHandler() );
+        machine.process( new RunMessage( "CREATE (n:InTx)", EMPTY_MAP ), recorder );
+        machine.process( DiscardAllMessage.INSTANCE, nullResponseHandler() );
 
-        machine.process( new Run( "ROLLBACK", EMPTY_MAP ), recorder );
-        machine.process( DiscardAll.INSTANCE, nullResponseHandler() );
+        machine.process( new RunMessage( "ROLLBACK", EMPTY_MAP ), recorder );
+        machine.process( DiscardAllMessage.INSTANCE, nullResponseHandler() );
 
         // Then
         assertThat( recorder.nextResponse(), succeeded() );
@@ -135,11 +135,11 @@ public class TransactionIT
         BoltResponseRecorder runRecorder = new BoltResponseRecorder();
         BoltResponseRecorder pullAllRecorder = new BoltResponseRecorder();
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
+        machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         // When
-        machine.process( new Run( "ROLLBACK", EMPTY_MAP ), runRecorder );
-        machine.process( PullAll.INSTANCE, pullAllRecorder );
+        machine.process( new RunMessage( "ROLLBACK", EMPTY_MAP ), runRecorder );
+        machine.process( PullAllMessage.INSTANCE, pullAllRecorder );
 
         // Then
         assertThat( runRecorder.nextResponse(), succeeded() );
@@ -152,17 +152,17 @@ public class TransactionIT
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
+        machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         // When
-        machine.process( new Run( "BEGIN", EMPTY_MAP ), recorder );
-        machine.process( DiscardAll.INSTANCE, recorder );
+        machine.process( new RunMessage( "BEGIN", EMPTY_MAP ), recorder );
+        machine.process( DiscardAllMessage.INSTANCE, recorder );
 
-        machine.process( new Run( "CREATE (a:Person)", EMPTY_MAP ), recorder );
-        machine.process( DiscardAll.INSTANCE, recorder );
+        machine.process( new RunMessage( "CREATE (a:Person)", EMPTY_MAP ), recorder );
+        machine.process( DiscardAllMessage.INSTANCE, recorder );
 
-        machine.process( new Run( "COMMIT", EMPTY_MAP ), recorder );
-        machine.process( DiscardAll.INSTANCE, recorder );
+        machine.process( new RunMessage( "COMMIT", EMPTY_MAP ), recorder );
+        machine.process( DiscardAllMessage.INSTANCE, recorder );
 
         // Then
         assertThat( recorder.nextResponse(), succeeded() );
@@ -179,17 +179,17 @@ public class TransactionIT
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
+        machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         // When
-        machine.process( new Run( "BEGIN", EMPTY_MAP ), recorder );
-        machine.process( DiscardAll.INSTANCE, recorder );
+        machine.process( new RunMessage( "BEGIN", EMPTY_MAP ), recorder );
+        machine.process( DiscardAllMessage.INSTANCE, recorder );
 
-        machine.process( new Run( "CREATE (a:Person)", EMPTY_MAP ), recorder );
-        machine.process( DiscardAll.INSTANCE, recorder );
+        machine.process( new RunMessage( "CREATE (a:Person)", EMPTY_MAP ), recorder );
+        machine.process( DiscardAllMessage.INSTANCE, recorder );
 
-        machine.process( new Run( "COMMIT", EMPTY_MAP ), recorder );
-        machine.process( PullAll.INSTANCE, recorder );
+        machine.process( new RunMessage( "COMMIT", EMPTY_MAP ), recorder );
+        machine.process( PullAllMessage.INSTANCE, recorder );
 
         // Then
         assertThat( recorder.nextResponse(), succeeded() );
@@ -216,10 +216,10 @@ public class TransactionIT
         Thread thread = new Thread( () -> {
             try ( BoltStateMachine machine = env.newMachine( boltChannel ) )
             {
-                machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
+                machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
                 latch.await();
-                machine.process( new Run( "MATCH (n:A) SET n.prop = 'two'", EMPTY_MAP ), nullResponseHandler() );
-                machine.process( PullAll.INSTANCE, nullResponseHandler() );
+                machine.process( new RunMessage( "MATCH (n:A) SET n.prop = 'two'", EMPTY_MAP ), nullResponseHandler() );
+                machine.process( PullAllMessage.INSTANCE, nullResponseHandler() );
             }
             catch ( BoltConnectionFatality connectionFatality )
             {
@@ -232,15 +232,15 @@ public class TransactionIT
         try ( BoltStateMachine machine = env.newMachine( boltChannel ) )
         {
             BoltResponseRecorder recorder = new BoltResponseRecorder();
-            machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
+            machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
             latch.release();
             final String bookmark = "neo4j:bookmark:v1:tx" + dbVersionAfterWrite;
-            machine.process( new Run( "BEGIN", ValueUtils.asMapValue( singletonMap( "bookmark", bookmark ) ) ), nullResponseHandler() );
-            machine.process( PullAll.INSTANCE, recorder );
-            machine.process( new Run( "MATCH (n:A) RETURN n.prop", EMPTY_MAP ), nullResponseHandler() );
-            machine.process( PullAll.INSTANCE, recorder );
-            machine.process( new Run( "COMMIT", EMPTY_MAP ), nullResponseHandler() );
-            machine.process( PullAll.INSTANCE, recorder );
+            machine.process( new RunMessage( "BEGIN", ValueUtils.asMapValue( singletonMap( "bookmark", bookmark ) ) ), nullResponseHandler() );
+            machine.process( PullAllMessage.INSTANCE, recorder );
+            machine.process( new RunMessage( "MATCH (n:A) RETURN n.prop", EMPTY_MAP ), nullResponseHandler() );
+            machine.process( PullAllMessage.INSTANCE, recorder );
+            machine.process( new RunMessage( "COMMIT", EMPTY_MAP ), nullResponseHandler() );
+            machine.process( PullAllMessage.INSTANCE, recorder );
 
             assertThat( recorder.nextResponse(), succeededWithMetadata( "bookmark", BOOKMARK_PATTERN ) );
             assertThat( recorder.nextResponse(), succeededWithRecord( "two" ) );
@@ -276,7 +276,7 @@ public class TransactionIT
             try ( BoltStateMachine stateMachine = env.newMachine( mock( BoltChannel.class ) ) )
             {
                 machine[0] = stateMachine;
-                stateMachine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
+                stateMachine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
                 String query = format( "USING PERIODIC COMMIT 10 LOAD CSV FROM 'http://localhost:%d' AS line " +
                                        "CREATE (n:A {id: line[0], square: line[1]}) " +
                                        "WITH count(*) as number " +
@@ -285,8 +285,8 @@ public class TransactionIT
                 try
                 {
                     latch.start();
-                    stateMachine.process( new Run( query, EMPTY_MAP ), nullResponseHandler() );
-                    stateMachine.process( PullAll.INSTANCE, nullResponseHandler() );
+                    stateMachine.process( new RunMessage( query, EMPTY_MAP ), nullResponseHandler() );
+                    stateMachine.process( PullAllMessage.INSTANCE, nullResponseHandler() );
                 }
                 finally
                 {
@@ -306,7 +306,7 @@ public class TransactionIT
         Thread.sleep( 1000 );
 
         // This is the call that RESETs the Bolt connection and will terminate the running query
-        machine[0].process( Reset.INSTANCE, nullResponseHandler() );
+        machine[0].process( ResetMessage.INSTANCE, nullResponseHandler() );
 
         barrier.release();
 
@@ -327,14 +327,14 @@ public class TransactionIT
     {
         // Given
         final BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
+        machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
         BoltResponseRecorder recorder = new BoltResponseRecorder();
 
         // When
-        machine.process( new Run( "RETURN 1", EMPTY_MAP ), nullResponseHandler() );
-        machine.process( PullAll.INSTANCE, recorder );
-        machine.process( new Run( "", EMPTY_MAP ), nullResponseHandler() );
-        machine.process( PullAll.INSTANCE, recorder );
+        machine.process( new RunMessage( "RETURN 1", EMPTY_MAP ), nullResponseHandler() );
+        machine.process( PullAllMessage.INSTANCE, recorder );
+        machine.process( new RunMessage( "", EMPTY_MAP ), nullResponseHandler() );
+        machine.process( PullAllMessage.INSTANCE, recorder );
 
         // Then
         assertThat( recorder.nextResponse(), succeededWithRecord( 1L ) );
@@ -346,18 +346,18 @@ public class TransactionIT
     {
         // Given
         final BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
+        machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
         BoltResponseRecorder recorder = new BoltResponseRecorder();
 
         // When
-        machine.process( new Run( "BEGIN", EMPTY_MAP ), nullResponseHandler() );
-        machine.process( DiscardAll.INSTANCE, nullResponseHandler() );
-        machine.process( new Run( "RETURN 1", EMPTY_MAP ), nullResponseHandler() );
-        machine.process( PullAll.INSTANCE, recorder );
-        machine.process( new Run( "", EMPTY_MAP ), nullResponseHandler() );
-        machine.process( PullAll.INSTANCE, recorder );
-        machine.process( new Run( "COMMIT", EMPTY_MAP ), nullResponseHandler() );
-        machine.process( DiscardAll.INSTANCE, nullResponseHandler() );
+        machine.process( new RunMessage( "BEGIN", EMPTY_MAP ), nullResponseHandler() );
+        machine.process( DiscardAllMessage.INSTANCE, nullResponseHandler() );
+        machine.process( new RunMessage( "RETURN 1", EMPTY_MAP ), nullResponseHandler() );
+        machine.process( PullAllMessage.INSTANCE, recorder );
+        machine.process( new RunMessage( "", EMPTY_MAP ), nullResponseHandler() );
+        machine.process( PullAllMessage.INSTANCE, recorder );
+        machine.process( new RunMessage( "COMMIT", EMPTY_MAP ), nullResponseHandler() );
+        machine.process( DiscardAllMessage.INSTANCE, nullResponseHandler() );
 
         // Then
         assertThat( recorder.nextResponse(), succeededWithRecord( 1L ) );
@@ -369,18 +369,18 @@ public class TransactionIT
     {
         // Given
         final BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
+        machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
         BoltResponseRecorder recorder = new BoltResponseRecorder();
 
         // When
-        machine.process( new Run( "RETURN 1", EMPTY_MAP ), nullResponseHandler() );
-        machine.process( PullAll.INSTANCE, recorder );
-        machine.process( new Run( "BEGIN", EMPTY_MAP ), nullResponseHandler() );
-        machine.process( DiscardAll.INSTANCE, nullResponseHandler() );
-        machine.process( new Run( "", EMPTY_MAP ), nullResponseHandler() );
-        machine.process( PullAll.INSTANCE, recorder );
-        machine.process( new Run( "COMMIT", EMPTY_MAP ), nullResponseHandler() );
-        machine.process( DiscardAll.INSTANCE, nullResponseHandler() );
+        machine.process( new RunMessage( "RETURN 1", EMPTY_MAP ), nullResponseHandler() );
+        machine.process( PullAllMessage.INSTANCE, recorder );
+        machine.process( new RunMessage( "BEGIN", EMPTY_MAP ), nullResponseHandler() );
+        machine.process( DiscardAllMessage.INSTANCE, nullResponseHandler() );
+        machine.process( new RunMessage( "", EMPTY_MAP ), nullResponseHandler() );
+        machine.process( PullAllMessage.INSTANCE, recorder );
+        machine.process( new RunMessage( "COMMIT", EMPTY_MAP ), nullResponseHandler() );
+        machine.process( DiscardAllMessage.INSTANCE, nullResponseHandler() );
 
         // Then
         assertThat( recorder.nextResponse(), succeededWithRecord( 1L ) );
@@ -392,15 +392,15 @@ public class TransactionIT
     {
         // Given
         final BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
+        machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
         BoltResponseRecorder recorder = new BoltResponseRecorder();
 
         // When
-        machine.process( new Run( "INVALID QUERY", EMPTY_MAP ), recorder );
-        machine.process( PullAll.INSTANCE, recorder );
-        machine.process( AckFailure.INSTANCE, recorder );
-        machine.process( new Run( "RETURN 2", EMPTY_MAP ), recorder );
-        machine.process( PullAll.INSTANCE, recorder );
+        machine.process( new RunMessage( "INVALID QUERY", EMPTY_MAP ), recorder );
+        machine.process( PullAllMessage.INSTANCE, recorder );
+        machine.process( AckFailureMessage.INSTANCE, recorder );
+        machine.process( new RunMessage( "RETURN 2", EMPTY_MAP ), recorder );
+        machine.process( PullAllMessage.INSTANCE, recorder );
 
         // Then
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Statement.SyntaxError ) );
@@ -416,15 +416,15 @@ public class TransactionIT
     {
         // Given
         final BoltStateMachine machine = env.newMachine( boltChannel );
-        machine.process( new Init( USER_AGENT, emptyMap() ), nullResponseHandler() );
+        machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
         BoltResponseRecorder recorder = new BoltResponseRecorder();
 
         // When
-        machine.process( new Run( "UNWIND [1, 0] AS x RETURN 1 / x", EMPTY_MAP ), recorder );
-        machine.process( PullAll.INSTANCE, recorder );
-        machine.process( AckFailure.INSTANCE, recorder );
-        machine.process( new Run( "RETURN 2", EMPTY_MAP ), recorder );
-        machine.process( PullAll.INSTANCE, recorder );
+        machine.process( new RunMessage( "UNWIND [1, 0] AS x RETURN 1 / x", EMPTY_MAP ), recorder );
+        machine.process( PullAllMessage.INSTANCE, recorder );
+        machine.process( AckFailureMessage.INSTANCE, recorder );
+        machine.process( new RunMessage( "RETURN 2", EMPTY_MAP ), recorder );
+        machine.process( PullAllMessage.INSTANCE, recorder );
 
         // Then
         assertThat( recorder.nextResponse(), succeeded() );

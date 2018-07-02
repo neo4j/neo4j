@@ -34,9 +34,9 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
-import org.neo4j.bolt.v1.messaging.message.Init;
-import org.neo4j.bolt.v1.messaging.message.PullAll;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
+import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
@@ -163,9 +163,9 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
         assertAuthAndChangePassword( "neo4j", "abc123", "123" );
 
         client.send( util.chunk(
-                new Run( "CALL dbms.security.createUser( '" + username + "', '" + createdUserPassword + "', false ) " +
+                new RunMessage( "CALL dbms.security.createUser( '" + username + "', '" + createdUserPassword + "', false ) " +
                          "CALL dbms.security.addRoleToUser( 'reader', '" + username + "' ) RETURN 0" ),
-                PullAll.INSTANCE ) );
+                PullAllMessage.INSTANCE ) );
 
         assertThat( client, util.eventuallyReceives( msgSuccess(), msgRecord( eqRecord( equalTo( longValue( 0L ) ) ) ) ) );
     }
@@ -198,7 +198,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
     {
         assertAuth( username, password );
         String query = format( "CALL dbms.security.changePassword('%s')", newPassword );
-        client.send( util.chunk( new Run( query ), PullAll.INSTANCE ) );
+        client.send( util.chunk( new RunMessage( query ), PullAllMessage.INSTANCE ) );
         assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
@@ -214,7 +214,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
 
     protected void assertRoles( String... roles ) throws Exception
     {
-        client.send( util.chunk( new Run( "CALL dbms.showCurrentUser" ), PullAll.INSTANCE ) );
+        client.send( util.chunk( new RunMessage( "CALL dbms.showCurrentUser" ), PullAllMessage.INSTANCE ) );
 
         // Then
         assertThat( client, util.eventuallyReceives(
@@ -230,7 +230,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
         client.connect( address )
                 .send( util.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( util.chunk(
-                        new Init( "TestClient/1.1", authToken ) ) );
+                        new InitMessage( "TestClient/1.1", authToken ) ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
@@ -248,7 +248,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
                 client.connect( address )
                         .send( util.acceptedVersions( 1, 0, 0, 0 ) )
                         .send( util.chunk(
-                                new Init( "TestClient/1.1", authToken ) ) );
+                                new InitMessage( "TestClient/1.1", authToken ) ) );
 
                 assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
                 assertThat( client, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
@@ -273,8 +273,8 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
     protected void assertReadSucceeds() throws Exception
     {
         // When
-        client.send( util.chunk( new Run( "MATCH (n) RETURN count(n)" ),
-                PullAll.INSTANCE ) );
+        client.send( util.chunk( new RunMessage( "MATCH (n) RETURN count(n)" ),
+                PullAllMessage.INSTANCE ) );
 
         // Then
         assertThat( client, util.eventuallyReceives(
@@ -287,8 +287,8 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
     {
         // When
         client.send( util.chunk(
-                new Run( "MATCH (n) RETURN n" ),
-                PullAll.INSTANCE ) );
+                new RunMessage( "MATCH (n) RETURN n" ),
+                PullAllMessage.INSTANCE ) );
 
         String roleString = StringUtils.isEmpty( roles ) ? "no roles" : "roles [" + roles + "]";
 
@@ -302,8 +302,8 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
     {
         // When
         client.send( util.chunk(
-                new Run( "CREATE ()" ),
-                PullAll.INSTANCE ) );
+                new RunMessage( "CREATE ()" ),
+                PullAllMessage.INSTANCE ) );
 
         // Then
         assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
@@ -313,8 +313,8 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
     {
         // When
         client.send( util.chunk(
-                new Run( "CREATE ()" ),
-                PullAll.INSTANCE ) );
+                new RunMessage( "CREATE ()" ),
+                PullAllMessage.INSTANCE ) );
 
         String roleString = StringUtils.isEmpty( roles ) ? "no roles" : "roles [" + roles + "]";
 
@@ -327,8 +327,8 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
     protected void assertBeginTransactionSucceeds() throws Exception
     {
         // When
-        client.send( util.chunk( new Run( "BEGIN" ),
-                PullAll.INSTANCE ) );
+        client.send( util.chunk( new RunMessage( "BEGIN" ),
+                PullAllMessage.INSTANCE ) );
 
         // Then
         assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
@@ -338,8 +338,8 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
     {
         // When
         client.send( util.chunk(
-                new Run( "COMMIT" ),
-                PullAll.INSTANCE ) );
+                new RunMessage( "COMMIT" ),
+                PullAllMessage.INSTANCE ) );
 
         // Then
         assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
@@ -349,8 +349,8 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
     {
         // When
         client.send( util.chunk(
-                new Run( query ),
-                PullAll.INSTANCE ) );
+                new RunMessage( query ),
+                PullAllMessage.INSTANCE ) );
 
         // Then
         assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );

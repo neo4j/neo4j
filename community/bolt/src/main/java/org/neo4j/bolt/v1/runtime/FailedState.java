@@ -23,12 +23,12 @@ import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.v1.messaging.message.AckFailure;
-import org.neo4j.bolt.v1.messaging.message.DiscardAll;
-import org.neo4j.bolt.v1.messaging.message.Interrupt;
-import org.neo4j.bolt.v1.messaging.message.PullAll;
-import org.neo4j.bolt.v1.messaging.message.Reset;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
+import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
+import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
+import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
+import org.neo4j.bolt.v1.messaging.request.ResetMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 
 import static org.neo4j.util.Preconditions.checkState;
 
@@ -53,16 +53,16 @@ public class FailedState implements BoltStateMachineState
             context.connectionState().markIgnored();
             return this;
         }
-        if ( message instanceof AckFailure )
+        if ( message instanceof AckFailureMessage )
         {
             context.connectionState().resetPendingFailedAndIgnored();
             return readyState;
         }
-        if ( message instanceof Reset )
+        if ( message instanceof ResetMessage )
         {
             return processResetMessage( context );
         }
-        if ( message instanceof Interrupt )
+        if ( message instanceof InterruptSignal )
         {
             return interruptedState;
         }
@@ -104,8 +104,8 @@ public class FailedState implements BoltStateMachineState
 
     private static boolean shouldIgnore( RequestMessage message )
     {
-        return message instanceof Run ||
-               message instanceof PullAll ||
-               message instanceof DiscardAll;
+        return message instanceof RunMessage ||
+               message instanceof PullAllMessage ||
+               message instanceof DiscardAllMessage;
     }
 }

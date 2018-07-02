@@ -39,9 +39,9 @@ import java.util.function.Consumer;
 
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
-import org.neo4j.bolt.v1.messaging.message.Init;
-import org.neo4j.bolt.v1.messaging.message.PullAll;
-import org.neo4j.bolt.v1.messaging.message.Run;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
+import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
@@ -140,7 +140,7 @@ public class BoltThrottleMaxDurationIT
         client.connect( address )
                 .send( util.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( util.chunk(
-                        new Init( "TestClient/1.1", emptyMap() ) ) );
+                        new InitMessage( "TestClient/1.1", emptyMap() ) ) );
 
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, util.eventuallyReceives( msgSuccess() ) );
@@ -150,8 +150,8 @@ public class BoltThrottleMaxDurationIT
             for ( int i = 0; i < numberOfRunDiscardPairs; i++ )
             {
                 client.send( util.chunk(
-                        new Run( "RETURN $data as data", ValueUtils.asMapValue( singletonMap( "data", largeString ) ) ),
-                        PullAll.INSTANCE
+                        new RunMessage( "RETURN $data as data", ValueUtils.asMapValue( singletonMap( "data", largeString ) ) ),
+                        PullAllMessage.INSTANCE
                 ) );
             }
 

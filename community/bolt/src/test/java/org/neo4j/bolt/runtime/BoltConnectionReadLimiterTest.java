@@ -26,7 +26,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
-import org.neo4j.bolt.v1.messaging.message.Init;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.runtime.Job;
 import org.neo4j.logging.Log;
 
@@ -49,7 +49,7 @@ import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 
 public class BoltConnectionReadLimiterTest
 {
-    private static final Job job = machine -> machine.process( new Init( "INIT", emptyMap() ), nullResponseHandler() );
+    private static final Job job = machine -> machine.process( new InitMessage( "INIT", emptyMap() ), nullResponseHandler() );
     private BoltConnection connection;
     private EmbeddedChannel channel;
     private Log log;

@@ -38,13 +38,13 @@ import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageReader;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageRecorder;
-import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter;
+import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriterV1;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
-import org.neo4j.bolt.v1.messaging.message.FailureMessage;
-import org.neo4j.bolt.v1.messaging.message.IgnoredMessage;
-import org.neo4j.bolt.v1.messaging.message.RecordMessage;
-import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
-import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
+import org.neo4j.bolt.v1.messaging.response.FailureMessage;
+import org.neo4j.bolt.v1.messaging.response.IgnoredMessage;
+import org.neo4j.bolt.v1.messaging.response.RecordMessage;
+import org.neo4j.bolt.messaging.ResponseMessage;
+import org.neo4j.bolt.v1.messaging.response.SuccessMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.transport.integration.TestNotification;
@@ -309,12 +309,12 @@ public class MessageMatchers
     {
         RecordingByteChannel rawData = new RecordingByteChannel();
         BufferedChannelOutput output = new BufferedChannelOutput( rawData );
-        BoltResponseMessageWriter writer = new BoltResponseMessageWriter( neo4jPack::newPacker, output,
+        BoltResponseMessageWriterV1 writer = new BoltResponseMessageWriterV1( neo4jPack::newPacker, output,
                 NullLogService.getInstance(), NullBoltMessageLogger.getInstance() );
 
         for ( ResponseMessage message : messages )
         {
-            message.dispatch( writer );
+            writer.write( message );
         }
         writer.flush();
 

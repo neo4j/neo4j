@@ -30,16 +30,16 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.neo4j.bolt.messaging.ResponseMessage;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
-import org.neo4j.bolt.v1.messaging.message.FailureMessage;
-import org.neo4j.bolt.v1.messaging.message.Init;
-import org.neo4j.bolt.v1.messaging.message.PullAll;
-import org.neo4j.bolt.v1.messaging.message.RecordMessage;
-import org.neo4j.bolt.v1.messaging.message.Reset;
-import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
-import org.neo4j.bolt.v1.messaging.message.Run;
-import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
+import org.neo4j.bolt.v1.messaging.request.InitMessage;
+import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
+import org.neo4j.bolt.v1.messaging.request.ResetMessage;
+import org.neo4j.bolt.v1.messaging.request.RunMessage;
+import org.neo4j.bolt.v1.messaging.response.FailureMessage;
+import org.neo4j.bolt.v1.messaging.response.RecordMessage;
+import org.neo4j.bolt.v1.messaging.response.SuccessMessage;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
@@ -151,7 +151,7 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
         }
         try
         {
-            subject.client.send( util.chunk( new Run( call, ValueUtils.asMapValue( params ) ), PullAll.INSTANCE ) );
+            subject.client.send( util.chunk( new RunMessage( call, ValueUtils.asMapValue( params ) ), PullAllMessage.INSTANCE ) );
             resultConsumer.accept( collectResults( subject.client ) );
             return "";
         }
@@ -177,7 +177,7 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
         }
         subject.client.connect( server.lookupDefaultConnector() )
                 .send( util.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( util.chunk( new Init( "TestClient/1.1",
+                .send( util.chunk( new InitMessage( "TestClient/1.1",
                         map( REALM_KEY, NATIVE_REALM, PRINCIPAL, username, CREDENTIALS, password,
                                 SCHEME_KEY, BASIC_SCHEME ) ) ) );
         assertThat( subject.client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
@@ -272,7 +272,7 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
             FailureMessage failMessage = (FailureMessage) message;
             // drain ignoredMessage, ack failure, get successMessage
             util.receiveOneResponseMessage( client );
-            client.send( util.chunk( Reset.INSTANCE ) );
+            client.send( util.chunk( ResetMessage.INSTANCE ) );
             util.receiveOneResponseMessage( client );
             throw new AuthenticationException( failMessage.status(), failMessage.message() );
         }
@@ -297,7 +297,7 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
         {
             FailureMessage failMessage = (FailureMessage) message;
             // ack failure, get successMessage
-            client.send( util.chunk( Reset.INSTANCE ) );
+            client.send( util.chunk( ResetMessage.INSTANCE ) );
             util.receiveOneResponseMessage( client );
             throw new AuthenticationException( failMessage.status(), failMessage.message() );
         }

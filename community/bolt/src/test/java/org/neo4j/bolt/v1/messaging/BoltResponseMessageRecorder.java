@@ -19,48 +19,25 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.bolt.v1.messaging.message.FailureMessage;
-import org.neo4j.bolt.v1.messaging.message.IgnoredMessage;
-import org.neo4j.bolt.v1.messaging.message.RecordMessage;
-import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
-import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
-import org.neo4j.cypher.result.QueryResult;
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.values.virtual.MapValue;
+import org.neo4j.bolt.messaging.ResponseMessage;
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 
-public class BoltResponseMessageRecorder implements BoltResponseMessageHandler
+public class BoltResponseMessageRecorder implements BoltResponseMessageWriter
 {
     private final List<ResponseMessage> messages = new ArrayList<>();
-
-    @Override
-    public void onSuccess( MapValue metadata )
-    {
-        messages.add( new SuccessMessage( metadata ) );
-    }
-
-    @Override
-    public void onRecord( QueryResult.Record item )
-    {
-        messages.add( new RecordMessage( item ) );
-    }
-
-    @Override
-    public void onIgnored()
-    {
-        messages.add( new IgnoredMessage() );
-    }
-
-    @Override
-    public void onFailure( Status status, String errorMessage )
-    {
-        messages.add( new FailureMessage( status, errorMessage ) );
-    }
 
     public List<ResponseMessage> asList()
     {
         return messages;
+    }
+
+    @Override
+    public void write( ResponseMessage message ) throws IOException
+    {
+        messages.add( message );
     }
 }
