@@ -247,7 +247,6 @@ public class CoreClusterMember implements ClusterMember<CoreGraphDatabase>
         return format( "CoreClusterMember{serverId=%d}", serverId );
     }
 
-    @Override
     public int serverId()
     {
         return serverId;

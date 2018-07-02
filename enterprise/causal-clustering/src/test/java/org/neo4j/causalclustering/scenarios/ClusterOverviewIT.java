@@ -36,8 +36,6 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -51,7 +49,6 @@ import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
-import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.causalclustering.discovery.RoleInfo;
 import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.collection.RawIterator;
@@ -113,8 +110,11 @@ public class ClusterOverviewIT
                 containsMemberAddresses( cluster.coreMembers() ),
                 containsRole( LEADER, 1 ), containsRole( FOLLOWER, coreMembers - 1 ), doesNotContainRole( READ_REPLICA ) );
 
-        // then
-        assertAllEventualOverviews( cluster, expected );
+        for ( int coreServerId = 0; coreServerId < coreMembers; coreServerId++ )
+        {
+            // then
+            assertEventualOverview( cluster, expected, coreServerId );
+        }
     }
 
     @Test
@@ -133,8 +133,11 @@ public class ClusterOverviewIT
                 containsAllMemberAddresses( cluster.coreMembers(), cluster.readReplicas() ),
                 containsRole( LEADER, 1 ), containsRole( FOLLOWER, 2 ), containsRole( READ_REPLICA, replicaCount ) );
 
-        // then
-        assertAllEventualOverviews( cluster, expected );
+        for ( int coreServerId = 0; coreServerId < coreMembers; coreServerId++ )
+        {
+            // then
+            assertEventualOverview( cluster, expected, coreServerId );
+        }
     }
 
     @Test
@@ -155,8 +158,11 @@ public class ClusterOverviewIT
                 containsAllMemberAddresses( cluster.coreMembers(), cluster.readReplicas() ),
                 containsRole( LEADER, 1 ), containsRole( FOLLOWER, coreMembers - 1 ), containsRole( READ_REPLICA, readReplicas ) );
 
-        // then
-        assertAllEventualOverviews( cluster, expected );
+        for ( int coreServerId = 0; coreServerId < coreMembers; coreServerId++ )
+        {
+            // then
+            assertEventualOverview( cluster, expected, coreServerId );
+        }
     }
 
     @Test
@@ -178,8 +184,11 @@ public class ClusterOverviewIT
                 containsMemberAddresses( cluster.coreMembers() ),
                 containsRole( LEADER, 1 ), containsRole( FOLLOWER, finalCoreMembers - 1 ) );
 
-        // then
-        assertAllEventualOverviews( cluster, expected );
+        for ( int coreServerId = 0; coreServerId < finalCoreMembers; coreServerId++ )
+        {
+            // then
+            assertEventualOverview( cluster, expected, coreServerId );
+        }
     }
 
     @Test
@@ -203,8 +212,11 @@ public class ClusterOverviewIT
                 containsRole( FOLLOWER, coreMembers - 1 ),
                 containsRole( READ_REPLICA, initialReadReplicas + 2 ) );
 
-        // then
-        assertAllEventualOverviews( cluster, expected );
+        for ( int coreServerId = 0; coreServerId < coreMembers; coreServerId++ )
+        {
+            // then
+            assertEventualOverview( cluster, expected, coreServerId );
+        }
     }
 
     @Test
@@ -218,14 +230,20 @@ public class ClusterOverviewIT
 
         Cluster cluster = clusterRule.startCluster();
 
-        assertAllEventualOverviews( cluster, containsRole( READ_REPLICA, initialReadReplicas ) );
+        for ( int coreServerId = 0; coreServerId < coreMembers; coreServerId++ )
+        {
+            assertEventualOverview( cluster, containsRole( READ_REPLICA, initialReadReplicas ), coreServerId );
+        }
 
         // when
         cluster.removeReadReplicaWithMemberId( 0 );
         cluster.removeReadReplicaWithMemberId( 1 );
 
-        // then
-        assertAllEventualOverviews( cluster, containsRole( READ_REPLICA, initialReadReplicas - 2 ) );
+        for ( int coreServerId = 0; coreServerId < coreMembers; coreServerId++ )
+        {
+            // then
+            assertEventualOverview( cluster, containsRole( READ_REPLICA, initialReadReplicas - 2 ), coreServerId );
+        }
     }
 
     @Test
@@ -238,15 +256,22 @@ public class ClusterOverviewIT
 
         Cluster cluster = clusterRule.startCluster();
 
-        assertAllEventualOverviews( cluster, allOf( containsRole( LEADER, 1 ), containsRole( FOLLOWER, coreMembers - 1 ) ) );
+        for ( int coreServerId = 0; coreServerId < coreMembers; coreServerId++ )
+        {
+            assertEventualOverview( cluster, allOf( containsRole( LEADER, 1 ), containsRole( FOLLOWER, coreMembers - 1 ) ),
+                    coreServerId );
+        }
 
         // when
         cluster.removeCoreMemberWithServerId( 0 );
         cluster.removeCoreMemberWithServerId( 1 );
 
-        // then
-        assertAllEventualOverviews( cluster, allOf( containsRole( LEADER, 1 ), containsRole( FOLLOWER, coreMembers - 1 - 2 ) ),
-                asSet( 0, 1 ), Collections.emptySet() );
+        for ( int coreServerId = 2; coreServerId < coreMembers; coreServerId++ )
+        {
+            // then
+            assertEventualOverview( cluster, allOf( containsRole( LEADER, 1 ), containsRole( FOLLOWER, coreMembers - 1 - 2 ) ),
+                    coreServerId );
+        }
     }
 
     @Test
@@ -260,7 +285,7 @@ public class ClusterOverviewIT
         CoreClusterMember leader = cluster.getMemberWithRole( Role.LEADER );
         followers.forEach( CoreClusterMember::shutdown );
 
-        assertEventualOverview( containsRole( LEADER, 0 ), leader, "core" );
+        assertEventualOverview( cluster, containsRole( LEADER, 0 ), leader.serverId() );
     }
 
     @Test
@@ -278,49 +303,20 @@ public class ClusterOverviewIT
         CoreClusterMember follower = cluster.getMemberWithRole( Role.FOLLOWER );
         follower.raft().triggerElection( Clock.systemUTC() );
 
-        assertEventualOverview( allOf(
+        assertEventualOverview( cluster, allOf(
                 containsRole( LEADER, 1 ),
                 containsRole( FOLLOWER, originalCoreMembers - 1 ),
-                not( equalTo( preElectionOverview ) ) ), leader, "core" );
+                not( equalTo( preElectionOverview ) ) ), leader.serverId() );
     }
 
-    private void assertAllEventualOverviews( Cluster cluster, Matcher<List<MemberInfo>> expected ) throws KernelException, InterruptedException
-    {
-        assertAllEventualOverviews( cluster, expected, Collections.emptySet(), Collections.emptySet()  );
-    }
-
-    private void assertAllEventualOverviews( Cluster cluster, Matcher<List<MemberInfo>> expected, Set<Integer> excludedCores, Set<Integer> excludedRRs )
-            throws KernelException, InterruptedException
-    {
-        for( CoreClusterMember core : cluster.coreMembers() )
-        {
-            if( !excludedCores.contains( core.serverId() ) )
-            {
-                assertEventualOverview( expected, core, "core" );
-            }
-
-        }
-
-        for( ReadReplica rr : cluster.readReplicas() )
-        {
-            if( !excludedRRs.contains( rr.serverId() ) )
-            {
-                assertEventualOverview( expected, rr, "rr" );
-            }
-        }
-    }
-
-    private void assertEventualOverview( Matcher<List<MemberInfo>> expected, ClusterMember<? extends GraphDatabaseFacade> member, String role )
+    private void assertEventualOverview( Cluster cluster, Matcher<List<MemberInfo>> expected, int coreServerId )
             throws KernelException, InterruptedException
     {
         Function<List<MemberInfo>, String> printableMemberInfos =
                 memberInfos -> memberInfos.stream().map( MemberInfo::toString ).collect( Collectors.joining( ", " ) );
-
-        String message = String.format( "should have overview from %s %s, but view was ", role, member.serverId() );
-        assertEventually( memberInfos -> message + printableMemberInfos.apply( memberInfos ),
-                () -> clusterOverview( member.database() ), expected, 90, SECONDS );
+        assertEventually( memberInfos -> "should have overview from core " + coreServerId + " but view was " + printableMemberInfos.apply( memberInfos ),
+                () -> clusterOverview( cluster.getCoreMemberById( coreServerId ).database() ), expected, 90, SECONDS );
     }
-
 
     @SafeVarargs
     private final Matcher<Iterable<? extends MemberInfo>> containsAllMemberAddresses(
