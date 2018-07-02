@@ -61,6 +61,7 @@ class ProcedureCallRuntimeResult(context: QueryContext,
   override val fieldNames: Array[String] = indexResultNameMappings.map(_._2).toArray
 
   private final val executionResults: Iterator[Array[AnyRef]] = executeCall
+  private var resultRequested = false
 
   // The signature mode is taking care of eagerization
   protected def executeCall: Iterator[Array[AnyRef]] = {
@@ -74,7 +75,8 @@ class ProcedureCallRuntimeResult(context: QueryContext,
       iterator
   }
 
-  override def asIterator(): ResourceIterator[util.Map[String, AnyRef]] =
+  override def asIterator(): ResourceIterator[util.Map[String, AnyRef]] = {
+    resultRequested = true
     new ResourceIterator[util.Map[String, AnyRef]]() {
       override def next(): util.Map[String, AnyRef] =
         resultAsMap(executionResults.next())
@@ -89,6 +91,7 @@ class ProcedureCallRuntimeResult(context: QueryContext,
 
       override def close(): Unit = self.close()
     }
+  }
 
   private def transform[T](value: AnyRef, f: T => AnyValue): AnyValue = {
     if (value == null) NO_VALUE
@@ -96,6 +99,7 @@ class ProcedureCallRuntimeResult(context: QueryContext,
   }
 
   override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {
+    resultRequested = true
     executionResults.foreach { res =>
       val fieldArray = new Array[AnyValue](indexResultNameMappings.size)
       for (i <- indexResultNameMappings.indices) {
@@ -130,8 +134,6 @@ class ProcedureCallRuntimeResult(context: QueryContext,
     close()
   }
 
-  // TODO Look into having the kernel track updates, rather than cypher middle-layers, only sensible way I can think
-  //      of to get accurate stats for procedure code
   override def queryStatistics(): QueryStatistics = context.getOptStatistics.getOrElse(QueryStatistics())
 
   private def resultAsMap(rowData: Array[AnyRef]): util.Map[String, AnyRef] = {
@@ -142,7 +144,7 @@ class ProcedureCallRuntimeResult(context: QueryContext,
 
   override def isIterable: Boolean = true
 
-  override def isExhausted: Boolean = !executionResults.hasNext
+  override def isExhausted: Boolean = resultRequested && !executionResults.hasNext
 
   override def close(): Unit = {}
 

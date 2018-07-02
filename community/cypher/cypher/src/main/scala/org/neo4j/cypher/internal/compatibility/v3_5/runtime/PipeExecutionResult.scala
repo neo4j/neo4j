@@ -37,10 +37,13 @@ class PipeExecutionResult(val result: IteratorBasedResult,
   self =>
 
   private val query = state.query
+  private var resultRequested = false
+
   val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue)
   def isIterable: Boolean = true
 
-  def asIterator: ResourceIterator[java.util.Map[String, AnyRef]] =
+  def asIterator: ResourceIterator[java.util.Map[String, AnyRef]] = {
+    resultRequested = true
     new WrappingResourceIterator[util.Map[String, AnyRef]] {
       private val inner = result.mapIterator
       def hasNext: Boolean = inner.hasNext
@@ -51,6 +54,7 @@ class PipeExecutionResult(val result: IteratorBasedResult,
           javaRow.put(kv._1, query.asObject(kv._2))
         javaRow
       }
+    }
   }
 
   override def queryStatistics(): QueryStatistics = state.getStatistics
@@ -63,11 +67,13 @@ class PipeExecutionResult(val result: IteratorBasedResult,
   }
 
   override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {
+    resultRequested = true
     val maybeRecordIterator = result.recordIterator
     if (maybeRecordIterator.isDefined)
       javaValues.feedQueryResultRecordIteratorToVisitable(maybeRecordIterator.get).accept(visitor)
     else
       javaValues.feedIteratorToVisitable(result.mapIterator.map(r => fieldNames.map(r))).accept(visitor)
   }
-  override def isExhausted: Boolean = !result.mapIterator.hasNext
+
+  override def isExhausted: Boolean = resultRequested && !result.mapIterator.hasNext
 }

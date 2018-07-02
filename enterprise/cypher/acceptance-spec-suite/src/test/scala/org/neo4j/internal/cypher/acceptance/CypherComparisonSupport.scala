@@ -434,7 +434,7 @@ object CypherComparisonSupport {
 
     implicit def plannerToPlanners(planner: Planner): Planners = Planners(planner)
 
-    object Cost extends Planner(Set("COST", "IDP"), "planner=cost")
+    object Cost extends Planner(Set("COST", "IDP", "PROCEDURE"), "planner=cost")
 
     object Rule extends Planner(Set("RULE"), "planner=rule")
 

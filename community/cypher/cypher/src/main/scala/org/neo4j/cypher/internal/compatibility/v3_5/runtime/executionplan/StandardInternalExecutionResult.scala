@@ -83,7 +83,7 @@ class StandardInternalExecutionResult(context: QueryContext,
   /**
     * ...and if we do not return any rows, we close all resources.
     */
-  if (noRows || queryType == WRITE || queryType == SCHEMA_WRITE) {
+  if (noRows || queryType == WRITE || fieldNames().isEmpty) {
     close(Success)
   }
 

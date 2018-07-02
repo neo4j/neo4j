@@ -34,7 +34,7 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes.ProcedureOrSchema
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V3_1, v3_5}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V3_1, V3_4, v3_5}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.io.fs.FileUtils
@@ -726,10 +726,10 @@ order by a.COL1""".format(a, b))
 
     val testConfiguration =
       TestConfiguration(
-        Versions(V3_1, v3_5, Versions.Default),
-        Planners.Default,
+        Versions(V3_1, V3_4, v3_5, Versions.Default),
+        Planners(Planners.Cost, Planners.Default),
         Runtimes(ProcedureOrSchema, Runtimes.Default)
-      ) + Configs.Rule2_3 + Configs.Cost3_4
+      ) + Configs.Rule2_3
 
     // WHEN
     executeWith(testConfiguration, s"""CREATE INDEX ON :$labelName(${propertyKeys.reduce(_ ++ "," ++ _)})""")

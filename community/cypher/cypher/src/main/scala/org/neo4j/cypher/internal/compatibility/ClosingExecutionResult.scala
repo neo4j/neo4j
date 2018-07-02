@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility
 
 import java.io.PrintWriter
 import java.util
+import java.util.NoSuchElementException
 
 import org.neo4j.cypher.exceptionHandler.RunSafely
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
@@ -69,14 +70,20 @@ class ClosingExecutionResult(val query: ExecutingQuery, val inner: InternalExecu
 
       new graphdb.ResourceIterator[java.util.Map[String, AnyRef]] {
         def next(): util.Map[String, AnyRef] = safely {
-          val result = innerIterator.next
-          closeIfEmpty(innerIterator)
-          result
+          if (inner.isClosed) throw new NoSuchElementException
+          else {
+            val result = innerIterator.next
+            closeIfEmpty(innerIterator)
+            result
+          }
         }
 
         def hasNext: Boolean = safely {
-          closeIfEmpty(innerIterator)
-          innerIterator.hasNext
+          if (inner.isClosed) false
+          else {
+            closeIfEmpty(innerIterator)
+            innerIterator.hasNext
+          }
         }
 
         def close(): Unit = self.close()
