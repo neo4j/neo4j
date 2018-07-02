@@ -175,3 +175,4 @@ Feature "DurationBetweenAcceptance": Scenario "Should handle durations at daylig
 Feature "DurationBetweenAcceptance": Scenario "Should handle large durations"
 Feature "DurationBetweenAcceptance": Scenario "Should handle when seconds and subseconds have different signs"
 Feature "DurationBetweenAcceptance": Scenario "Should compute durations with no difference"
+Feature "DurationBetweenAcceptance": Scenario "Should split between boundaries correctly"
