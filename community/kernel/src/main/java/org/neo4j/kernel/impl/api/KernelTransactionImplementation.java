@@ -757,6 +757,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 try
                 {
+                    // When rolling back we may have allocated some ids already, ids which are exposed to user e.g. node/relationship ids.
+                    // Rollback may also occur after a failure in the middle of creating commands (for example on deleting a node
+                    // that still has relationships or something like that), where ids of other more internal types have been allocated.
+                    // However these other allocations are harder to track since we don't have the commands so the command extractor
+                    // would have to keep track of allocated ids and have them accessible here just for the event of failure creating all commands.
+                    // Would that added overhead be worth it? What happens if we don't release these ids here in rollback is that
+                    // those ids won't be marked as reusable, which is bad for this session. However a restart will see those ids as
+                    // reusable again so they aren't entirely lost, just for this session.
+                    // So what we currently do is to release the readily available lists of created nodes/relationships.
+
                     txState.accept( new TxStateVisitor.Adapter()
                     {
                         @Override

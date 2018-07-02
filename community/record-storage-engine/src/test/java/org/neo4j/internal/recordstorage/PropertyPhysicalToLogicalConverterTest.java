@@ -46,6 +46,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
 @PageCacheExtension
 class PropertyPhysicalToLogicalConverterTest
@@ -67,8 +68,9 @@ class PropertyPhysicalToLogicalConverterTest
     @BeforeEach
     void before()
     {
-        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs ),
-                pageCache, fs, NullLogProvider.getInstance() );
+        StoreFactory storeFactory =
+                new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache, fs,
+                        NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
         store = neoStores.getPropertyStore();
         converter = new PropertyPhysicalToLogicalConverter( store );

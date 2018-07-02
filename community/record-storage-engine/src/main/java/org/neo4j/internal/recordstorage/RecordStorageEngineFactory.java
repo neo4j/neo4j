@@ -76,6 +76,7 @@ import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
@@ -150,7 +151,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     public TransactionMetaDataStore transactionMetaDataStore( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache )
     {
         RecordFormats recordFormats = selectForStoreOrConfig( Config.defaults(), databaseLayout, fs, pageCache, NullLogProvider.getInstance() );
-        return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs, recordFormats, NullLogProvider.getInstance() )
+        return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache, fs, recordFormats,
+                NullLogProvider.getInstance() )
                 .openNeoStores( META_DATA ).getMetaDataStore();
     }
 

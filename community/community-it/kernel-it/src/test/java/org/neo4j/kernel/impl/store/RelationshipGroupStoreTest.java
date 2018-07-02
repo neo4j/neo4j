@@ -62,6 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
@@ -172,8 +173,8 @@ class RelationshipGroupStoreTest
         {
             customConfig.put( dense_node_threshold.name(), "" + customThreshold );
         }
-        return new StoreFactory( testDirectory.databaseLayout(), Config.defaults( customConfig ), new DefaultIdGeneratorFactory( fs ), pageCache,
-                fs, NullLogProvider.getInstance() );
+        return new StoreFactory( testDirectory.databaseLayout(), Config.defaults( customConfig ), new DefaultIdGeneratorFactory( fs, pageCache, immediate() ),
+                pageCache, fs, NullLogProvider.getInstance() );
     }
 
     @Test

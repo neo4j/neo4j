@@ -35,6 +35,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 @PageCacheExtension
@@ -53,7 +54,7 @@ class TestGrowingFileMemoryMapping
         final int NUMBER_OF_RECORDS = 1000000;
 
         Config config = Config.defaults();
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( testDirectory.getFileSystem() );
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( testDirectory.getFileSystem(), pageCache, immediate() );
         StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), config, idGeneratorFactory, pageCache,
                 testDirectory.getFileSystem(), NullLogProvider.getInstance() );
 

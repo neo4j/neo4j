@@ -56,6 +56,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -75,27 +76,27 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
     @BeforeEach
     private void setUp()
     {
-        File file = dir.createFile( "label-tokens.db" );
-        File idFile = dir.createFile( "label-tokens.db.id" );
-        File namesFile = dir.createFile( "label-tokens.db.names" );
-        File namesIdFile = dir.createFile( "label-tokens.db.names.id" );
+        File file = dir.file( "label-tokens.db" );
+        File idFile = dir.file( "label-tokens.db.id" );
+        File namesFile = dir.file( "label-tokens.db.names" );
+        File namesIdFile = dir.file( "label-tokens.db.names.id" );
 
-        IdGeneratorFactory generatorFactory = new DefaultIdGeneratorFactory( fs );
+        IdGeneratorFactory generatorFactory = new DefaultIdGeneratorFactory( fs, pageCache, immediate() );
         LogProvider logProvider = NullLogProvider.getInstance();
 
         RecordFormats formats = RecordFormatSelector.defaultFormat();
         Config config = Config.defaults();
         nameStore = new DynamicStringStore( namesFile, namesIdFile, config, IdType.LABEL_TOKEN_NAME, generatorFactory, pageCache, logProvider,
                 TokenStore.NAME_STORE_BLOCK_SIZE, formats.dynamic(), formats.storeVersion() );
-        store = createStore( file, idFile, generatorFactory, pageCache, logProvider, nameStore, formats, config );
+        store = instantiateStore( file, idFile, generatorFactory, pageCache, logProvider, nameStore, formats, config );
         nameStore.initialise( true );
         store.initialise( true );
-        nameStore.makeStoreOk();
-        store.makeStoreOk();
+        nameStore.start();
+        store.start();
     }
 
-    protected abstract TokenStore<R> createStore( File file, File idFile, IdGeneratorFactory generatorFactory, PageCache pageCache, LogProvider logProvider,
-            DynamicStringStore nameStore, RecordFormats formats, Config config );
+    protected abstract TokenStore<R> instantiateStore( File file, File idFile, IdGeneratorFactory generatorFactory, PageCache pageCache,
+            LogProvider logProvider, DynamicStringStore nameStore, RecordFormats formats, Config config );
 
     @AfterEach
     private void tearDown() throws IOException

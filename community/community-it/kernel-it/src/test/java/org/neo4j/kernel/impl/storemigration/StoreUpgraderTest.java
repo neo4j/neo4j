@@ -93,6 +93,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 import static org.neo4j.storageengine.migration.StoreMigrationParticipant.NOT_PARTICIPATING;
 
@@ -239,8 +240,8 @@ public class StoreUpgraderTest
         newUpgrader( check, allowMigrateConfig, pageCache ).migrateIfNeeded( databaseLayout );
 
         // Then
-        StoreFactory factory = new StoreFactory( databaseLayout, allowMigrateConfig, new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
-            NullLogProvider.getInstance() );
+        StoreFactory factory = new StoreFactory( databaseLayout, allowMigrateConfig, new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() ),
+                pageCache, fileSystem, NullLogProvider.getInstance() );
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
             assertThat( neoStores.getMetaDataStore().getUpgradeTransaction(),

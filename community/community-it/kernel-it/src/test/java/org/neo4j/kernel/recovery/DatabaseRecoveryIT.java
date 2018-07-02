@@ -133,6 +133,7 @@ import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 
@@ -481,9 +482,9 @@ class DatabaseRecoveryIT
                 PageCache pageCache2 = new ConfiguringPageCacheFactory( fs2, defaults(), PageCacheTracer.NULL,
                         PageCursorTracerSupplier.NULL, NullLog.getInstance(), contextSupplier, jobScheduler )
                         .getOrCreatePageCache();
-                NeoStores store1 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs1 ),
+                NeoStores store1 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs1, pageCache1, immediate() ),
                         pageCache1, fs1, logProvider ).openAllNeoStores();
-                NeoStores store2 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs2 ),
+                NeoStores store2 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs2, pageCache2, immediate() ),
                         pageCache2, fs2, logProvider ).openAllNeoStores()
                 )
         {

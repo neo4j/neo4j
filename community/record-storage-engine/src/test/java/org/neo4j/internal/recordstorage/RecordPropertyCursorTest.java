@@ -46,6 +46,7 @@ import org.neo4j.values.storable.Value;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 
 @EphemeralPageCacheExtension
@@ -66,8 +67,9 @@ class RecordPropertyCursorTest
     @BeforeEach
     void setup()
     {
-        neoStores = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( testDirectory.getFileSystem() ),
-            pageCache, testDirectory.getFileSystem(), NullLogProvider.getInstance() ).openAllNeoStores( true );
+        neoStores = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(),
+                new DefaultIdGeneratorFactory( testDirectory.getFileSystem(), pageCache, immediate() ),
+                pageCache, testDirectory.getFileSystem(), NullLogProvider.getInstance() ).openAllNeoStores( true );
         creator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser() );
         owner = neoStores.getNodeStore().newRecord();
     }

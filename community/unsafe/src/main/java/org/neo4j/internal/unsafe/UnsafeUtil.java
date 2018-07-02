@@ -312,6 +312,19 @@ public final class UnsafeUtil
     }
 
     /**
+     * Atomically compare the current value of the given int field with the expected value, and if they are the
+     * equal, set the field to the updated value and return true. Otherwise return false.
+     * <p>
+     * If this method returns true, then it has the memory visibility semantics of a volatile read followed by a
+     * volatile write.
+     */
+    public static boolean compareAndSwapInt(
+            Object obj, long offset, int expected, int update )
+    {
+        return unsafe.compareAndSwapInt( obj, offset, expected, update );
+    }
+
+    /**
      * Same as compareAndSwapLong, but for object references.
      */
     public static boolean compareAndSwapObject(

@@ -35,7 +35,6 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
@@ -130,8 +129,7 @@ class IndexPopulationJobTest
     @BeforeEach
     void before() throws Exception
     {
-        managementService = new TestDatabaseManagementServiceBuilder().impermanent()
-                .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" ).build();
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
         stateHolder = new DatabaseSchemaState( NullLogProvider.getInstance() );

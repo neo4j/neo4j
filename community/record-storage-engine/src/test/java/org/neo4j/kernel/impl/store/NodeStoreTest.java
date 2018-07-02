@@ -29,24 +29,24 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.LongSupplier;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
-import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
-import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -62,9 +62,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.Exceptions.contains;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.NodeStore.readOwnerFromDynamicLabelsRecord;
@@ -75,7 +79,6 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
 class NodeStoreTest
 {
-
     @RegisterExtension
     static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
     @Inject
@@ -85,7 +88,6 @@ class NodeStoreTest
 
     private NodeStore nodeStore;
     private NeoStores neoStores;
-    private IdGeneratorFactory idGeneratorFactory;
 
     @AfterEach
     void tearDown()
@@ -146,7 +148,7 @@ class NodeStoreTest
     }
 
     @Test
-    void shouldCombineProperFiveByteLabelField() throws Exception
+    void shouldCombineProperFiveByteLabelField()
     {
         // GIVEN
         // -- a store
@@ -155,8 +157,7 @@ class NodeStoreTest
         // -- a record with the msb carrying a negative value
         long nodeId = 0;
         long labels = 0x8000000001L;
-        NodeRecord record =
-                new NodeRecord( nodeId, false, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
+        NodeRecord record = new NodeRecord( nodeId, false, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
         record.setInUse( true );
         record.setLabelField( labels, Collections.emptyList() );
         nodeStore.updateRecord( record );
@@ -198,7 +199,7 @@ class NodeStoreTest
     }
 
     @Test
-    void shouldTellNodeInUse() throws Exception
+    void shouldTellNodeInUse()
     {
         // Given
         NodeStore store = newNodeStore( fs );
@@ -231,8 +232,7 @@ class NodeStoreTest
             if ( nextRelSet.add( nextRelCandidate ) )
             {
                 long nodeId = nodeStore.nextId();
-                NodeRecord record = new NodeRecord(
-                        nodeId, false, nextRelCandidate, 20, true );
+                NodeRecord record = new NodeRecord( nodeId, false, nextRelCandidate, 20, true );
                 nodeStore.updateRecord( record );
                 if ( rng.nextInt( 0, 10 ) < 3 )
                 {
@@ -246,7 +246,7 @@ class NodeStoreTest
         // ...WHEN we now have an interesting set of node records, and we
         // visit each and remove that node from our nextRelSet...
 
-        Visitor<NodeRecord,IOException> scanner = record ->
+        Visitor<NodeRecord, IOException> scanner = record ->
         {
             // ...THEN we should observe that no nextRel is ever removed twice...
             assertTrue( nextRelSet.remove( record.getNextRel() ) );
@@ -263,29 +263,27 @@ class NodeStoreTest
     {
         // GIVEN
         final MutableBoolean fired = new MutableBoolean();
-        FileSystemAbstraction customFs = new DelegatingFileSystemAbstraction( fs )
-        {
-            @Override
-            public StoreChannel write( File fileName ) throws IOException
-            {
-                return new DelegatingStoreChannel( super.write( fileName ) )
-                {
-                    @Override
-                    public void readAll( ByteBuffer dst ) throws IOException
-                    {
-                        fired.setValue( true );
-                        throw new IOException( "Proving a point here" );
-                    }
-                };
-            }
-        };
 
         // WHEN
         Exception exception = assertThrows( Exception.class, () ->
         {
-            try ( PageCache pageCache = pageCacheExtension.getPageCache( customFs ) )
+            try ( PageCache pageCache = pageCacheExtension.getPageCache( fs ) )
             {
-                newNodeStore( customFs );
+                PageCache customPageCache = new DelegatingPageCache( pageCache )
+                {
+                    @Override
+                    public PagedFile map( File file, VersionContextSupplier versionContextSupplier, int pageSize, OpenOption... openOptions ) throws IOException
+                    {
+                        if ( file.getName().endsWith( ".id" ) )
+                        {
+                            fired.setTrue();
+                            throw new IOException( "Proving a point here" );
+                        }
+                        return super.map( file, versionContextSupplier, pageSize, openOptions );
+                    }
+                };
+
+                newNodeStore( fs, customPageCache );
             }
         } );
         assertTrue( contains( exception, IOException.class ) );
@@ -293,7 +291,7 @@ class NodeStoreTest
     }
 
     @Test
-    void shouldFreeSecondaryUnitIdOfDeletedRecord() throws Exception
+    void shouldFreeSecondaryUnitIdOfDeletedRecord()
     {
         // GIVEN
         nodeStore = newNodeStore( fs );
@@ -306,16 +304,16 @@ class NodeStoreTest
 
         // WHEN
         record.setInUse( false );
-        nodeStore.updateRecord( record );
+        IdUpdateListener idUpdateListener = mock( IdUpdateListener.class );
+        nodeStore.updateRecord( record, idUpdateListener );
 
         // THEN
-        IdGenerator idGenerator = idGeneratorFactory.get( IdType.NODE );
-        verify( idGenerator ).freeId( 5L );
-        verify( idGenerator ).freeId( 10L );
+        verify( idUpdateListener ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 5L ) );
+        verify( idUpdateListener ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 10L ) );
     }
 
     @Test
-    void shouldFreeSecondaryUnitIdOfShrunkRecord() throws Exception
+    void shouldFreeSecondaryUnitIdOfShrunkRecord()
     {
         // GIVEN
         nodeStore = newNodeStore( fs );
@@ -328,12 +326,58 @@ class NodeStoreTest
 
         // WHEN
         record.setRequiresSecondaryUnit( false );
-        nodeStore.updateRecord( record );
+        IdUpdateListener idUpdateListener = mock( IdUpdateListener.class );
+        nodeStore.updateRecord( record, idUpdateListener );
 
         // THEN
-        IdGenerator idGenerator = idGeneratorFactory.get( IdType.NODE );
-        verify( idGenerator, never() ).freeId( 5L );
-        verify( idGenerator ).freeId( 10L );
+        verify( idUpdateListener, never() ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 5L ) );
+        verify( idUpdateListener ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 10L ) );
+    }
+
+    @Test
+    void shouldMarkSecondaryUnitAsUsedOnCreatedAsBigRecord()
+    {
+        // given
+        long primaryUnitId = 5L;
+        long secondaryUnitId = 10L;
+        nodeStore = newNodeStore( fs );
+        NodeRecord record = new NodeRecord( primaryUnitId );
+        record.setRequiresSecondaryUnit( true );
+        record.setSecondaryUnitId( secondaryUnitId );
+        record.setInUse( true );
+        record.setCreated();
+
+        // when
+        IdUpdateListener idUpdateListener = mock( IdUpdateListener.class );
+        nodeStore.updateRecord( record, idUpdateListener );
+
+        // then
+        verify( idUpdateListener ).markIdAsUsed( eq( IdType.NODE ), any(), eq( primaryUnitId ) );
+        verify( idUpdateListener ).markIdAsUsed( eq( IdType.NODE ), any(), eq( secondaryUnitId ) );
+    }
+
+    @Test
+    void shouldMarkSecondaryUnitAsUsedOnGrowing()
+    {
+        // given
+        long primaryUnitId = 5L;
+        long secondaryUnitId = 10L;
+        nodeStore = newNodeStore( fs );
+        NodeRecord record = new NodeRecord( primaryUnitId );
+        record.setInUse( true );
+        record.setCreated();
+        nodeStore.updateRecord( record );
+
+        // when
+        nodeStore.getRecord( primaryUnitId, record, NORMAL );
+        record.setRequiresSecondaryUnit( true );
+        record.setSecondaryUnitId( secondaryUnitId );
+        IdUpdateListener idUpdateListener = mock( IdUpdateListener.class );
+        nodeStore.updateRecord( record, idUpdateListener );
+
+        // then
+        verify( idUpdateListener, never() ).markIdAsUsed( eq( IdType.NODE ), any(), eq( primaryUnitId ) );
+        verify( idUpdateListener ).markIdAsUsed( eq( IdType.NODE ), any(), eq( secondaryUnitId ) );
     }
 
     private NodeStore newNodeStore( FileSystemAbstraction fs )
@@ -343,13 +387,13 @@ class NodeStoreTest
 
     private NodeStore newNodeStore( FileSystemAbstraction fs, PageCache pageCache )
     {
-        idGeneratorFactory = spy( new DefaultIdGeneratorFactory( fs )
+        IdGeneratorFactory idGeneratorFactory = spy( new DefaultIdGeneratorFactory( fs, pageCache, immediate() )
         {
             @Override
-            protected IdGenerator instantiate( FileSystemAbstraction fs, File fileName, int grabSize, long maxValue,
-                    boolean aggressiveReuse, IdType idType, LongSupplier highId )
+            protected IdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+                    File fileName, long maxValue, IdType idType, OpenOption[] openOptions )
             {
-                return spy( super.instantiate( fs, fileName, grabSize, maxValue, aggressiveReuse, idType, highId ) );
+                return spy( super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, maxValue, idType, openOptions ) );
             }
         } );
         StoreFactory factory = new StoreFactory( testDirectory.databaseLayout( "new" ), Config.defaults(), idGeneratorFactory, pageCache, fs,

@@ -54,6 +54,7 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
 @EphemeralPageCacheExtension
 @ExtendWith( RandomExtension.class )
@@ -73,8 +74,8 @@ class DeleteDuplicateNodesStepTest
     @BeforeEach
     void before()
     {
-        var storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs ),
-            pageCache, fs, NullLogProvider.getInstance() );
+        var storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs, pageCache, immediate() ),
+                pageCache, fs, NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
     }
 

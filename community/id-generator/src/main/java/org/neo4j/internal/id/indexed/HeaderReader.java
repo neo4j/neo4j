@@ -17,21 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.id.configuration;
+package org.neo4j.internal.id.indexed;
 
-import org.neo4j.internal.id.IdType;
+import java.nio.ByteBuffer;
+
+import org.neo4j.index.internal.gbptree.Header;
 
 /**
- * Edition based configuration provider for possible id types.
- * @see IdType
- * @see IdTypeConfiguration
+ * {@link Header.Reader} capable of reading header of an {@link IndexedIdGenerator}. After read correctly the header data
+ * will exist as fields in the instance.
+ *
+ * @see HeaderWriter
  */
-public interface IdTypeConfigurationProvider
+public class HeaderReader implements Header.Reader
 {
-    /**
-     * Provides configuration object for requested id type.
-     * @param idType id type
-     * @return edition based id type configuration
-     */
-    IdTypeConfiguration getIdTypeConfiguration( IdType idType );
+    long highId;
+    long generation;
+    int idsPerEntry;
+
+    @Override
+    public void read( ByteBuffer headerBytes )
+    {
+        this.highId = headerBytes.getLong();
+        this.generation = headerBytes.getLong();
+        this.idsPerEntry = headerBytes.getInt();
+    }
 }

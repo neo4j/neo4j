@@ -35,7 +35,6 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdCapacityExceededException;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.IdGeneratorImpl;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.NegativeIdException;
 import org.neo4j.internal.id.ReservedIdException;
@@ -67,6 +66,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.id.IdValidator.INTEGER_MINUS_ONE;
 
 @PageCacheExtension
 class CommonAbstractStoreTest
@@ -167,7 +168,7 @@ class CommonAbstractStoreTest
     void throwsWhenRecordWithReservedIdIsUpdated()
     {
         TheStore store = newStore();
-        TheRecord record = newRecord( IdGeneratorImpl.INTEGER_MINUS_ONE );
+        TheRecord record = newRecord( INTEGER_MINUS_ONE );
 
         assertThrows( ReservedIdException.class, () -> store.updateRecord( record ) );
     }
@@ -179,10 +180,10 @@ class CommonAbstractStoreTest
         DatabaseLayout databaseLayout = dir.databaseLayout();
         File nodeStore = databaseLayout.nodeStore();
         File idFile = databaseLayout.idFile( DatabaseFile.NODE_STORE ).orElseThrow( () -> new IllegalStateException( "Node store id file not found." ) );
-        TheStore store = new TheStore( nodeStore, databaseLayout.idNodeStore(), config, idType, new DefaultIdGeneratorFactory( fs ), pageCache,
-                NullLogProvider.getInstance(), recordFormat, DELETE_ON_CLOSE );
+        TheStore store = new TheStore( nodeStore, databaseLayout.idNodeStore(), config, idType, new DefaultIdGeneratorFactory( fs, pageCache, immediate() ),
+                pageCache, NullLogProvider.getInstance(), recordFormat, DELETE_ON_CLOSE );
         store.initialise( true );
-        store.makeStoreOk();
+        store.start();
         assertTrue( fs.fileExists( nodeStore ) );
         assertTrue( fs.fileExists( idFile ) );
 

@@ -35,6 +35,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+
 /**
  * Not thread safe (since DiffRecordStore is not thread safe), intended for
  * single threaded use.
@@ -70,7 +72,7 @@ public class StoreAccess
 
     public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, DatabaseLayout directoryStructure, Config config )
     {
-        this( new StoreFactory( directoryStructure, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
+        this( new StoreFactory( directoryStructure, config, new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() ), pageCache,
                 fileSystem, NullLogProvider.getInstance() ).openAllNeoStores() );
         this.closeable = true;
     }

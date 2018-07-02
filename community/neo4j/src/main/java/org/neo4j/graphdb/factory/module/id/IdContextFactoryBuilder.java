@@ -23,39 +23,39 @@ import java.util.function.Function;
 
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.configuration.CommunityIdTypeConfigurationProvider;
-import org.neo4j.internal.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
 public class IdContextFactoryBuilder
 {
     private FileSystemAbstraction fileSystemAbstraction;
+    private PageCache pageCache;
     private JobScheduler jobScheduler;
     private Function<DatabaseId,IdGeneratorFactory> idGeneratorFactoryProvider;
-    private IdTypeConfigurationProvider idTypeConfigurationProvider;
     private Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper;
 
     private IdContextFactoryBuilder()
     {
     }
 
-    public static IdContextFactoryBuilder of( IdTypeConfigurationProvider configurationProvider, JobScheduler jobScheduler )
+    public static IdContextFactoryBuilder of( JobScheduler jobScheduler )
     {
         IdContextFactoryBuilder builder = new IdContextFactoryBuilder();
-        builder.idTypeConfigurationProvider = configurationProvider;
         builder.jobScheduler = jobScheduler;
         return builder;
     }
 
-    public static IdContextFactoryBuilder of( FileSystemAbstraction fileSystemAbstraction, JobScheduler jobScheduler )
+    public static IdContextFactoryBuilder of( FileSystemAbstraction fileSystemAbstraction, PageCache pageCache, JobScheduler jobScheduler )
     {
         IdContextFactoryBuilder builder = new IdContextFactoryBuilder();
         builder.fileSystemAbstraction = fileSystemAbstraction;
+        builder.pageCache = pageCache;
         builder.jobScheduler = jobScheduler;
         return builder;
     }
@@ -63,6 +63,12 @@ public class IdContextFactoryBuilder
     public IdContextFactoryBuilder withFileSystem( FileSystemAbstraction fileSystem )
     {
         this.fileSystemAbstraction = fileSystem;
+        return this;
+    }
+
+    public IdContextFactoryBuilder withPageCache( PageCache pageCache )
+    {
+        this.pageCache = pageCache;
         return this;
     }
 
@@ -83,16 +89,14 @@ public class IdContextFactoryBuilder
         if ( idGeneratorFactoryProvider == null )
         {
             requireNonNull( fileSystemAbstraction, "File system is required to build id generator factory." );
-            idGeneratorFactoryProvider = databaseId -> new DefaultIdGeneratorFactory( fileSystemAbstraction, idTypeConfigurationProvider );
-        }
-        if ( idTypeConfigurationProvider == null )
-        {
-            idTypeConfigurationProvider = new CommunityIdTypeConfigurationProvider();
+            // Note on the RecoveryCleanupWorkCollector: this is just using the immediate() because we aren't
+            // expecting any cleanup to be performed on main startup (this is after recovery).
+            idGeneratorFactoryProvider = databaseId -> new DefaultIdGeneratorFactory( fileSystemAbstraction, pageCache, immediate() );
         }
         if ( factoryWrapper == null )
         {
             factoryWrapper = identity();
         }
-        return new IdContextFactory( jobScheduler, idGeneratorFactoryProvider, idTypeConfigurationProvider, factoryWrapper );
+        return new IdContextFactory( jobScheduler, idGeneratorFactoryProvider, factoryWrapper );
     }
 }

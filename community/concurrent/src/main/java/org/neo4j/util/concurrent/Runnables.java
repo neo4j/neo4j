@@ -30,12 +30,14 @@ public class Runnables
 
     /**
      * Run all runnables, chaining exceptions, if any, into a single {@link RuntimeException} with provided message as message.
+     * If there's only a single failure and it's a {@link RuntimeException} it will be thrown as-is.
      * @param message passed to resulting {@link RuntimeException} if any runnable throw.
      * @param runnables to run.
      */
     public static void runAll( String message, Runnable... runnables )
     {
         Throwable exceptions = null;
+        int errors = 0;
         for ( Runnable runnable : runnables )
         {
             try
@@ -45,10 +47,15 @@ public class Runnables
             catch ( Throwable t )
             {
                 exceptions = Exceptions.chain( exceptions, t );
+                errors++;
             }
         }
         if ( exceptions != null )
         {
+            if ( errors == 1 && exceptions instanceof RuntimeException )
+            {
+                throw (RuntimeException) exceptions;
+            }
             throw new RuntimeException( message, exceptions );
         }
     }

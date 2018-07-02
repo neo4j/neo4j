@@ -45,6 +45,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
 
 @EphemeralPageCacheExtension
@@ -63,7 +64,7 @@ class StoreFactoryTest
     @BeforeEach
     void setUp()
     {
-        idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
+        idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() );
     }
 
     private StoreFactory storeFactory( Config config, OpenOption... openOptions )
@@ -71,8 +72,7 @@ class StoreFactoryTest
         LogProvider logProvider = NullLogProvider.getInstance();
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         RecordFormats recordFormats = selectForStoreOrConfig( config, databaseLayout, fileSystem, pageCache, logProvider );
-        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem,
-                recordFormats, logProvider, openOptions );
+        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, recordFormats, logProvider, openOptions );
     }
 
     @AfterEach
@@ -148,8 +148,12 @@ class StoreFactoryTest
         storeFactory.openAllNeoStores( true ).close();
         for ( File f : fileSystem.listFiles( testDirectory.databaseDir() ) )
         {
-            fileSystem.truncate( f, 0 );
+            if ( !f.getName().endsWith( ".id" ) )
+            {
+                fileSystem.truncate( f, 0 );
+            }
         }
+        storeFactory = storeFactory( Config.defaults() );
         storeFactory.openAllNeoStores( true ).close();
     }
 }

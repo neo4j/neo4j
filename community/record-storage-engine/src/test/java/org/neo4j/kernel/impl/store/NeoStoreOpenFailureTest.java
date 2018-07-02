@@ -41,6 +41,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
 @PageCacheExtension
 class NeoStoreOpenFailureTest
@@ -57,7 +58,7 @@ class NeoStoreOpenFailureTest
     {
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         Config config = Config.defaults();
-        IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fileSystem );
+        IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() );
         LogProvider logProvider = NullLogProvider.getInstance();
         RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
         RecordFormatPropertyConfigurator.configureRecordFormat( formats, config );

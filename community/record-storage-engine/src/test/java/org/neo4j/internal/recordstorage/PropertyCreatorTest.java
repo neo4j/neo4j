@@ -50,6 +50,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
 @PageCacheExtension
 class PropertyCreatorTest
@@ -70,7 +71,7 @@ class PropertyCreatorTest
     @BeforeEach
     void startStore()
     {
-        neoStores = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ),
+        neoStores = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() ),
                 pageCache, fileSystem, NullLogProvider.getInstance() ).openNeoStores( true,
                 StoreType.PROPERTY, StoreType.PROPERTY_STRING, StoreType.PROPERTY_ARRAY );
         propertyStore = neoStores.getPropertyStore();

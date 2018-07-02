@@ -23,8 +23,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.EnumMap;
+import java.util.Map;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -40,12 +45,15 @@ import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.util.concurrent.WorkSync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 @EphemeralPageCacheExtension
 class ApplyRecoveredTransactionsTest
@@ -58,12 +66,13 @@ class ApplyRecoveredTransactionsTest
     private EphemeralFileSystemAbstraction fs;
 
     private NeoStores neoStores;
+    private DefaultIdGeneratorFactory idGeneratorFactory;
 
     @BeforeEach
     void before()
     {
-        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs ),
-                pageCache, fs, NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(),
+                new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache, fs, NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
     }
 
@@ -106,10 +115,16 @@ class ApplyRecoveredTransactionsTest
     private void applyExternalTransaction( long transactionId, Command...commands ) throws Exception
     {
         LockService lockService = mock( LockService.class );
-        when( lockService.acquireNodeLock( anyLong(), any(LockService.LockType.class) )).thenReturn( LockService.NO_LOCK );
-        when( lockService.acquireRelationshipLock( anyLong(), any(LockService.LockType.class) )).thenReturn( LockService.NO_LOCK );
-        NeoStoreBatchTransactionApplier applier = new NeoStoreBatchTransactionApplier( neoStores,
-                mock( CacheAccessBackDoor.class ), lockService );
+        when( lockService.acquireNodeLock( anyLong(), any( LockService.LockType.class ) ) ).thenReturn( LockService.NO_LOCK );
+        when( lockService.acquireRelationshipLock( anyLong(), any( LockService.LockType.class ) ) ).thenReturn( LockService.NO_LOCK );
+        Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs = new EnumMap<>( IdType.class );
+        for ( IdType idType : IdType.values() )
+        {
+            idGeneratorWorkSyncs.put( idType, new WorkSync<>( idGeneratorFactory.get( idType ) ) );
+        }
+
+        NeoStoreBatchTransactionApplier applier = new NeoStoreBatchTransactionApplier( INTERNAL, neoStores, mock( CacheAccessBackDoor.class ),
+                lockService, idGeneratorWorkSyncs );
         CommandsToApply tx = new GroupOfCommands( transactionId, commands );
         CommandHandlerContract.apply( applier, txApplier ->
         {

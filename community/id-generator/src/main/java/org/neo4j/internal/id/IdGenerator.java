@@ -21,11 +21,10 @@ package org.neo4j.internal.id;
 
 import java.io.Closeable;
 
+import org.neo4j.io.pagecache.IOLimiter;
+
 public interface IdGenerator extends IdSequence, Closeable
 {
-    @Override
-    IdRange nextIdBatch( int size );
-
     /**
      * @param id the highest in use + 1
      */
@@ -33,21 +32,47 @@ public interface IdGenerator extends IdSequence, Closeable
     long getHighId();
     long getHighestPossibleIdInUse();
     void freeId( long id );
+    void deleteId( long id );
+    void markIdAsUsed( long id );
+    ReuseMarker reuseMarker();
+    CommitMarker commitMarker();
 
-    /**
-     * Closes the id generator, marking it as clean.
-     */
     @Override
     void close();
     long getNumberOfIdsInUse();
     long getDefragCount();
 
+    void checkpoint( IOLimiter ioLimiter );
+
     /**
-     * Closes the id generator as dirty and deletes it right after closed. This operation is safe, in the sense
-     * that the id generator file is closed but not marked as clean. This has the net result that a crash in the
-     * middle will still leave the file marked as dirty so it will be deleted on the next open call.
+     * Does some maintenance. This operation isn't critical for the functionality of an IdGenerator, but may make it perform better.
+     * The work happening inside this method should be work that would otherwise happen now and then inside the other methods anyway,
+     * but letting a maintenance thread calling it may take some burden off of main request threads.
      */
-    void delete();
+    void maintenance();
+
+    /**
+     * Starts the id generator, signaling that the database has entered normal operations mode.
+     * Updates to this id generator may have come in before this call and those operations must be treated
+     * as recovery operations.
+     */
+    void start();
+
+    interface CommitMarker extends AutoCloseable
+    {
+        void markUsed( long id );
+        void markDeleted( long id );
+        @Override
+        void close();
+    }
+
+    interface ReuseMarker extends AutoCloseable
+    {
+        void markFree( long id );
+        void markReserved( long id );
+        @Override
+        void close();
+    }
 
     class Delegate implements IdGenerator
     {
@@ -89,6 +114,30 @@ public interface IdGenerator extends IdSequence, Closeable
         }
 
         @Override
+        public ReuseMarker reuseMarker()
+        {
+            return delegate.reuseMarker();
+        }
+
+        @Override
+        public CommitMarker commitMarker()
+        {
+            return delegate.commitMarker();
+        }
+
+        @Override
+        public void markIdAsUsed( long id )
+        {
+            delegate.markIdAsUsed( id );
+        }
+
+        @Override
+        public void deleteId( long id )
+        {
+            delegate.deleteId( id );
+        }
+
+        @Override
         public void freeId( long id )
         {
             delegate.freeId( id );
@@ -113,9 +162,21 @@ public interface IdGenerator extends IdSequence, Closeable
         }
 
         @Override
-        public void delete()
+        public void checkpoint( IOLimiter ioLimiter )
         {
-            delegate.delete();
+            delegate.checkpoint( ioLimiter );
+        }
+
+        @Override
+        public void maintenance()
+        {
+            delegate.maintenance();
+        }
+
+        @Override
+        public void start()
+        {
+            delegate.start();
         }
     }
 }

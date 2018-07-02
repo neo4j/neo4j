@@ -50,6 +50,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.nio.ByteBuffer.wrap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterables.asCollection;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
@@ -73,11 +74,11 @@ class SchemaStore35Test
     void before()
     {
         Config config = Config.defaults();
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, pageCache, immediate() );
         NullLogProvider logProvider = NullLogProvider.getInstance();
-        store = new SchemaStore35( testDirectory.createFile( "schema35" ), testDirectory.createFile( "schema35.db.id" ), config, IdType.SCHEMA,
+        store = new SchemaStore35( testDirectory.file( "schema35" ), testDirectory.file( "schema35.db.id" ), config, IdType.SCHEMA,
                 idGeneratorFactory, pageCache, logProvider, StandardV3_4.RECORD_FORMATS );
-        store.checkAndLoadStorage( true );
+        store.initialise( true );
     }
 
     @AfterEach

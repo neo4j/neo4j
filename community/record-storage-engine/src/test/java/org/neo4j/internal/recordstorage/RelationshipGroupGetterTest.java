@@ -47,6 +47,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
 @EphemeralPageCacheExtension
 class RelationshipGroupGetterTest
@@ -63,8 +64,8 @@ class RelationshipGroupGetterTest
     {
         // GIVEN a node with relationship group chain 2-->4-->10-->23
         LogProvider logProvider = NullLogProvider.getInstance();
-        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs  ),
-                pageCache, fs, logProvider );
+        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(),
+                new DefaultIdGeneratorFactory( fs, pageCache, immediate()  ), pageCache, fs, logProvider );
         try ( NeoStores stores = storeFactory.openNeoStores( true, StoreType.RELATIONSHIP_GROUP ) )
         {
             RecordStore<RelationshipGroupRecord> store = spy( stores.getRelationshipGroupStore() );

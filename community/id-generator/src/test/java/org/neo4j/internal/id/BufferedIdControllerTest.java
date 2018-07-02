@@ -20,21 +20,23 @@
 package org.neo4j.internal.id;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
-import org.neo4j.internal.id.configuration.CommunityIdTypeConfigurationProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.OnDemandJobScheduler;
-import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
-@ExtendWith( EphemeralFileSystemExtension.class )
+@EphemeralPageCacheExtension
 class BufferedIdControllerTest
 {
     @Inject
     private FileSystemAbstraction fs;
+    @Inject
+    private PageCache pageCache;
 
     @Test
     void shouldStopWhenNotStarted()
@@ -46,8 +48,7 @@ class BufferedIdControllerTest
 
     private BufferedIdController newController()
     {
-        BufferingIdGeneratorFactory idGeneratorFactory =
-                new BufferingIdGeneratorFactory( new DefaultIdGeneratorFactory( fs ), new CommunityIdTypeConfigurationProvider() );
+        BufferingIdGeneratorFactory idGeneratorFactory = new BufferingIdGeneratorFactory( new DefaultIdGeneratorFactory( fs, pageCache, immediate() ) );
         return new BufferedIdController( idGeneratorFactory, new OnDemandJobScheduler() );
     }
 }

@@ -53,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getPropertyKeys;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
@@ -199,7 +200,7 @@ class TestGraphProperties
         managementService.shutdown();
 
         Config config = Config.defaults();
-        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), config, new DefaultIdGeneratorFactory( fs ),
+        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), config, new DefaultIdGeneratorFactory( fs, pageCache, immediate() ),
                 pageCache, fs, NullLogProvider.getInstance() );
         NeoStores neoStores = storeFactory.openAllNeoStores();
         long prop = neoStores.getMetaDataStore().getGraphNextProp();

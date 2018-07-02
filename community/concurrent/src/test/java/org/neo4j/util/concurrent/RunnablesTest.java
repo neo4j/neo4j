@@ -28,6 +28,7 @@ import java.util.List;
 import org.neo4j.internal.helpers.Exceptions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -84,7 +85,7 @@ class RunnablesTest
         Runnable throwingTask2 = runtimeException( expectedException );
 
         List<Runnable> runnables = Arrays.asList( task1, task2, task3, throwingTask1, throwingTask2 );
-        Collections.shuffle(runnables );
+        Collections.shuffle( runnables );
 
         // when
         String failureMessage = "Something wrong, Killroy must be here somewhere.";
@@ -95,6 +96,27 @@ class RunnablesTest
         assertTrue( Exceptions.findCauseOrSuppressed( actual, t -> t == expectedError ).isPresent() );
         assertTrue( Exceptions.findCauseOrSuppressed( actual, t -> t == expectedException ).isPresent() );
         assertEquals( failureMessage, actual.getMessage() );
+    }
+
+    @Test
+    void runAllMustRunAllAndPropagateSingleErrorAsIs()
+    {
+        // given
+        Task task1 = new Task();
+        Task task2 = new Task();
+        Task task3 = new Task();
+        RuntimeException expectedError = new RuntimeException( "Killroy was here" );
+        Runnable throwingTask1 = runtimeException( expectedError );
+
+        List<Runnable> runnables = Arrays.asList( task1, throwingTask1, task2, task3 );
+        Collections.shuffle( runnables );
+
+        // when
+        RuntimeException actual = assertThrows( RuntimeException.class, () -> Runnables.runAll( "something", runnables.toArray( new Runnable[0] ) ) );
+
+        // then
+        assertRun( task1, task2, task3 );
+        assertSame( expectedError, actual );
     }
 
     private Runnable error( Error error )

@@ -76,9 +76,9 @@ public class SchemaStore35 extends AbstractDynamicStore
 
     @VisibleForTesting
     @Override
-    public void checkAndLoadStorage( boolean createIfNotExists )
+    public void initialise( boolean createIfNotExists )
     {
-        super.checkAndLoadStorage( createIfNotExists );
+        super.initialise( createIfNotExists );
     }
 
     public List<DynamicRecord> allocateFrom( SchemaRule rule )

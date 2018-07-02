@@ -20,7 +20,6 @@
 package org.neo4j.test.rule;
 
 import java.io.IOException;
-import java.util.function.Function;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -42,6 +41,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
@@ -59,6 +59,7 @@ public class NeoStoresRule extends ExternalResource
     private JobScheduler jobScheduler;
 
     private final StoreType[] stores;
+    private DefaultIdGeneratorFactory idGeneratorFactory;
 
     public NeoStoresRule( Class<?> testClass, StoreType... stores )
     {
@@ -71,18 +72,23 @@ public class NeoStoresRule extends ExternalResource
         return new Builder();
     }
 
-    private NeoStores open( FileSystemAbstraction fs, PageCache pageCache, RecordFormats format,
-            Function<FileSystemAbstraction,IdGeneratorFactory> idGeneratorFactory, String... config ) throws IOException
+    private NeoStores open( FileSystemAbstraction fs, PageCache pageCache, RecordFormats format, String... config ) throws IOException
     {
         assert neoStores == null : "Already opened";
         TestDirectory testDirectory = TestDirectory.testDirectory( fs );
         testDirectory.prepareDirectory( testClass, null );
         Config configuration = configOf( config );
-        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), configuration, idGeneratorFactory.apply( fs ),
+        idGeneratorFactory = new DefaultIdGeneratorFactory( fs, pageCache, immediate() );
+        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), configuration, idGeneratorFactory,
                 pageCache, fs, format, NullLogProvider.getInstance() );
         return neoStores = stores.length == 0
                 ? storeFactory.openAllNeoStores( true )
                 : storeFactory.openNeoStores( true, stores );
+    }
+
+    public IdGeneratorFactory getIdGeneratorFactory()
+    {
+        return idGeneratorFactory;
     }
 
     private static Config configOf( String... config )
@@ -107,7 +113,6 @@ public class NeoStoresRule extends ExternalResource
         private String[] config;
         private RecordFormats format;
         private PageCache pageCache;
-        private Function<FileSystemAbstraction,IdGeneratorFactory> idGeneratorFactory;
 
         public Builder with( FileSystemAbstraction fs )
         {
@@ -133,12 +138,6 @@ public class NeoStoresRule extends ExternalResource
             return this;
         }
 
-        public Builder with( Function<FileSystemAbstraction,IdGeneratorFactory> idGeneratorFactory )
-        {
-            this.idGeneratorFactory = idGeneratorFactory;
-            return this;
-        }
-
         public NeoStores build() throws IOException
         {
             if ( fs == null )
@@ -159,11 +158,7 @@ public class NeoStoresRule extends ExternalResource
             {
                 format = RecordFormatSelector.selectForConfig( dbConfig, NullLogProvider.getInstance() );
             }
-            if ( idGeneratorFactory == null )
-            {
-                idGeneratorFactory = DefaultIdGeneratorFactory::new;
-            }
-            return open( fs, pageCache, format, idGeneratorFactory, config );
+            return open( fs, pageCache, format, config );
         }
     }
 

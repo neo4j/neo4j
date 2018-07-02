@@ -102,10 +102,10 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
     }
 
     @Override
-    public void updateRecord( NodeRecord record )
+    public void updateRecord( NodeRecord record, IdUpdateListener idUpdateListener )
     {
-        super.updateRecord( record );
-        updateDynamicLabelRecords( record.getDynamicLabelRecords() );
+        super.updateRecord( record, idUpdateListener );
+        updateDynamicLabelRecords( record.getDynamicLabelRecords(), idUpdateListener );
     }
 
     public DynamicArrayStore getDynamicLabelStore()
@@ -113,11 +113,11 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
         return dynamicLabelStore;
     }
 
-    public void updateDynamicLabelRecords( Iterable<DynamicRecord> dynamicLabelRecords )
+    public void updateDynamicLabelRecords( Iterable<DynamicRecord> dynamicLabelRecords, IdUpdateListener idUpdateListener )
     {
         for ( DynamicRecord record : dynamicLabelRecords )
         {
-            dynamicLabelStore.updateRecord( record );
+            dynamicLabelStore.updateRecord( record, idUpdateListener );
         }
     }
 }

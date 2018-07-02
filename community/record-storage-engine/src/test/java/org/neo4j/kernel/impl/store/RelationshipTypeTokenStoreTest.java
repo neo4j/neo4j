@@ -31,7 +31,7 @@ import org.neo4j.logging.LogProvider;
 class RelationshipTypeTokenStoreTest extends TokenStoreTestTemplate<RelationshipTypeTokenRecord>
 {
     @Override
-    protected TokenStore<RelationshipTypeTokenRecord> createStore( File file, File idFile, IdGeneratorFactory generatorFactory, PageCache pageCache,
+    protected TokenStore<RelationshipTypeTokenRecord> instantiateStore( File file, File idFile, IdGeneratorFactory generatorFactory, PageCache pageCache,
             LogProvider logProvider, DynamicStringStore nameStore, RecordFormats formats, Config config )
     {
         return new RelationshipTypeTokenStore( file, idFile, config, generatorFactory, pageCache, logProvider, nameStore, formats );

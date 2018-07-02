@@ -51,7 +51,6 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.IteratorWrapper;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -177,6 +176,7 @@ import static org.neo4j.collection.PrimitiveLongCollections.map;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
@@ -276,7 +276,7 @@ public class BatchInserterImpl implements BatchInserter
             msgLog = logService.getInternalLog( getClass() );
 
             boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
-            this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
+            this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() );
 
             LogProvider internalLogProvider = logService.getInternalLogProvider();
             RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, this.databaseLayout, fileSystem,
@@ -314,7 +314,7 @@ public class BatchInserterImpl implements BatchInserter
             storeIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ) );
             Dependencies deps = new Dependencies();
             Monitors monitors = new Monitors();
-            deps.satisfyDependencies( fileSystem, config, logService, storeIndexStoreView, pageCache, monitors, RecoveryCleanupWorkCollector.immediate() );
+            deps.satisfyDependencies( fileSystem, config, logService, storeIndexStoreView, pageCache, monitors, immediate() );
 
             DatabaseExtensions databaseExtensions = life.add( new DatabaseExtensions(
                 new DatabaseExtensionContext( this.databaseLayout, DatabaseInfo.TOOL, deps ),
@@ -541,7 +541,7 @@ public class BatchInserterImpl implements BatchInserter
         IndexStoreView indexStoreView = new DynamicIndexStoreView( storeIndexStoreView, labelIndex, NO_LOCK_SERVICE,
                 () -> new RecordStorageReader( neoStores ), logProvider );
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout.indexStatisticsStore(),
-                RecoveryCleanupWorkCollector.immediate() );
+                immediate() );
         IndexingService indexingService = IndexingServiceFactory
                 .createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView, new NonTransactionalTokenNameLookup( tokenHolders ),
                         emptyList(), logProvider, userLogProvider, NO_MONITOR, new DatabaseSchemaState( logProvider ), indexStatisticsStore );
@@ -1014,6 +1014,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             NativeLabelScanStore labelIndex = buildLabelIndex();
             repopulateAllIndexes( labelIndex );
+            neoStores.flush( IOLimiter.UNLIMITED );
         }
         catch ( IOException e )
         {
@@ -1042,7 +1043,7 @@ public class BatchInserterImpl implements BatchInserter
     {
         NativeLabelScanStore labelIndex =
                 new NativeLabelScanStore( pageCache, databaseLayout, fileSystem, new FullLabelStream( storeIndexStoreView ), false, monitors,
-                        RecoveryCleanupWorkCollector.immediate() );
+                        immediate() );
         if ( labelsTouched )
         {
             labelIndex.drop();

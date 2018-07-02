@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.configuration.CommunityIdTypeConfigurationProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.DelegatingPageCache;
@@ -76,6 +75,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyVararg;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -367,15 +367,13 @@ public class DatabaseTest
         Config config = Config.defaults();
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
         Throwable openStoresError = new RuntimeException( "Can't set up modules" );
-        doThrow( openStoresError ).when( idGeneratorFactory ).create( any( File.class ), anyLong(), anyBoolean() );
+        doThrow( openStoresError ).when( idGeneratorFactory ).create( any( File.class ), any(), anyLong(), anyBoolean(), anyLong(), anyVararg() );
 
-        CommunityIdTypeConfigurationProvider idTypeConfigurationProvider =
-                new CommunityIdTypeConfigurationProvider();
         AssertableLogProvider logProvider = new AssertableLogProvider();
         SimpleLogService logService = new SimpleLogService( logProvider, logProvider );
         PageCache pageCache = pageCacheRule.getPageCache( fs.get() );
         Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies( idGeneratorFactory, idTypeConfigurationProvider, config, logService );
+        dependencies.satisfyDependencies( idGeneratorFactory, config, logService );
 
         Database database = databaseRule.getDatabase( directory.databaseLayout(), fs.get(),
                 pageCache, dependencies );

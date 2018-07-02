@@ -28,7 +28,6 @@ import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.batchimport.stats.Stat;
 import org.neo4j.internal.batchimport.store.StorePrepareIdSequence;
-import org.neo4j.internal.id.IdGeneratorImpl;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -42,6 +41,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.id.IdValidator.INTEGER_MINUS_ONE;
 
 class UpdateRecordsStepTest
 {
@@ -80,7 +80,7 @@ class UpdateRecordsStepTest
         node1.setInUse( true );
         NodeRecord node2 = new NodeRecord( 2 );
         node2.setInUse( true );
-        NodeRecord nodeWithReservedId = new NodeRecord( IdGeneratorImpl.INTEGER_MINUS_ONE );
+        NodeRecord nodeWithReservedId = new NodeRecord( INTEGER_MINUS_ONE );
         NodeRecord[] batch = {node1, node2, nodeWithReservedId};
 
         step.process( batch, mock( BatchSender.class ) );

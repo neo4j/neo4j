@@ -134,14 +134,14 @@ public abstract class TokenStore<RECORD extends TokenRecord>
     }
 
     @Override
-    public void updateRecord( RECORD record )
+    public void updateRecord( RECORD record, IdUpdateListener idUpdateListener )
     {
-        super.updateRecord( record );
+        super.updateRecord( record, idUpdateListener );
         if ( !record.isLight() )
         {
             for ( DynamicRecord keyRecord : record.getNameRecords() )
             {
-                nameStore.updateRecord( keyRecord );
+                nameStore.updateRecord( keyRecord, idUpdateListener );
             }
         }
     }

@@ -27,7 +27,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.io.File;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -44,9 +43,12 @@ import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
@@ -75,19 +77,19 @@ class PropertyStoreTest
     {
         // given
         PageCache pageCache = pageCacheExtension.getPageCache( fs );
-        Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "true" );
+        Config config = Config.defaults();
 
         DynamicStringStore stringPropertyStore = mock( DynamicStringStore.class );
 
         final PropertyStore store =
-                new PropertyStore( storeFile, idFile, config, new DefaultIdGeneratorFactory( fs ), pageCache,
+                new PropertyStore( storeFile, idFile, config, new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache,
                         NullLogProvider.getInstance(), stringPropertyStore, mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class ),
                         RecordFormatSelector.defaultFormat() );
         store.initialise( true );
 
         try
         {
-            store.makeStoreOk();
+            store.start();
             final long propertyRecordId = store.nextId();
 
             PropertyRecord record = new PropertyRecord( propertyRecordId );
@@ -108,7 +110,7 @@ class PropertyStoreTest
             store.updateRecord( record );
 
             // then verify that our mocked method above, with the assert, was actually called
-            verify( stringPropertyStore ).updateRecord( dynamicRecord );
+            verify( stringPropertyStore ).updateRecord( eq( dynamicRecord ), any() );
         }
         finally
         {

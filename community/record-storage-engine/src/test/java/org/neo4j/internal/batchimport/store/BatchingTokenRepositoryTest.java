@@ -49,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
 @PageCacheExtension
 class BatchingTokenRepositoryTest
@@ -114,9 +115,9 @@ class BatchingTokenRepositoryTest
     {
         // given
 
-        try ( NeoStores stores = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ), pageCache,
-                fileSystem, NullLogProvider.getInstance() )
-                .openNeoStores( true, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME ) )
+        try ( NeoStores stores = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(),
+                new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() ), pageCache, fileSystem, NullLogProvider.getInstance() ).openNeoStores( true,
+                StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME ) )
         {
             TokenStore<PropertyKeyTokenRecord> tokenStore = stores.getPropertyKeyTokenStore();
             int rounds = 3;

@@ -20,16 +20,14 @@
 package org.neo4j.internal.id;
 
 import java.io.File;
+import java.nio.file.OpenOption;
 import java.util.function.LongSupplier;
 
 public interface IdGeneratorFactory
 {
-    IdGenerator open( File filename, IdType idType, LongSupplier highId, long maxId );
+    IdGenerator open( File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions );
 
-    IdGenerator open( File filename, int grabSize, IdType idType, LongSupplier highId, long maxId );
-
-    void create( File filename, long highId, boolean throwIfFileExists );
+    IdGenerator create( File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId, OpenOption... openOptions );
 
     IdGenerator get( IdType idType );
-
 }

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.Collection;
 
 import org.neo4j.configuration.Config;
@@ -34,6 +35,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -55,6 +57,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
 /**
  * Tests for handling many property keys (even after restart of database)
@@ -122,11 +125,11 @@ class ManyPropertyKeysIT
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount )
+    private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount ) throws IOException
     {
 
-        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ),
-                pageCache, fileSystem, NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(),
+                new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() ), pageCache, fileSystem, NullLogProvider.getInstance() );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         PropertyKeyTokenStore store = neoStores.getPropertyKeyTokenStore();
         for ( int i = 0; i < propertyKeyCount; i++ )
@@ -138,6 +141,7 @@ class ManyPropertyKeysIT
             record.setNameId( (int) Iterables.first( nameRecords ).getId() );
             store.updateRecord( record );
         }
+        neoStores.flush( IOLimiter.UNLIMITED );
         neoStores.close();
 
         return database();

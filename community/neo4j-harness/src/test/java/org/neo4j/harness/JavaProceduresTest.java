@@ -25,7 +25,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.stream.Stream;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.harness.internal.InProcessNeo4j;
 import org.neo4j.harness.internal.Neo4j;
 import org.neo4j.harness.internal.Neo4jBuilder;
@@ -187,7 +186,6 @@ class JavaProceduresTest
     {
         // When
         try ( InProcessNeo4j server = createServer( MyProceduresUsingMyCoreAPI.class )
-                .withConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
                 .build() )
         {
             // Then

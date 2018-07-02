@@ -102,6 +102,7 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
 import static java.util.Arrays.asList;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
@@ -436,7 +437,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private NeoStores instantiateLegacyStore( RecordFormats format, DatabaseLayout directoryStructure )
     {
-        return new StoreFactory( directoryStructure, config, new ReadOnlyIdGeneratorFactory(), pageCache, fileSystem,
+        return new StoreFactory( directoryStructure, config, new ReadOnlyIdGeneratorFactory(
+                new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() ) ), pageCache, fileSystem,
                 format, NullLogProvider.getInstance() ).openAllNeoStores( true );
     }
 
@@ -506,14 +508,10 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     public static StoreFactory createStoreFactory( DatabaseLayout databaseLayout, RecordFormats formats, boolean readOnlyIds, Config config,
             PageCache pageCache, FileSystemAbstraction fs, LogProvider logProvider )
     {
-        IdGeneratorFactory idGeneratorFactory;
+        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, pageCache, immediate() );
         if ( readOnlyIds )
         {
-            idGeneratorFactory = new ReadOnlyIdGeneratorFactory( fs );
-        }
-        else
-        {
-            idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
+            idGeneratorFactory = new ReadOnlyIdGeneratorFactory( idGeneratorFactory );
         }
         return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, formats, logProvider );
     }
@@ -661,7 +659,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                           directoryLayout.idSchemaStore(),
                           config,
                           org.neo4j.internal.id.IdType.SCHEMA,
-                          new ReadOnlyIdGeneratorFactory( fileSystem ),
+                          new ReadOnlyIdGeneratorFactory( new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() ) ),
                           pageCache,
                           NullLogProvider.getInstance(),
                           oldFormat );
@@ -672,7 +670,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
                 // Only set the property key tokens, because it's the only one we need, and it's the only token store we made sure to be there.
                 srcTokenHolders.propertyKeyTokens().setInitialTokens( srcStore.getPropertyKeyTokenStore().getTokens() );
-                srcSchema.checkAndLoadStorage( true );
+                srcSchema.initialise( true );
                 SchemaStorage35 srcAccess = new SchemaStorage35( srcSchema );
 
                 SchemaRuleMigrationAccess dstAccess = RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore );

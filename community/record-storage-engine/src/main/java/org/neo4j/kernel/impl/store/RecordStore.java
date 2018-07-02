@@ -195,7 +195,12 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * @param record containing data to write to this store at the {@link AbstractBaseRecord#getId() id}
      * specified by the record.
      */
-    void updateRecord( RECORD record );
+    void updateRecord( RECORD record, IdUpdateListener idUpdates );
+
+    default void updateRecord( RECORD record )
+    {
+        updateRecord( record, IdUpdateListener.DIRECT );
+    }
 
     /**
      * Lets {@code record} be processed by {@link Processor}.
@@ -374,9 +379,9 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         }
 
         @Override
-        public void updateRecord( R record )
+        public void updateRecord( R record, IdUpdateListener idUpdateListener )
         {
-            actual.updateRecord( record );
+            actual.updateRecord( record, idUpdateListener );
         }
 
         @Override

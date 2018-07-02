@@ -23,7 +23,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -31,7 +33,9 @@ import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.id.IdController;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.exceptions.TransactionApplyKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -107,7 +111,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final IdController idController;
     private final CountsTracker countsStore;
     private final int denseNodeThreshold;
-    private final int recordIdBatchSize;
+    private final Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs = new EnumMap<>( IdType.class );
 
     // installed later
     private IndexUpdateListener indexUpdateListener;
@@ -137,6 +141,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
         StoreFactory factory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, logProvider );
         neoStores = factory.openAllNeoStores( createStoreIfNotExists );
+        for ( IdType idType : IdType.values() )
+        {
+            idGeneratorWorkSyncs.put( idType, new WorkSync<>( idGeneratorFactory.get( idType ) ) );
+        }
 
         try
         {
@@ -147,7 +155,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaState, tokenHolders );
 
             denseNodeThreshold = config.get( GraphDatabaseSettings.dense_node_threshold );
-            recordIdBatchSize = config.get( GraphDatabaseSettings.record_id_batch_size );
 
             countsStore = openCountsStore( fs, pageCache, databaseLayout, config, logProvider, versionContextSupplier );
         }
@@ -165,7 +172,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         CountsTracker counts = readOnly
                                ? new ReadOnlyCountsTracker( logProvider, fs, pageCache, config, layout )
                                : new CountsTracker( logProvider, fs, pageCache, config, layout, versionContextSupplier );
-        counts.setInitializer( new DataInitializer<CountsAccessor.Updater>()
+        counts.setInitializer( new DataInitializer<>()
         {
             private final Log log = logProvider.getLog( MetaDataStore.class );
 
@@ -195,7 +202,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public RecordStorageCommandCreationContext newCommandCreationContext()
     {
-        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, recordIdBatchSize );
+        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold );
     }
 
     @Override
@@ -299,7 +306,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         ArrayList<BatchTransactionApplier> appliers = new ArrayList<>();
         // Graph store application. The order of the decorated store appliers is irrelevant
-        appliers.add( new NeoStoreBatchTransactionApplier( mode.version(), neoStores, cacheAccess, lockService( mode ) ) );
+        appliers.add( new NeoStoreBatchTransactionApplier( mode, neoStores, cacheAccess, lockService( mode ), idGeneratorWorkSyncs ) );
         if ( mode.needsHighIdTracking() )
         {
             appliers.add( new HighIdBatchTransactionApplier( neoStores ) );
@@ -392,7 +399,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void prepareForRecoveryRequired()
     {
-        neoStores.deleteIdGenerators();
     }
 
     @Override

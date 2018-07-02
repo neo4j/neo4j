@@ -25,13 +25,14 @@ import org.junit.jupiter.api.parallel.Execution;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.neo4j.internal.id.IdGeneratorImpl.INTEGER_MINUS_ONE;
 import static org.neo4j.internal.id.IdValidator.hasReservedIdInRange;
 import static org.neo4j.internal.id.IdValidator.isReservedId;
 
 @Execution( CONCURRENT )
 class BatchingIdSequenceTest
 {
+    public static final long INTEGER_MINUS_ONE = 0xFFFFFFFFL;
+
     @Test
     void ShouldSkipNullId()
     {

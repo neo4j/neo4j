@@ -50,6 +50,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
@@ -75,8 +76,9 @@ class NodeCommandTest
     @BeforeEach
     void before()
     {
-        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs ), pageCache, fs,
-                NullLogProvider.getInstance() );
+        StoreFactory storeFactory =
+                new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache, fs,
+                        NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();
     }

@@ -656,12 +656,6 @@ public class GraphDatabaseSettings implements LoadableConfig
             "the integrity of the database might be compromised." )
     public static final Setting<Boolean> fail_on_missing_files = setting( "dbms.recovery.fail_on_missing_files", BOOLEAN, TRUE );
 
-    @Description( "Use a quick approach for rebuilding the ID generators. This give quicker recovery time, " +
-            "but will limit the ability to reuse the space of deleted entities." )
-    @Internal
-    public static final Setting<Boolean> rebuild_idgenerators_fast =
-            setting( "unsupported.dbms.id_generator_fast_rebuild_enabled", BOOLEAN, TRUE );
-
     @Description( "Specifies if engine should run cypher query based on a snapshot of accessed data. " +
             "Query will be restarted in case if concurrent modification of data will be detected." )
     @Internal
@@ -737,17 +731,6 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     public static final Setting<Integer> label_block_size = buildSetting( "unsupported.dbms.block_size.labels", INTEGER,
             "0" ).constraint( min( 0 ) ).build();
-
-    @Description( "Specifies the size of id batches local to each transaction when committing. " +
-            "Committing a transaction which contains changes most often results in new data records being created. " +
-            "For each record a new id needs to be generated from an id generator. " +
-            "It's more efficient to allocate a batch of ids from the contended id generator, which the transaction " +
-            "holds and generates ids from while creating these new records. " +
-            "This setting specifies how big those batches are. " +
-            "Remaining ids are freed back to id generator on clean shutdown." )
-    @Internal
-    public static final Setting<Integer> record_id_batch_size = buildSetting( "unsupported.dbms.record_id_batch_size", INTEGER,
-            "20" ).constraint( range( 1, 1_000 ) ).build();
 
     @Description( "An identifier that uniquely identifies this graph database instance within this JVM. " +
             "Defaults to an auto-generated number depending on how many instance are started in this JVM." )

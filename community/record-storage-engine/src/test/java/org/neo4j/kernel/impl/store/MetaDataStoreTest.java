@@ -68,6 +68,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.test.Race.throwing;
@@ -510,12 +511,15 @@ class MetaDataStoreTest
     }
 
     @Test
-    void mustSupportScanningAllRecords() throws Exception
+    void mustSupportScanningAllRecords()
     {
-        File file = createMetaDataFile();
         MetaDataStore.Position[] positions = MetaDataStore.Position.values();
-        long storeVersion = versionStringToLong( Standard.LATEST_RECORD_FORMATS.storeVersion());
-        writeCorrectMetaDataRecord( file, positions, storeVersion );
+        long storeVersion = versionStringToLong( Standard.LATEST_RECORD_FORMATS.storeVersion() );
+        try ( MetaDataStore store = newMetaDataStore() )
+        {
+            writeCorrectMetaDataRecord( store, positions, storeVersion );
+            store.flush();
+        }
 
         List<Long> actualValues = new ArrayList<>();
         try ( MetaDataStore store = newMetaDataStore() )
@@ -550,12 +554,14 @@ class MetaDataStoreTest
     }
 
     @Test
-    void mustSupportScanningAllRecordsWithRecordCursor() throws Exception
+    void mustSupportScanningAllRecordsWithRecordCursor()
     {
-        File file = createMetaDataFile();
         MetaDataStore.Position[] positions = MetaDataStore.Position.values();
         long storeVersion = versionStringToLong( Standard.LATEST_RECORD_FORMATS.storeVersion());
-        writeCorrectMetaDataRecord( file, positions, storeVersion );
+        try ( MetaDataStore store = newMetaDataStore() )
+        {
+            writeCorrectMetaDataRecord( store, positions, storeVersion );
+        }
 
         List<Long> actualValues = new ArrayList<>();
         try ( MetaDataStore store = newMetaDataStore() )
@@ -590,19 +596,21 @@ class MetaDataStoreTest
         assertThat( actualValues, is( expectedValues ) );
     }
 
-    private void writeCorrectMetaDataRecord( File file, MetaDataStore.Position[] positions, long storeVersion )
-            throws IOException
+    private void writeCorrectMetaDataRecord( MetaDataStore store, MetaDataStore.Position[] positions, long storeVersion )
     {
+        MetaDataRecord record = store.newRecord();
         for ( MetaDataStore.Position position : positions )
         {
+            record.setId( position.id() );
             if ( position == MetaDataStore.Position.STORE_VERSION )
             {
-                MetaDataStore.setRecord( pageCache, file, position, storeVersion );
+                record.initialize( true, storeVersion );
             }
             else
             {
-                MetaDataStore.setRecord( pageCache, file, position, position.ordinal() + 1 );
+                record.initialize( true, position.ordinal() + 1 );
             }
+            store.updateRecord( record );
         }
     }
 
@@ -633,6 +641,7 @@ class MetaDataStoreTest
         {
             fakePageCursorOverflow = true;
             assertThrows( UnderlyingStorageException.class, store::incrementAndGetVersion );
+            fakePageCursorOverflow = false;
         }
     }
 
@@ -657,6 +666,7 @@ class MetaDataStoreTest
             store.setUpgradeTime( MetaDataStore.FIELD_NOT_INITIALIZED );
             fakePageCursorOverflow = true;
             assertThrows( UnderlyingStorageException.class, store::getUpgradeTime );
+            fakePageCursorOverflow = false;
         }
     }
 
@@ -667,6 +677,7 @@ class MetaDataStoreTest
         {
             fakePageCursorOverflow = true;
             assertThrows( UnderlyingStorageException.class, () -> store.setUpgradeTransaction( 13, 42, 42 ) );
+            fakePageCursorOverflow = false;
         }
     }
 
@@ -677,6 +688,7 @@ class MetaDataStoreTest
         {
             fakePageCursorOverflow = true;
             store.logRecords( NullLogger.getInstance() );
+            fakePageCursorOverflow = false;
         }
     }
 
@@ -693,8 +705,9 @@ class MetaDataStoreTest
     private MetaDataStore newMetaDataStore()
     {
         LogProvider logProvider = NullLogProvider.getInstance();
-        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs ),
-                pageCacheWithFakeOverflow, fs, logProvider );
+        StoreFactory storeFactory =
+                new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs, pageCache, immediate() ),
+                        pageCacheWithFakeOverflow, fs, logProvider );
         return storeFactory.openNeoStores( true, StoreType.META_DATA ).getMetaDataStore();
     }
 

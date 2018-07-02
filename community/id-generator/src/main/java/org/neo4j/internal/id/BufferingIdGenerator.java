@@ -35,27 +35,62 @@ class BufferingIdGenerator extends IdGenerator.Delegate
     {
         buffer = new DelayedBuffer<>( boundaries, safeThreshold, 10_000, freedIds ->
         {
-            for ( long id : freedIds )
+            try ( ReuseMarker reuseMarker = super.reuseMarker() )
             {
-                actualFreeId( id );
+                for ( long id : freedIds )
+                {
+                    reuseMarker.markFree( id );
+                }
             }
         } );
     }
 
-    private void actualFreeId( long id )
-    {
-        super.freeId( id );
-    }
-
     @Override
-    public void freeId( long id )
+    public void deleteId( long id )
     {
+        super.deleteId( id );
         buffer.offer( id );
     }
 
-    void maintenance()
+    // NOTE: there will be calls to freeId, which comes from transactions that have allocated ids and are rolling back instead of committing
+
+    @Override
+    public CommitMarker commitMarker()
     {
+        CommitMarker actual = super.commitMarker();
+        return new CommitMarker()
+        {
+            @Override
+            public void markUsed( long id )
+            {
+                // Goes straight in
+                actual.markUsed( id );
+            }
+
+            @Override
+            public void markDeleted( long id )
+            {
+                // Run these by the buffering too
+                actual.markDeleted( id );
+                buffer.offer( id );
+            }
+
+            @Override
+            public void close()
+            {
+                actual.close();
+            }
+        };
+    }
+
+    @Override
+    public void maintenance()
+    {
+        // Check and potentially release ids onto the IdGenerator
         buffer.maintenance();
+
+        // Do IdGenerator maintenance, typically ensure ID cache is full
+        super.maintenance();
     }
 
     void clear()

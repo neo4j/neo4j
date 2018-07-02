@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.function.LongPredicate;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.helpers.collection.Visitor;
@@ -43,7 +42,7 @@ import org.neo4j.internal.id.IdRange;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
-import org.neo4j.internal.id.InvalidIdGeneratorException;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -54,16 +53,14 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
+import org.neo4j.util.concurrent.Runnables;
 
 import static java.lang.Math.max;
 import static java.lang.String.format;
-import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.neo4j.internal.helpers.ArrayUtil.concat;
-import static org.neo4j.internal.helpers.ArrayUtil.contains;
 import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.ANY_PAGE_SIZE;
 import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
-import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
@@ -104,9 +101,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * loading any configuration defined in <CODE>config</CODE>. After
      * validation the <CODE>initStorage</CODE> method is called.
      * <p>
-     * If the store had a clean shutdown it will be marked as <CODE>ok</CODE>
-     * and the {@link #getStoreOk()} method will return true.
-     * If a problem was found when opening the store the {@link #makeStoreOk()}
+     * If the store had a clean shutdown it will be marked as <CODE>ok</CODE>.
+     * If a problem was found when opening the store the {@link #start()}
      * must be invoked.
      * <p>
      * throws IOException if the unable to open the storage or if the
@@ -142,11 +138,15 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         this.log = logProvider.getLog( getClass() );
     }
 
-    void initialise( boolean createIfNotExists )
+    protected void initialise( boolean createIfNotExists )
     {
         try
         {
-            checkAndLoadStorage( createIfNotExists );
+            boolean created = checkAndLoadStorage( createIfNotExists );
+            if ( !created )
+            {
+                openIdGenerator();
+            }
         }
         catch ( Exception e )
         {
@@ -156,10 +156,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
     private void closeAndThrow( Exception e )
     {
-        if ( pagedFile != null )
-        {
-            closeStoreFile();
-        }
+        closeStoreFile();
         throwIfUnchecked( e );
         throw new RuntimeException( e );
     }
@@ -187,14 +184,9 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * accessed through the page cache.
      * @param createIfNotExists If true, creates and initialises the store file if it does not exist already. If false,
      * this method will instead throw an exception in that situation.
+     * @return {@code true} if the store was created as part of this call, otherwise {@code false} if it already existed.
      */
-    protected void checkAndLoadStorage( boolean createIfNotExists )
-    {
-        mapStoreFile( createIfNotExists );
-        loadIdGenerator();
-    }
-
-    private void mapStoreFile( boolean createIfNotExists )
+    private boolean checkAndLoadStorage( boolean createIfNotExists )
     {
         try
         {
@@ -235,10 +227,13 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                     // Generate the header and determine correct page size
                     determineRecordSize( storeHeaderFormat.generateHeader() );
 
+                    // Create the id generator, and also open it because some stores may need the id generator when initializing their store
+                    idGenerator = idGeneratorFactory.create( idFile, idType, getNumberOfReservedLowIds(), false, recordFormat.getMaxId(), openOptions );
+
                     // Map the file (w/ the CREATE flag) and initialize the header
                     pagedFile = pageCache.map( storageFile, filePageSize, concat( StandardOpenOption.CREATE, openOptions ) );
                     initialiseNewStoreFile();
-                    return; // <-- successfully created and initialized
+                    return true; // <-- successfully created and initialized
                 }
                 catch ( IOException e1 )
                 {
@@ -255,6 +250,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         {
             throw new UnderlyingStorageException( "Unable to open store file: " + storageFile, e );
         }
+        return false;
     }
 
     protected void initialiseNewStoreFile() throws IOException
@@ -276,7 +272,10 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                 }
             }
         }
-        idGeneratorFactory.create( idFile, getNumberOfReservedLowIds(), false );
+
+        // Determine record size right after writing the header since some stores
+        // use it when initializing their stores to write some records.
+        recordSize = determineRecordSize();
     }
 
     private HEADER readStoreHeaderAndDetermineRecordSize( PagedFile pagedFile ) throws IOException
@@ -354,7 +353,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * @param cursor {@link PageCursor} initialized at the start of the store header where header information
      * can be read if need be. This can be {@code null} if this store has no store header. The initialization
      * of the record format still happens in here.
-     * @throws IOException if there were problems reading header information.
      */
     private HEADER readStoreHeaderAndDetermineRecordSize( PageCursor cursor )
     {
@@ -368,30 +366,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         storeHeader = header;
         recordSize = determineRecordSize();
         filePageSize = filePageSize( pageCache.pageSize(), recordSize );
-    }
-
-    private void loadIdGenerator()
-    {
-        try
-        {
-            if ( storeOk )
-            {
-                openIdGenerator();
-            }
-            // else we will rebuild the id generator after recovery, and we don't want to have the id generator
-            // picking up calls to freeId during recovery.
-        }
-        catch ( InvalidIdGeneratorException e )
-        {
-            setStoreNotOk( e );
-        }
-        finally
-        {
-            if ( !getStoreOk() )
-            {
-                log.debug( storageFile + " non clean shutdown detected" );
-            }
-        }
     }
 
     public boolean isInUse( long id )
@@ -440,112 +414,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         }
     }
 
-    /**
-     * Should rebuild the id generator from scratch.
-     * <p>
-     * Note: This method may be called both while the store has the store file mapped in the
-     * page cache, and while the store file is not mapped. Implementers must therefore
-     * map their own temporary PagedFile for the store file, and do their file IO through that,
-     * if they need to access the data in the store file.
-     */
-    final void rebuildIdGenerator()
-    {
-        int blockSize = getRecordSize();
-        if ( blockSize <= 0 )
-        {
-            throw new InvalidRecordException( "Illegal blockSize: " + blockSize );
-        }
-
-        log.info( "Rebuilding id generator for[" + getStorageFile() + "] ..." );
-        closeIdGenerator();
-        createIdGenerator( idFile );
-        openIdGenerator();
-
-        long defraggedCount = 0;
-        boolean fastRebuild = configuration.get( GraphDatabaseSettings.rebuild_idgenerators_fast );
-
-        try
-        {
-            long foundHighId = scanForHighId();
-            setHighId( foundHighId );
-            if ( !fastRebuild )
-            {
-                try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_READ_AHEAD ) )
-                {
-                    defraggedCount = rebuildIdGeneratorSlow( cursor, getRecordsPerPage(), blockSize, foundHighId );
-                }
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( "Unable to rebuild id generator " + getStorageFile(), e );
-        }
-
-        log.info( "[" + getStorageFile() + "] high id=" + getHighId() + " (defragged=" + defraggedCount + ")" );
-        log.info( getStorageFile() + " rebuild id generator, highId=" + getHighId() +
-                  " defragged count=" + defraggedCount );
-
-        if ( !fastRebuild )
-        {
-            closeIdGenerator();
-            openIdGenerator();
-        }
-    }
-
-    private long rebuildIdGeneratorSlow( PageCursor cursor, int recordsPerPage, int blockSize,
-                                         long foundHighId ) throws IOException
-    {
-        if ( !cursor.isWriteLocked() )
-        {
-            throw new IllegalArgumentException(
-                    "The store scanning id generator rebuild process requires a page cursor that is write-locked" );
-        }
-        long defragCount = 0;
-        long[] freedBatch = new long[recordsPerPage]; // we process in batches of one page worth of records
-        int startingId = getNumberOfReservedLowIds();
-        int defragged;
-
-        boolean done = false;
-        while ( !done && cursor.next() )
-        {
-            long idPageOffset = cursor.getCurrentPageId() * recordsPerPage;
-
-            defragged = 0;
-            for ( int i = startingId; i < recordsPerPage; i++ )
-            {
-                int offset = i * blockSize;
-                cursor.setOffset( offset );
-                long recordId = idPageOffset + i;
-                if ( recordId >= foundHighId )
-                {   // We don't have to go further than the high id we found earlier
-                    done = true;
-                    break;
-                }
-
-                if ( !isInUse( cursor ) )
-                {
-                    freedBatch[defragged++] = recordId;
-                }
-                else if ( isRecordReserved( cursor ) )
-                {
-                    cursor.setOffset( offset );
-                    cursor.putByte( Record.NOT_IN_USE.byteValue() );
-                    cursor.putInt( 0 );
-                    freedBatch[defragged++] = recordId;
-                }
-            }
-            checkIdScanCursorBounds( cursor );
-
-            for ( int i = 0; i < defragged; i++ )
-            {
-                freeId( freedBatch[i] );
-            }
-            defragCount += defragged;
-            startingId = 0;
-        }
-        return defragCount;
-    }
-
     private void checkIdScanCursorBounds( PageCursor cursor )
     {
         if ( cursor.checkAndClearBoundsFlag() )
@@ -562,21 +430,10 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     {
         storeOk = false;
         causeOfStoreNotOk = cause;
-        idGenerator = null; // since we will rebuild it later
     }
 
     /**
-     * If store is "not ok" <CODE>false</CODE> is returned.
-     *
-     * @return True if this store is ok
-     */
-    boolean getStoreOk()
-    {
-        return storeOk;
-    }
-
-    /**
-     * Throws cause of not being OK if {@link #getStoreOk()} returns {@code false}.
+     * Throws cause of not being OK, i.e. if {@link #setStoreNotOk(RuntimeException)} have been called.
      */
     void checkStoreOk()
     {
@@ -621,12 +478,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     @Override
     public void freeId( long id )
     {
-        IdGenerator generator = this.idGenerator;
-        if ( generator != null )
-        {
-            generator.freeId( id );
-        }
-        // else we're deleting records as part of applying transactions during recovery, and that's fine
+        idGenerator.freeId( id );
     }
 
     /**
@@ -638,7 +490,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     @Override
     public long getHighId()
     {
-        return idGenerator != null ? idGenerator.getHighId() : scanForHighId();
+        return idGenerator.getHighId();
     }
 
     /**
@@ -648,38 +500,25 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      */
     public void setHighId( long highId )
     {
-        // This method might get called during recovery, where we don't have a reliable id generator yet,
-        // so ignore these calls and let rebuildIdGenerators() figure out the high id after recovery.
-        IdGenerator generator = this.idGenerator;
-        if ( generator != null )
-        {
-            //noinspection SynchronizationOnLocalVariableOrMethodParameter
-            synchronized ( generator )
-            {
-                if ( highId > generator.getHighId() )
-                {
-                    generator.setHighId( highId );
-                }
-            }
-        }
+        idGenerator.setHighId( highId );
     }
 
     /**
-     * If store is not ok a call to this method will rebuild the {@link
-     * IdGenerator} used by this store and if successful mark it as OK.
-     *
-     * WARNING: this method must NOT be called if recovery is required, but hasn't performed.
-     * To remove all negations from the above statement: Only call this method if store is in need of
-     * recovery and recovery has been performed.
+     * Sets the store state to started, which is a state which either means that:
+     * <ul>
+     *     <li>store was opened on a previous clean shutdown where no recovery was required</li>
+     *     <li>store was opened on a previous non-clean shutdown and recovery has been performed</li>
+     * </ul>
+     * So when this method is called the store is in a good state and from this point the database enters normal operations mode.
      */
-    void makeStoreOk()
+    void start()
     {
         if ( !storeOk )
         {
-            rebuildIdGenerator();
             storeOk = true;
             causeOfStoreNotOk = null;
         }
+        idGenerator.start();
     }
 
     /**
@@ -701,14 +540,14 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * map their own temporary PagedFile for the store file, and do their file IO through that,
      * if they need to access the data in the store file.
      */
-    void openIdGenerator()
+    private void openIdGenerator()
     {
-        idGenerator = idGeneratorFactory.open( idFile, getIdType(), this::scanForHighId, recordFormat.getMaxId() );
+        idGenerator = idGeneratorFactory.open( idFile, getIdType(), this::scanForHighId, recordFormat.getMaxId(), openOptions );
     }
 
     /**
      * Starts from the end of the file and scans backwards to find the highest in use record.
-     * Can be used even if {@link #makeStoreOk()} hasn't been called. Basically this method should be used
+     * Can be used even if {@link #start()} hasn't been called. Basically this method should be used
      * over {@link #getHighestPossibleIdInUse()} and {@link #getHighId()} in cases where a store has been opened
      * but is in a scenario where recovery isn't possible, like some tooling or migration.
      *
@@ -810,31 +649,13 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         return recordFormat.isInUse( cursor );
     }
 
-    protected boolean isRecordReserved( PageCursor cursor )
-    {
-        return false;
-    }
-
-    private void createIdGenerator( File fileName )
-    {
-        idGeneratorFactory.create( fileName, 0, false );
-    }
-
-    /** Closed the {@link IdGenerator} used by this store */
-    void closeIdGenerator()
-    {
-        if ( idGenerator != null )
-        {
-            idGenerator.close();
-        }
-    }
-
     @Override
     public void flush()
     {
         try
         {
             pagedFile.flushAndForce();
+            idGenerator.checkpoint( IOLimiter.UNLIMITED );
         }
         catch ( IOException e )
         {
@@ -866,33 +687,23 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
     private void closeStoreFile()
     {
-        try
-        {
-            /*
-             * Note: the closing ordering here is important!
-             * It is the case since we want to mark the id generator as closed cleanly ONLY IF
-             * also the store file is cleanly shutdown.
-             */
-            if ( pagedFile != null )
-            {
-                pagedFile.close();
-            }
-            if ( idGenerator != null )
-            {
-                if ( contains( openOptions, DELETE_ON_CLOSE ) )
+        Runnables.runAll( "Failure closing store and/or id generator",
+                () ->
                 {
-                    idGenerator.delete();
-                }
-                else
+                    if ( pagedFile != null )
+                    {
+                        pagedFile.close();
+                        pagedFile = null;
+                    }
+                },
+                () ->
                 {
-                    idGenerator.close();
-                }
-            }
-        }
-        finally
-        {
-            pagedFile = null;
-        }
+                    if ( idGenerator != null )
+                    {
+                        idGenerator.close();
+                        idGenerator = null;
+                    }
+                } );
     }
 
     /** @return The highest possible id in use, -1 if no id in use. */
@@ -943,40 +754,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     void logIdUsage( Logger logger )
     {
         logger.log( format( "%s: used=%s high=%s", getTypeDescriptor(), getNumberOfIdsInUse(), getHighestPossibleIdInUse() ) );
-    }
-
-    /**
-     * Visits this store, and any other store managed by this store.
-     * TODO this could, and probably should, replace all override-and-do-the-same-thing-to-all-my-managed-stores
-     * methods like:
-     * {@link #makeStoreOk()},
-     * {@link #close()} (where that method could be deleted all together and do a visit in {@link #close()}),
-     * {@link #logIdUsage(Logger)},
-     * {@link #logVersions(Logger)}
-     * For a good samaritan to pick up later.
-     */
-    void visitStore( Visitor<CommonAbstractStore<RECORD,HEADER>,RuntimeException> visitor )
-    {
-        visitor.visit( this );
-    }
-
-    /**
-     * Called from the part of the code that starts the {@link MetaDataStore} and friends, together with any
-     * existing transaction log, seeing that there are transactions to recover.
-     * If we happen to have id generators open during recovery we delegate
-     * {@link #freeId(long)} calls to {@link IdGenerator#freeId(long)} and since the id generator is most likely
-     * out of date w/ regards to high id, it may very well blow up.
-     *
-     * This also marks the store as not OK. A call to {@link #makeStoreOk()} is needed once recovery is complete.
-     */
-    final void deleteIdGenerator()
-    {
-        if ( idGenerator != null )
-        {
-            idGenerator.delete();
-            idGenerator = null;
-            setStoreNotOk( new IllegalStateException( "IdGenerator is not initialized" ) );
-        }
     }
 
     @Override
@@ -1092,7 +869,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     @Override
-    public void updateRecord( RECORD record )
+    public void updateRecord( RECORD record, IdUpdateListener idUpdateListener )
     {
         long id = record.getId();
         IdValidator.assertValidId( getIdType(), id, recordFormat.getMaxId() );
@@ -1108,13 +885,28 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                 checkForDecodingErrors( cursor, id, NORMAL ); // We don't free ids if something weird goes wrong
                 if ( !record.inUse() )
                 {
-                    freeId( id );
+                    idUpdateListener.markIdAsUnused( idType, idGenerator, id );
                 }
+                else if ( record.isCreated() )
+                {
+                    idUpdateListener.markIdAsUsed( idType, idGenerator, id );
+                }
+
                 if ( (!record.inUse() || !record.requiresSecondaryUnit()) && record.hasSecondaryUnitId() )
                 {
                     // If record was just now deleted, or if the record used a secondary unit, but not anymore
                     // then free the id of that secondary unit.
-                    freeId( record.getSecondaryUnitId() );
+                    idUpdateListener.markIdAsUnused( idType, idGenerator, record.getSecondaryUnitId() );
+                }
+                if ( record.inUse() && record.requiresSecondaryUnit() && record.hasSecondaryUnitId() )
+                {
+                    // Triggers on:
+                    // - (a) record got created right now and has a secondary unit, or
+                    // - (b) it already existed and just now grew into a secondary unit then mark the secondary unit as used
+                    // TODO currently there's no state in the record to correctly see (b), or rather there's no telling (b) apart from
+                    //      a big record consisting of two units simply being updated. This is fine correctness-wise, but will invoke
+                    //      unnecessary calls to markIdAsUsed for big records.
+                    idUpdateListener.markIdAsUsed( idType, idGenerator, record.getSecondaryUnitId() );
                 }
             }
         }
@@ -1251,6 +1043,11 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         // just setting one byte or bit in that record.
         record.setInUse( false );
         cursor.setOffsetToMark();
+    }
+
+    IdGenerator getIdGenerator()
+    {
+        return idGenerator;
     }
 
     @Override

@@ -58,6 +58,7 @@ import org.neo4j.token.api.TokenHolder;
 
 import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
 /**
  * Conveniently manages a {@link RecordStorageEngine} in a test. Needs {@link FileSystemAbstraction} and
@@ -88,7 +89,7 @@ public class RecordStorageEngineRule extends ExternalResource
             IndexUpdateListener indexUpdateListener, NodeLabelUpdateListener nodeLabelUpdateListener, LockService lockService, TokenHolders tokenHolders,
             Config config, ConstraintRuleAccessor constraintSemantics )
     {
-        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
+        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, pageCache, immediate() );
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
         RecordStorageEngine engine = life.add(
                 new ExtendedRecordStorageEngine( databaseLayout, config, pageCache, fs, nullLogProvider, tokenHolders, mock( SchemaState.class ),

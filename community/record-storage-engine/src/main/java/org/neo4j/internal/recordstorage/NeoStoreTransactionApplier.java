@@ -21,8 +21,9 @@ package org.neo4j.internal.recordstorage;
 
 import org.neo4j.internal.recordstorage.Command.BaseCommand;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.kernel.impl.store.CommonAbstractStore;
+import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
@@ -44,9 +45,10 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     private final NeoStores neoStores;
     private final CacheAccessBackDoor cacheAccess;
     private final LockService lockService;
+    private final IdUpdateListener idUpdateListener;
 
     public NeoStoreTransactionApplier( CommandVersion version, NeoStores neoStores, CacheAccessBackDoor cacheAccess, LockService lockService,
-            long transactionId, LockGroup lockGroup )
+            long transactionId, LockGroup lockGroup, IdUpdateListener idUpdateListener )
     {
         this.version = version;
         this.lockGroup = lockGroup;
@@ -54,6 +56,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
         this.lockService = lockService;
         this.neoStores = neoStores;
         this.cacheAccess = cacheAccess;
+        this.idUpdateListener = idUpdateListener;
     }
 
     @Override
@@ -174,9 +177,9 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
         return false;
     }
 
-    private <RECORD extends AbstractBaseRecord> void updateStore( RecordStore<RECORD> store, BaseCommand<RECORD> command )
+    private <RECORD extends AbstractBaseRecord> void updateStore( CommonAbstractStore<RECORD,?> store, BaseCommand<RECORD> command )
     {
-        store.updateRecord( selectRecordByCommandVersion( command ) );
+        store.updateRecord( selectRecordByCommandVersion( command ), idUpdateListener );
     }
 
     private <RECORD extends AbstractBaseRecord> RECORD selectRecordByCommandVersion( BaseCommand<RECORD> command )

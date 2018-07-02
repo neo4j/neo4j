@@ -62,6 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
@@ -343,7 +344,7 @@ class CountsComputerTest
     {
         cleanupCountsForRebuilding();
 
-        IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fileSystem );
+        IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() );
         StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), CONFIG, idGenFactory, pageCache, fileSystem, LOG_PROVIDER );
         try ( Lifespan life = new Lifespan();
               NeoStores neoStores = storeFactory.openAllNeoStores() )

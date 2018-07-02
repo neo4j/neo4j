@@ -44,6 +44,7 @@ import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
+import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -64,6 +65,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.internal.helpers.collection.Iterables.addAll;
 import static org.neo4j.util.Bits.bits;
@@ -86,8 +88,9 @@ class NodeLabelsFieldTest
     void startUp()
     {
         Config config = Config.defaults( GraphDatabaseSettings.label_block_size, "60" );
-        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), config, new DefaultIdGeneratorFactory( testDirectory.getFileSystem() ),
-            pageCache, testDirectory.getFileSystem(), NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), config,
+                new DefaultIdGeneratorFactory( testDirectory.getFileSystem(), pageCache, immediate() ),
+                pageCache, testDirectory.getFileSystem(), NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();
     }
@@ -542,9 +545,8 @@ class NodeLabelsFieldTest
 
     private Collection<DynamicRecord> allocateAndApply( NodeStore nodeStore, long nodeId, long[] longs )
     {
-        Collection<DynamicRecord> records = DynamicNodeLabels.allocateRecordsForDynamicLabels( nodeId, longs,
-            nodeStore.getDynamicLabelStore() );
-        nodeStore.updateDynamicLabelRecords( records );
+        Collection<DynamicRecord> records = DynamicNodeLabels.allocateRecordsForDynamicLabels( nodeId, longs, nodeStore.getDynamicLabelStore() );
+        nodeStore.updateDynamicLabelRecords( records, IdUpdateListener.DIRECT );
         return records;
     }
 

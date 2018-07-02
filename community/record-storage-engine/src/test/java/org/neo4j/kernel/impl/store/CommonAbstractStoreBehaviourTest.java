@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.Ignore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -30,7 +31,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -48,6 +48,7 @@ import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
@@ -213,19 +214,7 @@ class CommonAbstractStoreBehaviourTest
         store.getRecord( 5, new IntRecord( 5 ), FORCE );
     }
 
-    @Test
-    void rebuildIdGeneratorSlowMustThrowOnPageOverflow() throws Exception
-    {
-        config.augment( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );
-        createStore();
-        store.setStoreNotOk( new RuntimeException() );
-        IntRecord record = new IntRecord( 200 );
-        record.value = 0xCAFEBABE;
-        store.updateRecord( record );
-        intsPerRecord = 8192;
-        assertThrowsUnderlyingStorageException( () -> store.makeStoreOk() );
-    }
-
+    @Ignore
     @Test
     void scanForHighIdMustThrowOnPageOverflow() throws Exception
     {
@@ -235,7 +224,7 @@ class CommonAbstractStoreBehaviourTest
         record.value = 0xCAFEBABE;
         store.updateRecord( record );
         intsPerRecord = 8192;
-        assertThrowsUnderlyingStorageException( () -> store.makeStoreOk() );
+        assertThrowsUnderlyingStorageException( () -> store.start() );
     }
 
     @Test
@@ -379,7 +368,7 @@ class CommonAbstractStoreBehaviourTest
         MyStore( Config config, PageCache pageCache, MyFormat format )
         {
             super( new File( "store" ), new File( "idFile" ), config, IdType.NODE,
-                    new DefaultIdGeneratorFactory( fs ), pageCache,
+                    new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache,
                     NullLogProvider.getInstance(), "T", format, format, "XYZ" );
         }
 

@@ -49,6 +49,7 @@ import static java.lang.Double.longBitsToDouble;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
 @PageCacheExtension
 class TestArrayStore
@@ -65,7 +66,7 @@ class TestArrayStore
     @BeforeEach
     void before()
     {
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() );
         StoreFactory factory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), idGeneratorFactory, pageCache, fileSystem,
                 NullLogProvider.getInstance() );
         neoStores = factory.openAllNeoStores( true );

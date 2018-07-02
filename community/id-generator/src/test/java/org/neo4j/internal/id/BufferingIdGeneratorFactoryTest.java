@@ -23,11 +23,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
+import java.nio.file.OpenOption;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.internal.id.IdController.ConditionSnapshot;
-import org.neo4j.internal.id.configuration.CommunityIdTypeConfigurationProvider;
+import org.neo4j.internal.id.IdGenerator.CommitMarker;
+import org.neo4j.internal.id.IdGenerator.ReuseMarker;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -45,29 +47,33 @@ class BufferingIdGeneratorFactoryTest
     private EphemeralFileSystemAbstraction fs;
 
     @Test
-    void shouldDelayFreeingOfAggressivelyReusedIds()
+    void shouldDelayFreeingOfDeletedIds()
     {
         // GIVEN
         MockedIdGeneratorFactory actual = new MockedIdGeneratorFactory();
         ControllableSnapshotSupplier boundaries = new ControllableSnapshotSupplier();
-        BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual, new CommunityIdTypeConfigurationProvider() );
+        BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual );
         bufferingIdGeneratorFactory.initialize( boundaries );
-        IdGenerator idGenerator = bufferingIdGeneratorFactory.open( new File( "doesnt-matter" ), 10, STRING_BLOCK, () -> 0L, Integer.MAX_VALUE );
+        IdGenerator idGenerator = bufferingIdGeneratorFactory.open( new File( "doesnt-matter" ), IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE );
 
         // WHEN
-        idGenerator.freeId( 7 );
-        verifyNoMoreInteractions( actual.get( STRING_BLOCK ) );
+        try ( CommitMarker marker = idGenerator.commitMarker() )
+        {
+            marker.markDeleted( 7 );
+        }
+        verify( actual.commitMarkers[STRING_BLOCK.ordinal()] ).markDeleted( 7 );
+        verifyNoMoreInteractions( actual.reuseMarkers[STRING_BLOCK.ordinal()] );
 
         // after some maintenance and transaction still not closed
         bufferingIdGeneratorFactory.maintenance();
-        verifyNoMoreInteractions( actual.get( STRING_BLOCK ) );
+        verifyNoMoreInteractions( actual.reuseMarkers[STRING_BLOCK.ordinal()] );
 
         // although after transactions have all closed
         boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
         bufferingIdGeneratorFactory.maintenance();
 
         // THEN
-        verify( actual.get( STRING_BLOCK ) ).freeId( 7 );
+        verify( actual.reuseMarkers[STRING_BLOCK.ordinal()] ).markFree( 7 );
     }
 
     private static class ControllableSnapshotSupplier implements Supplier<ConditionSnapshot>
@@ -89,22 +95,28 @@ class BufferingIdGeneratorFactoryTest
     private static class MockedIdGeneratorFactory implements IdGeneratorFactory
     {
         private final IdGenerator[] generators = new IdGenerator[IdType.values().length];
+        private final CommitMarker[] commitMarkers = new CommitMarker[IdType.values().length];
+        private final ReuseMarker[] reuseMarkers = new ReuseMarker[IdType.values().length];
 
         @Override
-        public IdGenerator open( File filename, IdType idType, LongSupplier highId, long maxId )
+        public IdGenerator open( File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions )
         {
-            return open( filename, 0, idType, highId, maxId );
+            IdGenerator idGenerator = mock( IdGenerator.class );
+            CommitMarker commitMarker = mock( CommitMarker.class );
+            ReuseMarker reuseMarker = mock( ReuseMarker.class );
+            int ordinal = idType.ordinal();
+            generators[ordinal] = idGenerator;
+            commitMarkers[ordinal] = commitMarker;
+            reuseMarkers[ordinal] = reuseMarker;
+            when( idGenerator.commitMarker() ).thenReturn( commitMarker );
+            when( idGenerator.reuseMarker() ).thenReturn( reuseMarker );
+            return idGenerator;
         }
 
         @Override
-        public IdGenerator open( File filename, int grabSize, IdType idType, LongSupplier highId, long maxId )
+        public IdGenerator create( File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId, OpenOption... openOptions )
         {
-            return generators[idType.ordinal()] = mock( IdGenerator.class );
-        }
-
-        @Override
-        public void create( File filename, long highId, boolean throwIfFileExists )
-        {
+            return open( filename, idType, () -> highId, maxId, openOptions );
         }
 
         @Override

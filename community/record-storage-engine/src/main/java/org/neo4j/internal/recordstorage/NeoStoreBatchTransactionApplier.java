@@ -19,11 +19,19 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import java.util.EnumMap;
+import java.util.Map;
+
+import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.IdType;
+import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.CommandVersion;
 import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.util.concurrent.WorkSync;
 
 /**
  * Visits commands targeted towards the {@link NeoStores} and update corresponding stores. What happens in here is what
@@ -38,18 +46,21 @@ public class NeoStoreBatchTransactionApplier extends BatchTransactionApplier.Ada
     // Ideally we don't want any cache access in here, but it is how it is. At least we try to minimize use of it
     private final CacheAccessBackDoor cacheAccess;
     private final LockService lockService;
+    private final Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs;
+    private final IdUpdateListener idUpdateListener;
+    private final EnumMap<IdType,ChangedIds> idUpdatesMap = new EnumMap<>( IdType.class );
 
-    public NeoStoreBatchTransactionApplier( NeoStores store, CacheAccessBackDoor cacheAccess, LockService lockService )
+    NeoStoreBatchTransactionApplier( TransactionApplicationMode mode, NeoStores store, CacheAccessBackDoor cacheAccess, LockService lockService,
+            Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs )
     {
-        this( CommandVersion.AFTER, store, cacheAccess, lockService );
-    }
-
-    public NeoStoreBatchTransactionApplier( CommandVersion version, NeoStores store, CacheAccessBackDoor cacheAccess, LockService lockService )
-    {
-        this.version = version;
+        this.version = mode.version();
         this.neoStores = store;
         this.cacheAccess = cacheAccess;
         this.lockService = lockService;
+        this.idGeneratorWorkSyncs = idGeneratorWorkSyncs;
+
+        // There's no need to update the id generators when recovery is on its way back
+        this.idUpdateListener = mode == TransactionApplicationMode.REVERSE_RECOVERY ? IdUpdateListener.EMPTY : new EnqueuingIdUpdateListener( idUpdatesMap );
     }
 
     @Override
@@ -61,6 +72,33 @@ public class NeoStoreBatchTransactionApplier extends BatchTransactionApplier.Ada
     @Override
     public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup )
     {
-        return new NeoStoreTransactionApplier( version, neoStores, cacheAccess, lockService, transaction.transactionId(), lockGroup );
+        return new NeoStoreTransactionApplier( version, neoStores, cacheAccess, lockService, transaction.transactionId(), lockGroup, idUpdateListener );
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        try
+        {
+            // Run through the id changes and apply them, or rather apply them asynchronously.
+            // This allows multiple concurrent threads applying batches of transactions to help each other out so that
+            // there's a higher chance that changes to different id types can be applied in parallel.
+            for ( Map.Entry<IdType,ChangedIds> idChanges : idUpdatesMap.entrySet() )
+            {
+                ChangedIds unit = idChanges.getValue();
+                unit.applyAsync( idGeneratorWorkSyncs.get( idChanges.getKey() ) );
+            }
+
+            // Wait for all id updates to complete
+            for ( Map.Entry<IdType,ChangedIds> idChanges : idUpdatesMap.entrySet() )
+            {
+                ChangedIds unit = idChanges.getValue();
+                unit.awaitApply();
+            }
+        }
+        finally
+        {
+            super.close();
+        }
     }
 }

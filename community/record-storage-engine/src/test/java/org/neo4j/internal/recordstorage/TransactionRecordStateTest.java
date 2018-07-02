@@ -31,6 +31,7 @@ import org.mockito.stubbing.Answer;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
@@ -86,6 +90,7 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.util.concurrent.WorkSync;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -105,6 +110,7 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterables.asSet;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterables.filter;
@@ -120,6 +126,7 @@ import static org.neo4j.storageengine.api.ConstraintRule.constraintRule;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.remove;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 @EphemeralPageCacheExtension
 class TransactionRecordStateTest
@@ -147,6 +154,7 @@ class TransactionRecordStateTest
     private EphemeralFileSystemAbstraction fs;
 
     private NeoStores neoStores;
+    private IdGeneratorFactory idGeneratorFactory;
 
     @AfterEach
     void after()
@@ -166,8 +174,9 @@ class TransactionRecordStateTest
 
     private NeoStores createStores( Config config, RecordFormats formats )
     {
-        var storeFactory = new StoreFactory( testDirectory.databaseLayout(), config, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
-            formats, NullLogProvider.getInstance() );
+        idGeneratorFactory = new DefaultIdGeneratorFactory( fs, pageCache, immediate() );
+        var storeFactory = new StoreFactory( testDirectory.databaseLayout(), config, idGeneratorFactory, pageCache, fs,
+                formats, NullLogProvider.getInstance() );
         return storeFactory.openAllNeoStores( true );
     }
 
@@ -253,16 +262,16 @@ class TransactionRecordStateTest
 
         // -- indexes
         long nodeRuleId = 0;
-        TransactionRecordState recordState = newTransactionRecordState( neoStores );
+        TransactionRecordState recordState = newTransactionRecordState();
         SchemaRule nodeRule = new DefaultStorageIndexReference( forLabel( labelId, propertyKeyId ), false, nodeRuleId, null );
         recordState.schemaRuleCreate( nodeRuleId, false, nodeRule );
         long relRuleId = 1;
         SchemaRule relRule = new DefaultStorageIndexReference( forRelType( relTypeId, propertyKeyId ), false, relRuleId, null );
         recordState.schemaRuleCreate( relRuleId, false, relRule );
-        apply( neoStores, recordState );
+        apply( recordState );
 
         // -- and a tx creating a node and a rel for those indexes
-        recordState = newTransactionRecordState( neoStores );
+        recordState = newTransactionRecordState();
         recordState.nodeCreate( nodeId );
         recordState.addLabelToNode( labelId, nodeId );
         recordState.nodeAddProperty( nodeId, propertyKeyId, Values.of( "Neo" ) );
@@ -308,15 +317,15 @@ class TransactionRecordStateTest
          */
 
         // GIVEN
-        TransactionRecordState recordState = newTransactionRecordState( neoStores );
+        TransactionRecordState recordState = newTransactionRecordState();
         int nodeId = 0;
         recordState.nodeCreate( nodeId );
         int index = 0;
         recordState.nodeAddProperty( nodeId, index, string( 70 ) ); // will require a block of size 1
-        apply( neoStores, recordState );
+        apply( recordState );
 
         // WHEN
-        recordState = newTransactionRecordState( neoStores );
+        recordState = newTransactionRecordState();
         int index2 = 1;
         recordState.nodeAddProperty( nodeId, index2, string( 40 ) ); // will require a block of size 4
 
@@ -352,18 +361,18 @@ class TransactionRecordStateTest
         neoStores = createStores();
         // GIVEN
         long nodeId = 0;
-        TransactionRecordState recordState = newTransactionRecordState( neoStores );
+        TransactionRecordState recordState = newTransactionRecordState();
         Value value1 = Values.of( LONG_STRING );
         Value value2 = Values.of( LONG_STRING.getBytes() );
         recordState.nodeCreate( nodeId );
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
-        apply( neoStores, recordState );
+        apply( recordState );
         StorageIndexReference rule1 = createIndex( labelIdOne, propertyId1 );
         StorageIndexReference rule2 = createIndex( labelIdOne, propertyId2 );
 
         // WHEN
-        recordState = newTransactionRecordState( neoStores );
+        recordState = newTransactionRecordState();
         addLabelsToNode( recordState, nodeId, oneLabelId );
         Iterable<Iterable<IndexEntryUpdate<SchemaDescriptor>>> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
@@ -380,16 +389,16 @@ class TransactionRecordStateTest
         neoStores = createStores();
         // GIVEN
         long nodeId = 0;
-        TransactionRecordState recordState = newTransactionRecordState( neoStores );
+        TransactionRecordState recordState = newTransactionRecordState();
         recordState.nodeCreate( nodeId );
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         addLabelsToNode( recordState, nodeId, oneLabelId );
-        apply( neoStores, recordState );
+        apply( recordState );
         StorageIndexReference rule1 = createIndex( labelIdOne, propertyId2 );
         StorageIndexReference rule2 = createIndex( labelIdOne, propertyId1, propertyId2 );
 
         // WHEN
-        recordState = newTransactionRecordState( neoStores );
+        recordState = newTransactionRecordState();
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         addLabelsToNode( recordState, nodeId, secondLabelId );
         Iterable<Iterable<IndexEntryUpdate<SchemaDescriptor>>> indexUpdates = indexUpdatesOf( neoStores, recordState );
@@ -407,16 +416,16 @@ class TransactionRecordStateTest
         neoStores = createStores();
         // GIVEN
         long nodeId = 0;
-        TransactionRecordState recordState = newTransactionRecordState( neoStores );
+        TransactionRecordState recordState = newTransactionRecordState();
         recordState.nodeCreate( nodeId );
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         addLabelsToNode( recordState, nodeId, oneLabelId );
-        apply( neoStores, recordState );
+        apply( recordState );
         StorageIndexReference rule = createIndex( labelIdOne, propertyId1 );
 
         // WHEN
-        recordState = newTransactionRecordState( neoStores );
+        recordState = newTransactionRecordState();
         removeLabelsFromNode( recordState, nodeId, oneLabelId );
         Iterable<Iterable<IndexEntryUpdate<SchemaDescriptor>>> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
@@ -430,16 +439,16 @@ class TransactionRecordStateTest
         neoStores = createStores();
         // GIVEN
         long nodeId = 0;
-        TransactionRecordState recordState = newTransactionRecordState( neoStores );
+        TransactionRecordState recordState = newTransactionRecordState();
         recordState.nodeCreate( nodeId );
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         addLabelsToNode( recordState, nodeId, bothLabelIds );
-        apply( neoStores, recordState );
+        apply( recordState );
         StorageIndexReference rule1 = createIndex( labelIdOne, propertyId1 );
         StorageIndexReference rule2 = createIndex( labelIdSecond, propertyId1 );
 
         // WHEN
-        recordState = newTransactionRecordState( neoStores );
+        recordState = newTransactionRecordState();
         recordState.nodeRemoveProperty( nodeId, propertyId1 );
         removeLabelsFromNode( recordState, nodeId, secondLabelId );
         Iterable<Iterable<IndexEntryUpdate<SchemaDescriptor>>> indexUpdates = indexUpdatesOf( neoStores, recordState );
@@ -457,16 +466,16 @@ class TransactionRecordStateTest
         neoStores = createStores();
         // GIVEN
         long nodeId = 0;
-        TransactionRecordState recordState = newTransactionRecordState( neoStores );
+        TransactionRecordState recordState = newTransactionRecordState();
         recordState.nodeCreate( nodeId );
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         addLabelsToNode( recordState, nodeId, bothLabelIds );
-        apply( neoStores, recordState );
+        apply( recordState );
         StorageIndexReference rule2 = createIndex( labelIdOne, propertyId2 );
         StorageIndexReference rule3 = createIndex( labelIdSecond, propertyId1 );
 
         // WHEN
-        recordState = newTransactionRecordState( neoStores );
+        recordState = newTransactionRecordState();
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         removeLabelsFromNode( recordState, nodeId, secondLabelId );
         Iterable<Iterable<IndexEntryUpdate<SchemaDescriptor>>> indexUpdates = indexUpdatesOf( neoStores, recordState );
@@ -484,12 +493,12 @@ class TransactionRecordStateTest
         neoStores = createStores();
         // GIVEN
         int nodeId = 0;
-        TransactionRecordState recordState = newTransactionRecordState( neoStores );
+        TransactionRecordState recordState = newTransactionRecordState();
         recordState.nodeCreate( nodeId );
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         addLabelsToNode( recordState, nodeId, oneLabelId );
-        apply( neoStores, transaction( recordState ) );
+        apply( transaction( recordState ) );
         StorageIndexReference rule1 = createIndex( labelIdOne, propertyId1 );
         StorageIndexReference rule2 = createIndex( labelIdOne, propertyId2 );
         StorageIndexReference rule3 = createIndex( labelIdOne, propertyId1, propertyId2 );
@@ -497,7 +506,7 @@ class TransactionRecordStateTest
         // WHEN
         Value newValue1 = Values.of( "new" );
         Value newValue2 = Values.of( "new 2" );
-        recordState = newTransactionRecordState( neoStores );
+        recordState = newTransactionRecordState();
         recordState.nodeChangeProperty( nodeId, propertyId1, newValue1 );
         recordState.nodeChangeProperty( nodeId, propertyId2, newValue2 );
         Iterable<Iterable<IndexEntryUpdate<SchemaDescriptor>>> indexUpdates = indexUpdatesOf( neoStores, recordState );
@@ -516,18 +525,18 @@ class TransactionRecordStateTest
         neoStores = createStores();
         // GIVEN
         int nodeId = 0;
-        TransactionRecordState recordState = newTransactionRecordState( neoStores );
+        TransactionRecordState recordState = newTransactionRecordState();
         recordState.nodeCreate( nodeId );
         addLabelsToNode( recordState, nodeId, oneLabelId );
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
-        apply( neoStores, transaction( recordState ) );
+        apply( transaction( recordState ) );
         StorageIndexReference rule1 = createIndex( labelIdOne, propertyId1 );
         StorageIndexReference rule2 = createIndex( labelIdOne, propertyId2 );
         StorageIndexReference rule3 = createIndex( labelIdOne, propertyId1, propertyId2 );
 
         // WHEN
-        recordState = newTransactionRecordState( neoStores );
+        recordState = newTransactionRecordState();
         recordState.nodeRemoveProperty( nodeId, propertyId1 );
         recordState.nodeRemoveProperty( nodeId, propertyId2 );
         Iterable<Iterable<IndexEntryUpdate<SchemaDescriptor>>> indexUpdates = indexUpdatesOf( neoStores, recordState );
@@ -545,14 +554,14 @@ class TransactionRecordStateTest
     {
         neoStores = createStores();
         // GIVEN a store that has got a node with a dynamic label record
-        BatchTransactionApplier applier = buildApplier( neoStores, LockService.NO_LOCK_SERVICE );
+        BatchTransactionApplier applier = buildApplier( LockService.NO_LOCK_SERVICE );
         AtomicLong nodeId = new AtomicLong();
         AtomicLong dynamicLabelRecordId = new AtomicLong();
         apply( applier, transaction( nodeWithDynamicLabelRecord( neoStores, nodeId, dynamicLabelRecordId ) ) );
         assertDynamicLabelRecordInUse( neoStores, dynamicLabelRecordId.get(), true );
 
         // WHEN applying a transaction where the node is deleted
-        apply( applier, transaction( deleteNode( neoStores, nodeId.get() ) ) );
+        apply( applier, transaction( deleteNode( nodeId.get() ) ) );
 
         // THEN the dynamic label record should also be deleted
         assertDynamicLabelRecordInUse( neoStores, dynamicLabelRecordId.get(), false );
@@ -563,14 +572,14 @@ class TransactionRecordStateTest
     {
         neoStores = createStores();
         // GIVEN a store that has got a node with a dynamic label record
-        BatchTransactionApplier applier = buildApplier( neoStores, LockService.NO_LOCK_SERVICE );
+        BatchTransactionApplier applier = buildApplier( LockService.NO_LOCK_SERVICE );
         AtomicLong nodeId = new AtomicLong();
         AtomicLong dynamicLabelRecordId = new AtomicLong();
         apply( applier, transaction( nodeWithDynamicLabelRecord( neoStores, nodeId, dynamicLabelRecordId ) ) );
         assertDynamicLabelRecordInUse( neoStores, dynamicLabelRecordId.get(), true );
 
         // WHEN applying a transaction, which has first round-tripped through a log (written then read)
-        CommandsToApply transaction = transaction( deleteNode( neoStores, nodeId.get() ) );
+        CommandsToApply transaction = transaction( deleteNode( nodeId.get() ) );
         InMemoryVersionableReadableClosablePositionAwareChannel channel = new InMemoryVersionableReadableClosablePositionAwareChannel();
         writeToChannel( transaction, channel );
         CommandsToApply recoveredTransaction = readFromChannel( channel );
@@ -585,7 +594,7 @@ class TransactionRecordStateTest
     void shouldExtractCreatedCommandsInCorrectOrder() throws Throwable
     {
         neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "1" ) ) );
-        TransactionRecordState recordState = newTransactionRecordState( neoStores );
+        TransactionRecordState recordState = newTransactionRecordState();
         long nodeId = 0;
         long relId = 1;
         recordState.nodeCreate( nodeId );
@@ -612,7 +621,7 @@ class TransactionRecordStateTest
     void shouldExtractUpdateCommandsInCorrectOrder() throws Throwable
     {
         neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "1" ) ) );
-        TransactionRecordState recordState = newTransactionRecordState( neoStores );
+        TransactionRecordState recordState = newTransactionRecordState();
         long nodeId = 0;
         long relId1 = 1;
         long relId2 = 2;
@@ -621,9 +630,9 @@ class TransactionRecordStateTest
         recordState.relCreate( relId1, 0, nodeId, nodeId );
         recordState.relCreate( relId2, 0, nodeId, nodeId );
         recordState.nodeAddProperty( nodeId, 0, Values.of( 101 ) );
-        apply( neoStores, transaction( recordState ) );
+        apply( transaction( recordState ) );
 
-        recordState = newTransactionRecordState( neoStores );
+        recordState = newTransactionRecordState();
         recordState.nodeChangeProperty( nodeId, 0, Values.of( 102 ) );
         recordState.relCreate( relId3, 0, nodeId, nodeId );
         recordState.relAddProperty( relId1, 0, Values.of( 123 ) );
@@ -667,17 +676,17 @@ class TransactionRecordStateTest
         neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "5" ) ) );
         int relationshipA = 0;
         int relationshipB = 1;
-        TransactionRecordState state = newTransactionRecordState( neoStores );
+        TransactionRecordState state = newTransactionRecordState();
         state.nodeCreate( 0 );
         state.relCreate( 0, relationshipA, 0, 0 );
         state.relCreate( 1, relationshipA, 0, 0 );
         state.relCreate( 2, relationshipA, 0, 0 );
         state.relCreate( 3, relationshipA, 0, 0 );
         state.relCreate( 4, relationshipB, 0, 0 );
-        apply( neoStores, state );
+        apply( state );
 
         // When doing a tx where a relationship of type A for the node is create and rel of type relationshipB is deleted
-        state = newTransactionRecordState( neoStores );
+        state = newTransactionRecordState();
         state.relCreate( 5, relationshipA, 0, 0 ); // here this node should be converted to dense and the groups should be created
         state.relDelete( 4 ); // here the group relationshipB should be delete
 
@@ -692,7 +701,7 @@ class TransactionRecordStateTest
     void shouldExtractDeleteCommandsInCorrectOrder() throws Exception
     {
         neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "1" ) ) );
-        TransactionRecordState recordState = newTransactionRecordState( neoStores );
+        TransactionRecordState recordState = newTransactionRecordState();
         long nodeId1 = 0;
         long nodeId2 = 1;
         long relId1 = 1;
@@ -704,9 +713,9 @@ class TransactionRecordStateTest
         recordState.relCreate( relId2, 0, nodeId1, nodeId1 );
         recordState.relCreate( relId4, 1, nodeId1, nodeId1 );
         recordState.nodeAddProperty( nodeId1, 0, value1 );
-        apply( neoStores, transaction( recordState ) );
+        apply( transaction( recordState ) );
 
-        recordState = newTransactionRecordState( neoStores );
+        recordState = newTransactionRecordState();
         recordState.relDelete( relId4 );
         recordState.nodeDelete( nodeId2 );
         recordState.nodeRemoveProperty( nodeId1, 0 );
@@ -736,7 +745,7 @@ class TransactionRecordStateTest
     {
         neoStores = createStores();
         // GIVEN
-        TransactionRecordState recordState = newTransactionRecordState( neoStores );
+        TransactionRecordState recordState = newTransactionRecordState();
 
         final long indexId = neoStores.getSchemaStore().nextId();
         final long constraintId = neoStores.getSchemaStore().nextId();
@@ -755,7 +764,7 @@ class TransactionRecordStateTest
     {
         neoStores = createStores();
         // GIVEN
-        TransactionRecordState recordState = newTransactionRecordState( neoStores );
+        TransactionRecordState recordState = newTransactionRecordState();
 
         int nodeId = 1;
         recordState.nodeCreate( nodeId );
@@ -782,7 +791,7 @@ class TransactionRecordStateTest
         neoStores = createStores();
         // GIVEN
         long nodeId = 0;
-        TransactionRecordState recordState = newTransactionRecordState( neoStores );
+        TransactionRecordState recordState = newTransactionRecordState();
         StorageIndexReference rule1 = createIndex( labelIdOne, propertyId1 );
         StorageIndexReference rule2 = createIndex( labelIdOne, propertyId2 );
         StorageIndexReference rule3 = createIndex( labelIdOne, propertyId1, propertyId2 );
@@ -827,20 +836,20 @@ class TransactionRecordStateTest
 
         {
             // create the node records that we will modify in our main tx.
-            TransactionRecordState tx = newTransactionRecordState( neoStores );
+            TransactionRecordState tx = newTransactionRecordState();
             for ( int i = 1; i < nodes.length - 1; i++ )
             {
                 tx.nodeCreate( nodes[i] );
             }
             tx.nodeAddProperty( nodes[3], 0, Values.of( "old" ) );
             tx.nodeAddProperty( nodes[4], 0, Values.of( "old" ) );
-            BatchTransactionApplier applier = buildApplier( neoStores, locks );
+            BatchTransactionApplier applier = buildApplier( locks );
             apply( applier, transaction( tx ) );
         }
         reset( locks );
 
         // These are the changes we want to assert locking on
-        TransactionRecordState tx = newTransactionRecordState( neoStores );
+        TransactionRecordState tx = newTransactionRecordState();
         tx.nodeCreate( nodes[0] );
         tx.addLabelToNode( 0, nodes[1] );
         tx.nodeAddProperty( nodes[2], 0, Values.of( "value" ) );
@@ -853,7 +862,7 @@ class TransactionRecordStateTest
         tx.nodeAddProperty( nodes[6], 0, Values.of( "value" ) );
 
         //commit( tx );
-        BatchTransactionApplier applier = buildApplier( neoStores, locks );
+        BatchTransactionApplier applier = buildApplier( locks );
         apply( applier, transaction( tx ) );
 
         // then
@@ -877,7 +886,7 @@ class TransactionRecordStateTest
     void movingBilaterallyOfTheDenseNodeThresholdIsConsistent() throws Exception
     {
         neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "10" ) ) );
-        TransactionRecordState tx = newTransactionRecordState( neoStores );
+        TransactionRecordState tx = newTransactionRecordState();
         long nodeId = neoStores.getNodeStore().nextId();
 
         tx.nodeCreate( nodeId );
@@ -886,10 +895,10 @@ class TransactionRecordStateTest
         tx.createRelationshipTypeToken( "A", typeA, false );
         createRelationships( neoStores, tx, nodeId, typeA, INCOMING, 20 );
 
-        BatchTransactionApplier applier = buildApplier( neoStores, LockService.NO_LOCK_SERVICE );
+        BatchTransactionApplier applier = buildApplier( LockService.NO_LOCK_SERVICE );
         apply( applier, transaction( tx ) );
 
-        tx = newTransactionRecordState( neoStores );
+        tx = newTransactionRecordState();
 
         int typeB = 1;
         tx.createRelationshipTypeToken( "B", typeB, false );
@@ -932,11 +941,11 @@ class TransactionRecordStateTest
     }
 
     @Test
-    void shouldConvertToDenseNodeRepresentationWhenHittingThresholdWithDifferentTypes() throws Exception
+    void shouldConvertToDenseNodeRepresentationWhenHittingThresholdWithDifferentTypes()
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "50" ) ) );
-        TransactionRecordState tx = newTransactionRecordState( neoStores );
+        TransactionRecordState tx = newTransactionRecordState();
         long nodeId = neoStores.getNodeStore().nextId();
         int typeA = 0;
         int typeB = 1;
@@ -967,11 +976,11 @@ class TransactionRecordStateTest
     }
 
     @Test
-    void shouldConvertToDenseNodeRepresentationWhenHittingThresholdWithTheSameTypeDifferentDirection() throws Exception
+    void shouldConvertToDenseNodeRepresentationWhenHittingThresholdWithTheSameTypeDifferentDirection()
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "49" ) ) );
-        TransactionRecordState tx = newTransactionRecordState( neoStores );
+        TransactionRecordState tx = newTransactionRecordState();
         long nodeId = neoStores.getNodeStore().nextId();
         int typeA = 0;
         tx.nodeCreate( nodeId );
@@ -995,7 +1004,7 @@ class TransactionRecordStateTest
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "8" ) ) );
-        TransactionRecordState tx = newTransactionRecordState( neoStores );
+        TransactionRecordState tx = newTransactionRecordState();
         long nodeId = neoStores.getNodeStore().nextId();
         int typeA = 0;
         tx.nodeCreate( nodeId );
@@ -1018,7 +1027,7 @@ class TransactionRecordStateTest
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "13" ) ) );
-        TransactionRecordState tx = newTransactionRecordState( neoStores );
+        TransactionRecordState tx = newTransactionRecordState();
         int nodeId = (int) neoStores.getNodeStore().nextId();
         int typeA = 0;
         tx.nodeCreate( nodeId );
@@ -1033,11 +1042,11 @@ class TransactionRecordStateTest
     }
 
     @Test
-    void shouldMaintainCorrectDataWhenDeletingFromDenseNodeWithManyTypes() throws Exception
+    void shouldMaintainCorrectDataWhenDeletingFromDenseNodeWithManyTypes()
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "1" ) ) );
-        TransactionRecordState tx = newTransactionRecordState( neoStores );
+        TransactionRecordState tx = newTransactionRecordState();
         long nodeId = neoStores.getNodeStore().nextId();
         int typeA = 0;
         int typeB = 12;
@@ -1112,20 +1121,20 @@ class TransactionRecordStateTest
         int type15 = 15;
         neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "1" ) ) );
         {
-            TransactionRecordState recordState = newTransactionRecordState( neoStores );
+            TransactionRecordState recordState = newTransactionRecordState();
             neoStores.getRelationshipTypeTokenStore().setHighId( 16 );
 
             recordState.createRelationshipTypeToken( "5", type5, false );
             recordState.createRelationshipTypeToken( "10", type10, false );
             recordState.createRelationshipTypeToken( "15", type15, false );
-            apply( neoStores, transaction( recordState ) );
+            apply( transaction( recordState ) );
         }
 
         long nodeId = neoStores.getNodeStore().nextId();
         {
             long otherNode1Id = neoStores.getNodeStore().nextId();
             long otherNode2Id = neoStores.getNodeStore().nextId();
-            TransactionRecordState recordState = newTransactionRecordState( neoStores );
+            TransactionRecordState recordState = newTransactionRecordState();
             recordState.nodeCreate( nodeId );
             recordState.nodeCreate( otherNode1Id );
             recordState.nodeCreate( otherNode2Id );
@@ -1133,7 +1142,7 @@ class TransactionRecordStateTest
             // This relationship will cause the switch to dense
             recordState.relCreate( neoStores.getRelationshipStore().nextId(), type10, nodeId, otherNode2Id );
 
-            apply( neoStores, transaction( recordState ) );
+            apply( transaction( recordState ) );
 
             // Just a little validation of assumptions
             assertRelationshipGroupsInOrder( neoStores, nodeId, type10 );
@@ -1141,11 +1150,11 @@ class TransactionRecordStateTest
 
         // WHEN inserting a relationship of type 5
         {
-            TransactionRecordState recordState = newTransactionRecordState( neoStores );
+            TransactionRecordState recordState = newTransactionRecordState();
             long otherNodeId = neoStores.getNodeStore().nextId();
             recordState.nodeCreate( otherNodeId );
             recordState.relCreate( neoStores.getRelationshipStore().nextId(), type5, nodeId, otherNodeId );
-            apply( neoStores, transaction( recordState ) );
+            apply( transaction( recordState ) );
 
             // THEN that group should end up first in the chain
             assertRelationshipGroupsInOrder( neoStores, nodeId, type5, type10 );
@@ -1153,11 +1162,11 @@ class TransactionRecordStateTest
 
         // WHEN inserting a relationship of type 15
         {
-            TransactionRecordState recordState = newTransactionRecordState( neoStores );
+            TransactionRecordState recordState = newTransactionRecordState();
             long otherNodeId = neoStores.getNodeStore().nextId();
             recordState.nodeCreate( otherNodeId );
             recordState.relCreate( neoStores.getRelationshipStore().nextId(), type15, nodeId, otherNodeId );
-            apply( neoStores, transaction( recordState ) );
+            apply( transaction( recordState ) );
 
             // THEN that group should end up last in the chain
             assertRelationshipGroupsInOrder( neoStores, nodeId, type5, type10, type15 );
@@ -1170,7 +1179,7 @@ class TransactionRecordStateTest
         PrepareTrackingRecordFormats format = new PrepareTrackingRecordFormats( Standard.LATEST_RECORD_FORMATS );
         neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "1" ) ), format );
         // WHEN
-        TransactionRecordState state = newTransactionRecordState( neoStores );
+        TransactionRecordState state = newTransactionRecordState();
         state.nodeCreate( 0 );
         state.relCreate( 0, 0, 0, 0 );
         state.relCreate( 1, 0, 0, 0 );
@@ -1209,7 +1218,7 @@ class TransactionRecordStateTest
     void preparingIndexRulesMustMarkSchemaRecordAsChanged() throws Exception
     {
         neoStores = createStores();
-        TransactionRecordState state = newTransactionRecordState( neoStores );
+        TransactionRecordState state = newTransactionRecordState();
         long ruleId = neoStores.getSchemaStore().nextId();
         StorageIndexReference rule = new DefaultStorageIndexReference( forLabel( 0, 1 ), false, ruleId, null );
         state.schemaRuleCreate( ruleId, false, rule );
@@ -1233,7 +1242,7 @@ class TransactionRecordStateTest
     void preparingConstraintRulesMustMarkSchemaRecordAsChanged() throws Exception
     {
         neoStores = createStores();
-        TransactionRecordState state = newTransactionRecordState( neoStores );
+        TransactionRecordState state = newTransactionRecordState();
         long ruleId = neoStores.getSchemaStore().nextId();
         ConstraintRule rule = constraintRule( ruleId, ConstraintDescriptorFactory.existsForLabel( 0, 1 ) );
         state.schemaRuleCreate( ruleId, true, rule );
@@ -1257,14 +1266,14 @@ class TransactionRecordStateTest
     void settingSchemaRulePropertyMustUpdateSchemaRecordIfChainHeadChanges() throws Exception
     {
         neoStores = createStores();
-        TransactionRecordState state = newTransactionRecordState( neoStores );
+        TransactionRecordState state = newTransactionRecordState();
         long ruleId = neoStores.getSchemaStore().nextId();
         StorageIndexReference rule = new DefaultStorageIndexReference( forLabel( 0, 1 ), false, ruleId, null );
         state.schemaRuleCreate( ruleId, false, rule );
 
-        apply( neoStores, state );
+        apply( state );
 
-        state = newTransactionRecordState( neoStores );
+        state = newTransactionRecordState();
         state.schemaRuleSetProperty( ruleId, 42, Values.booleanValue( true ), rule );
         List<StorageCommand> commands = new ArrayList<>();
         state.extractCommands( commands );
@@ -1286,9 +1295,9 @@ class TransactionRecordStateTest
         assertThat( schemaCmd.getAfter().isCreated(), is( false ) );
         assertThat( schemaCmd.getAfter().getNextProp(), is( propCmd.getKey() ) );
 
-        apply( neoStores, transaction( commands ) );
+        apply( transaction( commands ) );
 
-        state = newTransactionRecordState( neoStores );
+        state = newTransactionRecordState();
         state.schemaRuleSetProperty( ruleId, 42, Values.booleanValue( false ), rule );
         commands.clear();
         state.extractCommands( commands );
@@ -1306,15 +1315,15 @@ class TransactionRecordStateTest
     void deletingSchemaRuleMustAlsoDeletePropertyChain() throws Exception
     {
         neoStores = createStores();
-        TransactionRecordState state = newTransactionRecordState( neoStores );
+        TransactionRecordState state = newTransactionRecordState();
         long ruleId = neoStores.getSchemaStore().nextId();
         StorageIndexReference rule = new DefaultStorageIndexReference( forLabel( 0, 1 ), false, ruleId, null );
         state.schemaRuleCreate( ruleId, false, rule );
         state.schemaRuleSetProperty( ruleId, 42, Values.booleanValue( true ), rule );
 
-        apply( neoStores, state );
+        apply( state );
 
-        state = newTransactionRecordState( neoStores );
+        state = newTransactionRecordState();
         state.schemaRuleDelete( ruleId, rule );
 
         List<StorageCommand> commands = new ArrayList<>();
@@ -1336,14 +1345,14 @@ class TransactionRecordStateTest
     void settingIndexOwnerMustAlsoUpdateIndexRule() throws Exception
     {
         neoStores = createStores();
-        TransactionRecordState state = newTransactionRecordState( neoStores );
+        TransactionRecordState state = newTransactionRecordState();
         long ruleId = neoStores.getSchemaStore().nextId();
         StorageIndexReference rule = new DefaultStorageIndexReference( forLabel( 0, 1 ), true, ruleId, null );
         state.schemaRuleCreate( ruleId, false, rule );
 
-        apply( neoStores, state );
+        apply( state );
 
-        state = newTransactionRecordState( neoStores );
+        state = newTransactionRecordState();
         state.schemaRuleSetIndexOwner( rule, 13, 42, Values.longValue( 13 ) );
         List<StorageCommand> commands = new ArrayList<>();
         state.extractCommands( commands );
@@ -1375,15 +1384,15 @@ class TransactionRecordStateTest
     void settingIndexOwnerMustAlsoUpdateIndexRuleEvenIfIndexOwnerPropertyFitsInExistingPropertyChain() throws Exception
     {
         neoStores = createStores();
-        TransactionRecordState state = newTransactionRecordState( neoStores );
+        TransactionRecordState state = newTransactionRecordState();
         long ruleId = neoStores.getSchemaStore().nextId();
         StorageIndexReference rule = new DefaultStorageIndexReference( forLabel( 0, 1 ), true, ruleId, null );
         state.schemaRuleCreate( ruleId, false, rule );
         state.schemaRuleSetProperty( ruleId, 42, Values.booleanValue( true ), rule );
 
-        apply( neoStores, state );
+        apply( state );
 
-        state = newTransactionRecordState( neoStores );
+        state = newTransactionRecordState();
         state.schemaRuleSetIndexOwner( rule, 13, 56, Values.longValue( 13 ) );
         List<StorageCommand> commands = new ArrayList<>();
         state.extractCommands( commands );
@@ -1519,7 +1528,7 @@ class TransactionRecordStateTest
 
     private TransactionRecordState nodeWithDynamicLabelRecord( NeoStores store, AtomicLong nodeId, AtomicLong dynamicLabelRecordId )
     {
-        TransactionRecordState recordState = newTransactionRecordState( store );
+        TransactionRecordState recordState = newTransactionRecordState();
 
         nodeId.set( store.getNodeStore().nextId() );
         int[] labelIds = new int[20];
@@ -1542,36 +1551,41 @@ class TransactionRecordStateTest
         return recordState;
     }
 
-    private TransactionRecordState deleteNode( NeoStores store, long nodeId )
+    private TransactionRecordState deleteNode( long nodeId )
     {
-        TransactionRecordState recordState = newTransactionRecordState( store );
+        TransactionRecordState recordState = newTransactionRecordState();
         recordState.nodeDelete( nodeId );
         return recordState;
     }
 
-    private static void apply( BatchTransactionApplier applier, CommandsToApply transaction ) throws Exception
+    private void apply( BatchTransactionApplier applier, CommandsToApply transaction ) throws Exception
     {
         CommandHandlerContract.apply( applier, transaction );
     }
 
-    private static void apply( NeoStores neoStores, CommandsToApply transaction ) throws Exception
+    private void apply( CommandsToApply transaction ) throws Exception
     {
-        BatchTransactionApplier applier = buildApplier( neoStores, LockService.NO_LOCK_SERVICE );
+        BatchTransactionApplier applier = buildApplier( LockService.NO_LOCK_SERVICE );
         apply( applier, transaction );
     }
 
-    private static void apply( NeoStores neoStores, TransactionRecordState state ) throws Exception
+    private void apply( TransactionRecordState state ) throws Exception
     {
-        BatchTransactionApplier applier = buildApplier( neoStores, LockService.NO_LOCK_SERVICE );
+        BatchTransactionApplier applier = buildApplier( LockService.NO_LOCK_SERVICE );
         apply( applier, transaction( state ) );
     }
 
-    private static BatchTransactionApplier buildApplier( NeoStores neoStores, LockService noLockService )
+    private BatchTransactionApplier buildApplier( LockService noLockService )
     {
-        return new NeoStoreBatchTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ), noLockService );
+        Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs = new EnumMap<>( IdType.class );
+        for ( IdType idType : IdType.values() )
+        {
+            idGeneratorWorkSyncs.put( idType, new WorkSync<>( idGeneratorFactory.get( idType ) ) );
+        }
+        return new NeoStoreBatchTransactionApplier( INTERNAL, neoStores, mock( CacheAccessBackDoor.class ), noLockService, idGeneratorWorkSyncs );
     }
 
-    private TransactionRecordState newTransactionRecordState( NeoStores neoStores )
+    private TransactionRecordState newTransactionRecordState()
     {
         Loaders loaders = new Loaders( neoStores );
         recordChangeSet = new RecordChangeSet( loaders );

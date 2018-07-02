@@ -20,13 +20,13 @@
 package org.neo4j.internal.id;
 
 import java.io.File;
-import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.util.EnumMap;
 import java.util.function.LongSupplier;
 
-import org.neo4j.exceptions.UnderlyingStorageException;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.internal.id.IdGenerator.CommitMarker;
+import org.neo4j.internal.id.IdGenerator.ReuseMarker;
+import org.neo4j.io.pagecache.IOLimiter;
 
 /**
  * {@link IdGeneratorFactory} managing read-only {@link IdGenerator} instances which basically only can access
@@ -35,36 +35,26 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
 {
     private final EnumMap<IdType,IdGenerator> idGenerators = new EnumMap<>( IdType.class );
-    private final FileSystemAbstraction fileSystemAbstraction;
+    private final IdGeneratorFactory actual;
 
-    public ReadOnlyIdGeneratorFactory()
+    public ReadOnlyIdGeneratorFactory( IdGeneratorFactory actual )
     {
-        this.fileSystemAbstraction = new DefaultFileSystemAbstraction();
-    }
-
-    public ReadOnlyIdGeneratorFactory( FileSystemAbstraction fileSystemAbstraction )
-    {
-        this.fileSystemAbstraction = fileSystemAbstraction;
+        this.actual = actual;
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, LongSupplier highId, long maxId )
+    public IdGenerator open( File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions )
     {
-        return open( filename, 0, idType, highId, maxId );
+        IdGenerator actualGenerator = actual.open( filename, idType, highIdScanner, maxId );
+        ReadOnlyIdGenerator readOnlyIdGenerator = new ReadOnlyIdGenerator( actualGenerator );
+        idGenerators.put( idType, readOnlyIdGenerator );
+        return readOnlyIdGenerator;
     }
 
     @Override
-    public IdGenerator open( File filename, int grabSize, IdType idType, LongSupplier highId, long maxId )
+    public IdGenerator create( File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId, OpenOption... openOptions )
     {
-        IdGenerator generator = new ReadOnlyIdGenerator( highId, fileSystemAbstraction, filename );
-        idGenerators.put( idType, generator );
-        return generator;
-    }
-
-    @Override
-    public void create( File filename, long highId, boolean throwIfFileExists )
-    {
-        // Don't
+        throw new UnsupportedOperationException( "Not supported on read-only id generator factory" );
     }
 
     @Override
@@ -73,31 +63,49 @@ public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
         return idGenerators.get( idType );
     }
 
+    public static final ReuseMarker NOOP_REUSE_MARKER = new ReuseMarker()
+    {
+        @Override
+        public void markReserved( long id )
+        {   // no-op
+        }
+
+        @Override
+        public void markFree( long id )
+        {   // no-op
+        }
+
+        @Override
+        public void close()
+        {   // no-op
+        }
+    };
+
+    public static final CommitMarker NOOP_COMMIT_MARKER = new CommitMarker()
+    {
+        @Override
+        public void markUsed( long id )
+        {   // no-op
+        }
+
+        @Override
+        public void markDeleted( long id )
+        {   // no-op
+        }
+
+        @Override
+        public void close()
+        {   // no-op
+        }
+    };
+
     static class ReadOnlyIdGenerator implements IdGenerator
     {
-        private final long highId;
-        private final long defragCount;
+        private final IdGenerator actual;
 
-        ReadOnlyIdGenerator( LongSupplier highId, FileSystemAbstraction fs, File filename )
+        ReadOnlyIdGenerator( IdGenerator actual )
         {
-            if ( fs != null && fs.fileExists( filename ) )
-            {
-                try
-                {
-                    this.highId = IdGeneratorImpl.readHighId( fs, filename );
-                    defragCount = IdGeneratorImpl.readDefragCount( fs, filename );
-                }
-                catch ( IOException e )
-                {
-                    throw new UnderlyingStorageException(
-                            "Failed to read id counts of the id file: " + filename, e );
-                }
-            }
-            else
-            {
-                this.highId = highId.getAsLong();
-                defragCount = 0;
-            }
+            this.actual = actual;
         }
 
         @Override
@@ -120,18 +128,40 @@ public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
         @Override
         public long getHighId()
         {
-            return highId;
+            return actual.getHighId();
         }
 
         @Override
         public long getHighestPossibleIdInUse()
         {
-            return highId - 1;
+            return actual.getHighestPossibleIdInUse();
         }
 
         @Override
         public void freeId( long id )
         {   // Don't
+        }
+
+        @Override
+        public ReuseMarker reuseMarker()
+        {
+            return NOOP_REUSE_MARKER;
+        }
+
+        @Override
+        public void deleteId( long id )
+        {   // Don't
+        }
+
+        @Override
+        public void markIdAsUsed( long id )
+        {   // Don't
+        }
+
+        @Override
+        public CommitMarker commitMarker()
+        {
+            return NOOP_COMMIT_MARKER;
         }
 
         @Override
@@ -142,18 +172,33 @@ public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
         @Override
         public long getNumberOfIdsInUse()
         {
-            return highId - defragCount;
+            // TODO
+            return getHighId();
         }
 
         @Override
         public long getDefragCount()
         {
-            return defragCount;
+            // TODO
+            return 0;
         }
 
         @Override
-        public void delete()
-        {   // Nothing to delete
+        public void start()
+        {
+            // Don't
+        }
+
+        @Override
+        public void checkpoint( IOLimiter ioLimiter )
+        {
+            // Don't
+        }
+
+        @Override
+        public void maintenance()
+        {
+            // Nothing to do
         }
     }
 }

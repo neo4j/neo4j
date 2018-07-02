@@ -26,7 +26,6 @@ import org.neo4j.internal.id.BufferingIdGeneratorFactory;
 import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.util.FeatureToggles;
@@ -37,15 +36,13 @@ public class IdContextFactory
 
     private final JobScheduler jobScheduler;
     private final Function<DatabaseId,IdGeneratorFactory> idFactoryProvider;
-    private final IdTypeConfigurationProvider idTypeConfigurationProvider;
     private final Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper;
 
     IdContextFactory( JobScheduler jobScheduler, Function<DatabaseId,IdGeneratorFactory> idFactoryProvider,
-            IdTypeConfigurationProvider idTypeConfigurationProvider, Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper )
+            Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper )
     {
         this.jobScheduler = jobScheduler;
         this.idFactoryProvider = idFactoryProvider;
-        this.idTypeConfigurationProvider = idTypeConfigurationProvider;
         this.factoryWrapper = factoryWrapper;
     }
 
@@ -65,8 +62,7 @@ public class IdContextFactory
             DatabaseId databaseId )
     {
         IdGeneratorFactory idGeneratorFactory = idGeneratorFactoryProvider.apply( databaseId );
-        BufferingIdGeneratorFactory bufferingIdGeneratorFactory =
-                new BufferingIdGeneratorFactory( idGeneratorFactory, idTypeConfigurationProvider );
+        BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( idGeneratorFactory );
         BufferedIdController bufferingController = createBufferedIdController( bufferingIdGeneratorFactory, jobScheduler );
         return createIdContext( bufferingIdGeneratorFactory, bufferingController );
     }

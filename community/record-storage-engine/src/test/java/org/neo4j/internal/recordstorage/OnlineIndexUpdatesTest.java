@@ -69,6 +69,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
@@ -104,8 +105,9 @@ class OnlineIndexUpdatesTest
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         Config config = Config.defaults();
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
-        StoreFactory storeFactory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
-                        fileSystem, nullLogProvider );
+        StoreFactory storeFactory =
+                new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() ), pageCache, fileSystem,
+                        nullLogProvider );
 
         neoStores = storeFactory.openAllNeoStores( true );
         CountsTracker counts =

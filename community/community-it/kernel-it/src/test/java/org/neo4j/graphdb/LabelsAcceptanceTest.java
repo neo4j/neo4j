@@ -23,10 +23,10 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.LongSupplier;
@@ -42,16 +42,22 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdType;
-import org.neo4j.internal.id.configuration.CommunityIdTypeConfigurationProvider;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageSwapperFactory;
+import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -68,9 +74,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.helpers.collection.Iterables.map;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasLabel;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasLabels;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasNoLabels;
@@ -212,15 +221,18 @@ class LabelsAcceptanceTest
     @Test
     void oversteppingMaxNumberOfLabelsShouldFailGracefully() throws IOException
     {
-        try ( EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction() )
+        JobScheduler scheduler = JobSchedulerFactory.createScheduler();
+        try ( EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+                Lifespan lifespan = new Lifespan( scheduler );
+                PageCache pageCache = new MuninnPageCache( swapper( fileSystem ), 1_000, PageCacheTracer.NULL, NULL, EMPTY, scheduler ) )
         {
             // Given
             Dependencies dependencies = new Dependencies();
-            dependencies.satisfyDependencies( createIdContextFactoryWithMaxedOutLabelTokenIds( fileSystem ) );
+            dependencies.satisfyDependencies( createIdContextFactoryWithMaxedOutLabelTokenIds( fileSystem, pageCache, scheduler ) );
             dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will create labels
 
-            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().setFileSystem( fileSystem ).setExternalDependencies(
-                    dependencies ).impermanent().build();
+            DatabaseManagementService managementService =
+                    new TestDatabaseManagementServiceBuilder().setFileSystem( fileSystem ).setExternalDependencies( dependencies ).impermanent().build();
 
             GraphDatabaseService graphDatabase = managementService.database( DEFAULT_DATABASE_NAME );
 
@@ -784,20 +796,34 @@ class LabelsAcceptanceTest
         }
     }
 
-    private IdContextFactory createIdContextFactoryWithMaxedOutLabelTokenIds( FileSystemAbstraction fileSystem )
+    private IdContextFactory createIdContextFactoryWithMaxedOutLabelTokenIds( FileSystemAbstraction fileSystem, PageCache pageCache, JobScheduler jobScheduler )
     {
-        return IdContextFactoryBuilder.of( new CommunityIdTypeConfigurationProvider(), JobSchedulerFactory.createScheduler() ).withIdGenerationFactoryProvider(
-                any -> new DefaultIdGeneratorFactory( fileSystem )
+        return IdContextFactoryBuilder.of( jobScheduler ).withIdGenerationFactoryProvider(
+                any -> new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() )
                 {
                     @Override
-                    public IdGenerator open( File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
+                    public IdGenerator open( File fileName, IdType idType, LongSupplier highId, long maxId, OpenOption... openOptions )
                     {
-                        if ( idType == IdType.LABEL_TOKEN )
-                        {
-                            maxId = highId.getAsLong() - 1;
-                        }
-                        return super.open( fileName, grabSize, idType, highId, maxId );
+                        return super.open( fileName, idType, highId, maxId( idType, maxId, highId ), openOptions );
+                    }
+
+                    @Override
+                    public IdGenerator create( File fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId, OpenOption... openOptions )
+                    {
+                        return super.create( fileName, idType, highId, throwIfFileExists, maxId( idType, maxId, () -> highId ), openOptions );
+                    }
+
+                    private long maxId( IdType idType, long maxId, LongSupplier highId )
+                    {
+                        return idType == IdType.LABEL_TOKEN ? highId.getAsLong() - 1 : maxId;
                     }
                 } ).build();
+    }
+
+    private static PageSwapperFactory swapper( EphemeralFileSystemAbstraction fileSystem )
+    {
+        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
+        factory.open( fileSystem, null );
+        return factory;
     }
 }

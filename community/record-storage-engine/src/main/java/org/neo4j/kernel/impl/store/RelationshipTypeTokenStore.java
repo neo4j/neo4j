@@ -26,9 +26,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.LogProvider;
 
@@ -61,11 +59,5 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
             throws FAILURE
     {
         processor.processRelationshipTypeToken( this, record );
-    }
-
-    @Override
-    protected boolean isRecordReserved( PageCursor cursor )
-    {
-        return cursor.getInt() == Record.RESERVED.intValue();
     }
 }

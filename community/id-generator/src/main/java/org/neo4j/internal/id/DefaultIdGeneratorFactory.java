@@ -20,52 +20,47 @@
 package org.neo4j.internal.id;
 
 import java.io.File;
+import java.nio.file.OpenOption;
 import java.util.EnumMap;
 import java.util.function.LongSupplier;
 
-import org.neo4j.internal.id.configuration.CommunityIdTypeConfigurationProvider;
-import org.neo4j.internal.id.configuration.IdTypeConfiguration;
-import org.neo4j.internal.id.configuration.IdTypeConfigurationProvider;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.id.indexed.IndexedIdGenerator;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+
+import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 
 public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 {
-    private final EnumMap<IdType,IdGenerator> generators = new EnumMap<>( IdType.class );
+    private final EnumMap<IdType, IdGenerator> generators = new EnumMap<>( IdType.class );
     private final FileSystemAbstraction fs;
-    private final IdTypeConfigurationProvider idTypeConfigurationProvider;
+    private final PageCache pageCache;
+    private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
 
-    public DefaultIdGeneratorFactory( FileSystemAbstraction fs )
+    public DefaultIdGeneratorFactory( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
-        this( fs, new CommunityIdTypeConfigurationProvider() );
-    }
-
-    public DefaultIdGeneratorFactory( FileSystemAbstraction fs, IdTypeConfigurationProvider idTypeConfigurationProvider )
-    {
+        if ( pageCache == null )
+        {
+            new Exception().printStackTrace();
+        }
         this.fs = fs;
-        this.idTypeConfigurationProvider = idTypeConfigurationProvider;
+        this.pageCache = pageCache;
+        this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, LongSupplier highId, long maxId )
+    public IdGenerator open( File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions )
     {
-        IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
-        return open( filename, idTypeConfiguration.getGrabSize(), idType, highId, maxId );
-    }
-
-    @Override
-    public IdGenerator open( File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
-    {
-        IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
-        IdGenerator generator = instantiate( fs, fileName, grabSize, maxId, idTypeConfiguration.allowAggressiveReuse(),
-                idType, highId );
+        IdGenerator generator = instantiate( fs, pageCache, recoveryCleanupWorkCollector, filename, maxId, idType, openOptions );
         generators.put( idType, generator );
         return generator;
     }
 
-    protected IdGenerator instantiate( FileSystemAbstraction fs, File fileName, int grabSize, long maxValue,
-            boolean aggressiveReuse, IdType idType, LongSupplier highId )
+    protected IdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, File fileName,
+            long maxValue, IdType idType, OpenOption[] openOptions )
     {
-        return new IdGeneratorImpl( fs, fileName, grabSize, maxValue, aggressiveReuse, idType, highId );
+        return new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, 6 * 7, maxValue, openOptions );
     }
 
     @Override
@@ -75,8 +70,11 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public void create( File fileName, long highId, boolean throwIfFileExists )
+    public IdGenerator create( File fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId, OpenOption... openOptions )
     {
-        IdGeneratorImpl.createGenerator( fs, fileName, highId, throwIfFileExists );
+        IndexedIdGenerator generator = new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, highId, maxId, openOptions );
+        generator.checkpoint( UNLIMITED );
+        generators.put( idType, generator );
+        return generator;
     }
 }

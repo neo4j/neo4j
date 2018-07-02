@@ -166,6 +166,25 @@ public class Race
     }
 
     /**
+     * Like go, but wraps any exception in {@link RuntimeException}.
+     */
+    public void goUnchecked()
+    {
+        try
+        {
+            go();
+        }
+        catch ( RuntimeException e )
+        {
+            throw e;
+        }
+        catch ( Throwable t )
+        {
+            throw new RuntimeException( t );
+        }
+    }
+
+    /**
      * Starts the race and waits {@code maxWaitTime} for all contestants to either fail or succeed.
      *
      * @param maxWaitTime max time to wait for all contestants, 0 means indefinite wait.
@@ -242,6 +261,11 @@ public class Race
         }
     }
 
+    public boolean hasFailed()
+    {
+        return failure;
+    }
+
     private class Contestant extends Thread
     {
         private volatile Throwable error;
@@ -290,6 +314,7 @@ public class Race
             }
             catch ( Throwable e )
             {
+                e.printStackTrace();
                 error = e;
                 failure = true; // <-- global flag
                 throw e;

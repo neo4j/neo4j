@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.ArrayUtil.contains;
 
 /**
@@ -64,11 +65,11 @@ class DirectRecordStoreMigrator
         progressReporter.start( storesToOpen.length );
 
         try (
-                NeoStores fromStores = new StoreFactory( fromDirectoryStructure, config, new DefaultIdGeneratorFactory( fs ),
+                NeoStores fromStores = new StoreFactory( fromDirectoryStructure, config, new DefaultIdGeneratorFactory( fs, pageCache, immediate() ),
                     pageCache, fs, fromFormat, NullLogProvider.getInstance() )
                         .openNeoStores( true, storesToOpen );
                 NeoStores toStores = new StoreFactory( toDirectoryStructure, withPersistedStoreHeadersAsConfigFrom( fromStores, storesToOpen ),
-                    new DefaultIdGeneratorFactory( fs ), pageCache, fs, toFormat, NullLogProvider.getInstance() )
+                    new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache, fs, toFormat, NullLogProvider.getInstance() )
                         .openNeoStores( true, storesToOpen ) )
         {
             for ( StoreType type : types )

@@ -35,8 +35,6 @@ import org.neo4j.internal.id.BufferingIdGeneratorFactory;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.configuration.CommunityIdTypeConfigurationProvider;
-import org.neo4j.internal.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -98,6 +96,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 
@@ -145,9 +144,7 @@ public class DatabaseRule extends ExternalResource
         LogService logService = dependency( mutableDependencies, LogService.class,
                 deps -> new SimpleLogService( NullLogProvider.getInstance() ) );
         IdGeneratorFactory idGeneratorFactory = dependency( mutableDependencies, IdGeneratorFactory.class,
-                deps -> new DefaultIdGeneratorFactory( fs ) );
-        IdTypeConfigurationProvider idConfigurationProvider = dependency( mutableDependencies,
-                IdTypeConfigurationProvider.class, deps -> new CommunityIdTypeConfigurationProvider() );
+                deps -> new DefaultIdGeneratorFactory( fs, pageCache, immediate() ) );
         DatabaseHealth databaseHealth = dependency( mutableDependencies, DatabaseHealth.class,
                 deps -> new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() ) );
         SystemNanoClock clock = dependency( mutableDependencies, SystemNanoClock.class, deps -> Clocks.nanoClock() );
@@ -165,7 +162,7 @@ public class DatabaseRule extends ExternalResource
                 pageCache, new StandardConstraintSemantics(), monitors,
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler, clock ),
                 mock( GlobalProcedures.class ), IOLimiter.UNLIMITED, clock, new CanWrite(), new StoreCopyCheckPointMutex(),
-                new BufferedIdController( new BufferingIdGeneratorFactory( idGeneratorFactory, idConfigurationProvider ),
+                new BufferedIdController( new BufferingIdGeneratorFactory( idGeneratorFactory ),
                         jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP,
                 Iterables.iterable( new EmptyIndexExtensionFactory() ),
                 file -> mock( DatabaseLayoutWatcher.class ), Iterables.empty(),

@@ -79,6 +79,7 @@ import static org.neo4j.configuration.Settings.FALSE;
 import static org.neo4j.configuration.Settings.TRUE;
 import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
 import static org.neo4j.kernel.impl.factory.DatabaseInfo.TOOL;
@@ -193,7 +194,8 @@ public class ConsistencyCheckService
         config.augment( GraphDatabaseSettings.pagecache_warmup_enabled, FALSE );
 
         LifeSupport life = new LifeSupport();
-        StoreFactory factory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider );
+        StoreFactory factory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() ),
+                pageCache, fileSystem, logProvider );
         ReadOnlyCountsTracker counts = new ReadOnlyCountsTracker( logProvider, fileSystem, pageCache, config, databaseLayout );
         try
         {

@@ -19,11 +19,16 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.function.Predicate;
 
+import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorPredicates;
@@ -51,10 +56,13 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 class SchemaRuleCommandTest
 {
@@ -70,8 +78,7 @@ class SchemaRuleCommandTest
     private final SchemaCache schemaCache = mock( SchemaCache.class );
     private final StorageEngine storageEngine = mock( StorageEngine.class );
     private final NodeLabelUpdateListener labelUpdateListener = mock( NodeLabelUpdateListener.class );
-    private final NeoStoreBatchTransactionApplier storeApplier = new NeoStoreBatchTransactionApplier( neoStores,
-            mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE );
+    private NeoStoreBatchTransactionApplier storeApplier;
     private final WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSynchronizer = new WorkSync<>( labelUpdateListener );
     private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
     private final PropertyStore propertyStore = mock( PropertyStore.class );
@@ -80,6 +87,18 @@ class SchemaRuleCommandTest
                     neoStores.getRelationshipStore(), propertyStore, storageEngine, schemaCache, new IndexActivator( indexes ) );
     private final BaseCommandReader reader = new PhysicalLogCommandReaderV4_0();
     private final StorageIndexReference rule = new DefaultStorageIndexReference( SchemaDescriptor.forLabel( labelId, propertyKey ), false, id, null );
+
+    @BeforeEach
+    void setup()
+    {
+        Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs = new EnumMap<>( IdType.class );
+        for ( IdType idType : IdType.values() )
+        {
+            idGeneratorWorkSyncs.put( idType, new WorkSync<>( mock( IdGenerator.class ) ) );
+        }
+        storeApplier = new NeoStoreBatchTransactionApplier( INTERNAL, neoStores, mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE,
+                idGeneratorWorkSyncs );
+    }
 
     @Test
     void shouldWriteCreatedSchemaRuleToStore() throws Exception
@@ -94,7 +113,7 @@ class SchemaRuleCommandTest
         visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( before, after, rule ) );
 
         // THEN
-        verify( schemaStore ).updateRecord( after );
+        verify( schemaStore ).updateRecord( eq( after ), any() );
     }
 
     @Test
@@ -133,7 +152,7 @@ class SchemaRuleCommandTest
         visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( before, after, schemaRule ) );
 
         // THEN
-        verify( schemaStore ).updateRecord( after );
+        verify( schemaStore ).updateRecord( eq( after ), any() );
         verify( metaDataStore ).setLatestConstraintIntroducingTx( txId );
     }
 
@@ -151,7 +170,7 @@ class SchemaRuleCommandTest
         visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( before, after, rule ) );
 
         // THEN
-        verify( schemaStore ).updateRecord( after );
+        verify( schemaStore ).updateRecord( eq( after ), any() );
     }
 
     @Test

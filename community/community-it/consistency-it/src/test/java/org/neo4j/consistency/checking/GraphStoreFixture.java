@@ -111,6 +111,7 @@ import static org.neo4j.configuration.Settings.FALSE;
 import static org.neo4j.configuration.Settings.TRUE;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.recordstorage.StoreTokens.allReadableTokens;
 import static org.neo4j.internal.recordstorage.StoreTokens.readOnlyTokenHolders;
@@ -198,7 +199,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             PageCache pageCache = getPageCache( fileSystem );
             LogProvider logProvider = NullLogProvider.getInstance();
             Config config = Config.defaults( GraphDatabaseSettings.read_only, readOnly ? TRUE : FALSE );
-            DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
+            DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() );
             StoreFactory storeFactory = new StoreFactory(
                     directory.databaseLayout(), config, idGeneratorFactory, pageCache, fileSystem, logProvider );
             neoStore = storeFactory.openAllNeoStores();
@@ -252,8 +253,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     private LabelScanStore startLabelScanStore( PageCache pageCache, IndexStoreView indexStoreView, Monitors monitors, boolean readOnly )
     {
         NativeLabelScanStore labelScanStore =
-                new NativeLabelScanStore( pageCache, databaseLayout(), fileSystem, new FullLabelStream( indexStoreView ), readOnly, monitors,
-                        RecoveryCleanupWorkCollector.immediate() );
+                new NativeLabelScanStore( pageCache, databaseLayout(), fileSystem, new FullLabelStream( indexStoreView ), readOnly, monitors, immediate() );
         try
         {
             labelScanStore.init();

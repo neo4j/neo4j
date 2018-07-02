@@ -78,6 +78,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
 @PageCacheExtension
 class RecordStorageMigratorIT
@@ -134,8 +135,7 @@ class RecordStorageMigratorIT
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory = new StoreFactory(
-                databaseLayout, CONFIG, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
-                logService.getInternalLogProvider() );
+                databaseLayout, CONFIG, new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache, fs, logService.getInternalLogProvider() );
         storeFactory.openAllNeoStores().close();
     }
 
@@ -164,7 +164,7 @@ class RecordStorageMigratorIT
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory = new StoreFactory(
-                databaseLayout, CONFIG, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
+                databaseLayout, CONFIG, new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache, fs,
                 logService.getInternalLogProvider() );
         storeFactory.openAllNeoStores().close();
         logProvider.rawMessageMatcher().assertNotContains( "ERROR" );
@@ -197,7 +197,7 @@ class RecordStorageMigratorIT
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory =
-                new StoreFactory( databaseLayout, CONFIG, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
+                new StoreFactory( databaseLayout, CONFIG, new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache, fs,
                         logService.getInternalLogProvider() );
         storeFactory.openAllNeoStores().close();
     }
@@ -266,12 +266,12 @@ class RecordStorageMigratorIT
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
 
-        IdGeneratorFactory igf = new DefaultIdGeneratorFactory( fs );
+        IdGeneratorFactory igf = new DefaultIdGeneratorFactory( fs, pageCache, immediate() );
         LogProvider logProvider = logService.getInternalLogProvider();
         File storeFile = databaseLayout.schemaStore();
         File idFile = databaseLayout.idSchemaStore();
         SchemaStore35 schemaStore35 = new SchemaStore35( storeFile, idFile, CONFIG, IdType.SCHEMA, igf, pageCache, logProvider, StandardV3_4.RECORD_FORMATS );
-        schemaStore35.checkAndLoadStorage( false );
+        schemaStore35.initialise( false );
         SplittableRandom rng = new SplittableRandom();
         LongHashSet indexes = new LongHashSet();
         LongHashSet constraints = new LongHashSet();

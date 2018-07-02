@@ -45,6 +45,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 
 @PageCacheExtension
@@ -176,7 +177,7 @@ class RecordRelationshipScanCursorTest
     private StoreFactory getStoreFactory()
     {
         return new StoreFactory(
-                testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ),
+                testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() ),
                 pageCache, fileSystem, NullLogProvider.getInstance() );
     }
 

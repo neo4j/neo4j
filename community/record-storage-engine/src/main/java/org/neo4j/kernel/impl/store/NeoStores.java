@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
-import java.util.Iterator;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.neo4j.configuration.Config;
@@ -31,9 +31,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.Exceptions;
-import org.neo4j.internal.helpers.collection.FilteringIterator;
-import org.neo4j.internal.helpers.collection.IteratorWrapper;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -52,8 +49,6 @@ import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
 import static org.apache.commons.lang3.ArrayUtils.contains;
-import static org.neo4j.internal.helpers.collection.Iterators.iterator;
-import static org.neo4j.internal.helpers.collection.Iterators.loop;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionLongToString;
 
@@ -238,7 +233,17 @@ public class NeoStores implements AutoCloseable
 
     public void flush( IOLimiter limiter ) throws IOException
     {
+        // The thing about flush here is that it won't invoke flush on each individual store and this is because calling
+        // the flushAndForce method on the MuninnPageCache has the opportunity to flush things in parallel, something that
+        // flushing individual files would not have, or at least it would be a bit more complicated to do.
+        // Therefore this method will have to manually checkpoint all the id generators of all stores.
+        // The reason we don't use IdGeneratorFactory to get all the IdGenerators is that the design of it and where it sits
+        // architecturally makes it fragile and silently overwriting IdGenerator instances from other databases,
+        // it's weird I know. The most stable and secure thing we can do is to invoke this on the IdGenerator instances
+        // that our stores reference.
+
         pageCache.flushAndForce( limiter );
+        visitStores( store -> store.getIdGenerator().checkpoint( limiter ) );
     }
 
     private CommonAbstractStore openStore( StoreType type )
@@ -376,26 +381,9 @@ public class NeoStores implements AutoCloseable
         return (SchemaStore) getStore( StoreType.SCHEMA );
     }
 
-    private Iterable<CommonAbstractStore> instantiatedRecordStores()
-    {
-        Iterator<StoreType> storeTypes = new FilteringIterator<>( iterator( STORE_TYPES ), INSTANTIATED_STORES );
-        return loop( new IteratorWrapper<>( storeTypes )
-        {
-            @Override
-            protected CommonAbstractStore underlyingObjectToObject( StoreType type )
-            {
-                return stores[type.ordinal()];
-            }
-        } );
-    }
-
     public void makeStoreOk()
     {
-        visitStore( store ->
-        {
-            store.makeStoreOk();
-            return false;
-        } );
+        visitStores( CommonAbstractStore::start );
     }
 
     /**
@@ -403,29 +391,17 @@ public class NeoStores implements AutoCloseable
      */
     public void verifyStoreOk()
     {
-        visitStore( store ->
-        {
-            store.checkStoreOk();
-            return false;
-        } );
+        visitStores( CommonAbstractStore::checkStoreOk );
     }
 
     public void logVersions( Logger msgLog )
     {
-        visitStore( store ->
-        {
-            store.logVersions( msgLog );
-            return false;
-        } );
+        visitStores( store -> store.logVersions( msgLog ) );
     }
 
     public void logIdUsage( Logger msgLog )
     {
-        visitStore( store ->
-        {
-            store.logIdUsage( msgLog );
-            return false;
-        } );
+        visitStores( store -> store.logIdUsage( msgLog ) );
     }
 
     /**
@@ -434,21 +410,15 @@ public class NeoStores implements AutoCloseable
      * methods like:
      * {@link #close()} (where that method could be deleted all together, note a specific behaviour of Counts'Store'})
      */
-    public void visitStore( Visitor<CommonAbstractStore,RuntimeException> visitor )
+    private void visitStores( Consumer<CommonAbstractStore> visitor )
     {
-        for ( CommonAbstractStore store : instantiatedRecordStores() )
+        for ( CommonAbstractStore store : stores )
         {
-            store.visitStore( visitor );
+            if ( store != null )
+            {
+                visitor.accept( store );
+            }
         }
-    }
-
-    public void deleteIdGenerators()
-    {
-        visitStore( store ->
-        {
-            store.deleteIdGenerator();
-            return false;
-        } );
     }
 
     CommonAbstractStore createNodeStore()

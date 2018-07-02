@@ -23,6 +23,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -35,6 +36,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
@@ -46,6 +48,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 @EphemeralPageCacheExtension
@@ -60,13 +63,11 @@ class TestDynamicStore
 
     private StoreFactory storeFactory;
     private NeoStores neoStores;
-    private Config config;
 
     @BeforeEach
     void setUp()
     {
-        config = Config.defaults();
-        storeFactory = new StoreFactory( testDirectory.databaseLayout(), config, new DefaultIdGeneratorFactory( fs ),
+        storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs, pageCache, immediate() ),
                 pageCache, fs, NullLogProvider.getInstance() );
     }
 
@@ -120,7 +121,7 @@ class TestDynamicStore
     }
 
     @Test
-    void testRandomTest()
+    void testRandomTest() throws IOException
     {
         Random random = new Random( System.currentTimeMillis() );
         DynamicArrayStore store = createDynamicArrayStore();
@@ -136,8 +137,7 @@ class TestDynamicStore
             float rIndex = random.nextFloat();
             if ( rIndex < deleteIndex && currentCount > 0 )
             {
-                long blockId = idsTaken.remove(
-                        random.nextInt( currentCount ) );
+                long blockId = idsTaken.remove( random.nextInt( currentCount ) );
                 store.getRecords( blockId, NORMAL, false );
                 byte[] bytes = (byte[]) store.getArrayFor( store.getRecords( blockId, NORMAL, false ) );
                 validateData( bytes, byteData.remove( blockId ) );
@@ -168,6 +168,7 @@ class TestDynamicStore
             }
             if ( rIndex > (1.0f - closeIndex) || rIndex < closeIndex )
             {
+                neoStores.flush( IOLimiter.UNLIMITED );
                 neoStores.close();
                 store = createDynamicArrayStore();
             }

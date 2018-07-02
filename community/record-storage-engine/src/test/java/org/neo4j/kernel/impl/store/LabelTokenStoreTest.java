@@ -31,7 +31,7 @@ import org.neo4j.logging.LogProvider;
 class LabelTokenStoreTest extends TokenStoreTestTemplate<LabelTokenRecord>
 {
     @Override
-    protected TokenStore<LabelTokenRecord> createStore( File file, File idFile, IdGeneratorFactory generatorFactory, PageCache pageCache,
+    protected TokenStore<LabelTokenRecord> instantiateStore( File file, File idFile, IdGeneratorFactory generatorFactory, PageCache pageCache,
             LogProvider logProvider, DynamicStringStore nameStore, RecordFormats formats, Config config )
     {
         return new LabelTokenStore( file, idFile, config, generatorFactory, pageCache, logProvider, nameStore, formats );

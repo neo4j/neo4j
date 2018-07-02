@@ -199,13 +199,13 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     }
 
     @Override
-    public void updateRecord( PropertyRecord record )
+    public void updateRecord( PropertyRecord record, IdUpdateListener idUpdateListener )
     {
-        updatePropertyBlocks( record );
-        super.updateRecord( record );
+        updatePropertyBlocks( record, idUpdateListener );
+        super.updateRecord( record, idUpdateListener );
     }
 
-    private void updatePropertyBlocks( PropertyRecord record )
+    private void updatePropertyBlocks( PropertyRecord record, IdUpdateListener idUpdateListener )
     {
         if ( record.inUse() )
         {
@@ -221,30 +221,29 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
                 if ( !block.isLight()
                         && block.getValueRecords().get( 0 ).isCreated() )
                 {
-                    updateDynamicRecords( block.getValueRecords() );
+                    updateDynamicRecords( block.getValueRecords(), idUpdateListener );
                 }
             }
         }
-        updateDynamicRecords( record.getDeletedRecords() );
+        updateDynamicRecords( record.getDeletedRecords(), idUpdateListener );
     }
 
-    private void updateDynamicRecords( List<DynamicRecord> records )
+    private void updateDynamicRecords( List<DynamicRecord> records, IdUpdateListener idUpdateListener )
     {
         for ( DynamicRecord valueRecord : records )
         {
             PropertyType recordType = valueRecord.getType();
             if ( recordType == PropertyType.STRING )
             {
-                stringStore.updateRecord( valueRecord );
+                stringStore.updateRecord( valueRecord, idUpdateListener );
             }
             else if ( recordType == PropertyType.ARRAY )
             {
-                arrayStore.updateRecord( valueRecord );
+                arrayStore.updateRecord( valueRecord, idUpdateListener );
             }
             else
             {
-                throw new InvalidRecordException( "Unknown dynamic record"
-                        + valueRecord );
+                throw new InvalidRecordException( "Unknown dynamic record" + valueRecord );
             }
         }
     }

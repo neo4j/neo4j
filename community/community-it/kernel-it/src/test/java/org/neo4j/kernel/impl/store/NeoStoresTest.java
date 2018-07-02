@@ -28,11 +28,11 @@ import org.junit.rules.RuleChain;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.OpenOption;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.LongSupplier;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
@@ -44,12 +44,13 @@ import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.IdGeneratorImpl;
 import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.id.indexed.IndexedIdGenerator;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.TransactionRecordState.PropertyReceiver;
@@ -109,6 +110,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.counts_store_rotation_timeout;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
@@ -168,7 +170,7 @@ public class NeoStoresTest
         neoStores.close();
 
         exception.expect( IllegalStateException.class );
-        exception.expectMessage( "Specified store was already closed.");
+        exception.expectMessage( "Specified store was already closed." );
         neoStores.getMetaDataStore();
     }
 
@@ -196,7 +198,7 @@ public class NeoStoresTest
         exception.expect( IllegalStateException.class );
         exception.expectMessage(
                 "Specified store was not initialized. Please specify " + StoreType.META_DATA.name() +
-                " as one of the stores types that should be open to be able to use it." );
+                        " as one of the stores types that should be open to be able to use it." );
         try ( NeoStores neoStores = sf.openNeoStores( true, StoreType.NODE_LABEL ) )
         {
             neoStores.getMetaDataStore();
@@ -578,7 +580,7 @@ public class NeoStoresTest
             assertEquals( recordVersion, metaDataStore.getStoreVersion() );
             assertEquals( 8, metaDataStore.getGraphNextProp() );
             assertEquals( 9, metaDataStore.getLatestConstraintIntroducingTx() );
-            assertArrayEquals( metaDataStore.getLastClosedTransaction(), new long[]{FIELD_NOT_PRESENT,44,43} );
+            assertArrayEquals( metaDataStore.getLastClosedTransaction(), new long[]{FIELD_NOT_PRESENT, 44, 43} );
         }
     }
 
@@ -587,8 +589,9 @@ public class NeoStoresTest
     {
         // given
         Config config = Config.defaults();
-        StoreFactory sf = new StoreFactory( dir.databaseLayout(), config, new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), LOG_PROVIDER );
+        PageCache pageCache = pageCacheRule.getPageCache( fs.get() );
+        StoreFactory sf = new StoreFactory( dir.databaseLayout(), config, new DefaultIdGeneratorFactory( fs.get(), pageCache, immediate() ),
+                pageCache, fs.get(), LOG_PROVIDER );
 
         // when
         NeoStores neoStores = sf.openAllNeoStores( true );
@@ -691,7 +694,7 @@ public class NeoStoresTest
             assertEquals( new TransactionId( 10, 11, BASE_TX_COMMIT_TIMESTAMP ),
                     metaDataStore.getUpgradeTransaction() );
             assertEquals( 12, metaDataStore.getUpgradeTime() );
-            assertArrayEquals( metaDataStore.getLastClosedTransaction(), new long[]{6,44,43} );
+            assertArrayEquals( metaDataStore.getLastClosedTransaction(), new long[]{6, 44, 43} );
         }
 
         MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, 13 );
@@ -723,7 +726,7 @@ public class NeoStoresTest
             // THEN
             assertEquals( new TransactionId( 42, 6666, BASE_TX_COMMIT_TIMESTAMP ),
                     store.getLastCommittedTransaction() );
-            assertArrayEquals( store.getLastClosedTransaction(), new long[]{40,0,LogHeader.LOG_HEADER_SIZE} );
+            assertArrayEquals( store.getLastClosedTransaction(), new long[]{40, 0, LogHeader.LOG_HEADER_SIZE} );
         }
     }
 
@@ -746,7 +749,7 @@ public class NeoStoresTest
             // THEN
             assertEquals( new TransactionId( 40, 4444, BASE_TX_COMMIT_TIMESTAMP ),
                     store.getLastCommittedTransaction() );
-            assertArrayEquals( store.getLastClosedTransaction(), new long[]{40,0,LogHeader.LOG_HEADER_SIZE} );
+            assertArrayEquals( store.getLastClosedTransaction(), new long[]{40, 0, LogHeader.LOG_HEADER_SIZE} );
         }
     }
 
@@ -756,7 +759,7 @@ public class NeoStoresTest
         // given
         Config defaults = Config.defaults( counts_store_rotation_timeout, "60m" );
         String errorMessage = "Failing for the heck of it";
-        StoreFactory factory = new StoreFactory( databaseLayout, defaults, new CloseFailingDefaultIdGeneratorFactory( fs, errorMessage ), pageCache,
+        StoreFactory factory = new StoreFactory( databaseLayout, defaults, new CloseFailingDefaultIdGeneratorFactory( fs, pageCache, errorMessage ), pageCache,
                 fs, NullLogProvider.getInstance() );
         NeoStores neoStore = factory.openAllNeoStores( true );
 
@@ -782,7 +785,7 @@ public class NeoStoresTest
         // given
         FileSystemAbstraction fileSystem = fs.get();
         fileSystem.deleteRecursively( databaseLayout.databaseDirectory() );
-        DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fileSystem );
+        DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() );
         StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idFactory, pageCache, fileSystem,
                 LOG_PROVIDER );
 
@@ -800,7 +803,7 @@ public class NeoStoresTest
         // given
         FileSystemAbstraction fileSystem = fs.get();
         fileSystem.deleteRecursively( databaseLayout.databaseDirectory() );
-        DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fileSystem );
+        DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() );
         StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idFactory, pageCache, fileSystem,
                 LOG_PROVIDER );
         StoreType[] allStoreTypes = StoreType.values();
@@ -823,11 +826,11 @@ public class NeoStoresTest
     {
         RecordFormats recordFormats = RecordFormatSelector.defaultFormat();
         Config config = Config.defaults();
-        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
+        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, pageCache, immediate() );
         return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, recordFormats, LOG_PROVIDER );
     }
 
-    private void initializeStores( DatabaseLayout databaseLayout, Map<String,String> additionalConfig )
+    private void initializeStores( DatabaseLayout databaseLayout, Map<String, String> additionalConfig )
     {
         Dependencies dependencies = new Dependencies();
         Config config = Config.defaults( additionalConfig );
@@ -890,7 +893,7 @@ public class NeoStoresTest
             int relType1, int relType2 ) throws IOException, TokenNotFoundException
     {
         assertTrue( nodeExists( node ) );
-        Map<Integer,Pair<StorageProperty,Long>> props = new HashMap<>();
+        Map<Integer, Pair<StorageProperty, Long>> props = new HashMap<>();
         PropertyReceiver<PropertyKeyValue> receiver = newPropertyReceiver( props );
         nodeLoadProperties( node, receiver );
         int count = 0;
@@ -935,7 +938,7 @@ public class NeoStoresTest
     {
         int count = 0;
         try ( KernelStatement ignore = (KernelStatement) tx.acquireStatement();
-              StorageNodeCursor nodeCursor = allocateNodeCursor( node ) )
+                StorageNodeCursor nodeCursor = allocateNodeCursor( node ) )
         {
             assertTrue( nodeCursor.next() );
             try ( StorageRelationshipTraversalCursor relationships = allocateRelationshipTraversalCursor( nodeCursor ) )
@@ -958,7 +961,6 @@ public class NeoStoresTest
                         throw new IOException();
                     }
                     count++;
-
                 }
             }
         }
@@ -979,7 +981,7 @@ public class NeoStoresTest
         return nodeCursor;
     }
 
-    private PropertyReceiver<PropertyKeyValue> newPropertyReceiver( Map<Integer,Pair<StorageProperty,Long>> props )
+    private PropertyReceiver<PropertyKeyValue> newPropertyReceiver( Map<Integer, Pair<StorageProperty, Long>> props )
     {
         return ( property, propertyRecordId ) -> props.put( property.propertyKeyId(), Pair.of( property, propertyRecordId ) );
     }
@@ -989,7 +991,7 @@ public class NeoStoresTest
             long rel1, long rel2, int relType1, int relType2 ) throws IOException, RuntimeException, TokenNotFoundException
     {
         assertTrue( nodeExists( node ) );
-        Map<Integer,Pair<StorageProperty,Long>> props = new HashMap<>();
+        Map<Integer, Pair<StorageProperty, Long>> props = new HashMap<>();
         nodeLoadProperties( node, newPropertyReceiver( props ) );
         int count = 0;
         for ( int keyId : props.keySet() )
@@ -1026,7 +1028,7 @@ public class NeoStoresTest
         count = 0;
 
         try ( KernelStatement ignore = (KernelStatement) tx.acquireStatement();
-              StorageNodeCursor nodeCursor = allocateNodeCursor( node ) )
+                StorageNodeCursor nodeCursor = allocateNodeCursor( node ) )
         {
             assertTrue( nodeCursor.next() );
             try ( StorageRelationshipTraversalCursor relationships = allocateRelationshipTraversalCursor( nodeCursor ) )
@@ -1049,7 +1051,6 @@ public class NeoStoresTest
                         throw new IOException();
                     }
                     count++;
-
                 }
             }
         }
@@ -1068,7 +1069,7 @@ public class NeoStoresTest
             StorageProperty prop2, StorageProperty prop3, long firstNode, long secondNode,
             int relType ) throws IOException, TokenNotFoundException
     {
-        Map<Integer,Pair<StorageProperty,Long>> props = new HashMap<>();
+        Map<Integer, Pair<StorageProperty, Long>> props = new HashMap<>();
         relLoadProperties( rel, newPropertyReceiver( props ) );
         int count = 0;
         for ( int keyId : props.keySet() )
@@ -1122,7 +1123,7 @@ public class NeoStoresTest
             StorageProperty prop2, StorageProperty prop3,
             long firstNode, long secondNode, int relType ) throws IOException, TokenNotFoundException
     {
-        Map<Integer,Pair<StorageProperty,Long>> props = new HashMap<>();
+        Map<Integer, Pair<StorageProperty, Long>> props = new HashMap<>();
         relLoadProperties( rel, newPropertyReceiver( props ) );
         int count = 0;
         for ( int keyId : props.keySet() )
@@ -1172,15 +1173,15 @@ public class NeoStoresTest
         assertEquals( 2, allData.size() );
         for ( int i = 0; i < 2; i++ )
         {
-            if ( allData.get(i).id() == relType1 )
+            if ( allData.get( i ).id() == relType1 )
             {
-                assertEquals( relType1, allData.get(i).id() );
-                assertEquals( "relationshiptype1", allData.get(i).name() );
+                assertEquals( relType1, allData.get( i ).id() );
+                assertEquals( "relationshiptype1", allData.get( i ).name() );
             }
-            else if ( allData.get(i).id() == relType2 )
+            else if ( allData.get( i ).id() == relType2 )
             {
-                assertEquals( relType2, allData.get(i).id() );
-                assertEquals( "relationshiptype2", allData.get(i).name() );
+                assertEquals( relType2, allData.get( i ).id() );
+                assertEquals( "relationshiptype2", allData.get( i ).name() );
             }
             else
             {
@@ -1193,7 +1194,7 @@ public class NeoStoresTest
             StorageProperty prop3, long firstNode, long secondNode, int relType )
             throws Exception
     {
-        Map<Integer,Pair<StorageProperty,Long>> props = new HashMap<>();
+        Map<Integer, Pair<StorageProperty, Long>> props = new HashMap<>();
         relLoadProperties( rel, newPropertyReceiver( props ) );
         int count = 0;
         for ( int keyId : props.keySet() )
@@ -1251,7 +1252,7 @@ public class NeoStoresTest
             StorageProperty prop3, long firstNode, long secondNode, int relType )
             throws Exception
     {
-        Map<Integer,Pair<StorageProperty,Long>> props = new HashMap<>();
+        Map<Integer, Pair<StorageProperty, Long>> props = new HashMap<>();
         relLoadProperties( rel, newPropertyReceiver( props ) );
         int count = 0;
         for ( int keyId : props.keySet() )
@@ -1292,13 +1293,12 @@ public class NeoStoresTest
         assertHasRelationships( firstNode );
 
         assertHasRelationships( secondNode );
-
     }
 
     private void assertHasRelationships( long node )
     {
         try ( KernelStatement ignore = (KernelStatement) tx.acquireStatement();
-              StorageNodeCursor nodeCursor = allocateNodeCursor( node ) )
+                StorageNodeCursor nodeCursor = allocateNodeCursor( node ) )
         {
             assertTrue( nodeCursor.next() );
             try ( StorageRelationshipTraversalCursor relationships = allocateRelationshipTraversalCursor( nodeCursor ) )
@@ -1311,7 +1311,7 @@ public class NeoStoresTest
     private void deleteNode1( long node, StorageProperty prop1,
             StorageProperty prop2, StorageProperty prop3 ) throws IOException, TokenNotFoundException
     {
-        Map<Integer,Pair<StorageProperty,Long>> props = new HashMap<>();
+        Map<Integer, Pair<StorageProperty, Long>> props = new HashMap<>();
         nodeLoadProperties( node, newPropertyReceiver( props ) );
         int count = 0;
         for ( int keyId : props.keySet() )
@@ -1353,7 +1353,7 @@ public class NeoStoresTest
     private void deleteNode2( long node, StorageProperty prop1,
             StorageProperty prop2, StorageProperty prop3 ) throws IOException, TokenNotFoundException
     {
-        Map<Integer,Pair<StorageProperty,Long>> props = new HashMap<>();
+        Map<Integer, Pair<StorageProperty, Long>> props = new HashMap<>();
         nodeLoadProperties( node, newPropertyReceiver( props ) );
         int count = 0;
         for ( int keyId : props.keySet() )
@@ -1409,7 +1409,7 @@ public class NeoStoresTest
     private void deleteRelationships( long nodeId )
     {
         try ( KernelStatement ignore = (KernelStatement) tx.acquireStatement();
-              StorageNodeCursor nodeCursor = allocateNodeCursor( nodeId ) )
+                StorageNodeCursor nodeCursor = allocateNodeCursor( nodeId ) )
         {
             assertTrue( nodeCursor.next() );
             try ( StorageRelationshipTraversalCursor relationships = allocateRelationshipTraversalCursor( nodeCursor ) )
@@ -1457,31 +1457,30 @@ public class NeoStoresTest
         }
     }
 
-    private StoreFactory getStoreFactory( Config config, DatabaseLayout databaseLayout, FileSystemAbstraction ephemeralFileSystemAbstraction,
+    private StoreFactory getStoreFactory( Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs,
             NullLogProvider logProvider )
     {
-        return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( ephemeralFileSystemAbstraction ), pageCache,
-                ephemeralFileSystemAbstraction, logProvider );
+        return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache, fs, logProvider );
     }
 
     private class CloseFailingDefaultIdGeneratorFactory extends DefaultIdGeneratorFactory
     {
         private final String errorMessage;
 
-        CloseFailingDefaultIdGeneratorFactory( FileSystemAbstraction fs, String errorMessage )
+        CloseFailingDefaultIdGeneratorFactory( FileSystemAbstraction fs, PageCache pageCache, String errorMessage )
         {
-            super( fs );
+            super( fs, pageCache, immediate() );
             this.errorMessage = errorMessage;
         }
 
         @Override
-        protected IdGenerator instantiate( FileSystemAbstraction fs, File fileName, int grabSize, long maxValue, boolean aggressiveReuse, IdType idType,
-                LongSupplier highId )
+        protected IdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+                File fileName, long maxValue, IdType idType, OpenOption[] openOptions )
         {
             if ( idType == IdType.NODE )
             {
                 // Return a special id generator which will throw exception on close
-                return new IdGeneratorImpl( fs, fileName, grabSize, maxValue, aggressiveReuse, idType, highId )
+                return new IndexedIdGenerator( pageCache, fileName, immediate(), idType, 6 * 7, maxValue )
                 {
                     @Override
                     public synchronized void close()
@@ -1491,7 +1490,7 @@ public class NeoStoresTest
                     }
                 };
             }
-            return super.instantiate( fs, fileName, grabSize, maxValue, aggressiveReuse, idType, highId );
+            return super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, maxValue, idType, openOptions );
         }
     }
 }

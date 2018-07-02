@@ -38,32 +38,28 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
     private final RelationshipDeleter relationshipDeleter;
     private final PropertyCreator propertyCreator;
     private final PropertyDeleter propertyDeleter;
-    private final RenewableBatchIdSequences idBatches;
 
-    RecordStorageCommandCreationContext( NeoStores neoStores, int denseNodeThreshold, int idBatchSize )
+    RecordStorageCommandCreationContext( NeoStores neoStores, int denseNodeThreshold )
     {
         this.neoStores = neoStores;
-        this.idBatches = new RenewableBatchIdSequences( neoStores, idBatchSize );
-
         this.loaders = new Loaders( neoStores );
-        RelationshipGroupGetter relationshipGroupGetter =
-                new RelationshipGroupGetter( idBatches.idGenerator( StoreType.RELATIONSHIP_GROUP ) );
+        RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore() );
         this.relationshipCreator = new RelationshipCreator( relationshipGroupGetter, denseNodeThreshold );
         PropertyTraverser propertyTraverser = new PropertyTraverser();
         this.propertyDeleter = new PropertyDeleter( propertyTraverser );
         this.relationshipDeleter = new RelationshipDeleter( relationshipGroupGetter, propertyDeleter );
         this.propertyCreator = new PropertyCreator(
-                new StandardDynamicRecordAllocator( idBatches.idGenerator( StoreType.PROPERTY_STRING ),
+                new StandardDynamicRecordAllocator( neoStores.getPropertyStore().getStringStore(),
                         neoStores.getPropertyStore().getStringStore().getRecordDataSize() ),
-                new StandardDynamicRecordAllocator( idBatches.idGenerator( StoreType.PROPERTY_ARRAY ),
+                new StandardDynamicRecordAllocator( neoStores.getPropertyStore().getArrayStore(),
                         neoStores.getPropertyStore().getArrayStore().getRecordDataSize() ),
-                idBatches.idGenerator( StoreType.PROPERTY ),
+                neoStores.getPropertyStore(),
                 propertyTraverser, neoStores.getPropertyStore().allowStorePointsAndTemporal() );
     }
 
-    public long nextId( StoreType storeType )
+    private long nextId( StoreType storeType )
     {
-        return idBatches.nextId( storeType );
+        return neoStores.getRecordStore( storeType ).nextId();
     }
 
     @Override
@@ -111,7 +107,6 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
     @Override
     public void close()
     {
-        this.idBatches.close();
     }
 
     TransactionRecordState createTransactionRecordState( IntegrityValidator integrityValidator, long lastTransactionIdWhenStarted,

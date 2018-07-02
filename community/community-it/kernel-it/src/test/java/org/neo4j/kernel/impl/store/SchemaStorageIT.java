@@ -88,6 +88,7 @@ public class SchemaStorageIT
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
+    private static SchemaStore schemaStore;
     private static SchemaStorage storage;
 
     @BeforeClass
@@ -103,7 +104,7 @@ public class SchemaStorageIT
             tokenWrite.relationshipTypeGetOrCreateForName( TYPE1 );
             transaction.success();
         }
-        SchemaStore schemaStore = resolveDependency( RecordStorageEngine.class ).testAccessNeoStores().getSchemaStore();
+        schemaStore = resolveDependency( RecordStorageEngine.class ).testAccessNeoStores().getSchemaStore();
         storage = new SchemaStorage( schemaStore, resolveDependency( TokenHolders.class ) );
     }
 
@@ -262,11 +263,12 @@ public class SchemaStorageIT
                 "value.boolean", Values.booleanValue( true )
         ) );
         SchemaDescriptor schema = forLabel( labelId( LABEL1 ), propId( PROP1 ) ).withIndexConfig( expected );
-        StoreIndexDescriptor storeIndexDescriptor = forSchema( schema ).withId( 1 );
+        long id = schemaStore.nextId();
+        StoreIndexDescriptor storeIndexDescriptor = forSchema( schema ).withId( id );
         storage.writeSchemaRule( storeIndexDescriptor );
 
         // when
-        SchemaRule schemaRule = storage.loadSingleSchemaRule( 1 );
+        SchemaRule schemaRule = storage.loadSingleSchemaRule( id );
         storage.deleteSchemaRule( schemaRule ); // Clean up after ourselves.
 
         // then

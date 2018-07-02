@@ -31,7 +31,7 @@ import org.neo4j.logging.LogProvider;
 class PropertyKeyTokenStoreTest extends TokenStoreTestTemplate<PropertyKeyTokenRecord>
 {
     @Override
-    protected TokenStore<PropertyKeyTokenRecord> createStore( File file, File idFile, IdGeneratorFactory generatorFactory, PageCache pageCache,
+    protected TokenStore<PropertyKeyTokenRecord> instantiateStore( File file, File idFile, IdGeneratorFactory generatorFactory, PageCache pageCache,
             LogProvider logProvider, DynamicStringStore nameStore, RecordFormats formats, Config config )
     {
         return new PropertyKeyTokenStore( file, idFile, config, generatorFactory, pageCache, logProvider, nameStore, formats );

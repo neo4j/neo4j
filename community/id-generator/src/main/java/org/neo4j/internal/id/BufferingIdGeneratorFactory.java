@@ -20,16 +20,13 @@
 package org.neo4j.internal.id;
 
 import java.io.File;
+import java.nio.file.OpenOption;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.neo4j.internal.id.configuration.IdTypeConfiguration;
-import org.neo4j.internal.id.configuration.IdTypeConfigurationProvider;
-
 /**
- * Wraps {@link IdGenerator} for those that have {@link IdTypeConfiguration#allowAggressiveReuse() aggressive id reuse}
- * so that ids can be {@link IdGenerator#freeId(long) freed} at safe points in time, after all transactions
+ * Wraps {@link IdGenerator} so that ids can be {@link IdGenerator#freeId(long) freed} at safe points in time, after all transactions
  * which were active at the time of freeing, have been closed.
  */
 public class BufferingIdGeneratorFactory implements IdGeneratorFactory
@@ -39,12 +36,10 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     private Supplier<IdController.ConditionSnapshot> boundaries;
     private final Predicate<IdController.ConditionSnapshot> safeThreshold;
     private final IdGeneratorFactory delegate;
-    private final IdTypeConfigurationProvider idTypeConfigurationProvider;
 
-    public BufferingIdGeneratorFactory( IdGeneratorFactory delegate, IdTypeConfigurationProvider idTypeConfigurationProvider )
+    public BufferingIdGeneratorFactory( IdGeneratorFactory delegate )
     {
         this.delegate = delegate;
-        this.idTypeConfigurationProvider = idTypeConfigurationProvider;
         this.safeThreshold = IdController.ConditionSnapshot::conditionMet;
     }
 
@@ -54,33 +49,19 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, LongSupplier highId, long maxId )
-    {
-        IdTypeConfiguration typeConfiguration = getIdTypeConfiguration( idType );
-        return open( filename, typeConfiguration.getGrabSize(), idType, highId, maxId );
-    }
-
-    @Override
-    public IdGenerator open( File filename, int grabSize, IdType idType, LongSupplier highId, long maxId )
+    public IdGenerator open( File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions )
     {
         assert boundaries != null : "Factory needs to be initialized before usage";
 
-        IdGenerator generator = delegate.open( filename, grabSize, idType, highId, maxId );
-        IdTypeConfiguration typeConfiguration = getIdTypeConfiguration(idType);
-        if ( typeConfiguration.allowAggressiveReuse() )
-        {
-            BufferingIdGenerator bufferingGenerator = new BufferingIdGenerator( generator );
-            bufferingGenerator.initialize( boundaries, safeThreshold );
-            overriddenIdGenerators[idType.ordinal()] = bufferingGenerator;
-            generator = bufferingGenerator;
-        }
-        return generator;
+        IdGenerator generator = delegate.open( filename, idType, highIdScanner, maxId );
+        return wrapAndKeep( idType, generator );
     }
 
     @Override
-    public void create( File filename, long highId, boolean throwIfFileExists )
+    public IdGenerator create( File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId, OpenOption... openOptions )
     {
-        delegate.create( filename, highId, throwIfFileExists );
+        IdGenerator idGenerator = delegate.create( filename, idType, highId, throwIfFileExists, maxId, openOptions );
+        return wrapAndKeep( idType, idGenerator );
     }
 
     @Override
@@ -88,6 +69,14 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     {
         IdGenerator generator = overriddenIdGenerators[idType.ordinal()];
         return generator != null ? generator : delegate.get( idType );
+    }
+
+    private IdGenerator wrapAndKeep( IdType idType, IdGenerator generator )
+    {
+        BufferingIdGenerator bufferingGenerator = new BufferingIdGenerator( generator );
+        bufferingGenerator.initialize( boundaries, safeThreshold );
+        overriddenIdGenerators[idType.ordinal()] = bufferingGenerator;
+        return bufferingGenerator;
     }
 
     public void maintenance()
@@ -110,10 +99,5 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
                 generator.clear();
             }
         }
-    }
-
-    private IdTypeConfiguration getIdTypeConfiguration( IdType idType )
-    {
-        return idTypeConfigurationProvider.getIdTypeConfiguration( idType );
     }
 }

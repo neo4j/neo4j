@@ -182,14 +182,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         setGraphNextProp( -1 );
         setLatestConstraintIntroducingTx( 0 );
 
-        flush();
-    }
-
-    @Override
-    protected void checkAndLoadStorage( boolean createIfNotExists )
-    {
-        super.checkAndLoadStorage( createIfNotExists );
         initHighId();
+        flush();
     }
 
     // Only for initialization and recovery, so we don't need to lock the records

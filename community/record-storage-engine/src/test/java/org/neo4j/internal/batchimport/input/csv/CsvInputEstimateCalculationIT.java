@@ -86,6 +86,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.csv.reader.Readables.wrap;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.input.RandomEntityDataGenerator.convert;
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
@@ -135,7 +136,7 @@ class CsvInputEstimateCalculationIT
             swapperFactory.open( fs, null );
             try ( PageCache pageCache = new MuninnPageCache( swapperFactory, 1000, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
                           contextSupplier, jobScheduler );
-                  NeoStores stores = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
+                  NeoStores stores = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache, fs,
                           NullLogProvider.getInstance() ).openAllNeoStores() )
             {
                 assertRoughlyEqual( estimates.numberOfNodes(), stores.getNodeStore().getNumberOfIdsInUse() );

@@ -93,6 +93,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeoStores;
@@ -359,7 +360,8 @@ class BatchingNeoStoresTest
                             tokenHolders, new DatabaseSchemaState( NullLogProvider.getInstance() ),
                             new StandardConstraintSemantics(), LockService.NO_LOCK_SERVICE,
                             new DatabaseHealth( new DatabasePanicEventGenerator( new DatabaseEventListeners( nullLog ), DEFAULT_DATABASE_NAME ), nullLog ),
-                            new DefaultIdGeneratorFactory( fileSystem ), new DefaultIdController(), EmptyVersionContextSupplier.EMPTY, true ) );
+                            new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() ), new DefaultIdController(),
+                            EmptyVersionContextSupplier.EMPTY, true ) );
             // Create the relationship type token
             TxState txState = new TxState();
             NeoStores neoStores = storageEngine.testAccessNeoStores();

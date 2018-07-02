@@ -40,6 +40,7 @@ import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
@@ -67,13 +68,10 @@ abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S ext
     {
         PageCache pageCache = pageCacheExtension.getPageCache( fs,
                 config().withInconsistentReads( nextReadIsInconsistent ) );
-        StoreFactory factory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs ),
+        StoreFactory factory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs, pageCache, immediate() ),
                 pageCache, fs, NullLogProvider.getInstance() );
         NeoStores neoStores = factory.openAllNeoStores( true );
-        S store = initialiseStore( neoStores );
-
-        CommonAbstractStore commonAbstractStore = (CommonAbstractStore) store;
-        commonAbstractStore.rebuildIdGenerator();
+        initialiseStore( neoStores );
         return neoStores;
     }
 

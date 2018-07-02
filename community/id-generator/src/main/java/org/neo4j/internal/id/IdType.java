@@ -21,19 +21,34 @@ package org.neo4j.internal.id;
 
 public enum IdType
 {
-    NODE,
-    RELATIONSHIP,
-    PROPERTY,
-    STRING_BLOCK,
-    ARRAY_BLOCK,
-    PROPERTY_KEY_TOKEN,
-    PROPERTY_KEY_TOKEN_NAME,
-    RELATIONSHIP_TYPE_TOKEN,
-    RELATIONSHIP_TYPE_TOKEN_NAME,
-    LABEL_TOKEN,
-    LABEL_TOKEN_NAME,
-    NEOSTORE_BLOCK,
-    SCHEMA,
-    NODE_LABELS,
-    RELATIONSHIP_GROUP
+    NODE( true ),
+    RELATIONSHIP( true ),
+    PROPERTY( true ),
+    STRING_BLOCK( true ),
+    ARRAY_BLOCK( true ),
+    PROPERTY_KEY_TOKEN( false ),
+    PROPERTY_KEY_TOKEN_NAME( false ),
+    RELATIONSHIP_TYPE_TOKEN( false ),
+    RELATIONSHIP_TYPE_TOKEN_NAME( false ),
+    LABEL_TOKEN( false ),
+    LABEL_TOKEN_NAME( false ),
+    NEOSTORE_BLOCK( false ),
+    SCHEMA( false ),
+    NODE_LABELS( false ),
+    RELATIONSHIP_GROUP( true );
+
+    private final boolean highActivity;
+
+    IdType( boolean highActivity )
+    {
+        this.highActivity = highActivity;
+    }
+
+    /**
+     * @return whether or not there's a high activity of id allocations/deallocations for this type.
+     */
+    public boolean highActivity()
+    {
+        return highActivity;
+    }
 }

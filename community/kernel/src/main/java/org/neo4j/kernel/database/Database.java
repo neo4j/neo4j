@@ -717,6 +717,7 @@ public class Database extends LifecycleAdapter
         if ( started )
         {
             prepareStop( alwaysTrue() );
+            checkpointerLifecycle.setCheckpointOnShutdown( false );
             stop();
         }
         deleteDatabaseFiles( List.of( databaseLayout.databaseDirectory(), databaseLayout.getTransactionLogsDirectory() ) );
@@ -879,7 +880,6 @@ public class Database extends LifecycleAdapter
         databasePageCache.listExistingMappings()
                 .stream().filter( deleteFilePredicate )
                 .forEach( file -> file.setDeleteOnClose( true ) );
-        checkpointerLifecycle.setCheckpointOnShutdown( false );
     }
 
     private long getAwaitActiveTransactionDeadlineMillis()

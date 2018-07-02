@@ -17,34 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.id.configuration;
-
-import org.neo4j.internal.id.IdType;
+package org.neo4j.internal.id.indexed;
 
 /**
- * Configuration for any specific id type
- * @see IdType
- * @see IdTypeConfigurationProvider
+ * ID range for an {@link IdRange}. This instance will hold an ID range index which specific which range of IDs can be found in
+ * its associated {@link IdRange}. Number of ids per entry also comes into play here. E.g. given idsPerEntry=128 then an iD range index=5
+ * specific IDs between 128*5 up to an excluding 128*(5+1).
  */
-public class IdTypeConfiguration
+class IdRangeKey
 {
-    static final int DEFAULT_GRAB_SIZE = 1024;
-    static final int AGGRESSIVE_GRAB_SIZE = 50000;
+    private long idRangeIdx;
 
-    private final boolean allowAggressiveReuse;
-
-    public IdTypeConfiguration( boolean allowAggressiveReuse )
+    IdRangeKey( long idRangeIdx )
     {
-        this.allowAggressiveReuse = allowAggressiveReuse;
+        this.idRangeIdx = idRangeIdx;
     }
 
-    public boolean allowAggressiveReuse()
+    long getIdRangeIdx()
     {
-        return allowAggressiveReuse;
+        return idRangeIdx;
     }
 
-    public int getGrabSize()
+    void setIdRangeIdx( long idRangeIdx )
     {
-        return allowAggressiveReuse ? AGGRESSIVE_GRAB_SIZE : DEFAULT_GRAB_SIZE;
+        this.idRangeIdx = idRangeIdx;
     }
 }
