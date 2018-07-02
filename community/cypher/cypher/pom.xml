@@ -153,7 +153,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-compiler-2.3</artifactId>
-      <version>2.3.12</version>
+      <version>${cypher.compatibility.23}</version>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>
@@ -180,7 +180,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-compiler-3.1</artifactId>
-      <version>3.1.8</version>
+      <version>${cypher.compatibility.31}</version>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>
@@ -219,7 +219,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-planner-3.4</artifactId>
-      <version>3.4.1</version>
+      <version>${cypher.compatibility.34}</version>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>

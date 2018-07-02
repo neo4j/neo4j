@@ -180,7 +180,7 @@
       <dependency>
         <groupId>org.neo4j</groupId>
         <artifactId>neo4j-graph-matching</artifactId>
-        <version>3.1.6</version>
+        <version>${cypher.compatibility.31}</version>
       </dependency>
       <dependency>
         <groupId>org.neo4j</groupId>
