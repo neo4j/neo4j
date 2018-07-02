@@ -20,20 +20,33 @@
 package org.neo4j.ssl;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.SslProvider;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.function.Function;
+import java.util.stream.Stream;
+import javax.net.ssl.SNIHostName;
+import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManagerFactory;
+
+
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.toList;
 
 public class SslPolicy
 {
@@ -77,6 +90,7 @@ public class SslPolicy
     {
         return SslContextBuilder.forClient()
                 .sslProvider( sslProvider )
+                .clientAuth( forNetty( clientAuth ) )
                 .keyManager( privateKey, keyCertChain )
                 .protocols( tlsVersions )
                 .ciphers( ciphers )
@@ -101,22 +115,63 @@ public class SslPolicy
 
     public SslHandler nettyServerHandler( Channel channel ) throws SSLException
     {
-        return makeNettyHandler( channel, nettyServerContext() );
+        return makeNettyHandler( channel, nettyServerContext(), SslHandler::new );
     }
 
     public SslHandler nettyClientHandler( Channel channel ) throws SSLException
     {
-        return makeNettyHandler( channel, nettyClientContext() );
+        return makeNettyHandler( channel, nettyClientContext(), sslEngine -> new SslHandler( sslEngine )
+        {
+            private void bootstrapSNI( final InetSocketAddress remoteAddress )
+            {
+                SSLParameters params = this.engine().getSSLParameters();
+                SNIHostName remoteHost = new SNIHostName( remoteAddress.getHostString() );
+
+                List<SNIServerName> serverNames = params.getServerNames();
+                if ( serverNames.stream().anyMatch( name -> name.equals( remoteHost ) ) )
+                {
+                    // No need to do anything the ssl params server names are already set correctly
+                    return;
+                }
+
+                Stream<SNIServerName> newServerNames = Stream.of( remoteHost );
+                List<SNIServerName> replacementServerNames = Stream
+                        .concat( serverNames.stream(), newServerNames )
+                        .distinct()
+                        .collect( collectingAndThen( toList(), Collections::unmodifiableList ) );
+
+                params.setServerNames( replacementServerNames );
+                this.engine().setSSLParameters( params );
+            }
+
+            private void checkRemoteAddressAndBootstrapSNI( SocketAddress remoteAddress )
+            {
+                //TODO: warn if not using InetSocket Address?
+                if ( remoteAddress != null && remoteAddress instanceof InetSocketAddress )
+                {
+                    bootstrapSNI( (InetSocketAddress) remoteAddress );
+                }
+            }
+
+            @Override
+            public void connect( ChannelHandlerContext ctx, SocketAddress remoteAddress,
+                    SocketAddress localAddress, ChannelPromise promise ) throws Exception
+            {
+                checkRemoteAddressAndBootstrapSNI( remoteAddress );
+                super.connect( ctx, remoteAddress, localAddress, promise );
+            }
+        } );
     }
 
-    private SslHandler makeNettyHandler( Channel channel, SslContext sslContext )
+    private SslHandler makeNettyHandler( Channel channel, SslContext sslContext,
+            Function<SSLEngine,SslHandler> sslHandlerFactory )
     {
         SSLEngine sslEngine = sslContext.newEngine( channel.alloc() );
         if ( tlsVersions != null )
         {
             sslEngine.setEnabledProtocols( tlsVersions );
         }
-        return new SslHandler( sslEngine );
+        return sslHandlerFactory.apply(sslEngine);
     }
 
     public PrivateKey privateKey()
@@ -185,7 +240,7 @@ public class SslPolicy
 
     private String describeCertChain()
     {
-        List<String> certificates = Arrays.stream( keyCertChain ).map( this::describeCertificate ).collect( Collectors.toList() );
+        List<String> certificates = Arrays.stream( keyCertChain ).map( this::describeCertificate ).collect( toList() );
         return String.join( ", ", certificates );
     }
 }
