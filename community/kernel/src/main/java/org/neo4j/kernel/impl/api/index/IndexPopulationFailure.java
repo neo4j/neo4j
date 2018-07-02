@@ -44,7 +44,7 @@ public abstract class IndexPopulationFailure
             public IndexPopulationFailedKernelException asIndexPopulationFailure(
                     SchemaDescriptor descriptor, String indexUserDescription )
             {
-                return new IndexPopulationFailedKernelException( descriptor, indexUserDescription, failure );
+                return new IndexPopulationFailedKernelException( indexUserDescription, failure );
             }
         };
     }
@@ -63,7 +63,7 @@ public abstract class IndexPopulationFailure
             public IndexPopulationFailedKernelException asIndexPopulationFailure(
                     SchemaDescriptor descriptor, String indexUserDescription )
             {
-                return new IndexPopulationFailedKernelException( descriptor, indexUserDescription, failure );
+                return new IndexPopulationFailedKernelException( indexUserDescription, failure );
             }
         };
     }

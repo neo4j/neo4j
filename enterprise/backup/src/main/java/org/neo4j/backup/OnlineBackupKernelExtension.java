@@ -127,7 +127,7 @@ public class OnlineBackupKernelExtension extends LifecycleAdapter
                 try
                 {
                     startBindingListener = new StartBindingListener();
-                    graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberEvents.class).addClusterMemberListener(
+                    graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberEvents.class ).addClusterMemberListener(
                             (ClusterMemberListener) startBindingListener );
 
                     bindingListener = (BindingListener) myUri -> me = myUri;
@@ -157,7 +157,7 @@ public class OnlineBackupKernelExtension extends LifecycleAdapter
 
             try
             {
-                graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberEvents.class).removeClusterMemberListener(
+                graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberEvents.class ).removeClusterMemberListener(
                         (ClusterMemberListener) startBindingListener );
                 graphDatabaseAPI.getDependencyResolver().resolveDependency( BindingNotifier.class ).removeBindingListener(
                         (BindingListener) bindingListener );

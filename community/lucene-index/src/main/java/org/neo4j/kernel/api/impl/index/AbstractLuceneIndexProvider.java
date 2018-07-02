@@ -56,11 +56,6 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider
     }
 
     @Override
-    public void shutdown()
-    {   // Nothing to shut down
-    }
-
-    @Override
     public StoreMigrationParticipant storeMigrationParticipant( final FileSystemAbstraction fs, PageCache pageCache )
     {
         return new SchemaIndexMigrator( fs, this );

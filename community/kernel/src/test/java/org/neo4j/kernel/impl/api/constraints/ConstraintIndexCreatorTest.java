@@ -129,7 +129,7 @@ public class ConstraintIndexCreatorTest
         when( indexProxy.getDescriptor() ).thenReturn( index.withId( INDEX_ID ).withoutCapabilities() );
 
         IndexEntryConflictException cause = new IndexEntryConflictException( 2, 1, Values.of( "a" ) );
-        doThrow( new IndexPopulationFailedKernelException( descriptor, "some index", cause ) )
+        doThrow( new IndexPopulationFailedKernelException( "some index", cause ) )
                 .when( indexProxy ).awaitStoreScanCompleted();
         NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
         when( schemaRead.index( any( SchemaDescriptor.class ) ) )
