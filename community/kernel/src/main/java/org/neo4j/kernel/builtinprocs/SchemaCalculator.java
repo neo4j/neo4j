@@ -69,8 +69,6 @@ public class SchemaCalculator
     private final String NODE = "Node";
     private final String RELATIONSHIP = "Relationship";
 
-    //TODO: Extend this to support showing how relationships types connect to nodes
-
     SchemaCalculator( KernelTransaction ktx )
     {
         this.ktx = ktx;

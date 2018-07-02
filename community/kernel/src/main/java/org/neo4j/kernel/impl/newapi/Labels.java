@@ -36,6 +36,7 @@ public class Labels implements LabelSet
     private Labels( long[] labels )
     {
         this.labels = labels;
+        Arrays.sort(labels); // needed for quick equality check, most of the time, its already sorted anyway
     }
 
     public static Labels from( long[] labels )
@@ -100,7 +101,18 @@ public class Labels implements LabelSet
     {
         if ( obj instanceof LabelSet )
         {
-            return Arrays.equals( labels, ((LabelSet) obj).all() );
+            long[] input = ((LabelSet) obj).all();
+
+            if ( labels == input )
+            {
+                return true;
+            }
+            if ( input.length != labels.length )
+            {
+                return false;
+            }
+
+            return Arrays.equals(labels, input);
         }
         return false;
     }

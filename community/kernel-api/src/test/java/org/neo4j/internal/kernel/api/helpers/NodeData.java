@@ -33,13 +33,20 @@ class NodeData
 
     NodeData( long id, long[] labels, Map<Integer,Value> properties )
     {
+        if ( labels == null )
+        {
+            throw new IllegalArgumentException();
+        }
+
         this.id = id;
         this.labels = labels;
+        Arrays.sort( labels );  // needed for quick equality check, most of the time, its already sorted anyway
         this.properties = properties;
     }
 
     LabelSet labelSet()
     {
+
         return new LabelSet()
         {
             @Override
@@ -51,7 +58,7 @@ class NodeData
             @Override
             public int label( int offset )
             {
-                return labels.length;
+                return (int) labels[offset];
             }
 
             @Override
@@ -84,7 +91,18 @@ class NodeData
             {
                 if ( obj instanceof LabelSet )
                 {
-                    return Arrays.equals( labels, ((LabelSet) obj).all() );
+                    long[] input = ((LabelSet) obj).all();
+
+                    if ( labels == input )
+                    {
+                        return true;
+                    }
+                    if ( input.length != labels.length )
+                    {
+                        return false;
+                    }
+
+                    return Arrays.equals( labels, input );
                 }
                 return false;
             }

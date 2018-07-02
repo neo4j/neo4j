@@ -194,20 +194,12 @@ public class BuiltInProcedures
         }
     }
 
-    @Procedure( name = "db.schemaAsTable", mode = Mode.READ )  // I am open about a better name for this. Something like db.propertySchema maybe?
-    @Description( "Show the schema of the data in tabular form." )
-    public Stream<SchemaInfoResult> schemaAsTable()
+    @Procedure( name = "db.propertySchema", mode = Mode.READ )
+    @Description( "Show the derived property schema of the data in tabular form." )
+    public Stream<SchemaInfoResult> propertySchema()
     {
         return new SchemaCalculator( tx ).calculateTabularResultStream();
     }
-
-    // TODO: Next step -> graph with more info then db.schema currently has
-//    @Procedure( value = "db.schema.graph", mode = Mode.READ )
-//    @Description( "Show the schema of the data." ) // old description
-//    public Stream<SchemaProcedure.GraphResult> schemaAsGraph()
-//    {
-//        return new SchemaCalculator( db, tx ).calculateGraphResultStream();
-//    }
 
     @Description( "Show the schema of the data." )
     @Procedure( name = "db.schema", mode = READ )
