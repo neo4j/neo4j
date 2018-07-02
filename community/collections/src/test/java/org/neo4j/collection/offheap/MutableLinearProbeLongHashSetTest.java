@@ -35,17 +35,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.function.Executable;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 
-import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryAllocationTracker;
 
-import static java.lang.Math.toIntExact;
 import static java.util.Arrays.asList;
 import static org.eclipse.collections.impl.list.mutable.primitive.LongArrayList.newListWith;
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
@@ -498,27 +494,27 @@ class MutableLinearProbeLongHashSetTest
         );
     }
 
-    private static LongSet drain( LongIterator iter1 )
+    private static LongSet drain( LongIterator iter )
     {
         final MutableLongSet result = new LongHashSet();
-        while ( iter1.hasNext() )
+        while ( iter.hasNext() )
         {
-            result.add( iter1.next() );
+            result.add( iter.next() );
         }
         return result;
     }
 
     private DynamicTest testIteratorFails( String name, Consumer<MutableLinearProbeLongHashSet> mutator, long... initialValues )
     {
-        return dynamicTest( name, withNewSet( set ->
+        return dynamicTest( name, withNewSet( s ->
         {
-            set.addAll( initialValues );
+            s.addAll( initialValues );
 
-            final MutableLongIterator iterator = set.longIterator();
+            final MutableLongIterator iterator = s.longIterator();
             assertTrue( iterator.hasNext() );
             assertDoesNotThrow( iterator::next );
 
-            mutator.accept( set );
+            mutator.accept( s );
             assertThrows( ConcurrentModificationException.class, iterator::hasNext );
             assertThrows( ConcurrentModificationException.class, iterator::next );
         } ) );
@@ -528,14 +524,9 @@ class MutableLinearProbeLongHashSetTest
     {
         return () ->
         {
-            final MutableLinearProbeLongHashSet set = newSet();
-            try
+            try ( MutableLinearProbeLongHashSet set = newSet() )
             {
-                test.accept( set );
-            }
-            finally
-            {
-                set.close();
+                    test.accept( set );
             }
         };
     }
@@ -543,20 +534,21 @@ class MutableLinearProbeLongHashSetTest
     private ImmutableLongList generateCollisions( int n )
     {
         long v = 1984;
-        final MutableLinearProbeLongHashSet set = newSet();
-        final int h = set.hashAndMask( v );
-        final MutableLongList elements = LongLists.mutable.with( v );
-
-        while ( elements.size() < n )
+        final MutableLongList elements;
+        try ( MutableLinearProbeLongHashSet s = newSet() )
         {
-            ++v;
-            if ( set.hashAndMask( v ) == h )
+            final int h = s.hashAndMask( v );
+            elements = LongLists.mutable.with( v );
+
+            while ( elements.size() < n )
             {
-                elements.add( v );
+                ++v;
+                if ( s.hashAndMask( v ) == h )
+                {
+                    elements.add( v );
+                }
             }
         }
-
-        set.close();
         return elements.toImmutable();
     }
 
@@ -565,75 +557,5 @@ class MutableLinearProbeLongHashSetTest
         MutableLinearProbeLongHashSet result = new MutableLinearProbeLongHashSet( allocator );
         result.addAll( elements );
         return result;
-    }
-
-    static class TestMemoryAllocator implements MemoryAllocator
-    {
-        final MemoryAllocationTracker tracker;
-
-        TestMemoryAllocator()
-        {
-            this( new LocalMemoryTracker() );
-        }
-
-        TestMemoryAllocator( MemoryAllocationTracker tracker )
-        {
-            this.tracker = tracker;
-        }
-
-        @Override
-        public Memory allocate( long size )
-        {
-            final ByteBuffer buf = ByteBuffer.allocate( toIntExact( size ) );
-            return new MemoryImpl( buf );
-        }
-
-        class MemoryImpl implements Memory
-        {
-            final ByteBuffer buf;
-
-            MemoryImpl( ByteBuffer buf )
-            {
-                this.buf = buf;
-                tracker.allocated( buf.capacity() );
-            }
-
-            @Override
-            public long readLong( long offset )
-            {
-                return buf.getLong( toIntExact( offset ) );
-            }
-
-            @Override
-            public void writeLong( long offset, long value )
-            {
-                buf.putLong( toIntExact( offset ), value );
-            }
-
-            @Override
-            public void clear()
-            {
-                Arrays.fill( buf.array(), (byte) 0 );
-            }
-
-            @Override
-            public long size()
-            {
-                return buf.capacity();
-            }
-
-            @Override
-            public void free()
-            {
-                tracker.deallocated( buf.capacity() );
-            }
-
-            @Override
-            public Memory copy()
-            {
-                ByteBuffer copyBuf = ByteBuffer.wrap( Arrays.copyOf( buf.array(), buf.array().length ) );
-                return new MemoryImpl( copyBuf );
-            }
-        }
     }
 }
