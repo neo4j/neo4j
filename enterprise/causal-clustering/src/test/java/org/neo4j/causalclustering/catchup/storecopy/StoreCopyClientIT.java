@@ -27,7 +27,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.apache.commons.compress.utils.Charsets;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
-import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -71,6 +70,9 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.CoreMatchers.both;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -323,7 +325,8 @@ public class StoreCopyClientIT
         }
         catch ( StoreCopyFailedException e )
         {
-            assertableLogProvider.assertContainsExactlyOneMessageMatching( CoreMatchers.equalTo( "Connection refused: localhost/127.0.0.1:" + port ) );
+            assertableLogProvider.assertContainsExactlyOneMessageMatching(
+                    both( startsWith( "Connection refused:" ) ).and( containsString( "localhost/127.0.0.1:" + port ) ) );
         }
     }
 
@@ -352,7 +355,7 @@ public class StoreCopyClientIT
         }
         catch ( StoreCopyFailedException e )
         {
-            assertableLogProvider.assertContainsExactlyOneMessageMatching( CoreMatchers.startsWith( "Unable to resolve address for" ) );
+            assertableLogProvider.assertContainsExactlyOneMessageMatching( startsWith( "Unable to resolve address for" ) );
             assertableLogProvider.assertLogStringContains(catchupAddressResolutionException.getMessage() );
         }
     }
