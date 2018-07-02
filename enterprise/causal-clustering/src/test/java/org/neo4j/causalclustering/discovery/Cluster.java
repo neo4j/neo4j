@@ -398,11 +398,24 @@ public class Cluster
         ensureDBName( dbName );
         Set<Role> roleSet = Arrays.stream( roles ).collect( toSet() );
 
-        return coreMembers.values().stream()
-                .filter( m -> m.database() != null )
-                .filter( m -> m.dbName().equals( dbName ) )
-                .filter( m -> roleSet.contains( m.database().getRole() ) )
-                .collect( Collectors.toList() );
+        List<CoreClusterMember> list = new ArrayList<>();
+        for ( CoreClusterMember m : coreMembers.values() )
+        {
+            CoreGraphDatabase database = m.database();
+            if ( database == null )
+            {
+                continue;
+            }
+
+            if ( m.dbName().equals( dbName ) )
+            {
+                if ( roleSet.contains( database.getRole() ) )
+                {
+                    list.add( m );
+                }
+            }
+        }
+        return list;
     }
 
     public CoreClusterMember awaitLeader() throws TimeoutException
