@@ -25,7 +25,6 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compatibility.CypherRuntime
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{ExecutionPlan => ExecutionPlanv3_5}
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{CompiledRuntimeName, RuntimeName}
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
@@ -34,7 +33,6 @@ import org.neo4j.cypher.internal.runtime.compiled.CompiledPlan
 import org.neo4j.cypher.internal.runtime.compiled.codegen.{CodeGenConfiguration, CodeGenerator}
 import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.graphdb.Notification
 import org.neo4j.values.virtual.MapValue
 
 object CompiledRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
@@ -49,21 +47,13 @@ object CompiledRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
       state.plannerName,
       context.readOnly,
       state.cardinalities)
-    new CompiledExecutionPlan(
-      compiled,
-      notifications(context))
-  }
-
-  private def notifications(context: EnterpriseRuntimeContext): Set[Notification] = {
-    val mapper = asKernelNotification(context.notificationLogger.offset) _
-    context.notificationLogger.notifications.map(mapper)
+    new CompiledExecutionPlan(compiled)
   }
 
   /**
     * Execution plan for compiled runtime. Beware: will be cached.
     */
-  class CompiledExecutionPlan(val compiled: CompiledPlan,
-                              val notifications: Set[Notification]) extends ExecutionPlanv3_5 {
+  class CompiledExecutionPlan(val compiled: CompiledPlan) extends ExecutionPlanv3_5 {
 
     override def run(queryContext: QueryContext,
                      doProfile: Boolean,
