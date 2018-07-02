@@ -19,6 +19,8 @@
  */
 package org.neo4j.util;
 
+import static java.lang.String.format;
+
 /**
  * A set of static convenience methods for checking ctor/method parameters or state.
  */
@@ -105,6 +107,21 @@ public final class Preconditions
         if ( !expression )
         {
             throw new IllegalStateException( message );
+        }
+    }
+
+    /**
+     * Ensures that {@code expression} is {@code true} or throws {@link IllegalArgumentException} otherwise.
+     *
+     * @param expression an expression for check
+     * @param message error message for the exception
+     * @throws IllegalArgumentException if {@code expression} is {@code false}
+     */
+    public static void checkArgument( boolean expression, String message, Object... args )
+    {
+        if ( !expression )
+        {
+            throw new IllegalArgumentException( args.length > 0 ? format( message, args ) : message );
         }
     }
 }
