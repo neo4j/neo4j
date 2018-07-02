@@ -54,8 +54,11 @@ public interface OperatorProfile
 
     default double pageCacheHitRatio()
     {
-        return MathUtil.portion( pageCacheHits(), pageCacheMisses() );
+        return ( pageCacheHits() == NO_DATA || pageCacheMisses() == NO_DATA ) ?
+               NO_DATA : MathUtil.portion( pageCacheHits(), pageCacheMisses() );
     }
+
+    long NO_DATA = -1L;
 
     OperatorProfile NONE = new OperatorProfile()
     {

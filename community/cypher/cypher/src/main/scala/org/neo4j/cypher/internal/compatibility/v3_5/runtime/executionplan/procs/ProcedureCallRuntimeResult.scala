@@ -155,13 +155,13 @@ case class StandaloneProcedureCallProfile(rowCount: Long) extends QueryProfile w
 
   override def operatorProfile(operatorId: Int): OperatorProfile = this
 
-  override def time(): Long = -1
+  override def time(): Long = OperatorProfile.NO_DATA
 
   override def dbHits(): Long = 1 // for unclear reasons
 
   override def rows(): Long = rowCount
 
-  override def pageCacheHits(): Long = -1
+  override def pageCacheHits(): Long = OperatorProfile.NO_DATA
 
-  override def pageCacheMisses(): Long = -1
+  override def pageCacheMisses(): Long = OperatorProfile.NO_DATA
 }

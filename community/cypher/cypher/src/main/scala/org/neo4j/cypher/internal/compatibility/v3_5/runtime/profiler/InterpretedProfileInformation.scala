@@ -31,7 +31,7 @@ class InterpretedProfileInformation extends QueryProfile {
                           override val pageCacheHits: Long,
                           override val pageCacheMisses: Long) extends OperatorProfile {
 
-    override def time: Long = -1L
+    override def time: Long = OperatorProfile.NO_DATA
   }
 
   val pageCacheMap: mutable.Map[Id, PageCacheStats] = mutable.Map.empty

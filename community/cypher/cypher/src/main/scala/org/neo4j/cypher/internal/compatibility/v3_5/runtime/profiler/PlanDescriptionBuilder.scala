@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.runtime.planDescription.{Argument, InternalPlanDescription, LogicalPlan2PlanDescription}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
-import org.neo4j.cypher.result.QueryProfile
+import org.neo4j.cypher.result.{OperatorProfile, QueryProfile}
 import org.opencypher.v9_0.frontend.PlannerName
 
 class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
@@ -52,13 +52,22 @@ class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
       input: InternalPlanDescription =>
         val data = queryProfile.operatorProfile(input.id.x)
 
-        input
-          .addArgument(Arguments.Rows(data.rows))
-          .addArgument(Arguments.DbHits(data.dbHits))
-          .addArgument(Arguments.PageCacheHits(data.pageCacheHits))
-          .addArgument(Arguments.PageCacheMisses(data.pageCacheMisses))
-          .addArgument(Arguments.PageCacheHitRatio(data.pageCacheHitRatio()))
-          .addArgument(Arguments.Time(data.time()))
+        BuildPlanDescription(input)
+          .addArgument(Arguments.Rows, data.rows)
+          .addArgument(Arguments.DbHits, data.dbHits)
+          .addArgument(Arguments.PageCacheHits, data.pageCacheHits)
+          .addArgument(Arguments.PageCacheMisses, data.pageCacheMisses)
+          .addArgument(Arguments.PageCacheHitRatio, data.pageCacheHitRatio())
+          .addArgument(Arguments.Time, data.time())
+        .plan
     }
+  }
+
+  case class BuildPlanDescription(plan: InternalPlanDescription) {
+
+    def addArgument[T](argument: T => Argument,
+                       value: T): BuildPlanDescription =
+      if (value == OperatorProfile.NO_DATA) this
+      else BuildPlanDescription(plan.addArgument(argument(value)))
   }
 }
