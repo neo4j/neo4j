@@ -32,11 +32,11 @@ public class SchemaInfoResult
      */
     public final List<String> nodeLabelsOrRelType;
     /**
-     * A property that occurs on the given label combination / relationship type
+     * A property that occurs on the given label combination / relationship type or null
      */
     public final String property;
     /**
-     * The CypherType of the given property on the given label combination / relationship type
+     * The CypherType of the given property on the given label combination / relationship type or null
      */
     public final String cypherType;
 

@@ -41,8 +41,7 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -52,7 +51,7 @@ import static org.neo4j.kernel.builtinprocs.SchemaCalculator.ValueStatus.VALUE_G
 
 public class SchemaCalculator
 {
-    private KernelTransaction ktx;
+    private org.neo4j.internal.kernel.api.Transaction ktx;
 
     private Map<LabelSet,Set<Integer>> labelSetToPropertyKeysMapping;
     private Map<Pair<LabelSet,Integer>,ValueTypeDecider> labelSetANDNodePropertyKeyIdToValueTypeMapping;
@@ -69,7 +68,7 @@ public class SchemaCalculator
     private final String NODE = "Node";
     private final String RELATIONSHIP = "Relationship";
 
-    SchemaCalculator( KernelTransaction ktx )
+    SchemaCalculator( Transaction ktx )
     {
         this.ktx = ktx;
     }
@@ -159,35 +158,32 @@ public class SchemaCalculator
     private void calculateSchema()
     {
         // this one does most of the work
-        try ( Statement ignore = ktx.acquireStatement() )
-        {
-            Read dataRead = ktx.dataRead();
-            TokenRead tokenRead = ktx.tokenRead();
-            SchemaRead schemaRead = ktx.schemaRead();
-            CursorFactory cursors = ktx.cursors();
+        Read dataRead = ktx.dataRead();
+        TokenRead tokenRead = ktx.tokenRead();
+        SchemaRead schemaRead = ktx.schemaRead();
+        CursorFactory cursors = ktx.cursors();
 
-            // setup mappings
-            int labelCount = tokenRead.labelCount();
-            int relationshipTypeCount = tokenRead.relationshipTypeCount();
-            labelSetToPropertyKeysMapping = new HashMap<>( labelCount );
-            labelIdToLabelNameMapping = new HashMap<>( labelCount );
-            propertyIdToPropertylNameMapping = new HashMap<>( tokenRead.propertyKeyCount() );
-            relationshipTypIdToRelationshipNameMapping = new HashMap<>( relationshipTypeCount );
-            relationshipTypeIdToPropertyKeysMapping = new HashMap<>( relationshipTypeCount );
-            labelSetANDNodePropertyKeyIdToValueTypeMapping = new HashMap<>();
-            relationshipTypeIdANDPropertyTypeIdToValueTypeMapping = new HashMap<>();
+        // setup mappings
+        int labelCount = tokenRead.labelCount();
+        int relationshipTypeCount = tokenRead.relationshipTypeCount();
+        labelSetToPropertyKeysMapping = new HashMap<>( labelCount );
+        labelIdToLabelNameMapping = new HashMap<>( labelCount );
+        propertyIdToPropertylNameMapping = new HashMap<>( tokenRead.propertyKeyCount() );
+        relationshipTypIdToRelationshipNameMapping = new HashMap<>( relationshipTypeCount );
+        relationshipTypeIdToPropertyKeysMapping = new HashMap<>( relationshipTypeCount );
+        labelSetANDNodePropertyKeyIdToValueTypeMapping = new HashMap<>();
+        relationshipTypeIdANDPropertyTypeIdToValueTypeMapping = new HashMap<>();
 
-            scanEverythingBelongingToNodes( dataRead, cursors );
-            scanEverythingBelongingToRelationships( dataRead, cursors );
+        scanEverythingBelongingToNodes( dataRead, cursors );
+        scanEverythingBelongingToRelationships( dataRead, cursors );
 
-            // OTHER:
-            // go through all labels
-            addNamesToCollection( tokenRead.labelsGetAllTokens(), labelIdToLabelNameMapping );
-            // go through all propertyKeys
-            addNamesToCollection( tokenRead.propertyKeyGetAllTokens(), propertyIdToPropertylNameMapping );
-            // go through all relationshipTypes
-            addNamesToCollection( tokenRead.relationshipTypesGetAllTokens(), relationshipTypIdToRelationshipNameMapping );
-        }
+        // OTHER:
+        // go through all labels
+        addNamesToCollection( tokenRead.labelsGetAllTokens(), labelIdToLabelNameMapping );
+        // go through all propertyKeys
+        addNamesToCollection( tokenRead.propertyKeyGetAllTokens(), propertyIdToPropertylNameMapping );
+        // go through all relationshipTypes
+        addNamesToCollection( tokenRead.relationshipTypesGetAllTokens(), relationshipTypIdToRelationshipNameMapping );
     }
 
     private void scanEverythingBelongingToRelationships( Read dataRead, CursorFactory cursors )
@@ -303,7 +299,6 @@ public class SchemaCalculator
         private ValueGroup valueGroup;
         private ValueStatus valueStatus;
         private Boolean isNullable = false;
-        private String nullableSuffix = "";
 
         ValueTypeDecider( Value v )
         {
@@ -319,7 +314,6 @@ public class SchemaCalculator
         private void setNullable( )
         {
                 isNullable = true;
-                nullableSuffix = NULLABLE;
         }
 
         /*
@@ -330,10 +324,10 @@ public class SchemaCalculator
             switch ( valueStatus )
             {
             case VALUE:
-                return isNullable ? concreteValue.getTypeName().toUpperCase() + nullableSuffix
+                return isNullable ? concreteValue.getTypeName().toUpperCase() + NULLABLE
                                   : concreteValue.getTypeName().toUpperCase();
             case VALUE_GROUP:
-                return isNullable ? valueGroup.name() + nullableSuffix
+                return isNullable ? valueGroup.name() + NULLABLE
                                   : valueGroup.name();
             case ANY:
                 return isNullable ? NULLABLE_ANYVALUE
