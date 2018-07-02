@@ -241,6 +241,7 @@ public class ExecutionResultTest
     {
         // Given
         Result result = db.execute( "PROFILE CALL db.labels()" );
+        result.resultAsString();
 
         // When
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();

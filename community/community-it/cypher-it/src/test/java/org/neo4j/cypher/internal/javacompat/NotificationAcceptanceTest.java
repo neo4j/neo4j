@@ -77,7 +77,7 @@ public class NotificationAcceptanceTest
     {
         // when
         Result result = db().execute( "CYPHER planner=rule RETURN 1" );
-        InputPosition position = new InputPosition( 20, 1, 21 );
+        InputPosition position = InputPosition.empty;
 
         // then
         assertThat( result.getNotifications(), contains( RULE_PLANNER_UNAVAILABLE_FALLBACK.notification( position ) ) );
