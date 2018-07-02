@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.CypherException
+import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
-import org.opencypher.v9_0.util.InternalNotification
 
 /**
   * Cypher compiler, which compiles pre-parsed queries into executable queries.
@@ -43,7 +43,7 @@ trait Compiler {
   @throws[org.neo4j.cypher.CypherException]
   def compile(preParsedQuery: PreParsedQuery,
               tracer: CompilationPhaseTracer,
-              preParsingNotifications: Set[InternalNotification],
+              preParsingNotifications: Set[Notification],
               transactionalContext: TransactionalContext,
               params: MapValue
              ): ExecutableQuery

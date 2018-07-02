@@ -25,7 +25,6 @@ import org.neo4j.cypher.CypherExecutionMode
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrapping.{asKernelNotification => asKernelNotification3_5}
 import org.neo4j.cypher.internal.compiler.v3_1
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{ExecutionPlan => ExecutionPlan_v3_1, InternalExecutionResult => InternalExecutionResult3_1}
 import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
@@ -36,7 +35,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.ValueConversion
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_1.{TransactionalContextWrapper => TransactionalContextWrapperV3_1, _}
 import org.neo4j.function.ThrowingBiConsumer
-import org.neo4j.graphdb.Result
+import org.neo4j.graphdb.{Notification, Result}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.query.{CompilerInfo, IndexUsage}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
@@ -45,7 +44,6 @@ import org.neo4j.logging.Log
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.frontend.phases
-import org.opencypher.v9_0.util.InternalNotification
 
 import scala.collection.mutable
 
@@ -132,7 +130,7 @@ trait Cypher31Compiler extends CachingPlanner[PreparedQuerySyntax] with Compiler
 
   override def compile(preParsedQuery: PreParsedQuery,
                        tracer: phases.CompilationPhaseTracer,
-                       preParsingNotifications: Set[InternalNotification],
+                       preParsingNotifications: Set[Notification],
                        transactionalContext: TransactionalContext,
                        params: MapValue
                       ): ExecutableQuery = {
@@ -155,7 +153,7 @@ trait Cypher31Compiler extends CachingPlanner[PreparedQuerySyntax] with Compiler
 
       new Cypher31ExecutableQuery(
         executionPlan3_1,
-        preParsingNotifications.map(asKernelNotification3_5(None)),
+        preParsingNotifications,
         position3_1,
         Seq.empty[String],
         ValueConversion.asValues(extractedParameters))

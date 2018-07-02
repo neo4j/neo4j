@@ -41,7 +41,7 @@ import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.frontend.PlannerName
 import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
-import org.opencypher.v9_0.util.{InternalNotification, TaskCloser}
+import org.opencypher.v9_0.util.TaskCloser
 
 import scala.collection.JavaConverters._
 
@@ -73,7 +73,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     */
   override def compile(preParsedQuery: PreParsedQuery,
                        tracer: CompilationPhaseTracer,
-                       preParsingNotifications: Set[InternalNotification],
+                       preParsingNotifications: Set[Notification],
                        transactionalContext: TransactionalContext,
                        params: MapValue
                       ): ExecutableQuery = {
@@ -100,7 +100,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       runtimeContext.readOnly,
       logicalPlanResult.logicalPlanState.cardinalities,
       executionPlan3_5,
-      preParsingNotifications.map(asKernelNotification(None)),
+      preParsingNotifications,
       planningNotificationLogger.notifications.map(asKernelNotification(planningNotificationLogger.offset)),
       logicalPlanResult.reusability,
       logicalPlanResult.paramNames,

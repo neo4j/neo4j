@@ -21,8 +21,10 @@ package org.neo4j.cypher.internal
 
 import java.time.Clock
 
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compiler.v3_5.{StatsDivergenceCalculator, _}
 import org.neo4j.cypher.{InvalidArgumentException, _}
+import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.configuration.Config
@@ -80,6 +82,8 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
 
     val logger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
 
+    def notificationsSoFar(): Set[Notification] = logger.notifications.map(asKernelNotification(None))
+
     val supportedRuntimes3_1 = Seq(CypherRuntimeOption.interpreted, CypherRuntimeOption.default)
     val inputPosition = preParsedQuery.offset
 
@@ -112,7 +116,7 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
                                                          preParsedQuery.updateStrategy)
 
         try {
-          compiler3_5.compile(preParsedQuery, tracer, logger.notifications, transactionalContext, params)
+          compiler3_5.compile(preParsedQuery, tracer, notificationsSoFar(), transactionalContext, params)
         } catch {
           case ex: SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
             val ex3_5 = ex.getCause.asInstanceOf[InternalSyntaxException]
@@ -135,7 +139,7 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
                                                       preParsedQuery.runtime,
                                                       preParsedQuery.updateStrategy)
 
-        compiler.compile(preParsedQuery, tracer, logger.notifications, transactionalContext, params)
+        compiler.compile(preParsedQuery, tracer, notificationsSoFar(), transactionalContext, params)
       }
     }
 
@@ -163,13 +167,13 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
   }
 
   private def getNonIndexedLabelWarningThreshold: Long = {
-    val setting: (Config) => Long = config => config.get(GraphDatabaseSettings.query_non_indexed_label_warning_threshold).longValue()
+    val setting: Config => Long = config => config.get(GraphDatabaseSettings.query_non_indexed_label_warning_threshold).longValue()
     getSetting(graph, setting, DEFAULT_NON_INDEXED_LABEL_WARNING_THRESHOLD)
   }
 
   private def getSetting[A](gds: GraphDatabaseQueryService, configLookup: Config => A, default: A): A = gds match {
     // TODO: Cypher should not be pulling out components from casted interfaces, it should ask for Config as a dep
-    case gdbApi:GraphDatabaseQueryService => configLookup(gdbApi.getDependencyResolver.resolveDependency(classOf[Config]))
+    case gdbApi: GraphDatabaseQueryService => configLookup(gdbApi.getDependencyResolver.resolveDependency(classOf[Config]))
     case _ => default
   }
 }
