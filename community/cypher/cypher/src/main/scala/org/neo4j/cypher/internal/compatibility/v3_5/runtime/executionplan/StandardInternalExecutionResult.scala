@@ -120,6 +120,11 @@ class StandardInternalExecutionResult(context: QueryContext,
     value
   }
 
+  /**
+    * If a runtime only supports visitor-style access (it is not iterable), we cannot serve the
+    * result to the client as an iterator without materializing. This is because our current
+    * visitor pattern does not support back-pressure.
+    */
   protected final lazy val inner: ResourceIterator[util.Map[String, AnyRef]] = {
     if (!isMaterialized && runtimeResult.isIterable)
       runtimeResult.asIterator()
