@@ -320,9 +320,7 @@ public class TransactionHandle implements TransactionTerminationHandle
                     hasPrevious = true;
                     TransactionalContext tc = txManagerFacade.create( request, queryService, type, loginContext,
                             statement.statement(), statement.parameters() );
-                    Result result = safelyExecute( statement, hasPeriodicCommit, tc );
-                    output.statementResult( result, statement.includeStats(), statement.resultDataContents() );
-                    output.notifications( result.getNotifications() );
+                    safelyExecute( statement, hasPeriodicCommit, tc, output );
                 }
                 catch ( KernelException | CypherException | AuthorizationViolationException |
                         WriteOperationsNotAllowedException e )
@@ -363,12 +361,16 @@ public class TransactionHandle implements TransactionTerminationHandle
         }
     }
 
-    private Result safelyExecute( Statement statement, boolean hasPeriodicCommit, TransactionalContext tc )
-            throws QueryExecutionKernelException
+    private void safelyExecute( Statement statement,
+                                boolean hasPeriodicCommit,
+                                TransactionalContext tc,
+                                ExecutionResultSerializer output ) throws QueryExecutionKernelException, IOException
     {
         try
         {
-            return engine.executeQuery( statement.statement(), ValueUtils.asMapValue( statement.parameters() ), tc );
+            Result result = engine.executeQuery( statement.statement(), ValueUtils.asMapValue( statement.parameters() ), tc );
+            output.statementResult( result, statement.includeStats(), statement.resultDataContents() );
+            output.notifications( result.getNotifications() );
         }
         finally
         {

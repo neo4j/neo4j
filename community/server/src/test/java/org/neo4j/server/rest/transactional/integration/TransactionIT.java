@@ -315,7 +315,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     public void begin_and_execute_periodic_commit_that_returns_data_and_commit() throws Exception
     {
         int nodes = 11;
-        int batch = 2;
+        int batchSize = 2;
         ServerTestUtils.withCSVFile( nodes, url ->
         {
             long nodesInDatabaseBeforeTransaction = countNodes();
@@ -324,7 +324,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
             // begin and execute and commit
             Response response = http.POST(
                     "db/data/transaction/commit",
-                    quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT " + batch + " LOAD CSV FROM " +
+                    quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT " + batchSize + " LOAD CSV FROM " +
                             "\\\"" + url + "\\\" AS line CREATE (n {id: 23}) RETURN n' } ] }" )
             );
             long txIdAfter = resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
@@ -336,7 +336,9 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
             JsonNode columns = response.get( "results" ).get( 0 ).get( "columns" );
             assertThat( columns.toString(), equalTo( "[\"n\"]" ) );
             assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + nodes ) );
-            assertThat( txIdAfter, equalTo( txIdBefore + ((nodes / batch) + 1) ) );
+            long nBatches = (nodes / batchSize) + 1;
+            long expectedTxCount = nBatches + 1; // tx which create the property key token `id`
+            assertThat( txIdAfter - txIdBefore, equalTo( expectedTxCount ) );
         } );
     }
 
