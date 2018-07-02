@@ -325,7 +325,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
             Response response = http.POST(
                     "db/data/transaction/commit",
                     quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT " + batchSize + " LOAD CSV FROM " +
-                            "\\\"" + url + "\\\" AS line CREATE (n {id: 23}) RETURN n' } ] }" )
+                            "\\\"" + url + "\\\" AS line CREATE (n {id1: 23}) RETURN n' } ] }" )
             );
             long txIdAfter = resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
 
