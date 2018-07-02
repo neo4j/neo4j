@@ -61,6 +61,10 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     private static final int TYPE_ID_SIZE = Byte.BYTES;
 
     Type type;
+    NativeIndexKey.Inclusion inclusion;
+    private boolean isArray;
+    private int arrayLength;
+    private int currentArrayOffset;
 
     // zoned date time:       long0 (epochSecondUTC), long1 (nanoOfSecond), long2 (zoneId), long3 (zoneOffsetSeconds)
     // local date time:       long0 (nanoOfSecond), long1 (epochSecond)
@@ -74,12 +78,20 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     // TODO spatial
     // TODO arrays of all types ^^^
 
+    // for non-array values
     private long long0;
     private long long1;
     private long long2;
     private long long3;
     private byte[] byteArray;
-    NativeIndexKey.Inclusion inclusion;
+
+    // for array values
+    // TODO for arrays we have the ability to serialize the values more compact
+    private long[] long0Array;
+    private long[] long1Array;
+    private long[] long2Array;
+    private long[] long3Array;
+    private byte[][] byteArrayArray;
 
     void clear()
     {
@@ -89,6 +101,9 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         long2 = 0;
         long3 = 0;
         inclusion = NEUTRAL;
+        isArray = false;
+        arrayLength = 0;
+        currentArrayOffset = 0;
     }
 
     Value assertCorrectType( Value value )
@@ -105,7 +120,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         switch ( type )
         {
         case ZONED_DATE_TIME:
-            return zonedDateTimeAsValue();
+            return zonedDateTimeAsValue( long0, long1, long2, long3 );
         case LOCAL_DATE_TIME:
             return localDateTimeAsValue();
         case DATE:
@@ -176,31 +191,72 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         return inclusion.compareTo( other.inclusion );
     }
 
-    private int internalCompareValueTo( GenericKeyState other )
+    private int internalCompareValueTo( GenericKeyState that )
     {
         switch ( type )
         {
         case ZONED_DATE_TIME:
-            return compareZonedDateTime( other );
+            return compareZonedDateTime(
+                    this.long0, this.long1, this.long2, this.long3,
+                    that.long0, that.long1, that.long2, that.long3 );
         case LOCAL_DATE_TIME:
-            return compareLocalDateTime( other );
+            return compareLocalDateTime(
+                    this.long0, this.long1,
+                    that.long0, that.long1 );
         case DATE:
-            return compareDate( other );
+            return compareDate(
+                    this.long0,
+                    that.long0 );
         case ZONED_TIME:
-            return compareZonedTime( other );
+            return compareZonedTime(
+                    this.long0, this.long1,
+                    that.long0, that.long1 );
         case LOCAL_TIME:
-            return compareLocalTime( other );
+            return compareLocalTime(
+                    this.long0,
+                    that.long0 );
         case DURATION:
-            return compareDuration( other );
+            return compareDuration(
+                    this.long0, this.long1, this.long2, this.long3,
+                    that.long0, that.long1, that.long2, that.long3 );
         case TEXT:
-            return compareText( other );
+            return compareText(
+                    this.byteArray, this.long0, this.long2, this.long3,
+                    that.byteArray, that.long0, that.long2, that.long3 );
         case BOOLEAN:
-            return compareBoolean( other );
+            return compareBoolean(
+                    this.long0,
+                    that.long0 );
         case NUMBER:
-            return compareNumber( other );
+            return compareNumber(
+                    this.long0, this.long1,
+                    that.long0, that.long1 );
+        case ZONED_DATE_TIME_ARRAY:
+            return compareZonedDateTimeArray( that );
+        case LOCAL_DATE_TIME_ARRAY:
+            break;
+        case DATE_ARRAY:
+            break;
+        case ZONED_TIME_ARRAY:
+            break;
+        case LOCAL_TIME_ARRAY:
+            break;
+        case DURATION_ARRAY:
+            break;
+        case TEXT_ARRAY:
+            break;
+        case BOOLEAN_ARRAY:
+            break;
+        case NUMBER_ARRAY:
+            break;
         default:
             throw new IllegalArgumentException( "Unknown type " + type );
         }
+    }
+
+    private int compareZonedDateTimeArray( GenericKeyState other )
+    {
+
     }
 
     private void copyByteArrayFromIfExists( GenericKeyState key, int targetLength )
@@ -250,114 +306,235 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     @Override
     protected void writeDate( long epochDay ) throws RuntimeException
     {
-        type = Type.DATE;
-        long0 = epochDay;
+        if ( !isArray )
+        {
+            type = Type.DATE;
+            long0 = epochDay;
+        }
+        else
+        {
+            long0Array[currentArrayOffset] = epochDay;
+            currentArrayOffset++;
+        }
     }
 
     @Override
     protected void writeLocalTime( long nanoOfDay ) throws RuntimeException
     {
-        type = Type.LOCAL_TIME;
-        long0 = nanoOfDay;
+        if ( !isArray )
+        {
+            type = Type.LOCAL_TIME;
+            long0 = nanoOfDay;
+        }
+        else
+        {
+            long0Array[currentArrayOffset] = nanoOfDay;
+            currentArrayOffset++;
+        }
     }
 
     @Override
     protected void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws RuntimeException
     {
-        type = Type.ZONED_TIME;
-        long0 = nanosOfDayUTC;
-        long1 = offsetSeconds;
+        if ( !isArray )
+        {
+            type = Type.ZONED_TIME;
+            long0 = nanosOfDayUTC;
+            long1 = offsetSeconds;
+        }
+        else
+        {
+            long0Array[currentArrayOffset] = nanosOfDayUTC;
+            long1Array[currentArrayOffset] = offsetSeconds;
+            currentArrayOffset++;
+        }
     }
 
     @Override
     protected void writeLocalDateTime( long epochSecond, int nano ) throws RuntimeException
     {
-        type = Type.LOCAL_DATE_TIME;
-        long0 = nano;
-        long1 = epochSecond;
+        if ( !isArray )
+        {
+            type = Type.LOCAL_DATE_TIME;
+            long0 = nano;
+            long1 = epochSecond;
+        }
+        else
+        {
+            long0Array[currentArrayOffset] = nano;
+            long1Array[currentArrayOffset] = epochSecond;
+            currentArrayOffset++;
+        }
     }
 
     @Override
     protected void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws RuntimeException
     {
-        type = Type.ZONED_DATE_TIME;
-        long0 = epochSecondUTC;
-        long1 = nano;
-        long2 = -1;
-        long3 = offsetSeconds;
+        if ( !isArray )
+        {
+            type = Type.ZONED_DATE_TIME;
+            long0 = epochSecondUTC;
+            long1 = nano;
+            long2 = -1;
+            long3 = offsetSeconds;
+        }
+        else
+        {
+            long0Array[currentArrayOffset] = epochSecondUTC;
+            long1Array[currentArrayOffset] = nano;
+            long2Array[currentArrayOffset] = -1;
+            long3Array[currentArrayOffset] = offsetSeconds;
+            currentArrayOffset++;
+        }
     }
 
     @Override
     protected void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws RuntimeException
     {
-        type = Type.ZONED_DATE_TIME;
-        long0 = epochSecondUTC;
-        long1 = nano;
-        long2 = TimeZones.map( zoneId );
-        long3 = 0;
+        if ( !isArray )
+        {
+            type = Type.ZONED_DATE_TIME;
+            long0 = epochSecondUTC;
+            long1 = nano;
+            long2 = TimeZones.map( zoneId );
+            long3 = 0;
+        }
+        else
+        {
+            long0Array[currentArrayOffset] = epochSecondUTC;
+            long1Array[currentArrayOffset] = nano;
+            long2Array[currentArrayOffset] = TimeZones.map( zoneId );
+            long3Array[currentArrayOffset] = 0;
+            currentArrayOffset++;
+        }
     }
 
     @Override
     public void writeBoolean( boolean value ) throws RuntimeException
     {
-        type = Type.BOOLEAN;
-        long0 = value ? TRUE : FALSE;
+        if ( !isArray )
+        {
+            type = Type.BOOLEAN;
+            long0 = value ? TRUE : FALSE;
+        }
+        else
+        {
+            long0Array[currentArrayOffset] = value ? TRUE : FALSE;
+            currentArrayOffset++;
+        }
     }
 
     @Override
     public void writeInteger( byte value )
     {
-        type = Type.NUMBER;
-        long0 = value;
-        long1 = RawBits.BYTE;
+        if ( !isArray )
+        {
+            type = Type.NUMBER;
+            long0 = value;
+            long1 = RawBits.BYTE;
+        }
+        else
+        {
+            long0Array[currentArrayOffset] = value;
+            currentArrayOffset++;
+        }
     }
 
     @Override
     public void writeInteger( short value )
     {
-        type = Type.NUMBER;
-        long0 = value;
-        long1 = RawBits.SHORT;
+        if ( !isArray )
+        {
+            type = Type.NUMBER;
+            long0 = value;
+            long1 = RawBits.SHORT;
+        }
+        else
+        {
+            long0Array[currentArrayOffset] = value;
+            currentArrayOffset++;
+        }
     }
 
     @Override
     public void writeInteger( int value )
     {
-        type = Type.NUMBER;
-        long0 = value;
-        long1 = RawBits.INT;
+        if ( !isArray )
+        {
+            type = Type.NUMBER;
+            long0 = value;
+            long1 = RawBits.INT;
+        }
+        else
+        {
+            long0Array[currentArrayOffset] = value;
+            currentArrayOffset++;
+        }
     }
 
     @Override
     public void writeInteger( long value )
     {
-        type = Type.NUMBER;
-        long0 = value;
-        long1 = RawBits.LONG;
+        if ( !isArray )
+        {
+            type = Type.NUMBER;
+            long0 = value;
+            long1 = RawBits.LONG;
+        }
+        else
+        {
+            long0Array[currentArrayOffset] = value;
+            currentArrayOffset++;
+        }
     }
 
     @Override
     public void writeFloatingPoint( float value )
     {
-        type = Type.NUMBER;
-        long0 = Float.floatToIntBits( value );
-        long1 = RawBits.FLOAT;
+        if ( !isArray )
+        {
+            type = Type.NUMBER;
+            long0 = Float.floatToIntBits( value );
+            long1 = RawBits.FLOAT;
+        }
+        else
+        {
+            long0Array[currentArrayOffset] = Float.floatToIntBits( value );;
+            currentArrayOffset++;
+        }
     }
 
     @Override
     public void writeFloatingPoint( double value )
     {
-        type = Type.NUMBER;
-        long0 = Double.doubleToLongBits( value );
-        long1 = RawBits.DOUBLE;
+        if ( !isArray )
+        {
+            type = Type.NUMBER;
+            long0 = Double.doubleToLongBits( value );
+            long1 = RawBits.DOUBLE;
+        }
+        else
+        {
+            long0Array[currentArrayOffset] = Double.doubleToLongBits( value );
+            currentArrayOffset++;
+        }
     }
 
     @Override
     public void writeString( String value ) throws RuntimeException
     {
-        type = Type.TEXT;
-        byteArray = UTF8.encode( value );
-        long0 = byteArray.length;
+        if ( !isArray )
+        {
+            type = Type.TEXT;
+            byteArray = UTF8.encode( value );
+            long0 = byteArray.length;
+        }
+        else
+        {
+            byteArrayArray[currentArrayOffset] = UTF8.encode( value );
+            long0Array[currentArrayOffset] = byteArray.length;
+            currentArrayOffset++;
+        }
         long1 = FALSE;
     }
 
@@ -370,11 +547,22 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     @Override
     public void writeDuration( long months, long days, long seconds, int nanos )
     {
-        type = Type.DURATION;
-        long0 = months * AVG_MONTH_SECONDS + days * AVG_DAY_SECONDS + seconds;
-        long1 = nanos;
-        long2 = months;
-        long3 = days;
+        if ( !isArray )
+        {
+            type = Type.DURATION;
+            long0 = months * AVG_MONTH_SECONDS + days * AVG_DAY_SECONDS + seconds;
+            long1 = nanos;
+            long2 = months;
+            long3 = days;
+        }
+        else
+        {
+            long0Array[currentArrayOffset] = months * AVG_MONTH_SECONDS + days * AVG_DAY_SECONDS + seconds;
+            long1Array[currentArrayOffset] = nanos;
+            long2Array[currentArrayOffset] = months;
+            long3Array[currentArrayOffset] = days;
+            currentArrayOffset++;
+        }
     }
 
     private NumberValue numberAsValue()
@@ -429,34 +617,50 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         return LocalDateTimeValue.localDateTime( long1, long0 );
     }
 
-    private DateTimeValue zonedDateTimeAsValue()
+    private static DateTimeValue zonedDateTimeAsValue( long long0, long long1, long long2, long long3 )
     {
         return TimeZones.validZoneId( (short) long2 ) ?
                DateTimeValue.datetime( long0, long1, ZoneId.of( TimeZones.map( (short) long2 ) ) ) :
                DateTimeValue.datetime( long0, long1, ZoneOffset.ofTotalSeconds( (int) long3 ) );
     }
 
-    private int compareNumber( GenericKeyState other )
+    private static boolean isHighestText( long long3 )
     {
-        return RawBits.compare( long0, (byte) long1, other.long0, (byte) other.long1 );
+        return long3 == TRUE;
     }
 
-    private int compareBoolean( GenericKeyState other )
+    private static boolean booleanOf( long longValue )
     {
-        return Long.compare( long0, other.long0 );
+        return longValue == TRUE;
     }
 
-    private int compareText( GenericKeyState other )
+    private static int compareNumber(
+            long this_long0, long this_long1,
+            long that_long0, long that_long1 )
     {
-        if ( byteArray != other.byteArray )
+        return RawBits.compare( this_long0, (byte) this_long1, that_long0, (byte) that_long1 );
+    }
+
+    private static int compareBoolean(
+            long this_long0,
+            long that_long0 )
+    {
+        return Long.compare( this_long0, that_long0 );
+    }
+
+    private static int compareText(
+            byte[] this_byteArray, long this_long0, long this_long2, long this_long3,
+            byte[] that_byteArray, long that_long0, long that_long2, long that_long3 )
+    {
+        if ( this_byteArray != that_byteArray )
         {
-            if ( byteArray == null )
+            if ( this_byteArray == null )
             {
-                return isHighestText() ? 1 : -1;
+                return isHighestText( this_long3 ) ? 1 : -1;
             }
-            if ( other.byteArray == null )
+            if ( that_byteArray == null )
             {
-                return other.isHighestText() ? -1 : 1;
+                return isHighestText( that_long3 ) ? -1 : 1;
             }
         }
         else
@@ -464,80 +668,84 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
             return 0;
         }
 
-        return unsignedByteArrayCompare( byteArray, (int) long0, other.byteArray, (int) other.long0, booleanOf( long2 ) | booleanOf( other.long2 ) );
+        return unsignedByteArrayCompare( this_byteArray, (int) this_long0, that_byteArray, (int) that_long0, booleanOf( this_long2 ) | booleanOf( that_long2 ) );
     }
 
-    private boolean isHighestText()
+    private static int compareZonedDateTime(
+            long this_long0, long this_long1, long this_long2, long this_long3,
+            long that_long0, long that_long1, long that_long2, long that_long3 )
     {
-        return long3 == TRUE;
-    }
-
-    private boolean booleanOf( long longValue )
-    {
-        return longValue == TRUE;
-    }
-
-    private int compareZonedDateTime( GenericKeyState other )
-    {
-        int compare = Long.compare( long0, other.long0 );
+        int compare = Long.compare( this_long0, that_long0 );
         if ( compare == 0 )
         {
-            compare = Integer.compare( (int) long1, (int) other.long1 );
+            compare = Integer.compare( (int) this_long1, (int) that_long1 );
             if ( compare == 0 &&
                     // We need to check validity upfront without throwing exceptions, because the PageCursor might give garbage bytes
-                    TimeZones.validZoneOffset( (int) long3 ) &&
-                    TimeZones.validZoneOffset( (int) other.long3 ) )
+                    TimeZones.validZoneOffset( (int) this_long3 ) &&
+                    TimeZones.validZoneOffset( (int) that_long3 ) )
             {
                 // In the rare case of comparing the same instant in different time zones, we settle for
                 // mapping to values and comparing using the general values comparator.
-                compare = Values.COMPARATOR.compare( asValue(), other.asValue() );
+                compare = Values.COMPARATOR.compare(
+                        zonedDateTimeAsValue( this_long0, this_long1, this_long2, this_long3 ),
+                        zonedDateTimeAsValue( that_long0, that_long1, that_long2, that_long3 ) );
             }
         }
         return compare;
     }
 
-    private int compareLocalDateTime( GenericKeyState other )
+    private static int compareLocalDateTime(
+            long this_long0, long this_long1,
+            long that_long0, long that_long1 )
     {
-        int compare = Long.compare( long1, other.long1 );
+        int compare = Long.compare( this_long1, that_long1 );
         if ( compare == 0 )
         {
-            compare = Integer.compare( (int) long0, (int) other.long0 );
+            compare = Integer.compare( (int) this_long0, (int) that_long0 );
         }
         return compare;
     }
 
-    private int compareDate( GenericKeyState other )
+    private static int compareDate(
+            long this_long0,
+            long that_long0 )
     {
-        return Long.compare( long0, other.long0 );
+        return Long.compare( this_long0, that_long0 );
     }
 
-    private int compareZonedTime( GenericKeyState other )
+    private static int compareZonedTime(
+            long this_long0, long this_long1,
+            long that_long0, long that_long1 )
     {
-        int compare = Long.compare( long0, other.long0 );
+        int compare = Long.compare( this_long0, that_long0 );
         if ( compare == 0 )
         {
-            compare = Integer.compare( (int) long1, (int) other.long1 );
+            compare = Integer.compare( (int) this_long1, (int) that_long1 );
         }
         return compare;
     }
 
-    private int compareLocalTime( GenericKeyState other )
+    private static int compareLocalTime(
+            long this_long0,
+            long that_long0 )
     {
-        return Long.compare( long0, other.long0 );
+        return Long.compare( this_long0, that_long0 );
     }
 
-    private int compareDuration( GenericKeyState other )
+    private static int compareDuration(
+            long this_long0, long this_long1, long this_long2, long this_long3,
+            long that_long0, long that_long1, long that_long2, long that_long3 )
     {
-        int comparison = Long.compare( long0, other.long0 );
+        int comparison = Long.compare( this_long0, that_long0 );
         if ( comparison == 0 )
         {
-            comparison = Integer.compare( (int) long1, (int) other.long1 );
+            comparison = Integer.compare( (int) this_long1, (int) that_long1 );
             if ( comparison == 0 )
             {
-                comparison = Long.compare( long2, other.long2 );
+                comparison = Long.compare( this_long2, that_long2 );
                 if ( comparison == 0 )
                 {
-                    comparison = Long.compare( long3, other.long3 );
+                    comparison = Long.compare( this_long3, that_long3 );
                 }
             }
         }
@@ -694,6 +902,170 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         else
         {
             cursor.putInt( (int) long3 & ZONE_ID_MASK );
+        }
+    }
+
+    @Override
+    public void beginArray( int size, ArrayType arrayType ) throws RuntimeException
+    {
+        switch ( arrayType )
+        {
+        case BYTE:
+            type = Type.NUMBER_ARRAY;
+            long1 = RawBits.BYTE;
+            break;
+        case SHORT:
+            type = Type.NUMBER_ARRAY;
+            long1 = RawBits.SHORT;
+            break;
+        case INT:
+            type = Type.NUMBER_ARRAY;
+            long1 = RawBits.INT;
+            break;
+        case LONG:
+            type = Type.NUMBER_ARRAY;
+            long1 = RawBits.LONG;
+            break;
+        case FLOAT:
+            type = Type.NUMBER_ARRAY;
+            long1 = RawBits.FLOAT;
+            break;
+        case DOUBLE:
+            type = Type.NUMBER_ARRAY;
+            long1 = RawBits.DOUBLE;
+            break;
+        case BOOLEAN:
+            type = Type.BOOLEAN_ARRAY;
+            break;
+        case STRING:
+            type = Type.TEXT_ARRAY;
+            break;
+        case CHAR:
+            type = Type.TEXT_ARRAY;
+            break;
+        case POINT:
+            throw new UnsupportedOperationException( "Not implemented yet" );
+        case ZONED_DATE_TIME:
+            type = Type.ZONED_DATE_TIME_ARRAY;
+            break;
+        case LOCAL_DATE_TIME:
+            type = Type.LOCAL_DATE_TIME_ARRAY;
+            break;
+        case DATE:
+            type = Type.DATE_ARRAY;
+            break;
+        case ZONED_TIME:
+            type = Type.ZONED_TIME_ARRAY;
+            break;
+        case LOCAL_TIME:
+            type = Type.LOCAL_TIME_ARRAY;
+            break;
+        case DURATION:
+            type = Type.DURATION_ARRAY;
+            break;
+        default:
+            throw new IllegalArgumentException( "Unknown array type " + arrayType );
+        }
+        isArray = true;
+        arrayLength = size;
+        currentArrayOffset = 0;
+        switch ( type )
+        {
+        case ZONED_DATE_TIME_ARRAY:
+            long0Array = ensureBigEnough( long0Array, size );
+            long1Array = ensureBigEnough( long1Array, size );
+            long2Array = ensureBigEnough( long2Array, size );
+            long3Array = ensureBigEnough( long3Array, size );
+            break;
+        case LOCAL_DATE_TIME_ARRAY:
+            long0Array = ensureBigEnough( long0Array, size );
+            long1Array = ensureBigEnough( long1Array, size );
+            break;
+        case DATE_ARRAY:
+            long0Array = ensureBigEnough( long0Array, size );
+            break;
+        case ZONED_TIME_ARRAY:
+            long0Array = ensureBigEnough( long0Array, size );
+            long1Array = ensureBigEnough( long1Array, size );
+            break;
+        case LOCAL_TIME_ARRAY:
+            long0Array = ensureBigEnough( long0Array, size );
+            break;
+        case DURATION_ARRAY:
+            long0Array = ensureBigEnough( long0Array, size );
+            long1Array = ensureBigEnough( long1Array, size );
+            long2Array = ensureBigEnough( long2Array, size );
+            long3Array = ensureBigEnough( long3Array, size );
+            break;
+        case TEXT_ARRAY:
+            long0Array = ensureBigEnough( long0Array, size );
+            // plain long1 for bytesDereferenced
+            byteArrayArray = ensureBigEnough( byteArrayArray, size );
+            break;
+        case BOOLEAN_ARRAY:
+            long0Array = ensureBigEnough( long0Array, size );
+            break;
+        case NUMBER_ARRAY:
+            long0Array = ensureBigEnough( long0Array, size );
+            // plain long1 for number type
+            break;
+        }
+    }
+
+    private byte[][] ensureBigEnough( byte[][] array, int targetLength )
+    {
+        return array == null || array.length < targetLength ? new byte[targetLength][] : array;
+    }
+
+    private static long[] ensureBigEnough( long[] array, int targetLength )
+    {
+        return array == null || array.length < targetLength ? new long[targetLength] : array;
+    }
+
+    @Override
+    public void endArray() throws RuntimeException
+    {
+        // TODO do something here?
+    }
+
+    private Type arrayType( ArrayType arrayType )
+    {
+        switch ( arrayType )
+        {
+        case BYTE:
+            return Type.NUMBER_ARRAY;
+        case SHORT:
+            return Type.NUMBER_ARRAY;
+        case INT:
+            return Type.NUMBER_ARRAY;
+        case LONG:
+            return Type.NUMBER_ARRAY;
+        case FLOAT:
+            return Type.NUMBER_ARRAY;
+        case DOUBLE:
+            return Type.NUMBER_ARRAY;
+        case BOOLEAN:
+            return Type.BOOLEAN_ARRAY;
+        case STRING:
+            return Type.TEXT_ARRAY;
+        case CHAR:
+            return Type.TEXT_ARRAY;
+        case POINT:
+            throw new UnsupportedOperationException( "Not implemented yet" );
+        case ZONED_DATE_TIME:
+            return Type.ZONED_DATE_TIME_ARRAY;
+        case LOCAL_DATE_TIME:
+            return Type.LOCAL_DATE_TIME_ARRAY;
+        case DATE:
+            return Type.DATE_ARRAY;
+        case ZONED_TIME:
+            return Type.ZONED_TIME_ARRAY;
+        case LOCAL_TIME:
+            return Type.LOCAL_TIME_ARRAY;
+        case DURATION:
+            return Type.DURATION_ARRAY;
+        default:
+            throw new IllegalArgumentException( "Unknown array type " + arrayType );
         }
     }
 

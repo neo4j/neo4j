@@ -43,7 +43,17 @@ class GenericLayout extends IndexLayout<CompositeGenericKey>
         DURATION( ValueGroup.DURATION, (byte) 5 ),
         TEXT( ValueGroup.TEXT, (byte) 6 ),
         BOOLEAN( ValueGroup.BOOLEAN, (byte) 7 ),
-        NUMBER( ValueGroup.NUMBER, (byte) 8 );
+        NUMBER( ValueGroup.NUMBER, (byte) 8 ),
+
+        ZONED_DATE_TIME_ARRAY( ValueGroup.ZONED_DATE_TIME_ARRAY, (byte) 9 ),
+        LOCAL_DATE_TIME_ARRAY( ValueGroup.LOCAL_DATE_TIME_ARRAY, (byte) 10 ),
+        DATE_ARRAY( ValueGroup.DATE_ARRAY, (byte) 11 ),
+        ZONED_TIME_ARRAY( ValueGroup.ZONED_TIME_ARRAY, (byte) 12 ),
+        LOCAL_TIME_ARRAY( ValueGroup.LOCAL_TIME_ARRAY, (byte) 13 ),
+        DURATION_ARRAY( ValueGroup.DURATION_ARRAY, (byte) 14 ),
+        TEXT_ARRAY( ValueGroup.TEXT_ARRAY, (byte) 15 ),
+        BOOLEAN_ARRAY( ValueGroup.BOOLEAN_ARRAY, (byte) 16 ),
+        NUMBER_ARRAY( ValueGroup.NUMBER_ARRAY, (byte) 17 );
 
         private final ValueGroup valueGroup;
         final byte typeId;
