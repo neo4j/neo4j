@@ -97,38 +97,54 @@ class RuntimeTextValueConverter(scalaValues: RuntimeScalaValueConverter,
 
   private def props(n: Node): String = {
     val tx = txContext.transaction
-    if (tx.dataRead().nodeDeletedInTransaction(n.getId)) {
-      return "{deleted}"
-    }
-
-    if (!isVirtualEntityHack(n)) {
+    if (tx.dataRead().nodeDeletedInTransaction(n.getId))
+      "{deleted}"
+    else if (isVirtualEntityHack(n))
+      "{}"
+    else {
       val nodeCursor = tx.cursors().allocateNodeCursor()
       val propertyCursor = tx.cursors().allocatePropertyCursor()
-      tx.dataRead().singleNode(n.getId, nodeCursor)
-      if (nodeCursor.next()) {
-        nodeCursor.properties(propertyCursor)
-        return propertiesAsTextValue(propertyCursor)
+
+      try {
+
+        tx.dataRead().singleNode(n.getId, nodeCursor)
+
+        if (nodeCursor.next()) {
+          nodeCursor.properties(propertyCursor)
+          propertiesAsTextValue(propertyCursor)
+        } else "{}"
+
+      } finally {
+        propertyCursor.close()
+        nodeCursor.close()
       }
     }
-    "{}"
   }
 
   private def props(r: Relationship): String = {
     val tx = txContext.transaction
-    if (tx.dataRead().relationshipDeletedInTransaction(r.getId)) {
-      return "{deleted}"
-    }
-
-    if (!isVirtualEntityHack(r)) {
+    if (tx.dataRead().relationshipDeletedInTransaction(r.getId))
+      "{deleted}"
+    else if (isVirtualEntityHack(r))
+      "{}"
+    else {
       val relationshipCursor = tx.cursors().allocateRelationshipScanCursor()
       val propertyCursor = tx.cursors().allocatePropertyCursor()
-      tx.dataRead().singleRelationship(r.getId, relationshipCursor)
-      if (relationshipCursor.next()) {
-        relationshipCursor.properties(propertyCursor)
-        return propertiesAsTextValue(propertyCursor)
+
+      try {
+
+        tx.dataRead().singleRelationship(r.getId, relationshipCursor)
+
+        if (relationshipCursor.next()) {
+          relationshipCursor.properties(propertyCursor)
+          propertiesAsTextValue(propertyCursor)
+        } else "{}"
+
+      } finally {
+        propertyCursor.close()
+        relationshipCursor.close()
       }
     }
-    "{}"
   }
 
   private def propertiesAsTextValue(propertyCursor: PropertyCursor): String = {
