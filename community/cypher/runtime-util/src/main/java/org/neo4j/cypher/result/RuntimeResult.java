@@ -27,19 +27,41 @@ import org.neo4j.graphdb.ResourceIterator;
  */
 public interface RuntimeResult extends AutoCloseable
 {
+    /**
+     * Names of the returned fields of this result.
+     */
     String[] fieldNames();
 
+    /**
+     * True if this result can be consumed as an iterator. See {@link RuntimeResult#asIterator}.
+     */
     boolean isIterable();
 
+    /**
+     * Consume this result as an iterator. Will complain if {@link RuntimeResult#isIterable()} is false.
+     */
     ResourceIterator<java.util.Map<String, Object>> asIterator();
 
+    /**
+     * True if this result has been completely served either via {@link RuntimeResult#asIterator} or
+     * {@link RuntimeResult#accept(QueryResult.QueryResultVisitor)}.
+     */
     boolean isExhausted();
 
+    /**
+     * Consume this result using a visitor. Will complain if {@link RuntimeResult#isIterable()} is false.
+     */
     <E extends Exception> void accept( QueryResult.QueryResultVisitor<E> visitor )
             throws E;
 
+    /**
+     * Get the {@link QueryStatistics} related to this query execution.
+     */
     QueryStatistics queryStatistics();
 
+    /**
+     * Get the {@link QueryProfile} of this query execution.
+     */
     QueryProfile queryProfile();
 
     @Override

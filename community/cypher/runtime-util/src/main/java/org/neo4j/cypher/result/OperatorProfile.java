@@ -43,12 +43,12 @@ public interface OperatorProfile
     long rows();
 
     /**
-     * Page cache page hits while executing this operator.
+     * Page cache hits while executing this operator.
      */
     long pageCacheHits();
 
     /**
-     * Page cache page misses while executing this operator.
+     * Page cache misses while executing this operator.
      */
     long pageCacheMisses();
 
