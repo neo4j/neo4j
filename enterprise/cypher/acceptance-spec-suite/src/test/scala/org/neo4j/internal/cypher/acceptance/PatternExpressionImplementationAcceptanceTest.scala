@@ -22,12 +22,12 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.opencypher.v9_0.expressions.SemanticDirection
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.runtime.PathImpl
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{EstimatedRows, ExpandExpression}
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.opencypher.v9_0.expressions.SemanticDirection
 import org.scalatest.Matchers
 
 class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSuite with Matchers with CypherComparisonSupport {
@@ -40,7 +40,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
 
     val result = executeWith(Configs.Interpreted, "match (n) return case when id(n) >= 0 then (n)-->() else 42 end as p",
-      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot useOperators("Expand(All)")))
+      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("Expand(All)")))
 
     result.toList.head("p").asInstanceOf[Seq[_]] should have size 2
   }
@@ -51,7 +51,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
 
     val result = executeWith(Configs.Interpreted, "match (n) return case when id(n) < 0 then (n)-->() else 42 end as p",
-      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot useOperators("Expand(All)")))
+      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("Expand(All)")))
 
     result.toList.head("p").asInstanceOf[Long] should equal(42)
   }
@@ -137,7 +137,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
 
     val result = executeWith(Configs.Interpreted + Configs.Morsel, "match (n) where (case when id(n) >= 0 then length((n)-->()) else 42 end) > 0 return n",
-      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot useOperators("RollUpApply")))
+      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("RollUpApply")))
 
     result.toList should equal(List(
       Map("n" -> start)
@@ -170,7 +170,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
 
     val result = executeWith(Configs.Interpreted, "match (n) where (case when id(n) < 0 then length((n)-->(:X)) else 42 end) > 0 return n",
-      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot useOperators("RollUpApply")))
+      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("RollUpApply")))
 
     result should have size 3
   }
@@ -185,7 +185,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start3, createNode())
 
     val result = executeWith(Configs.Interpreted, "match (n) where (n)-->() AND (case when n:A then length((n)-->(:C)) when n:B then length((n)-->(:D)) else 42 end) > 1 return n",
-      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot useOperators("RollUpApply")))
+      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("RollUpApply")))
 
     result.toList should equal(List(
       Map("n" -> start),
@@ -223,7 +223,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
         |         ELSE (a)-->()
         |       END as X
         |         """.stripMargin,
-      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot useOperators("RollUpApply")))
+      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("RollUpApply")))
 
     result.toList should equal(List(Map("X" -> Seq())))
   }
@@ -234,7 +234,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
 
     executeWith(Configs.Interpreted, "match (n) return case when id(n) >= 0 then (n)-->() else 42 end as p",
-      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot useOperators("Expand(All)")))
+      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("Expand(All)")))
   }
 
   test("should not use full expand 2") {
@@ -243,7 +243,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
 
     executeWith(Configs.Interpreted, "match (n) return case when id(n) < 0 then (n)-->() else 42 end as p",
-      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot useOperators("Expand(All)")))
+      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("Expand(All)")))
   }
 
   // TESTS WITH EXTRACT
@@ -290,7 +290,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
 
     executeWith(Configs.Interpreted, "match (n)-->(b) with (n)-->() as p, count(b) as c return p, c",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("Expand(All)"), expectPlansToFail = Configs.AllRulePlanners))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("Expand(All)"), expectPlansToFail = Configs.AllRulePlanners))
   }
 
   test("should use varlength expandInto when variables are bound") {
@@ -299,7 +299,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(a, b)
 
     executeWith(Configs.Interpreted, "match (a:Start), (b:End) with (a)-[*]->(b) as path, count(a) as c return path, c",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("VarLengthExpand(Into)"),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("VarLengthExpand(Into)"),
         expectPlansToFail = Configs.AllRulePlanners + Configs.Version2_3))
   }
 
@@ -314,7 +314,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(createNode(), createLabeledNode("A"), "T")
 
     executeWith(Configs.Interpreted, "PROFILE MATCH ()-[r]->() WHERE ()-[r]-(:A) RETURN r",
-      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot useOperators("NodeByLabelScan")))
+      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("NodeByLabelScan")))
   }
 
   test("should consider cardinality input when planning pattern expression in where clause") {
@@ -360,7 +360,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(node, createNode(), "HAS")
 
     executeWith(Configs.Interpreted, "MATCH (n:A) RETURN count((n)-[:HAS]->()) as c",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("Expand(All)"),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("Expand(All)"),
         expectPlansToFail = Configs.AllRulePlanners + Configs.Version2_3))
   }
 
@@ -368,28 +368,28 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     setup()
 
     executeWith(Configs.Interpreted, "MATCH (n:X) WHERE LENGTH((n)-->()) > 2 RETURN n",
-      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot useOperators("RollUpApply")))
+      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("RollUpApply")))
   }
 
   test("use getDegree for simple pattern expression with length clause, incoming") {
     setup()
 
     executeWith(Configs.Interpreted, "MATCH (n:X) WHERE LENGTH((n)<--()) > 2 RETURN n",
-      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot useOperators("RollUpApply")))
+      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("RollUpApply")))
   }
 
   test("use getDegree for simple pattern expression with length clause, both") {
     setup()
 
     executeWith(Configs.Interpreted, "MATCH (n:X) WHERE LENGTH((n)--()) > 2 RETURN n",
-      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot useOperators("RollUpApply")))
+      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("RollUpApply")))
   }
 
   test("use getDegree for simple pattern expression with rel-type ORs") {
     setup()
 
     executeWith(Configs.Interpreted + Configs.Morsel, "MATCH (n) WHERE length((n)-[:X|Y]->()) > 2 RETURN n",
-      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot useOperators("RollUpApply")))
+      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("RollUpApply")))
   }
 
   private def setup(): (Node, Node) = {

@@ -103,7 +103,7 @@ class CostPlannerAcceptanceTest extends ExecutionEngineFunSuite {
 
     val explainAndAssert = () => {
       val result = execute(s"EXPLAIN $query")
-      result.executionPlanDescription() should useOperatorTimes("NodeByIdSeek", 1)
+      result.executionPlanDescription() should includeSomewhere.nTimes(1, aPlan("NodeByIdSeek"))
     }
     new GeneratedTestValues().test(executeOnDbWithInitialNumberOfNodes(explainAndAssert, _))
   }
@@ -117,7 +117,7 @@ class CostPlannerAcceptanceTest extends ExecutionEngineFunSuite {
 
     val explainAndAssert = () => {
       val result = execute(s"EXPLAIN $query")
-      result.executionPlanDescription() should useOperatorTimes("UndirectedRelationshipByIdSeek", 1)
+      result.executionPlanDescription() should includeSomewhere.nTimes(1, aPlan("UndirectedRelationshipByIdSeek"))
     }
     new GeneratedTestValues().test(executeOnDbWithInitialNumberOfNodes(explainAndAssert, _))
   }
@@ -138,13 +138,13 @@ class CostPlannerAcceptanceTest extends ExecutionEngineFunSuite {
       """.stripMargin
 
     val result = execute(s"EXPLAIN $query")
-    result.executionPlanDescription() should not(useOperators("CartesianProduct"))
+    result.executionPlanDescription() should not(includeSomewhere.aPlan("CartesianProduct"))
   }
 
   private def testPlanNodeIndexSeek(query: String, assertNumberOfIndexSeeks: Int): Unit = {
     val explainAndAssertNodeIndexSeekIsUsed = () => {
       val result = execute(s"EXPLAIN $query")
-      result.executionPlanDescription() should useOperatorTimes("NodeIndexSeek", assertNumberOfIndexSeeks)
+      result.executionPlanDescription() should includeSomewhere.nTimes(assertNumberOfIndexSeeks, aPlan("NodeIndexSeek"))
     }
     new GeneratedTestValues().test(executeOnDbWithInitialNumberOfNodes(explainAndAssertNodeIndexSeekIsUsed, _))
   }

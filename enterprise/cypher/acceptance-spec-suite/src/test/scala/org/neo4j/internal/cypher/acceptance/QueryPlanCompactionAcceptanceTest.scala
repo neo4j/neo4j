@@ -31,6 +31,9 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
 
   private val expectedToSucceed = Configs.Interpreted - Configs.Cost2_3
 
+  val shouldCompact = ComparePlansWithAssertion(_.toString.split("\\n").exists(line => line.contains("Create") && line.contains("...")) should be(true))
+  val shouldNotCompact = ComparePlansWithAssertion(_.toString.split("\\n").exists(line => line.contains("Create") && line.contains("...")) should be(false))
+
   implicit val windowsSafe = WindowsStringSafe
 
   test("Compact very long query containing consecutive update operations") {
@@ -543,16 +546,8 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         |;""".stripMargin
 
 
-      // Removed produceResults part of plan which differs between scenarios and isn't what we want to test
-      val expectedPlan =
-      """
-        || |               +----------------+-------------------------------------------------------------------------------------------------+
-        || +Create         |              1 | anon[10142], anon[10200], anon[10266], anon[10333], anon[10398], anon[10464], anon[10529], ...  |
-        |+-----------------+----------------+-------------------------------------------------------------------------------------------------+
-        |""".stripMargin
-
     val result = executeWith(expectedToSucceed, query,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should matchPlan(expectedPlan), expectPlansToFail = Configs.Version2_3 + Configs.Version3_1 + Configs.Version3_4 + Configs.SlottedInterpreted + Configs.AllRulePlanners))
+      planComparisonStrategy = shouldCompact)
     assertStats(result, nodesCreated = 171, relationshipsCreated = 253, propertiesWritten = 564, labelsAdded = 171)
   }
 
@@ -575,73 +570,15 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         |  (JoelS)-[:PRODUCED]->(TheMatrix)
         |""".stripMargin
 
-    // Removed produceResults part of plan which differs between scenarios and isn't what we want to test
-    val expectedPlan =
-      """
-        || |               +----------------+-------------------------------------------------------------------------------------------------+
-        || +Create         |              1 | anon[*], anon[*], anon[*], anon[*], anon[*], anon[*], anon[*], AndyW, Carrie, ...               |
-        |+-----------------+----------------+-------------------------------------------------------------------------------------------------+
-        |""".stripMargin
-
-    val result = executeWith(expectedToSucceed, query, planComparisonStrategy = ComparePlansWithAssertion(_ should matchPlan(expectedPlan), expectPlansToFail = Configs.Version2_3 + Configs.Version3_1 + Configs.Version3_4 + Configs.SlottedInterpreted + Configs.AllRulePlanners))
+    val result = executeWith(expectedToSucceed, query, planComparisonStrategy = shouldCompact)
     assertStats(result, nodesCreated = 8, relationshipsCreated = 7, propertiesWritten = 21, labelsAdded = 8)
   }
 
   test("Don't compact complex query") {
     val query = "EXPLAIN LOAD CSV WITH HEADERS FROM {csv_filename} AS line MERGE (u1:User {login: line.user1}) MERGE " +
       "(u2:User {login: line.user2}) CREATE (u1)-[:FRIEND]->(u2)"
-    val expectedPlan =
-      """
-        |+-------------------------+----------------+---------------------------+-----------------------+
-        || Operator                | Estimated Rows | Variables                 | Other                 |
-        |+-------------------------+----------------+---------------------------+-----------------------+
-        || +ProduceResults         |              1 | anon[134], line, u1, u2   |                       |
-        || |                       +----------------+---------------------------+-----------------------+
-        || +EmptyResult            |              1 | anon[134], line, u1, u2   |                       |
-        || |                       +----------------+---------------------------+-----------------------+
-        || +Create                 |              1 | anon[134] -- line, u1, u2 |                       |
-        || |                       +----------------+---------------------------+-----------------------+
-        || +Apply                  |              1 | u1 -- line, u2            |                       |
-        || |\                      +----------------+---------------------------+-----------------------+
-        || | +AntiConditionalApply |              1 | line, u2                  |                       |
-        || | |\                    +----------------+---------------------------+-----------------------+
-        || | | +MergeCreateNode    |              1 | u2 -- line                |                       |
-        || | | |                   +----------------+---------------------------+-----------------------+
-        || | | +Argument           |              1 | line                      |                       |
-        || | |                     +----------------+---------------------------+-----------------------+
-        || | +Optional             |              1 | line, u2                  |                       |
-        || | |                     +----------------+---------------------------+-----------------------+
-        || | +ActiveRead           |              0 | line, u2                  |                       |
-        || | |                     +----------------+---------------------------+-----------------------+
-        || | +Filter               |              0 | line, u2                  | u2.login = line.user2 |
-        || | |                     +----------------+---------------------------+-----------------------+
-        || | +NodeByLabelScan      |              1 | u2 -- line                | :User                 |
-        || |                       +----------------+---------------------------+-----------------------+
-        || +Eager                  |              1 | line, u1                  |                       |
-        || |                       +----------------+---------------------------+-----------------------+
-        || +Apply                  |              1 | line, u1                  |                       |
-        || |\                      +----------------+---------------------------+-----------------------+
-        || | +AntiConditionalApply |              1 | line, u1                  |                       |
-        || | |\                    +----------------+---------------------------+-----------------------+
-        || | | +MergeCreateNode    |              1 | u1 -- line                |                       |
-        || | | |                   +----------------+---------------------------+-----------------------+
-        || | | +Argument           |              1 | line                      |                       |
-        || | |                     +----------------+---------------------------+-----------------------+
-        || | +Optional             |              1 | line, u1                  |                       |
-        || | |                     +----------------+---------------------------+-----------------------+
-        || | +ActiveRead           |              0 | line, u1                  |                       |
-        || | |                     +----------------+---------------------------+-----------------------+
-        || | +Filter               |              0 | line, u1                  | u1.login = line.user1 |
-        || | |                     +----------------+---------------------------+-----------------------+
-        || | +NodeByLabelScan      |              1 | u1 -- line                | :User                 |
-        || |                       +----------------+---------------------------+-----------------------+
-        || +LoadCSV                |              1 | line                      |                       |
-        |+-------------------------+----------------+---------------------------+-----------------------+
-        |""".stripMargin
 
-    executeWith(expectedToSucceed, query, planComparisonStrategy = ComparePlansWithAssertion(_ should matchPlan(expectedPlan),
-      // FIXME this is horrible, but I cardified it
-      expectPlansToFail = Configs.Version2_3 + Configs.Version3_1 + Configs.AllRulePlanners + Configs.SlottedInterpreted + TestConfiguration(Versions.V3_4, Planners(Planners.Cost, Planners.Default), Runtimes(Runtimes.Slotted, Runtimes.Default))), params = Map("csv_filename" -> "x"))
+    executeWith(expectedToSucceed, query, planComparisonStrategy = shouldNotCompact, params = Map("csv_filename" -> "x"))
   }
 
   test("Don't compact query with consecutive expands due to presence of values in 'other' column") {
@@ -657,66 +594,6 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
     relate(c,b)
     relate(d,b)
     val query = "MATCH (n:Actor {name:'Keanu Reeves'})-->()-->(b) RETURN b"
-    val expectedPlan =
-      """+------------------+----------------+--------------------------------------+-----------------------------+
-        || Operator         | Estimated Rows | Variables                            | Other                       |
-        |+------------------+----------------+--------------------------------------+-----------------------------+
-        || +ProduceResults  |              1 | anon[38], anon[41], anon[43], b, n   |                             |
-        || |                +----------------+--------------------------------------+-----------------------------+
-        || +Filter          |              1 | anon[38], anon[41], anon[43], b, n   | not `anon[38]` = `anon[43]` |
-        || |                +----------------+--------------------------------------+-----------------------------+
-        || +Expand(All)     |              1 | anon[43], b -- anon[38], anon[41], n | ()-->(b)                    |
-        || |                +----------------+--------------------------------------+-----------------------------+
-        || +Expand(All)     |              1 | anon[38], anon[41] -- n              | (n)-->()                    |
-        || |                +----------------+--------------------------------------+-----------------------------+
-        || +Filter          |              1 | n                                    | n.name = $`  AUTOSTRING0`   |
-        || |                +----------------+--------------------------------------+-----------------------------+
-        || +NodeByLabelScan |              5 | n                                    | :Actor                      |
-        |+------------------+----------------+--------------------------------------+-----------------------------+
-        |""".stripMargin
-    val ignoreConfiguration = Configs.Version2_3 + Configs.Version3_1 + Configs.AllRulePlanners + Configs.SlottedInterpreted
-    executeWith(Configs.All, query, planComparisonStrategy = ComparePlansWithAssertion(_ should matchPlan(expectedPlan), expectPlansToFail = ignoreConfiguration))
-  }
-
-  test("plans are alike with different anon variable numbers") {
-    val plan1 =
-      """
-        |+------------------+----------------+------+---------+--------------------------------------+---------------------------+
-        || Operator         | Estimated Rows | Rows | DB Hits | Variables                            | Other                     |
-        |+------------------+----------------+------+---------+--------------------------------------+---------------------------+
-        || +ProduceResults  |              1 |    1 |       0 | b                                    | b                         |
-        || |                +----------------+------+---------+--------------------------------------+---------------------------+
-        || +Filter          |              1 |    1 |       0 | anon[00], anon[11], anon[22], b, n   | NOT(anon[38] == anon[43]) |
-        || |                +----------------+------+---------+--------------------------------------+---------------------------+
-        || +Expand(All)     |              1 |    1 |       2 | anon[33], b -- anon[44], anon[55], n | ()-->(b)                  |
-        || |                +----------------+------+---------+--------------------------------------+---------------------------+
-        || +Expand(All)     |              1 |    1 |       2 | anon[66], anon[77] -- n              | (n)-->()                  |
-        || |                +----------------+------+---------+--------------------------------------+---------------------------+
-        || +Filter          |              1 |    1 |       5 | n                                    | n.name == {  AUTOSTRING0} |
-        || |                +----------------+------+---------+--------------------------------------+---------------------------+
-        || +NodeByLabelScan |              5 |    5 |       6 | n                                    | :Actor                    |
-        |+------------------+----------------+------+---------+--------------------------------------+---------------------------+
-      """.stripMargin
-
-    val plan2 =
-      """
-        |+------------------+----------------+------+---------+--------------------------------------+---------------------------+
-        || Operator         | Estimated Rows | Rows | DB Hits | Variables                            | Other                     |
-        |+------------------+----------------+------+---------+--------------------------------------+---------------------------+
-        || +ProduceResults  |              1 |    1 |       0 | b                                    | b                         |
-        || |                +----------------+------+---------+--------------------------------------+---------------------------+
-        || +Filter          |              1 |    1 |       0 | anon[38], anon[41], anon[43], b, n   | NOT(anon[38] == anon[43]) |
-        || |                +----------------+------+---------+--------------------------------------+---------------------------+
-        || +Expand(All)     |              1 |    1 |       2 | anon[43], b -- anon[38], anon[41], n | ()-->(b)                  |
-        || |                +----------------+------+---------+--------------------------------------+---------------------------+
-        || +Expand(All)     |              1 |    1 |       2 | anon[38], anon[41] -- n              | (n)-->()                  |
-        || |                +----------------+------+---------+--------------------------------------+---------------------------+
-        || +Filter          |              1 |    1 |       5 | n                                    | n.name == {  AUTOSTRING0} |
-        || |                +----------------+------+---------+--------------------------------------+---------------------------+
-        || +NodeByLabelScan |              5 |    5 |       6 | n                                    | :Actor                    |
-        |+------------------+----------------+------+---------+--------------------------------------+---------------------------+
-      """.stripMargin
-
-    replaceAnonVariables(plan1) should be(replaceAnonVariables(plan2))
+    executeWith(Configs.All, query, planComparisonStrategy = shouldNotCompact)
   }
 }

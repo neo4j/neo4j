@@ -51,7 +51,7 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with C
     val query = "MATCH (l:Location) WHERE l.name CONTAINS 'ondo' RETURN l"
 
     val result = executeWith(expectedToSucceed, query,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeIndexContainsScan"), expectPlansToFail))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexContainsScan"), expectPlansToFail))
 
     result should evaluateTo(List(Map("l" -> london)))
   }
@@ -73,7 +73,7 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with C
     val query = "MATCH (l:Location) WHERE l.name CONTAINS 'ondo' RETURN l"
 
     val result = executeWith(expectedToSucceed, query,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeIndexContainsScan"), expectPlansToFail))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexContainsScan"), expectPlansToFail))
 
     result should evaluateTo(List(Map("l" -> london)))
   }
@@ -96,7 +96,7 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with C
     val query = "MATCH (l:Location) WHERE l.name CONTAINS 'ondo' AND l.country = 'UK' RETURN l"
 
     val result = executeWith(expectedToSucceed, query,
-    planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeIndexContainsScan"), expectPlansToFail))
+    planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexContainsScan"), expectPlansToFail))
 
     result should evaluateTo(List(Map("l" -> london)))
   }
@@ -119,7 +119,7 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with C
     val query = "MATCH (l:Location) WHERE l.name CONTAINS 'ondo' AND l.country = 'UK' RETURN l"
 
     val result = executeWith(Configs.Interpreted, query,
-    planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeIndexSeek"), expectPlansToFail = Configs.AllRulePlanners))
+    planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeek"), expectPlansToFail = Configs.AllRulePlanners))
 
     result should evaluateTo(List(Map("l" -> london)))
   }
@@ -164,7 +164,7 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with C
     val query = "MATCH (l:Location) WHERE l.name CONTAINS {param} RETURN l"
 
     val result = executeWith(expectedToSucceed, query,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeIndexContainsScan"), expectPlansToFail),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexContainsScan"), expectPlansToFail),
       params = Map("param" -> null))
 
     result should evaluateTo(List.empty)

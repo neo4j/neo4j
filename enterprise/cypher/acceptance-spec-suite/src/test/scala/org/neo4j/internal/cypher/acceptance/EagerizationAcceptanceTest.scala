@@ -23,7 +23,6 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.collection.RawIterator
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.{Counter, CreateTempFileTestSupport, InternalExecutionResult}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.Node
@@ -761,8 +760,8 @@ class EagerizationAcceptanceTest
     val query = "CREATE () WITH * MATCH () RETURN count(*)"
     val result = executeWith(Configs.UpdateConf, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
-        plan should not(useOperators("ReadOnly"))
-        assertNumberOfEagerness(plan, 0) should be(true)
+        plan should not(includeSomewhere.aPlan("ReadOnly"))
+        plan should includeSomewhere.nTimes(0, aPlan().withName(EagerRegEx))
       }))
     assertStats(result, nodesCreated = 1)
     result.columnAs[Long]("count(*)").next shouldBe 1
@@ -2818,20 +2817,9 @@ class EagerizationAcceptanceTest
 
   private def testEagerPlanComparisonStrategy(expectedEagerCount: Int,
                                               expectPlansToFailPredicate: TestConfiguration = TestConfiguration.empty,
-                                              optimalEagerCount: Int = -1) = {
+                                              optimalEagerCount: Int = -1): PlanComparisonStrategy = {
     val failureMessage = s"Unexpected number of eagers. Expected $expectedEagerCount" + (if(optimalEagerCount != -1) s", optimal $optimalEagerCount" else "")
-    ComparePlansWithPredicate((plan) => assertNumberOfEagerness(plan, expectedEagerCount), expectPlansToFailPredicate, failureMessage)
+    ComparePlansWithAssertion((plan) => plan should includeSomewhere.nTimes(expectedEagerCount, aPlan().withName(EagerRegEx)), expectPlansToFailPredicate)
   }
 
-  private def assertNumberOfEagerness(planDescription: InternalPlanDescription, expectedEagerCount: Int): Boolean = {
-    val plan = planDescription.toString
-    val eagers = EagerRegEx.findAllIn(plan).length
-    if (VERBOSE && expectedEagerCount > 0) {
-      println(s"Expected eagerness $expectedEagerCount\n  Eager: $eagers\n")
-      if (VERBOSE_INCLUDE_PLAN_DESCRIPTION)
-        println(plan)
-    }
-
-    eagers == expectedEagerCount
-  }
 }

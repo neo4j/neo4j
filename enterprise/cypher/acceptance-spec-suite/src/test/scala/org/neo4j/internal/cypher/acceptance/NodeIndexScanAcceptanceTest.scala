@@ -45,7 +45,7 @@ class NodeIndexScanAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
       "MATCH (p:Person) WHERE p.name IS NOT NULL RETURN p",
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
-        plan should useOperators("NodeIndexScan")
+        plan should includeSomewhere.aPlan("NodeIndexScan")
       }, expectPlansToFail = Configs.AllRulePlanners))
 
     // Then
@@ -63,7 +63,7 @@ class NodeIndexScanAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
       "MATCH (p:Person) WHERE exists(p.name) RETURN p",
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
-        plan should useOperators("NodeIndexScan")
+        plan should includeSomewhere.aPlan("NodeIndexScan")
       }, expectPlansToFail = Configs.AllRulePlanners))
 
     // Then
@@ -88,7 +88,7 @@ class NodeIndexScanAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
 
     // When
     val result = executeWith(expectedToSucceed, "MATCH (n:phone_type:timed) where n.label =~ 'a.' return count(n)",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeIndexScan"), expectPlansToFail = Configs.AllRulePlanners))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexScan"), expectPlansToFail = Configs.AllRulePlanners))
 
     // Then
     result should evaluateTo(List(Map("count(n)" -> 3)))

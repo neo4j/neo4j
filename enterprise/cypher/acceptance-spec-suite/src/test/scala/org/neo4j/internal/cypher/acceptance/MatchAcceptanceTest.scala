@@ -40,7 +40,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       Configs.Interpreted - Configs.Before3_3AndRule,
       "MATCH (n) WHERE id(n) IN {ids} RETURN n.id",
       params = Map("ids" -> List(-2, -3, 0, -4)))
-    result.executionPlanDescription() should useOperators("NodeByIdSeek")
+    result.executionPlanDescription() should includeSomewhere.aPlan("NodeByIdSeek")
     result.toList should equal(List(Map("n.id" -> 0)))
   }
 
@@ -54,7 +54,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val result = innerExecuteDeprecated( // Bug in 3.1 makes it difficult to use the backwards compability mode here
       queryText = "MATCH ()-[r]->() WHERE id(r) IN {ids} RETURN id(r)",
       params = Map("ids" -> List(-2, -3, 0, -4)))
-    result.executionPlanDescription() should useOperators("DirectedRelationshipByIdSeek")
+    result.executionPlanDescription() should includeSomewhere.aPlan("DirectedRelationshipByIdSeek")
     result.toList should equal(List(Map("id(r)" -> 0)))
   }
 

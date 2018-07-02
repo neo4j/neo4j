@@ -39,7 +39,7 @@ class ShortestPathComplexQueryAcceptanceTest extends ExecutionEngineFunSuite wit
         |WHERE none (n IN nodes(pathx) WHERE id(n) = id(kimDeal))
         |RETURN extract(node in nodes(pathx) | id(node)) as ids
       """.stripMargin,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("VarLengthExpand(Into)", "AntiConditionalApply"),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("AntiConditionalApply").withRHS(includeSomewhere.aPlan("VarLengthExpand(Into)")),
         expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3), expectedDifferentResults = Configs.Cost2_3)
 
     val results = result.columnAs("ids").toList
@@ -58,7 +58,7 @@ class ShortestPathComplexQueryAcceptanceTest extends ExecutionEngineFunSuite wit
         |WHERE none (n IN nodes(pathx) WHERE id(n) = id(kimDeal))
         |RETURN extract(node in nodes(pathx) | id(node)) as ids
       """.stripMargin,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("VarLengthExpand(Into)", "AntiConditionalApply"),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("AntiConditionalApply").withRHS(includeSomewhere.aPlan("VarLengthExpand(Into)")),
         expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3), expectedDifferentResults = Configs.Cost2_3)
 
     val results = result.columnAs("ids").toList

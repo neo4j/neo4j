@@ -208,7 +208,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val result = executeWith(expectedToSucceedRestricted,
       "match (n:START) return n.x, [(n)-->(other) | other.x] as coll",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("RollUpApply"), expectPlansToFail = Configs.AllRulePlanners))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("RollUpApply"), expectPlansToFail = Configs.AllRulePlanners))
 
     result.toList should equal(List(
       Map("n.x" -> 1, "coll" -> Seq(5, 4, 3)),
@@ -233,7 +233,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val result = executeWith(expectedToSucceedRestricted,
       "match (n:START) return n.x, [(n)-->(other) WHERE other.x % 2 = 0 | other.x] as coll",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("RollUpApply"), expectPlansToFail = Configs.AllRulePlanners))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("RollUpApply"), expectPlansToFail = Configs.AllRulePlanners))
 
     result.toList should equal(List(
       Map("n.x" -> 1, "coll" -> Seq(6, 4)),
@@ -248,7 +248,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
     relate(n1, n1, "x"->"B")
     val result = executeWith(expectedToSucceedRestricted,
       "match (n:START) return n.x, [(n)-[r]->(n) | r.x] as coll",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("RollUpApply"), expectPlansToFail = Configs.AllRulePlanners))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("RollUpApply"), expectPlansToFail = Configs.AllRulePlanners))
 
     result.toList should equal(List(
       Map("n.x" -> 1, "coll" -> Seq("B", "A"))
@@ -258,7 +258,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
   test("pattern comprehension built on a null yields null") {
     val result = executeWith(expectedToSucceed,
       "optional match (n:MISSING) return [(n)-->(n) | n.x] as coll",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("RollUpApply"), expectPlansToFail = Configs.AllRulePlanners))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("RollUpApply"), expectPlansToFail = Configs.AllRulePlanners))
     result.toList should equal(List(
       Map("coll" -> null)
     ))
@@ -282,7 +282,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
       """match (n:START)
         |where [(n)-->(other) | other.x] = [3,2,1]
         |return n""".stripMargin,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("RollUpApply"), expectPlansToFail = Configs.AllRulePlanners))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("RollUpApply"), expectPlansToFail = Configs.AllRulePlanners))
 
     result.toList should equal(List(
       Map("n" -> a)
@@ -304,7 +304,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
     result.toList should equal(List(
       Map("bonus" -> List())
     ))
-    result.executionPlanDescription() should useOperators("AntiSemiApply", "RollUpApply")
+    result.executionPlanDescription() should (includeSomewhere.aPlan("AntiSemiApply") and includeSomewhere.aPlan("RollUpApply"))
   }
 
   test("bug found where NOT predicate in pattern comprehension wasn't planned properly 2") {
@@ -324,7 +324,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
     result.toList should equal(List(
       Map("bonus" -> List())
     ))
-    result.executionPlanDescription() should useOperators("RollUpApply")
+    result.executionPlanDescription() should includeSomewhere.aPlan("RollUpApply")
   }
 
   test("using pattern comprehension as grouping key") {
@@ -344,7 +344,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val result = executeWith(expectedToSucceed,
       "match (n:START) return count(*), [(n)-->(other) | other.x] as coll",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("RollUpApply"), expectPlansToFail = Configs.AllRulePlanners))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("RollUpApply"), expectPlansToFail = Configs.AllRulePlanners))
     result.toList should equal(List(
       Map("count(*)" -> 2, "coll" -> Seq(5, 4, 3))
     ))

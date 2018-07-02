@@ -35,7 +35,7 @@ class HintAcceptanceTest
 
   test("should use a simple hint") {
     val query = "MATCH (a)--(b)--(c) USING JOIN ON b RETURN a,b,c"
-    executeWith(Configs.All, query, planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeHashJoin"), expectPlansToFail = Configs.AllRulePlanners))
+    executeWith(Configs.All, query, planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeHashJoin"), expectPlansToFail = Configs.AllRulePlanners))
   }
 
   test("should not plan multiple joins for one hint - left outer join") {
@@ -52,8 +52,8 @@ class HintAcceptanceTest
 
     executeWith(Configs.Interpreted + Configs.Version3_4 - Configs.Cost2_3 - Configs.Cost3_1, query,
       planComparisonStrategy = ComparePlansWithAssertion((p) => {
-      p should useOperators("NodeLeftOuterHashJoin")
-      p should not(useOperators("NodeHashJoin"))
+      p should includeSomewhere.aPlan("NodeLeftOuterHashJoin")
+      p should not(includeSomewhere.aPlan("NodeHashJoin"))
     }, expectPlansToFail = Configs.Before3_3AndRule))
   }
 
@@ -70,8 +70,8 @@ class HintAcceptanceTest
                   |RETURN a.name, b.name""".stripMargin
 
     executeWith(Configs.Interpreted - Configs.Cost2_3 - Configs.Cost3_1, query, planComparisonStrategy = ComparePlansWithAssertion((p) => {
-      p should useOperators("NodeRightOuterHashJoin")
-      p should not(useOperators("NodeHashJoin"))
+      p should includeSomewhere.aPlan("NodeRightOuterHashJoin")
+      p should not(includeSomewhere.aPlan("NodeHashJoin"))
     }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
   }
 
@@ -86,7 +86,7 @@ class HintAcceptanceTest
 
     executeWith(Configs.Interpreted - Configs.Cost2_3 - Configs.Cost3_1, query,
       planComparisonStrategy = ComparePlansWithAssertion((p) => {
-        p should useOperators("NodeRightOuterHashJoin")
+        p should includeSomewhere.aPlan("NodeRightOuterHashJoin")
       }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
   }
 
@@ -113,7 +113,7 @@ class HintAcceptanceTest
 
     executeWith(Configs.Interpreted - Configs.AllRulePlanners - Configs.Cost2_3 - Configs.Cost3_1, query,
       planComparisonStrategy = ComparePlansWithAssertion((p) => {
-        p should useOperatorTimes("NodeIndexSeek", 2)
+        p should includeSomewhere.nTimes(2, aPlan("NodeIndexSeek"))
       }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
   }
 

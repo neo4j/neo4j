@@ -100,7 +100,7 @@ trait IndexingTestSupport extends ExecutionEngineFunSuite with CypherComparisonS
           config,
           query,
           params = params,
-          planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators(wantedOperator))
+          planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan(wantedOperator))
         )
       val nodes = result.columnAs("n").toSet
       expected.foreach(p => assert(nodes.contains(p)))

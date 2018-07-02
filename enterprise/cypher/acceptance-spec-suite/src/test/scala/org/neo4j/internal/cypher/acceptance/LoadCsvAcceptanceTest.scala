@@ -28,15 +28,14 @@ import java.nio.file.Files
 import java.util.Collections.emptyMap
 
 import org.neo4j.cypher._
-import org.opencypher.v9_0.util.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.runtime.CreateTempFileTestSupport
-import org.neo4j.cypher.internal.v3_5.logical.plans.NodeIndexSeek
 import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.graphdb.config.Configuration
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.security.URLAccessRule
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}
+import org.opencypher.v9_0.util.helpers.StringHelper.RichString
 import org.scalatest.BeforeAndAfterAll
 
 import scala.collection.JavaConverters._
@@ -82,11 +81,11 @@ class LoadCsvAcceptanceTest
             | SET acc.field1=row.field1,
             | acc.field2=row.field2
             | RETURN count(*); """.stripMargin,
-        planComparisonStrategy = ComparePlansWithAssertion(_ should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "user")
-      , expectPlansToFail = Configs.AllRulePlanners))
+        planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.atLeastNTimes(1, aPlan("NodeIndexSeek").containingVariables("user"))
+          , expectPlansToFail = Configs.AllRulePlanners))
 
       assertStats(result, propertiesWritten = 6)
-      result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "user")
+      result.executionPlanDescription() should includeSomewhere.atLeastNTimes(1, aPlan("NodeIndexSeek").containingVariables("user"))
     }
   }
 
@@ -106,7 +105,7 @@ class LoadCsvAcceptanceTest
          | WITH row.field1 as field, row.OrderId as order
          | MATCH (o) WHERE o.OrderId = order
          | SET o.field1 = field""".stripMargin,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should not( useOperators("Eager")),expectPlansToFail = Configs.Cost3_1))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should not( includeSomewhere.aPlan("Eager")),expectPlansToFail = Configs.Cost3_1))
 
     assertStats(result, nodesCreated = 0, propertiesWritten = 1)
   }

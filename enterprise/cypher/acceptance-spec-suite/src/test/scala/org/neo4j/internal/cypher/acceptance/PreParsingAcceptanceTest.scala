@@ -23,79 +23,63 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.opencypher.v9_0.frontend.PlannerName
 import org.neo4j.cypher.internal.planner.v3_5.spi.{DPPlannerName, IDPPlannerName}
-import org.neo4j.cypher.internal.runtime.InternalExecutionResult
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
+import org.opencypher.v9_0.frontend.PlannerName
+import org.scalatest.matchers.Matcher
 
 class PreParsingAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should not use eagerness when option not provided ") {
-    execute("MATCH () CREATE ()") shouldNot use("Eager")
+    execute("MATCH () CREATE ()").executionPlanDescription() shouldNot includeSomewhere.aPlan("Eager")
   }
 
   test("should use eagerness when option is provided ") {
-    execute("CYPHER updateStrategy=eager MATCH () CREATE ()") should use("Eager")
+    execute("CYPHER updateStrategy=eager MATCH () CREATE ()").executionPlanDescription() should includeSomewhere.aPlan("Eager")
   }
 
   test("specifying no planner should provide IDP") {
     val query = "PROFILE RETURN 1"
 
-    execute(query) should havePlanner(IDPPlannerName)
+    execute(query).executionPlanDescription() should havePlanner(IDPPlannerName)
   }
 
   test("specifying cost planner should provide IDP") {
     val query = "PROFILE CYPHER planner=cost RETURN 1"
 
-    execute(query) should havePlanner(IDPPlannerName)
+    execute(query).executionPlanDescription() should havePlanner(IDPPlannerName)
   }
 
   test("specifying idp planner should provide IDP") {
     val query = "PROFILE CYPHER planner=idp RETURN 1"
 
-    execute(query) should havePlanner(IDPPlannerName)
+    execute(query).executionPlanDescription() should havePlanner(IDPPlannerName)
   }
 
   test("specifying dp planner should provide DP") {
     val query = "PROFILE CYPHER planner=dp RETURN 1"
 
-    execute(query) should havePlanner(DPPlannerName)
+    execute(query).executionPlanDescription() should havePlanner(DPPlannerName)
   }
 
   test("specifying cost planner should provide IDP using old syntax") {
     val query = "PROFILE CYPHER planner=cost RETURN 1"
 
-    execute(query) should havePlanner(IDPPlannerName)
+    execute(query).executionPlanDescription() should havePlanner(IDPPlannerName)
   }
 
   test("specifying idp planner should provide IDP using old syntax") {
     val query = "PROFILE CYPHER planner=idp RETURN 1"
 
-    execute(query) should havePlanner(IDPPlannerName)
+    execute(query).executionPlanDescription() should havePlanner(IDPPlannerName)
   }
 
   test("specifying dp planner should provide DP using old syntax") {
     val query = "PROFILE CYPHER planner=dp RETURN 1"
 
-    execute(query) should havePlanner(DPPlannerName)
+    execute(query).executionPlanDescription() should havePlanner(DPPlannerName)
   }
 
-  private def havePlanner(expected: PlannerName): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
-    override def apply(result: InternalExecutionResult): MatchResult = {
-      // exhaust the iterator so we can collect the plan description
-      result.length
-      result.executionPlanDescription() match {
-        case planDesc =>
-          val actual = planDesc.arguments.collectFirst {
-            case Arguments.PlannerImpl(name) => name
-          }
-          MatchResult(
-            matches = actual.isDefined && actual.get == expected.name,
-            rawFailureMessage = s"PlannerName should be $expected, but was $actual",
-            rawNegatedFailureMessage = s"PlannerName should not be $actual"
-          )
-      }
-    }
-  }
+  private def havePlanner(expected: PlannerName): Matcher[InternalPlanDescription] =
+    haveAsRoot.aPlan.containingArgument(expected.name)
 }

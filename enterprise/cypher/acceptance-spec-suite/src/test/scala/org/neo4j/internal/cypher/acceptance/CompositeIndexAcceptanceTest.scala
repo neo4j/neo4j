@@ -68,7 +68,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val result = executeWith(Configs.Interpreted, "MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n",
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
-        plan should useOperators("NodeIndexSeek")
+        plan should includeSomewhere.aPlan("NodeIndexSeek")
       }, Configs.Before3_3AndRule))
 
     // Then
@@ -90,7 +90,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val result = executeWith(Configs.All, "MATCH (n:User) WHERE n.firstname = 'Jake' RETURN n",
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
-        plan should not(useOperators("NodeIndexSeek"))
+        plan should not(includeSomewhere.aPlan("NodeIndexSeek"))
       }))
 
     // Then
@@ -114,9 +114,9 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val result = executeWith(Configs.Interpreted, "MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n",
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
-        plan should useOperatorWithText("NodeIndexSeek", ":User(firstname,lastname)")
-        plan should not(useOperatorWithText("NodeIndexSeek", ":User(firstname)"))
-        plan should not(useOperatorWithText("NodeIndexSeek", ":User(lastname)"))
+        plan should includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":User(firstname,lastname)")// includeSomewhere.aPlan("NodeIndexSeek").containingOther(":User(firstname,lastname)")
+        plan should not(includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":User(firstname)"))
+        plan should not(includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":User(lastname)"))
       }, Configs.Before3_3AndRule))
 
     // Then
@@ -146,9 +146,9 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
         |""".stripMargin,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
-        plan should not(useOperatorWithText("NodeIndexSeek", ":User(firstname,lastname)"))
-        plan should not(useOperatorWithText("NodeIndexSeek", ":User(firstname)"))
-        plan should useOperatorWithText("NodeIndexSeek", ":User(lastname)")
+        plan should not(includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":User(firstname,lastname)"))
+        plan should not(includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":User(firstname)"))
+        plan should includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":User(lastname)")
       }, Configs.AllRulePlanners))
 
     // Then
@@ -172,9 +172,9 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val result = executeWith(Configs.Interpreted, "MATCH (n:User) WHERE exists(n.lastname) AND n.firstname = 'Jake' RETURN n",
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
-        plan should useOperatorWithText("NodeIndexScan", ":User(firstname,lastname)")
-        plan should not(useOperatorWithText("NodeIndexSeek", ":User(firstname)"))
-        plan should not(useOperatorWithText("NodeIndexSeek", ":User(lastname)"))
+        plan should includeSomewhere.aPlan("NodeIndexScan").containingArgument(":User(firstname,lastname)")
+        plan should not(includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":User(firstname)"))
+        plan should not(includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":User(lastname)"))
       }))
 
     // Then
@@ -188,7 +188,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val result = executeWith(Configs.Interpreted, "MATCH (n:Person) where n.firstname = 'Joe' and n.lastname = 'Bloggs' RETURN n",
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
-        plan should useOperators("NodeIndexSeek")
+        plan should includeSomewhere.aPlan("NodeIndexSeek")
       }, Configs.Before3_3AndRule))
     result.toComparableResult should equal(List(Map("n" -> n)))
   }
@@ -201,7 +201,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     executeWith(Configs.Interpreted, "MATCH (n:Person) WHERE n.firstname = 'Joe' AND n.lastname = 'Soap' RETURN n",
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
-        plan should useOperatorWithText("NodeIndexSeek", ":Person(firstname,lastname)")
+        plan should includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":Person(firstname,lastname)")
       }, Configs.Before3_3AndRule))
   }
 
@@ -224,7 +224,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
         |ORDER BY x""".stripMargin,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
-        plan should useOperatorWithText("NodeIndexSeek", ":Foo(bar,baz)")
+        plan should includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":Foo(bar,baz)")
       }, Configs.Before3_3AndRule))
 
     // Then
@@ -248,7 +248,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
         |ORDER BY x""".stripMargin,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
-        plan should useOperatorWithText("NodeIndexSeek", ":Foo(bar,baz)")
+        plan should includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":Foo(bar,baz)")
       }, Configs.Before3_3AndRule))
 
     // Then
@@ -272,7 +272,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
         |ORDER BY x""".stripMargin,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
-        plan should useOperatorWithText("NodeIndexSeek", ":Foo(bar,baz)")
+        plan should includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":Foo(bar,baz)")
       }, Configs.Before3_3AndRule))
 
     // Then
@@ -292,7 +292,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val result = executeWith(Configs.Interpreted, "MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)",
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
-        plan should useOperatorWithText("NodeIndexSeek", ":L(foo,bar,baz")
+        plan should includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":L(foo,bar,baz)")
       }, Configs.Before3_3AndRule))
     result.toComparableResult should equal(Seq(Map("count(n)" -> 1)))
   }
@@ -310,7 +310,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val result = executeWith(Configs.Interpreted, "MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)",
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
-        plan should useOperatorWithText("NodeIndexSeek", ":L(foo,bar,baz)")
+        plan should includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":L(foo,bar,baz)")
       }, Configs.Before3_3AndRule))
     result.toComparableResult should equal(Seq(Map("count(n)" -> 1)))
   }
@@ -330,7 +330,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val result = executeWith(Configs.Interpreted, "match (n:X) where n.p1 = 1 AND n.p2 > 0 return n;",
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
-        plan shouldNot useOperatorWithText("NodeIndexSeek", ":X(p1,p2)")
+        plan shouldNot includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":X(p1,p2)")
       }))
 
     // Then
@@ -364,13 +364,13 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
             executeWith(testConfig, query,
               planComparisonStrategy = ComparePlansWithAssertion((plan) => {
                 //THEN
-                plan should useOperatorWithText("NodeIndexSeek", ":User(name,surname,age,active)")
+                plan should includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":User(name,surname,age,active)")
               }, Configs.Before3_3AndRule))
           else
             executeWith(testConfig, query,
               planComparisonStrategy = ComparePlansWithAssertion((plan) => {
                 //THEN
-                plan shouldNot useOperatorWithText("NodeIndexSeek", ":User(name,surname,age,active)")
+                plan shouldNot includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":User(name,surname,age,active)")
               }))
         } catch {
           case e: Exception =>
@@ -403,7 +403,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val result = executeWith(Configs.Interpreted - Configs.Version2_3, "match (a), (b:X) where id(a) = $id AND b.p1 = a.p1 AND b.p2 = 1 return b",
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
-        plan should useOperatorWithText("NodeIndexSeek", ":X(p1,p2)")
+        plan should includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":X(p1,p2)")
       }, Configs.Before3_3AndRule), params = Map("id" -> a.getId))
 
     result.toComparableResult should equal(Seq(Map("b" -> b)))
@@ -424,7 +424,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val resultIndex = executeWith(Configs.Interpreted - Configs.Before3_3AndRule, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
-        plan should useOperators("NodeIndexSeek")
+        plan should includeSomewhere.aPlan("NodeIndexSeek")
       }))
 
     // Then
@@ -453,7 +453,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val resultIndex = executeWith(Configs.Interpreted - Configs.Before3_3AndRule, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
-        plan should useOperators("NodeIndexSeek")
+        plan should includeSomewhere.aPlan("NodeIndexSeek")
       }))
 
     // Then
@@ -481,7 +481,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val resultIndex = executeWith(Configs.Interpreted - Configs.Before3_3AndRule, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
-        plan should useOperators("NodeIndexSeek")
+        plan should includeSomewhere.aPlan("NodeIndexSeek")
       }))
 
     // Then

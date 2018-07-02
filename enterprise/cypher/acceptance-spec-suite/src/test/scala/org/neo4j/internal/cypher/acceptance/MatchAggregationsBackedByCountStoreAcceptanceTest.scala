@@ -46,8 +46,8 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
     resultStar.toList should equal(List(Map("count(*)" -> 2)))
     resultVar.toList should equal(List(Map("count(r)" -> 2)))
 
-    resultStar.executionPlanDescription() shouldNot useOperators("RelationshipCountFromCountStore")
-    resultVar.executionPlanDescription() shouldNot useOperators("RelationshipCountFromCountStore")
+    resultStar.executionPlanDescription() shouldNot includeSomewhere.aPlan("RelationshipCountFromCountStore")
+    resultVar.executionPlanDescription() shouldNot includeSomewhere.aPlan("RelationshipCountFromCountStore")
   }
 
   test("counts nodes using count store") {
@@ -409,7 +409,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
       query,
       executeBefore = executeBefore,
       planComparisonStrategy = ComparePlansWithAssertion(plan => {
-        plan should useOperators("RelationshipCountFromCountStore")
+        plan should includeSomewhere.aPlan("RelationshipCountFromCountStore")
       }, expectOtherPlan))
     resultOnEmpty.toList should equal(List())
 
@@ -421,7 +421,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
       query,
       executeBefore = executeBefore,
       planComparisonStrategy = ComparePlansWithAssertion(plan => {
-        plan should useOperators("RelationshipCountFromCountStore")
+        plan should includeSomewhere.aPlan("RelationshipCountFromCountStore")
       }, expectOtherPlan),
       resultAssertionInTx = resultAssertionInTx)
   }
@@ -692,7 +692,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
       query,
       executeBefore = executeBefore,
       planComparisonStrategy = ComparePlansWithAssertion(plan => {
-        plan should useOperators(expectedLogicalPlan)
+        plan should includeSomewhere.aPlan(expectedLogicalPlan)
       }, expectOtherPlanIn),
       resultAssertionInTx = resultAssertionInTx)
     result.columnAs(result.columns.head).toSet[Any] should equal(Set(expectedCount))

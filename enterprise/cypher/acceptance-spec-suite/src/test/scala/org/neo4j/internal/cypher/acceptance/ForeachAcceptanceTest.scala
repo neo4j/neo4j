@@ -74,7 +74,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
     val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
       planComparisonStrategy = ComparePlansWithAssertion(plan => {
         //THEN
-        plan should useOperators("Foreach", "Create")
+        plan should includeSomewhere.aPlan("Foreach").withRHS(aPlan("Create"))
       }, Configs.AllRulePlanners + Configs.Version3_1))
 
     // then

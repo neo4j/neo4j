@@ -34,7 +34,9 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
 
   test("distance function should work on co-located points") {
     val result = executeWith(pointConfig, "WITH point({latitude: 12.78, longitude: 56.7}) as point RETURN distance(point,point) as dist",
-    planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point", "dist"),
+    planComparisonStrategy = ComparePlansWithAssertion(_ should
+        includeSomewhere.aPlan("Projection").containingArgumentRegex("\\{dist : .*\\}".r)
+          .onTopOf(includeSomewhere.aPlan("Projection").containingArgumentRegex("\\{point : .*\\}".r)),
     expectPlansToFail = Configs.AllRulePlanners))
 
     result.toList should equal(List(Map("dist" -> 0.0)))
@@ -42,7 +44,9 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
 
   test("distance function should work on co-located points in 3D") {
     val result = executeWith(unrecognizedKeyPointConfig, "WITH point({latitude: 12.78, longitude: 56.7, height: 198.2}) as point RETURN distance(point,point) as dist",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point", "dist"),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should
+        includeSomewhere.aPlan("Projection").containingArgumentRegex("\\{dist : .*\\}".r)
+          .onTopOf(includeSomewhere.aPlan("Projection").containingArgumentRegex("\\{point : .*\\}".r)),
         expectPlansToFail = Configs.AllRulePlanners))
 
     result.toList should equal(List(Map("dist" -> 0.0)))
@@ -54,7 +58,9 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
         |WITH point({x: 2.3, y: 4.5, crs: 'cartesian'}) as p1, point({x: 1.1, y: 5.4, crs: 'cartesian'}) as p2
         |RETURN distance(p1,p2) as dist
       """.stripMargin,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "p1", "p2", "dist"),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should
+        includeSomewhere.aPlan("Projection").containingArgumentRegex("\\{dist : .*\\}".r)
+          .onTopOf(includeSomewhere.aPlan("Projection").containingArgumentRegex("\\{p1 : .*, p2 : .*\\}".r)),
         expectPlansToFail = Configs.AllRulePlanners))
 
     result.columnAs("dist").next().asInstanceOf[Double] should equal(1.5)
@@ -66,7 +72,9 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
         |WITH point({longitude: 12.78, latitude: 56.7}) as p1, point({latitude: 56.71, longitude: 12.79}) as p2
         |RETURN distance(p1,p2) as dist
       """.stripMargin,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "p1", "p2", "dist"),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should
+        includeSomewhere.aPlan("Projection").containingArgumentRegex("\\{dist : .*\\}".r)
+          .onTopOf(includeSomewhere.aPlan("Projection").containingArgumentRegex("\\{p1 : .*, p2 : .*\\}".r)),
         expectPlansToFail = Configs.AllRulePlanners))
 
     Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(1270)
@@ -79,7 +87,9 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
         |RETURN distance(p1,p2) as dist
       """.stripMargin,
       expectedDifferentResults = Configs.Cost3_1 + Configs.AllRulePlanners, // older versions give slightly different answers due to recent bugfix
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "p1", "p2", "dist"),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should
+        includeSomewhere.aPlan("Projection").containingArgumentRegex("\\{dist : .*\\}".r)
+          .onTopOf(includeSomewhere.aPlan("Projection").containingArgumentRegex("\\{p1 : .*, p2 : .*\\}".r)),
         expectPlansToFail = Configs.AllRulePlanners))
 
     Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(1270)
@@ -91,7 +101,9 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
         |WITH point({latitude: 56.7, longitude: 12.78}) as p1, point({longitude: -51.9, latitude: -16.7}) as p2
         |RETURN distance(p1,p2) as dist
       """.stripMargin,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "p1", "p2", "dist"),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should
+        includeSomewhere.aPlan("Projection").containingArgumentRegex("\\{dist : .*\\}".r)
+          .onTopOf(includeSomewhere.aPlan("Projection").containingArgumentRegex("\\{p1 : .*, p2 : .*\\}".r)),
         expectPlansToFail = Configs.AllRulePlanners))
 
     Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(10116214)
@@ -104,7 +116,9 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
         |RETURN distance(p1,p2) as dist
       """.stripMargin,
       expectedDifferentResults = Configs.Cost3_1 + Configs.AllRulePlanners, // older versions give slightly different answers due to recent bugfix
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "p1", "p2", "dist"),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should
+        includeSomewhere.aPlan("Projection").containingArgumentRegex("\\{dist : .*\\}".r)
+          .onTopOf(includeSomewhere.aPlan("Projection").containingArgumentRegex("\\{p1 : .*, p2 : .*\\}".r)),
         expectPlansToFail = Configs.AllRulePlanners))
 
     Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(10116373)
@@ -117,7 +131,9 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
         |RETURN distance(p1,p2) as dist
       """.stripMargin,
       expectedDifferentResults = Configs.Version3_1 + Configs.AllRulePlanners,  // TODO should rather throw error
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "p1", "p2", "dist"),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should
+        includeSomewhere.aPlan("Projection").containingArgumentRegex("\\{dist : .*\\}".r)
+          .onTopOf(includeSomewhere.aPlan("Projection").containingArgumentRegex("\\{p1 : .*, p2 : .*\\}".r)),
         expectPlansToFail = Configs.AllRulePlanners))
 
     Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(1)
@@ -147,7 +163,9 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
         |WITH point({latitude: 55.672874, longitude: 12.564590}) as p1, point({latitude: 55.611784, longitude: 12.994341}) as p2
         |RETURN distance(p1,p2) as dist
       """.stripMargin,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "p1", "p2","dist"),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should
+        includeSomewhere.aPlan("Projection").containingArgumentRegex("\\{dist : .*\\}".r)
+          .onTopOf(includeSomewhere.aPlan("Projection").containingArgumentRegex("\\{p1 : .*, p2 : .*\\}".r)),
         expectPlansToFail = Configs.AllRulePlanners))
 
     Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(27842)
@@ -609,10 +627,7 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
 
     // Then
     val plan = result.executionPlanDescription()
-    plan should useOperatorWithText("Projection", "point")
-    plan should useOperatorWithText("Filter", "distance")
-    plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location)", "distance", "<= ")
-    result.toList.toSet should equal(Set.empty)
+    expectResultsAndIndexUsage(query, Set.empty, inclusiveRange = true)
   }
 
   test("invalid location without index") {
@@ -630,9 +645,10 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
 
     // Then
     val plan = result.executionPlanDescription()
-    plan should useOperatorWithText("Projection", "point")
-    plan should useOperatorWithText("Filter", "distance")
-    plan should useOperatorWithText("NodeByLabelScan", ":Place")
+    plan should includeSomewhere
+      .aPlan("Projection").containingArgumentRegex("\\{point : .*\\}".r)
+      .onTopOf(aPlan("Filter").containingArgumentRegex("distance.*".r)
+        .onTopOf(includeSomewhere.aPlan("NodeByLabelScan").containingArgument(":Place")))
     result.toList.toSet should equal(Set.empty)
   }
 
@@ -731,14 +747,15 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     }
   }
 
-  private def expectResultsAndIndexUsage(query: String, expectedResults: Set[_ <: Any], inclusiveRange: Boolean) = {
+  private def expectResultsAndIndexUsage(query: String, expectedResults: Set[_ <: Any], inclusiveRange: Boolean): Unit = {
     val result = executeWith(distanceConfig, query)
 
     // Then
     val plan = result.executionPlanDescription()
-    plan should useOperatorWithText("Projection", "point")
-    plan should useOperatorWithText("Filter", "distance")
-    plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location)", "distance", if (inclusiveRange) "<= " else "<")
+    plan should includeSomewhere
+      .aPlan("Projection").containingArgumentRegex("\\{point : .*\\}".r)
+      .onTopOf(aPlan("Filter").containingArgumentRegex("distance.*".r)
+        .onTopOf(includeSomewhere.aPlan("NodeIndexSeekByRange").containingArgumentRegex((":Place\\(location\\) WHERE distance\\(.+?\\) " + (if (inclusiveRange) "<= " else "<") + ".*").r)))
     result.toList.toSet should equal(expectedResults)
   }
 }

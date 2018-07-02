@@ -32,10 +32,10 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite with Cypher
                                 |WHERE NOT (p1)-[:FRIEND]-(p2)
                                 |RETURN p1.name AS l, p2.name AS r""".stripMargin
 
-  private val usesTriadic = ComparePlansWithAssertion(_ should useOperators("TriadicSelection"), Configs.AllRulePlanners)
-  private val usesExpandInto = ComparePlansWithAssertion(_ should useOperators("Expand(Into)"), Configs.AllRulePlanners)
-  private val usesAntiSemiApply = ComparePlansWithAssertion(_ should useOperators("AntiSemiApply"), Configs.AllRulePlanners)
-  private val noTriadic = ComparePlansWithAssertion(_ should not(useOperators("TriadicSelection")))
+  private val usesTriadic = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("TriadicSelection"), Configs.AllRulePlanners)
+  private val usesExpandInto = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("Expand(Into)"), Configs.AllRulePlanners)
+  private val usesAntiSemiApply = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("AntiSemiApply"), Configs.AllRulePlanners)
+  private val noTriadic = ComparePlansWithAssertion(_ should not(includeSomewhere.aPlan("TriadicSelection")))
   private val configs = Configs.Interpreted
   private val noCompiled = Configs.All - Configs.Compiled
 

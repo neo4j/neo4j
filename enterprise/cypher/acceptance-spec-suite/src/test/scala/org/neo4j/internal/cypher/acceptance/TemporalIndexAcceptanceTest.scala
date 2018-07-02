@@ -24,7 +24,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import java.time._
 
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs, TestConfiguration}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
 import org.neo4j.values.storable._
 
 class TemporalIndexAcceptanceTest extends IndexingTestSupport {
@@ -94,7 +94,7 @@ class TemporalIndexAcceptanceTest extends IndexingTestSupport {
     val resultIndex = executeWith(Configs.Interpreted - Configs.Before3_3AndRule, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
-        plan should useOperators("NodeIndexSeek")
+        plan should includeSomewhere.aPlan("NodeIndexSeek")
       }))
 
     // Then
@@ -149,7 +149,7 @@ class TemporalIndexAcceptanceTest extends IndexingTestSupport {
       """.stripMargin
 
     val result = executeWith(Configs.Interpreted - Configs.Before3_3AndRule, query,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeIndexSeekByRange")))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeekByRange")))
 
     result.toList should equal(List(Map("n" -> node2)))
   }

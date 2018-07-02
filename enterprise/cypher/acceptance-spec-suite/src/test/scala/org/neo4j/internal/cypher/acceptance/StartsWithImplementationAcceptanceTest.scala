@@ -57,7 +57,7 @@ class StartsWithImplementationAcceptanceTest extends ExecutionEngineFunSuite wit
 
     val result = executeWith(Configs.Interpreted, "MATCH (a:Address) WHERE a.prop STARTS WITH 'www' RETURN a")
 
-    result should not(use(IndexSeekByRange.name))
+    result.executionPlanDescription() should not(includeSomewhere.aPlan(IndexSeekByRange.name))
   }
 
   test("Should handle prefix search with existing transaction state") {

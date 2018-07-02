@@ -25,18 +25,15 @@ package org.neo4j.internal.cypher.acceptance
 import java.util
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.runtime.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.Rows
-import org.opencypher.v9_0.util.InternalException
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.DataMonitor
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.{Node, Path}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
 import org.neo4j.kernel.monitoring.Monitors
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.scalatest.matchers.Matcher
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -109,7 +106,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
     // Then
     result.length should equal(1)
     result.head.toSet should equal(Set(node(0, 0)))
-    results shouldNot executeShortestPathFallbackWith(minRows = 1)
+    results.executionPlanDescription() shouldNot executeShortestPathFallbackWith(minRows = 1)
   }
 
   // FAIL: head of empty list
@@ -129,7 +126,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
     // Then
     result.length should equal(1)
     result.head.toSet should equal(row(0) ++ row(1))
-    results should executeShortestPathFallbackWith(minRows = 1)
+    results.executionPlanDescription() should executeShortestPathFallbackWith(minRows = 1)
   }
 
   // FAIL: head of empty list
@@ -149,7 +146,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
     // Then
     result.length should equal(1)
     result.head.toSet should equal(row(0) ++ row(1))
-    results should executeShortestPathFallbackWith(minRows = 1)
+    results.executionPlanDescription() should executeShortestPathFallbackWith(minRows = 1)
   }
 
   test("Shortest path from first to last node with no possible path (reverts to exhaustive)") {
@@ -167,7 +164,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
 
     // Then
     result.length should equal(0)
-    results should executeShortestPathFallbackWith(minRows = 1)
+    results.executionPlanDescription() should executeShortestPathFallbackWith(minRows = 1)
   }
 
   test("Shortest path from first to last node via top right") {
@@ -176,7 +173,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
       s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
          |WHERE ANY(n in nodes(p) WHERE n:$topRight)
          |RETURN nodes(p) AS nodes""".stripMargin,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("VarLengthExpand(Into)"),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("VarLengthExpand(Into)"),
         expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
 
     dprintln(s"Query took ${(System.currentTimeMillis - start)/1000.0}s")
@@ -187,7 +184,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
     // Then
     result.length should equal(1)
     result.head.toSet should equal(row(0) ++ col(dMax))
-    results shouldNot executeShortestPathFallbackWith(minRows = 1)
+    results.executionPlanDescription() shouldNot executeShortestPathFallbackWith(minRows = 1)
   }
 
   test("Shortest path from first to last node via bottom left") {
@@ -196,7 +193,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
       s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
          |WHERE ANY(n in nodes(p) WHERE n:$bottomLeft)
          |RETURN nodes(p) AS nodes""".stripMargin,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("VarLengthExpand(Into)"),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("VarLengthExpand(Into)"),
         expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
 
     val result = results.columnAs[List[Node]]("nodes").toList
@@ -207,7 +204,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
     // Then
     result.length should equal(1)
     result.head.toSet should equal(col(0) ++ row(dMax))
-    results shouldNot executeShortestPathFallbackWith(minRows = 1)
+    results.executionPlanDescription() shouldNot executeShortestPathFallbackWith(minRows = 1)
   }
 
   test("Fallback expander should take on rel-type predicates") {
@@ -217,7 +214,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
          |WHERE ALL(r in rels WHERE type(r) = "DOWN")
          |  AND ANY(n in nodes(p) WHERE n:$bottomLeft)
          |RETURN nodes(p) AS nodes""".stripMargin,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("VarLengthExpand(Into)"),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("VarLengthExpand(Into)"),
         expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
 
     val result = results.columnAs[List[Node]]("nodes").toList
@@ -226,7 +223,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
 
     // Then
     result should be(empty)
-    results should executeShortestPathFallbackWith(minRows = 0, maxRows = 0)
+    results.executionPlanDescription() should executeShortestPathFallbackWith(minRows = 0, maxRows = 0)
   }
 
   // expanderSolverStep does not currently take on predicates using rels(p), but it should!
@@ -237,7 +234,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
          |WHERE ALL(r in rels(p) WHERE type(r) = "DOWN")
          |  AND ANY(n in nodes(p) WHERE n:$bottomLeft)
          |RETURN nodes(p) AS nodes""".stripMargin,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("VarLengthExpand(Into)"), expectPlansToFail = Configs.AllRulePlanners))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("VarLengthExpand(Into)"), expectPlansToFail = Configs.AllRulePlanners))
 
     val result = results.columnAs[List[Node]]("nodes").toList
 
@@ -245,7 +242,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
 
     // Then
     result should be(empty)
-    results should executeShortestPathFallbackWith(minRows = 0, maxRows = 0)
+    results.executionPlanDescription() should executeShortestPathFallbackWith(minRows = 0, maxRows = 0)
   }
 
   // FAIL: head of empty list
@@ -260,7 +257,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
 
     // Then
     evaluateShortestPathResults(results, start, dim * 4 - 3, row(0) ++ row(dMax))
-    results should executeShortestPathFallbackWith(minRows = 1)
+    results.executionPlanDescription() should executeShortestPathFallbackWith(minRows = 1)
   }
 
   test("Shortest path from first to last node via middle") {
@@ -274,8 +271,8 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
 
     // Then
     evaluateShortestPathResults(results, start, dim * 2 - 1, Set(nodesByName(s"${dMax / 2}${dMax / 2}")))
-    results should use("VarLengthExpand(Into)")
-    results should executeShortestPathFallbackWith(maxRows = 0)
+    results.executionPlanDescription() should includeSomewhere.aPlan("VarLengthExpand(Into)")
+    results.executionPlanDescription() should executeShortestPathFallbackWith(maxRows = 0)
   }
 
   test("Exhaustive shortest path from first to last node via top right") {
@@ -372,7 +369,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
       row(0) ++ row(1) ++ col(0) ++ row(dMax),
       col(0) ++ col(1) ++ row(0) ++ col(dMax)
     ))
-    result should executeShortestPathFallbackWith(minRows = 1)
+    result.executionPlanDescription() should executeShortestPathFallbackWith(minRows = 1)
   }
 
   test("Exhaustive All shortest paths from first to last node") {
@@ -459,7 +456,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
     val result = results.columnAs[Seq[Node]]("nodes").toList
     result.length should equal(1)
     result.head.length should equal (2 * dim - 1)
-    results shouldNot use("ShortestPathVarLengthExpand")
+    results.executionPlanDescription() shouldNot includeSomewhere.aPlan("ShortestPathVarLengthExpand")
   }
 
   test("Shortest path from first to last node with ALL predicate") {
@@ -473,7 +470,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
     val result = results.columnAs[List[Node]]("nodes").toList
     result.length should equal(1)
     result.head.toSet should equal (diag())
-    results shouldNot use("ShortestPathVarLengthExpand")
+    results.executionPlanDescription() shouldNot includeSomewhere.aPlan("ShortestPathVarLengthExpand")
   }
 
   test("Shortest path from first to last node with NONE predicate") {
@@ -486,7 +483,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
     val result = results.columnAs[Seq[Node]]("nodes").toList
     result.length should equal(1)
     result.head.length should equal (2 * dim - 1)
-    results shouldNot use("ShortestPathVarLengthExpand")
+    results.executionPlanDescription() shouldNot includeSomewhere.aPlan("ShortestPathVarLengthExpand")
   }
 
   test("Shortest path from first to last node with NONE predicate with a composite predicate") {
@@ -499,7 +496,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
     val result = results.columnAs[Seq[Node]]("nodes").toList
     result.length should equal(1)
     result.head.length should equal (2 * dim - 1)
-    results shouldNot use("VarLengthExpand(Into)")
+    results.executionPlanDescription() shouldNot includeSomewhere.aPlan("VarLengthExpand(Into)")
   }
 
   test("Shortest path from first to last node with path length predicate") {
@@ -514,7 +511,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
     val result = results.columnAs[Seq[Node]]("nodes").toList
     result.length should equal(1)
     result.head.length should equal (dim + 1)
-    results should use("VarLengthExpand(Into)")
+    results.executionPlanDescription() should includeSomewhere.aPlan("VarLengthExpand(Into)")
   }
 
   test("Shortest path from first to last node with ALL node predicate") {
@@ -529,7 +526,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
     result.length should equal(1)
     result.head.toSet should equal (row(0) ++ col(dMax))
     // TODO: Stop using fallback once node predicates are supported in expander
-    results should use("VarLengthExpand(Into)")
+    results.executionPlanDescription() should includeSomewhere.aPlan("VarLengthExpand(Into)")
   }
 
   test("Shortest path from first to last node with NONE node predicate") {
@@ -544,7 +541,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
     result.length should equal(1)
     result.head.toSet should equal (row(0) ++ col(dMax))
     // TODO: Stop using fallback once node predicates are supported in expander
-    results should use("VarLengthExpand(Into)")
+    results.executionPlanDescription() should includeSomewhere.aPlan("VarLengthExpand(Into)")
   }
 
   test("GH #5803 query should work with shortest path") {
@@ -629,27 +626,8 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
     assert(!VERBOSE, "Verbose should be turned off")
   }
 
-  def executeShortestPathFallbackWith(minRows: Int = 0, maxRows: Long = Long.MaxValue): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
-    override def apply(result: InternalExecutionResult): MatchResult = {
-      val plan: InternalPlanDescription = result.executionPlanDescription()
-      val operators = plan.find("VarLengthExpand(Into)")
-      if (operators.isEmpty) {
-        MatchResult(
-          matches = false,
-          rawFailureMessage = s"Plan should use VarLengthExpand\n$plan",
-          rawNegatedFailureMessage = s"Plan should use VarLengthExpand\n$plan")
-      } else {
-        val rowCount = operators.head.arguments.collectFirst {
-          case Rows(r) => r
-        }.getOrElse(throw new InternalException("Query must be profiled"))
-
-        MatchResult(
-          matches = rowCount >= minRows && rowCount <= maxRows,
-          rawFailureMessage = s"Plan used VarLengthExpand with ${rowCount} but expected at least ${minRows} row(s) and at most ${maxRows}:\n$plan",
-          rawNegatedFailureMessage = s"Plan used VarLengthExpand with ${rowCount} but expected it not to have at least ${minRows} row(s) and at most ${maxRows}:\n$plan")
-      }
-    }
-  }
+  def executeShortestPathFallbackWith(minRows: Int = 0, maxRows: Long = Long.MaxValue): Matcher[InternalPlanDescription] =
+    includeSomewhere.aPlan("VarLengthExpand(Into)").withRowsBetween(minRows, maxRows)
 
   val dim = 4
   val dMax = dim - 1

@@ -33,7 +33,7 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
   with CypherComparisonSupport {
 
   val hasActiveRead = ComparePlansWithAssertion((plan) => {
-    plan should useOperators("ActiveRead")
+    plan should includeSomewhere.aPlan("ActiveRead")
   }, Configs.Cost3_1 + Configs.Cost2_3 + Configs.AllRulePlanners)
 
   Seq(UniquenessConstraintCreator, NodeKeyConstraintCreator).foreach { constraintCreator =>

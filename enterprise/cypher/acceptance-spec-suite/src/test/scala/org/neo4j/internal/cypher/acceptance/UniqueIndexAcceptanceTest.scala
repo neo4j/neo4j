@@ -116,8 +116,8 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
       val result = executeWith(Configs.All, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n",
         planComparisonStrategy = ComparePlansWithAssertion((plan) => {
           //THEN
-          plan should useOperators("NodeUniqueIndexSeek")
-          plan shouldNot useOperators("NodeUniqueIndexSeek(Locking)")
+          plan should includeSomewhere.aPlan("NodeUniqueIndexSeek")
+          plan shouldNot includeSomewhere.aPlan("NodeUniqueIndexSeek(Locking)")
         }, Configs.AllRulePlanners),
         params = Map("coll" -> List("Jacob")))
     }
@@ -133,8 +133,8 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
       executeWith(Configs.Interpreted - Configs.Cost2_3, "MERGE (n:Person {name: 'Andres'}) RETURN n.name",
         planComparisonStrategy = ComparePlansWithAssertion((plan) => {
           //THEN
-          plan shouldNot useOperators("NodeIndexSeek")
-          plan should useOperators("NodeUniqueIndexSeek(Locking)")
+          plan shouldNot includeSomewhere.aPlan("NodeIndexSeek")
+          plan should includeSomewhere.aPlan("NodeUniqueIndexSeek(Locking)")
         }, Configs.AllRulePlanners))
     }
 
@@ -150,9 +150,9 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
         "PROFILE MATCH (n:Person {name: 'Andres'}) MERGE (n)-[:KNOWS]->(m:Person {name: 'Maria'}) RETURN n.name",
         planComparisonStrategy = ComparePlansWithAssertion((plan) => {
           // THEN
-          plan shouldNot useOperators("NodeIndexSeek")
-          plan shouldNot useOperators("NodeByLabelScan")
-          plan should useOperators("NodeUniqueIndexSeek(Locking)")
+          plan shouldNot includeSomewhere.aPlan("NodeIndexSeek")
+          plan shouldNot includeSomewhere.aPlan("NodeByLabelScan")
+          plan should includeSomewhere.aPlan("NodeUniqueIndexSeek(Locking)")
         }, Configs.AllRulePlanners + Configs.Cost3_1))
     }
 
@@ -168,8 +168,8 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
       executeWith(Configs.Interpreted - Configs.Cost2_3, query, params = Map("coll" -> List("Jacob")),
         planComparisonStrategy = ComparePlansWithAssertion((plan) => {
           //THEN
-          plan shouldNot useOperators("NodeIndexSeek")
-          plan should useOperators("NodeUniqueIndexSeek(Locking)")
+          plan shouldNot includeSomewhere.aPlan("NodeIndexSeek")
+          plan should includeSomewhere.aPlan("NodeUniqueIndexSeek(Locking)")
         }, Configs.AllRulePlanners))
     }
   }
@@ -185,9 +185,9 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     //WHEN
     executeWith(Configs.Interpreted - Configs.Cost2_3, query, planComparisonStrategy = ComparePlansWithAssertion((plan) => {
       //THEN
-      plan shouldNot useOperators("NodeIndexSeek")
-      plan shouldNot useOperators("NodeByLabelScan")
-      plan should useOperators("NodeUniqueIndexSeek(Locking)")
+      plan shouldNot includeSomewhere.aPlan("NodeIndexSeek")
+      plan shouldNot includeSomewhere.aPlan("NodeByLabelScan")
+      plan should includeSomewhere.aPlan("NodeUniqueIndexSeek(Locking)")
     }, Configs.AllRulePlanners + Configs.Cost3_1))
   }
 }

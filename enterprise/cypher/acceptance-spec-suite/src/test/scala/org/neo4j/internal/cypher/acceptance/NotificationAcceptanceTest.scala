@@ -412,7 +412,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
     val result = innerExecuteDeprecated(
       "EXPLAIN MATCH (n) DELETE n WITH * LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MERGE () RETURN line", Map.empty)
 
-    result should use("LoadCSV", "Eager")
+    result.executionPlanDescription() should includeSomewhere.aPlan("LoadCSV").withLHS(aPlan("Eager"))
     result.notifications.map(_.getCode) should not contain "Neo.ClientNotification.Statement.EagerOperatorWarning"
   }
 
@@ -420,7 +420,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
     val result = innerExecuteDeprecated(
       "EXPLAIN MATCH (n) LOAD CSV FROM 'file:///ignore/ignore.csv' AS line WITH * DELETE n MERGE () RETURN line", Map.empty)
 
-    result should use("LoadCSV", "Eager")
+    result.executionPlanDescription() should includeSomewhere.aPlan("Eager").withLHS(includeSomewhere.aPlan("LoadCSV"))
     result.notifications.map(_.getCode) should contain("Neo.ClientNotification.Statement.EagerOperatorWarning")
   }
 
@@ -428,7 +428,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
     val result = innerExecuteDeprecated(
       "EXPLAIN CYPHER 3.4 MATCH (n) LOAD CSV FROM 'file:///ignore/ignore.csv' AS line WITH * DELETE n MERGE () RETURN line", Map.empty)
 
-    result should use("LoadCSV", "Eager")
+    result.executionPlanDescription() should includeSomewhere.aPlan("Eager").withLHS(includeSomewhere.aPlan("LoadCSV"))
     result.notifications.map(_.getCode) should contain("Neo.ClientNotification.Statement.EagerOperatorWarning")
   }
 
@@ -436,14 +436,14 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
     val result = innerExecuteDeprecated(
       "EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH (:A) CREATE (:B) RETURN line", Map.empty)
 
-    result should use("LoadCSV")
+    result.executionPlanDescription() should includeSomewhere.aPlan("LoadCSV")
     result.notifications.map(_.getCode) should not contain "Neo.ClientNotification.Statement.EagerOperatorWarning"
   }
 
   test("should not warn for eager without load csv") {
     val result = innerExecuteDeprecated("EXPLAIN MATCH (a), (b) CREATE (c) RETURN *", Map.empty)
 
-    result should use("Eager")
+    result.executionPlanDescription() should includeSomewhere.aPlan("Eager")
     result.notifications.map(_.getCode) should not contain "Neo.ClientNotification.Statement.EagerOperatorWarning"
   }
 
@@ -451,35 +451,35 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
     val result = innerExecuteDeprecated(
       "EXPLAIN MATCH (a), (b) CREATE (c) WITH c LOAD CSV FROM 'file:///ignore/ignore.csv' AS line RETURN *", Map.empty)
 
-    result should use("LoadCSV", "Eager")
+    result.executionPlanDescription() should includeSomewhere.aPlan("LoadCSV").withLHS(includeSomewhere.aPlan("Eager"))
     result.notifications.map(_.getCode) should not contain "Neo.ClientNotification.Statement.EagerOperatorWarning"
   }
 
   test("should warn for large label scans combined with load csv") {
     1 to 11 foreach { _ => createLabeledNode("A") }
     val result = innerExecuteDeprecated("EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH (a:A) RETURN *", Map.empty)
-    result should use("LoadCSV", "NodeByLabelScan")
+    result.executionPlanDescription() should includeSomewhere.aPlan.withLHS(aPlan("LoadCSV")).withRHS(aPlan("NodeByLabelScan"))
     result.notifications.map(_.getCode) should contain("Neo.ClientNotification.Statement.NoApplicableIndexWarning")
   }
 
   test("should warn for large label scans with merge combined with load csv") {
     1 to 11 foreach { _ => createLabeledNode("A") }
     val result = innerExecuteDeprecated("EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MERGE (a:A) RETURN *", Map.empty)
-    result should use("LoadCSV", "AntiConditionalApply")
+    result.executionPlanDescription() should includeSomewhere.aPlan.withLHS(aPlan("LoadCSV")).withRHS(aPlan("AntiConditionalApply"))
     result.notifications.map(_.getCode) should contain("Neo.ClientNotification.Statement.NoApplicableIndexWarning")
   }
 
   test("should not warn for small label scans combined with load csv") {
     createLabeledNode("A")
     val result = innerExecuteDeprecated("EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH (a:A) RETURN *", Map.empty)
-    result should use("LoadCSV", "NodeByLabelScan")
+    result.executionPlanDescription() should includeSomewhere.aPlan.withLHS(aPlan("LoadCSV")).withRHS(aPlan("NodeByLabelScan"))
     result.notifications.map(_.getCode) should not contain "Neo.ClientNotification.Statement.NoApplicableIndexWarning"
   }
 
   test("should not warn for small label scans with merge combined with load csv") {
     createLabeledNode("A")
     val result = innerExecuteDeprecated("EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MERGE (a:A) RETURN *", Map.empty)
-    result should use("LoadCSV", "AntiConditionalApply")
+    result.executionPlanDescription() should includeSomewhere.aPlan.withLHS(aPlan("LoadCSV")).withRHS(aPlan("AntiConditionalApply"))
     result.notifications.map(_.getCode) should not contain "Neo.ClientNotification.Statement.NoApplicableIndexWarning"
   }
 

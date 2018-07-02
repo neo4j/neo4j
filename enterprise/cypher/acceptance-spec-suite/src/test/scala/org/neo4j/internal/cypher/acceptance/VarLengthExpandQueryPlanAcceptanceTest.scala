@@ -37,8 +37,8 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
 
     executeWith(Interpreted, query, planComparisonStrategy =
       ComparePlansWithAssertion(plan => {
-        plan should useOperatorWithText("VarLengthExpand(All)", "(e)<-[:*..4]-(a)")
-        plan should useOperatorWithText("NodeByLabelScan", ":To")
+        plan should includeSomewhere.aPlan("VarLengthExpand(All)").containingArgument("(e)<-[:*..4]-(a)")
+        plan should includeSomewhere.aPlan("NodeByLabelScan").containingArgument(":To")
       }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
   }
 
@@ -47,8 +47,8 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     val query = "PROFILE MATCH (a:From {name:'Keanu Reeves'})-[*..4]->(e:To {name:'Andres'}) RETURN *"
     executeWith(Interpreted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
-        plan should useOperatorWithText("VarLengthExpand(All)", "(a)-[:*..4]->(e)")
-        plan should useOperatorWithText("NodeByLabelScan", ":From")
+        plan should includeSomewhere.aPlan("VarLengthExpand(All)").containingArgument("(a)-[:*..4]->(e)")
+        plan should includeSomewhere.aPlan("NodeByLabelScan").containingArgument(":From")
       }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
   }
 
@@ -56,7 +56,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     val query = "MATCH (a)-[*1..2]->(c) RETURN DISTINCT c"
     executeWith(Interpreted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
-        plan should useOperators("VarLengthExpand(Pruning)")
+        plan should includeSomewhere.aPlan("VarLengthExpand(Pruning)")
       }, expectPlansToFail = Configs.Before3_3AndRule))
   }
 
@@ -64,7 +64,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     val query = "MATCH (a)-[*1..2]->(c) WITH DISTINCT c RETURN count(*)"
     executeWith(Interpreted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
-        plan should useOperators("VarLengthExpand(Pruning)")
+        plan should includeSomewhere.aPlan("VarLengthExpand(Pruning)")
       }, expectPlansToFail = Configs.Before3_3AndRule))
   }
 
@@ -72,7 +72,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     val query = "MATCH (from)-[*1..3]->(to) RETURN count(DISTINCT to)"
     executeWith(Interpreted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
-        plan should useOperators("VarLengthExpand(Pruning)")
+        plan should includeSomewhere.aPlan("VarLengthExpand(Pruning)")
       }, expectPlansToFail = Configs.Before3_3AndRule))
   }
 
@@ -80,7 +80,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     val query = "MATCH (a)-[*1..3]->(b:X) RETURN DISTINCT b"
     executeWith(Interpreted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
-        plan should useOperators("VarLengthExpand(Pruning)")
+        plan should includeSomewhere.aPlan("VarLengthExpand(Pruning)")
       }, expectPlansToFail = Configs.Before3_3AndRule))
   }
 
@@ -88,7 +88,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     val query = "MATCH (a)-[:R*1..3]->(b) WITH count(*) AS count RETURN DISTINCT count"
     executeWith(Interpreted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
-        plan should useOperators("VarLengthExpand(All)")
+        plan should includeSomewhere.aPlan("VarLengthExpand(All)")
       }, expectPlansToFail = Configs.AllRulePlanners))
   }
 
@@ -96,7 +96,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     val query = "MATCH (a)-[:R*1..3]->(b)-[:T*1..3]->(c) RETURN DISTINCT c"
     executeWith(Interpreted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
-        plan should useOperators("VarLengthExpand(Pruning)")
+        plan should includeSomewhere.aPlan("VarLengthExpand(Pruning)")
       }, expectPlansToFail = Configs.Before3_3AndRule))
   }
 
@@ -104,7 +104,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     val query = "MATCH (a)-[:R*1..3]->(b)-[:T]->(c) RETURN DISTINCT c"
     executeWith(Interpreted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
-        plan should useOperators("VarLengthExpand(Pruning)")
+        plan should includeSomewhere.aPlan("VarLengthExpand(Pruning)")
       }, expectPlansToFail = Configs.Before3_3AndRule))
   }
 
@@ -112,7 +112,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     val query = "MATCH (a) OPTIONAL MATCH (a)-[:R*1..3]->(b)-[:T]->(c) RETURN DISTINCT c"
     executeWith(Interpreted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
-        plan should useOperators("VarLengthExpand(Pruning)")
+        plan should includeSomewhere.aPlan("VarLengthExpand(Pruning)")
       }, expectPlansToFail = Configs.Before3_3AndRule))
   }
 
@@ -120,7 +120,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     val query = "MATCH (a)-[*1..3]->(b) RETURN b, count(*)"
     executeWith(Interpreted + Configs.Cost2_3, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
-        plan should useOperators("VarLengthExpand(All)")
+        plan should includeSomewhere.aPlan("VarLengthExpand(All)")
       }, expectPlansToFail = Configs.AllRulePlanners))
   }
 
@@ -128,7 +128,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     val query = "MATCH (a)-[*4..5]->(b) RETURN DISTINCT b"
     executeWith(Interpreted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
-        plan should useOperators("VarLengthExpand(Pruning)")
+        plan should includeSomewhere.aPlan("VarLengthExpand(Pruning)")
       }, expectPlansToFail = Configs.Before3_3AndRule))
   }
 
@@ -136,7 +136,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     val query = "MATCH (a)-[*1..1]->(b) RETURN DISTINCT b"
     executeWith(Interpreted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
-        plan should useOperators("VarLengthExpand(All)")
+        plan should includeSomewhere.aPlan("VarLengthExpand(All)")
       }, expectPlansToFail = Configs.AllRulePlanners))
   }
 
@@ -147,7 +147,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
                   |RETURN pB.name """.stripMargin
     val result = executeWith(Interpreted, query, planComparisonStrategy =
       ComparePlansWithAssertion(plan => {
-        plan should useOperators("VarLengthExpand(All)")
+        plan should includeSomewhere.aPlan("VarLengthExpand(All)")
       }, expectPlansToFail = Configs.AllRulePlanners))
     result.toList should equal(List(Map("pB.name" -> "d")))
   }
@@ -159,7 +159,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
                   |RETURN pB.name """.stripMargin
     val result = executeWith(Interpreted, query, planComparisonStrategy =
       ComparePlansWithAssertion(plan => {
-        plan should useOperators("VarLengthExpand(All)")
+        plan should includeSomewhere.aPlan("VarLengthExpand(All)")
       }, expectPlansToFail = Configs.AllRulePlanners))
     result.toList should equal(List(Map("pB.name" -> "d")))
   }
@@ -171,7 +171,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
                   |RETURN pB.name """.stripMargin
     val result = executeWith(Interpreted, query, planComparisonStrategy =
       ComparePlansWithAssertion(plan => {
-        plan should useOperators("VarLengthExpand(All)")
+        plan should includeSomewhere.aPlan("VarLengthExpand(All)")
       }, expectPlansToFail = Configs.AllRulePlanners))
     result.toList should equal(List(Map("pB.name" -> "d")))
   }
@@ -183,7 +183,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
                   |RETURN pB.name """.stripMargin
     val result = executeWith(Interpreted, query, planComparisonStrategy =
       ComparePlansWithAssertion(plan => {
-        plan should useOperators("VarLengthExpand(All)")
+        plan should includeSomewhere.aPlan("VarLengthExpand(All)")
       }, expectPlansToFail = Configs.AllRulePlanners))
     result.toList should equal(List(Map("pB.name" -> "d")))
   }
@@ -195,7 +195,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
                   |RETURN pB.name """.stripMargin
     val result = executeWith(Interpreted, query, planComparisonStrategy =
       ComparePlansWithAssertion(plan => {
-        plan should useOperators("VarLengthExpand(All)")
+        plan should includeSomewhere.aPlan("VarLengthExpand(All)")
       }, expectPlansToFail = Configs.AllRulePlanners))
     result.toList should equal(List(Map("pB.name" -> "d")))
   }
@@ -383,7 +383,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     val query = "MATCH p=(from)-[r*0..1]->(to) WITH nodes(p) AS d RETURN DISTINCT d"
     executeWith(Interpreted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
-        plan should useOperators("VarLengthExpand(All)")
+        plan should includeSomewhere.aPlan("VarLengthExpand(All)")
       }, expectPlansToFail = Configs.AllRulePlanners))
   }
 
