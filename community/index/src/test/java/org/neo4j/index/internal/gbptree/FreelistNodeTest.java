@@ -19,15 +19,15 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class FreelistNodeTest
+class FreelistNodeTest
 {
     private static final int PAGE_SIZE = 128;
 
@@ -36,7 +36,7 @@ public class FreelistNodeTest
     private final int maxEntries = freelist.maxEntries();
 
     @Test
-    public void shouldInitializeTreeNode()
+    void shouldInitializeTreeNode()
     {
         // GIVEN
         FreelistNode.initialize( cursor );
@@ -49,7 +49,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldNodeOverwriteNodeType()
+    void shouldNodeOverwriteNodeType()
     {
         // GIVEN
         FreelistNode.initialize( cursor );
@@ -66,7 +66,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldSetAndGetNext()
+    void shouldSetAndGetNext()
     {
         // GIVEN
         long nextId = 12345;
@@ -80,7 +80,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldReadAndWriteFreeListEntries()
+    void shouldReadAndWriteFreeListEntries()
     {
         // GIVEN
         long generationA = 34;
@@ -100,52 +100,25 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldFailOnWritingBeyondMaxEntries()
+    void shouldFailOnWritingBeyondMaxEntries()
     {
-        // WHEN
-        try
-        {
-            freelist.write( cursor, 1, 10, maxEntries );
-            fail( "Should've failed" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // THEN good
-        }
+        assertThrows( IllegalArgumentException.class, () -> freelist.write( cursor, 1, 10, maxEntries ) );
     }
 
     @Test
-    public void shouldFailOnWritingTooBigPointer()
+    void shouldFailOnWritingTooBigPointer()
     {
-        // WHEN
-        try
-        {
-            freelist.write( cursor, 1, PageCursorUtil._6B_MASK + 1, 0 );
-            fail( "Should've failed" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // THEN good
-        }
+        assertThrows( IllegalArgumentException.class, () -> freelist.write( cursor, 1, PageCursorUtil._6B_MASK + 1, 0 ) );
     }
 
     @Test
-    public void shouldFailOnWritingTooBigGeneration()
+    void shouldFailOnWritingTooBigGeneration()
     {
-        // WHEN
-        try
-        {
-            freelist.write( cursor, GenerationSafePointer.MAX_GENERATION + 1, 1, 0 );
-            fail( "Should've failed" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // THEN good
-        }
+        assertThrows( IllegalArgumentException.class, () -> freelist.write( cursor, GenerationSafePointer.MAX_GENERATION + 1, 1, 0 ) );
     }
 
     @Test
-    public void shouldReturnNoPageOnUnstableEntry()
+    void shouldReturnNoPageOnUnstableEntry()
     {
         // GIVEN
         long stableGeneration = 10;

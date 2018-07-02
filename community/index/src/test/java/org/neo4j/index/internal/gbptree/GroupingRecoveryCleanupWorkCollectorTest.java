@@ -19,7 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,17 +29,17 @@ import java.util.List;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.scheduler.JobSchedulerAdapter;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class GroupingRecoveryCleanupWorkCollectorTest
+class GroupingRecoveryCleanupWorkCollectorTest
 {
     private final ImmediateJobScheduler jobScheduler = new ImmediateJobScheduler();
     private final GroupingRecoveryCleanupWorkCollector collector =
             new GroupingRecoveryCleanupWorkCollector( jobScheduler );
 
     @Test
-    public void mustNotScheduleAnyJobsBeforeStart()
+    void mustNotScheduleAnyJobsBeforeStart()
     {
         // given
         List<DummyJob> allRuns = new ArrayList<>();
@@ -54,7 +54,7 @@ public class GroupingRecoveryCleanupWorkCollectorTest
     }
 
     @Test
-    public void mustScheduleAllJobs()
+    void mustScheduleAllJobs()
     {
         // given
         List<DummyJob> allRuns = new ArrayList<>();
@@ -70,7 +70,7 @@ public class GroupingRecoveryCleanupWorkCollectorTest
     }
 
     @Test
-    public void mustThrowIfOldJobsDuringInit()
+    void mustThrowIfOldJobsDuringInit()
     {
         // given
         List<DummyJob> allRuns = new ArrayList<>();
@@ -78,19 +78,11 @@ public class GroupingRecoveryCleanupWorkCollectorTest
 
         // when
         addAll( someJobs );
-        try
-        {
-            collector.init();
-            fail( "Should have failed" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // then
-        }
+        assertThrows( IllegalStateException.class, collector::init );
     }
 
     @Test
-    public void mustCloseOldJobsOnShutdown()
+    void mustCloseOldJobsOnShutdown()
     {
         // given
         List<DummyJob> allRuns = new ArrayList<>();
@@ -102,15 +94,15 @@ public class GroupingRecoveryCleanupWorkCollectorTest
         collector.shutdown();
 
         // then
-        assertTrue( "Expected no jobs to run", allRuns.isEmpty() );
+        assertTrue( allRuns.isEmpty(), "Expected no jobs to run" );
         for ( DummyJob job : someJobs )
         {
-            assertTrue( "Expected all jobs to be closed", job.isClosed() );
+            assertTrue( job.isClosed(), "Expected all jobs to be closed" );
         }
     }
 
     @Test
-    public void mustNotScheduleOldJobsOnMultipleStart()
+    void mustNotScheduleOldJobsOnMultipleStart()
     {
         // given
         List<DummyJob> allRuns = new ArrayList<>();
@@ -127,7 +119,7 @@ public class GroupingRecoveryCleanupWorkCollectorTest
     }
 
     @Test
-    public void mustNotScheduleOldJobsOnStartStopStart() throws Throwable
+    void mustNotScheduleOldJobsOnStartStopStart() throws Throwable
     {
         // given
         List<DummyJob> allRuns = new ArrayList<>();
@@ -145,7 +137,7 @@ public class GroupingRecoveryCleanupWorkCollectorTest
     }
 
     @Test
-    public void executeAllTheJobsWhenSeparateJobFails()
+    void executeAllTheJobsWhenSeparateJobFails()
     {
         List<DummyJob> allRuns = new ArrayList<>();
         collector.init();
@@ -160,34 +152,19 @@ public class GroupingRecoveryCleanupWorkCollectorTest
         collector.add( thirdJob );
         collector.add( fourthJob );
 
-        try
-        {
-            collector.start();
-            fail( "One of the jobs throws exception." );
-        }
-        catch ( RuntimeException e )
-        {
-            assertTrue( Exceptions.contains( e, "Resilient to run attempts", RuntimeException.class ) );
-        }
+        RuntimeException exception = assertThrows( RuntimeException.class, collector::start );
+        assertTrue( Exceptions.contains( exception, "Resilient to run attempts", RuntimeException.class ) );
 
         assertSame( expectedJobs, allRuns );
     }
 
     @Test
-    public void throwOnAddingJobsAfterStart()
+    void throwOnAddingJobsAfterStart()
     {
         collector.init();
         collector.start();
 
-        try
-        {
-            collector.add( new DummyJob( "first", new ArrayList<>() ) );
-            fail( "Collector should not acccept new jobs after start." );
-        }
-        catch ( IllegalStateException ise )
-        {
-            // expected
-        }
+        assertThrows( IllegalStateException.class, () -> collector.add( new DummyJob( "first", new ArrayList<>() ) ) );
     }
 
     private void addAll( Collection<DummyJob> jobs )

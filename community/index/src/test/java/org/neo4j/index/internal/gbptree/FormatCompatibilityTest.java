@@ -57,7 +57,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
-import static org.neo4j.test.rule.PageCacheRule.config;
 
 /**
  * A little trick to automatically tell whether or not index format was changed without
@@ -86,8 +85,8 @@ public class FormatCompatibilityTest
     @Parameter( 1 )
     public String zipName;
 
-    private final TestDirectory directory = TestDirectory.testDirectory( getClass() );
-    private final PageCacheRule pageCacheRule = new PageCacheRule( config().withInconsistentReads( false ) );
+    private final TestDirectory directory = TestDirectory.testDirectory();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final DefaultFileSystemRule fsRule = new DefaultFileSystemRule();
     private final RandomRule random = new RandomRule();
 

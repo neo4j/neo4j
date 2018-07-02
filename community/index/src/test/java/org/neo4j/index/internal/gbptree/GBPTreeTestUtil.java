@@ -25,7 +25,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class GBPTreeTestUtil
+class GBPTreeTestUtil
 {
     static <KEY> boolean contains( List<KEY> expectedKeys, KEY key, Comparator<KEY> comparator )
     {

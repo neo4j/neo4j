@@ -19,11 +19,11 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.io.pagecache.PageCursor;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
 {
@@ -48,11 +48,11 @@ public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
         int currentAllocSpace = ((TreeNodeDynamicSize) node).getAllocOffset( cursor );
 
         // Then
-        assertEquals("allocSpace point to end of page", pageSize, currentAllocSpace );
+        assertEquals( pageSize, currentAllocSpace, "allocSpace point to end of page" );
     }
 
     @Test
-    public void mustCompactKeyValueSizeHeader() throws Exception
+    void mustCompactKeyValueSizeHeader()
     {
         int oneByteKeyMax = DynamicSizeUtil.MASK_ONE_BYTE_KEY_SIZE;
         int oneByteValueMax = DynamicSizeUtil.MASK_ONE_BYTE_VALUE_SIZE;

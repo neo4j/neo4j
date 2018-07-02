@@ -19,21 +19,20 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runners.Parameterized.Parameter;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
 
-import static org.junit.Assert.assertEquals;
-
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractKeySize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractValueSize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putKeyValueSize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readKeyValueSize;
 
-public class DynamicSizeUtilTest
+class DynamicSizeUtilTest
 {
     private static final int KEY_ONE_BYTE_MAX = 0x1F;
     private static final int KEY_TWO_BYTE_MIN = KEY_ONE_BYTE_MAX + 1;
@@ -45,21 +44,14 @@ public class DynamicSizeUtilTest
 
     private PageCursor cursor;
 
-    @Parameter( 0 )
-    public int keySize;
-    @Parameter( 1 )
-    public int valueSize;
-    @Parameter( 2 )
-    public int expectedBytes;
-
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         cursor = ByteArrayPageCursor.wrap( 8192 );
     }
 
     @Test
-    public void shouldPutAndGetKeyValueSize() throws Exception
+    void shouldPutAndGetKeyValueSize()
     {
         //                           KEY SIZE             | VALUE SIZE      | EXPECTED BYTES
         shouldPutAndGetKeyValueSize( 0,                     0,                1 );
@@ -85,7 +77,7 @@ public class DynamicSizeUtilTest
     }
 
     @Test
-    public void shouldPutAndGetKeySize() throws Exception
+    void shouldPutAndGetKeySize()
     {
         //                      KEY SIZE        | EXPECTED BYTES
         shouldPutAndGetKeySize( 0,                1 );
@@ -95,42 +87,26 @@ public class DynamicSizeUtilTest
     }
 
     @Test
-    public void shouldPreventWritingKeyLargerThanMaxPossible() throws Exception
+    void shouldPreventWritingKeyLargerThanMaxPossible()
     {
         // given
         int keySize = 0xFFF;
 
         // when
-        try
-        {
-            putKeyValueSize( cursor, keySize + 1, 0 );
-            fail( "Expected failure" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // then good
-        }
+        assertThrows( IllegalArgumentException.class, () -> putKeyValueSize( cursor, keySize + 1, 0 ) );
 
         // whereas when size is one less than that
         shouldPutAndGetKeyValueSize( keySize, 0, 2 );
     }
 
     @Test
-    public void shouldPreventWritingValueLargerThanMaxPossible() throws Exception
+    void shouldPreventWritingValueLargerThanMaxPossible()
     {
         // given
         int valueSize = 0x7FFF;
 
         // when
-        try
-        {
-            putKeyValueSize( cursor, 1, valueSize + 1 );
-            fail( "Expected failure" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // then good
-        }
+        assertThrows( IllegalArgumentException.class, () -> putKeyValueSize( cursor, 1, valueSize + 1 ) );
 
         // whereas when size is one less than that
         shouldPutAndGetKeyValueSize( 1, valueSize, 3 );
@@ -153,7 +129,7 @@ public class DynamicSizeUtilTest
         return offsetAfter - offsetBefore;
     }
 
-    private void shouldPutAndGetKeyValueSize( int keySize, int valueSize, int expectedBytes ) throws Exception
+    private void shouldPutAndGetKeyValueSize( int keySize, int valueSize, int expectedBytes )
     {
         int size = putAndGetKeyValue( keySize, valueSize );
         assertEquals( expectedBytes, size );

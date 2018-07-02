@@ -19,26 +19,28 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil._6B_MASK;
 
-public class PageCursorUtilTest
+@ExtendWith( RandomExtension.class )
+class PageCursorUtilTest
 {
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private RandomRule random;
 
     @Test
-    public void shouldPutAndGet6BLongs()
+    void shouldPutAndGet6BLongs()
     {
         // GIVEN
         PageCursor cursor = ByteArrayPageCursor.wrap( 10 );
@@ -60,7 +62,7 @@ public class PageCursorUtilTest
     }
 
     @Test
-    public void shouldFailOnInvalidValues()
+    void shouldFailOnInvalidValues()
     {
         // GIVEN
         PageCursor cursor = ByteArrayPageCursor.wrap( 10 );
@@ -73,15 +75,7 @@ public class PageCursorUtilTest
             {
                 // OK here we have an invalid value
                 cursor.setOffset( 0 );
-                try
-                {
-                    PageCursorUtil.put6BLong( cursor, expected );
-                    fail( "Should have failed" );
-                }
-                catch ( IllegalArgumentException e )
-                {
-                    // THEN good
-                }
+                assertThrows( IllegalArgumentException.class, () -> PageCursorUtil.put6BLong( cursor, expected ) );
                 i++;
             }
         }

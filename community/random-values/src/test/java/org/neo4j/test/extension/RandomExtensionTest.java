@@ -17,19 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.internal.gbptree;
+package org.neo4j.test.extension;
 
-class SeekCursorDynamicSizeTest extends SeekCursorTestBase<RawBytes,RawBytes>
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import org.neo4j.test.rule.RandomRule;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+@ExtendWith( RandomExtension.class )
+class RandomExtensionTest
 {
-    @Override
-    TestLayout<RawBytes,RawBytes> getLayout()
+    @Inject
+    RandomRule random;
+
+    @Test
+    void randomInjectionsInitialiseField()
     {
-        return new SimpleByteArrayLayout();
+        assertNotNull( random );
     }
 
-    @Override
-    TreeNode<RawBytes,RawBytes> getTreeNode( int pageSize, TestLayout<RawBytes,RawBytes> layout )
+    @Test
+    void randomIsInitialised()
     {
-        return new TreeNodeDynamicSize<>( pageSize, layout );
+        assertNotNull( random.nextAlphaNumericString() );
     }
 }

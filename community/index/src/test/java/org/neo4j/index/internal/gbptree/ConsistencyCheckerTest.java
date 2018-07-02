@@ -21,23 +21,24 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 
+import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.index.internal.gbptree.ConsistencyChecker.assertNoCrashOrBrokenPointerInGSPP;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointer.MIN_GENERATION;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.goTo;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 
-public class ConsistencyCheckerTest
+class ConsistencyCheckerTest
 {
     @Test
-    public void shouldThrowDescriptiveExceptionOnBrokenGSPP() throws Exception
+    void shouldThrowDescriptiveExceptionOnBrokenGSPP() throws Exception
     {
         // GIVEN
         int pageSize = 256;
@@ -53,26 +54,21 @@ public class ConsistencyCheckerTest
         TreeNode.setSuccessor( cursor, pointer, stableGeneration, crashGeneration );
 
         // WHEN
-        try
+        CursorException exception = assertThrows( CursorException.class, () ->
         {
-            assertNoCrashOrBrokenPointerInGSPP( cursor, stableGeneration, unstableGeneration,
-                    pointerFieldName, TreeNode.BYTE_POS_SUCCESSOR );
+            assertNoCrashOrBrokenPointerInGSPP( cursor, stableGeneration, unstableGeneration, pointerFieldName, TreeNode.BYTE_POS_SUCCESSOR );
             cursor.checkAndClearCursorException();
-            fail( "Should have failed" );
-        }
-        catch ( CursorException e )
-        {
-            // THEN
-            assertThat( e.getMessage(), containsString( pointerFieldName ) );
-            assertThat( e.getMessage(), containsString( pointerFieldName ) );
-            assertThat( e.getMessage(), containsString( "state=CRASH" ) );
-            assertThat( e.getMessage(), containsString( "state=EMPTY" ) );
-            assertThat( e.getMessage(), containsString( String.valueOf( pointer ) ) );
-        }
+        } );
+
+        assertThat( exception.getMessage(), allOf( containsString( pointerFieldName ),
+                        containsString( pointerFieldName ),
+                        containsString( "state=CRASH" ),
+                        containsString( "state=EMPTY" ),
+                        containsString( String.valueOf( pointer ) ) ) );
     }
 
     @Test
-    public void shouldDetectUnusedPages() throws Exception
+    void shouldDetectUnusedPages() throws Exception
     {
         // GIVEN
         int pageSize = 256;
@@ -120,15 +116,8 @@ public class ConsistencyCheckerTest
         // WHEN
         ConsistencyChecker<MutableLong> cc =
                 new ConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration );
-        try
-        {
-            cc.checkSpace( cursor, idProvider.lastId(), ImmutableEmptyLongIterator.INSTANCE );
-            fail( "Should have failed" );
-        }
-        catch ( RuntimeException e )
-        {
-            // THEN good
-            assertThat( e.getMessage(), containsString( "unused pages" ) );
-        }
+        RuntimeException exception =
+                assertThrows( RuntimeException.class, () -> cc.checkSpace( cursor, idProvider.lastId(), ImmutableEmptyLongIterator.INSTANCE ) );
+        assertThat( exception.getMessage(), containsString( "unused pages" ) );
     }
 }

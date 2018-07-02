@@ -19,20 +19,20 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class GenerationTest
+class GenerationTest
 {
     @Test
-    public void shouldSetLowGenerations()
+    void shouldSetLowGenerations()
     {
         shouldComposeAndDecomposeGeneration( GenerationSafePointer.MIN_GENERATION, GenerationSafePointer.MIN_GENERATION + 1 );
     }
 
     @Test
-    public void shouldSetHighGenerations()
+    void shouldSetHighGenerations()
     {
         shouldComposeAndDecomposeGeneration( GenerationSafePointer.MAX_GENERATION - 1, GenerationSafePointer.MAX_GENERATION );
     }
