@@ -62,16 +62,39 @@ Function Invoke-ExternalCommand
 
   Process
   {
-    # This is a hack to make Windows 7 happy with quoted commands. If command is quoated but
-    # does not include a space, Windows 7 produces an error about command path not found. 
-    # So we need to selectively apply double quotes when command includes spaces. 
-    If ($Command -match " ")
+    # Merge Command and CommandArgs into a single array that each element
+    # is checked against a space and surrounded with double quoates if
+    # they are already not
+    $ComSpecArgs = @()
+    If ($Command -match ' ' -and -not($Command -match '\".+\"'))
     {
-        $Command = '"{0}"' -f $Command
+        $ComSpecArgs += "`"$Command`""
     }
-  
-    Write-Verbose "Invoking $Command with arguments $($CommandArgs -join " ")"
-    $Output = & "$Env:ComSpec" /C "$Command $($CommandArgs -join " ") 2>&1"
+    Else
+    {
+        $ComSpecArgs += $Command
+    }
+
+    Foreach ($Arg in $CommandArgs)
+    {
+        If ($Arg -match ' ' -and -Not($Arg -match '\".+\"'))
+        {
+            $ComSpecArgs += "`"$Arg`""
+        }
+        Else
+        {
+            $ComSpecArgs += $Arg
+        }
+    }
+    $ComSpecArgs += "2>&1"
+
+    Write-Verbose "Invoking $ComSpecArgs" 
+    # cmd.exe is a bit picky about its translation of command line arguments
+    # to the actual command to be executed and this is the only one that
+    # found to be running both on Windows 7 and Windows 10
+    # /S is required not to transform contents of $ComSpecArgs and to be used 
+    # as it is.
+    $Output = & $env:ComSpec /S /C """ " $ComSpecArgs " """
     Write-Verbose "Command returned with exit code $LastExitCode"
 
     Write-Output @{'exitCode' = $LastExitCode; 'capturedOutput' = $Output}
