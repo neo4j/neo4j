@@ -80,10 +80,10 @@ class AggregationReduceOperator(aggregations: Array[AggregationOffsets],
       val currentIncomingRow = inputMorsels(morselPos)
       while (currentIncomingRow.hasMoreRows) {
         val key = getGroupingKey(currentIncomingRow)
-        val functions = result.getOrElseUpdate(key, aggregations.map(_.aggregation.createAggregationReducer))
+        val reducersForKey = result.getOrElseUpdate(key, aggregations.map(_.aggregation.createAggregationReducer))
         var i = 0
         while (i < aggregations.length) {
-          val reducer = functions(i)
+          val reducer = reducersForKey(i)
           reducer.reduce(currentIncomingRow.getRefAt(incomingSlots(i)))
           i += 1
         }
