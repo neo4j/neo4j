@@ -292,18 +292,18 @@ public class ClusterOverviewIT
     private void assertAllEventualOverviews( Cluster cluster, Matcher<List<MemberInfo>> expected, Set<Integer> excludedCores, Set<Integer> excludedRRs )
             throws KernelException, InterruptedException
     {
-        for ( CoreClusterMember core : cluster.coreMembers() )
+        for( CoreClusterMember core : cluster.coreMembers() )
         {
-            if ( !excludedCores.contains( core.serverId() ) )
+            if( !excludedCores.contains( core.serverId() ) )
             {
                 assertEventualOverview( expected, core, "core" );
             }
 
         }
 
-        for ( ReadReplica rr : cluster.readReplicas() )
+        for( ReadReplica rr : cluster.readReplicas() )
         {
-            if ( !excludedRRs.contains( rr.serverId() ) )
+            if( !excludedRRs.contains( rr.serverId() ) )
             {
                 assertEventualOverview( expected, rr, "rr" );
             }
@@ -320,6 +320,7 @@ public class ClusterOverviewIT
         assertEventually( memberInfos -> message + printableMemberInfos.apply( memberInfos ),
                 () -> clusterOverview( member.database() ), expected, 90, SECONDS );
     }
+
 
     @SafeVarargs
     private final Matcher<Iterable<? extends MemberInfo>> containsAllMemberAddresses(
