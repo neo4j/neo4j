@@ -99,7 +99,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
 
     public static ZonedDateTime datetimeRaw( long epochSecond, long nano, ZoneOffset zoneOffset )
     {
-        return datetimeRaw( epochSecond, nano, zoneOffset );
+        return datetimeRaw( epochSecond, nano, (ZoneId) zoneOffset );
     }
 
     public static DateTimeValue datetime( ZonedDateTime datetime )
