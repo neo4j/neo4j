@@ -39,7 +39,6 @@ import static java.util.Collections.singletonList;
 
 public class PointValue extends ScalarValue implements Point, Comparable<PointValue>
 {
-    public static String[] ALLOWED_KEYS = new String[]{"crs", "x", "y", "z", "longitude", "latitude", "height", "srid"};
 
     private CoordinateReferenceSystem crs;
     private double[] coordinate;
@@ -476,7 +475,6 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         private Double latitude;
         private Double height;
         private int srid = -1;
-        private boolean allowOpenMaps = true;
 
         @Override
         public void assign( String key, Object value )
@@ -519,10 +517,6 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
                 assignIntegral( key, value, i -> srid = i );
                 break;
             default:
-                if ( !allowOpenMaps )
-                {
-                    throwOnUnrecognizedKey( key );
-                }
             }
         }
 
@@ -588,11 +582,6 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             {
                 throw new InvalidValuesArgumentException( String.format( "Cannot assign %s to field %s", value, key ) );
             }
-        }
-
-        private void throwOnUnrecognizedKey( String key )
-        {
-            throw new InvalidValuesArgumentException( String.format( "Unknown key '%s' for creating new point", key ) );
         }
 
         private <T extends Number> T assertConvertible( Supplier<T> func )

@@ -19,23 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import java.util.function.{BiConsumer, BiFunction}
-
-import org.opencypher.v9_0.util.CypherTypeException
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.IsMap
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, IsMap}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{PointValue, Values}
-import org.neo4j.values.virtual.{MapValue, VirtualNodeValue, VirtualRelationshipValue}
+import org.neo4j.values.virtual.MapValue
+import org.opencypher.v9_0.util.CypherTypeException
 
-object PointFunction {
-  private val FILTER_VALID_KEYS = new BiFunction[String, AnyValue, java.lang.Boolean] {
-    override def apply(t: String,
-                       ignore: AnyValue): java.lang.Boolean = PointValue.ALLOWED_KEYS.exists(_.equalsIgnoreCase(t))
-  }
-}
 case class PointFunction(data: Expression) extends NullInNullOutExpression(data) {
 
 
@@ -45,13 +36,7 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
       if (containsNull(map)) {
         Values.NO_VALUE
       } else {
-        //TODO: We might consider removing this code if the PointBuilder.allowOpenMaps=true remains default
-        if (value.isInstanceOf[VirtualNodeValue] || value.isInstanceOf[VirtualRelationshipValue]) {
-          PointValue.fromMap(map.filter(PointFunction.FILTER_VALID_KEYS))
-        }
-        else {
-          PointValue.fromMap(map)
-        }
+        PointValue.fromMap(map)
       }
     case x => throw new CypherTypeException(s"Expected a map but got $x")
   }
