@@ -22,9 +22,39 @@
  */
 package org.neo4j.cypher.internal.runtime.parallel
 
-import java.util.concurrent.Executors
+import scala.collection.mutable
 
-class SimpleSchedulerTest extends SchedulerTest {
-  override def newScheduler(maxConcurrency: Int): Scheduler =
-    new SimpleScheduler( Executors.newFixedThreadPool( maxConcurrency ) )
+/**
+  * Single threaded implementation of the Scheduler trait
+  */
+class SingleThreadScheduler() extends Scheduler {
+
+  override def execute(task: Task): QueryExecution = new SingleThreadQueryExecution(task)
+
+  def isMultiThreaded: Boolean = false
+
+  class SingleThreadQueryExecution(initialTask: Task) extends QueryExecution {
+
+    val jobStack: mutable.Stack[Task] = new mutable.Stack()
+    jobStack.push(initialTask)
+
+    override def await(): Option[Throwable] = {
+
+      try {
+        while (jobStack.nonEmpty) {
+          val nextTask = jobStack.pop()
+
+          val downstreamTasks = nextTask.executeWorkUnit()
+          for (newTask <- downstreamTasks)
+            jobStack.push(newTask)
+
+          if (nextTask.canContinue)
+            jobStack.push(nextTask)
+        }
+        None
+      } catch {
+        case t: Throwable => Some(t)
+      }
+    }
+  }
 }

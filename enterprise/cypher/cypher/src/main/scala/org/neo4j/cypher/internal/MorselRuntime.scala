@@ -34,19 +34,18 @@ import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
+import org.neo4j.cypher.internal.runtime.parallel.SingleThreadScheduler
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, LogicalPlan2PlanDescription}
 import org.neo4j.cypher.internal.runtime.slotted.expressions.{CompiledExpressionConverter, SlottedExpressionConverters}
-import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.{Dispatcher, SingleThreadedExecutor}
 import org.neo4j.cypher.internal.runtime.vectorized.expressions.MorselExpressionConverters
-import org.neo4j.cypher.internal.runtime.vectorized.{Pipeline, PipelineBuilder}
+import org.neo4j.cypher.internal.runtime.vectorized.{Dispatcher, Pipeline, PipelineBuilder}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Notification
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.frontend.PlannerName
-
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 import org.opencypher.v9_0.util.TaskCloser
 
@@ -64,7 +63,7 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
 
       val operators = operatorBuilder.create(logicalPlan)
       val dispatcher =
-        if (context.debugOptions.contains("singlethreaded")) new SingleThreadedExecutor()
+        if (context.debugOptions.contains("singlethreaded")) new Dispatcher(100000, new SingleThreadScheduler())
         else context.dispatcher
       val fieldNames = state.statement().returnColumns.toArray
 

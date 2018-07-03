@@ -20,20 +20,15 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.cypher.internal.runtime.vectorized.dispatcher
-
-import java.util.concurrent.Executor
+package org.neo4j.cypher.internal.runtime.vectorized
 
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.parallel.{SimpleScheduler, Scheduler}
-import org.neo4j.cypher.internal.runtime.vectorized._
+import org.neo4j.cypher.internal.runtime.parallel.Scheduler
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.util.TaskCloser
 
-class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) extends Dispatcher {
-
-  val scheduler: Scheduler = new SimpleScheduler(executor)
+class Dispatcher(morselSize: Int, scheduler: Scheduler) {
 
   def execute[E <: Exception](operators: Pipeline,
                               queryContext: QueryContext,

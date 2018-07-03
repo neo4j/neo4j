@@ -37,6 +37,8 @@ trait Scheduler {
     * @return QueryExecution representing the ongoing execution
     */
   def execute(task: Task): QueryExecution
+
+  def isMultiThreaded: Boolean
 }
 
 /**
