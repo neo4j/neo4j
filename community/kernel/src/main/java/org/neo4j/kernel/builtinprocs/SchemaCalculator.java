@@ -19,16 +19,15 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.helpers.collection.Pair;
@@ -39,13 +38,15 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
-import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.values.storable.IntegralArray;
+import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.kernel.builtinprocs.SchemaCalculator.ValueStatus.ANY;
+import static org.neo4j.kernel.builtinprocs.SchemaCalculator.ValueStatus.CONSISTENT_NUMBER_VALUE;
 import static org.neo4j.kernel.builtinprocs.SchemaCalculator.ValueStatus.VALUE;
 import static org.neo4j.kernel.builtinprocs.SchemaCalculator.ValueStatus.VALUE_GROUP;
 
@@ -53,18 +54,26 @@ public class SchemaCalculator
 {
     private org.neo4j.internal.kernel.api.Transaction ktx;
 
-    private Map<LabelSet,Set<Integer>> labelSetToPropertyKeysMapping;
+    private Map<LabelSet,MutableIntSet> labelSetToPropertyKeysMapping;
     private Map<Pair<LabelSet,Integer>,ValueTypeDecider> labelSetANDNodePropertyKeyIdToValueTypeMapping;
     private Map<Integer,String> labelIdToLabelNameMapping;
     private Map<Integer,String> propertyIdToPropertylNameMapping;
     private Map<Integer,String> relationshipTypIdToRelationshipNameMapping;
-    private Map<Integer,Set<Integer>> relationshipTypeIdToPropertyKeysMapping;
+    private Map<Integer,MutableIntSet> relationshipTypeIdToPropertyKeysMapping;
     private Map<Pair<Integer,Integer>,ValueTypeDecider> relationshipTypeIdANDPropertyTypeIdToValueTypeMapping;
 
-    private final Set<Integer> emptyPropertyIdSet = Collections.unmodifiableSet( Collections.emptySet() );
+    private final MutableIntSet emptyPropertyIdSet = IntSets.mutable.empty();
     private final String ANYVALUE = "ANY";
+    private final String INTEGRAL = "INTEGRAL";
+    private final String INTEGRAL_ARRAY = "INTEGRALARRAY";
+    private final String FLOATING_POINT = "FLOATINGPOINT";
+    private final String FLOATING_POINT_ARRAY = "FLOATINGPOINTARRAY";
     private final String NULLABLE = "?";
     private final String NULLABLE_ANYVALUE = ANYVALUE + NULLABLE;
+    private final String NULLABLE_INTEGRAL = INTEGRAL + NULLABLE;
+    private final String NULLABLE_INTEGRAL_ARRAY = INTEGRAL_ARRAY + NULLABLE;
+    private final String NULLABLE_FLOATING_POINT_ARRAY = FLOATING_POINT_ARRAY + NULLABLE;
+    private final String NULLABLE_FLOATING_POINT = FLOATING_POINT + NULLABLE;
     private final String NODE = "Node";
     private final String RELATIONSHIP = "Relationship";
 
@@ -93,21 +102,19 @@ public class SchemaCalculator
             String name = relationshipTypIdToRelationshipNameMapping.get( typeId );
 
             // lookup property value types
-            Set<Integer> propertyIds = relationshipTypeIdToPropertyKeysMapping.get( typeId );
+            MutableIntSet propertyIds = relationshipTypeIdToPropertyKeysMapping.get( typeId );
             if ( propertyIds.size() == 0 )
             {
                 results.add( new SchemaInfoResult( RELATIONSHIP, Collections.singletonList( name ), null, null ) );
             }
             else
             {
-                for ( Integer propId : propertyIds )
-                {
+                propertyIds.forEach( propId -> {
                     // lookup propId name and valueGroup
                     String propName = propertyIdToPropertylNameMapping.get( propId );
                     ValueTypeDecider valueTypeDecider = relationshipTypeIdANDPropertyTypeIdToValueTypeMapping.get( Pair.of( typeId, propId ) );
-                    results.add( new SchemaInfoResult( RELATIONSHIP, Collections.singletonList( name ), propName,
-                            valueTypeDecider.getCypherTypeString() ) );
-                }
+                    results.add( new SchemaInfoResult( RELATIONSHIP, Collections.singletonList( name ), propName, valueTypeDecider.getCypherTypeString() ) );
+                } );
             }
         }
         return results;
@@ -127,40 +134,30 @@ public class SchemaCalculator
             }
 
             // lookup property value types
-            Set<Integer> propertyIds = labelSetToPropertyKeysMapping.get( labelSet );
+            MutableIntSet propertyIds = labelSetToPropertyKeysMapping.get( labelSet );
             if ( propertyIds.size() == 0 )
             {
                 results.add( new SchemaInfoResult( NODE, labelNames, null, null ) );
             }
             else
             {
-                for ( Integer propId : propertyIds )
-                {
+                propertyIds.forEach( propId -> {
                     // lookup propId name and valueGroup
                     String propName = propertyIdToPropertylNameMapping.get( propId );
                     ValueTypeDecider valueTypeDecider = labelSetANDNodePropertyKeyIdToValueTypeMapping.get( Pair.of( labelSet, propId ) );
                     results.add( new SchemaInfoResult( NODE, labelNames, propName, valueTypeDecider.getCypherTypeString() ) );
-                }
+                } );
             }
         }
         return results;
     }
 
-    public Stream<SchemaProcedure.GraphResult> calculateGraphResultStream()
-    {
-        calculateSchema();
-        //TODO finish this
-        throw new NotImplementedException();
-    }
-
-    //TODO: Parallelize this: (Nodes | Rels) and/or more
     //TODO: If we would have this schema information in the count store (or somewhere), this could be super fast
     private void calculateSchema()
     {
         // this one does most of the work
         Read dataRead = ktx.dataRead();
         TokenRead tokenRead = ktx.tokenRead();
-        SchemaRead schemaRead = ktx.schemaRead();
         CursorFactory cursors = ktx.cursors();
 
         // setup mappings
@@ -195,7 +192,7 @@ public class SchemaCalculator
         {
             int typeId = relationshipScanCursor.type();
             relationshipScanCursor.properties( propertyCursor );
-            Set<Integer> propertyIds = new HashSet<>();  // is Set really the best fit here?
+            MutableIntSet propertyIds = IntSets.mutable.empty();
 
             while ( propertyCursor.next() )
             {
@@ -209,7 +206,7 @@ public class SchemaCalculator
             }
             propertyCursor.close();
 
-            Set<Integer> oldPropertyKeySet = relationshipTypeIdToPropertyKeysMapping.getOrDefault( typeId, emptyPropertyIdSet );
+            MutableIntSet oldPropertyKeySet = relationshipTypeIdToPropertyKeysMapping.getOrDefault( typeId, emptyPropertyIdSet );
 
             // find out which old properties we did not visited and mark them as nullable
             if ( !(oldPropertyKeySet == emptyPropertyIdSet) )
@@ -238,7 +235,7 @@ public class SchemaCalculator
             // each node
             LabelSet labels = nodeCursor.labels();
             nodeCursor.properties( propertyCursor );
-            Set<Integer> propertyIds = new HashSet<>();  // is Set really the best fit here?
+            MutableIntSet propertyIds = IntSets.mutable.empty();
 
             while ( propertyCursor.next() )
             {
@@ -251,7 +248,7 @@ public class SchemaCalculator
             }
             propertyCursor.close();
 
-            Set<Integer> oldPropertyKeySet = labelSetToPropertyKeysMapping.getOrDefault( labels, emptyPropertyIdSet );
+            MutableIntSet oldPropertyKeySet = labelSetToPropertyKeysMapping.getOrDefault( labels, emptyPropertyIdSet );
 
             // find out which old properties we did not visited and mark them as nullable
             if ( !(oldPropertyKeySet == emptyPropertyIdSet) )
@@ -298,7 +295,8 @@ public class SchemaCalculator
         private Value concreteValue;
         private ValueGroup valueGroup;
         private ValueStatus valueStatus;
-        private Boolean isNullable = false;
+        private boolean isNullable;
+        private Boolean isIntegral;  // this is only important if we have a NumberValue or NumberArray. In those cases false means FloatingPoint
 
         ValueTypeDecider( Value v )
         {
@@ -309,11 +307,33 @@ public class SchemaCalculator
             this.concreteValue = v;
             this.valueGroup = v.valueGroup();
             this.valueStatus = VALUE;
+
+            this.isIntegral = isIntegral( v );
         }
 
         private void setNullable( )
         {
                 isNullable = true;
+        }
+
+        /***
+         * Checks if the given value is an Integral value, a Floating Point value or none
+         * @param v the given value
+         * @return true, if v is an IntegralValue or -Array (e.g. Long), false if v is a FloatingPoint or -Array (e.g. Double)
+         * or null if v is not neither NUMBER nor NUMBER_ARRAY
+         */
+
+        private Boolean isIntegral( Value v )
+        {
+            if ( v.valueGroup() == ValueGroup.NUMBER_ARRAY )
+            {
+                return v instanceof IntegralArray;
+            }
+            else if ( v.valueGroup() == ValueGroup.NUMBER )
+            {
+                return v instanceof IntegralValue;
+            }
+            return null;
         }
 
         /*
@@ -326,6 +346,36 @@ public class SchemaCalculator
             case VALUE:
                 return isNullable ? concreteValue.getTypeName().toUpperCase() + NULLABLE
                                   : concreteValue.getTypeName().toUpperCase();
+            case CONSISTENT_NUMBER_VALUE:
+                if ( isIntegral == null )
+                {
+                    throw new IllegalStateException( "isIntegral should have been set in this state" );
+                }
+                if ( valueGroup == ValueGroup.NUMBER )
+                {
+                    if ( isIntegral )
+                    {
+                        return isNullable ? NULLABLE_INTEGRAL
+                                          : INTEGRAL;
+                    }
+                    else
+                    {
+                        return isNullable ? NULLABLE_FLOATING_POINT
+                                          : FLOATING_POINT;
+                    }
+                }
+                // NUMBER_ARRAY
+                if ( isIntegral )
+                {
+                    return isNullable ? NULLABLE_INTEGRAL_ARRAY
+                                      : INTEGRAL_ARRAY;
+                }
+                else
+                {
+                    return isNullable ? NULLABLE_FLOATING_POINT_ARRAY
+                                      : FLOATING_POINT_ARRAY;
+                }
+
             case VALUE_GROUP:
                 return isNullable ? valueGroup.name() + NULLABLE
                                   : valueGroup.name();
@@ -340,8 +390,9 @@ public class SchemaCalculator
         /*
         This method is needed to handle conflicting property values and sets valueStatus accordingly to:
          A) VALUE if current and new value match on class level
-         B) VALUE_GROUP, if at least the ValueGroups of the current and new values match
-         C) ANY, if nothing matches
+         B) CONSISTENT_NUMBER_VALUE if current and new value are NUMBER or NUMBER_ARRAY and both are integral or both are floating point values
+         C) VALUE_GROUP if at least the ValueGroups of the current and new values match
+         D) ANY if nothing matches
         */
         void compareAndPutValueType( Value newValue )
         {
@@ -353,19 +404,57 @@ public class SchemaCalculator
             switch ( valueStatus )
             {
             case VALUE:
-                // check if classes match
+                // check if classes match -> if so, do nothing
                 if ( !concreteValue.getClass().equals( newValue.getClass() ) )
                 {
                     // Clases don't match -> update needed
                     if ( valueGroup.equals( newValue.valueGroup() ) )
                     {
-                        // same valueGroup -> set that
+                        // same valueGroup -> set that (default, can be overriden if they are Numbers and consistency checks out)
                         valueStatus = VALUE_GROUP;
+
+                        if ( valueGroup == ValueGroup.NUMBER_ARRAY || valueGroup == ValueGroup.NUMBER )
+                        {
+                            Boolean newValueIsIntegral = isIntegral( newValue );
+                            if ( isIntegral == null || newValueIsIntegral == null )
+                            {
+                                throw new IllegalStateException(
+                                        "isIntegral should have been set in this state and method should have returned non null for new value" );
+                            }
+                            // test consistency
+                            if ( isIntegral == newValueIsIntegral )
+                            {
+                                valueStatus = CONSISTENT_NUMBER_VALUE;
+                            }
+                        }
                     }
                     else
                     {
                         // Not same valueGroup -> update to AnyValue
                         valueStatus = ANY;
+                    }
+                }
+                break;
+
+            case CONSISTENT_NUMBER_VALUE:
+                if ( !valueGroup.equals( newValue.valueGroup() ) )
+                {
+                    // not same valueGroup -> update to AnyValue
+                    valueStatus = ANY;
+                }
+                else
+                {
+                    // same value-group
+                    // -> update to VALUE_GROUP if new value brakes consistency
+                    Boolean newValueIsIntegral = isIntegral( newValue );
+                    if ( isIntegral == null || newValueIsIntegral == null )
+                    {
+                        throw new IllegalStateException(
+                                "isIntegral should have been set in this state and method should have returned non null for new value" );
+                    }
+                    if ( ! (isIntegral == newValueIsIntegral) )
+                    {
+                        valueStatus = VALUE_GROUP;
                     }
                 }
                 break;
@@ -388,6 +477,7 @@ public class SchemaCalculator
     enum ValueStatus
     {
         VALUE,
+        CONSISTENT_NUMBER_VALUE,
         VALUE_GROUP,
         ANY
     }
