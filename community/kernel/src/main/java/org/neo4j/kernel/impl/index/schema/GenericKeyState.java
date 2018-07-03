@@ -19,8 +19,14 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.Arrays;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.index.schema.GenericLayout.Type;
@@ -126,24 +132,112 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         case ZONED_DATE_TIME:
             return zonedDateTimeAsValue( long0, long1, long2, long3 );
         case LOCAL_DATE_TIME:
-            return localDateTimeAsValue();
+            return localDateTimeAsValue( long0, long1 );
         case DATE:
-            return dateAsValue();
+            return dateAsValue( long0 );
         case ZONED_TIME:
-            return zonedTimeAsValue();
+            return zonedTimeAsValue( long0, long1 );
         case LOCAL_TIME:
-            return localTimeAsValue();
+            return localTimeAsValue( long0 );
         case DURATION:
-            return durationAsValue();
+            return durationAsValue( long0, long1, long2, long3 );
         case TEXT:
-            return textAsValue();
+            long1 = TRUE; // bytes dereferenced
+            return textAsValue( byteArray, long0 );
         case BOOLEAN:
-            return booleanAsValue();
+            return booleanAsValue( long0 );
         case NUMBER:
-            return numberAsValue();
+            return numberAsValue( long0, long1 );
+        case ZONED_DATE_TIME_ARRAY:
+            return Values.of( populateValueArray( new ZonedDateTime[arrayLength],
+                    i -> zonedDateTimeAsValueRaw( long0Array[i], long1Array[i], long2Array[i], long3Array[i] ) ) );
+        case LOCAL_DATE_TIME_ARRAY:
+            return Values.of( populateValueArray( new LocalDateTime[arrayLength], i -> localDateTimeAsValueRaw( long0Array[i], long1Array[i] ) ) );
+        case DATE_ARRAY:
+            return Values.of( populateValueArray( new LocalDate[arrayLength], i -> dateAsValueRaw( long0Array[i] ) ) );
+        case ZONED_TIME_ARRAY:
+            return Values.of( populateValueArray( new OffsetTime[arrayLength], i -> zonedTimeAsValueRaw( long0Array[i], long1Array[i] ) ) );
+        case LOCAL_TIME_ARRAY:
+            return Values.of( populateValueArray( new LocalTime[arrayLength], i -> localTimeAsValueRaw( long0Array[i] ) ) );
+        case DURATION_ARRAY:
+            return Values.of( populateValueArray( new DurationValue[arrayLength],
+                    i -> durationAsValue( long0Array[i], long1Array[i], long2Array[i], long3Array[i] ) ) );
+        case TEXT_ARRAY:
+            long1 = TRUE; // bytes dereferenced
+            return Values.of( populateValueArray( new String[arrayLength], i -> textAsValueRaw( byteArrayArray[i], long0Array[i] ) ) );
+        case BOOLEAN_ARRAY:
+            return booleanArrayAsValue();
+        case NUMBER_ARRAY:
+            return numberArrayAsValue();
         default:
             throw new IllegalArgumentException( "Unknown type " + type );
         }
+    }
+
+    private Value numberArrayAsValue()
+    {
+        byte numberType = (byte) this.long1;
+        switch ( numberType )
+        {
+        case RawBits.BYTE:
+            byte[] byteArray = new byte[arrayLength];
+            for ( int i = 0; i < arrayLength; i++ )
+            {
+                byteArray[i] = (byte) long0Array[i];
+            }
+            return Values.byteArray( byteArray );
+        case RawBits.SHORT:
+            short[] shortArray = new short[arrayLength];
+            for ( int i = 0; i < arrayLength; i++ )
+            {
+                shortArray[i] = (short) long0Array[i];
+            }
+            return Values.shortArray( shortArray );
+        case RawBits.INT:
+            int[] intArray = new int[arrayLength];
+            for ( int i = 0; i < arrayLength; i++ )
+            {
+                intArray[i] = (int) long0Array[i];
+            }
+            return Values.intArray( intArray );
+        case RawBits.LONG:
+            return Values.longArray( Arrays.copyOf( long0Array, arrayLength ) );
+        case RawBits.FLOAT:
+            float[] floatArray = new float[arrayLength];
+            for ( int i = 0; i < arrayLength; i++ )
+            {
+                floatArray[i] = Float.intBitsToFloat( (int) long0Array[i] );
+            }
+            return Values.floatArray( floatArray );
+        case RawBits.DOUBLE:
+            double[] doubleArray = new double[arrayLength];
+            for ( int i = 0; i < arrayLength; i++ )
+            {
+                doubleArray[i] = Double.longBitsToDouble( long0Array[i] );
+            }
+            return Values.doubleArray( doubleArray );
+        default:
+            throw new IllegalArgumentException( "Unknown number type " + numberType );
+        }
+    }
+
+    private Value booleanArrayAsValue()
+    {
+        boolean[] array = new boolean[arrayLength];
+        for ( int i = 0; i < arrayLength; i++ )
+        {
+            array[i] = booleanAsValueRaw( long0Array[i] );
+        }
+        return Values.of( array );
+    }
+
+    private <T> T[] populateValueArray( T[] array, ArrayElementValueFactory<T> valueFactory )
+    {
+        for ( int i = 0; i < arrayLength; i++ )
+        {
+            array[i] = valueFactory.from( i );
+        }
+        return array;
     }
 
     // todo is this simple lowest approach viable?
@@ -601,63 +695,98 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         }
     }
 
-    private NumberValue numberAsValue()
+    private static NumberValue numberAsValue( long long0, long long1 )
     {
+        // There's a difference between composing a single text value and a array text value
+        // and there's therefore no common "raw" variant of it
         return RawBits.asNumberValue( long0, (byte) long1 );
     }
 
-    private BooleanValue booleanAsValue()
+    private static BooleanValue booleanAsValue( long long0 )
     {
-        return Values.booleanValue( long0 == TRUE );
+        return Values.booleanValue( booleanAsValueRaw( long0 ) );
     }
 
-    private Value textAsValue()
+    private static boolean booleanAsValueRaw( long long0 )
     {
-        if ( byteArray == null )
-        {
-            return Values.NO_VALUE;
-        }
-
-        // Dereference our bytes so that we won't overwrite it on next read
-        long1 = TRUE;
-        return Values.utf8Value( byteArray, 0, (int) long0 );
+        return booleanOf( long0 );
     }
 
-    private Value durationAsValue()
+    private static Value textAsValue( byte[] byteArray, long long0 )
     {
+        // There's a difference between composing a single text value and a array text value
+        // and there's therefore no common "raw" variant of it
+        return byteArray == null ? NO_VALUE : Values.utf8Value( byteArray, 0, (int) long0 );
+    }
+
+    private String textAsValueRaw( byte[] byteArray, long long0 )
+    {
+        return byteArray == null ? null : UTF8.decode( byteArray, 0, (int) long0 );
+    }
+
+    private static DurationValue durationAsValue( long long0, long long1, long long2, long long3  )
+    {
+        // DurationValue has no "raw" variant
         long seconds = long0 - long2 * AVG_MONTH_SECONDS - long3 * AVG_DAY_SECONDS;
         return DurationValue.duration( long2, long3, seconds, long1 );
     }
 
-    private LocalTimeValue localTimeAsValue()
+    private static LocalTimeValue localTimeAsValue( long long0 )
     {
-        return LocalTimeValue.localTime( long0 );
+        return LocalTimeValue.localTime( localTimeAsValueRaw( long0 ) );
     }
 
-    private Value zonedTimeAsValue()
+    private static LocalTime localTimeAsValueRaw( long long0 )
+    {
+        return LocalTimeValue.localTimeRaw( long0 );
+    }
+
+    private static Value zonedTimeAsValue( long long0, long long1 )
+    {
+        OffsetTime time = zonedTimeAsValueRaw( long0, long1 );
+        return time != null ? TimeValue.time( time ) : NO_VALUE;
+    }
+
+    private static OffsetTime zonedTimeAsValueRaw( long long0, long long1 )
     {
         if ( TimeZones.validZoneOffset( (int) long1 ) )
         {
-            return TimeValue.time( long0, ZoneOffset.ofTotalSeconds( (int) long1 ) );
+            return TimeValue.timeRaw( long0, ZoneOffset.ofTotalSeconds( (int) long1 ) );
         }
-        return NO_VALUE;
+        // TODO Getting here means that after a proper read this value is plain wrong... shouldn't something be thrown instead?
+        return null;
     }
 
-    private DateValue dateAsValue()
+    private static DateValue dateAsValue( long long0 )
     {
-        return DateValue.epochDate( long0 );
+        return DateValue.date( dateAsValueRaw( long0 ) );
     }
 
-    private LocalDateTimeValue localDateTimeAsValue()
+    private static LocalDate dateAsValueRaw( long long0 )
     {
-        return LocalDateTimeValue.localDateTime( long1, long0 );
+        return DateValue.epochDateRaw( long0 );
+    }
+
+    private static LocalDateTimeValue localDateTimeAsValue( long long0, long long1 )
+    {
+        return LocalDateTimeValue.localDateTime( localDateTimeAsValueRaw( long0, long1 ) );
+    }
+
+    private static LocalDateTime localDateTimeAsValueRaw( long long0, long long1 )
+    {
+        return LocalDateTimeValue.localDateTimeRaw( long1, long0 );
     }
 
     private static DateTimeValue zonedDateTimeAsValue( long long0, long long1, long long2, long long3 )
     {
+        return DateTimeValue.datetime( zonedDateTimeAsValueRaw( long0, long1, long2, long3 ) );
+    }
+
+    private static ZonedDateTime zonedDateTimeAsValueRaw( long long0, long long1, long long2, long long3 )
+    {
         return TimeZones.validZoneId( (short) long2 ) ?
-               DateTimeValue.datetime( long0, long1, ZoneId.of( TimeZones.map( (short) long2 ) ) ) :
-               DateTimeValue.datetime( long0, long1, ZoneOffset.ofTotalSeconds( (int) long3 ) );
+               DateTimeValue.datetimeRaw( long0, long1, ZoneId.of( TimeZones.map( (short) long2 ) ) ) :
+               DateTimeValue.datetimeRaw( long0, long1, ZoneOffset.ofTotalSeconds( (int) long3 ) );
     }
 
     private static boolean isHighestText( long long3 )
@@ -848,50 +977,58 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         switch ( type )
         {
         case ZONED_DATE_TIME:
-            putZonedDateTime( cursor );
+            putZonedDateTime( cursor, long0, long1, long2, long3 );
             break;
         case LOCAL_DATE_TIME:
-            putLocalDateTime( cursor );
+            putLocalDateTime( cursor, long0, long1 );
             break;
         case DATE:
-            putDate( cursor );
+            putDate( cursor, long0 );
             break;
         case ZONED_TIME:
-            putZonedTime( cursor );
+            putZonedTime( cursor, long0, long1 );
             break;
         case LOCAL_TIME:
-            putLocalTime( cursor );
+            putLocalTime( cursor, long0 );
             break;
         case DURATION:
-            putDuration( cursor );
+            putDuration( cursor, long0, long1, long2, long3 );
             break;
         case TEXT:
-            putText( cursor );
+            putText( cursor, byteArray, long0 );
             break;
         case BOOLEAN:
-            putBoolean( cursor );
+            putBoolean( cursor, long0 );
             break;
         case NUMBER:
-            putNumber( cursor );
+            putNumber( cursor, long0, long1 );
             break;
         case ZONED_DATE_TIME_ARRAY:
-            putZonedDateTimeArray( cursor, c -> putZoned
+            putArray( cursor, ( c, i ) -> putZonedDateTime( c, long0Array[i], long1Array[i], long2Array[i], long3Array[i] ) );
             break;
         case LOCAL_DATE_TIME_ARRAY:
+            putArray( cursor, ( c, i ) -> putLocalDateTime( c, long0Array[i], long1Array[i] ) );
             break;
         case DATE_ARRAY:
+            putArray( cursor, ( c, i ) -> putDate( c, long0Array[i] ) );
             break;
         case ZONED_TIME_ARRAY:
+            putArray( cursor, ( c, i ) -> putZonedTime( c, long0Array[i], long1Array[i] ) );
             break;
         case LOCAL_TIME_ARRAY:
+            putArray( cursor, ( c, i ) -> putLocalTime( c, long0Array[i] ) );
             break;
         case DURATION_ARRAY:
+            putArray( cursor, ( c, i ) -> putDuration( c, long0Array[i], long1Array[i], long2Array[i], long3Array[i] ) );
             break;
         case TEXT_ARRAY:
+            putArray( cursor, ( c, i ) -> putText( c, byteArrayArray[i], long0Array[i] ) );
             break;
         case BOOLEAN_ARRAY:
+            putArray( cursor, ( c, i ) -> putBoolean( c, long0Array[i] ) );
             break;
         case NUMBER_ARRAY:
+            putArray( cursor, ( c, i ) -> putNumber( c, long0Array[i], long1Array[i] ) );
             break;
         default:
             throw new IllegalArgumentException( "Unknown type " + type );
@@ -903,7 +1040,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         void write( PageCursor cursor, int i );
     }
 
-    private void putZonedDateTimeArray( PageCursor cursor, ArrayElementWriter writer )
+    private void putArray( PageCursor cursor, ArrayElementWriter writer )
     {
         cursor.putInt( arrayLength );
         for ( int i = 0; i < arrayLength; i++ )
@@ -912,25 +1049,25 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         }
     }
 
-    private void putNumber( PageCursor cursor )
+    private static void putNumber( PageCursor cursor, long long0, long long1 )
     {
         cursor.putByte( (byte) long1 );
         cursor.putLong( long0 );
     }
 
-    private void putBoolean( PageCursor cursor )
+    private static void putBoolean( PageCursor cursor, long long0 )
     {
         cursor.putByte( (byte) long0 );
     }
 
-    private void putText( PageCursor cursor )
+    private static void putText( PageCursor cursor, byte[] byteArray, long long0 )
     {
         // TODO short/int weird asymmetry ey?
         cursor.putShort( (short) long0 );
         cursor.putBytes( byteArray, 0, (int) long0 );
     }
 
-    private void putDuration( PageCursor cursor )
+    private static void putDuration( PageCursor cursor, long long0, long long1, long long2, long long3 )
     {
         cursor.putLong( long0 );
         cursor.putInt( (int) long1 );
@@ -938,29 +1075,29 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         cursor.putLong( long3 );
     }
 
-    private void putLocalTime( PageCursor cursor )
+    private static void putLocalTime( PageCursor cursor, long long0 )
     {
         cursor.putLong( long0 );
     }
 
-    private void putZonedTime( PageCursor cursor )
+    private static void putZonedTime( PageCursor cursor, long long0, long long1 )
     {
         cursor.putLong( long0 );
         cursor.putInt( (int) long1 );
     }
 
-    private void putDate( PageCursor cursor )
+    private static void putDate( PageCursor cursor, long long0 )
     {
         cursor.putLong( long0 );
     }
 
-    private void putLocalDateTime( PageCursor cursor )
+    private static void putLocalDateTime( PageCursor cursor, long long0, long long1 )
     {
         cursor.putLong( long1 );
         cursor.putInt( (int) long0 );
     }
 
-    private void putZonedDateTime( PageCursor cursor )
+    private static void putZonedDateTime( PageCursor cursor, long long0, long long1, long long2, long long3 )
     {
         cursor.putLong( long0 );
         cursor.putInt( (int) long1 );
@@ -1454,5 +1591,11 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     interface ArrayElementReader
     {
         void readFrom( PageCursor cursor );
+    }
+
+    @FunctionalInterface
+    interface ArrayElementValueFactory<T>
+    {
+        T from( int i );
     }
 }

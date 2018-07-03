@@ -78,7 +78,12 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
 
     public static LocalDateTimeValue localDateTime( long epochSecond, long nano )
     {
-        return new LocalDateTimeValue( assertValidArgument( () -> ofInstant( ofEpochSecond( epochSecond, nano ), UTC ) ) );
+        return new LocalDateTimeValue( localDateTimeRaw( epochSecond, nano ) );
+    }
+
+    public static LocalDateTime localDateTimeRaw( long epochSecond, long nano )
+    {
+        return assertValidArgument( () -> ofInstant( ofEpochSecond( epochSecond, nano ), UTC ) );
     }
 
     public static LocalDateTimeValue parse( CharSequence text )

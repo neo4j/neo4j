@@ -61,7 +61,12 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
 
     public static LocalTimeValue localTime( long nanoOfDay )
     {
-        return new LocalTimeValue( assertValidArgument( () -> LocalTime.ofNanoOfDay( nanoOfDay ) ) );
+        return new LocalTimeValue( localTimeRaw( nanoOfDay ) );
+    }
+
+    public static LocalTime localTimeRaw( long nanoOfDay )
+    {
+        return assertValidArgument( () -> LocalTime.ofNanoOfDay( nanoOfDay ) );
     }
 
     public static LocalTimeValue parse( CharSequence text )

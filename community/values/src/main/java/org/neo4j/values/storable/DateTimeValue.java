@@ -94,7 +94,12 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
 
     public static DateTimeValue datetime( long epochSecond, long nano, ZoneOffset zoneOffset )
     {
-        return new DateTimeValue( assertValidArgument( () -> ofInstant( ofEpochSecond( epochSecond, nano ), zoneOffset ) ) );
+        return new DateTimeValue( datetimeRaw( epochSecond, nano, zoneOffset ) );
+    }
+
+    public static ZonedDateTime datetimeRaw( long epochSecond, long nano, ZoneOffset zoneOffset )
+    {
+        return datetimeRaw( epochSecond, nano, zoneOffset );
     }
 
     public static DateTimeValue datetime( ZonedDateTime datetime )
@@ -109,7 +114,12 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
 
     public static DateTimeValue datetime( long epochSecondUTC, long nano, ZoneId zone )
     {
-        return new DateTimeValue( assertValidArgument( () -> ofInstant( ofEpochSecond( epochSecondUTC, nano ), zone ) ) );
+        return new DateTimeValue( datetimeRaw( epochSecondUTC, nano, zone ) );
+    }
+
+    public static ZonedDateTime datetimeRaw( long epochSecondUTC, long nano, ZoneId zone )
+    {
+        return assertValidArgument( () -> ofInstant( ofEpochSecond( epochSecondUTC, nano ), zone ) );
     }
 
     public static DateTimeValue ofEpoch( IntegralValue epochSecondUTC, IntegralValue nano )
@@ -119,7 +129,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         {
             throw new InvalidValuesArgumentException( "Invalid nanosecond: " + ns );
         }
-        return new DateTimeValue( assertValidArgument( () -> ofInstant( ofEpochSecond( epochSecondUTC.longValue(), ns ), UTC ) ) );
+        return new DateTimeValue( datetimeRaw( epochSecondUTC.longValue(), ns, UTC ) );
     }
 
     public static DateTimeValue ofEpochMillis( IntegralValue millisUTC )

@@ -80,7 +80,12 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
 
     public static DateValue epochDate( long epochDay )
     {
-        return new DateValue( assertValidArgument( () -> LocalDate.ofEpochDay( epochDay ) ) );
+        return new DateValue( epochDateRaw( epochDay ) );
+    }
+
+    public static LocalDate epochDateRaw( long epochDay )
+    {
+        return assertValidArgument( () -> LocalDate.ofEpochDay( epochDay ) );
     }
 
     public static DateValue parse( CharSequence text )

@@ -73,7 +73,12 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 
     public static TimeValue time( long nanosOfDayUTC, ZoneOffset offset )
     {
-        return new TimeValue( OffsetTime.ofInstant( assertValidArgument( () -> Instant.ofEpochSecond( 0, nanosOfDayUTC ) ), offset ) );
+        return new TimeValue( timeRaw( nanosOfDayUTC, offset ) );
+    }
+
+    public static OffsetTime timeRaw( long nanosOfDayUTC, ZoneOffset offset )
+    {
+        return OffsetTime.ofInstant( assertValidArgument( () -> Instant.ofEpochSecond( 0, nanosOfDayUTC ) ), offset );
     }
 
     @Override
