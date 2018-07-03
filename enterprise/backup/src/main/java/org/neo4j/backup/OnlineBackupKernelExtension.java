@@ -136,12 +136,11 @@ public class OnlineBackupKernelExtension extends LifecycleAdapter
                 }
                 catch ( NoClassDefFoundError | UnsatisfiedDependencyException e )
                 {
-                    e.printStackTrace();
+                    // Not running HA
                 }
             }
             catch ( Throwable t )
             {
-                t.printStackTrace();
                 throw new RuntimeException( t );
             }
         }
@@ -168,7 +167,7 @@ public class OnlineBackupKernelExtension extends LifecycleAdapter
             }
             catch ( NoClassDefFoundError | UnsatisfiedDependencyException e )
             {
-                e.printStackTrace();
+                // Not running HA
             }
         }
     }
