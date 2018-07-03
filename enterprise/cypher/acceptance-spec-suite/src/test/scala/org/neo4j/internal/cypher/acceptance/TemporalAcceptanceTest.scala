@@ -369,11 +369,78 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     shouldNotConstructWithArg("datetime", queries)
   }
 
-  test("should not create date time with conflicting time zones")
-  {
+  test("should not create date time with conflicting time zones") {
     val query = "WITH datetime('1984-07-07T12:34+03:00[Europe/Stockholm]') as d RETURN d"
     val errorMsg = "Timezone and offset do not match"
     failWithError(Configs.Interpreted - Configs.Version2_3 + Configs.Procs, query, Seq(errorMsg), Seq("InvalidArgumentException"))
+  }
+
+  // Failing when providing wrong values
+
+  test("should not create date with out of bounds values") {
+    shouldNotConstructWithArg("date", Seq(
+      "{year: 1000000000000, month: 1, day: 1}",
+      "{year: 1, month: -1, day: 1}",
+      "{year: 1, month: 1, day: -1}",
+      "{year: 1, week: -1, dayOfWeek: 1}",
+      "{year: 1, week: 1, dayOfWeek: -1}"
+    ))
+  }
+
+  test("should not create local time with out of bounds values") {
+    shouldNotConstructWithArg("localtime", Seq(
+      "{hour: -1, minute: 1, second: 1, nanosecond: 1}",
+      "{hour: 1, minute: -1, second: 1, nanosecond: 1}",
+      "{hour: 1, minute: 1, second: -1, nanosecond: 1}",
+      "{hour: 1, minute: 1, second: 1, millisecond: -1}",
+      "{hour: 1, minute: 1, second: 1, microsecond: -1}",
+      "{hour: 1, minute: 1, second: 1, nanosecond: -1}"
+    ))
+  }
+
+  test("should not create time with out of bounds values") {
+    shouldNotConstructWithArg("time", Seq(
+      "{hour: -1, minute: 1, second: 1, nanosecond: 1}",
+      "{hour: 1, minute: -1, second: 1, nanosecond: 1}",
+      "{hour: 1, minute: 1, second: -1, nanosecond: 1}",
+      "{hour: 1, minute: 1, second: 1, millisecond: -1}",
+      "{hour: 1, minute: 1, second: 1, microsecond: -1}",
+      "{hour: 1, minute: 1, second: 1, nanosecond: -1}",
+      "{hour: 1, minute: 1, second: 1, nanosecond: 1, timezone: '+20:00'}"
+    ))
+  }
+
+  test("should not create local date time with out of bounds values") {
+    shouldNotConstructWithArg("localdatetime", Seq(
+      "{year: 1000000000000, month: 1, day: 1, hour: 1, minute: 1, second: 1, nanosecond: 1}",
+      "{year: 1, month: -1, day: 1, hour: 1, minute: 1, second: 1, nanosecond: 1}",
+      "{year: 1, month: 1, day: -1, hour: 1, minute: 1, second: 1, nanosecond: 1}",
+      "{year: 1, week: -1, dayOfWeek: 1, hour: 1, minute: 1, second: 1, nanosecond: 1}",
+      "{year: 1, week: 1, dayOfWeek: -1, hour: 1, minute: 1, second: 1, nanosecond: 1}",
+      "{year: 1, month: 1, day: 1, hour: -1, minute: 1, second: 1, nanosecond: 1}",
+      "{year: 1, month: 1, day: 1, hour: 1, minute: -1, second: 1, nanosecond: 1}",
+      "{year: 1, month: 1, day: 1, hour: 1, minute: 1, second: -1, nanosecond: 1}",
+      "{year: 1, month: 1, day: 1, hour: 1, minute: 1, second: 1, millisecond: -1}",
+      "{year: 1, month: 1, day: 1, hour: 1, minute: 1, second: 1, microsecond: -1}",
+      "{year: 1, month: 1, day: 1, hour: 1, minute: 1, second: 1, nanosecond: -1}"
+    ))
+  }
+
+  test("should not create date time with out of bounds values") {
+    shouldNotConstructWithArg("datetime", Seq(
+      "{year: 1000000000000, month: 1, day: 1, hour: 1, minute: 1, second: 1, nanosecond: 1}",
+      "{year: 1, month: -1, day: 1, hour: 1, minute: 1, second: 1, nanosecond: 1}",
+      "{year: 1, month: 1, day: -1, hour: 1, minute: 1, second: 1, nanosecond: 1}",
+      "{year: 1, week: -1, dayOfWeek: 1, hour: 1, minute: 1, second: 1, nanosecond: 1}",
+      "{year: 1, week: 1, dayOfWeek: -1, hour: 1, minute: 1, second: 1, nanosecond: 1}",
+      "{year: 1, month: 1, day: 1, hour: -1, minute: 1, second: 1, nanosecond: 1}",
+      "{year: 1, month: 1, day: 1, hour: 1, minute: -1, second: 1, nanosecond: 1}",
+      "{year: 1, month: 1, day: 1, hour: 1, minute: 1, second: -1, nanosecond: 1}",
+      "{year: 1, month: 1, day: 1, hour: 1, minute: 1, second: 1, millisecond: -1}",
+      "{year: 1, month: 1, day: 1, hour: 1, minute: 1, second: 1, microsecond: -1}",
+      "{year: 1, month: 1, day: 1, hour: 1, minute: 1, second: 1, nanosecond: -1}",
+      "{year: 1, month: 1, day: 1, hour: 1, minute: 1, second: 1, nanosecond: 1, timezone: '+20:00'}"
+    ))
   }
 
   // Failing when selecting a wrong group
@@ -891,9 +958,9 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
   private def shouldNotConstructWithArg(func: String, args: Seq[String]): Unit = {
     for (arg <- args) {
       val query = s"RETURN $func($arg)"
-      val validErrorMessages = Seq("Cannot assign", "cannot be selected together with", "cannot be specified without", "must be specified")
+      val validErrorMessages = Seq("Cannot assign", "cannot be selected together with", "cannot be specified without", "must be specified", "Invalid value")
       withClue(s"Executing $query") {
-        failWithError(failConf2, query, validErrorMessages, Seq("CypherTypeException", "InvalidArgumentException"))
+        failWithError(failConf2, query, validErrorMessages, Seq("CypherTypeException", "InvalidArgumentException", "SyntaxException"))
       }
     }
   }

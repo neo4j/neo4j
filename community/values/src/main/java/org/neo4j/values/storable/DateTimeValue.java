@@ -632,7 +632,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         }
         catch ( DateTimeParseException e )
         {
-            throw new TemporalParseException( e.getMessage(), e.getParsedString(), e.getErrorIndex(), e );
+            throw new TemporalParseException( "Invalid value for TimeZone: " + e.getMessage(), e.getParsedString(), e.getErrorIndex(), e );
         }
         return parsedName;
     }
@@ -650,7 +650,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         }
         catch ( DateTimeParseException e )
         {
-            throw new TemporalParseException( e.getMessage(), e.getParsedString(), e.getErrorIndex(), e );
+            throw new TemporalParseException( "Invalid value for TimeZone: " + e.getMessage(), e.getParsedString(), e.getErrorIndex(), e );
         }
     }
 
