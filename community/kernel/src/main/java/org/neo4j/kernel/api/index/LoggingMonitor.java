@@ -19,14 +19,16 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.util.Map;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
+import java.io.File;
 import java.util.StringJoiner;
 
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.logging.Log;
 
-import static java.lang.String.format;
+import static org.neo4j.helpers.Format.duration;
 
 public class LoggingMonitor implements IndexProvider.Monitor
 {
@@ -44,12 +46,44 @@ public class LoggingMonitor implements IndexProvider.Monitor
     }
 
     @Override
-    public void recoveryCompleted( IndexDescriptor schemaIndexDescriptor, String indexFile, Map<String,Object> data )
+    public void recoveryCleanupRegistered( File indexFile, IndexDescriptor indexDescriptor )
     {
-        StringJoiner joiner = new StringJoiner( ", ", "Schema index recovery completed: ", "" );
-        joiner.add( "descriptor=" + schemaIndexDescriptor );
-        joiner.add( "file=" + indexFile );
-        data.forEach( ( key, value ) -> joiner.add( format( "%s=%s", key, value ) ) );
+        log.info( "Schema index cleanup job registered: " + indexDescription( indexFile, indexDescriptor ) );
+    }
+
+    @Override
+    public void recoveryCleanupStarted( File indexFile, IndexDescriptor indexDescriptor )
+    {
+        log.info( "Schema index cleanup job started: " + indexDescription( indexFile, indexDescriptor ) );
+    }
+
+    @Override
+    public void recoveryCleanupFinished( File indexFile, IndexDescriptor indexDescriptor,
+            long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
+    {
+        StringJoiner joiner =
+                new StringJoiner( ", ", "Schema index cleanup job finished: " + indexDescription( indexFile, indexDescriptor ) + " ", "" );
+        joiner.add( "Number of pages visited: " + numberOfPagesVisited );
+        joiner.add( "Number of cleaned crashed pointers: " + numberOfCleanedCrashPointers );
+        joiner.add( "Time spent: " + duration( durationMillis ) );
         log.info( joiner.toString() );
+    }
+
+    @Override
+    public void recoveryCleanupClosed( File indexFile, IndexDescriptor indexDescriptor )
+    {
+        log.info( "Schema index cleanup job closed: " + indexDescription( indexFile, indexDescriptor ) );
+    }
+
+    @Override
+    public void recoveryCleanupFailed( File indexFile, IndexDescriptor indexDescriptor, Throwable throwable )
+    {
+        log.info( String.format( "Schema index cleanup job failed: %s.%nCaused by: %s",
+                indexDescription( indexFile, indexDescriptor ), ExceptionUtils.getStackTrace( throwable ) ) );
+    }
+
+    private String indexDescription( File indexFile, IndexDescriptor indexDescriptor )
+    {
+        return "descriptor=" + indexDescriptor.toString() + ", indexFile=" + indexFile.getAbsolutePath();
     }
 }

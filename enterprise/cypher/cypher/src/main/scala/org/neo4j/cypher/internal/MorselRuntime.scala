@@ -33,7 +33,6 @@ import org.neo4j.cypher.internal.compiler.v3_5.ExperimentalFeatureNotification
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, LogicalPlan2PlanDescription}
@@ -57,12 +56,11 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
   override def compileToExecutable(state: LogicalPlanState, context: EnterpriseRuntimeContext): ExecutionPlan_V35 = {
       val (logicalPlan,physicalPlan) = rewritePlan(context, state.logicalPlan, state.semanticTable())
       val converters: ExpressionConverters = new ExpressionConverters(
-        new CompiledExpressionConverter(context.log),
+        new CompiledExpressionConverter(context.log, physicalPlan.slotConfigurations(state.logicalPlan.id)),
         MorselExpressionConverters,
         SlottedExpressionConverters,
         CommunityExpressionConverter)
-      val readOnly = state.solveds(state.logicalPlan.id).readOnly
-      val operatorBuilder = new PipelineBuilder(physicalPlan, converters, readOnly)
+      val operatorBuilder = new PipelineBuilder(physicalPlan, converters, context.readOnly)
 
       val operators = operatorBuilder.create(logicalPlan)
       val dispatcher =
@@ -73,15 +71,21 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
       context.notificationLogger.log(
         ExperimentalFeatureNotification("use the morsel runtime at your own peril, " +
                                       "not recommended to be run on production systems"))
-       VectorizedExecutionPlan(state.plannerName, operators,  physicalPlan.slotConfigurations, logicalPlan, fieldNames,
-                                             dispatcher, context.notificationLogger,
-      readOnly,
-    state.cardinalities)
+
+      VectorizedExecutionPlan(state.plannerName,
+                              operators,
+                              physicalPlan.slotConfigurations,
+                              logicalPlan,
+                              fieldNames,
+                              dispatcher,
+                              context.notificationLogger,
+                              context.readOnly,
+                              state.cardinalities)
   }
 
   private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan, semanticTable: SemanticTable) = {
     val physicalPlan: PhysicalPlan = SlotAllocation.allocateSlots(beforeRewrite, semanticTable)
-    val slottedRewriter = new SlottedRewriter(context.planContext)
+    val slottedRewriter = new SlottedRewriter(context.tokenContext)
     val logicalPlan = slottedRewriter(beforeRewrite, physicalPlan.slotConfigurations)
     (logicalPlan, physicalPlan)
   }
@@ -89,7 +93,7 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
   case class VectorizedExecutionPlan(plannerUsed: PlannerName,
                                      operators: Pipeline,
                                      slots: SlotConfigurations,
-                                     physicalPlan: LogicalPlan,
+                                     logicalPlan: LogicalPlan,
                                      fieldNames: Array[String],
                                      dispatcher: Dispatcher,
                                      notificationLogger: InternalNotificationLogger,
@@ -100,7 +104,7 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
       taskCloser.addTask(queryContext.transactionalContext.close)
       taskCloser.addTask(queryContext.resources.close)
       val planDescription =
-        () => LogicalPlan2PlanDescription(physicalPlan, plannerUsed, readOnly, cardinalities)
+        () => LogicalPlan2PlanDescription(logicalPlan, plannerUsed, readOnly, cardinalities)
           .addArgument(Runtime(MorselRuntimeName.toTextOutput))
           .addArgument(RuntimeImpl(MorselRuntimeName.name))
 
@@ -109,16 +113,11 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
         taskCloser.close(success = true)
         ExplainExecutionResult(fieldNames, planDescription(), READ_ONLY,
           notificationLogger.notifications.map(asKernelNotification(notificationLogger.offset)))
-      } else new VectorizedOperatorExecutionResult(operators, physicalPlan, planDescription, queryContext,
+      } else new VectorizedOperatorExecutionResult(operators, logicalPlan, planDescription, queryContext,
         params, fieldNames, taskCloser, dispatcher)
     }
 
-
-    override def isPeriodicCommit: Boolean = false
-
-    override def reusability: ReusabilityState = FineToReuse // TODO: This is a lie.
-
-    override def runtimeUsed: RuntimeName = MorselRuntimeName
+    override def runtimeName: RuntimeName = MorselRuntimeName
   }
 
   class VectorizedOperatorExecutionResult(operators: Pipeline,

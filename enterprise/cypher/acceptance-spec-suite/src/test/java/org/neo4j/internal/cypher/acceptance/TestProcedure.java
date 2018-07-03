@@ -22,6 +22,8 @@
  */
 package org.neo4j.internal.cypher.acceptance;
 
+import java.time.Duration;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -62,6 +64,14 @@ public class TestProcedure
 {
     @Context
     public GraphDatabaseService db;
+
+    @Procedure( "org.neo4j.time" )
+    @Description( "org.neo4j.time" )
+    public void time( @Name( value = "time" ) LocalTime statementTime )
+    {
+        LocalTime realTime = LocalTime.now();
+        Duration duration = Duration.between( statementTime, realTime );
+    }
 
     @Procedure( "org.neo4j.aNodeWithLabel" )
     @Description( "org.neo4j.aNodeWithLabel" )
@@ -126,9 +136,9 @@ public class TestProcedure
         return Stream.of( new NodeResult( node ) );
     }
 
-    @Procedure( name = "org.neo4j.graphAlgosDjikstra" )
-    @Description( "org.neo4j.graphAlgosDjikstra" )
-    public Stream<NodeResult> graphAlgosDjikstra(
+    @Procedure( name = "org.neo4j.graphAlgosDijkstra" )
+    @Description( "org.neo4j.graphAlgosDijkstra" )
+    public Stream<NodeResult> graphAlgosDijkstra(
             @Name( "startNode" ) Node start,
             @Name( "endNode" ) Node end,
             @Name( "relType" ) String relType,

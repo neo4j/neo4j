@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -56,6 +57,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.tracing.TransactionTracer.NULL;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
+import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 
 public class KernelTransactionFactory
 {
@@ -96,7 +98,7 @@ public class KernelTransactionFactory
                 PageCursorTracerSupplier.NULL,
                 storageEngine, new CanWrite(), AutoIndexing.UNSUPPORTED,
                 mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(),
-                mock( SchemaState.class), mock( IndexingService.class ) );
+                mock( SchemaState.class), mock( IndexingService.class ), mockedTokenHolders(), new Dependencies() );
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 

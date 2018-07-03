@@ -23,20 +23,20 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.ir.v3_5.LazyMode
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.v3_5.logical.plans._
+import org.opencypher.v9_0.expressions.{Ands, HasLabels, LabelName, SemanticDirection}
 import org.opencypher.v9_0.util.Cost
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.expressions.{HasLabels, LabelName, SemanticDirection}
-import org.neo4j.cypher.internal.v3_5.logical.plans._
 
 class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("expand should only be counted once") {
     val cardinalities = new Cardinalities
     val plan =
-      setC(Selection(List(HasLabels(varFor("a"), Seq(LabelName("Awesome") _)) _),
+      setC(Selection(Ands(Set(HasLabels(varFor("a"), Seq(LabelName("Awesome") _)) _))_,
         setC(Expand(
-          setC(Selection(List(HasLabels(varFor("a"), Seq(LabelName("Awesome") _)) _),
-            setC(Expand(
+          setC(Selection(Ands(Set(HasLabels(varFor("a"), Seq(LabelName("Awesome") _)) _))_,
+                         setC(Expand(
               setC(Argument(Set("a")), cardinalities, 10.0),
               "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1"), cardinalities, 100.0)
           ), cardinalities, 10.0), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1"), cardinalities, 100.0)
@@ -45,7 +45,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     costFor(plan, QueryGraphSolverInput.empty, cardinalities) should equal(Cost(231))
   }
 
-  test("should introduce increase cost when estimating an eager operator and lazyness is preferred") {
+  test("should introduce increase cost when estimating an eager operator and laziness is preferred") {
     val cardinalities = new Cardinalities
     val plan = setC(NodeHashJoin(Set("a"),
       setC(NodeByLabelScan("a", lblName("A"), Set.empty), cardinalities, 10.0),
@@ -60,7 +60,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     costFor(plan, whatever, cardinalities) should be < costFor(plan, pleaseLazy, cardinalities)
   }
 
-  test("non-lazy plan should be penalized when estimating cost wrt a lazy one when lazyness is preferred") {
+  test("non-lazy plan should be penalized when estimating cost wrt a lazy one when laziness is preferred") {
     // MATCH (a1: A)-[r1]->(b)<-[r2]-(a2: A) RETURN b
     val lazyCardinalities = new Cardinalities
     val lazyPlan = setC(Projection(
@@ -101,7 +101,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     val cardinalities = new Cardinalities
     val cardinality = 10.0
     val plan =
-      setC(Selection(List(propEquality("a", "prop1", 42), propEquality("a", "prop1", 42), propEquality("a", "prop1", 42)),
+      setC(Selection(List(propEquality("a", "prop1", 42), propEquality("a", "prop1", 43), propEquality("a", "prop1", 44)),
         setC(Argument(Set("a")), cardinalities, cardinality)), cardinalities, cardinality)
 
     val numberOfPredicates = 3

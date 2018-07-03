@@ -19,22 +19,20 @@
  */
 package org.neo4j.csv.reader;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import org.neo4j.csv.reader.Source.Chunk;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import static java.util.Arrays.copyOfRange;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ClosestNewLineChunkerTest
+class ClosestNewLineChunkerTest
 {
     @Test
-    public void shouldBackUpChunkToClosestNewline() throws Exception
+    void shouldBackUpChunkToClosestNewline() throws Exception
     {
         // GIVEN
         CharReadable reader = Readables.wrap( "1234567\n8901234\n5678901234" );
@@ -57,7 +55,7 @@ public class ClosestNewLineChunkerTest
     }
 
     @Test
-    public void shouldFailIfNoNewlineInChunk() throws Exception
+    void shouldFailIfNoNewlineInChunk() throws Exception
     {
         // GIVEN
         CharReadable reader = Readables.wrap( "1234567\n89012345678901234" );
@@ -69,60 +67,11 @@ public class ClosestNewLineChunkerTest
             Chunk chunk = source.newChunk();
             assertTrue( source.nextChunk( chunk ) );
             assertArrayEquals( "1234567\n".toCharArray(), charactersOf( chunk ) );
-            try
-            {
-                assertFalse( source.nextChunk( chunk ) );
-                fail( "Should have failed here" );
-            }
-            catch ( IllegalStateException e )
-            {
-                // THEN good
-            }
+            assertThrows( IllegalStateException.class, () -> assertFalse( source.nextChunk( chunk ) ) );
         }
     }
 
-    private CharReadable dataWithLines( int lineCount )
-    {
-        return new CharReadable.Adapter()
-        {
-            private int line;
-
-            @Override
-            public String sourceDescription()
-            {
-                return "test";
-            }
-
-            @Override
-            public int read( char[] into, int offset, int length )
-            {
-                assert offset == 0 : "This test assumes offset is 0, "
-                        + "which it always was for this use case at the time of writing";
-                if ( line++ == lineCount )
-                {
-                    return -1;
-                }
-
-                // We cheat here and simply say that we read the requested amount of characters
-                into[length - 1] = '\n';
-                return length;
-            }
-
-            @Override
-            public SectionedCharBuffer read( SectionedCharBuffer buffer, int from )
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public long length()
-            {
-                return 0;
-            }
-        };
-    }
-
-    static char[] charactersOf( Chunk chunk )
+    private static char[] charactersOf( Chunk chunk )
     {
         return copyOfRange( chunk.data(), chunk.startPosition(), chunk.startPosition() + chunk.length() );
     }

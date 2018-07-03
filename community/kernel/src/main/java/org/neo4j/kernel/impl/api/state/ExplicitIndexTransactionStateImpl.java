@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -32,6 +31,7 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
+import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
-import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.TransactionRecordState;
 import org.neo4j.kernel.spi.explicitindex.ExplicitIndexProviderTransaction;
 import org.neo4j.kernel.spi.explicitindex.IndexCommandFactory;
 import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
@@ -59,7 +59,7 @@ public class ExplicitIndexTransactionStateImpl implements ExplicitIndexTransacti
 {
     private final Map<String,ExplicitIndexProviderTransaction> transactions = new HashMap<>();
     private final IndexConfigStore indexConfigStore;
-    private final Function<String,IndexImplementation> providerLookup;
+    private final ExplicitIndexProvider providerLookup;
 
     // Commands
     private IndexDefineCommand defineCommand;
@@ -67,10 +67,10 @@ public class ExplicitIndexTransactionStateImpl implements ExplicitIndexTransacti
     private final Map<String, List<IndexCommand>> relationshipCommands = new HashMap<>();
 
     public ExplicitIndexTransactionStateImpl( IndexConfigStore indexConfigStore,
-            Function<String,IndexImplementation> providerLookup )
+            ExplicitIndexProvider explicitIndexProvider )
     {
         this.indexConfigStore = indexConfigStore;
-        this.providerLookup = providerLookup;
+        this.providerLookup = explicitIndexProvider;
     }
 
     @Override
@@ -82,7 +82,7 @@ public class ExplicitIndexTransactionStateImpl implements ExplicitIndexTransacti
             throw new ExplicitIndexNotFoundKernelException( "Node index '" + indexName + " not found" );
         }
         String providerName = configuration.get( IndexManager.PROVIDER );
-        IndexImplementation provider = providerLookup.apply( providerName );
+        IndexImplementation provider = providerLookup.getProviderByName( providerName );
         ExplicitIndexProviderTransaction transaction =
                 transactions.computeIfAbsent( providerName, k -> provider.newTransaction( this ) );
         return transaction.nodeIndex( indexName, configuration );
@@ -97,7 +97,7 @@ public class ExplicitIndexTransactionStateImpl implements ExplicitIndexTransacti
             throw new ExplicitIndexNotFoundKernelException( "Relationship index '" + indexName + " not found" );
         }
         String providerName = configuration.get( IndexManager.PROVIDER );
-        IndexImplementation provider = providerLookup.apply( providerName );
+        IndexImplementation provider = providerLookup.getProviderByName( providerName );
         ExplicitIndexProviderTransaction transaction = transactions.get( providerName );
         if ( transaction == null )
         {
@@ -150,7 +150,7 @@ public class ExplicitIndexTransactionStateImpl implements ExplicitIndexTransacti
 
     private void addCommand( String indexName, IndexCommand command, boolean clearFirst )
     {
-        List<IndexCommand> commands = null;
+        List<IndexCommand> commands;
         if ( command.getEntityType() == IndexEntityType.Node.id() )
         {
             commands = nodeCommands.computeIfAbsent( indexName, k -> new ArrayList<>() );
@@ -243,7 +243,7 @@ public class ExplicitIndexTransactionStateImpl implements ExplicitIndexTransacti
         }
 
         String providerName = configuration.get( IndexManager.PROVIDER );
-        IndexImplementation provider = providerLookup.apply( providerName );
+        IndexImplementation provider = providerLookup.getProviderByName( providerName );
         assertConfigMatches( provider, indexName, configuration, config );
         return true;
     }

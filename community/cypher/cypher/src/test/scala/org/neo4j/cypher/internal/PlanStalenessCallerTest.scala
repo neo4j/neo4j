@@ -228,5 +228,5 @@ class PlanStalenessCallerTest extends CypherFunSuite {
   }
 
   private def label(i: Int): LabelId = LabelId(i)
-  private def not_used(plan: ExecutionPlan, tc: TransactionalContext) = FineToReuse
+  private def not_used(plan: ExecutableQuery, tc: TransactionalContext) = FineToReuse
 }

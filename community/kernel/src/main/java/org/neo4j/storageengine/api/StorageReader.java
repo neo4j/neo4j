@@ -26,12 +26,8 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
-import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
@@ -223,124 +219,6 @@ public interface StorageReader extends AutoCloseable
     String indexGetFailure( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
-     * @param labelName name of label.
-     * @return token id of label.
-     */
-    int labelGetForName( String labelName );
-
-    /**
-     * @param labelId label id to get name for.
-     * @return label name for given label id.
-     * @throws LabelNotFoundKernelException if no label by {@code labelId} was found.
-     */
-    String labelGetName( long labelId ) throws LabelNotFoundKernelException;
-
-    /**
-     * Get or create the property token ids for each of the given {@code propertyKeys}, and store them at the
-     * corresponding index in the given {@code ids} array.
-     *
-     * This is effectively a batching version of {@link #propertyKeyGetOrCreateForName(String)}.
-     *
-     * @param propertyKeys The array of property names for which to resolve or create their id.
-     * @param ids The array into which the resulting token ids will be stored.
-     */
-    void propertyKeyGetOrCreateForNames( String[] propertyKeys, int[] ids );
-
-    /**
-     * @param propertyKeyName name of property key.
-     * @return token id of property key.
-     */
-    int propertyKeyGetForName( String propertyKeyName );
-
-    /**
-     * Gets property key token id for the given {@code propertyKeyName}, or creates one if there is no
-     * existing property key with the given name.
-     *
-     * @param propertyKeyName name of property key.
-     * @return property key token id for the given name, created if need be.
-     */
-    int propertyKeyGetOrCreateForName( String propertyKeyName );
-
-    /**
-     * @param propertyKeyId property key to get name for.
-     * @return property key name for given property key id.
-     * @throws PropertyKeyIdNotFoundKernelException if no property key by {@code propertyKeyId} was found.
-     */
-    String propertyKeyGetName( int propertyKeyId ) throws PropertyKeyIdNotFoundKernelException;
-
-    /**
-     * @return all stored property key tokens.
-     */
-    Iterator<Token> propertyKeyGetAllTokens();
-
-    /**
-     * @return all stored label tokens.
-     */
-    Iterator<Token> labelsGetAllTokens();
-
-    /**
-     * @return all stored relationship type tokens.
-     */
-    Iterator<Token> relationshipTypeGetAllTokens();
-
-    /**
-     * @param relationshipTypeName name of relationship type.
-     * @return token id of relationship type.
-     */
-    int relationshipTypeGetForName( String relationshipTypeName );
-
-    /**
-     * @param relationshipTypeId relationship type id to get name for.
-     * @return relationship type name of given relationship type id.
-     * @throws RelationshipTypeIdNotFoundKernelException if no label by {@code labelId} was found.
-     */
-    String relationshipTypeGetName( int relationshipTypeId ) throws RelationshipTypeIdNotFoundKernelException;
-
-    /**
-     * Gets label token id for the given {@code labelName}, or creates one if there is no
-     * existing label with the given name.
-     *
-     * @param labelName name of label.
-     * @return label token id for the given name, created if need be.
-     * @throws TooManyLabelsException if creating this label would have exceeded storage limitations for
-     * number of stored labels.
-     */
-    int labelGetOrCreateForName( String labelName ) throws TooManyLabelsException;
-
-    /**
-     * Get or create the label token ids for each of the given {@code labelNames}, and store them at the corresponding
-     * index in the given {@code labelIds} array.
-     *
-     * This is effectively a batching version of {@link #labelGetOrCreateForName(String)}.
-     *
-     * @param labelNames The array of label names for which to resolve or create their id.
-     * @param labelIds The array into which the resulting token ids will be stored.
-     * @throws TooManyLabelsException if too many labels would bve created by this call, compared to the token id space
-     * available.
-     */
-    void labelGetOrCreateForNames( String[] labelNames, int[] labelIds ) throws TooManyLabelsException;
-
-    /**
-     * Gets relationship type token id for the given {@code relationshipTypeName}, or creates one if there is no
-     * existing relationship type with the given name.
-     *
-     * @param relationshipTypeName name of relationship type.
-     * @return relationship type token id for the given name, created if need be.
-     */
-    int relationshipTypeGetOrCreateForName( String relationshipTypeName );
-
-    /**
-     * Get or create the relationship type token ids for each of the given {@code relationshipTypeNames}, and store
-     * them at the corresponding index in the given {@code ids} array.
-     *
-     * This is effectively a batching version of {@link #relationshipTypeGetOrCreateForName(String)}.
-     *
-     * @param relationshipTypeNames The array of label names for which to resolve or create their id.
-     * @param ids The array into which the resulting token ids will be stored.
-     */
-    void relationshipTypeGetOrCreateForNames( String[] relationshipTypeNames, int[] ids );
-
-    /**
      * Visits data about a relationship. The given {@code relationshipVisitor} will be notified.
      *
      * @param relationshipId the id of the relationship to access.
@@ -365,6 +243,12 @@ public interface StorageReader extends AutoCloseable
      * @param id reserved relationship id to release.
      */
     void releaseRelationship( long id );
+
+    int reserveLabelTokenId();
+
+    int reservePropertyKeyTokenId();
+
+    int reserveRelationshipTypeTokenId();
 
     /**
      * Returns number of stored nodes labeled with the label represented by {@code labelId}.

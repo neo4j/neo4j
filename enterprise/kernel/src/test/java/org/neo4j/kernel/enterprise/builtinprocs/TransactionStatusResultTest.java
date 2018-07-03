@@ -64,6 +64,7 @@ import org.neo4j.kernel.impl.query.clientconnection.HttpConnectionInfo;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -80,6 +81,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
+import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 
 public class TransactionStatusResultTest
 {
@@ -226,7 +228,7 @@ public class TransactionStatusResultTest
                         mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(),
                         AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ),
                         EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class),
-                        mock( IndexingService.class ) )
+                        mock( IndexingService.class ), mockedTokenHolders(), new Dependencies() )
             {
                 @Override
                 public Statistics getStatistics()

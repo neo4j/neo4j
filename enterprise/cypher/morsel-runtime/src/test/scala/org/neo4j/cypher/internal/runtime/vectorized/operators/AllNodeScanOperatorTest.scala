@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.VirtualValues
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class AllNodeScanOperatorTest extends CypherFunSuite {
@@ -73,7 +72,7 @@ class AllNodeScanOperatorTest extends CypherFunSuite {
     when(context.transactionalContext.cursors.allocateNodeCursor()).thenReturn(cursor1, cursor2)
 
     // When
-    operator.operate(StartLeafLoop(Iteration(Some(inputRow))), outputRow, context, QueryState(VirtualValues.EMPTY_MAP, null))
+    operator.init(context, null, inputRow).operate(outputRow, context, QueryState.EMPTY)
 
     // Then
     outputMorsel.longs should equal(Array(
@@ -93,7 +92,7 @@ class AllNodeScanOperatorTest extends CypherFunSuite {
     // And when
     inputRow.moveToNextRow()
     outputRow.resetToFirstRow()
-    operator.operate(StartLeafLoop(Iteration(Some(inputRow))), outputRow, context, QueryState(VirtualValues.EMPTY_MAP, null))
+    operator.init(context, null, inputRow).operate(outputRow, context, QueryState.EMPTY)
 
     // Then
     outputMorsel.longs should equal(Array(

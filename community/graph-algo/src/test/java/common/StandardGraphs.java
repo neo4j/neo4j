@@ -96,7 +96,7 @@ public enum StandardGraphs implements GraphDefinition, RelationshipType
             relationship = morpheus.createRelationshipTo( trinity,
                     StandardGraphs.MatrixTypes.KNOWS );
             relationship.setProperty( "since", "a year before the movie" );
-            relationship.setProperty( "cooporates on", "The Nebuchadnezzar" );
+            relationship.setProperty( "cooperates on", "The Nebuchadnezzar" );
             relationship = trinity.createRelationshipTo( neo,
                     StandardGraphs.MatrixTypes.LOVES );
             relationship.setProperty( "since", "meeting the oracle" );

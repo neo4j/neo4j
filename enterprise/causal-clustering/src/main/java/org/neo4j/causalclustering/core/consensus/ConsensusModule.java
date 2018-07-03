@@ -53,9 +53,9 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
 import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentMarshal;
+import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
@@ -110,7 +110,7 @@ public class ConsensusModule
         termState = new MonitoredTermStateStorage( durableTermState, platformModule.monitors );
 
         voteState = life.add( new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_VOTE_NAME,
-                new VoteState.Marshal( MemberId.MARSHAL ), config.get( CausalClusteringSettings.vote_state_size ),
+                new VoteState.Marshal( new MemberId.Marshal() ), config.get( CausalClusteringSettings.vote_state_size ),
                 logProvider ) );
 
         raftMembershipStorage = life.add(

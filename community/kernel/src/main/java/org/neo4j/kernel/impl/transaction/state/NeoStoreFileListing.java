@@ -34,7 +34,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
+import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.store.StoreType;
@@ -60,7 +60,7 @@ public class NeoStoreFileListing
 
     public NeoStoreFileListing( File storeDir, LogFiles logFiles,
             LabelScanStore labelScanStore, IndexingService indexingService,
-            ExplicitIndexProviderLookup explicitIndexProviders, StorageEngine storageEngine )
+            ExplicitIndexProvider explicitIndexProviders, StorageEngine storageEngine )
     {
         this.storeDir = storeDir;
         this.logFiles = logFiles;

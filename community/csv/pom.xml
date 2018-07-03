@@ -48,53 +48,53 @@ the relevant Commercial Agreement.
   </licenses>
 
 
-  <dependencies>
-      <!-- main dependencies -->
-      <dependency>
-          <groupId>com.google.code.findbugs</groupId>
-          <artifactId>annotations</artifactId>
-      </dependency>
-      <dependency>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-collections</artifactId>
-          <version>${project.version}</version>
-      </dependency>
-      <dependency>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-values</artifactId>
-          <version>${project.version}</version>
-      </dependency>
+    <dependencies>
+        <!-- main dependencies -->
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>annotations</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-collections</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-values</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
 
-      <!-- test dependencies -->
-      <dependency>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-io</artifactId>
-          <version>${project.version}</version>
-          <type>test-jar</type>
-          <scope>test</scope>
-      </dependency>
-      <dependency>
-          <groupId>commons-codec</groupId>
-          <artifactId>commons-codec</artifactId>
-      </dependency>
-      <dependency>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-io</artifactId>
-          <version>${project.version}</version>
-          <scope>test</scope>
-      </dependency>
-      <dependency>
-          <groupId>org.junit.jupiter</groupId>
-          <artifactId>junit-jupiter-migrationsupport</artifactId>
-      </dependency>
-      <dependency>
-          <groupId>org.junit.jupiter</groupId>
-          <artifactId>junit-jupiter-api</artifactId>
-      </dependency>
-      <dependency>
-          <groupId>org.apache.maven.surefire</groupId>
-          <artifactId>surefire-logger-api</artifactId>
-      </dependency>
-  </dependencies>
+        <!-- test dependencies -->
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-io</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-io</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-migrationsupport</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+        </dependency>
+    </dependencies>
 </project>

@@ -44,17 +44,7 @@ public abstract class AbstractLogProvider<T extends Log> implements LogProvider
 
     private T getLog( String name, Supplier<T> logSupplier )
     {
-        T log = logCache.get( name );
-        if ( log == null )
-        {
-            T newLog = logSupplier.get();
-            log = logCache.putIfAbsent( name, newLog );
-            if ( log == null )
-            {
-                log = newLog;
-            }
-        }
-        return log;
+        return logCache.computeIfAbsent( name, s -> logSupplier.get() );
     }
 
     /**

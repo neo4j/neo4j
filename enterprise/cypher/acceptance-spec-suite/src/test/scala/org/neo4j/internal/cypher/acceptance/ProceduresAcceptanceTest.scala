@@ -97,7 +97,7 @@ class ProceduresAcceptanceTest extends ExecutionEngineFunSuite with CypherCompar
     result.size should equal(1)
   }
 
-  test("should find shortest path using Graph Algos Djikstra") {
+  test("should find shortest path using Graph Algos Dijkstra") {
     registerTestProcedures()
 
     graph.execute(
@@ -121,7 +121,7 @@ class ProceduresAcceptanceTest extends ExecutionEngineFunSuite with CypherCompar
         |""".stripMargin)
 
     val result = executeWith(expectSucceed,
-      "MATCH (s:Start),(e:End) CALL org.neo4j.graphAlgosDjikstra( s, e, 'Rel', 'weight' ) YIELD node RETURN node")
+      "MATCH (s:Start),(e:End) CALL org.neo4j.graphAlgosDijkstra( s, e, 'Rel', 'weight' ) YIELD node RETURN node")
 
     result.size should equal(5) // s -> n3 -> n4 -> n5 -> e
   }
@@ -140,6 +140,15 @@ class ProceduresAcceptanceTest extends ExecutionEngineFunSuite with CypherCompar
 
     // Then
     result.toList should equal(List(Map("name" -> "Clint Eastwood")))
+  }
+
+  test("should use correct temporal types") {
+    registerTestProcedures()
+
+    val result = innerExecuteDeprecated(
+      "CALL org.neo4j.time(localtime.statement())")
+
+    result.toList should be(empty) // and not crash
   }
 
   private def registerTestProcedures(): Unit = {

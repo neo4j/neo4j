@@ -23,9 +23,14 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherMath
 import org.neo4j.values._
+import org.neo4j.values.storable.Values
 
 case class Add(a: Expression, b: Expression) extends Expression {
-  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = CypherMath.add(a(ctx, state), b(ctx, state))
+
+  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = (a(ctx, state), b(ctx, state)) match {
+    case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
+    case (x, y) => CypherMath.add(x, y)
+  }
 
   def rewrite(f: (Expression) => Expression) = f(Add(a.rewrite(f), b.rewrite(f)))
 

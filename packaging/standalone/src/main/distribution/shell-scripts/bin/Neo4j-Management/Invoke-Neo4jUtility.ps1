@@ -19,10 +19,10 @@
 
 <#
 .SYNOPSIS
-Invokes various Neo4j Utilites
+Invokes various Neo4j Utilities
 
 .DESCRIPTION
-Invokes various Neo4j Utilites.  This is a generic utility function called by the external functions e.g. Shell, Import
+Invokes various Neo4j Utilities.  This is a generic utility function called by the external functions e.g. Shell, Import
 
 .PARAMETER Command
 A string of the command to run.
@@ -59,7 +59,7 @@ Function Invoke-Neo4jUtility
 
   Process
   {
-    # Determine the Neo4j Home Directory.  Uses the NEO4J_HOME enironment variable or a parent directory of this script
+    # Determine the Neo4j Home Directory.  Uses the NEO4J_HOME environment variable or a parent directory of this script
     $Neo4jHome = Get-Neo4jEnv 'NEO4J_HOME'
     if ( ($Neo4jHome -eq $null) -or (-not (Test-Path -Path $Neo4jHome)) ) {
       $Neo4jHome = Split-Path -Path (Split-Path -Path $PSScriptRoot -Parent) -Parent

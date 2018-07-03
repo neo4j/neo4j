@@ -23,7 +23,6 @@
 package org.neo4j.backup;
 
 import java.net.URI;
-import java.util.function.Supplier;
 
 import org.neo4j.backup.impl.BackupImpl;
 import org.neo4j.backup.impl.BackupServer;
@@ -37,8 +36,8 @@ import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreCopyServer;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
@@ -47,10 +46,9 @@ import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -61,7 +59,7 @@ import static org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSetting
  * @deprecated This will be moved to an internal package in the future.
  */
 @Deprecated
-public class OnlineBackupKernelExtension implements Lifecycle
+public class OnlineBackupKernelExtension extends LifecycleAdapter
 {
     private Object startBindingListener;
     private Object bindingListener;
@@ -87,28 +85,23 @@ public class OnlineBackupKernelExtension implements Lifecycle
 
     public OnlineBackupKernelExtension( Config config, final GraphDatabaseAPI graphDatabaseAPI, final LogProvider logProvider,
                                         final Monitors monitors, final NeoStoreDataSource neoStoreDataSource,
-                                        final Supplier<CheckPointer> checkPointerSupplier,
-                                        final Supplier<TransactionIdStore> transactionIdStoreSupplier,
-                                        final Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
-                                        final Supplier<LogFileInformation> logFileInformationSupplier,
-                                        final FileSystemAbstraction fileSystemAbstraction,
-                                        final PageCache pageCache,
-                                        final StoreCopyCheckPointMutex storeCopyCheckPointMutex )
+                                        final FileSystemAbstraction fileSystemAbstraction )
     {
         this( config, graphDatabaseAPI, () ->
         {
-            TransactionIdStore transactionIdStore = transactionIdStoreSupplier.get();
-            StoreCopyServer copier = new StoreCopyServer( neoStoreDataSource, checkPointerSupplier.get(),
+            DependencyResolver dependencyResolver = graphDatabaseAPI.getDependencyResolver();
+            TransactionIdStore transactionIdStore = dependencyResolver.resolveDependency( TransactionIdStore.class );
+            StoreCopyServer copier = new StoreCopyServer( neoStoreDataSource, dependencyResolver.resolveDependency( CheckPointer.class ),
                     fileSystemAbstraction, graphDatabaseAPI.getStoreDir(),
-                    monitors.newMonitor( StoreCopyServer.Monitor.class ), storeCopyCheckPointMutex );
-            LogicalTransactionStore logicalTransactionStore = logicalTransactionStoreSupplier.get();
-            LogFileInformation logFileInformation = logFileInformationSupplier.get();
+                    monitors.newMonitor( StoreCopyServer.Monitor.class ) );
+            LogicalTransactionStore logicalTransactionStore = dependencyResolver.resolveDependency( LogicalTransactionStore.class );
+            LogFileInformation logFileInformation = dependencyResolver.resolveDependency( LogFileInformation.class );
             return new BackupImpl( copier, logicalTransactionStore, transactionIdStore, logFileInformation,
                     graphDatabaseAPI::storeId, logProvider );
         }, monitors, logProvider );
     }
 
-    public OnlineBackupKernelExtension( Config config, GraphDatabaseAPI graphDatabaseAPI, BackupProvider provider,
+    private OnlineBackupKernelExtension( Config config, GraphDatabaseAPI graphDatabaseAPI, BackupProvider provider,
                                         Monitors monitors, LogProvider logProvider )
     {
         this.config = config;
@@ -119,20 +112,15 @@ public class OnlineBackupKernelExtension implements Lifecycle
     }
 
     @Override
-    public void init()
+    public synchronized void start()
     {
-    }
-
-    @Override
-    public void start()
-    {
-        if ( config.<Boolean>get( OnlineBackupSettings.online_backup_enabled ) )
+        if ( config.get( OnlineBackupSettings.online_backup_enabled ) )
         {
             try
             {
                 server = new BackupServer( backupProvider.newBackup(), config.get( online_backup_server ),
-                        logProvider, monitors.newMonitor( ByteCounterMonitor.class, BackupServer.class ),
-                        monitors.newMonitor( RequestMonitor.class, BackupServer.class ) );
+                        logProvider, monitors.newMonitor( ByteCounterMonitor.class, BackupServer.class.getName() ),
+                        monitors.newMonitor( RequestMonitor.class, BackupServer.class.getName() ) );
                 server.init();
                 server.start();
 
@@ -148,18 +136,19 @@ public class OnlineBackupKernelExtension implements Lifecycle
                 }
                 catch ( NoClassDefFoundError | UnsatisfiedDependencyException e )
                 {
-                    // Not running HA
+                    e.printStackTrace();
                 }
             }
             catch ( Throwable t )
             {
+                t.printStackTrace();
                 throw new RuntimeException( t );
             }
         }
     }
 
     @Override
-    public void stop() throws Throwable
+    public synchronized void stop() throws Throwable
     {
         if ( server != null )
         {
@@ -179,14 +168,9 @@ public class OnlineBackupKernelExtension implements Lifecycle
             }
             catch ( NoClassDefFoundError | UnsatisfiedDependencyException e )
             {
-                // Not running HA
+                e.printStackTrace();
             }
         }
-    }
-
-    @Override
-    public void shutdown()
-    {
     }
 
     private class StartBindingListener extends ClusterMemberListener.Adapter

@@ -26,17 +26,48 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 
-public abstract class SecurityModule extends Service
+public abstract class SecurityModule extends Service implements Lifecycle
 {
+    protected final LifeSupport life = new LifeSupport();
+
     public SecurityModule( String key, String... altKeys )
     {
         super( key, altKeys );
     }
 
     public abstract void setup( Dependencies dependencies ) throws KernelException;
+
+    public abstract AuthManager authManager();
+
+    public abstract UserManagerSupplier userManagerSupplier();
+
+    @Override
+    public void init() throws Throwable
+    {
+        life.init();
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+        life.start();
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+        life.stop();
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        life.shutdown();
+    }
 
     public interface Dependencies
     {
@@ -49,8 +80,6 @@ public abstract class SecurityModule extends Service
         JobScheduler scheduler();
 
         FileSystemAbstraction fileSystem();
-
-        LifeSupport lifeSupport();
 
         DependencySatisfier dependencySatisfier();
     }

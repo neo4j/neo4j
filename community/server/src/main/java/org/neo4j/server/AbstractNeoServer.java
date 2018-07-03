@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.RunCarefully;
@@ -45,9 +46,7 @@ import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -128,6 +127,7 @@ public abstract class AbstractNeoServer implements NeoServer
     private Optional<AdvertisedSocketAddress> httpsAdvertisedAddress;
 
     protected Database database;
+    private DependencyResolver dependencyResolver;
     protected CypherExecutor cypherExecutor;
     protected WebServer webServer;
     protected Supplier<AuthManager> authManagerSupplier;
@@ -138,8 +138,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private TransactionHandleRegistry transactionRegistry;
     private boolean initialized;
-    private LifecycleAdapter serverComponents;
-    protected ConnectorPortRegister connectorPortRegister;
+    private ConnectorPortRegister connectorPortRegister;
     private HttpConnector httpConnector;
     private Optional<HttpConnector> httpsConnector;
     private AsyncRequestLog requestLog;
@@ -183,21 +182,10 @@ public abstract class AbstractNeoServer implements NeoServer
             return;
         }
 
-        this.database =
-                life.add( dependencyResolver.satisfyDependency( dbFactory.newDatabase( config, dependencies ) ) );
-
-        this.authManagerSupplier = dependencyResolver.provideDependency( AuthManager.class );
-        this.userManagerSupplier = dependencyResolver.provideDependency( UserManagerSupplier.class );
-        this.sslPolicyFactorySupplier = dependencyResolver.provideDependency( SslPolicyLoader.class );
-        this.webServer = createWebServer();
-
-        for ( ServerModule moduleClass : createServerModules() )
-        {
-            registerModule( moduleClass );
-        }
-
-        serverComponents = new ServerComponentsLifecycleAdapter();
-        life.add( serverComponents );
+        this.database = dbFactory.newDatabase( config, dependencies );
+        life.add( database );
+        life.add( new ServerDependenciesLifeCycleAdapter() );
+        life.add( new ServerComponentsLifecycleAdapter() );
 
         this.initialized = true;
     }
@@ -209,7 +197,6 @@ public abstract class AbstractNeoServer implements NeoServer
         try
         {
             life.start();
-
         }
         catch ( Throwable t )
         {
@@ -286,6 +273,11 @@ public abstract class AbstractNeoServer implements NeoServer
     private void stopModules()
     {
         new RunCarefully( map( module -> module::stop, serverModules ) ).run();
+    }
+
+    private void clearModules()
+    {
+        serverModules.clear();
     }
 
     @Override
@@ -469,7 +461,6 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( new TransactionFilter( database ) );
         singletons.add( new LoggingProvider( logProvider ) );
         singletons.add( providerForSingleton( logProvider.getLog( NeoServer.class ), Log.class ) );
-
         singletons.add( providerForSingleton( resolveDependency( UsageData.class ), UsageData.class ) );
 
         return singletons;
@@ -494,15 +485,24 @@ public abstract class AbstractNeoServer implements NeoServer
         return dependencyResolver.resolveDependency( type );
     }
 
-    private final Dependencies dependencyResolver = new Dependencies( new Supplier<DependencyResolver>()
+    private class ServerDependenciesLifeCycleAdapter extends LifecycleAdapter
     {
         @Override
-        public DependencyResolver get()
+        public void start()
         {
-            Database db = dependencyResolver.resolveDependency( Database.class );
-            return db.getGraph().getDependencyResolver();
+            dependencyResolver = database.getGraph().getDependencyResolver();
+
+            authManagerSupplier = dependencyResolver.provideDependency( AuthManager.class );
+            userManagerSupplier = dependencyResolver.provideDependency( UserManagerSupplier.class );
+            sslPolicyFactorySupplier = dependencyResolver.provideDependency( SslPolicyLoader.class );
+            webServer = createWebServer();
+
+            for ( ServerModule moduleClass : createServerModules() )
+            {
+                registerModule( moduleClass );
+            }
         }
-    } );
+    }
 
     private class ServerComponentsLifecycleAdapter extends LifecycleAdapter
     {
@@ -535,6 +535,7 @@ public abstract class AbstractNeoServer implements NeoServer
         {
             stopWebServer();
             stopModules();
+            clearModules();
         }
     }
 }

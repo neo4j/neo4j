@@ -52,17 +52,27 @@ public class ServerMetrics extends LifecycleAdapter
         this.registry = registry;
         this.serverThreadView = new ServerThreadView()
         {
+            private volatile boolean warnedAboutIdle;
+            private volatile boolean warnedAboutAll;
             @Override
             public int idleThreads()
             {
-                userLog.warn( "Server thread metrics not available (missing " + THREAD_JETTY_IDLE + ")" );
+                if ( !warnedAboutIdle )
+                {
+                    userLog.warn( "Server thread metrics not available (missing " + THREAD_JETTY_IDLE + ")" );
+                    warnedAboutIdle = true;
+                }
                 return -1;
             }
 
             @Override
             public int allThreads()
             {
-                userLog.warn( "Server thread metrics not available (missing " + THREAD_JETTY_ALL + ")" );
+                if ( !warnedAboutAll )
+                {
+                    userLog.warn( "Server thread metrics not available (missing " + THREAD_JETTY_ALL + ")" );
+                    warnedAboutAll = true;
+                }
                 return -1;
             }
         };

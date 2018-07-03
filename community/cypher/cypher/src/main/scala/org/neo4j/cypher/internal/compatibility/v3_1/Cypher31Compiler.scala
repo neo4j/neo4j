@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.spi.v3_1.{TransactionalContextWrapper => Transa
 import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.query.{IndexUsage, PlannerInfo}
+import org.neo4j.kernel.api.query.{IndexUsage, CompilerInfo}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
@@ -47,14 +47,13 @@ import org.opencypher.v9_0.{frontend => v3_5}
 
 import scala.collection.mutable
 
-trait Cypher31Compiler extends CachingCompiler[PreparedQuerySyntax] {
+trait Cypher31Compiler extends CachingPlanner[PreparedQuerySyntax] with Compiler {
 
   val graph: GraphDatabaseQueryService
   val queryCacheSize: Int
   val kernelMonitors: KernelMonitors
 
   override def parserCacheSize: Int = queryCacheSize
-  override def plannerCacheSize: Int = 0
 
   protected val rewriterSequencer: (String) => RewriterStepSequencer = {
     import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer._
@@ -67,8 +66,11 @@ trait Cypher31Compiler extends CachingCompiler[PreparedQuerySyntax] {
 
   implicit val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v3_1, preParsingNotifications: Set[org.neo4j.graphdb.Notification], offSet: InputPosition3_1)
-    extends ExecutionPlan {
+  class Cypher31ExecutableQuery(inner: ExecutionPlan_v3_1,
+                                preParsingNotifications: Set[org.neo4j.graphdb.Notification],
+                                offSet: InputPosition3_1,
+                                override val paramNames: Seq[String],
+                                override val extractedParams: MapValue) extends ExecutableQuery {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
 
@@ -108,9 +110,9 @@ trait Cypher31Compiler extends CachingCompiler[PreparedQuerySyntax] {
         FineToReuse
     }
 
-    override val plannerInfo = new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, emptyList[IndexUsage])
+    override val compilerInfo = new CompilerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, emptyList[IndexUsage])
 
-    override def run(transactionalContext: TransactionalContext, executionMode: CypherExecutionMode, params: MapValue): Result = {
+    override def execute(transactionalContext: TransactionalContext, executionMode: CypherExecutionMode, params: MapValue): Result = {
       var map: mutable.Map[String, Any] = mutable.Map[String, Any]()
       params.foreach(new ThrowingBiConsumer[String, AnyValue, RuntimeException] {
         override def accept(t: String, u: AnyValue): Unit = map.put(t, valueHelper.fromValue(u))
@@ -124,7 +126,7 @@ trait Cypher31Compiler extends CachingCompiler[PreparedQuerySyntax] {
                        tracer: v3_5.phases.CompilationPhaseTracer,
                        preParsingNotifications: Set[org.neo4j.graphdb.Notification],
                        transactionalContext: TransactionalContext
-                      ): CacheableExecutableQuery = {
+                      ): ExecutableQuery = {
 
     exceptionHandler.runSafely {
       val notificationLogger = new RecordingNotificationLogger
@@ -142,8 +144,12 @@ trait Cypher31Compiler extends CachingCompiler[PreparedQuerySyntax] {
       // Log notifications/warnings from planning
       executionPlan3_1.notifications(planContext).foreach(notificationLogger += _)
 
-      val executionPlan = new ExecutionPlanWrapper(executionPlan3_1, preParsingNotifications, position3_1)
-      CacheableExecutableQuery(executionPlan, Seq.empty[String], ValueConversion.asValues(extractedParameters))
+      new Cypher31ExecutableQuery(
+        executionPlan3_1,
+        preParsingNotifications,
+        position3_1,
+        Seq.empty[String],
+        ValueConversion.asValues(extractedParameters))
     }
   }
 }

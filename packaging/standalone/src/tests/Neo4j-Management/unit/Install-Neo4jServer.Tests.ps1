@@ -78,7 +78,7 @@ InModuleScope Neo4j-Management {
 
       $result = Install-Neo4jServer -Neo4jServer $serverObject
 
-      It "returns 0 when succesfully installed" {
+      It "returns 0 when successfully installed" {
         $result | Should Be 0
       }
 

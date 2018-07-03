@@ -50,10 +50,8 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.PrintStreamLogger;
-import org.neo4j.storageengine.api.Token;
 
 import static java.lang.Long.parseLong;
-
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
@@ -211,12 +209,12 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
         dumpTokens( neoStores.getRelationshipTypeTokenStore(), ids );
     }
 
-    private static <R extends TokenRecord, T extends Token> void dumpTokens(
-            final TokenStore<R, T> store, IdRange[] ids ) throws Exception
+    private static <R extends TokenRecord> void dumpTokens(
+            final TokenStore<R> store, IdRange[] ids ) throws Exception
     {
         try
         {
-            new DumpStore<R, TokenStore<R, T>>( System.out )
+            new DumpStore<R, TokenStore<R>>( System.out )
             {
                 @Override
                 protected Object transform( R record )

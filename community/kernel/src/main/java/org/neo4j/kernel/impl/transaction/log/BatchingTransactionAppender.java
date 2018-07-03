@@ -131,7 +131,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         // in this batch exist durably on disk.
         if ( forceAfterAppend( logAppendEvent ) )
         {
-            // We got lucky and were the one forcing the log. It's enough if ones of all doing concurrent committerss
+            // We got lucky and were the one forcing the log. It's enough if ones of all doing concurrent committers
             // checks the need for log rotation.
             boolean logRotated = logRotation.rotateLogIfNeeded( logAppendEvent );
             logAppendEvent.setLogRotated( logRotated );

@@ -28,34 +28,37 @@ import javax.management.MBeanServer;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.KernelData;
-import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class JmxKernelExtension implements Lifecycle
+public class JmxKernelExtension extends LifecycleAdapter
 {
-    private KernelData kernelData;
-    private Log log;
+    private final KernelData kernelData;
+    private final DataSourceManager dataSourceManager;
+    private final Log log;
     private List<Neo4jMBean> beans;
     private MBeanServer mbs;
     private ManagementSupport support;
 
-    public JmxKernelExtension( KernelData kernelData, LogProvider logProvider )
+    public JmxKernelExtension( KernelData kernelData, DataSourceManager dataSourceManager, LogProvider logProvider )
     {
         this.kernelData = kernelData;
+        this.dataSourceManager = dataSourceManager;
         this.log = logProvider.getLog( getClass() );
     }
 
     @Override
-    public void init()
+    public void start()
     {
         support = ManagementSupport.load();
         mbs = support.getMBeanServer();
         beans = new LinkedList<>();
         try
         {
-            Neo4jMBean bean = new KernelBean( kernelData, support );
+            Neo4jMBean bean = new KernelBean( kernelData, dataSourceManager, support );
             mbs.registerMBean( bean, bean.objectName );
             beans.add( bean );
         }
@@ -92,17 +95,7 @@ public class JmxKernelExtension implements Lifecycle
     }
 
     @Override
-    public void start()
-    {
-    }
-
-    @Override
     public void stop()
-    {
-    }
-
-    @Override
-    public void shutdown()
     {
         for ( Neo4jMBean bean : beans )
         {

@@ -57,6 +57,12 @@ object coerce {
         case CTNumber => value.asInstanceOf[NumberValue]
         case CTPoint => value.asInstanceOf[PointValue]
         case CTGeometry => value.asInstanceOf[PointValue]
+        case CTDate => value.asInstanceOf[DateValue]
+        case CTLocalTime => value.asInstanceOf[LocalTimeValue]
+        case CTTime => value.asInstanceOf[TimeValue]
+        case CTLocalDateTime => value.asInstanceOf[LocalDateTimeValue]
+        case CTDateTime => value.asInstanceOf[DateTimeValue]
+        case CTDuration => value.asInstanceOf[DurationValue]
         case _ => throw cantCoerce(value, typ)
       }
     }

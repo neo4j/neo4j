@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.eclipse.collections.api.map.primitive.LongObjectMap;
-
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -31,7 +29,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.ToIntFunction;
 
-import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
@@ -270,19 +267,14 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
 
         PropertyType type = block.getType();
         RecordStore<DynamicRecord> dynamicStore = dynamicStoreForValueType( type );
-        if ( dynamicStore == null )
+        if ( dynamicStore != null )
         {
-            return;
-        }
-
-        try ( Cursor<DynamicRecord> dynamicRecords = dynamicStore.newRecordCursor( dynamicStore.newRecord() )
-                .acquire( block.getSingleValueLong(), NORMAL ) )
-        {
-            while ( dynamicRecords.next() )
+            List<DynamicRecord> dynamicRecords = dynamicStore.getRecords( block.getSingleValueLong(), NORMAL );
+            for ( DynamicRecord dynamicRecord : dynamicRecords )
             {
-                dynamicRecords.get().setType( type.intValue() );
-                block.addValueRecord( dynamicRecords.get().clone() );
+                dynamicRecord.setType( type.intValue() );
             }
+            block.setValueRecords( dynamicRecords );
         }
     }
 
@@ -301,14 +293,12 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         return propertyBlock.getType().value( propertyBlock, this );
     }
 
-    public static void allocateStringRecords( Collection<DynamicRecord> target, byte[] chars,
-            DynamicRecordAllocator allocator )
+    private static void allocateStringRecords( Collection<DynamicRecord> target, byte[] chars, DynamicRecordAllocator allocator )
     {
         AbstractDynamicStore.allocateRecordsFromBytes( target, chars, allocator );
     }
 
-    public static void allocateArrayRecords( Collection<DynamicRecord> target, Object array,
-            DynamicRecordAllocator allocator, boolean allowStorePoints )
+    private static void allocateArrayRecords( Collection<DynamicRecord> target, Object array, DynamicRecordAllocator allocator, boolean allowStorePoints )
     {
         DynamicArrayStore.allocateRecords( target, array, allocator, allowStorePoints );
     }
@@ -655,26 +645,26 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         return UTF8.decode( byteArray );
     }
 
-    public String getStringFor( PropertyBlock propertyBlock )
+    String getStringFor( PropertyBlock propertyBlock )
     {
         ensureHeavy( propertyBlock );
         return getStringFor( propertyBlock.getValueRecords() );
     }
 
-    public String getStringFor( Collection<DynamicRecord> dynamicRecords )
+    private String getStringFor( Collection<DynamicRecord> dynamicRecords )
     {
         Pair<byte[], byte[]> source = stringStore.readFullByteArray( dynamicRecords, PropertyType.STRING );
         // A string doesn't have a header in the data array
         return decodeString( source.other() );
     }
 
-    public Value getArrayFor( PropertyBlock propertyBlock )
+    Value getArrayFor( PropertyBlock propertyBlock )
     {
         ensureHeavy( propertyBlock );
         return getArrayFor( propertyBlock.getValueRecords() );
     }
 
-    public Value getArrayFor( Iterable<DynamicRecord> records )
+    private Value getArrayFor( Iterable<DynamicRecord> records )
     {
         return getRightArray( arrayStore.readFullByteArray( records, PropertyType.ARRAY ) );
     }
@@ -693,24 +683,6 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         {
             PropertyRecord propRecord = new PropertyRecord( nextProp );
             getRecord( nextProp, propRecord, RecordLoad.NORMAL );
-            toReturn.add( propRecord );
-            nextProp = propRecord.getNextProp();
-        }
-        return toReturn;
-    }
-
-    public Collection<PropertyRecord> getPropertyRecordChain( long firstRecordId,
-            LongObjectMap<PropertyRecord> propertyLookup )
-    {
-        long nextProp = firstRecordId;
-        List<PropertyRecord> toReturn = new ArrayList<>();
-        while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
-        {
-            PropertyRecord propRecord = propertyLookup.get( nextProp );
-            if ( propRecord == null )
-            {
-                getRecord( nextProp, propRecord = newRecord(), RecordLoad.NORMAL );
-            }
             toReturn.add( propRecord );
             nextProp = propRecord.getNextProp();
         }

@@ -14,7 +14,7 @@
   <name>Neo4j - Community</name>
   <packaging>jar</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
-  <description>A meta package containing the most used Neo4j libraries. Intended use: as a Maven dependency.</description>
+  <description>Neo4j Community Edition</description>
 
   <properties>
     <license-text.header>headers/GPL-3-header.txt</license-text.header>
@@ -80,6 +80,11 @@ the relevant Commercial Agreement.
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-bolt</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
             <artifactId>neo4j-consistency-check</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -90,12 +95,12 @@ the relevant Commercial Agreement.
             <artifactId>junit-jupiter-migrationsupport</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.maven.surefire</groupId>
-            <artifactId>surefire-logger-api</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
         </dependency>
         <dependency>
             <groupId>org.hamcrest</groupId>
@@ -125,12 +130,12 @@ the relevant Commercial Agreement.
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-      <dependency>
-        <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-random-values</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-random-values</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-kernel</artifactId>

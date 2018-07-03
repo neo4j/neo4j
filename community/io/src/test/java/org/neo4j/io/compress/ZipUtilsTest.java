@@ -109,6 +109,15 @@ class ZipUtilsTest
         assertEquals( 1, countArchiveEntries( archiveFile ) );
     }
 
+    @Test
+    public void supportSpacesInDestinationPath() throws IOException
+    {
+        File archiveFile = testDirectory.file( "file archive.zip" );
+        File aFile = testDirectory.file( "a" );
+        fileSystem.create( aFile ).close();
+        ZipUtils.zip( fileSystem, aFile, archiveFile );
+    }
+
     private int countArchiveEntries( File archiveFile ) throws IOException
     {
         try ( ZipInputStream zipInputStream = new ZipInputStream( new BufferedInputStream( new FileInputStream( archiveFile ) ) ) )

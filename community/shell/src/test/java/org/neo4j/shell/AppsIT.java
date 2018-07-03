@@ -1125,7 +1125,7 @@ public class AppsIT extends AbstractShellIT
     }
 
     @Test
-    public void allowsArgumentsStartingWithDoubldHyphensForCommandsThatDontTakeOptions() throws Exception
+    public void allowsArgumentsStartingWithDoubledHyphensForCommandsThatDontTakeOptions() throws Exception
     {
         executeCommand( "MATCH () -- () RETURN 0;" );
     }

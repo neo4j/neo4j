@@ -30,17 +30,20 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public class IndexPopulationTest
 {
@@ -55,11 +58,13 @@ public class IndexPopulationTest
         OnlineIndexProxy onlineProxy = onlineIndexProxy( storeView );
         FlippableIndexProxy flipper = new FlippableIndexProxy();
         flipper.setFlipTarget( () -> onlineProxy );
-        MultipleIndexPopulator multipleIndexPopulator = new MultipleIndexPopulator( storeView, logProvider );
+        MultipleIndexPopulator multipleIndexPopulator =
+                new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE, mock( SchemaState.class ) );
+
         MultipleIndexPopulator.IndexPopulation indexPopulation =
                 multipleIndexPopulator.addPopulator( populator, dummyMeta(), flipper, t -> failedProxy, "userDescription" );
         multipleIndexPopulator.queueUpdate( someUpdate() );
-        multipleIndexPopulator.indexAllNodes().run();
+        multipleIndexPopulator.indexAllEntities().run();
 
         // when
         indexPopulation.flip();
@@ -84,7 +89,7 @@ public class IndexPopulationTest
         return new IndexPopulator.Adapter()
         {
             @Override
-            public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
+            public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor )
             {
                 return new IndexUpdater()
                 {
@@ -109,7 +114,7 @@ public class IndexPopulationTest
         {
             @Override
             public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
-                    Visitor<NodeUpdates,FAILURE> propertyUpdateVisitor, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor, boolean forceStoreScan )
+                    Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor, boolean forceStoreScan )
             {
                 //noinspection unchecked
                 return new StoreScan()

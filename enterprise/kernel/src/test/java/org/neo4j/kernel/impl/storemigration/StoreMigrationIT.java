@@ -115,13 +115,13 @@ public class StoreMigrationIT
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( dir, fs ).withLogEntryReader( logEntryReader ).build();
         LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors() );
         List<Object[]> data = new ArrayList<>();
-        ArrayList<RecordFormats> recordFormatses = new ArrayList<>();
-        RecordFormatSelector.allFormats().forEach( f -> addIfNotThere( f, recordFormatses ) );
-        for ( RecordFormats toFormat : recordFormatses )
+        ArrayList<RecordFormats> recordFormats = new ArrayList<>();
+        RecordFormatSelector.allFormats().forEach( f -> addIfNotThere( f, recordFormats ) );
+        for ( RecordFormats toFormat : recordFormats )
         {
             UpgradableDatabase upgradableDatabase =
                     new UpgradableDatabase( storeVersionCheck, toFormat, tailScanner );
-            for ( RecordFormats fromFormat : recordFormatses )
+            for ( RecordFormats fromFormat : recordFormats )
             {
                 File db = new File( dir, baseDirName( toFormat, fromFormat ) );
                 try
@@ -129,7 +129,7 @@ public class StoreMigrationIT
                     createDb( fromFormat, db );
                     if ( !upgradableDatabase.hasCurrentVersion( db ) )
                     {
-                        upgradableDatabase.checkUpgradeable( db );
+                        upgradableDatabase.checkUpgradable( db );
                         data.add( new Object[]{fromFormat, toFormat} );
                     }
                 }
@@ -149,16 +149,16 @@ public class StoreMigrationIT
         return fromFormat.storeVersion() + toFormat.storeVersion();
     }
 
-    private static void addIfNotThere( RecordFormats f, ArrayList<RecordFormats> recordFormatses )
+    private static void addIfNotThere( RecordFormats f, ArrayList<RecordFormats> recordFormats )
     {
-        for ( RecordFormats format : recordFormatses )
+        for ( RecordFormats format : recordFormats )
         {
             if ( format.storeVersion().equals( f.storeVersion() ) )
             {
                 return;
             }
         }
-        recordFormatses.add( f );
+        recordFormats.add( f );
     }
 
     @Service.Implementation( RecordFormats.Factory.class )

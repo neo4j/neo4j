@@ -49,7 +49,7 @@ import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
-import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
@@ -64,6 +64,7 @@ import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -111,6 +112,7 @@ import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory.DEFAULT;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
+import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 import static org.neo4j.test.assertion.Assert.assertException;
 
 public class KernelTransactionsTest
@@ -612,7 +614,7 @@ public class KernelTransactionsTest
                 AutoIndexing.UNSUPPORTED,
                 mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
-                mock( IndexingProvidersService.class), mock( PropertyKeyTokenHolder.class ) );
+                mock( IndexingProvidersService.class), mockedTokenHolders(), new Dependencies() );
     }
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
@@ -624,7 +626,7 @@ public class KernelTransactionsTest
                 null, DEFAULT,
                 commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ),
                 availabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
-                new CanWrite(), AutoIndexing.UNSUPPORTED, EmptyVersionContextSupplier.EMPTY, mock( PropertyKeyTokenHolder.class ) );
+                new CanWrite(), AutoIndexing.UNSUPPORTED, EmptyVersionContextSupplier.EMPTY, mockedTokenHolders(), new Dependencies() );
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )
@@ -670,18 +672,18 @@ public class KernelTransactionsTest
                 ConstraintIndexCreator constraintIndexCreator, StatementOperationParts statementOperations,
                 SchemaWriteGuard schemaWriteGuard, TransactionHeaderInformationFactory txHeaderFactory,
                 TransactionCommitProcess transactionCommitProcess, IndexConfigStore indexConfigStore,
-                ExplicitIndexProviderLookup explicitIndexProviderLookup, TransactionHooks hooks,
+                ExplicitIndexProvider explicitIndexProviderLookup, TransactionHooks hooks,
                 TransactionMonitor transactionMonitor, AvailabilityGuard availabilityGuard, Tracers tracers,
                 StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
                 AccessCapability accessCapability,
-                AutoIndexing autoIndexing, VersionContextSupplier versionContextSupplier, PropertyKeyTokenHolder propertyKeyTokenHolder )
+                AutoIndexing autoIndexing, VersionContextSupplier versionContextSupplier, TokenHolders tokenHolders, Dependencies dataSourceDependencies )
         {
             super( statementLocksFactory, constraintIndexCreator, statementOperations, schemaWriteGuard, txHeaderFactory, transactionCommitProcess,
                     indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor, availabilityGuard, tracers, storageEngine, procedures,
                     transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
                     accessCapability, autoIndexing, mock( ExplicitIndexStore.class ), versionContextSupplier,
                     ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
-                    mock( IndexingProvidersService.class ), propertyKeyTokenHolder );
+                    mock( IndexingProvidersService.class ), tokenHolders, dataSourceDependencies );
         }
 
         @Override

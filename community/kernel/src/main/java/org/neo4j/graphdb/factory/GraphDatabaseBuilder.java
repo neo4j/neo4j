@@ -69,7 +69,7 @@ public class GraphDatabaseBuilder
     protected Map<String,String> config = new HashMap<>();
 
     /**
-     * @deprecated Use {@link GraphDatabaseFactory} to get instances of this class.
+     * @deprecated
      */
     @Deprecated
     public GraphDatabaseBuilder( DatabaseCreator creator )
@@ -205,14 +205,6 @@ public class GraphDatabaseBuilder
     public GraphDatabaseService newGraphDatabase()
     {
         return creator.newDatabase( Config.defaults( config ) );
-    }
-
-    /**
-     * Used by tests via GraphDatabaseBuilderTestTools.
-     */
-    Map<String,String> getRawConfig()
-    {
-        return config;
     }
 
     /**

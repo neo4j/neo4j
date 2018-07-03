@@ -22,19 +22,26 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compatibility.v3_5.Cypher35Compiler
+import java.time.Clock
+
+import org.neo4j.cypher.internal.compatibility.v3_4.Cypher34Planner
+import org.neo4j.cypher.internal.compatibility.v3_5.Cypher35Planner
+import org.neo4j.cypher.internal.compatibility.{CypherCurrentCompiler, CypherPlanner, RuntimeContext, RuntimeContextCreator}
 import org.neo4j.cypher.internal.compiler.v3_5._
-import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContextCreator
+import org.neo4j.cypher.internal.executionplan.GeneratedQuery
+import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
+import org.neo4j.cypher.internal.runtime.compiled.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.runtime.interpreted.LastCommittedTxIdProvider
-import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.{ParallelDispatcher, SingleThreadedExecutor}
+import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.{Dispatcher, ParallelDispatcher, SingleThreadedExecutor}
 import org.neo4j.cypher.internal.spi.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy, CypherVersion}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
-import org.neo4j.logging.LogProvider
+import org.neo4j.logging.{Log, LogProvider}
 import org.neo4j.scheduler.JobScheduler
+import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 
 class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
                                 graph: GraphDatabaseQueryService,
@@ -49,8 +56,32 @@ class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
                               config: CypherPlannerConfiguration
                              ): Compiler = {
 
-    if (cypherVersion == CypherVersion.v3_5 && cypherPlanner != CypherPlannerOption.rule) {
+    val log = logProvider.getLog(getClass)
+    val createPlanner: PartialFunction[CypherVersion, CypherPlanner] = {
+      case CypherVersion.v3_4 =>
+        Cypher34Planner(
+          config,
+          MasterCompiler.CLOCK,
+          kernelMonitors,
+          log,
+          cypherPlanner,
+          cypherUpdateStrategy,
+          LastCommittedTxIdProvider(graph))
 
+      case CypherVersion.v3_5 =>
+        Cypher35Planner(
+          config,
+          MasterCompiler.CLOCK,
+          kernelMonitors,
+          log,
+          cypherPlanner,
+          cypherUpdateStrategy,
+          LastCommittedTxIdProvider(graph))
+      }
+
+    if (cypherPlanner != CypherPlannerOption.rule && createPlanner.isDefinedAt(cypherVersion)) {
+
+      val planner = createPlanner(cypherVersion)
       val settings = graph.getDependencyResolver.resolveDependency(classOf[Config])
       val morselSize: Int = settings.get(GraphDatabaseSettings.cypher_morsel_size)
       val workers: Int = settings.get(GraphDatabaseSettings.cypher_worker_count)
@@ -64,13 +95,51 @@ class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
           new ParallelDispatcher(morselSize, numberOfThreads, executorService)
         }
 
-      val log = logProvider.getLog(getClass)
-      Cypher35Compiler(config, MasterCompiler.CLOCK, kernelMonitors, log,
-        cypherPlanner, cypherUpdateStrategy, EnterpriseRuntimeFactory.getRuntime(cypherRuntime, config.useErrorsOverWarnings),
+      CypherCurrentCompiler(
+        planner,
+        EnterpriseRuntimeFactory.getRuntime(cypherRuntime, config.useErrorsOverWarnings),
         EnterpriseRuntimeContextCreator(GeneratedQueryStructure, dispatcher, log),
-        LastCommittedTxIdProvider(graph))
+        kernelMonitors)
 
     } else
       community.createCompiler(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy, config)
   }
+}
+
+/**
+  * Enterprise runtime context. Enriches the community runtime context with infrastructure needed for
+  * query compilation and parallel execution.
+  */
+case class EnterpriseRuntimeContext(notificationLogger: InternalNotificationLogger,
+                                    tokenContext: TokenContext,
+                                    readOnly: Boolean,
+                                    codeStructure: CodeStructure[GeneratedQuery],
+                                    dispatcher: Dispatcher,
+                                    log: Log,
+                                    clock: Clock,
+                                    debugOptions: Set[String]
+                                   ) extends RuntimeContext
+
+/**
+  * Creator of EnterpriseRuntimeContext
+  */
+case class EnterpriseRuntimeContextCreator(codeStructure: CodeStructure[GeneratedQuery],
+                                           dispatcher: Dispatcher,
+                                           log: Log)
+  extends RuntimeContextCreator[EnterpriseRuntimeContext] {
+
+  override def create(notificationLogger: InternalNotificationLogger,
+                      tokenContext: TokenContext,
+                      clock: Clock,
+                      debugOptions: Set[String],
+                      readOnly: Boolean
+                     ): EnterpriseRuntimeContext =
+    EnterpriseRuntimeContext(notificationLogger,
+                             tokenContext,
+                             readOnly,
+                             codeStructure,
+                             dispatcher,
+                             log,
+                             clock,
+                             debugOptions)
 }

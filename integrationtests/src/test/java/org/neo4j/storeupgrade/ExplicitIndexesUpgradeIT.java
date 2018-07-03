@@ -120,11 +120,11 @@ public class ExplicitIndexesUpgradeIT
         }
     }
 
-    private GraphDatabaseService startDatabase( boolean allowUpgread )
+    private GraphDatabaseService startDatabase( boolean allowUpgrade )
     {
         GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDir.graphDbDir() );
-        builder.setConfig( GraphDatabaseSettings.allow_upgrade, Boolean.toString( allowUpgread ) );
+        builder.setConfig( GraphDatabaseSettings.allow_upgrade, Boolean.toString( allowUpgrade ) );
         builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
         builder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
         return builder.newGraphDatabase();

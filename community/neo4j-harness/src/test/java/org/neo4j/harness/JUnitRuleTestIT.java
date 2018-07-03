@@ -23,21 +23,32 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runners.model.Statement;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.LogTimeZone;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.time.ZoneOffset.UTC;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -54,6 +65,7 @@ public class JUnitRuleTestIT
     @Rule
     public Neo4jRule neo4j = new Neo4jRule()
             .withFixture( "CREATE (u:User)" )
+            .withConfig( GraphDatabaseSettings.db_timezone.name(), LogTimeZone.SYSTEM.toString() )
             .withConfig( LegacySslPolicyConfig.certificates_directory.name(),
                     getRelativePath( getSharedTestTemporaryFolder(), LegacySslPolicyConfig.certificates_directory ) )
             .withFixture( graphDatabaseService ->
@@ -139,5 +151,27 @@ public class JUnitRuleTestIT
                 assertEquals( 1, column.get( 0 ) );
             }
         }, null );
+    }
+
+    @Test
+    public void shouldUseSystemTimeZoneForLogging() throws Exception
+    {
+        String currentOffset = currentTimeZoneOffsetString();
+
+        assertThat( contentOf( "neo4j.log" ), containsString( currentOffset ) );
+        assertThat( contentOf( "debug.log" ), containsString( currentOffset ) );
+    }
+
+    private String contentOf( String file ) throws IOException
+    {
+        Path storeDir = ((GraphDatabaseAPI) neo4j.getGraphDatabaseService()).getStoreDir().toPath();
+        Path testDir = storeDir.getParent().getParent();
+        return new String( Files.readAllBytes( testDir.resolve( file ) ), UTF_8 );
+    }
+
+    private static String currentTimeZoneOffsetString()
+    {
+        ZoneOffset offset = OffsetDateTime.now().getOffset();
+        return offset.equals( UTC ) ? "+0000" : offset.toString().replace( ":", "" );
     }
 }

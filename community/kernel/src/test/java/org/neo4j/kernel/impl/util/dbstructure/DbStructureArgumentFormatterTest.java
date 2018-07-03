@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 
 import static org.junit.Assert.assertEquals;

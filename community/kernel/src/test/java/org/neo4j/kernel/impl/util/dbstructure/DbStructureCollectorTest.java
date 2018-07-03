@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 
 import static java.util.Arrays.asList;
@@ -61,8 +61,7 @@ public class DbStructureCollectorTest
         assertEquals( asList( of( 1, "name" ), of( 2, "income" ) ), Iterators.asList( lookup.properties() ) );
         assertEquals( asList( of( 1, "LIVES_IN" ), of( 2, "FRIEND" ) ), Iterators.asList( lookup.relationshipTypes() ) );
 
-        assertEquals( asList( "Person" ),
-                Iterators.asList( Iterators.map( Pair::first, lookup.knownUniqueIndices() ) ) );
+        assertArrayEquals( new String[] { "Person" }, lookup.knownUniqueIndices().next().first() );
         assertArrayEquals( new String[]{"name"}, lookup.knownUniqueIndices().next().other() );
 
         assertEquals( asList( "City" ),
@@ -73,7 +72,7 @@ public class DbStructureCollectorTest
                 Iterators.asList( Iterators.map( Pair::first, lookup.knownUniqueConstraints() ) ) );
         assertArrayEquals( new String[]{"name"}, lookup.knownUniqueConstraints().next().other() );
 
-        assertEquals( asList( "City" ), Iterators.asList( Iterators.map( Pair::first, lookup.knownIndices() ) ) );
+        assertEquals( new String[] { "City" }, lookup.knownIndices().next().first() );
         assertArrayEquals( new String[]{"income"}, lookup.knownIndices().next().other() );
 
         assertEquals( 50, lookup.nodesAllCardinality() );
@@ -117,13 +116,12 @@ public class DbStructureCollectorTest
         assertEquals( asList( of( 1, "LIVES_IN" ), of( 2, "FRIEND" ) ),
                 Iterators.asList( lookup.relationshipTypes() ) );
 
-        assertEquals( asList( "Person" ),
-                Iterators.asList( Iterators.map( Pair::first, lookup.knownUniqueIndices() ) ) );
+        assertArrayEquals( new String[] { "Person" }, lookup.knownUniqueIndices().next().first() );
         assertArrayEquals( new String[]{"name", "lastName"}, lookup.knownUniqueIndices().next().other() );
         assertEquals( asList( "City" ),
                 Iterators.asList( Iterators.map( Pair::first, lookup.knownUniqueConstraints() ) ) );
         assertArrayEquals( new String[]{"name", "area"}, lookup.knownUniqueConstraints().next().other() );
-        assertEquals( asList( "City" ), Iterators.asList( Iterators.map( Pair::first, lookup.knownIndices() ) ) );
+        assertEquals( new String[] { "City" }, lookup.knownIndices().next().first() );
         assertArrayEquals( new String[]{"income", "tax"}, lookup.knownIndices().next().other() );
 
         assertEquals( 50, lookup.nodesAllCardinality() );

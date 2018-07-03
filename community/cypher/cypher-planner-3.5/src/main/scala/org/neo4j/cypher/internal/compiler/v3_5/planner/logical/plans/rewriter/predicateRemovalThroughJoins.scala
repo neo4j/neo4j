@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans.rewriter
 
 import org.opencypher.v9_0.util.{Rewriter, bottomUp}
-import org.opencypher.v9_0.expressions.Expression
+import org.opencypher.v9_0.expressions.{Ands, Expression}
 import org.neo4j.cypher.internal.ir.v3_5.QueryGraph
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.opencypher.v9_0.util.attribution.{Attributes, SameId}
@@ -38,15 +38,15 @@ case class predicateRemovalThroughJoins(solveds: Solveds, cardinalities: Cardina
   override def apply(input: AnyRef) = instance.apply(input)
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
-    case n@NodeHashJoin(nodeIds, lhs, rhs@Selection(rhsPredicates, rhsLeaf)) =>
+    case n@NodeHashJoin(nodeIds, lhs, rhs@Selection(Ands(rhsPredicates), rhsLeaf)) =>
       val lhsPredicates = predicatesDependingOnTheJoinIds(solveds.get(lhs.id).lastQueryGraph, nodeIds)
       val newPredicate = rhsPredicates.filterNot(lhsPredicates)
 
       if (newPredicate.isEmpty) {
         NodeHashJoin(nodeIds, lhs, rhsLeaf)(SameId(n.id))
       } else {
-        val newRhsPlannerQuery = solveds.get(rhsLeaf.id).amendQueryGraph(_.addPredicates(newPredicate: _*))
-        val newSelection = Selection(newPredicate, rhsLeaf)(attributes.copy(rhs.id))
+        val newRhsPlannerQuery = solveds.get(rhsLeaf.id).amendQueryGraph(_.addPredicates(newPredicate.toArray: _*))
+        val newSelection = Selection(Ands(newPredicate)(newPredicate.head.position), rhsLeaf)(attributes.copy(rhs.id))
         solveds.set(newSelection.id, newRhsPlannerQuery)
         cardinalities.copy(rhsLeaf.id, newSelection.id)
         NodeHashJoin(nodeIds, lhs, newSelection)(SameId(n.id))

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.expressions
 
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.compiled.expressions.{CodeGeneration, CompiledExpression, IntermediateCodeGeneration}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverter, ExpressionConverters}
@@ -30,7 +31,7 @@ import org.opencypher.v9_0.expressions.FunctionInvocation
 import org.opencypher.v9_0.expressions.functions.AggregatingFunction
 import org.opencypher.v9_0.{expressions => ast}
 
-class CompiledExpressionConverter(log: Log) extends ExpressionConverter {
+class CompiledExpressionConverter(log: Log, slots: SlotConfiguration) extends ExpressionConverter {
 
   //uses an inner converter to simplify compliance with Expression trait
   private val inner = new ExpressionConverters(SlottedExpressionConverters, CommunityExpressionConverter)
@@ -42,7 +43,7 @@ class CompiledExpressionConverter(log: Log) extends ExpressionConverter {
     case f: FunctionInvocation if f.function.isInstanceOf[AggregatingFunction] => None
 
     case e => try {
-      new IntermediateCodeGeneration().compile(e).map(ir => CompileWrappingExpression(CodeGeneration.compile(ir),
+      new IntermediateCodeGeneration(slots).compile(e).map(i => CompileWrappingExpression(CodeGeneration.compile(i.ir),
                                                                                 inner.toCommandExpression(expression)))
     } catch {
       case t: Throwable =>

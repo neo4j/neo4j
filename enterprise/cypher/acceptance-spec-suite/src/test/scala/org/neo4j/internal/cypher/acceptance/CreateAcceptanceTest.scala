@@ -33,11 +33,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport
   with CreateTempFileTestSupport {
 
-  private val BIG_TIMEOUT = 60 seconds
+  private val BIG_TIMEOUT = 15 minutes
   private val BIG_N = 1000
   private val BIG_CREATE_CONFIGS =
     TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
-    TestConfiguration(Versions.V3_3, Planners.Default, Runtimes(Runtimes.Interpreted))
+    TestConfiguration(Versions.V3_4, Planners.Default, Runtimes(Runtimes.Interpreted))
 
   test("handle big CREATE clause") {
     var query = "CREATE (x)"

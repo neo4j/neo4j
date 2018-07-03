@@ -79,7 +79,7 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     result.tail.get.queryGraph should equal(secondQueryGraph)
   }
 
-  test("should compute lazyness preference correctly for a single planner query") {
+  test("should compute laziness preference correctly for a single planner query") {
     val noLimit = RegularPlannerQuery(horizon = QueryProjection.empty)
     noLimit.preferredStrictness should equal(None)
 
@@ -92,7 +92,7 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     hasLimitAndSort.preferredStrictness should equal(None)
   }
 
-  test("should consider planner query tails when computing lazyness preference") {
+  test("should consider planner query tails when computing laziness preference") {
     val shuffleWithLimit = QueryProjection.empty.withShuffle(QueryShuffle(limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
     val shuffleWithLimitAndSort = QueryProjection.empty.withShuffle(QueryShuffle(sortItems = Seq(mock[SortItem]), limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
 

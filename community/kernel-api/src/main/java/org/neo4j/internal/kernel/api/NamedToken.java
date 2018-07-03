@@ -77,4 +77,10 @@ public final class NamedToken
         result = 31 * result + name.hashCode();
         return result;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "%s[name:%s, id:%d]", getClass().getSimpleName(), name, id );
+    }
 }

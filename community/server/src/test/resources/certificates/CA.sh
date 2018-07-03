@@ -77,7 +77,7 @@
 # The implementation was written so as to conform with Netscapes SSL.
 # 
 # This library is free for commercial and non-commercial use as long as
-# the following conditions are aheared to.  The following conditions
+# the following conditions are adhered to.  The following conditions
 # apply to all code found in this distribution, be it the RC4, RSA,
 # lhash, DES, etc., code; not just the SSL code.  The SSL documentation
 # included with this distribution is covered by the same copyright terms
@@ -102,7 +102,7 @@
 #    must display the following acknowledgement:
 #    "This product includes cryptographic software written by
 #     Eric Young (eay@cryptsoft.com)"
-#    The word 'cryptographic' can be left out if the rouines from the library
+#    The word 'cryptographic' can be left out if the routines from the library
 #    being used are not cryptographic related :-).
 # 4. If you include any Windows specific code (or a derivative thereof) from 
 #    the apps directory (application code) you must include an acknowledgement:
@@ -147,7 +147,7 @@
 #                  environment variable so this can be driven from
 #                  a script.
 # 25-Jul-96 eay    Cleaned up filenames some more.
-# 11-Jun-96 eay    Fixed a few filename missmatches.
+# 11-Jun-96 eay    Fixed a few filename mismatches.
 # 03-May-96 eay    Modified to use 'ssleay cmd' instead of 'cmd'.
 # 18-Apr-96 tjh    Original hacking
 #

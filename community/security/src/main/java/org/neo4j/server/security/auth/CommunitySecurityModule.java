@@ -24,13 +24,14 @@ import java.io.File;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.UserManager;
+import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
@@ -38,9 +39,13 @@ import org.neo4j.time.Clocks;
 @Service.Implementation( SecurityModule.class )
 public class CommunitySecurityModule extends SecurityModule
 {
+    public static final String COMMUNITY_SECURITY_MODULE_ID = "community-security-module";
+
+    private BasicAuthManager authManager;
+
     public CommunitySecurityModule()
     {
-        super( CommunityEditionModule.COMMUNITY_SECURITY_MODULE_ID );
+        super( COMMUNITY_SECURITY_MODULE_ID );
     }
 
     @Override
@@ -55,13 +60,25 @@ public class CommunitySecurityModule extends SecurityModule
 
         final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
 
-        BasicAuthManager authManager = new BasicAuthManager( userRepository, passwordPolicy, Clocks.systemClock(),
+        authManager = new BasicAuthManager( userRepository, passwordPolicy, Clocks.systemClock(),
                 initialUserRepository, config );
 
-        dependencies.lifeSupport().add( dependencies.dependencySatisfier().satisfyDependency( authManager ) );
+        life.add( dependencies.dependencySatisfier().satisfyDependency( authManager ) );
 
         procedures.registerComponent( UserManager.class, ctx -> authManager, false );
         procedures.registerProcedure( AuthProcedures.class );
+    }
+
+    @Override
+    public AuthManager authManager()
+    {
+        return authManager;
+    }
+
+    @Override
+    public UserManagerSupplier userManagerSupplier()
+    {
+        return authManager;
     }
 
     public static final String USER_STORE_FILENAME = "auth";

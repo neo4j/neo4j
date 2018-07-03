@@ -26,8 +26,8 @@ import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -44,29 +44,29 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Values;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.IndexQuery.range;
 
-public class SimpleIndexReaderTest
+class SimpleIndexReaderTest
 {
     private final PartitionSearcher partitionSearcher = mock( PartitionSearcher.class );
     private final IndexSearcher indexSearcher = mock( IndexSearcher.class );
     private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
     private final TaskCoordinator taskCoordinator = new TaskCoordinator( 0, TimeUnit.MILLISECONDS );
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         when( partitionSearcher.getIndexSearcher() ).thenReturn( indexSearcher );
     }
 
     @Test
-    public void releaseSearcherOnClose() throws IOException
+    void releaseSearcherOnClose() throws IOException
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
@@ -76,7 +76,7 @@ public class SimpleIndexReaderTest
     }
 
     @Test
-    public void seekQueryReachSearcher() throws Exception
+    void seekQueryReachSearcher() throws Exception
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
@@ -86,7 +86,7 @@ public class SimpleIndexReaderTest
     }
 
     @Test
-    public void scanQueryReachSearcher() throws Exception
+    void scanQueryReachSearcher() throws Exception
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
@@ -96,7 +96,7 @@ public class SimpleIndexReaderTest
     }
 
     @Test
-    public void stringRangeSeekQueryReachSearcher() throws Exception
+    void stringRangeSeekQueryReachSearcher() throws Exception
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
@@ -106,7 +106,7 @@ public class SimpleIndexReaderTest
     }
 
     @Test
-    public void prefixRangeSeekQueryReachSearcher() throws Exception
+    void prefixRangeSeekQueryReachSearcher() throws Exception
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
@@ -116,7 +116,7 @@ public class SimpleIndexReaderTest
     }
 
     @Test
-    public void numberRangeSeekQueryReachSearcher() throws Exception
+    void numberRangeSeekQueryReachSearcher() throws Exception
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
@@ -126,7 +126,7 @@ public class SimpleIndexReaderTest
     }
 
     @Test
-    public void countIndexedNodesReachSearcher() throws IOException
+    void countIndexedNodesReachSearcher() throws IOException
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
@@ -136,14 +136,14 @@ public class SimpleIndexReaderTest
     }
 
     @Test
-    public void uniqueIndexSamplerForUniqueIndex()
+    void uniqueIndexSamplerForUniqueIndex()
     {
         SimpleIndexReader uniqueSimpleReader = getUniqueSimpleReader();
         assertThat( uniqueSimpleReader.createSampler(), instanceOf( UniqueLuceneIndexSampler.class ) );
     }
 
     @Test
-    public void nonUuniqueIndexSamplerForNonUniqueIndex()
+    void nonUniqueIndexSamplerForNonUniqueIndex()
     {
         SimpleIndexReader uniqueSimpleReader = getNonUniqueSimpleReader();
         assertThat( uniqueSimpleReader.createSampler(), instanceOf( NonUniqueLuceneIndexSampler.class ) );

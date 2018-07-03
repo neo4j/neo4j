@@ -170,11 +170,6 @@ public class NativeLabelScanStoreHaIT
         }
 
         @Override
-        public void lockedIndex( Exception e )
-        {
-        }
-
-        @Override
         public void notValidIndex()
         {
         }

@@ -40,7 +40,7 @@ case class UnwindCollection(opName: String, collection: CodeGenExpression, eleme
   override def getNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
                          (implicit context: CodeGenContext): Unit = {
     assert(elementCodeGenType == nextVar.codeGenType)
-    val next = generator.iteratorNext(generator.loadVariable(iterVar))
+    val next = generator.iteratorNext(generator.loadVariable(iterVar), nextVar.codeGenType)
     generator.assign(nextVar, next)
   }
 

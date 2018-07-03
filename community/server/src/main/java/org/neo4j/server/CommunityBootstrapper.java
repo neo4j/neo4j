@@ -23,7 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import javax.annotation.Nonnull;
 
-import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationValidator;
 import org.neo4j.kernel.configuration.ServerConfigurationValidator;

@@ -48,10 +48,8 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
-import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
-import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 
 /**
@@ -376,18 +374,7 @@ public class NativeLabelScanStore implements LabelScanStore
 
     private GBPTree.Monitor treeMonitor()
     {
-        return new GBPTree.Monitor.Adaptor()
-        {
-            @Override
-            public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
-                    long durationMillis )
-            {
-                monitor.recoveryCompleted( map(
-                        "Number of pages visited", numberOfPagesVisited,
-                        "Number of cleaned crashed pointers", numberOfCleanedCrashPointers,
-                        "Time spent", duration( durationMillis ) ) );
-            }
-        };
+        return new LabelIndexTreeMonitor();
     }
 
     @Override
@@ -433,7 +420,7 @@ public class NativeLabelScanStore implements LabelScanStore
                 numberOfNodes = fullStoreChangeStream.applyTo( writer );
             }
 
-            index.checkpoint( IOLimiter.unlimited(), writeClean );
+            index.checkpoint( IOLimiter.UNLIMITED, writeClean );
 
             monitor.rebuilt( numberOfNodes );
             needsRebuild = false;
@@ -485,5 +472,38 @@ public class NativeLabelScanStore implements LabelScanStore
     public boolean isDirty()
     {
         return index == null || index.wasDirtyOnStartup();
+    }
+
+    private class LabelIndexTreeMonitor extends GBPTree.Monitor.Adaptor
+    {
+        @Override
+        public void cleanupRegistered()
+        {
+            monitor.recoveryCleanupRegistered();
+        }
+
+        @Override
+        public void cleanupStarted()
+        {
+            monitor.recoveryCleanupStarted();
+        }
+
+        @Override
+        public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
+        {
+            monitor.recoveryCleanupFinished( numberOfPagesVisited, numberOfCleanedCrashPointers, durationMillis );
+        }
+
+        @Override
+        public void cleanupClosed()
+        {
+            monitor.recoveryCleanupClosed();
+        }
+
+        @Override
+        public void cleanupFailed( Throwable throwable )
+        {
+            monitor.recoveryCleanupFailed( throwable );
+        }
     }
 }

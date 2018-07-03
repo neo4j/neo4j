@@ -22,6 +22,7 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized
 
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.values.AnyValue
 import org.opencypher.v9_0.util.InternalException
@@ -31,6 +32,7 @@ object MorselExecutionContext {
     pipeline.slots.numberOfLongs, pipeline.slots.numberOfReferences, 0)
   def apply(morsel: Morsel, numberOfLongs: Int, numberOfRows: Int) = new MorselExecutionContext(morsel,
     numberOfLongs, numberOfRows, 0)
+  val EMPTY = new MorselExecutionContext(Morsel.create(SlotConfiguration.empty, 1), 0, 0, 0)
 }
 
 class MorselExecutionContext(private val morsel: Morsel, private val longsPerRow: Int, private val refsPerRow: Int, private var currentRow: Int) extends ExecutionContext {

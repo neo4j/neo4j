@@ -42,7 +42,7 @@
     <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
 
     <neo4j.version>${project.version}</neo4j.version>
-    <neo4j-browser.version>3.1.14</neo4j-browser.version>
+    <neo4j-browser.version>3.2.1</neo4j-browser.version>
 
     <neo4j-server.mainClass>org.neo4j.server.CommunityEntryPoint</neo4j-server.mainClass>
 
@@ -109,7 +109,7 @@
             <!-- We need this one, or transitive dependencies of kernel
         will end up in the test scope. -->
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-kernel</artifactId>
+            <artifactId>neo4j</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -202,11 +202,11 @@
             <artifactId>jackson-jaxrs</artifactId>
         </dependency>
 
-    <dependency>
-      <groupId>org.bouncycastle</groupId>
-      <artifactId>bcprov-jdk15on</artifactId>
-    </dependency>
-    <!-- This dependency is needed for Netty to be able to generate
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15on</artifactId>
+        </dependency>
+        <!-- This dependency is needed for Netty to be able to generate
     self signed certificate on a JDK without sun.security.* package -->
         <dependency>
             <groupId>org.bouncycastle</groupId>
@@ -217,6 +217,13 @@
         <dependency>
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-client</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j.community</groupId>
+            <artifactId>it-test-support</artifactId>
+            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -289,12 +296,12 @@
             <artifactId>junit-jupiter-migrationsupport</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.maven.surefire</groupId>
-            <artifactId>surefire-logger-api</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
         </dependency>
         <dependency>
             <groupId>org.hamcrest</groupId>

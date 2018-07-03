@@ -39,7 +39,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
@@ -197,10 +197,10 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
     public void shouldGetASingleContentLengthHeaderWhenCreatingANode()
     {
         JaxRsResponse response = sendCreateRequestToServer();
-        List<String> contentLentgthHeaders = response.getHeaders()
+        List<String> contentLengthHeaders = response.getHeaders()
                 .get( "Content-Length" );
-        assertNotNull( contentLentgthHeaders );
-        assertEquals( 1, contentLentgthHeaders.size() );
+        assertNotNull( contentLengthHeaders );
+        assertEquals( 1, contentLengthHeaders.size() );
     }
 
     @Test

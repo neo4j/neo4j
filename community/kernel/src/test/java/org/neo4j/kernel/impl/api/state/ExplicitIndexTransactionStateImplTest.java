@@ -25,11 +25,11 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
@@ -54,7 +54,6 @@ public class ExplicitIndexTransactionStateImplTest
 {
     private final Map<String,String> config = singletonMap( IndexManager.PROVIDER, "test" );
     private final IndexImplementation provider = mock( IndexImplementation.class );
-    private Function<String,IndexImplementation> providerLookup;
     private IndexConfigStore indexConfigStore;
 
     @Test
@@ -317,8 +316,9 @@ public class ExplicitIndexTransactionStateImplTest
         when( indexConfigStore.get( eq( Node.class ), anyString() ) ).thenReturn( config );
         when( indexConfigStore.get( eq( Relationship.class ), anyString() ) ).thenReturn( config );
 
-        providerLookup = s -> provider;
+        ExplicitIndexProvider explicitIndexProvider = mock( ExplicitIndexProvider.class );
+        when( explicitIndexProvider.getProviderByName( anyString() ) ).thenReturn( provider );
 
-        return new ExplicitIndexTransactionStateImpl( indexConfigStore, providerLookup );
+        return new ExplicitIndexTransactionStateImpl( indexConfigStore, explicitIndexProvider );
     }
 }

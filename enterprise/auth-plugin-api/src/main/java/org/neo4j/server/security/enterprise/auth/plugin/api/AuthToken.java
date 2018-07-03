@@ -52,7 +52,7 @@ public interface AuthToken
      * <p>Most commonly this is a password.
      *
      * <p>The reason this is a character array and not a {@link String}, is so that sensitive information
-     * can be cleared from memory after useage without having to wait for the garbage collector to act.
+     * can be cleared from memory after usage without having to wait for the garbage collector to act.
      *
      * @return the credentials that verifies the identity.
      */

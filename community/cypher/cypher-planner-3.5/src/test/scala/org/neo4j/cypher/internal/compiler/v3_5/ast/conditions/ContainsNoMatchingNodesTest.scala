@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.conditions
 
+import org.opencypher.v9_0.ast._
+import org.opencypher.v9_0.expressions.Variable
+import org.opencypher.v9_0.rewriting.conditions.containsNoMatchingNodes
 import org.opencypher.v9_0.util.ASTNode
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.ast.conditions.containsNoMatchingNodes
-import org.opencypher.v9_0.expressions.Variable
 
 class ContainsNoMatchingNodesTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -32,13 +32,13 @@ class ContainsNoMatchingNodesTest extends CypherFunSuite with AstConstructionTes
   })
 
   test("Happy when not finding ReturnItems(includeExisting = true, ...)") {
-    val ast: ASTNode = Return(false, ReturnItems(includeExisting = false, Seq(UnaliasedReturnItem(Variable("foo")_, "foo")_))_, None, None, None, None)_
+    val ast: ASTNode = Return(false, ReturnItems(includeExisting = false, Seq(UnaliasedReturnItem(Variable("foo")_, "foo")_))_, None, None, None)_
 
     condition(ast) should equal(Seq())
   }
 
   test("Fails when finding ReturnItems(includeExisting = true, ...)") {
-    val ast: ASTNode = Return(false, ReturnItems(includeExisting = true, Seq(UnaliasedReturnItem(Variable("foo")_, "foo")_))_, None, None, None, None)_
+    val ast: ASTNode = Return(false, ReturnItems(includeExisting = true, Seq(UnaliasedReturnItem(Variable("foo")_, "foo")_))_, None, None, None)_
 
     condition(ast) should equal(Seq("Expected none but found ReturnItems(includeExisting = true, ...) at position line 1, column 0 (offset: 0)"))
   }

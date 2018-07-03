@@ -188,6 +188,12 @@ public class ConfigurableIOLimiter implements IOLimiter
         while ( !stateUpdater.compareAndSet( this, currentState, newState ) );
     }
 
+    @Override
+    public boolean isLimited()
+    {
+        return getDisabledCounter( state ) == 0;
+    }
+
     private long currentTimeMillis()
     {
         return System.currentTimeMillis();

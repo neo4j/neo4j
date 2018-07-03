@@ -27,12 +27,14 @@ import org.junit.Test;
 
 import java.util.concurrent.Future;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.util.Listener;
+import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.ha.ClusterRule;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
@@ -40,7 +42,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.kernel.impl.api.integrationtest.UniquenessConstraintValidationConcurrencyIT.createNode;
 import static org.neo4j.test.rule.concurrent.OtherThreadRule.isWaiting;
 
 public class UniquenessConstraintValidationHAIT
@@ -166,6 +167,25 @@ public class UniquenessConstraintValidationHAIT
                 db.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
 
                 tx.success();
+            }
+        };
+    }
+
+    public static OtherThreadExecutor.WorkerCommand<Void, Boolean> createNode(
+            final GraphDatabaseService db, final String label, final String propertyKey, final Object propertyValue )
+    {
+        return nothing ->
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.createNode( label( label ) ).setProperty( propertyKey, propertyValue );
+
+                tx.success();
+                return true;
+            }
+            catch ( ConstraintViolationException e )
+            {
+                return false;
             }
         };
     }

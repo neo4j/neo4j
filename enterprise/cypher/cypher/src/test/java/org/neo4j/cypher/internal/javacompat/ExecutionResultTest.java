@@ -23,7 +23,6 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -293,7 +292,7 @@ public class ExecutionResultTest
     @Test
     public void shouldContainCompletePlanFromFromLegacyVersions()
     {
-        for ( String version : new String[]{"2.3", "3.1", "3.3", "3.5"} )
+        for ( String version : new String[]{"2.3", "3.1", "3.4", "3.5"} )
         {
             // Given
             Result result = db.execute( String.format( "EXPLAIN CYPHER %s MATCH (n) RETURN n", version ) );
@@ -318,7 +317,7 @@ public class ExecutionResultTest
             tx.success();
         }
 
-        for ( String version : new String[]{"2.3", "3.1", "3.3", "3.5"} )
+        for ( String version : new String[]{"2.3", "3.1", "3.4", "3.5"} )
         {
             // When
             Result result = db.execute( String.format( "PROFILE CYPHER %s MATCH (n) RETURN n", version ) );

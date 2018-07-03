@@ -33,8 +33,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
+import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.kernel.impl.index.schema.DeferredConflictCheckingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -141,7 +141,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
     }
 
     @Override
-    public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
+    public void verifyDeferredConstraints( NodePropertyAccessor accessor ) throws IndexEntryConflictException, IOException
     {
         // If we've seen constraint violation failures in here when updates came in then fail immediately with those
         if ( !failures.isEmpty() )
@@ -163,7 +163,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
         {
             SchemaDescriptor descriptor = getDescriptor().schema();
             throw new UniquePropertyValueValidationException(
-                    ConstraintDescriptorFactory.uniqueForLabel( descriptor.keyId(), descriptor.getPropertyIds() ),
+                    ConstraintDescriptorFactory.uniqueForSchema( descriptor ),
                     ConstraintValidationException.Phase.VERIFICATION,
                     new HashSet<>( failures )
                 );

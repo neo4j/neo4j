@@ -46,7 +46,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           case ListComprehension(ExtractScope(_, Some(NestedPlanExpression(nestedPlan, _)), _), _) =>
             nestedPlan should equal(
               Selection(
-                Seq(HasLabels(varFor("  NODE116"), Seq(LabelName("ComedyClub")_))_),
+                Ands(Set(HasLabels(varFor("  NODE116"), Seq(LabelName("ComedyClub")_))_))_,
                 Expand(
                   Argument(Set("f")),
                   "f", SemanticDirection.OUTGOING, Seq(RelTypeName("WORKS_AT")_), "  NODE116", "  REL102", ExpandAll
@@ -59,7 +59,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans with getDegree for a single pattern predicate") {
     planFor("MATCH (a) WHERE (a)-[:X]->() RETURN a")._2 should equal(
-      Selection(Seq(GreaterThan(GetDegree(Variable("a") _,Some(RelTypeName("X") _), OUTGOING)_,SignedDecimalIntegerLiteral("0")_)_),
+      Selection(Ands(Set(GreaterThan(GetDegree(Variable("a") _,Some(RelTypeName("X") _), OUTGOING)_,SignedDecimalIntegerLiteral("0")_)_))_,
         AllNodesScan("a", Set.empty)
       )
     )
@@ -67,7 +67,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans containing getDegree for a single negated pattern predicate") {
     planFor("MATCH (a) WHERE NOT (a)-[:X]->() RETURN a")._2 should equal(
-      Selection(Seq(LessThanOrEqual(GetDegree(Variable("a") _,Some(RelTypeName("X") _), OUTGOING)_,SignedDecimalIntegerLiteral("0")_)_),
+      Selection(Ands(Set(LessThanOrEqual(GetDegree(Variable("a") _,Some(RelTypeName("X") _), OUTGOING)_,SignedDecimalIntegerLiteral("0")_)_))_,
                 AllNodesScan("a", Set.empty)
       )
     )
@@ -75,78 +75,78 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans containing getDegree for two pattern predicates") {
     planFor("MATCH (a) WHERE (a)-[:X]->() AND (a)-[:Y]->() RETURN a")._2 should equal(
-      Selection(Seq(
+      Selection(Ands(Set(
         GreaterThan(
           GetDegree(Variable("a")_, Some(RelTypeName("Y")_), OUTGOING)_,SignedDecimalIntegerLiteral("0")_)_,
         GreaterThan(
-          GetDegree(Variable("a")_, Some(RelTypeName("X")_), OUTGOING)_, SignedDecimalIntegerLiteral("0")_)_),
+          GetDegree(Variable("a")_, Some(RelTypeName("X")_), OUTGOING)_, SignedDecimalIntegerLiteral("0")_)_))_,
                 AllNodesScan("a", Set.empty)))
   }
 
   test("should build plans containing getDegree for a pattern predicate and an expression") {
     planFor("MATCH (a) WHERE (a)-[:X]->() OR a.prop > 4 RETURN a")._2 should equal(
-      Selection(Seq(Ors(Set(
+      Selection(Ands(Set(Ors(Set(
         GreaterThan(
           GetDegree(Variable("a")_, Some(RelTypeName("X")_),OUTGOING)_,
           SignedDecimalIntegerLiteral("0")_)_,
-        GreaterThan(Property(Variable("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _))_),
+        GreaterThan(Property(Variable("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _))_))_,
                 AllNodesScan("a", Set.empty)))
   }
 
   test("should build plans containing getDegree for a pattern predicate and multiple expressions") {
     planFor("MATCH (a) WHERE a.prop2 = 9 OR (a)-[:X]->() OR a.prop > 4 RETURN a")._2 should equal(
-      Selection(Seq(Ors(Set(
+      Selection(Ands(Set(Ors(Set(
         GreaterThan(
           GetDegree(Variable("a")_, Some(RelTypeName("X")_),OUTGOING)_,
           SignedDecimalIntegerLiteral("0")_)_,
         GreaterThan(Property(Variable("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _,
-        In(Property(Variable("a") _, PropertyKeyName("prop2") _) _, ListLiteral(Seq(SignedDecimalIntegerLiteral("9") _)) _) _))_),
+        In(Property(Variable("a") _, PropertyKeyName("prop2") _) _, ListLiteral(Seq(SignedDecimalIntegerLiteral("9") _)) _) _))_))_,
                 AllNodesScan("a", Set.empty)))
   }
 
   test("should build plans containing getDegree for a single negated pattern predicate and an expression") {
     planFor("MATCH (a) WHERE a.prop = 9 OR NOT (a)-[:X]->() RETURN a")._2 should equal(
-      Selection(Seq(Ors(Set(
+      Selection(Ands(Set(Ors(Set(
         LessThanOrEqual(
           GetDegree(Variable("a")_, Some(RelTypeName("X")_),OUTGOING)_,
           SignedDecimalIntegerLiteral("0")_)_,
-        In(Property(Variable("a") _, PropertyKeyName("prop") _) _, ListLiteral(Seq(SignedDecimalIntegerLiteral("9") _)) _) _))_),
+        In(Property(Variable("a") _, PropertyKeyName("prop") _) _, ListLiteral(Seq(SignedDecimalIntegerLiteral("9") _)) _) _))_))_,
                 AllNodesScan("a", Set.empty)))
   }
 
   test("should build plans containing getDegree for two pattern predicates and expressions") {
     planFor("MATCH (a) WHERE a.prop = 9 OR (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a")._2 should equal(
-      Selection(Seq(Ors(Set(
+      Selection(Ands(Set(Ors(Set(
         GreaterThan(
           GetDegree(Variable("a")_, Some(RelTypeName("Y")_), OUTGOING)_,
           SignedDecimalIntegerLiteral("0")_)_,
         LessThanOrEqual(
           GetDegree(Variable("a")_, Some(RelTypeName("X")_), OUTGOING)_,
           SignedDecimalIntegerLiteral("0")_)_,
-        In(Property(Variable("a")_, PropertyKeyName("prop")_)_, ListLiteral(Seq(SignedDecimalIntegerLiteral("9")_))_)_))_),
+        In(Property(Variable("a")_, PropertyKeyName("prop")_)_, ListLiteral(Seq(SignedDecimalIntegerLiteral("9")_))_)_))_))_,
                 AllNodesScan("a", Set.empty)))
   }
 
   test("should build plans containing getDegree for two pattern predicates with one negation") {
     planFor("MATCH (a) WHERE (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a")._2 should equal(
-      Selection(Seq(Ors(Set(
+      Selection(Ands(Set(Ors(Set(
         GreaterThan(
           GetDegree(Variable("a")_, Some(RelTypeName("Y")_), OUTGOING)_,
           SignedDecimalIntegerLiteral("0")_)_,
         LessThanOrEqual(
           GetDegree(Variable("a")_, Some(RelTypeName("X")_), OUTGOING)_,
-          SignedDecimalIntegerLiteral("0")_)_))_),
+          SignedDecimalIntegerLiteral("0")_)_))_))_,
                 AllNodesScan("a", Set.empty))
     )
   }
 
   test("should build plans containing getDegree for two negated pattern predicates") {
     planFor("MATCH (a) WHERE NOT (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a")._2 should equal(
-      Selection(Seq(Ors(Set(
+      Selection(Ands(Set(Ors(Set(
         LessThanOrEqual(GetDegree(Variable("a")_, Some(RelTypeName("Y")_), OUTGOING)_,
                         SignedDecimalIntegerLiteral("0")_)_,
         LessThanOrEqual(GetDegree(Variable("a")_, Some(RelTypeName("X")_), OUTGOING)_,
-                        SignedDecimalIntegerLiteral("0")_)_))_),  AllNodesScan("a", Set.empty))
+                        SignedDecimalIntegerLiteral("0")_)_))_))_,  AllNodesScan("a", Set.empty))
     )
   }
 

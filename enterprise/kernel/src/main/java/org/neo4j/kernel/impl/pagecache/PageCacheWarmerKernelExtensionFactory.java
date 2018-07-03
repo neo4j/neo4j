@@ -22,8 +22,6 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import java.util.function.Supplier;
-
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -32,7 +30,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -52,7 +50,7 @@ public class PageCacheWarmerKernelExtensionFactory
 
         FileSystemAbstraction fileSystemAbstraction();
 
-        NeoStoreFileListing fileListing();
+        DataSourceManager getDataSourceManager();
 
         LogService logService();
 
@@ -73,12 +71,12 @@ public class PageCacheWarmerKernelExtensionFactory
         AvailabilityGuard availabilityGuard = deps.availabilityGuard();
         PageCache pageCache = deps.pageCache();
         FileSystemAbstraction fs = deps.fileSystemAbstraction();
-        Supplier<NeoStoreFileListing> fileListing = deps::fileListing;
         LogService logService = deps.logService();
+        DataSourceManager dataSourceManager = deps.getDataSourceManager();
         Log log = logService.getInternalLog( PageCacheWarmer.class );
         PageCacheWarmerMonitor monitor = deps.monitors().newMonitor( PageCacheWarmerMonitor.class );
         Config config = deps.config();
         return new PageCacheWarmerKernelExtension(
-                scheduler, availabilityGuard, pageCache, fs, fileListing, log, monitor, config );
+                scheduler, availabilityGuard, pageCache, fs, dataSourceManager, log, monitor, config );
     }
 }

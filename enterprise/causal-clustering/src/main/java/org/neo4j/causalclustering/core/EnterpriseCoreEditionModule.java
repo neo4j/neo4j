@@ -94,15 +94,15 @@ import org.neo4j.causalclustering.upstream.UpstreamDatabaseStrategySelector;
 import org.neo4j.causalclustering.upstream.strategies.TypicallyConnectToRandomReadReplicaStrategy;
 import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.function.Predicates;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.module.EditionModule;
+import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.SocketAddress;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
@@ -116,9 +116,6 @@ import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.EditionModule;
-import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -135,7 +132,6 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
@@ -144,7 +140,7 @@ import static java.util.Arrays.asList;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_messages_log_path;
 
 /**
- * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
+ * This implementation of {@link EditionModule} creates the implementations of services
  * that are specific to the Enterprise Core edition that provides a core cluster.
  */
 public class EnterpriseCoreEditionModule extends EditionModule
@@ -311,9 +307,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         dependencies.satisfyDependency( idGeneratorFactory );
         dependencies.satisfyDependency( idController );
 
-        this.labelTokenHolder = coreStateMachinesModule.labelTokenHolder;
-        this.propertyKeyTokenHolder = coreStateMachinesModule.propertyKeyTokenHolder;
-        this.relationshipTypeTokenHolder = coreStateMachinesModule.relationshipTypeTokenHolder;
+        // TODO: this is broken, coreStateMachinesModule.tokenHolders should be supplier, somehow...
+        this.tokenHoldersSupplier = () -> coreStateMachinesModule.tokenHolders;
         this.lockManager = coreStateMachinesModule.lockManager;
         this.commitProcessFactory = coreStateMachinesModule.commitProcessFactory;
         this.accessCapability = new LeaderCanWrite( consensusModule.raftMachine() );
@@ -443,8 +438,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
         coreAPIAvailabilityGuard =
                 new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
 
-        registerRecovery( platformModule.databaseInfo, life, dependencies );
-
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
 
         dependencies.satisfyDependency( createSessionTracker() );
@@ -486,18 +479,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
         return () -> new TransactionHeaderInformation( -1, -1, new byte[0] );
     }
 
-    private void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,
-            final DependencyResolver dependencyResolver )
-    {
-        life.addLifecycleListener( ( instance, from, to ) ->
-        {
-            if ( instance instanceof DatabaseAvailability && LifecycleStatus.STARTED.equals( to ) )
-            {
-                doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );
-            }
-        } );
-    }
-
     @Override
     protected BoltConnectionTracker createSessionTracker()
     {
@@ -507,7 +488,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
     @Override
     public void setupSecurityModule( PlatformModule platformModule, Procedures procedures )
     {
-        EnterpriseEditionModule.setupEnterpriseSecurityModule( platformModule, procedures );
+        EnterpriseEditionModule.setupEnterpriseSecurityModule( this, platformModule, procedures );
     }
 
     public void disableCatchupServer() throws Throwable

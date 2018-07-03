@@ -58,7 +58,7 @@ public class BoltMetrics extends LifecycleAdapter
     public static final String CONNECTIONS_IDLE = name( NAME_PREFIX, "connections_idle" );
 
     @Documented( "The total number of messages received via Bolt since this instance started." )
-    public static final String MESSAGES_RECIEVED = name( NAME_PREFIX, "messages_received" );
+    public static final String MESSAGES_RECEIVED = name( NAME_PREFIX, "messages_received" );
 
     @Documented( "The total number of messages that began processing since this instance started. This is different " +
                  "from messages received in that this counter tracks how many of the received messages have" +
@@ -97,7 +97,7 @@ public class BoltMetrics extends LifecycleAdapter
         registry.register( CONNECTIONS_CLOSED, (Gauge<Long>) boltMonitor.connectionsClosed::get );
         registry.register( CONNECTIONS_RUNNING, (Gauge<Long>) boltMonitor.connectionsActive::get );
         registry.register( CONNECTIONS_IDLE, (Gauge<Long>) boltMonitor.connectionsIdle::get );
-        registry.register( MESSAGES_RECIEVED, (Gauge<Long>) boltMonitor.messagesReceived::get );
+        registry.register( MESSAGES_RECEIVED, (Gauge<Long>) boltMonitor.messagesReceived::get );
         registry.register( MESSAGES_STARTED, (Gauge<Long>) boltMonitor.messagesStarted::get );
         registry.register( MESSAGES_DONE, (Gauge<Long>) boltMonitor.messagesDone::get );
         registry.register( MESSAGES_FAILED, (Gauge<Long>) boltMonitor.messagesFailed::get );
@@ -113,7 +113,7 @@ public class BoltMetrics extends LifecycleAdapter
         registry.remove( CONNECTIONS_CLOSED );
         registry.remove( CONNECTIONS_IDLE );
         registry.remove( CONNECTIONS_RUNNING );
-        registry.remove( MESSAGES_RECIEVED );
+        registry.remove( MESSAGES_RECEIVED );
         registry.remove( MESSAGES_STARTED );
         registry.remove( MESSAGES_DONE );
         registry.remove( MESSAGES_FAILED );

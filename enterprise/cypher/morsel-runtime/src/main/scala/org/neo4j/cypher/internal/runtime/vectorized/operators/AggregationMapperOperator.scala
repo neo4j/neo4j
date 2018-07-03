@@ -36,15 +36,19 @@ Responsible for aggregating the data coming from a single morsel. This is equiva
 step of map-reduce. Each thread performs it its local aggregation on the data local to it. In
 the subsequent reduce steps these local aggregations are merged into a single global aggregate.
  */
-class AggregationMapperOperator(aggregations: Array[AggregationOffsets], groupings: Array[GroupingOffsets]) extends MiddleOperator {
+class AggregationMapperOperator(aggregations: Array[AggregationOffsets],
+                                groupings: Array[GroupingOffsets]) extends StatelessOperator {
 
   //These are assigned at compile time to save some time at runtime
   private val groupingFunction = AggregationHelper.groupingFunction(groupings)
   private val addGroupingValuesToResult = AggregationHelper.computeGroupingSetter(groupings)(_.mapperOutputSlot)
 
-  override def operate(iterationState: Iteration, currentRow: MorselExecutionContext, context: QueryContext, state: QueryState): Unit = {
+  override def operate(currentRow: MorselExecutionContext,
+                       context: QueryContext,
+                       state: QueryState): Unit = {
 
     val result = MutableMap[AnyValue, Array[(Int,AggregationMapper)]]()
+
     val queryState = new OldQueryState(context, resources = null, params = state.params)
 
     //loop over the entire morsel and apply the aggregation

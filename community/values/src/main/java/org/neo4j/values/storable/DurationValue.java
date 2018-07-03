@@ -482,36 +482,26 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         long days = 0;
         if ( from.isSupported( EPOCH_DAY ) && to.isSupported( EPOCH_DAY ) )
         {
-            LocalDate fromDate;
-            LocalDate toDate;
+            months = assertValidUntil( from, to, ChronoUnit.MONTHS );
             try
             {
-                fromDate = LocalDate.from( from );
-                toDate = LocalDate.from( to );
+                from = from.plus( months, ChronoUnit.MONTHS );
             }
-            catch ( DateTimeException e )
+            catch ( DateTimeException | ArithmeticException e )
             {
-                throw new InvalidValuesArgumentException( e.getMessage(), e );
+                throw new TemporalArithmeticException( e.getMessage(), e );
             }
-            Period period = Period.between( fromDate, toDate );
-            months = period.getYears() * 12L + period.getMonths();
-            days = period.getDays();
-            if ( months != 0 || days != 0 )
+
+            days = assertValidUntil( from, to, ChronoUnit.DAYS );
+            try
             {
-                // Adjust in order to get to a point where we can compute the time difference,
-                // without having to bother with the length of days (which might differ due to timezone)
-                try
-                {
-                    from = from.plus( period );
-                }
-                catch ( DateTimeException | ArithmeticException e )
-                {
-                    throw new TemporalArithmeticException( e.getMessage(), e );
-                }
+                from = from.plus( days, ChronoUnit.DAYS );
+            }
+            catch ( DateTimeException | ArithmeticException e )
+            {
+                throw new TemporalArithmeticException( e.getMessage(), e );
             }
         }
-        // Compute the time difference - which is simple at this point
-        // NANOS of a day will never overflow a long
         long nanos = assertValidUntil( from, to, NANOS );
         return newDuration( months, days, nanos / NANOS_PER_SECOND, nanos % NANOS_PER_SECOND );
     }

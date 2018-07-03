@@ -71,7 +71,7 @@ public class RemoteStoreTest
         // when
         AdvertisedSocketAddress localhost = new AdvertisedSocketAddress( "127.0.0.1", 1234 );
         CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( localhost );
-        remoteStore.copy( catchupAddressProvider, storeId, new File( "destination" ) );
+        remoteStore.copy( catchupAddressProvider, storeId, new File( "destination" ), true );
 
         // then
         verify( storeCopyClient ).copyStoreFiles( eq( catchupAddressProvider ), eq( storeId ), any( StoreFileStreamProvider.class ), any(), any() );
@@ -101,7 +101,7 @@ public class RemoteStoreTest
                 null, storeCopyClient, txPullClient, factory( writer ), Config.defaults(), new Monitors() );
 
         // when
-        remoteStore.copy( catchupAddressProvider, wantedStoreId, new File( "destination" ) );
+        remoteStore.copy( catchupAddressProvider, wantedStoreId, new File( "destination" ), true );
 
         // then
         long previousTxId = lastFlushedTxId - 1; // the interface is defined as asking for the one preceding
@@ -129,7 +129,7 @@ public class RemoteStoreTest
         // when
         try
         {
-            remoteStore.copy( catchupAddressProvider, storeId, null );
+            remoteStore.copy( catchupAddressProvider, storeId, null, true );
         }
         catch ( StoreCopyFailedException e )
         {
@@ -144,7 +144,7 @@ public class RemoteStoreTest
     {
         TransactionLogCatchUpFactory factory = mock( TransactionLogCatchUpFactory.class );
         when( factory.create( isNull(), any( FileSystemAbstraction.class ), isNull(), any( Config.class ),
-                any( LogProvider.class ), anyLong(), anyBoolean(), anyBoolean() ) ).thenReturn( writer );
+                any( LogProvider.class ), anyLong(), anyBoolean(), anyBoolean(), anyBoolean() ) ).thenReturn( writer );
         return factory;
     }
 }

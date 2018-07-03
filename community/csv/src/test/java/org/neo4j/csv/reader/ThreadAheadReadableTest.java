@@ -19,20 +19,20 @@
  */
 package org.neo4j.csv.reader;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.CharArrayReader;
 import java.io.IOException;
 import java.util.concurrent.locks.LockSupport;
 
 import static java.util.Arrays.copyOfRange;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ThreadAheadReadableTest
+class ThreadAheadReadableTest
 {
     @Test
-    public void shouldReadAhead() throws Exception
+    void shouldReadAhead() throws Exception
     {
         // GIVEN
         TrackingReader actual = new TrackingReader( 23 );
@@ -74,7 +74,7 @@ public class ThreadAheadReadableTest
     }
 
     @Test
-    public void shouldHandleReadAheadEmptyData() throws Exception
+    void shouldHandleReadAheadEmptyData() throws Exception
     {
         // GIVEN
         TrackingReader actual = new TrackingReader( 0 );
@@ -91,7 +91,7 @@ public class ThreadAheadReadableTest
         assertEquals( buffer.pivot(), buffer.front() );
     }
 
-    private void assertBuffer( char[] expectedChars, SectionedCharBuffer buffer, int charsInBack, int charsInFront )
+    private static void assertBuffer( char[] expectedChars, SectionedCharBuffer buffer, int charsInBack, int charsInFront )
     {
         assertEquals( buffer.pivot() - charsInBack, buffer.back() );
         assertEquals( buffer.pivot() + charsInFront, buffer.front() );

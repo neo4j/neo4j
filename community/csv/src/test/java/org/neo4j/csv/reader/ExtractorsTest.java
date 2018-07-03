@@ -19,22 +19,22 @@
  */
 package org.neo4j.csv.reader;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.csv.reader.Extractors.IntExtractor;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class ExtractorsTest
+class ExtractorsTest
 {
     @Test
-    public void shouldExtractStringArray()
+    void shouldExtractStringArray()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -50,7 +50,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractLongArray()
+    void shouldExtractLongArray()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -67,7 +67,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractBooleanArray()
+    void shouldExtractBooleanArray()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -83,7 +83,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractDoubleArray()
+    void shouldExtractDoubleArray()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -99,7 +99,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldFailExtractingLongArrayWhereAnyValueIsEmpty()
+    void shouldFailExtractingLongArrayWhereAnyValueIsEmpty()
     {
         // GIVEN
         Extractors extractors = new Extractors( ';' );
@@ -107,36 +107,22 @@ public class ExtractorsTest
         String data = toString( longData, ';' ) + ";";
 
         // WHEN extracting long[] from "<number>;<number>...;" i.e. ending with a delimiter
-        try
-        {
-            extractors.longArray().extract( data.toCharArray(), 0, data.length(), false );
-            fail( "Should have failed" );
-        }
-        catch ( NumberFormatException e )
-        {   // Great
-        }
+        assertThrows( NumberFormatException.class, () -> extractors.longArray().extract( data.toCharArray(), 0, data.length(), false ) );
     }
 
     @Test
-    public void shouldFailExtractingLongArrayWhereAnyValueIsntReallyANumber()
+    void shouldFailExtractingLongArrayWhereAnyValueIsntReallyANumber()
     {
         // GIVEN
         Extractors extractors = new Extractors( ';' );
 
         // WHEN extracting long[] from "<number>;<number>...;" i.e. ending with a delimiter
         String data = "123;456;abc;789";
-        try
-        {
-            extractors.valueOf( "long[]" ).extract( data.toCharArray(), 0, data.length(), false );
-            fail( "Should have failed" );
-        }
-        catch ( NumberFormatException e )
-        {   // Great
-        }
+        assertThrows( NumberFormatException.class, () -> extractors.valueOf( "long[]" ).extract( data.toCharArray(), 0, data.length(), false ) );
     }
 
     @Test
-    public void shouldExtractPoint()
+    void shouldExtractPoint()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -153,7 +139,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractNegativeInt()
+    void shouldExtractNegativeInt()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -169,7 +155,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractEmptyStringForEmptyArrayString()
+    void shouldExtractEmptyStringForEmptyArrayString()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -184,7 +170,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractEmptyLongArrayForEmptyArrayString()
+    void shouldExtractEmptyLongArrayForEmptyArrayString()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -199,7 +185,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractTwoEmptyStringsForSingleDelimiterInArrayString()
+    void shouldExtractTwoEmptyStringsForSingleDelimiterInArrayString()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -214,7 +200,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractEmptyStringForEmptyQuotedString()
+    void shouldExtractEmptyStringForEmptyQuotedString()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -229,7 +215,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractNullForEmptyQuotedStringIfConfiguredTo()
+    void shouldExtractNullForEmptyQuotedStringIfConfiguredTo()
     {
         // GIVEN
         Extractors extractors = new Extractors( ';', true );
@@ -244,7 +230,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldTrimStringArrayIfConfiguredTo()
+    void shouldTrimStringArrayIfConfiguredTo()
     {
         // GIVEN
         Extractors extractors = new Extractors( ';', true, true );
@@ -260,7 +246,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldNotTrimStringIfNotConfiguredTo()
+    void shouldNotTrimStringIfNotConfiguredTo()
     {
         // GIVEN
         Extractors extractors = new Extractors( ';', true, false );
@@ -276,7 +262,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldCloneExtractor()
+    void shouldCloneExtractor()
     {
         // GIVEN
         Extractors extractors = new Extractors( ';' );
@@ -296,7 +282,7 @@ public class ExtractorsTest
         assertEquals( v1, e1.value() );
     }
 
-    private String toString( long[] values, char delimiter )
+    private static String toString( long[] values, char delimiter )
     {
         StringBuilder builder = new StringBuilder();
         for ( long value : values )
@@ -306,7 +292,7 @@ public class ExtractorsTest
         return builder.toString();
     }
 
-    private String toString( double[] values, char delimiter )
+    private static String toString( double[] values, char delimiter )
     {
         StringBuilder builder = new StringBuilder();
         for ( double value : values )
@@ -316,7 +302,7 @@ public class ExtractorsTest
         return builder.toString();
     }
 
-    private String toString( boolean[] values, char delimiter )
+    private static String toString( boolean[] values, char delimiter )
     {
         StringBuilder builder = new StringBuilder();
         for ( boolean value : values )
@@ -326,12 +312,12 @@ public class ExtractorsTest
         return builder.toString();
     }
 
-    private void assertBooleanArrayEquals( boolean[] expected, boolean[] values )
+    private static void assertBooleanArrayEquals( boolean[] expected, boolean[] values )
     {
-        assertEquals( "Array lengths differ", expected.length, values.length );
+        assertEquals( expected.length, values.length, "Array lengths differ" );
         for ( int i = 0; i < expected.length; i++ )
         {
-            assertEquals( "Item " + i + " differs", expected[i], values[i] );
+            assertEquals( expected[i], values[i], "Item " + i + " differs" );
         }
     }
 }

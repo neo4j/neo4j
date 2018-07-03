@@ -47,18 +47,18 @@ object inliningContextCreator extends (ast.Statement => InliningContext) {
           (context.spoilVariable(sortItem.expression.asInstanceOf[Variable]), Some(identity))
 
       // Do not inline pattern variables, unless they are clean aliases of previous variables
-      case NodePattern(Some(variable), _, _) =>
+      case NodePattern(Some(variable), _, _, _) =>
         context =>
           (spoilVariableIfNotAliased(variable, context), Some(identity))
 
-      case RelationshipPattern(Some(variable), _, _, _, _, _) =>
+      case RelationshipPattern(Some(variable), _, _, _, _, _, _) =>
         context =>
           (spoilVariableIfNotAliased(variable, context), Some(identity))
     }
   }
 
   private def spoilVariableIfNotAliased(variable: LogicalVariable, context: InliningContext): InliningContext =
-    if (context.isAliasedVarible(variable)) context
+    if (context.isAliasedVariable(variable)) context
     else context.spoilVariable(variable)
 
   private def aliasedReturnItems(items: Seq[ast.ReturnItem]): Map[LogicalVariable, Expression] =

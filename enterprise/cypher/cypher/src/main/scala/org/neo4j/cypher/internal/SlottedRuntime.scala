@@ -22,22 +22,19 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.compatibility.CypherRuntime
+import org.neo4j.cypher.internal.compatibility.InterpretedRuntime.InterpretedExecutionPlan
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotAllocation.PhysicalPlan
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{PeriodicCommitInfo, ExecutionPlan => ExecutionPlan_V35}
-import org.neo4j.cypher.internal.compatibility.{CypherRuntime, InterpretedRuntime}
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.runtime.slotted.expressions.{CompiledExpressionConverter, SlottedExpressionConverters}
 import org.neo4j.cypher.internal.runtime.slotted.{SlottedExecutionResultBuilderFactory, SlottedPipeBuilder}
-import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexUsage, LogicalPlan}
-import org.neo4j.values.virtual.MapValue
+import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.opencypher.v9_0.ast.semantics.SemanticTable
-import org.opencypher.v9_0.frontend.PlannerName
 import org.opencypher.v9_0.util.CypherException
 
 object SlottedRuntime extends CypherRuntime[EnterpriseRuntimeContext] with DebugPrettyPrinter {
@@ -68,29 +65,19 @@ object SlottedRuntime extends CypherRuntime[EnterpriseRuntimeContext] with Debug
         printRewrittenPlanInfo(logicalPlan)
       }
 
-      val converters = new ExpressionConverters(new CompiledExpressionConverter(context.log),
-        SlottedExpressionConverters, CommunityExpressionConverter)
+      val converters = new ExpressionConverters(
+        new CompiledExpressionConverter(context.log, physicalPlan.slotConfigurations(state.logicalPlan.id)),
+        SlottedExpressionConverters,
+        CommunityExpressionConverter)
+
       val pipeBuilderFactory = SlottedPipeBuilder.Factory(physicalPlan)
       val executionPlanBuilder = new PipeExecutionPlanBuilder(expressionConverters = converters, pipeBuilderFactory = pipeBuilderFactory)
-      val readOnly = state.solveds(state.logicalPlan.id).readOnly
-      val pipeBuildContext = PipeExecutionBuilderContext(state.semanticTable(), readOnly, state.cardinalities)
-      val pipe = executionPlanBuilder.build(logicalPlan)(pipeBuildContext, context.planContext)
+      val pipeBuildContext = PipeExecutionBuilderContext(state.semanticTable(), context.readOnly, state.cardinalities)
+      val pipe = executionPlanBuilder.build(logicalPlan)(pipeBuildContext, context.tokenContext)
       val periodicCommitInfo = state.periodicCommit.map(x => PeriodicCommitInfo(x.batchSize))
       val columns = state.statement().returnColumns
       val resultBuilderFactory =
-        new SlottedExecutionResultBuilderFactory(pipe, readOnly, columns, logicalPlan, physicalPlan.slotConfigurations)
-      val func = InterpretedRuntime.getExecutionPlanFunction(periodicCommitInfo,
-        resultBuilderFactory,
-        context.notificationLogger,
-        state.plannerName,
-        SlottedRuntimeName,
-        readOnly,
-        state.cardinalities)
-
-      val fp = PlanFingerprint.take(context.clock, context.planContext.txIdProvider, context.planContext.statistics)
-      val fingerprint = new PlanFingerprintReference(fp)
-      val periodicCommit = periodicCommitInfo.isDefined
-      val indexes = logicalPlan.indexUsage
+        new SlottedExecutionResultBuilderFactory(pipe, context.readOnly, columns, logicalPlan, physicalPlan.slotConfigurations)
 
       if (ENABLE_DEBUG_PRINTS) {
         if (!PRINT_PLAN_INFO_EARLY) {
@@ -101,7 +88,14 @@ object SlottedRuntime extends CypherRuntime[EnterpriseRuntimeContext] with Debug
         printPipe(physicalPlan.slotConfigurations, pipe)
       }
 
-      SlottedExecutionPlan(fingerprint, periodicCommit, state.plannerName, indexes, func)
+      new InterpretedExecutionPlan(
+        periodicCommitInfo,
+        resultBuilderFactory,
+        context.notificationLogger,
+        state.plannerName,
+        SlottedRuntimeName,
+        context.readOnly,
+        state.cardinalities)
     }
     catch {
       case e: CypherException =>
@@ -117,25 +111,8 @@ object SlottedRuntime extends CypherRuntime[EnterpriseRuntimeContext] with Debug
 
   private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan, semanticTable: SemanticTable): (LogicalPlan, PhysicalPlan) = {
     val physicalPlan: PhysicalPlan = SlotAllocation.allocateSlots(beforeRewrite, semanticTable)
-    val slottedRewriter = new SlottedRewriter(context.planContext)
+    val slottedRewriter = new SlottedRewriter(context.tokenContext)
     val logicalPlan = slottedRewriter(beforeRewrite, physicalPlan.slotConfigurations)
     (logicalPlan, physicalPlan)
   }
-
-  case class SlottedExecutionPlan(fingerprint: PlanFingerprintReference,
-                                  isPeriodicCommit: Boolean,
-                                  plannerUsed: PlannerName,
-                                  override val plannedIndexUsage: Seq[IndexUsage],
-                                  runFunction: (QueryContext, ExecutionMode, MapValue) => InternalExecutionResult
-                                 ) extends ExecutionPlan_V35 {
-
-    override def run(queryContext: QueryContext, planType: ExecutionMode,
-                     params: MapValue): InternalExecutionResult =
-      runFunction(queryContext, planType, params)
-
-    override def reusability: ReusabilityState = MaybeReusable(fingerprint)
-
-    override def runtimeUsed: RuntimeName = SlottedRuntimeName
-  }
-
 }

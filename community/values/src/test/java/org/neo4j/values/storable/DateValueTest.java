@@ -19,7 +19,7 @@
  */
 package org.neo4j.values.storable;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -30,11 +30,12 @@ import java.util.List;
 import org.neo4j.values.utils.InvalidValuesArgumentException;
 import org.neo4j.values.utils.TemporalParseException;
 
+import static java.lang.String.format;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.values.storable.DateValue.date;
 import static org.neo4j.values.storable.DateValue.ordinalDate;
 import static org.neo4j.values.storable.DateValue.parse;
@@ -42,13 +43,11 @@ import static org.neo4j.values.storable.DateValue.quarterDate;
 import static org.neo4j.values.storable.DateValue.weekDate;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
-import static org.neo4j.values.utils.AnyValueTestUtil.assertThrows;
 
-@SuppressWarnings( "ThrowableNotThrown" )
-public class DateValueTest
+class DateValueTest
 {
     @Test
-    public void shouldParseYear()
+    void shouldParseYear()
     {
         assertEquals( date( 2015, 1, 1 ), parse( "2015" ) );
         assertEquals( date( 2015, 1, 1 ), parse( "+2015" ) );
@@ -58,7 +57,7 @@ public class DateValueTest
     }
 
     @Test
-    public void shouldParseYearMonth()
+    void shouldParseYearMonth()
     {
         assertEquals( date( 2015, 3, 1 ), parse( "201503" ) );
         assertEquals( date( 2015, 3, 1 ), parse( "2015-03" ) );
@@ -69,7 +68,7 @@ public class DateValueTest
     }
 
     @Test
-    public void shouldParseYearWeek()
+    void shouldParseYearWeek()
     {
         assertEquals( weekDate( 2015, 5, 1 ), parse( "2015W05" ) );
         assertEquals( weekDate( 2015, 53, 1 ), parse( "2015W53" ) ); // 2015 had 53 weeks
@@ -81,7 +80,7 @@ public class DateValueTest
     }
 
     @Test
-    public void shouldParseYearQuarter()
+    void shouldParseYearQuarter()
     {
         assumeTrue( DateValue.QUARTER_DATES );
         assertEquals( quarterDate( 2017, 3, 1 ), parse( "2017Q3" ) );
@@ -92,7 +91,7 @@ public class DateValueTest
     }
 
     @Test
-    public void shouldParseCalendarDate()
+    void shouldParseCalendarDate()
     {
         assertEquals( date( 2016, 1, 27 ), parse( "20160127" ) );
         assertEquals( date( 2016, 1, 27 ), parse( "+2016-01-27" ) );
@@ -102,7 +101,7 @@ public class DateValueTest
     }
 
     @Test
-    public void shouldParseWeekDate()
+    void shouldParseWeekDate()
     {
         assertEquals( weekDate( 2015, 5, 6 ), parse( "2015W056" ) );
         assertCannotParse( "+2015W056" );
@@ -113,7 +112,7 @@ public class DateValueTest
     }
 
     @Test
-    public void shouldParseQuarterDate()
+    void shouldParseQuarterDate()
     {
         assumeTrue( DateValue.QUARTER_DATES );
         assertEquals( quarterDate( 2017, 3, 92 ), parse( "2017Q392" ) );
@@ -122,7 +121,7 @@ public class DateValueTest
     }
 
     @Test
-    public void shouldParseOrdinalDate()
+    void shouldParseOrdinalDate()
     {
         assertEquals( ordinalDate( 2017, 3 ), parse( "2017003" ) );
         assertCannotParse( "20173" );
@@ -132,29 +131,20 @@ public class DateValueTest
     }
 
     @Test
-    public void shouldEnforceStrictWeekRanges()
+    void shouldEnforceStrictWeekRanges()
     {
         LocalDate localDate = weekDate( 2017, 52, 7 ).temporal();
-        assertEquals( "Sunday is the seventh day of the week.", DayOfWeek.SUNDAY, localDate.getDayOfWeek() );
+        assertEquals( DayOfWeek.SUNDAY, localDate.getDayOfWeek(), "Sunday is the seventh day of the week." );
         assertEquals( 52, localDate.get( IsoFields.WEEK_OF_WEEK_BASED_YEAR ) );
         assertEquals( localDate, date( 2017, 12, 31 ).temporal() );
-        try
-        {
-            DateValue value = weekDate( 2017, 53, 1 );
-            fail( String.format(
-                    "2017 does not have 53 weeks, %s is week %s of %s", value,
-                    value.temporal().get( IsoFields.WEEK_OF_WEEK_BASED_YEAR ),
-                    value.temporal().get( IsoFields.WEEK_BASED_YEAR ) ) );
-        }
-        catch ( InvalidValuesArgumentException expected )
-        {
-            assertEquals( "Year 2017 does not contain 53 weeks.", expected.getMessage() );
-        }
+        InvalidValuesArgumentException expected =
+                assertThrows( InvalidValuesArgumentException.class, () -> weekDate( 2017, 53, 1 ), "2017 does not have 53 weeks." );
+        assertEquals( "Year 2017 does not contain 53 weeks.", expected.getMessage() );
         assertEquals( date( 2016, 1, 1 ), weekDate( 2015, 53, 5 ) );
     }
 
     @Test
-    public void shouldEnforceStrictQuarterRanges()
+    void shouldEnforceStrictQuarterRanges()
     {
         assertEquals( date( 2017, 3, 31 ), quarterDate( 2017, 1, 90 ) );
         assertThrows( InvalidValuesArgumentException.class, () -> quarterDate( 2017, 1, 0 ) );
@@ -171,14 +161,14 @@ public class DateValueTest
     }
 
     @Test
-    public void shouldNotParseInvalidDates()
+    void shouldNotParseInvalidDates()
     {
         assertCannotParse( "2015W54" ); // no year should have more than 53 weeks (2015 had 53 weeks)
         assertThrows( InvalidValuesArgumentException.class, () -> parse( "2017W53" ) ); // 2017 only has 52 weeks
     }
 
     @Test
-    public void shouldWriteDate()
+    void shouldWriteDate()
     {
         // given
         for ( DateValue value : new DateValue[] {
@@ -205,7 +195,7 @@ public class DateValueTest
     }
 
     @Test
-    public void shouldAddDurationToDates()
+    void shouldAddDurationToDates()
     {
         assertEquals( date( 2018, 2, 1 ),
                 date( 2018, 1, 1 ).add( DurationValue.duration( 1, 0, 900, 0 ) ) );
@@ -216,7 +206,7 @@ public class DateValueTest
     }
 
     @Test
-    public void shouldReuseInstanceInArithmetics()
+    void shouldReuseInstanceInArithmetics()
     {
         final DateValue date = date( 2018, 2, 1 );
         assertSame( date,
@@ -228,7 +218,7 @@ public class DateValueTest
     }
 
     @Test
-    public void shouldSubtractDurationFromDates()
+    void shouldSubtractDurationFromDates()
     {
         assertEquals( date( 2018, 1, 1 ),
                 date( 2018, 2, 1 ).sub( DurationValue.duration( 1, 0, 900, 0 ) ) );
@@ -238,30 +228,20 @@ public class DateValueTest
                 date( 2018, 1, 31 ).sub( DurationValue.duration( -1, 0, 0, 0 ) ) );
     }
 
-    @SuppressWarnings( "UnusedReturnValue" )
-    private TemporalParseException assertCannotParse( String text )
-    {
-        DateValue value;
-        try
-        {
-            value = parse( text );
-        }
-        catch ( TemporalParseException e )
-        {
-            return e;
-        }
-        throw new AssertionError( String.format( "'%s' parsed to %s", text, value ) );
-    }
-
     @Test
-    public void shouldEqualItself()
+    void shouldEqualItself()
     {
         assertEqual( date( 2018, 1, 31 ), date( 2018, 1, 31 ) );
     }
 
     @Test
-    public void shouldNotEqualOther()
+    void shouldNotEqualOther()
     {
         assertNotEqual( date( 2018, 1, 31 ), date( 2018, 1, 30 ) );
+    }
+
+    private static void assertCannotParse( String text )
+    {
+        assertThrows( TemporalParseException.class, () -> parse( text ), format( "'%s' parsed to value", text ) );
     }
 }

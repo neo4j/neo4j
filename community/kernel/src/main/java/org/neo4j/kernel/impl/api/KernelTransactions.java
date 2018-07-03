@@ -44,7 +44,7 @@ import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.ExplicitIndexTransactionStateImpl;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.MonotonicCounter;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -101,7 +102,8 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final AutoIndexing autoIndexing;
     private final ExplicitIndexStore explicitIndexStore;
     private final IndexingProvidersService indexProviders;
-    private final PropertyKeyTokenHolder propertyKeyTokenHolder;
+    private final TokenHolders tokenHolders;
+    private final Dependencies dataSourceDependencies;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final SchemaState schemaState;
 
@@ -134,23 +136,15 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
      */
     private volatile boolean stopped = true;
 
-    public KernelTransactions( StatementLocksFactory statementLocksFactory,
-            ConstraintIndexCreator constraintIndexCreator, StatementOperationParts statementOperations,
-            SchemaWriteGuard schemaWriteGuard, TransactionHeaderInformationFactory txHeaderFactory,
-            TransactionCommitProcess transactionCommitProcess, IndexConfigStore indexConfigStore,
-            ExplicitIndexProviderLookup explicitIndexProviderLookup, TransactionHooks hooks,
-            TransactionMonitor transactionMonitor, AvailabilityGuard availabilityGuard, Tracers tracers,
-            StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore,
-            SystemNanoClock clock,
-            AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability,
-            AutoIndexing autoIndexing,
-            ExplicitIndexStore explicitIndexStore,
-            VersionContextSupplier versionContextSupplier,
-            CollectionsFactorySupplier collectionsFactorySupplier,
-            ConstraintSemantics constraintSemantics,
-            SchemaState schemaState,
-            IndexingProvidersService indexProviders,
-            PropertyKeyTokenHolder propertyKeyTokenHolder )
+    public KernelTransactions( StatementLocksFactory statementLocksFactory, ConstraintIndexCreator constraintIndexCreator,
+            StatementOperationParts statementOperations, SchemaWriteGuard schemaWriteGuard, TransactionHeaderInformationFactory txHeaderFactory,
+            TransactionCommitProcess transactionCommitProcess, IndexConfigStore indexConfigStore, ExplicitIndexProvider explicitIndexProviderLookup,
+            TransactionHooks hooks, TransactionMonitor transactionMonitor, AvailabilityGuard availabilityGuard, Tracers tracers, StorageEngine storageEngine,
+            Procedures procedures, TransactionIdStore transactionIdStore, SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef,
+            AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability, AutoIndexing autoIndexing,
+            ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
+            ConstraintSemantics constraintSemantics, SchemaState schemaState, IndexingProvidersService indexProviders, TokenHolders tokenHolders,
+            Dependencies dataSourceDependencies )
     {
         this.statementLocksFactory = statementLocksFactory;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -171,7 +165,8 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.autoIndexing = autoIndexing;
         this.explicitIndexStore = explicitIndexStore;
         this.indexProviders = indexProviders;
-        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
+        this.tokenHolders = tokenHolders;
+        this.dataSourceDependencies = dataSourceDependencies;
         this.explicitIndexTxStateSupplier = () ->
                 new CachingExplicitIndexTransactionState(
                         new ExplicitIndexTransactionStateImpl( indexConfigStore, explicitIndexProviderLookup ) );
@@ -186,7 +181,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     public KernelTransaction newInstance( KernelTransaction.Type type, LoginContext loginContext, long timeout )
     {
         assertCurrentThreadIsNotBlockingNewTransactions();
-        SecurityContext securityContext = loginContext.authorize( propertyKeyTokenHolder::getOrCreateId );
+        SecurityContext securityContext = loginContext.authorize( tokenHolders.propertyKeyTokens()::getOrCreateId );
         try
         {
             while ( !newTransactionsLock.readLock().tryLock( 1, TimeUnit.SECONDS ) )
@@ -373,7 +368,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
                             tracers.pageCursorTracerSupplier, storageEngine, accessCapability,
                             autoIndexing,
                             explicitIndexStore, versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
-                            schemaState, indexProviders );
+                            schemaState, indexProviders, tokenHolders, dataSourceDependencies );
             this.transactions.add( tx );
             return tx;
         }

@@ -55,8 +55,8 @@ import org.neo4j.causalclustering.protocol.handshake.ApplicationSupportedProtoco
 import org.neo4j.causalclustering.protocol.handshake.HandshakeServerInitializer;
 import org.neo4j.causalclustering.protocol.handshake.ModifierProtocolRepository;
 import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
+import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
 

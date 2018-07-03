@@ -70,11 +70,11 @@ public class JmxUtils
     }
 
     @SuppressWarnings( "unchecked" )
-    public static <T> T invoke( ObjectName objectName, String attribute, Object[] params, String[] signatur )
+    public static <T> T invoke( ObjectName objectName, String attribute, Object[] params, String[] signature )
     {
         try
         {
-            return (T) mbeanServer.invoke( objectName, attribute, params, signatur );
+            return (T) mbeanServer.invoke( objectName, attribute, params, signature );
         }
         catch ( Exception e )
         {

@@ -19,22 +19,33 @@
  */
 package org.neo4j.csv.reader;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.StringReader;
 
 import org.neo4j.collection.RawIterator;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.csv.reader.Readables.wrap;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class MultiReadableTest
+class MultiReadableTest
 {
+    private static final Configuration CONFIG = new Configuration.Overridden( Configuration.DEFAULT )
+    {
+        @Override
+        public int bufferSize()
+        {
+            return 200;
+        }
+    };
+    private final Mark mark = new Mark();
+    private final Extractors extractors = new Extractors( ';' );
+    private final int delimiter = ',';
+
     @Test
-    public void shouldReadFromMultipleReaders() throws Exception
+    void shouldReadFromMultipleReaders() throws Exception
     {
         // GIVEN
         String[][] data = new String[][] {
@@ -55,7 +66,7 @@ public class MultiReadableTest
     }
 
     @Test
-    public void shouldHandleSourcesEndingWithNewLine() throws Exception
+    void shouldHandleSourcesEndingWithNewLine() throws Exception
     {
         // GIVEN
         String[][] data = new String[][] {
@@ -77,7 +88,7 @@ public class MultiReadableTest
     }
 
     @Test
-    public void shouldTrackAbsolutePosition() throws Exception
+    void shouldTrackAbsolutePosition() throws Exception
     {
         // GIVEN
         String[][] data = new String[][] {
@@ -93,7 +104,7 @@ public class MultiReadableTest
         reader.read( buffer, buffer.front() );
         assertEquals( 15, reader.position() );
         reader.read( buffer, buffer.front() );
-        assertEquals( "Should not transition to a new reader in the middle of a read", 23, reader.position() );
+        assertEquals( 23, reader.position(), "Should not transition to a new reader in the middle of a read" );
         assertEquals( "Reader1", reader.sourceDescription() );
 
         // we will transition to the new reader in the call below
@@ -106,7 +117,7 @@ public class MultiReadableTest
     }
 
     @Test
-    public void shouldNotCrossSourcesInOneRead() throws Exception
+    void shouldNotCrossSourcesInOneRead() throws Exception
     {
         // given
         String source1 = "abcdefghijklm";
@@ -131,15 +142,6 @@ public class MultiReadableTest
         read = readable.read( target, 0, target.length );
         assertEquals( 1/*added newline-char*/, read );
     }
-
-    private static final Configuration CONFIG = new Configuration.Overridden( Configuration.DEFAULT )
-    {
-        @Override
-        public int bufferSize()
-        {
-            return 200;
-        }
-    };
 
     private void assertNextLine( String[] line, CharSeeker seeker, Mark mark, Extractors extractors ) throws IOException
     {
@@ -168,7 +170,7 @@ public class MultiReadableTest
             public CharReadable next()
             {
                 String string = join( data[cursor++] );
-                return wrap( new StringReader( string )
+                return Readables.wrap( new StringReader( string )
                 {
                     @Override
                     public String toString()
@@ -200,7 +202,4 @@ public class MultiReadableTest
         };
     }
 
-    private final Mark mark = new Mark();
-    private final Extractors extractors = new Extractors( ';' );
-    private final int delimiter = ',';
 }

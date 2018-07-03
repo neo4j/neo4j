@@ -41,8 +41,6 @@ import org.neo4j.causalclustering.core.state.machines.token.TokenType;
 import org.neo4j.causalclustering.core.state.machines.tx.RecoverConsensusLogIndex;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransaction;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionStateMachine;
-import org.neo4j.kernel.impl.core.RelationshipTypeToken;
-import org.neo4j.storageengine.api.Token;
 
 import static java.lang.Math.max;
 import static org.junit.Assert.assertEquals;
@@ -154,19 +152,11 @@ public class CoreStateMachinesTest
         }
     }
 
-    @SuppressWarnings( "unchecked" )
     private final ReplicatedTransactionStateMachine txSM = mock( ReplicatedTransactionStateMachine.class );
-    @SuppressWarnings( "unchecked" )
-    private final ReplicatedTokenStateMachine<Token> labelTokenSM = mock( ReplicatedTokenStateMachine.class );
-    @SuppressWarnings( "unchecked" )
-    private final ReplicatedTokenStateMachine<RelationshipTypeToken> relationshipTypeTokenSM =
-            mock( ReplicatedTokenStateMachine.class );
-    @SuppressWarnings( "unchecked" )
-    private final ReplicatedTokenStateMachine<Token> propertyKeyTokenSM = mock( ReplicatedTokenStateMachine.class );
-    @SuppressWarnings( "unchecked" )
-    private final ReplicatedLockTokenStateMachine lockTokenSM =
-            mock( ReplicatedLockTokenStateMachine.class );
-    @SuppressWarnings( "unchecked" )
+    private final ReplicatedTokenStateMachine labelTokenSM = mock( ReplicatedTokenStateMachine.class );
+    private final ReplicatedTokenStateMachine relationshipTypeTokenSM = mock( ReplicatedTokenStateMachine.class );
+    private final ReplicatedTokenStateMachine propertyKeyTokenSM = mock( ReplicatedTokenStateMachine.class );
+    private final ReplicatedLockTokenStateMachine lockTokenSM = mock( ReplicatedLockTokenStateMachine.class );
     private final ReplicatedIdAllocationStateMachine idAllocationSM = mock( ReplicatedIdAllocationStateMachine.class );
     private final DummyMachine dummySM = mock( DummyMachine.class );
     private final RecoverConsensusLogIndex recoverConsensusLogIndex = mock( RecoverConsensusLogIndex.class );

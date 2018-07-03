@@ -37,6 +37,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -45,9 +46,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyValueRecordSizeCalculator;
-import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -108,7 +107,7 @@ public class CsvInputEstimateCalculationIT
         Input input = generateData();
         RecordFormats format = LATEST_RECORD_FORMATS;
         Input.Estimates estimates = input.calculateEstimates( new PropertyValueRecordSizeCalculator(
-                LATEST_RECORD_FORMATS.property().getRecordSize( NO_STORE_HEADER ),
+                format.property().getRecordSize( NO_STORE_HEADER ),
                 parseInt( GraphDatabaseSettings.string_block_size.getDefaultValue() ), 0,
                 parseInt( GraphDatabaseSettings.array_block_size.getDefaultValue() ), 0 ) );
 
@@ -131,7 +130,7 @@ public class CsvInputEstimateCalculationIT
             assertRoughlyEqual( estimates.numberOfNodes(), stores.getNodeStore().getNumberOfIdsInUse() );
             assertRoughlyEqual( estimates.numberOfRelationships(), stores.getRelationshipStore().getNumberOfIdsInUse() );
             assertRoughlyEqual( estimates.numberOfNodeProperties() + estimates.numberOfRelationshipProperties(),
-                    calculateNumberOfProperties( stores.getPropertyStore() ) );
+                    calculateNumberOfProperties( stores ) );
         }
         assertRoughlyEqual( propertyStorageSize(), estimates.sizeOfNodeProperties() + estimates.sizeOfRelationshipProperties() );
     }
@@ -192,17 +191,19 @@ public class CsvInputEstimateCalculationIT
                 IdType.INTEGER, COMMAS, Collector.EMPTY, groups );
     }
 
-    private long calculateNumberOfProperties( PropertyStore propertyStore )
+    private long calculateNumberOfProperties( NeoStores stores )
     {
         long count = 0;
-        try ( RecordCursor<PropertyRecord> cursor = propertyStore.newRecordCursor( propertyStore.newRecord() ).acquire( 0, CHECK ) )
+        PropertyRecord record = stores.getPropertyStore().newRecord();
+        try ( PageCursor cursor = stores.getPropertyStore().openPageCursorForReading( 0 ) )
         {
-            long highId = propertyStore.getHighId();
+            long highId = stores.getPropertyStore().getHighId();
             for ( long id = 0; id < highId; id++ )
             {
-                if ( cursor.next( id ) )
+                stores.getPropertyStore().getRecordByCursor( id, record, CHECK, cursor );
+                if ( record.inUse() )
                 {
-                    count += count( cursor.get() );
+                    count += count( record );
                 }
             }
         }

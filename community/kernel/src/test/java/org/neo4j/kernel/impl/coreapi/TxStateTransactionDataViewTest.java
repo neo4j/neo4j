@@ -30,6 +30,8 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -65,13 +67,20 @@ public class TxStateTransactionDataViewTest
     private final Statement stmt = mock( Statement.class );
     private final StubStorageCursors ops = new StubStorageCursors();
     private final KernelTransaction transaction = mock( KernelTransaction.class );
+    private final TokenRead tokenRead = mock( TokenRead.class );
 
     private final TransactionState state = new TxState();
 
     @Before
-    public void setup()
+    public void setup() throws PropertyKeyIdNotFoundKernelException
     {
+        when( transaction.tokenRead() ).thenReturn( tokenRead );
         when( bridge.get() ).thenReturn( stmt );
+        when( tokenRead.propertyKeyName( anyInt() ) ).thenAnswer( invocationOnMock ->
+        {
+            int id = invocationOnMock.getArgument( 0 );
+            return ops.propertyKeyTokenHolder().getTokenById( id ).name();
+        } );
     }
 
     @Test
@@ -92,7 +101,9 @@ public class TxStateTransactionDataViewTest
         state.nodeDoDelete( 1L );
         state.nodeDoDelete( 2L );
 
-        int labelId = ops.labelGetOrCreateForName( "label" );
+        int labelId = 15;
+        when( tokenRead.nodeLabelName( labelId ) ).thenReturn( "label" );
+
         ops.withNode( 1, new long[]{labelId}, genericMap( "key", Values.of( "p" ) ) );
         ops.withNode( 2, NO_LABELS );
 
@@ -161,7 +172,7 @@ public class TxStateTransactionDataViewTest
     public void shouldListAddedNodePropertiesProperties() throws Exception
     {
         // Given
-        int propertyKeyId = ops.propertyKeyGetOrCreateForName( "theKey" );
+        int propertyKeyId = ops.propertyKeyTokenHolder().getOrCreateId( "theKey" );
         Value prevValue = Values.of( "prevValue" );
         state.nodeDoChangeProperty( 1L, propertyKeyId, Values.of( "newValue" ) );
         ops.withNode( 1, NO_LABELS, genericMap( "theKey", prevValue ) );
@@ -181,7 +192,7 @@ public class TxStateTransactionDataViewTest
     public void shouldListRemovedNodeProperties() throws Exception
     {
         // Given
-        int propertyKeyId = ops.propertyKeyGetOrCreateForName( "theKey" );
+        int propertyKeyId = ops.propertyKeyTokenHolder().getOrCreateId( "theKey" );
         Value prevValue = Values.of( "prevValue" );
         state.nodeDoRemoveProperty( 1L, propertyKeyId );
         ops.withNode( 1, NO_LABELS, genericMap( "theKey", prevValue ) );
@@ -200,7 +211,7 @@ public class TxStateTransactionDataViewTest
     public void shouldListRemovedRelationshipProperties() throws Exception
     {
         // Given
-        int propertyKeyId = ops.propertyKeyGetOrCreateForName( "theKey" );
+        int propertyKeyId = ops.propertyKeyTokenHolder().getOrCreateId( "theKey" );
         Value prevValue = Values.of( "prevValue" );
         state.relationshipDoRemoveProperty( 1L, propertyKeyId );
         ops.withRelationship( 1, 0, 0, 0, genericMap( "theKey", prevValue ) );
@@ -220,7 +231,7 @@ public class TxStateTransactionDataViewTest
     {
         // Given
         Value prevValue = Values.of( "prevValue" );
-        int propertyKeyId = ops.propertyKeyGetOrCreateForName( "theKey" );
+        int propertyKeyId = ops.propertyKeyTokenHolder().getOrCreateId( "theKey" );
         state.relationshipDoReplaceProperty( 1L, propertyKeyId, prevValue, Values.of( "newValue" ) );
         ops.withRelationship( 1, 0, 0, 0, genericMap( "theKey", prevValue ) );
 
@@ -239,7 +250,8 @@ public class TxStateTransactionDataViewTest
     public void shouldListAddedLabels() throws Exception
     {
         // Given
-        int labelId = ops.labelGetOrCreateForName( "theLabel" );
+        int labelId = 2;
+        when( tokenRead.nodeLabelName( labelId ) ).thenReturn( "theLabel" );
         state.nodeDoAddLabel( labelId, 1L );
 
         // When
@@ -255,7 +267,8 @@ public class TxStateTransactionDataViewTest
     public void shouldListRemovedLabels() throws Exception
     {
         // Given
-        int labelId = ops.labelGetOrCreateForName( "theLabel" );
+        int labelId = 2;
+        when( tokenRead.nodeLabelName( labelId ) ).thenReturn( "theLabel" );
         state.nodeDoRemoveLabel( labelId, 1L );
 
         // When

@@ -99,7 +99,7 @@ public class WritableIndexReferenceFactoryTest
         assertNotSame( "Should return new refreshed index reference.", indexReference, refreshedIndexReference );
     }
 
-    private void writeSomething( IndexReference indexReference ) throws IOException
+    private static void writeSomething( IndexReference indexReference ) throws IOException
     {
         IndexWriter writer = indexReference.getWriter();
         writer.addDocument( new Document() );

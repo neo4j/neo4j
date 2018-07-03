@@ -570,7 +570,7 @@ test_expect_code() {
 
 # Public: Compare two files to see if expected output matches actual output.
 #
-# The TEST_CMP variable defines the command used for the comparision; it
+# The TEST_CMP variable defines the command used for the comparison; it
 # defaults to "diff -u". Only when the test script was started with --verbose,
 # will the command's output, the diff, be printed to the standard output.
 #
@@ -624,7 +624,7 @@ test_seq() {
 # Public: Check if the file expected to be empty is indeed empty, and barfs
 # otherwise.
 #
-# $1 - File to check for emptyness.
+# $1 - File to check for emptiness.
 #
 # Returns 0 if file is empty, 1 otherwise.
 test_must_be_empty() {

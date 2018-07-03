@@ -20,58 +20,54 @@
 package org.neo4j.index.impl.lucene.explicit;
 
 import org.apache.lucene.search.IndexSearcher;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ReadOnlyIndexReferenceTest
+class ReadOnlyIndexReferenceTest
 {
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
     private IndexIdentifier identifier = mock( IndexIdentifier.class );
     private IndexSearcher searcher = mock( IndexSearcher.class );
     private CloseTrackingIndexReader reader = new CloseTrackingIndexReader();
     private ReadOnlyIndexReference indexReference = new ReadOnlyIndexReference( identifier, searcher );
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         when( searcher.getIndexReader() ).thenReturn( reader );
     }
 
     @Test
-    public void obtainingWriterIsUnsupported()
+    void obtainingWriterIsUnsupported()
     {
-        expectedException.expect( UnsupportedOperationException.class );
-        expectedException.expectMessage( "Read only indexes do not have index writers." );
-        indexReference.getWriter();
+        UnsupportedOperationException uoe = assertThrows( UnsupportedOperationException.class, () -> indexReference.getWriter() );
+        assertEquals( uoe.getMessage(), "Read only indexes do not have index writers." );
     }
 
     @Test
-    public void markAsStaleIsUnsupported()
+    void markAsStaleIsUnsupported()
     {
-        expectedException.expect( UnsupportedOperationException.class );
-        expectedException.expectMessage( "Read only indexes can't be marked as stale." );
-        indexReference.setStale();
+        UnsupportedOperationException uoe = assertThrows( UnsupportedOperationException.class, () -> indexReference.setStale() );
+        assertEquals( uoe.getMessage(), "Read only indexes can't be marked as stale." );
     }
 
     @Test
-    public void checkAndClearStaleAlwaysFalse()
+    void checkAndClearStaleAlwaysFalse()
     {
         assertFalse( indexReference.checkAndClearStale() );
     }
 
     @Test
-    public void disposeClosingSearcherAndMarkAsClosed() throws IOException
+    void disposeClosingSearcherAndMarkAsClosed() throws IOException
     {
         indexReference.dispose();
 
@@ -80,26 +76,26 @@ public class ReadOnlyIndexReferenceTest
     }
 
     @Test
-    public void detachIndexReferenceWhenSomeReferencesExist() throws IOException
+    void detachIndexReferenceWhenSomeReferencesExist() throws IOException
     {
         indexReference.incRef();
         indexReference.detachOrClose();
 
-        assertTrue( "Should leave index in detached state.", indexReference.isDetached() );
+        assertTrue( indexReference.isDetached(), "Should leave index in detached state." );
     }
 
     @Test
-    public void closeIndexReferenceWhenNoReferenceExist() throws IOException
+    void closeIndexReferenceWhenNoReferenceExist() throws IOException
     {
         indexReference.detachOrClose();
 
-        assertFalse( "Should leave index in closed state.", indexReference.isDetached() );
+        assertFalse( indexReference.isDetached(), "Should leave index in closed state." );
         assertTrue( reader.isClosed() );
         assertTrue( indexReference.isClosed() );
     }
 
     @Test
-    public void doNotCloseInstanceWhenSomeReferenceExist()
+    void doNotCloseInstanceWhenSomeReferenceExist()
     {
         indexReference.incRef();
         assertFalse( indexReference.close() );
@@ -108,12 +104,12 @@ public class ReadOnlyIndexReferenceTest
     }
 
     @Test
-    public void closeDetachedIndexReferencedOnlyOnce() throws IOException
+    void closeDetachedIndexReferencedOnlyOnce() throws IOException
     {
         indexReference.incRef();
         indexReference.detachOrClose();
 
-        assertTrue( "Should leave index in detached state.", indexReference.isDetached() );
+        assertTrue( indexReference.isDetached(), "Should leave index in detached state." );
 
         assertTrue( indexReference.close() );
         assertTrue( reader.isClosed() );
@@ -121,19 +117,19 @@ public class ReadOnlyIndexReferenceTest
     }
 
     @Test
-    public void doNotCloseDetachedIndexReferencedMoreThenOnce() throws IOException
+    void doNotCloseDetachedIndexReferencedMoreThenOnce() throws IOException
     {
         indexReference.incRef();
         indexReference.incRef();
         indexReference.detachOrClose();
 
-        assertTrue( "Should leave index in detached state.", indexReference.isDetached() );
+        assertTrue( indexReference.isDetached(), "Should leave index in detached state." );
 
         assertFalse( indexReference.close() );
     }
 
     @Test
-    public void doNotCloseReferencedIndex()
+    void doNotCloseReferencedIndex()
     {
         indexReference.incRef();
         assertFalse( indexReference.close() );
@@ -141,7 +137,7 @@ public class ReadOnlyIndexReferenceTest
     }
 
     @Test
-    public void closeNotReferencedIndex()
+    void closeNotReferencedIndex()
     {
         assertTrue( indexReference.close() );
     }

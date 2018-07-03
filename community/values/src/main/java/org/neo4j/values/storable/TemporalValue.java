@@ -504,7 +504,12 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             for ( Map.Entry<Field,AnyValue> entry : fields.entrySet() )
             {
                 Field f = entry.getKey();
-                if ( !f.isGroupSelector() && f != Field.timezone && f != Field.millisecond && f != Field.microsecond && f != Field.nanosecond )
+                if ( f == Field.year && fields.containsKey( Field.week ) )
+                {
+                    // Year can mean week-based year, if a week is specified.
+                    result = (Temp) result.with( IsoFields.WEEK_BASED_YEAR, safeCastIntegral( f.name(), entry.getValue(), f.defaultValue ) );
+                }
+                else if ( !f.isGroupSelector() && f != Field.timezone && f != Field.millisecond && f != Field.microsecond && f != Field.nanosecond )
                 {
                     TemporalField temporalField = f.field;
                     result = (Temp) result.with( temporalField, safeCastIntegral( f.name(), entry.getValue(), f.defaultValue ) );
@@ -581,6 +586,10 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
 
     }
 
+    /**
+     * All fields that can be a asigned to or read from temporals.
+     * Make sure that writable fields defined in "decreasing" order between year and nanosecond.
+     */
     protected enum Field
     {
         year( ChronoField.YEAR, 0 ),

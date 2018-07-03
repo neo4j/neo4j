@@ -22,7 +22,6 @@ package org.neo4j.server.database;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 

@@ -448,7 +448,6 @@ abstract class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
   }
 }
 
-
 class ParallelMorselRuntimeAcceptanceTest extends MorselRuntimeAcceptanceTest {
   //we use a ridiculously small morsel size in order to trigger as many morsel overflows as possible
   override def databaseConfig(): Map[Setting[_], String] = Map(

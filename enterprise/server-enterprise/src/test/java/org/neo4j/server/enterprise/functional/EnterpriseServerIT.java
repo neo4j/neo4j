@@ -35,6 +35,7 @@ import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.server.HTTP;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.hamcrest.CoreMatchers.is;
@@ -44,8 +45,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.cluster.ClusterSettings.cluster_server;
 import static org.neo4j.cluster.ClusterSettings.initial_hosts;
-import static org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings.mode;
 import static org.neo4j.cluster.ClusterSettings.server_id;
+import static org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings.mode;
 
 public class EnterpriseServerIT
 {
@@ -73,13 +74,14 @@ public class EnterpriseServerIT
             server.start();
             server.getDatabase();
 
-            assertThat( server.getDatabase().getGraph(), is( instanceOf(HighlyAvailableGraphDatabase.class) ) );
+            assertThat( server.getDatabase().getGraph(), is( instanceOf( HighlyAvailableGraphDatabase.class ) ) );
 
-            Client client = Client.create();
-            ClientResponse r = client.resource( getHaEndpoint( server ) )
-                    .accept( APPLICATION_JSON ).get( ClientResponse.class );
-            assertEquals( 200, r.getStatus() );
-            assertThat( r.getEntity( String.class ), containsString( "master" ) );
+            HTTP.Response haEndpoint = HTTP.GET( getHaEndpoint( server ) );
+            assertEquals( 200, haEndpoint.status() );
+            assertThat( haEndpoint.rawContent(), containsString( "master" ) );
+
+            HTTP.Response discovery = HTTP.GET( server.baseUri().toASCIIString() );
+            assertEquals( 200, discovery.status() );
         }
         finally
         {

@@ -29,6 +29,8 @@ import org.neo4j.values.storable.DurationValue
 
 class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
+  private val INTERPRETED_33_35_NO_RULE = Configs.Interpreted - Configs.Version3_1 - Configs.Version2_3 - Configs.AllRulePlanners
+
   // Non-deterministic query -- needs TCK design
   test("should aggregate using as grouping key expressions using variables in scope and nothing else") {
     val userId = createLabeledNode(Map("userId" -> 11), "User")
@@ -194,7 +196,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val r1 = relate(node1, node2)
 
     val query = "MATCH (a)-[r]-(b) RETURN a, r, b, count(a) ORDER BY a, r, b"
-    val result = executeWith(Configs.All - Configs.OldAndRule, query) // Neo4j version <= 3.1 cannot order by nodes
+    val result = executeWith(Configs.All - Configs.Before3_3AndRule, query) // Neo4j version <= 3.1 cannot order by nodes
     result.toList should equal(List(
       Map("a" -> node1, "r" -> r1, "b" -> node2, "count(a)" -> 1),
       Map("a" -> node2, "r" -> r1, "b" -> node1, "count(a)" -> 1)
@@ -207,7 +209,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val r1 = relate(node1, node2)
 
     val query = "MATCH (a)-[r]-(b) RETURN a, r, b, a.prop as s, count(a) ORDER BY a, r, b, s"
-    val result = executeWith(Configs.All - Configs.OldAndRule, query) // Neo4j version <= 3.1 cannot order by nodes
+    val result = executeWith(Configs.All - Configs.Before3_3AndRule, query) // Neo4j version <= 3.1 cannot order by nodes
     result.toList should equal(List(
       Map("a" -> node1, "r" -> r1, "b" -> node2, "s" -> "alice", "count(a)" -> 1),
       Map("a" -> node2, "r" -> r1, "b" -> node1, "s" -> "bob", "count(a)" -> 1)
@@ -229,7 +231,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
 
   test("Should sum durations") {
     val query = "UNWIND [duration('PT10S'), duration('P1D'), duration('PT30.5S')] as x RETURN sum(x) AS length"
-    executeWith(Configs.Interpreted - Configs.OldAndRule, query).toList should equal(List(Map("length" -> DurationValue.duration(0,1,40,500000000))))
+    executeWith(INTERPRETED_33_35_NO_RULE, query).toList should equal(List(Map("length" -> DurationValue.duration(0,1,40,500000000))))
   }
 
   test("Should sum durations from stored nodes") {
@@ -238,17 +240,17 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     createNode(Map("d" -> DurationValue.duration(0,0,30,500000000)))
 
     val query = "MATCH (n) RETURN sum(n.d) AS length"
-    executeWith(Configs.Interpreted - Configs.OldAndRule, query).toList should equal(List(Map("length" -> DurationValue.duration(0,1,40,500000000))))
+    executeWith(INTERPRETED_33_35_NO_RULE, query).toList should equal(List(Map("length" -> DurationValue.duration(0,1,40,500000000))))
   }
 
   test("Should not sum durations and numbers together") {
     val query = "UNWIND [duration('PT10S'), duration('P1D'), duration('PT30.5S'), 90] as x RETURN sum(x) AS length"
-    failWithError(Configs.Interpreted + Configs.Procs - Configs.OldAndRule, query, Seq("cannot mix number and durations"))
+    failWithError(INTERPRETED_33_35_NO_RULE + Configs.Procs, query, Seq("cannot mix number and durations"))
   }
 
   test("Should avg durations") {
     val query = "UNWIND [duration('PT10S'), duration('P3D'), duration('PT20.6S')] as x RETURN avg(x) AS length"
-    executeWith(Configs.Interpreted - Configs.OldAndRule, query).toList should equal(List(Map("length" -> DurationValue.duration(0,1,10,200000000))))
+    executeWith(INTERPRETED_33_35_NO_RULE, query).toList should equal(List(Map("length" -> DurationValue.duration(0,1,10,200000000))))
   }
 
   test("Should avg durations from stored nodes") {
@@ -257,11 +259,11 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     createNode(Map("d" -> DurationValue.duration(0,0,20,600000000)))
 
     val query = "MATCH (n) RETURN avg(n.d) AS length"
-    executeWith(Configs.Interpreted - Configs.OldAndRule, query).toList should equal(List(Map("length" -> DurationValue.duration(0,1,10,200000000))))
+    executeWith(INTERPRETED_33_35_NO_RULE, query).toList should equal(List(Map("length" -> DurationValue.duration(0,1,10,200000000))))
   }
 
   test("Should not avg durations and numbers together") {
     val query = "UNWIND [duration('PT10S'), duration('P1D'), duration('PT30.5S'), 90] as x RETURN avg(x) AS length"
-    failWithError(Configs.Interpreted + Configs.Procs - Configs.OldAndRule, query, Seq("cannot mix number and durations"))
+    failWithError(INTERPRETED_33_35_NO_RULE + Configs.Procs, query, Seq("cannot mix number and durations"))
   }
 }

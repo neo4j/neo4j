@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.v3_5.logical.plans._
-import org.opencypher.v9_0.expressions.Expression
+import org.opencypher.v9_0.expressions.{Ands, Expression}
 import org.opencypher.v9_0.util.attribution.{IdGen, SameId}
 import org.opencypher.v9_0.util.{Rewriter, bottomUp}
 
@@ -50,9 +50,9 @@ case object unnestOptional extends Rewriter {
 
     case apply@Apply(lhs,
       Optional(
-      Selection(predicates,
+      Selection(Ands(predicates),
       e@Expand(_: Argument, _, _, _, _, _, _)), _)) =>
-        optionalExpand(e, lhs)(predicates)(SameId(apply.id))
+        optionalExpand(e, lhs)(predicates.toSeq)(SameId(apply.id))
   })
 
   private def optionalExpand(e: Expand, lhs: LogicalPlan): Seq[Expression] => IdGen => OptionalExpand =

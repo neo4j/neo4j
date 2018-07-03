@@ -242,7 +242,6 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
 
     public void prependProvider( DiagnosticsProvider provider )
     {
-        @SuppressWarnings( "hiding" )
         State state = this.state;
         if ( state == State.STOPPED )
         {

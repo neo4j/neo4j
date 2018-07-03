@@ -31,9 +31,6 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -50,6 +47,7 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 
 public class DefaultMasterImplSPITest
 {
@@ -57,16 +55,17 @@ public class DefaultMasterImplSPITest
     public void flushStoreFilesWithCorrectCheckpointTriggerName() throws IOException
     {
         CheckPointer checkPointer = mock( CheckPointer.class );
+        StoreCopyCheckPointMutex mutex = new StoreCopyCheckPointMutex();
 
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
+        when( dataSource.getStoreCopyCheckPointMutex() ).thenReturn( mutex );
         when( dataSource.listStoreFiles( anyBoolean() ) ).thenReturn( Iterators.emptyResourceIterator() );
 
         DefaultMasterImplSPI master = new DefaultMasterImplSPI( mock( GraphDatabaseAPI.class, RETURNS_MOCKS ),
-                mock( FileSystemAbstraction.class ), new Monitors(), mock( LabelTokenHolder.class ),
-                mock( PropertyKeyTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ),
+                mock( FileSystemAbstraction.class ), new Monitors(), mockedTokenHolders(),
                 mock( IdGeneratorFactory.class ), mock( TransactionCommitProcess.class ), checkPointer,
                 mock( TransactionIdStore.class ), mock( LogicalTransactionStore.class ),
-                dataSource, new StoreCopyCheckPointMutex(), NullLogProvider.getInstance() );
+                dataSource, NullLogProvider.getInstance() );
 
         master.flushStoresAndStreamStoreFiles( mock( StoreWriter.class ) );
 

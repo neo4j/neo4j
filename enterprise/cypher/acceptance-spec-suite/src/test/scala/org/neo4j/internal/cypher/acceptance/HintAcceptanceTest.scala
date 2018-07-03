@@ -50,11 +50,11 @@ class HintAcceptanceTest
                   |USING JOIN ON a
                   |RETURN a.name, b.name""".stripMargin
 
-    executeWith(Configs.Interpreted + Configs.Version3_3 - Configs.Cost2_3 - Configs.Cost3_1, query,
+    executeWith(Configs.Interpreted + Configs.Version3_4 - Configs.Cost2_3 - Configs.Cost3_1, query,
       planComparisonStrategy = ComparePlansWithAssertion((p) => {
       p should useOperators("NodeLeftOuterHashJoin")
       p should not(useOperators("NodeHashJoin"))
-    }, expectPlansToFail = Configs.OldAndRule))
+    }, expectPlansToFail = Configs.Before3_3AndRule))
   }
 
   test("should not plan multiple joins for one hint - right outer join") {
@@ -72,7 +72,7 @@ class HintAcceptanceTest
     executeWith(Configs.Interpreted - Configs.Cost2_3 - Configs.Cost3_1, query, planComparisonStrategy = ComparePlansWithAssertion((p) => {
       p should useOperators("NodeRightOuterHashJoin")
       p should not(useOperators("NodeHashJoin"))
-    }, expectPlansToFail = Configs.AllRulePlanners + Configs.BackwardsCompatibility))
+    }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
   }
 
   test("should solve join hint on 1 variable with join on more, if possible") {
@@ -84,12 +84,10 @@ class HintAcceptanceTest
         |USING JOIN ON pB
         |RETURN *""".stripMargin
 
-    // TODO: Once 3.3 comes out with the same bugfix, we should change the following lines to not exclude 3.3
-    val cost3_3 = TestScenario(Versions.V3_3, Planners.Cost, Runtimes.Default)
     executeWith(Configs.Interpreted - Configs.Cost2_3 - Configs.Cost3_1, query,
       planComparisonStrategy = ComparePlansWithAssertion((p) => {
         p should useOperators("NodeRightOuterHashJoin")
-      }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1 + cost3_3))
+      }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
   }
 
   test("should do index seek instead of index scan with explicit index seek hint") {
@@ -113,16 +111,13 @@ class HintAcceptanceTest
                   |RETURN a.prop, b.prop
                 """.stripMargin
 
-    // TODO: Once 3.2 comes out with this feature added, we should change the following line to not exclude 3.3
-    val cost3_3 = TestScenario(Versions.V3_3, Planners.Cost, Runtimes.Default)
-    executeWith(Configs.Interpreted - Configs.AllRulePlanners - Configs.Cost2_3 - Configs.Cost3_1 - cost3_3, query,
+    executeWith(Configs.Interpreted - Configs.AllRulePlanners - Configs.Cost2_3 - Configs.Cost3_1, query,
       planComparisonStrategy = ComparePlansWithAssertion((p) => {
         p should useOperatorTimes("NodeIndexSeek", 2)
       }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
   }
 
-  // TODO re-enable after next front-end release
-  ignore("should accept hint on spatial index with distance function") {
+  test("should accept hint on spatial index with distance function") {
     // Given
     graph.createIndex("Business", "location")
     graph.createIndex("Review", "date")
@@ -139,7 +134,7 @@ class HintAcceptanceTest
         |AND date("2017-01-01") <= r.date <= date("2018-01-01")
         |RETURN COUNT(*)""".stripMargin
 
-    val result = executeWith(Configs.Version3_5 - Configs.Compiled - Configs.AllRulePlanners, query)
+    val result = executeWith(Configs.Version3_5 + Configs.Version3_4 - Configs.Compiled - Configs.AllRulePlanners, query)
 
     // Then
     result.toList should be(List(Map("COUNT(*)" -> 1)))

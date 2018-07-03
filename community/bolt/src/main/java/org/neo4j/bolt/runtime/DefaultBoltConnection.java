@@ -30,13 +30,9 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.BoltKernelExtension;
+import org.neo4j.bolt.BoltServer;
 import org.neo4j.bolt.v1.packstream.PackOutput;
-import org.neo4j.bolt.v1.runtime.BoltConnectionAuthFatality;
-import org.neo4j.bolt.v1.runtime.BoltProtocolBreachFatality;
-import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.Job;
-import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
@@ -46,7 +42,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class DefaultBoltConnection implements BoltConnection
 {
-    protected static final int DEFAULT_MAX_BATCH_SIZE = FeatureToggles.getInteger( BoltKernelExtension.class, "max_batch_size", 100 );
+    protected static final int DEFAULT_MAX_BATCH_SIZE = FeatureToggles.getInteger( BoltServer.class, "max_batch_size", 100 );
 
     private final String id;
 

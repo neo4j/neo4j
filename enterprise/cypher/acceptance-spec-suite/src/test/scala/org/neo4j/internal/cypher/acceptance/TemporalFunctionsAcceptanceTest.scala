@@ -29,7 +29,7 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 class TemporalFunctionsAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport with FakeClock {
 
-  val supported = (Configs.Version3_5 + Configs.Version3_3 + Configs.Version3_1) - Configs.Compiled
+  val supported = (Configs.Version3_5 + Configs.Version3_4 + Configs.Version3_1) - Configs.Compiled
 
   test("should get current default datetime") {
     val result = executeWith(supported, "RETURN datetime() as now")

@@ -127,11 +127,11 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
     )
 
   private def arguments: Seq[Argument] = Seq(createSignatureArgument,
-                                                               Runtime(runtimeUsed.toTextOutput),
-                                                               RuntimeImpl(runtimeUsed.name),
-                                                               Planner(plannerUsed.toTextOutput),
-                                                               PlannerImpl(plannerUsed.name),
-                                                               PlannerVersion(plannerUsed.version),
+                                                               Runtime(ProcedureRuntimeName.toTextOutput),
+                                                               RuntimeImpl(ProcedureRuntimeName.name),
+                                                               Planner(ProcedurePlannerName.toTextOutput),
+                                                               PlannerImpl(ProcedurePlannerName.name),
+                                                               PlannerVersion(ProcedurePlannerName.version),
                                                                Version(s"CYPHER ${CypherVersion.default.name}"),
                                                                RuntimeVersion(CypherVersion.default.name))
 
@@ -139,12 +139,6 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
   private def createSignatureArgument: Argument =
     Signature(signature.name, Seq.empty, resultSymbols)
 
-  override def isPeriodicCommit: Boolean = false
-
-  override def runtimeUsed = ProcedureRuntimeName
-
-  override def reusability: ReusabilityState = FineToReuse
-
-  override def plannerUsed = ProcedurePlannerName
+  override def runtimeName: RuntimeName = ProcedureRuntimeName
 }
 

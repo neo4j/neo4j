@@ -22,6 +22,8 @@
  */
 package org.neo4j.com;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.test.subprocess.SubProcess;
 
 import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
@@ -30,8 +32,6 @@ public class MadeUpServerProcess extends SubProcess<ServerInterface, StartupData
 {
     private static final long serialVersionUID = 1L;
 
-    public static final int PORT = 8888;
-
     private transient volatile MadeUpServer server;
 
     @Override
@@ -39,7 +39,7 @@ public class MadeUpServerProcess extends SubProcess<ServerInterface, StartupData
     {
         MadeUpCommunicationInterface implementation = new MadeUpServerImplementation(
                 newStoreIdForCurrentVersion( data.creationTime, data.storeId, data.creationTime, data.storeId ) );
-        MadeUpServer localServer = new MadeUpServer( implementation, 8888, data.internalProtocolVersion,
+        MadeUpServer localServer = new MadeUpServer( implementation, data.port, data.internalProtocolVersion,
                 data.applicationProtocolVersion, TxChecksumVerifier.ALWAYS_MATCH, data.chunkSize );
         localServer.init();
         localServer.start();
@@ -52,7 +52,7 @@ public class MadeUpServerProcess extends SubProcess<ServerInterface, StartupData
     {
         try
         {
-            long endTime = System.currentTimeMillis() + 20 * 1000;
+            long endTime = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis( 60 );
             while ( server == null && System.currentTimeMillis() < endTime )
             {
                 Thread.sleep( 10 );

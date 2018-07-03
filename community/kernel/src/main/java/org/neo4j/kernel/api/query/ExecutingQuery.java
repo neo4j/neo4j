@@ -58,7 +58,7 @@ public class ExecutingQuery
     private final long startTimeNanos;
     private final long startTimestampMillis;
     /** Uses write barrier of {@link #status}. */
-    private long planningDoneNanos;
+    private long compilationCompletedNanos;
     private final long threadExecutingTheQueryId;
     @SuppressWarnings( {"unused", "FieldCanBeLocal"} )
     private final String threadExecutingTheQueryName;
@@ -71,7 +71,7 @@ public class ExecutingQuery
     private final long heapAllocatedBytesWhenQueryStarted;
     private final Map<String,Object> transactionAnnotationData;
     /** Uses write barrier of {@link #status}. */
-    private PlannerInfo plannerInfo;
+    private CompilerInfo compilerInfo;
     private volatile ExecutingQueryStatus status = SimpleState.planning();
     /** Updated through {@link #WAIT_TIME} */
     @SuppressWarnings( "unused" )
@@ -116,10 +116,10 @@ public class ExecutingQuery
 
     // update state
 
-    public void planningCompleted( PlannerInfo plannerInfo )
+    public void compilationCompleted( CompilerInfo compilerInfo )
     {
-        this.plannerInfo = plannerInfo;
-        this.planningDoneNanos = clock.nanos();
+        this.compilerInfo = compilerInfo;
+        this.compilationCompletedNanos = clock.nanos();
         this.status = SimpleState.running(); // write barrier - must be last
     }
 
@@ -159,9 +159,9 @@ public class ExecutingQuery
         }
         while ( this.status != status );
         // guarded by barrier - unused if status is planning, stable otherwise
-        long planningDoneNanos = this.planningDoneNanos;
-        // guarded by barrier - like planningDoneNanos
-        PlannerInfo planner = status.isPlanning() ? null : this.plannerInfo;
+        long compilationCompletedNanos = this.compilationCompletedNanos;
+        // guarded by barrier - like compilationCompletedNanos
+        CompilerInfo planner = status.isPlanning() ? null : this.compilerInfo;
         List<ActiveLock> waitingOnLocks = status.isWaitingOnLocks() ? status.waitingOnLocks() : Collections.emptyList();
         // activeLockCount is not atomic to capture, so we capture it after the most sensitive part.
         long totalActiveLocks = this.activeLockCount.getAsLong();
@@ -170,7 +170,7 @@ public class ExecutingQuery
         PageCounterValues pageCounters = new PageCounterValues( pageCursorCounters );
 
         // - at this point we are done capturing the "live" state, and can start computing the snapshot -
-        long planningTimeNanos = (status.isPlanning() ? currentTimeNanos : planningDoneNanos) - startTimeNanos;
+        long compilationTimeNanos = (status.isPlanning() ? currentTimeNanos : compilationCompletedNanos) - startTimeNanos;
         long elapsedTimeNanos = currentTimeNanos - startTimeNanos;
         cpuTimeNanos -= cpuTimeNanosWhenQueryStarted;
         waitTimeNanos += status.waitTimeNanos( currentTimeNanos );
@@ -184,7 +184,7 @@ public class ExecutingQuery
                 this,
                 planner,
                 pageCounters,
-                NANOSECONDS.toMillis( planningTimeNanos ),
+                NANOSECONDS.toMillis( compilationTimeNanos ),
                 NANOSECONDS.toMillis( elapsedTimeNanos ),
                 cpuTimeNanos == 0 && cpuTimeNanosWhenQueryStarted == -1 ? -1 : NANOSECONDS.toMillis( cpuTimeNanos ),
                 NANOSECONDS.toMillis( waitTimeNanos ),

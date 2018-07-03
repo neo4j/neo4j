@@ -65,6 +65,12 @@
       <groupId>org.opencypher</groupId>
       <artifactId>tck-api</artifactId>
       <version>${opencypher.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.junit.jupiter</groupId>
+          <artifactId>junit-jupiter-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <!-- scala -->
@@ -92,6 +98,12 @@
       <groupId>com.novus</groupId>
       <artifactId>salat-core_2.11</artifactId>
       <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.community</groupId>
+      <artifactId>it-test-support</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
 
     <!-- neo4j -->
@@ -138,6 +150,5 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
-
   </dependencies>
 </project>

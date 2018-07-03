@@ -43,7 +43,7 @@ public class ToNetworkStoreWriter implements StoreWriter
     public ToNetworkStoreWriter( ChannelBuffer targetBuffer, Monitors monitors )
     {
         this.targetBuffer = targetBuffer;
-        bufferMonitor = monitors.newMonitor( ByteCounterMonitor.class, getClass(), STORE_COPIER_MONITOR_TAG );
+        bufferMonitor = monitors.newMonitor( ByteCounterMonitor.class, getClass().getName(), STORE_COPIER_MONITOR_TAG );
     }
 
     @Override

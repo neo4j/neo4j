@@ -26,14 +26,14 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.internal.kernel.api.NodeIndexCursor
 
-abstract class NodeIndexOperator[CURSOR <: NodeIndexCursor](offset: Int) extends Operator {
+abstract class NodeIndexOperator[CURSOR <: NodeIndexCursor](offset: Int) extends StreamingOperator {
 
-  protected def iterate(currentRow: MorselExecutionContext, cursor: CURSOR, iterationState: Iteration, argumentSize: SlotConfiguration.Size): Continuation = {
+  protected def iterate(currentRow: MorselExecutionContext, cursor: CURSOR, argumentSize: SlotConfiguration.Size): Boolean = {
     var cursorHasMore = true
     while (currentRow.hasMoreRows && cursorHasMore) {
       cursorHasMore = cursor.next()
       if (cursorHasMore) {
-        iterationState.copyArgumentStateTo(currentRow, argumentSize.nLongs, argumentSize.nReferences)
+        //              iterationState.copyArgumentStateTo(currentRow, argumentSize.nLongs, argumentSize.nReferences)
 
         currentRow.setLongAt(offset, cursor.nodeReference())
         currentRow.moveToNextRow()
@@ -42,13 +42,11 @@ abstract class NodeIndexOperator[CURSOR <: NodeIndexCursor](offset: Int) extends
 
     currentRow.finishedWriting()
 
-    if (cursorHasMore)
-      ContinueWithSource(cursor, iterationState)
-    else {
+    if (!cursorHasMore) {
       if (cursor != null) {
         cursor.close()
       }
-      EndOfLoop(iterationState)
     }
+    cursorHasMore
   }
 }

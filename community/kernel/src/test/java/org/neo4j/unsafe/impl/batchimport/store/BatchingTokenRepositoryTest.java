@@ -24,10 +24,10 @@ import org.junit.Test;
 
 import java.util.List;
 
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.Token;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
@@ -92,7 +91,7 @@ public class BatchingTokenRepositoryTest
     public void shouldRespectExistingTokens()
     {
         // given
-        TokenStore<RelationshipTypeTokenRecord,RelationshipTypeToken> tokenStore = mock( TokenStore.class );
+        TokenStore<RelationshipTypeTokenRecord> tokenStore = mock( TokenStore.class );
         int previousHighId = 5;
         when( tokenStore.getHighId() ).thenReturn( (long) previousHighId );
         BatchingRelationshipTypeTokenRepository repo = new BatchingRelationshipTypeTokenRepository( tokenStore );
@@ -116,7 +115,7 @@ public class BatchingTokenRepositoryTest
                 NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY )
                 .openNeoStores( true, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME ) )
         {
-            TokenStore<PropertyKeyTokenRecord,Token> tokenStore = stores.getPropertyKeyTokenStore();
+            TokenStore<PropertyKeyTokenRecord> tokenStore = stores.getPropertyKeyTokenStore();
             int rounds = 3;
             int tokensPerRound = 4;
             try ( BatchingPropertyKeyTokenRepository repo = new BatchingPropertyKeyTokenRepository( tokenStore ) )
@@ -138,9 +137,9 @@ public class BatchingTokenRepositoryTest
                 }
             }
 
-            List<Token> tokens = tokenStore.getTokens( 100 );
+            List<NamedToken> tokens = tokenStore.getTokens();
             assertEquals( tokensPerRound * rounds, tokens.size() );
-            for ( Token token : tokens )
+            for ( NamedToken token : tokens )
             {
                 assertEquals( token.id(), parseInt( token.name() ) );
             }

@@ -253,7 +253,7 @@ public class TransactionLogFileTest
     }
 
     @Test
-    public void shouldSuppressFailueToCloseChannelInFailedAttemptToReadHeaderAfterOpen() throws Exception
+    public void shouldSuppressFailureToCloseChannelInFailedAttemptToReadHeaderAfterOpen() throws Exception
     {
         // GIVEN a file which returns 1/2 log header size worth of bytes
         File directory = new File( "/dir" );

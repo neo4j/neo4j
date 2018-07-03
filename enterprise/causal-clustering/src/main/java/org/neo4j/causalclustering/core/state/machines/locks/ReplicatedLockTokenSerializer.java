@@ -39,13 +39,13 @@ public class ReplicatedLockTokenSerializer
     public static void marshal( ReplicatedLockTokenRequest tokenRequest, WritableChannel channel ) throws IOException
     {
         channel.putInt( tokenRequest.id() );
-        MemberId.MARSHAL.marshal( tokenRequest.owner(), channel );
+        new MemberId.Marshal().marshal( tokenRequest.owner(), channel );
     }
 
     public static ReplicatedLockTokenRequest unmarshal( ReadableChannel channel ) throws IOException, EndOfStreamException
     {
         int candidateId = channel.getInt();
-        MemberId owner = MemberId.MARSHAL.unmarshal( channel );
+        MemberId owner = new MemberId.Marshal().unmarshal( channel );
 
         return new ReplicatedLockTokenRequest( owner, candidateId );
     }

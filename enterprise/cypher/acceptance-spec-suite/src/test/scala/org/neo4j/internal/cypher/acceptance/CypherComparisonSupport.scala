@@ -352,7 +352,7 @@ object CypherComparisonSupport {
   }
 
   object Versions {
-    val orderedVersions: Seq[Version] = Seq(V2_3, V3_1, V3_3, v3_5)
+    val orderedVersions: Seq[Version] = Seq(V2_3, V3_1, V3_4, v3_5)
 
     implicit def versionToVersions(version: Version): Versions = Versions(version)
 
@@ -364,16 +364,16 @@ object CypherComparisonSupport {
 
     object V3_1 extends Version("3.1")
 
-    object V3_3 extends Version("3.3") {
-      // 3.3 has 3.5 runtime
+    object V3_4 extends Version("3.4") {
+      // 3.4 has 3.5 runtime
       override val acceptedRuntimeVersionNames = Set("3.5")
     }
 
     object v3_5 extends Version("3.5")
 
     object Default extends Version("") {
-      override val acceptedRuntimeVersionNames = Set("2.3", "3.1", "3.3", "3.5")
-      override val acceptedPlannerVersionNames = Set("2.3", "3.1", "3.3", "3.5")
+      override val acceptedRuntimeVersionNames = Set("2.3", "3.1", "3.4", "3.5")
+      override val acceptedPlannerVersionNames = Set("2.3", "3.1", "3.4", "3.5")
     }
 
   }
@@ -599,13 +599,13 @@ object CypherComparisonSupport {
       TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
         TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
         TestScenario(Versions.Default, Planners.Rule, Runtimes.Default) +
-        TestScenario(Versions.V3_3, Planners.Cost, Runtimes.Default)
+        TestScenario(Versions.V3_4, Planners.Cost, Runtimes.Default)
 
     def CommunityInterpreted: TestConfiguration =
       TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted) +
         TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
         TestScenario(Versions.Default, Planners.Rule, Runtimes.Default) +
-        TestScenario(Versions.V3_3, Planners.Cost, Runtimes.Default)
+        TestScenario(Versions.V3_4, Planners.Cost, Runtimes.Default)
 
     def SlottedInterpreted: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.Slotted)
 
@@ -615,9 +615,7 @@ object CypherComparisonSupport {
 
     def Cost3_1: TestConfiguration = TestScenario(Versions.V3_1, Planners.Cost, Runtimes.Default)
 
-    def Cost3_3: TestConfiguration = TestScenario(Versions.V3_3, Planners.Cost, Runtimes.Default)
-
-    def Cost3_4: TestConfiguration = TestScenario(Versions.v3_5, Planners.Cost, Runtimes.Default)
+    def Cost3_4: TestConfiguration = TestScenario(Versions.V3_4, Planners.Cost, Runtimes.Default)
 
     def Rule2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Rule, Runtimes.Default)
 
@@ -629,7 +627,7 @@ object CypherComparisonSupport {
 
     def Version3_1: TestConfiguration = TestConfiguration(Versions.V3_1, Planners.all, Runtimes.Default)
 
-    def Version3_3: TestConfiguration = TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes.Default)
+    def Version3_4: TestConfiguration = TestConfiguration(Versions.V3_4, Planners.Cost, Runtimes.Default)
 
     def Version3_5: TestConfiguration =
       TestConfiguration(Versions.v3_5, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
@@ -639,14 +637,16 @@ object CypherComparisonSupport {
     def AllRulePlanners: TestConfiguration = TestConfiguration(Versions(Versions.V2_3, Versions.V3_1, Versions.Default), Planners.Rule, Runtimes.Default)
 
     def BackwardsCompatibility: TestConfiguration = TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
-      TestScenario(Versions.V3_3, Planners.Cost, Runtimes.Default)
+      TestScenario(Versions.V3_4, Planners.Cost, Runtimes.Default)
 
     def Procs: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.ProcedureOrSchema)
 
     /**
-      * Handy configs for things only supported from 3.3 (not rule) and for checking plans
+      * Handy configs for things not supported in older versions
       */
-    def OldAndRule: TestConfiguration = Cost2_3 + Cost3_1 + AllRulePlanners
+    def Before3_3AndRule: TestConfiguration = Cost2_3 + Cost3_1 + AllRulePlanners
+
+    def OldAndRule: TestConfiguration = BackwardsCompatibility + AllRulePlanners
 
     /**
       * Configs which support CREATE, DELETE, SET, REMOVE, MERGE etc.
@@ -659,8 +659,6 @@ object CypherComparisonSupport {
      */
     def All: TestConfiguration = AbsolutelyAll - Procs
 
-    def AllExceptSlotted: TestConfiguration = All - SlottedInterpreted
-
     /**
       * These are all configurations that will be executed even if not explicitly expected to succeed or fail.
       * Even if not explicitly requested, they are executed to check if they unexpectedly succeed to make sure that
@@ -672,7 +670,7 @@ object CypherComparisonSupport {
                                                                        Runtimes.ProcedureOrSchema)) +
         TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
         TestScenario(Versions.Default, Planners.Rule, Runtimes.Default) +
-        TestScenario(Versions.V3_3, Planners.Cost, Runtimes.Default)
+        TestScenario(Versions.V3_4, Planners.Cost, Runtimes.Default)
 
     /**
       * These experimental configurations will only be executed if you explicitly specify them in the test expectation.

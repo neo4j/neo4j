@@ -35,9 +35,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
 
 import static org.apache.commons.lang3.ArrayUtils.isEmpty;
 
@@ -62,23 +59,6 @@ public class Monitors
     /** Monitor interface method -> Listeners */
     private final Map<Method,Set<MonitorListenerInvocationHandler>> methodMonitorListeners = new ConcurrentHashMap<>();
     private final MutableBag<Class<?>> monitoredInterfaces = MultiReaderHashBag.newBag();
-    private final Log log;
-
-    public Monitors()
-    {
-        this( NullLogProvider.getInstance() );
-    }
-
-    public Monitors( LogProvider logProvider )
-    {
-        this.log = logProvider.getLog( Monitors.class );
-    }
-
-    public <T> T newMonitor( Class<T> monitorClass, Class<?> owningClass, String... tags )
-    {
-        String[] monitorTags = ArrayUtil.concat( tags, owningClass.getName() );
-        return newMonitor( monitorClass, monitorTags );
-    }
 
     public <T> T newMonitor( Class<T> monitorClass, String... tags )
     {
@@ -225,10 +205,8 @@ public class Monitors
                 {
                     monitorListenerInvocationHandler.invoke( proxy, method, args, tags );
                 }
-                catch ( Throwable e )
+                catch ( Throwable ignored )
                 {
-                    String message = String.format( "Encountered exception while handling listener for monitor method %s", method.getName() );
-                    log.warn( message, e );
                 }
             }
         }

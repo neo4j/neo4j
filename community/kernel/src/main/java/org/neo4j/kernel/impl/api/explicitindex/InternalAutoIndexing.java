@@ -23,7 +23,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.explicitindex.AutoIndexOperations;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolder;
 
 /**
  * This gets notified whenever there are changes to entities and their properties, and given a runtime-configurable set of rules
@@ -37,7 +37,7 @@ public class InternalAutoIndexing implements AutoIndexing
     private final InternalAutoIndexOperations nodes;
     private final InternalAutoIndexOperations relationships;
 
-    public InternalAutoIndexing( Config config, PropertyKeyTokenHolder propertyKeyLookup )
+    public InternalAutoIndexing( Config config, TokenHolder propertyKeyLookup )
     {
         this.nodes = new InternalAutoIndexOperations( propertyKeyLookup, InternalAutoIndexOperations.EntityType.NODE );
         this.relationships = new InternalAutoIndexOperations( propertyKeyLookup, InternalAutoIndexOperations.EntityType.RELATIONSHIP );

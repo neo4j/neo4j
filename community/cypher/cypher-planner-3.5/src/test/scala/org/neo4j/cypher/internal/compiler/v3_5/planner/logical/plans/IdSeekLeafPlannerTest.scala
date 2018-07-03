@@ -291,7 +291,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     // then
     resultPlans should equal(
       Seq(Selection(
-        Seq(Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("X")_)_),
+        Ands(Set(Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("X")_)_))_,
         UndirectedRelationshipByIdSeek("r", ManySeekableArgs(ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_), from, end, Set.empty)
       ))
     )
@@ -343,12 +343,12 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     // then
     resultPlans should equal(
       Seq(Selection(
-        Seq(
+        Ands(Set(
           Ors(Set(
             Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("X")_)(pos),
             Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("Y")_)(pos)
           ))_
-        ),
+        ))_,
         UndirectedRelationshipByIdSeek("r", ManySeekableArgs(ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_), from, end, Set.empty)
     )))
   }

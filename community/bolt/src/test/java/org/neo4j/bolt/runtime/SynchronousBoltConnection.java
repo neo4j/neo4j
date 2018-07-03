@@ -26,8 +26,6 @@ import java.net.SocketAddress;
 
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.packstream.PackOutput;
-import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.Job;
 import org.neo4j.bolt.v1.transport.ChunkedOutput;
 

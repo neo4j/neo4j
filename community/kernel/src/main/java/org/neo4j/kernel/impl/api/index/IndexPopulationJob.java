@@ -44,15 +44,13 @@ public class IndexPopulationJob implements Runnable
     private final IndexingService.Monitor monitor;
     private final MultipleIndexPopulator multiPopulator;
     private final CountDownLatch doneSignal = new CountDownLatch( 1 );
-    private final SchemaState schemaState;
 
     private volatile StoreScan<IndexPopulationFailedKernelException> storeScan;
     private volatile boolean cancelled;
 
-    public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexingService.Monitor monitor, SchemaState schemaState )
+    public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexingService.Monitor monitor )
     {
         this.multiPopulator = multiPopulator;
-        this.schemaState = schemaState;
         this.monitor = monitor;
     }
 
@@ -100,7 +98,7 @@ public class IndexPopulationJob implements Runnable
                 multiPopulator.resetIndexCounts();
 
                 monitor.indexPopulationScanStarting();
-                indexAllNodes();
+                indexAllEntities();
                 monitor.indexPopulationScanComplete();
                 if ( cancelled )
                 {
@@ -109,8 +107,6 @@ public class IndexPopulationJob implements Runnable
                     return;
                 }
                 multiPopulator.flipAfterPopulation();
-
-                schemaState.clear();
             }
             catch ( Throwable t )
             {
@@ -124,9 +120,9 @@ public class IndexPopulationJob implements Runnable
         }
     }
 
-    private void indexAllNodes() throws IndexPopulationFailedKernelException
+    private void indexAllEntities() throws IndexPopulationFailedKernelException
     {
-        storeScan = multiPopulator.indexAllNodes();
+        storeScan = multiPopulator.indexAllEntities();
         storeScan.run();
     }
 

@@ -42,7 +42,7 @@ public final class IOUtils
      */
     public static <T extends AutoCloseable> void closeAll( Collection<T> closeables ) throws IOException
     {
-        closeAll( closeables.toArray( new AutoCloseable[closeables.size()] ) );
+        closeAll( closeables.toArray( new AutoCloseable[0] ) );
     }
 
     /**

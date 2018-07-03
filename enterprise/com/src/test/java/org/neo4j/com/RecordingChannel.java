@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 
 public class RecordingChannel implements Channel
 {
-    private Queue<ChannelBuffer> recievedMessages = new LinkedList<>();
+    private Queue<ChannelBuffer> receivedMessages = new LinkedList<>();
 
     @Override
     public ChannelFuture write( Object message )
@@ -46,7 +46,7 @@ public class RecordingChannel implements Channel
         if ( message instanceof ChannelBuffer )
         {
             ChannelBuffer buffer = (ChannelBuffer) message;
-            recievedMessages.offer( buffer.duplicate() );
+            receivedMessages.offer( buffer.duplicate() );
         }
         return immediateFuture;
     }
@@ -203,7 +203,7 @@ public class RecordingChannel implements Channel
     }
 
     // This is due to a tight coupling of the netty pipeline and message deserialization, we can't deserialize without
-    // this pipeline item yet. We should refactor the serialization/deserialzation code appropriately such that it is
+    // this pipeline item yet. We should refactor the serialization/deserialization code appropriately such that it is
     // not tied like this to components it should not be aware of.
     public BlockingReadHandler<ChannelBuffer> asBlockingReadHandler()
     {
@@ -212,7 +212,7 @@ public class RecordingChannel implements Channel
             @Override
             public ChannelBuffer read()
             {
-                return recievedMessages.poll();
+                return receivedMessages.poll();
             }
 
             @Override

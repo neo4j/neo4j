@@ -35,7 +35,9 @@ import org.neo4j.function.Predicates;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.util.FeatureToggles;
 
 import static java.util.stream.Collectors.joining;
@@ -73,13 +75,15 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
 
     /**
      * Creates a new multi-threaded populator for the given store view.
-     *
-     * @param storeView the view of the store as a visitable of nodes
+     *  @param storeView the view of the store as a visitable of nodes
      * @param logProvider the log provider
+     * @param type entity type to populate
+     * @param schemaState the schema state
      */
-    BatchingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider )
+    BatchingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type,
+                                    SchemaState schemaState )
     {
-        super( storeView, logProvider );
+        super( storeView, logProvider, type, schemaState );
         this.executor = createThreadPool();
     }
 
@@ -91,17 +95,19 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      * @param storeView the view of the store as a visitable of nodes
      * @param executor the thread pool to use for batched index insertions
      * @param logProvider the log provider
+     * @param schemaState the schema state
      */
-    BatchingMultipleIndexPopulator( IndexStoreView storeView, ExecutorService executor, LogProvider logProvider )
+    BatchingMultipleIndexPopulator( IndexStoreView storeView, ExecutorService executor, LogProvider logProvider,
+                                    SchemaState schemaState )
     {
-        super( storeView, logProvider );
+        super( storeView, logProvider, EntityType.NODE, schemaState );
         this.executor = executor;
     }
 
     @Override
-    public StoreScan<IndexPopulationFailedKernelException> indexAllNodes()
+    public StoreScan<IndexPopulationFailedKernelException> indexAllEntities()
     {
-        StoreScan<IndexPopulationFailedKernelException> storeScan = super.indexAllNodes();
+        StoreScan<IndexPopulationFailedKernelException> storeScan = super.indexAllEntities();
         return new BatchingStoreScan<>( storeScan );
     }
 

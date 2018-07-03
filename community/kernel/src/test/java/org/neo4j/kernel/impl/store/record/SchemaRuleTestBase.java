@@ -34,6 +34,7 @@ abstract class SchemaRuleTestBase
     protected static final long RULE_ID = 1;
     protected static final long RULE_ID_2 = 2;
     protected static final int LABEL_ID = 10;
+    protected static final int LABEL_ID_2 = 11;
     protected static final int REL_TYPE_ID = 20;
     protected static final int PROPERTY_ID_1 = 30;
     protected static final int PROPERTY_ID_2 = 31;

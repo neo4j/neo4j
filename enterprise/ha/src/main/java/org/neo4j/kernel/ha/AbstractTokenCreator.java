@@ -22,8 +22,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.util.function.IntPredicate;
-
 import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -55,19 +53,6 @@ public abstract class AbstractTokenCreator implements TokenCreator
             throw new TransientTransactionFailureException(
                     "Cannot create identifier for token '" + name + "' on the master " + master + ". " +
                     "The master is either down, or we have network connectivity problems", e );
-        }
-    }
-
-    @Override
-    public final void createTokens( String[] names, int[] ids, IntPredicate filter )
-    {
-        // Making this more efficient (by actually batching) requires a protocol change.
-        for ( int i = 0; i < ids.length; i++ )
-        {
-            if ( filter.test( i ) )
-            {
-                ids[i] = createToken( names[i] );
-            }
         }
     }
 

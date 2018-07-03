@@ -25,9 +25,8 @@ package cypher.features
 import java.util.Collection
 
 import cypher.features.ScenarioTestHelper._
-import org.junit.Ignore
 import org.junit.jupiter.api.Assertions.fail
-import org.junit.jupiter.api.{DynamicTest, Test, TestFactory}
+import org.junit.jupiter.api.{Disabled, DynamicTest, Test, TestFactory}
 import org.opencypher.tools.tck.api.Scenario
 
 abstract class BaseFeatureTest {
@@ -60,11 +59,10 @@ abstract class BaseFeatureTest {
     createTests(scenarios, CostSlottedTestConfig)
   }
 
-// TODO tests are failing on windows, investigate
-//  @TestFactory
-//  def runCostMorsel(): Collection[DynamicTest] = {
-//     createTests(scenarios, CostMorselTestConfig)
-//  }
+  @TestFactory
+  def runCostMorsel(): Collection[DynamicTest] = {
+     createTests(scenarios, CostMorselTestConfig)
+  }
 
   @TestFactory
   def runCostCompiled(): Collection[DynamicTest] = {
@@ -77,8 +75,8 @@ abstract class BaseFeatureTest {
   }
 
   @TestFactory
-  def runCompatibility33(): Collection[DynamicTest] = {
-    createTests(scenarios, Compatibility33TestConfig)
+  def runCompatibility34(): Collection[DynamicTest] = {
+    createTests(scenarios, Compatibility34TestConfig)
   }
 
   @TestFactory
@@ -106,51 +104,51 @@ abstract class BaseFeatureTest {
   All methods for generating blacklists. Ignore them for commit
    */
 
-  @Ignore
+  @Disabled
   def generateBlacklistDefault(): Unit = {
     printComputedBlacklist(scenarios, DefaultTestConfig)
-    fail("Do not forget to add @ignore to this method")
+    fail("Do not forget to add @Disabled to this method")
   }
 
-  @Ignore
+  @Disabled
   def generateBlacklistCostSlotted(): Unit = {
     printComputedBlacklist(scenarios, CostSlottedTestConfig)
-    fail("Do not forget to add @ignore to this method")
+    fail("Do not forget to add @Disabled to this method")
   }
 
-  @Ignore
+  @Disabled
   def generateBlacklistTCKTestCostMorsel(): Unit = {
     printComputedBlacklist(scenarios, CostMorselTestConfig)
-    fail("Do not forget to add @ignore to this method")
+    fail("Do not forget to add @Disabled to this method")
   }
 
-  @Ignore
+  @Disabled
   def generateBlacklistCostCompiled(): Unit = {
     printComputedBlacklist(scenarios, CostCompiledTestConfig)
-    fail("Do not forget to add @ignore to this method")
+    fail("Do not forget to add @Disabled to this method")
   }
 
-  @Ignore
+  @Disabled
   def generateBlacklistCostInterpreted(): Unit = {
     printComputedBlacklist(scenarios, CostInterpretedTestConfig)
-    fail("Do not forget to add @ignore to this method")
+    fail("Do not forget to add @Disabled to this method")
   }
 
-  @Ignore
+  @Disabled
   def generateBlacklistCompatibility33(): Unit = {
-    printComputedBlacklist(scenarios, Compatibility33TestConfig)
-    fail("Do not forget to add @ignore to this method")
+    printComputedBlacklist(scenarios, Compatibility34TestConfig)
+    fail("Do not forget to add @Disabled to this method")
   }
 
-  @Ignore
+  @Disabled
   def generateBlacklistCompatibility31(): Unit = {
     printComputedBlacklist(scenarios, Compatibility31TestConfig)
-    fail("Do not forget to add @ignore to this method")
+    fail("Do not forget to add @Disabled to this method")
   }
 
-  @Ignore
+  @Disabled
   def generateBlacklistCompatibility23(): Unit = {
     printComputedBlacklist(scenarios, Compatibility23TestConfig)
-    fail("Do not forget to add @ignore to this method")
+    fail("Do not forget to add @Disabled to this method")
   }
 }

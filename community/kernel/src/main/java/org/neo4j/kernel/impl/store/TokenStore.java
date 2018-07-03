@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
@@ -37,20 +38,17 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.Token;
-import org.neo4j.storageengine.api.TokenFactory;
 
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
 import static org.neo4j.kernel.impl.store.PropertyStore.decodeString;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
-public abstract class TokenStore<RECORD extends TokenRecord,TOKEN extends Token>
+public abstract class TokenStore<RECORD extends TokenRecord>
         extends CommonAbstractStore<RECORD,NoStoreHeader>
 {
     public static final int NAME_STORE_BLOCK_SIZE = 30;
 
     private final DynamicStringStore nameStore;
-    private final TokenFactory<TOKEN> tokenFactory;
 
     public TokenStore(
             File file,
@@ -61,7 +59,6 @@ public abstract class TokenStore<RECORD extends TokenRecord,TOKEN extends Token>
             LogProvider logProvider,
             DynamicStringStore nameStore,
             String typeDescriptor,
-            TokenFactory<TOKEN> tokenFactory,
             RecordFormat<RECORD> recordFormat,
             String storeVersion,
             OpenOption... openOptions )
@@ -69,7 +66,6 @@ public abstract class TokenStore<RECORD extends TokenRecord,TOKEN extends Token>
         super( file, configuration, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
                 recordFormat, NO_STORE_HEADER_FORMAT, storeVersion, openOptions );
         this.nameStore = nameStore;
-        this.tokenFactory = tokenFactory;
     }
 
     public DynamicStringStore getNameStore()
@@ -83,13 +79,13 @@ public abstract class TokenStore<RECORD extends TokenRecord,TOKEN extends Token>
         return false;
     }
 
-    public List<TOKEN> getTokens( int maxCount )
+    public List<NamedToken> getTokens()
     {
-        LinkedList<TOKEN> records = new LinkedList<>();
+        LinkedList<NamedToken> records = new LinkedList<>();
         long maxIdInUse = getHighestPossibleIdInUse();
         int found = 0;
         RECORD record = newRecord();
-        for ( int i = 0; i <= maxIdInUse && found < maxCount; i++ )
+        for ( int i = 0; i <= maxIdInUse; i++ )
         {
             if ( !getRecord( i, record, RecordLoad.CHECK ).inUse() )
             {
@@ -99,17 +95,17 @@ public abstract class TokenStore<RECORD extends TokenRecord,TOKEN extends Token>
             found++;
             if ( record != null && record.inUse() && record.getNameId() != Record.RESERVED.intValue() )
             {
-                records.add( tokenFactory.newToken( getStringFor( record ), i ) );
+                records.add( new NamedToken( getStringFor( record ), i ) );
             }
         }
 
         return records;
     }
 
-    public TOKEN getToken( int id )
+    public NamedToken getToken( int id )
     {
         RECORD record = getRecord( id, newRecord(), NORMAL );
-        return tokenFactory.newToken( getStringFor( record ), record.getIntId() );
+        return new NamedToken( getStringFor( record ), record.getIntId() );
     }
 
     public Collection<DynamicRecord> allocateNameRecords( byte[] chars )

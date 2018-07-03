@@ -50,7 +50,7 @@ public class OnlineBackupCommandProvider extends AdminCommand.Provider
     @Nonnull
     public Arguments allArguments()
     {
-        return OnlineBackupContextBuilder.arguments();
+        return OnlineBackupContextFactory.arguments();
     }
 
     @Override
@@ -89,7 +89,7 @@ public class OnlineBackupCommandProvider extends AdminCommand.Provider
         LogProvider logProvider = FormattedLogProvider.withDefaultLogLevel( debug ? Level.DEBUG : Level.NONE ).toOutputStream( outsideWorld.outStream() );
         Monitors monitors = new Monitors();
 
-        OnlineBackupContextBuilder contextBuilder = new OnlineBackupContextBuilder( homeDir, configDir );
+        OnlineBackupContextFactory contextBuilder = new OnlineBackupContextFactory( homeDir, configDir );
         BackupModule backupModule = new BackupModule( outsideWorld, logProvider, monitors );
 
         BackupSupportingClassesFactoryProvider classesFactoryProvider =

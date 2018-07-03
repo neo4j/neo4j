@@ -19,9 +19,9 @@
  */
 package org.neo4j.values.storable;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.values.storable.Values.booleanArray;
 import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.byteArray;
@@ -42,10 +42,10 @@ import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
 
-public class ValuesTest
+class ValuesTest
 {
     @Test
-    public void shouldBeEqualToItself()
+    void shouldBeEqualToItself()
     {
         assertEqual( booleanValue( false ), booleanValue( false ) );
         assertEqual( byteValue( (byte)0 ), byteValue( (byte)0 ) );
@@ -88,24 +88,11 @@ public class ValuesTest
     }
 
     @Test
-    public void pointValueShouldRequireConsistentInput()
+    void pointValueShouldRequireConsistentInput()
     {
-        assertThrowsIllegalArgument( CoordinateReferenceSystem.Cartesian, 1, 2, 3 );
-        assertThrowsIllegalArgument( CoordinateReferenceSystem.Cartesian_3D, 1, 2 );
-        assertThrowsIllegalArgument( CoordinateReferenceSystem.WGS84, 1, 2, 3 );
-        assertThrowsIllegalArgument( CoordinateReferenceSystem.WGS84_3D, 1, 2 );
-    }
-
-    private void assertThrowsIllegalArgument( CoordinateReferenceSystem crs, double... coordinates )
-    {
-        try
-        {
-            Values.pointValue( crs, coordinates );
-            fail( "exception expected" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // this is what we want
-        }
+        assertThrows(IllegalArgumentException.class, () -> Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 2, 3 ) );
+        assertThrows(IllegalArgumentException.class, () -> Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 1, 2 ) );
+        assertThrows(IllegalArgumentException.class, () -> Values.pointValue( CoordinateReferenceSystem.WGS84, 1, 2, 3 ) );
+        assertThrows(IllegalArgumentException.class, () -> Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 1, 2 ) );
     }
 }

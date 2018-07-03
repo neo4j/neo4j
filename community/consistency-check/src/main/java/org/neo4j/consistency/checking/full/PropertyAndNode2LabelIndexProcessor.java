@@ -46,7 +46,7 @@ public class PropertyAndNode2LabelIndexProcessor extends RecordProcessor.Adapter
 
     public PropertyAndNode2LabelIndexProcessor( ConsistencyReporter reporter,
             IndexAccessors indexes,
-            PropertyReader propertyReader,
+            NodePropertyReader propertyReader,
             CacheAccess cacheAccess,
             Function<NodeRecord,MandatoryProperties.Check<NodeRecord,ConsistencyReport.NodeConsistencyReport>> mandatoryProperties )
     {

@@ -77,6 +77,7 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
@@ -292,7 +293,7 @@ public class IndexingServiceTest
         order.verify( populator ).includeSample( add( 1, "value1" ) );
         order.verify( populator, times( 2 ) ).add( any( Collection.class ) );
 
-        // invoked from indexAllNodes(), empty because the id we added (2) is bigger than the one we indexed (1)
+        // invoked from indexAllEntities(), empty because the id we added (2) is bigger than the one we indexed (1)
         //
         // (We don't get an update for value2 here because we mock a fake store that doesn't contain it
         //  just for the purpose of testing this behavior)
@@ -733,7 +734,8 @@ public class IndexingServiceTest
             }
 
             @Override
-            public void feed( LongObjectMap<List<PropertyCommand>> propCommands, LongObjectMap<NodeCommand> nodeCommands )
+            public void feed( LongObjectMap<List<PropertyCommand>> propCommandsByNodeId, LongObjectMap<List<PropertyCommand>> propCommandsByRelationshipId,
+                    LongObjectMap<NodeCommand> nodeCommands, LongObjectMap<RelationshipCommand> relationshipCommands )
             {
                 throw new UnsupportedOperationException();
             }
@@ -756,7 +758,7 @@ public class IndexingServiceTest
         long nodeId = 0;
         long indexId = 1;
         long otherIndexId = 2;
-        NodeUpdates update = addNodeUpdate( nodeId, "value" );
+        EntityUpdates update = addNodeUpdate( nodeId, "value" );
         when( storeView.nodeAsUpdates( eq( nodeId ) ) ).thenReturn( update );
         DoubleLongRegister register = mock( DoubleLongRegister.class );
         when( register.readSecond() ).thenReturn( 42L );
@@ -1052,27 +1054,27 @@ public class IndexingServiceTest
 
         IndexingService indexingService = createIndexServiceWithCustomIndexMap( indexMapReference );
 
-        indexingService.forceAll( IOLimiter.unlimited() );
-        verify( validIndex1, times( 1 ) ).force( IOLimiter.unlimited() );
-        verify( validIndex2, times( 1 ) ).force( IOLimiter.unlimited() );
-        verify( validIndex3, times( 1 ) ).force( IOLimiter.unlimited() );
-        verify( validIndex4, times( 1 ) ).force( IOLimiter.unlimited() );
+        indexingService.forceAll( IOLimiter.UNLIMITED );
+        verify( validIndex1, times( 1 ) ).force( IOLimiter.UNLIMITED );
+        verify( validIndex2, times( 1 ) ).force( IOLimiter.UNLIMITED );
+        verify( validIndex3, times( 1 ) ).force( IOLimiter.UNLIMITED );
+        verify( validIndex4, times( 1 ) ).force( IOLimiter.UNLIMITED );
     }
 
     @Test
     public void failForceAllWhenOneOfTheIndexesFailToForce() throws IOException
     {
         IndexMapReference indexMapReference = new IndexMapReference();
+        IndexProxy strangeIndexProxy = createIndexProxyMock( 1 );
+        doThrow( new UncheckedIOException( new IOException( "Can't force" ) ) ).when( strangeIndexProxy ).force( any( IOLimiter.class ) );
         indexMapReference.modify( indexMap ->
         {
             IndexProxy validIndex = createIndexProxyMock( 0 );
             indexMap.putIndexProxy( validIndex );
             indexMap.putIndexProxy( validIndex );
-            IndexProxy strangeIndexProxy = createIndexProxyMock( 1 );
             indexMap.putIndexProxy( strangeIndexProxy );
             indexMap.putIndexProxy( validIndex );
             indexMap.putIndexProxy( validIndex );
-            doThrow( new UncheckedIOException( new IOException( "Can't force" ) ) ).when( strangeIndexProxy ).force( any( IOLimiter.class ) );
             return indexMap;
         } );
 
@@ -1080,7 +1082,7 @@ public class IndexingServiceTest
 
         expectedException.expectMessage( "Unable to force" );
         expectedException.expect( UnderlyingStorageException.class );
-        indexingService.forceAll( IOLimiter.unlimited() );
+        indexingService.forceAll( IOLimiter.UNLIMITED );
     }
 
     @Test
@@ -1202,14 +1204,14 @@ public class IndexingServiceTest
         return invocationOnMock -> asResourceIterator(iterator( theFile ));
     }
 
-    private NodeUpdates addNodeUpdate( long nodeId, Object propertyValue )
+    private EntityUpdates addNodeUpdate( long nodeId, Object propertyValue )
     {
         return addNodeUpdate( nodeId, propertyValue, labelId );
     }
 
-    private NodeUpdates addNodeUpdate( long nodeId, Object propertyValue, int labelId )
+    private EntityUpdates addNodeUpdate( long nodeId, Object propertyValue, int labelId )
     {
-        return NodeUpdates.forNode( nodeId, new long[]{labelId} )
+        return EntityUpdates.forEntity( nodeId ).withTokens( labelId )
                 .added( index.schema().getPropertyId(), Values.of( propertyValue ) ).build();
     }
 
@@ -1265,21 +1267,21 @@ public class IndexingServiceTest
         );
     }
 
-    private DataUpdates withData( NodeUpdates... updates )
+    private DataUpdates withData( EntityUpdates... updates )
     {
         return new DataUpdates( updates );
     }
 
     private static class DataUpdates implements Answer<StoreScan<IndexPopulationFailedKernelException>>
     {
-        private final NodeUpdates[] updates;
+        private final EntityUpdates[] updates;
 
         DataUpdates()
         {
-            this.updates = new NodeUpdates[0];
+            this.updates = new EntityUpdates[0];
         }
 
-        DataUpdates( NodeUpdates[] updates )
+        DataUpdates( EntityUpdates[] updates )
         {
             this.updates = updates;
         }
@@ -1294,7 +1296,7 @@ public class IndexingServiceTest
         @Override
         public StoreScan<IndexPopulationFailedKernelException> answer( InvocationOnMock invocation )
         {
-            final Visitor<NodeUpdates,IndexPopulationFailedKernelException> visitor =
+            final Visitor<EntityUpdates,IndexPopulationFailedKernelException> visitor =
                     visitor( invocation.getArgument( 2 ) );
             return new StoreScan<IndexPopulationFailedKernelException>()
             {
@@ -1303,7 +1305,7 @@ public class IndexingServiceTest
                 @Override
                 public void run() throws IndexPopulationFailedKernelException
                 {
-                    for ( NodeUpdates update : updates )
+                    for ( EntityUpdates update : updates )
                     {
                         if ( stop )
                         {
@@ -1336,7 +1338,7 @@ public class IndexingServiceTest
         }
 
         @SuppressWarnings( {"unchecked", "rawtypes"} )
-        private static Visitor<NodeUpdates, IndexPopulationFailedKernelException> visitor( Object v )
+        private static Visitor<EntityUpdates, IndexPopulationFailedKernelException> visitor( Object v )
         {
             return (Visitor) v;
         }

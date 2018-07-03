@@ -23,10 +23,6 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.NumberValue;
@@ -90,56 +86,4 @@ public class StreamMatchers
         };
     }
 
-    public static Matcher<BoltResult> equalsStream( final String[] fieldNames, final Matcher... records )
-    {
-        return new TypeSafeMatcher<BoltResult>()
-        {
-            @Override
-            protected boolean matchesSafely( BoltResult item )
-            {
-                if ( !Arrays.equals( fieldNames, item.fieldNames() ) )
-                {
-                    return false;
-                }
-                final Iterator<Matcher> expected = asList( records ).iterator();
-                final AtomicBoolean matched = new AtomicBoolean( true );
-                try
-                {
-                    item.accept( new BoltResult.Visitor()
-                    {
-                        @Override
-                        public void visit( QueryResult.Record record )
-                        {
-                            if ( !expected.hasNext() || !expected.next().matches( record ) )
-                            {
-                                matched.set( false );
-                            }
-                        }
-
-                        @Override
-                        public void addMetadata( String key, AnyValue value )
-                        {
-
-                        }
-                    } );
-                }
-                catch ( Exception e )
-                {
-                    throw new RuntimeException( e );
-                }
-
-                // All records matched, and there are no more expected records.
-                return matched.get() && !expected.hasNext();
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description
-                        .appendText( "Stream[" )
-                        .appendValueList( " fieldNames=[", ",", "]", fieldNames )
-                        .appendList( ", records=[", ",", "]", asList( records ) );
-            }
-        };
-    }
 }

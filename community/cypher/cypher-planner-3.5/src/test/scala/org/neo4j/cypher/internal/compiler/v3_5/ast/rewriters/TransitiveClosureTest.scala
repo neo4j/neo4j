@@ -35,13 +35,13 @@ class TransitiveClosureTest extends CypherFunSuite with AstRewritingTestSupport 
   }
 
   // pending fix in frontend
-  ignore("MATCH (a)-->(b) WHERE NOT a.prop = b.prop AND b.prop = 42") {
+  test("MATCH (a)-->(b) WHERE NOT a.prop = b.prop AND b.prop = 42") {
     shouldNotRewrite(
       "MATCH (a)-->(b) WHERE NOT a.prop = b.prop AND b.prop = 42")
   }
 
   // pending fix in frontend
-  ignore("MATCH (a)-->(b) WHERE a.prop = b.prop AND NOT b.prop = 42") {
+  test("MATCH (a)-->(b) WHERE a.prop = b.prop AND NOT b.prop = 42") {
     shouldNotRewrite(
       "MATCH (a)-->(b) WHERE a.prop = b.prop AND NOT b.prop = 42")
   }

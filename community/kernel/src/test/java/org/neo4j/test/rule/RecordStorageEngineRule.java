@@ -31,15 +31,13 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
-import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
+import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
-import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -68,6 +66,7 @@ import org.neo4j.test.impl.EphemeralIdGenerator;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 
 /**
  * Conveniently manages a {@link RecordStorageEngine} in a test. Needs {@link FileSystemAbstraction} and
@@ -104,8 +103,8 @@ public class RecordStorageEngineRule extends ExternalResource
             throw new IllegalStateException();
         }
         IdGeneratorFactory idGeneratorFactory = new EphemeralIdGenerator.Factory();
-        ExplicitIndexProviderLookup explicitIndexProviderLookup = mock( ExplicitIndexProviderLookup.class );
-        when( explicitIndexProviderLookup.all() ).thenReturn( Iterables.empty() );
+        ExplicitIndexProvider explicitIndexProviderLookup = mock( ExplicitIndexProvider.class );
+        when( explicitIndexProviderLookup.allIndexProviders() ).thenReturn( Iterables.empty() );
         IndexConfigStore indexConfigStore = new IndexConfigStore( storeDirectory, fs );
         JobScheduler scheduler = life.add( new CentralJobScheduler() );
         Config config = Config.defaults();
@@ -114,8 +113,8 @@ public class RecordStorageEngineRule extends ExternalResource
                 new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS,
                         new CommunityIdTypeConfigurationProvider() );
         return life.add( new ExtendedRecordStorageEngine( storeDirectory, config, pageCache, fs,
-                NullLogProvider.getInstance(), mock( PropertyKeyTokenHolder.class ), mock( LabelTokenHolder.class ),
-                mock( RelationshipTypeTokenHolder.class ), mock( SchemaState.class ), new StandardConstraintSemantics(),
+                NullLogProvider.getInstance(), mockedTokenHolders(),
+                mock( SchemaState.class ), new StandardConstraintSemantics(),
                 scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(),
                 indexProvider, IndexingService.NO_MONITOR, databaseHealth, explicitIndexProviderLookup, indexConfigStore,
                 new SynchronizedArrayIdOrderingQueue( 20 ), idGeneratorFactory,
@@ -195,19 +194,17 @@ public class RecordStorageEngineRule extends ExternalResource
                 transactionApplierTransformer;
 
         ExtendedRecordStorageEngine( File storeDir, Config config, PageCache pageCache, FileSystemAbstraction fs,
-                LogProvider logProvider, PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
-                RelationshipTypeTokenHolder relationshipTypeTokens, SchemaState schemaState,
+                LogProvider logProvider, TokenHolders tokenHolders, SchemaState schemaState,
                 ConstraintSemantics constraintSemantics, JobScheduler scheduler, TokenNameLookup tokenNameLookup,
                 LockService lockService, IndexProvider indexProvider,
                 IndexingService.Monitor indexingServiceMonitor, DatabaseHealth databaseHealth,
-                ExplicitIndexProviderLookup explicitIndexProviderLookup,
+                ExplicitIndexProvider explicitIndexProviderLookup,
                 IndexConfigStore indexConfigStore, IdOrderingQueue explicitIndexTransactionOrdering,
                 IdGeneratorFactory idGeneratorFactory, IdController idController,
                 Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer, Monitors monitors,
                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, OperationalMode operationalMode )
         {
-            super( storeDir, config, pageCache, fs, logProvider, propertyKeyTokenHolder, labelTokens,
-                    relationshipTypeTokens, schemaState, constraintSemantics, scheduler, tokenNameLookup,
+            super( storeDir, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics, scheduler, tokenNameLookup,
                     lockService, new DefaultIndexProviderMap( indexProvider ),
                     indexingServiceMonitor, databaseHealth, explicitIndexProviderLookup, indexConfigStore, explicitIndexTransactionOrdering, idGeneratorFactory,
                     idController, monitors, recoveryCleanupWorkCollector, operationalMode, EmptyVersionContextSupplier.EMPTY );

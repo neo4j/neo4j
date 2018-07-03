@@ -19,7 +19,6 @@
  */
 package org.neo4j.shell.kernel.apps;
 
-import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -92,7 +91,7 @@ public class Dbinfo extends NonTransactionProvidingApp
     {
         GraphDatabaseAPI graphDb = getServer().getDb();
         Kernel kernel = null;
-        if ( graphDb instanceof GraphDatabaseAPI )
+        if ( graphDb != null )
         {
             try
             {

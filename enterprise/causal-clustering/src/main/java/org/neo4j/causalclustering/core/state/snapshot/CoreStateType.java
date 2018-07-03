@@ -30,8 +30,8 @@ import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenS
 
 public enum CoreStateType
 {
-    LOCK_TOKEN( new ReplicatedLockTokenState.Marshal( MemberId.MARSHAL ) ),
-    SESSION_TRACKER( new GlobalSessionTrackerState.Marshal( MemberId.MARSHAL ) ),
+    LOCK_TOKEN( new ReplicatedLockTokenState.Marshal( new MemberId.Marshal() ) ),
+    SESSION_TRACKER( new GlobalSessionTrackerState.Marshal( new MemberId.Marshal() ) ),
     ID_ALLOCATION( new IdAllocationState.Marshal() ),
     RAFT_CORE_STATE( new RaftCoreState.Marshal() );
 

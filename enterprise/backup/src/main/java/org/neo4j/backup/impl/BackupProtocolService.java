@@ -159,7 +159,7 @@ public class BackupProtocolService
             long lastCommittedTx = -1;
             StoreCopyClient storeCopier = new StoreCopyClient( targetDirectory.toFile(), tuningConfiguration,
                     loadKernelExtensions(), logProvider, fileSystem, pageCache,
-                    monitors.newMonitor( StoreCopyClientMonitor.class, getClass() ), forensics );
+                    monitors.newMonitor( StoreCopyClientMonitor.class, getClass().getName() ), forensics );
             FullBackupStoreCopyRequester storeCopyRequester =
                     new FullBackupStoreCopyRequester( sourceHostNameOrIp, sourcePort, timeout, forensics, monitors );
             storeCopier.copyStore(
@@ -377,8 +377,8 @@ public class BackupProtocolService
         Monitors monitors = resolver.resolveDependency( Monitors.class );
         LogProvider logProvider = resolver.resolveDependency( LogService.class ).getInternalLogProvider();
         BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort, null, logProvider, targetDb.storeId(),
-                timeout, unpacker, monitors.newMonitor( ByteCounterMonitor.class, BackupClient.class ),
-                monitors.newMonitor( RequestMonitor.class, BackupClient.class ), new VersionAwareLogEntryReader<>() );
+                timeout, unpacker, monitors.newMonitor( ByteCounterMonitor.class, BackupClient.class.getName() ),
+                monitors.newMonitor( RequestMonitor.class, BackupClient.class.getName() ), new VersionAwareLogEntryReader<>() );
 
         try ( Lifespan lifespan = new Lifespan( unpacker, client ) )
         {

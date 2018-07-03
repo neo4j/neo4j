@@ -10,7 +10,7 @@
   <properties>
     <license-text.header>headers/GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
-    <moduleName>org.neo4j.graphdb.resourse</moduleName>
+    <moduleName>org.neo4j.graphdb.resource</moduleName>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>
@@ -66,12 +66,12 @@ the relevant Commercial Agreement.
             <artifactId>junit-jupiter-migrationsupport</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.maven.surefire</groupId>
-            <artifactId>surefire-logger-api</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
         </dependency>
     </dependencies>
 </project>

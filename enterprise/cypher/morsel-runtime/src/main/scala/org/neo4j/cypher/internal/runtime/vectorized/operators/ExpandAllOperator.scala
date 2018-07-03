@@ -28,86 +28,61 @@ import org.neo4j.cypher.internal.runtime.slotted.helpers.NullChecker.entityIsNul
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.opencypher.v9_0.expressions.SemanticDirection
-import org.opencypher.v9_0.util.InternalException
 
 class ExpandAllOperator(fromOffset: Int,
                         relOffset: Int,
                         toOffset: Int,
                         dir: SemanticDirection,
-                        types: LazyTypes) extends Operator {
+                        types: LazyTypes) extends StreamingOperator {
 
-  override def operate(source: Message,
-                       outputRow: MorselExecutionContext,
-                       context: QueryContext,
-                       state: QueryState): Continuation = {
+  override def init(queryContext: QueryContext, state: QueryState, inputMorsel: MorselExecutionContext): ContinuableOperatorTask =
+    new OTask(inputMorsel)
+
+  class OTask(val inputRow: MorselExecutionContext) extends ContinuableOperatorTask {
 
     /*
     This might look wrong, but it's like this by design. This allows the loop to terminate early and still be
     picked up at any point again - all without impacting the tight loop.
     The mutable state is an unfortunate cost for this feature.
      */
-    var relationships: RelationshipSelectionCursor = null
-    var inputRow: MorselExecutionContext = null
-    var iterationState: Iteration = null
+    var readPos = 0
+    var relationships: RelationshipSelectionCursor = _
 
-    source match {
-      case StartLoopWithSingleMorsel(ir, is) =>
-        inputRow = ir
-        iterationState = is
-      case ContinueLoopWith(ContinueWithData(ir, is)) =>
-        inputRow = ir
-        iterationState = is
-      case ContinueLoopWith(ContinueWithDataAndSource(ir, rels, is)) =>
-        inputRow = ir
-        iterationState = is
-        relationships = rels.asInstanceOf[RelationshipSelectionCursor]
-      case _ =>
-        throw new InternalException("Unknown continuation received")
-    }
+    override def operate(outputRow: MorselExecutionContext,
+                         context: QueryContext,
+                         state: QueryState): Unit = {
 
-    while (inputRow.hasMoreRows && outputRow.hasMoreRows) {
+      while (inputRow.hasMoreRows && outputRow.hasMoreRows) {
 
-      val fromNode = inputRow.getLongAt(fromOffset)
-      if (entityIsNull(fromNode)) inputRow.moveToNextRow()
-      else {
-        if (relationships == null) {
-          relationships = context.getRelationshipsCursor(fromNode, dir, types.types(context))
-        }
+        val fromNode = inputRow.getLongAt(fromOffset)
+        if (entityIsNull(fromNode)) inputRow.moveToNextRow()
+        else {
+          if (relationships == null) {
+            relationships = context.getRelationshipsCursor(fromNode, dir, types.types(context))
+          }
 
-        while (outputRow.hasMoreRows && relationships.next()) {
-          val relId = relationships.relationshipReference()
-          val otherSide = relationships.otherNodeReference()
+          while (outputRow.hasMoreRows && relationships.next()) {
+            val relId = relationships.relationshipReference()
+            val otherSide = relationships.otherNodeReference()
 
-          // Now we have everything needed to create a row.
-          outputRow.copyFrom(inputRow)
-          outputRow.setLongAt(relOffset, relId)
-          outputRow.setLongAt(toOffset, otherSide)
-          outputRow.moveToNextRow()
-        }
+            // Now we have everything needed to create a row.
+            outputRow.copyFrom(inputRow)
+            outputRow.setLongAt(relOffset, relId)
+            outputRow.setLongAt(toOffset, otherSide)
+            outputRow.moveToNextRow()
+          }
 
-        //we haven't filled up the rows
-        if (outputRow.hasMoreRows) {
-          relationships.close()
-          relationships = null
-          inputRow.moveToNextRow()
+          //we haven't filled up the rows
+          if (outputRow.hasMoreRows) {
+            relationships.close()
+            relationships = null
+            inputRow.moveToNextRow()
+          }
         }
       }
+      outputRow.finishedWriting()
     }
-    outputRow.finishedWriting()
 
-    if (inputRow.hasMoreRows || relationships != null) {
-      if (relationships == null)
-        ContinueWithData(inputRow, iterationState)
-      else
-        ContinueWithDataAndSource(inputRow, relationships, iterationState)
-    } else {
-      if (relationships != null) {
-        relationships.close()
-        relationships = null
-      }
-      EndOfLoop(iterationState)
-    }
+    override def canContinue: Boolean = inputRow.hasMoreRows || relationships != null
   }
-
-  override def addDependency(pipeline: Pipeline): Dependency = Lazy(pipeline)
 }

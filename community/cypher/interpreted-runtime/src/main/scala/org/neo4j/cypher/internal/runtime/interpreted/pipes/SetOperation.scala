@@ -29,6 +29,7 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual._
 
 import scala.collection.Map
+import scala.collection.mutable.ArrayBuffer
 
 sealed trait SetOperation {
 
@@ -51,7 +52,10 @@ object SetOperation {
   }
 
   private def propertyKeyMap(qtx: QueryContext, map: MapValue): Map[Int, AnyValue] = {
-    var builder = Map.newBuilder[Int, AnyValue]
+    val builder = Map.newBuilder[Int, AnyValue]
+    val setKeys = new ArrayBuffer[String]()
+    val setValues = new ArrayBuffer[AnyValue]()
+
     map.foreach(new ThrowingBiConsumer[String, AnyValue, RuntimeException] {
       override def accept(k: String, v: AnyValue): Unit = {
         if (v == Values.NO_VALUE) {
@@ -61,10 +65,17 @@ object SetOperation {
           }
         }
         else {
-          builder += qtx.getOrCreatePropertyKeyId(k) -> v
+          setKeys += k
+          setValues += v
         }
       }
     })
+
+    // Adding property keys is O(|totalPropertyKeyIds|^2) per call, so
+    // batch creation is way faster is graphs with many propertyKeyIds
+    val propertyIds = qtx.getOrCreatePropertyKeyIds(setKeys.toArray)
+    for (i <- propertyIds.indices)
+      builder += (propertyIds(i) -> setValues(i))
 
     builder.result()
   }

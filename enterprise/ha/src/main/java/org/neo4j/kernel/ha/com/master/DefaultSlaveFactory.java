@@ -57,8 +57,8 @@ public class DefaultSlaveFactory implements SlaveFactory
         return life.add( new SlaveClient( clusterMember.getInstanceId(), clusterMember.getHAUri().getHost(),
                 clusterMember.getHAUri().getPort(), originHostNameOrIp, logProvider, storeId,
                 2, // and that's 1 too many, because we push from the master from one thread only anyway
-                chunkSize, monitors.newMonitor( ByteCounterMonitor.class, SlaveClient.class ),
-                monitors.newMonitor( RequestMonitor.class, SlaveClient.class ), entryReader.get() ) );
+                chunkSize, monitors.newMonitor( ByteCounterMonitor.class, SlaveClient.class.getName() ),
+                monitors.newMonitor( RequestMonitor.class, SlaveClient.class.getName() ), entryReader.get() ) );
     }
 
     @Override

@@ -125,7 +125,7 @@ public abstract class LabelScanStoreTest
     public void forceShouldNotForceWriterOnReadOnlyScanStore()
     {
         createAndStartReadOnly();
-        store.force( IOLimiter.unlimited() );
+        store.force( IOLimiter.UNLIMITED );
     }
 
     @Test
@@ -644,11 +644,6 @@ public abstract class LabelScanStoreTest
         public void noIndex()
         {
             noIndexCalled = true;
-        }
-
-        @Override
-        public void lockedIndex( Exception e )
-        {
         }
 
         @Override

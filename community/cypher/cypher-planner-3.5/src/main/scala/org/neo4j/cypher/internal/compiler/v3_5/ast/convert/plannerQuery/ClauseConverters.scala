@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.convert.plannerQuery
 
-import org.opencypher.v9_0.util.{InternalException, SyntaxException}
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
-import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5.helpers.ExpressionConverters._
 import org.neo4j.cypher.internal.ir.v3_5.helpers.PatternConverters._
 import org.neo4j.cypher.internal.ir.v3_5.{NoHeaders, _}
 import org.neo4j.cypher.internal.v3_5.logical.plans.ResolvedCall
+import org.opencypher.v9_0.ast._
+import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.util.{InternalException, SyntaxException}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -92,7 +92,7 @@ object ClauseConverters {
 
   private def addReturnToLogicalPlanInput(acc: PlannerQueryBuilder,
                                           clause: Return): PlannerQueryBuilder = clause match {
-    case Return(distinct, ReturnItems(star, items), _, optOrderBy, skip, limit, _) if !star =>
+    case Return(distinct, ReturnItems(star, items), optOrderBy, skip, limit, _) if !star =>
 
       val shuffle = asQueryShuffle(optOrderBy).
         withSkip(skip).
@@ -129,7 +129,7 @@ object ClauseConverters {
 
     clause.pattern.patternParts.foreach {
       //CREATE (n :L1:L2 {prop: 42})
-      case EveryPath(NodePattern(Some(id), labels, props)) =>
+      case EveryPath(NodePattern(Some(id), labels, props, _)) =>
         nodes += CreateNode(id.name, labels, props)
         seenPatternNodes += id.name
 
@@ -176,9 +176,9 @@ object ClauseConverters {
   }
 
   private def allCreatePatterns(element: PatternElement): (Vector[CreateNode], Vector[CreateRelationship]) = element match {
-    case NodePattern(None, _, _) => throw new InternalException("All nodes must be named at this instance")
+    case NodePattern(None, _, _, _) => throw new InternalException("All nodes must be named at this instance")
     //CREATE ()
-    case NodePattern(Some(variable), labels, props) =>
+    case NodePattern(Some(variable), labels, props, _) =>
       (Vector(CreateNode(variable.name, labels, props)), Vector.empty)
 
     //CREATE ()-[:R]->()
@@ -298,7 +298,7 @@ object ClauseConverters {
 
     clause.pattern.patternParts.foldLeft(builder) {
       //MERGE (n :L1:L2 {prop: 42})
-      case (acc, EveryPath(NodePattern(Some(id), labels, props))) =>
+      case (acc, EveryPath(NodePattern(Some(id), labels, props, _))) =>
         val currentlyAvailableVariables = builder.currentlyAvailableVariables
         val labelPredicates = labels.map(l => HasLabels(id, Seq(l))(id.position))
         val propertyPredicates = toPropertySelection(id, toPropertyMap(props))
@@ -383,7 +383,7 @@ object ClauseConverters {
 
     Handles: ... WITH * [WHERE <predicate>] ...
      */
-    case With(false, ri, _, None, None, None, where)
+    case With(false, ri, None, None, None, where)
       if !(builder.currentQueryGraph.hasOptionalPatterns || builder.currentQueryGraph.containsUpdates)
         && ri.items.forall(item => !containsAggregate(item.expression))
         && ri.items.forall {
@@ -399,7 +399,7 @@ object ClauseConverters {
 
     Handles all other WITH clauses
      */
-    case With(distinct, projection, _, orderBy, skip, limit, where) =>
+    case With(distinct, projection, orderBy, skip, limit, where) =>
       val selections = asSelections(where)
       val returnItems = asReturnItems(builder.currentQueryGraph, projection)
 

@@ -23,7 +23,6 @@ import java.net.URL
 import java.util.function.Predicate
 
 import org.eclipse.collections.api.iterator.LongIterator
-import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v3_1.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
@@ -56,7 +55,7 @@ import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
-import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
+import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
@@ -906,8 +905,8 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
 
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
     callProcedure(name, args,
-                  txContext.dbmsOperations.procedureCallDbms(_,_,txContext.securityContext,
-                                                                        txContext.resourceTracker))
+                  txContext.dbmsOperations.procedureCallDbms(_,_,txContext.graph.getDependencyResolver, txContext.securityContext,
+        txContext.resourceTracker))
   }
 
   private def callProcedure(name: QualifiedName, args: Seq[Any], call: KernelProcedureCall) = {

@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.conditions
 
+import org.opencypher.v9_0.ast._
+import org.opencypher.v9_0.expressions.{EveryPath, NodePattern, Pattern, Variable}
+import org.opencypher.v9_0.rewriting.conditions.containsNoNodesOfType
 import org.opencypher.v9_0.util.ASTNode
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.ast.conditions.containsNoNodesOfType
-import org.opencypher.v9_0.expressions.{EveryPath, NodePattern, Pattern, Variable}
 
 class ContainsNoNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -36,7 +36,7 @@ class ContainsNoNodesOfTypeTest extends CypherFunSuite with AstConstructionTestS
   }
 
   test("Fails when finding UnaliasedReturnItem") {
-    val ast: ASTNode = Return(false, ReturnItems(includeExisting = false, Seq(UnaliasedReturnItem(Variable("foo")_, "foo")_))_, None, None, None, None)_
+    val ast: ASTNode = Return(false, ReturnItems(includeExisting = false, Seq(UnaliasedReturnItem(Variable("foo")_, "foo")_))_, None, None, None)_
 
     condition(ast) should equal(Seq("Expected none but found UnaliasedReturnItem at position line 1, column 0 (offset: 0)"))
   }

@@ -52,6 +52,12 @@ public class SchemaProcessorTest
             {
                 callHistory.add( "RelationTypeSchemaDescriptor" );
             }
+
+            @Override
+            public void processSpecific( org.neo4j.internal.kernel.api.schema.SchemaDescriptor schemaDescriptor )
+            {
+                callHistory.add( "SchemaDescriptor" );
+            }
         };
 
         disguisedLabel().processWith( processor );

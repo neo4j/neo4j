@@ -29,13 +29,13 @@ import java.util.function.Function;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
+import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
+import org.neo4j.graphdb.factory.module.EditionModule;
+import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
-import org.neo4j.kernel.impl.factory.PlatformModule;
 
 public class ReadReplicaGraphDatabase extends GraphDatabaseFacade
 {

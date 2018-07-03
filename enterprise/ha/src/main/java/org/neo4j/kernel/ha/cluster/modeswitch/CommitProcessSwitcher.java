@@ -23,6 +23,7 @@
 package org.neo4j.kernel.ha.cluster.modeswitch;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.MasterTransactionCommitProcess;
 import org.neo4j.kernel.ha.SlaveTransactionCommitProcess;
@@ -65,11 +66,12 @@ public class CommitProcessSwitcher extends AbstractComponentSwitcher<Transaction
     @Override
     protected TransactionCommitProcess getMasterImpl()
     {
+        DependencyResolver databaseResolver = this.dependencyResolver.resolveDependency( NeoStoreDataSource.class ).getDependencyResolver();
         TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
-                dependencyResolver.resolveDependency( TransactionAppender.class ),
-                dependencyResolver.resolveDependency( StorageEngine.class ) );
+                databaseResolver.resolveDependency( TransactionAppender.class ),
+                databaseResolver.resolveDependency( StorageEngine.class ) );
 
-        IntegrityValidator validator = dependencyResolver.resolveDependency( IntegrityValidator.class );
+        IntegrityValidator validator = databaseResolver.resolveDependency( IntegrityValidator.class );
         return new MasterTransactionCommitProcess( commitProcess, txPropagator, validator, monitor );
     }
 }

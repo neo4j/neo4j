@@ -40,7 +40,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
+import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -80,7 +80,7 @@ public class StoreSizeBeanTest
     private final FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
     private final File storeDir = new File( "" );
     private final LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDir, fs ).build();
-    private final ExplicitIndexProviderLookup explicitIndexProviderLookup = mock( ExplicitIndexProviderLookup.class );
+    private final ExplicitIndexProvider explicitIndexProviderLookup = mock( ExplicitIndexProvider.class );
     private final IndexProvider indexProvider = mockedIndexProvider( "providah1" );
     private final IndexProvider indexProvider2 = mockedIndexProvider( "providah" );
     private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
@@ -252,7 +252,7 @@ public class StoreSizeBeanTest
 
         IndexImplementation indexImplementation = mock( IndexImplementation.class );
         when( indexImplementation.getIndexImplementationDirectory( any() ) ).thenReturn( explicitIndex );
-        when( explicitIndexProviderLookup.all() ).thenReturn( iterable( indexImplementation ) );
+        when( explicitIndexProviderLookup.allIndexProviders() ).thenReturn( iterable( indexImplementation ) );
 
         // Schema index files
         {

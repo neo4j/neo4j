@@ -25,9 +25,9 @@ package org.neo4j.metrics.source.db;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 
-import java.io.IOException;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.Supplier;
 
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.api.DefaultTransactionTracer;
@@ -53,15 +53,15 @@ public class LogRotationMetrics extends LifecycleAdapter
 
     private final MetricRegistry registry;
     private final Monitors monitors;
-    private final LogRotationMonitor logRotationMonitor;
+    private final Supplier<LogRotationMonitor> logRotationMonitorSupplier;
     private final DefaultTransactionTracer.Monitor listener;
 
     public LogRotationMetrics( EventReporter reporter, MetricRegistry registry,
-            Monitors monitors, LogRotationMonitor logRotationMonitor )
+            Monitors monitors, Supplier<LogRotationMonitor> logRotationMonitorSupplier )
     {
         this.registry = registry;
         this.monitors = monitors;
-        this.logRotationMonitor = logRotationMonitor;
+        this.logRotationMonitorSupplier = logRotationMonitorSupplier;
         this.listener = durationMillis ->
         {
             final SortedMap<String,Gauge> gauges = new TreeMap<>();
@@ -75,9 +75,10 @@ public class LogRotationMetrics extends LifecycleAdapter
     {
         monitors.addMonitorListener( listener );
 
-        registry.register( LOG_ROTATION_EVENTS, (Gauge<Long>) logRotationMonitor::numberOfLogRotationEvents );
+        LogRotationMonitor monitor = this.logRotationMonitorSupplier.get();
+        registry.register( LOG_ROTATION_EVENTS, (Gauge<Long>) monitor::numberOfLogRotationEvents );
         registry.register( LOG_ROTATION_TOTAL_TIME,
-                (Gauge<Long>) logRotationMonitor::logRotationAccumulatedTotalTimeMillis );
+                (Gauge<Long>) monitor::logRotationAccumulatedTotalTimeMillis );
     }
 
     @Override

@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.bolt.BoltKernelExtension;
+import org.neo4j.bolt.BoltServer;
 import org.neo4j.bolt.testing.Jobs;
 import org.neo4j.function.Predicates;
 import org.neo4j.kernel.configuration.Config;
@@ -203,7 +203,7 @@ public class ExecutorBoltSchedulerTest
         verify( connection ).processNextBatch();
         verify( connection ).stop();
 
-        logProvider.assertExactly( AssertableLogProvider.inLog( containsString( BoltKernelExtension.class.getPackage().getName() ) ).error(
+        logProvider.assertExactly( AssertableLogProvider.inLog( containsString( BoltServer.class.getPackage().getName() ) ).error(
                 containsString( "Unexpected error during job scheduling for session" ),
                 matchesExceptionMessage( containsString( "some unexpected error" ) ) ) );
     }

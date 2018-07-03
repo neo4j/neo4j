@@ -76,11 +76,6 @@ public class StoreProcessor extends AbstractStoreProcessor
         return stage;
     }
 
-    public int getStageIndex()
-    {
-        return stage.ordinal();
-    }
-
     @Override
     public void processNode( RecordStore<NodeRecord> store, NodeRecord node )
     {

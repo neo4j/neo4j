@@ -144,5 +144,5 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: AnyRef](val maximumSiz
 }
 
 object QueryCache {
-  val NOT_PRESENT: CacheableExecutableQuery = null
+  val NOT_PRESENT: ExecutableQuery = null
 }

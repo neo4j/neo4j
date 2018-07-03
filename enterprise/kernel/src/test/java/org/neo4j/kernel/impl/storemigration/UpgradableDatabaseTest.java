@@ -109,11 +109,11 @@ public class UpgradableDatabaseTest
             tailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors() );
         }
 
-        boolean storeFilesUpgradeable( File storeDirectory, UpgradableDatabase upgradableDatabase )
+        boolean storeFilesUpgradable( File storeDirectory, UpgradableDatabase upgradableDatabase )
         {
             try
             {
-                upgradableDatabase.checkUpgradeable( storeDirectory );
+                upgradableDatabase.checkUpgradable( storeDirectory );
                 return true;
             }
             catch ( StoreUpgrader.UnableToUpgradeException e )
@@ -129,7 +129,7 @@ public class UpgradableDatabaseTest
             final UpgradableDatabase upgradableDatabase = getUpgradableDatabase();
 
             // when
-            final boolean result = storeFilesUpgradeable( workingDirectory, upgradableDatabase );
+            final boolean result = storeFilesUpgradable( workingDirectory, upgradableDatabase );
 
             // then
             assertTrue( result );
@@ -158,7 +158,7 @@ public class UpgradableDatabaseTest
             final UpgradableDatabase upgradableDatabase = getUpgradableDatabase();
 
             // when
-            final boolean result = storeFilesUpgradeable( workingDirectory, upgradableDatabase );
+            final boolean result = storeFilesUpgradable( workingDirectory, upgradableDatabase );
 
             // then
             assertFalse( result );
@@ -234,7 +234,7 @@ public class UpgradableDatabaseTest
             try
             {
                 // when
-                upgradableDatabase.checkUpgradeable( workingDirectory );
+                upgradableDatabase.checkUpgradable( workingDirectory );
                 fail( "should not have been able to upgrade" );
             }
             catch ( StoreUpgrader.UnexpectedUpgradingStoreVersionException e )

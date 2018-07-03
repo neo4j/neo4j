@@ -59,6 +59,9 @@ import org.neo4j.function.Factory;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.module.CommunityEditionModule;
+import org.neo4j.graphdb.factory.module.EditionModule;
+import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.internal.kernel.api.Kernel;
@@ -133,12 +136,12 @@ import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
-import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
-import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.LastTxIdGetter;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
+import org.neo4j.kernel.impl.core.TokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
@@ -146,10 +149,7 @@ import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.CanWrite;
-import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.EditionModule;
-import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.factory.ReadOnly;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
@@ -172,8 +172,10 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
+import org.neo4j.kernel.internal.KernelDiagnostics;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
@@ -188,14 +190,15 @@ import static java.lang.reflect.Proxy.newProxyInstance;
 import static org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 
 /**
- * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
+ * This implementation of {@link EditionModule} creates the implementations of services
  * that are specific to the Enterprise edition.
  */
 public class HighlyAvailableEditionModule
         extends EditionModule
 {
-    private HighAvailabilityMemberStateMachine memberStateMachine;
+    public HighAvailabilityMemberStateMachine memberStateMachine;
     public ClusterMembers members;
+    private TokenHolders tokenHolders;
 
     public HighlyAvailableEditionModule( final PlatformModule platformModule )
     {
@@ -235,14 +238,14 @@ public class HighlyAvailableEditionModule
 
         RequestContextFactory requestContextFactory = dependencies.satisfyDependency( new RequestContextFactory(
                 serverId.toIntegerIndex(),
-                dependencies.provideDependency( TransactionIdStore.class ) ) );
+                () -> resolveDatabaseDependency( dependencies, TransactionIdStore.class ) ) );
 
         final long idReuseSafeZone = config.get( HaSettings.id_reuse_safe_zone_time ).toMillis();
         TransactionCommittingResponseUnpacker responseUnpacker = dependencies.satisfyDependency(
                 new TransactionCommittingResponseUnpacker( dependencies,
                         config.get( HaSettings.pull_apply_batch_size ), idReuseSafeZone ) );
 
-        Supplier<Kernel> kernelProvider = dependencies.provideDependency( Kernel.class );
+        Supplier<Kernel> kernelProvider = () -> resolveDatabaseDependency( dependencies, Kernel.class );
 
         transactionStartTimeout = config.get( HaSettings.state_switch_timeout ).toMillis();
 
@@ -271,8 +274,7 @@ public class HighlyAvailableEditionModule
         // TODO There's a cyclical dependency here that should be fixed
         final AtomicReference<HighAvailabilityMemberStateMachine> electionProviderRef = new AtomicReference<>();
         OnDiskLastTxIdGetter lastTxIdGetter = new OnDiskLastTxIdGetter(
-                () -> platformModule.dependencies.resolveDependency(
-                        TransactionIdStore.class ).getLastCommittedTransactionId() );
+                () -> resolveDatabaseDependency( dependencies, TransactionIdStore.class ).getLastCommittedTransactionId() );
         ElectionCredentialsProvider electionCredentialsProvider = config.get( HaSettings.slave_only ) ?
                 new NotElectableElectionCredentialsProvider() :
                 new DefaultElectionCredentialsProvider(
@@ -388,8 +390,7 @@ public class HighlyAvailableEditionModule
         // but merely provide a way to get access to it. That's why this is a Supplier and will be asked
         // later, after the data source module and all that have started.
         @SuppressWarnings( {"deprecation", "unchecked"} )
-        Supplier<LogEntryReader<ReadableClosablePositionAwareChannel>> logEntryReader =
-                (Supplier) dependencies.provideDependency( LogEntryReader.class );
+        Supplier<LogEntryReader<ReadableClosablePositionAwareChannel>> logEntryReader = () -> resolveDatabaseDependency( dependencies, LogEntryReader.class );
 
         MasterClientResolver masterClientResolver = new MasterClientResolver( logging.getInternalLogProvider(),
                 responseUnpacker,
@@ -417,8 +418,8 @@ public class HighlyAvailableEditionModule
 
         Function<Slave, SlaveServer> slaveServerFactory =
                 slave -> new SlaveServer( slave, slaveServerConfig( config ), logging.getInternalLogProvider(),
-                        monitors.newMonitor( ByteCounterMonitor.class, SlaveServer.class ),
-                        monitors.newMonitor( RequestMonitor.class, SlaveServer.class ) );
+                        monitors.newMonitor( ByteCounterMonitor.class, SlaveServer.class.getName() ),
+                        monitors.newMonitor( RequestMonitor.class, SlaveServer.class.getName() ) );
 
         SwitchToSlave switchToSlaveInstance = chooseSwitchToSlaveStrategy( platformModule, config, dependencies, logging, monitors,
                 masterDelegateInvocationHandler, requestContextFactory, clusterMemberAvailability,
@@ -427,13 +428,12 @@ public class HighlyAvailableEditionModule
         final Factory<MasterImpl.SPI> masterSPIFactory =
                 () -> new DefaultMasterImplSPI( platformModule.graphDatabaseFacade, platformModule.fileSystem,
                         platformModule.monitors,
-                        labelTokenHolder, propertyKeyTokenHolder, relationshipTypeTokenHolder, this.idGeneratorFactory,
-                        platformModule.dependencies.resolveDependency( TransactionCommitProcess.class ),
-                        platformModule.dependencies.resolveDependency( CheckPointer.class ),
-                        platformModule.dependencies.resolveDependency( TransactionIdStore.class ),
-                        platformModule.dependencies.resolveDependency( LogicalTransactionStore.class ),
-                        platformModule.dependencies.resolveDependency( NeoStoreDataSource.class ),
-                        platformModule.storeCopyCheckPointMutex,
+                        tokenHolders, this.idGeneratorFactory,
+                        resolveDatabaseDependency( dependencies, TransactionCommitProcess.class ),
+                        resolveDatabaseDependency( dependencies, CheckPointer.class ),
+                        resolveDatabaseDependency( dependencies, TransactionIdStore.class ),
+                        resolveDatabaseDependency( dependencies, LogicalTransactionStore.class ),
+                        dependencies.resolveDependency( NeoStoreDataSource.class ),
                         logging.getInternalLogProvider() );
 
         final Factory<ConversationSPI> conversationSPIFactory =
@@ -443,20 +443,20 @@ public class HighlyAvailableEditionModule
 
         BiFunction<ConversationManager, LifeSupport, Master> masterFactory = ( conversationManager, life1 ) ->
                 life1.add( new MasterImpl( masterSPIFactory.newInstance(),
-                conversationManager, monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class ), config ) );
+                conversationManager, monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class.getName() ), config ) );
 
         BiFunction<Master, ConversationManager, MasterServer> masterServerFactory =
                 ( master1, conversationManager ) ->
                 {
                     TransactionChecksumLookup txChecksumLookup = new TransactionChecksumLookup(
-                            platformModule.dependencies.resolveDependency( TransactionIdStore.class ),
-                            platformModule.dependencies.resolveDependency( LogicalTransactionStore.class ) );
+                            resolveDatabaseDependency( dependencies, TransactionIdStore.class ),
+                            resolveDatabaseDependency( dependencies, LogicalTransactionStore.class ) );
 
                     return new MasterServer( master1, logging.getInternalLogProvider(),
                             masterServerConfig( config ),
                             new BranchDetectingTxVerifier( logging.getInternalLogProvider(), txChecksumLookup ),
-                            monitors.newMonitor( ByteCounterMonitor.class, MasterServer.class ),
-                            monitors.newMonitor( RequestMonitor.class, MasterServer.class ), conversationManager,
+                            monitors.newMonitor( ByteCounterMonitor.class, MasterServer.class.getName() ),
+                            monitors.newMonitor( RequestMonitor.class, MasterServer.class.getName() ), conversationManager,
                             logEntryReader.get() );
                 };
 
@@ -500,15 +500,19 @@ public class HighlyAvailableEditionModule
 
         statementLocksFactory = createStatementLocksFactory( componentSwitcherContainer, config, logging );
 
-        propertyKeyTokenHolder = dependencies.satisfyDependency( new DelegatingPropertyKeyTokenHolder(
-                createPropertyKeyCreator( config, componentSwitcherContainer,
-                        masterDelegateInvocationHandler, requestContextFactory, kernelProvider ) ) );
-        labelTokenHolder = dependencies.satisfyDependency( new DelegatingLabelTokenHolder( createLabelIdCreator( config,
-                componentSwitcherContainer, masterDelegateInvocationHandler, requestContextFactory,
-                kernelProvider ) ) );
-        relationshipTypeTokenHolder = dependencies.satisfyDependency( new DelegatingRelationshipTypeTokenHolder(
-                createRelationshipTypeCreator( config, componentSwitcherContainer,
-                        masterDelegateInvocationHandler, requestContextFactory, kernelProvider ) ) );
+        DelegatingTokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder(
+                createPropertyKeyCreator( config, componentSwitcherContainer, masterDelegateInvocationHandler, requestContextFactory, kernelProvider ),
+                TokenHolder.TYPE_PROPERTY_KEY );
+        DelegatingTokenHolder labelTokenHolder = new DelegatingTokenHolder(
+                createLabelIdCreator( config, componentSwitcherContainer, masterDelegateInvocationHandler, requestContextFactory, kernelProvider ),
+                TokenHolder.TYPE_LABEL );
+        DelegatingTokenHolder relationshipTypeTokenHolder = new DelegatingTokenHolder(
+                createRelationshipTypeCreator( config, componentSwitcherContainer, masterDelegateInvocationHandler, requestContextFactory, kernelProvider ),
+                TokenHolder.TYPE_RELATIONSHIP_TYPE );
+
+        // HA will only support a single token holder
+        tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
+        tokenHoldersSupplier = () -> tokenHolders;
 
         dependencies.satisfyDependency(
                 createKernelData( config, platformModule.graphDatabaseFacade, members, fs, platformModule.pageCache,
@@ -603,7 +607,7 @@ public class HighlyAvailableEditionModule
                         monitors.newMonitor( SwitchToSlave.Monitor.class ),
                         monitors.newMonitor( StoreCopyClientMonitor.class ),
                         dependencies.provideDependency( NeoStoreDataSource.class ),
-                        dependencies.provideDependency( TransactionIdStore.class ),
+                        () -> resolveDatabaseDependency( dependencies, TransactionIdStore.class ),
                         slaveServerFactory, updatePullerProxy, platformModule.pageCache,
                         monitors, platformModule.transactionMonitor );
             case copy_then_branch:
@@ -615,7 +619,7 @@ public class HighlyAvailableEditionModule
                         monitors.newMonitor( SwitchToSlave.Monitor.class ),
                         monitors.newMonitor( StoreCopyClientMonitor.class ),
                         dependencies.provideDependency( NeoStoreDataSource.class ),
-                        dependencies.provideDependency( TransactionIdStore.class ),
+                        () -> resolveDatabaseDependency( dependencies, TransactionIdStore.class ),
                         slaveServerFactory, updatePullerProxy, platformModule.pageCache,
                         monitors, platformModule.transactionMonitor );
             default:
@@ -722,7 +726,7 @@ public class HighlyAvailableEditionModule
 
         RelationshipTypeCreatorSwitcher typeCreatorModeSwitcher = new RelationshipTypeCreatorSwitcher(
                 relationshipTypeCreatorDelegate, masterInvocationHandler, requestContextFactory,
-                kernelProvider, idGeneratorFactory );
+                kernelProvider );
 
         componentSwitcherContainer.add( typeCreatorModeSwitcher );
         return relationshipTypeCreator;
@@ -730,7 +734,7 @@ public class HighlyAvailableEditionModule
 
     private TokenCreator createPropertyKeyCreator( Config config, ComponentSwitcherContainer componentSwitcherContainer,
             DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
-            RequestContextFactory requestContextFactory, Supplier<Kernel> kernelProvider )
+            RequestContextFactory requestContextFactory, Supplier<Kernel> kernelSupplier )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -744,7 +748,7 @@ public class HighlyAvailableEditionModule
 
         PropertyKeyCreatorSwitcher propertyKeyCreatorModeSwitcher = new PropertyKeyCreatorSwitcher(
                 propertyKeyCreatorDelegate, masterDelegateInvocationHandler,
-                requestContextFactory, kernelProvider, idGeneratorFactory );
+                requestContextFactory, kernelSupplier );
 
         componentSwitcherContainer.add( propertyKeyCreatorModeSwitcher );
         return propertyTokenCreator;
@@ -765,8 +769,7 @@ public class HighlyAvailableEditionModule
                 new Class[]{TokenCreator.class}, labelIdCreatorDelegate );
 
         LabelTokenCreatorSwitcher modeSwitcher = new LabelTokenCreatorSwitcher(
-                labelIdCreatorDelegate, masterDelegateInvocationHandler, requestContextFactory, kernelProvider,
-                idGeneratorFactory );
+                labelIdCreatorDelegate, masterDelegateInvocationHandler, requestContextFactory, kernelProvider );
 
         componentSwitcherContainer.add( modeSwitcher );
         return labelIdCreator;
@@ -811,7 +814,12 @@ public class HighlyAvailableEditionModule
             {
                 try
                 {
-                    HighlyAvailableEditionModule.this.doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );
+                    DiagnosticsManager diagnosticsManager = dependencyResolver.resolveDependency( DiagnosticsManager.class );
+                    NeoStoreDataSource neoStoreDataSource = dependencyResolver.resolveDependency( NeoStoreDataSource.class );
+
+                    diagnosticsManager.prependProvider( new KernelDiagnostics.Versions( databaseInfo, neoStoreDataSource.getStoreId() ) );
+                    neoStoreDataSource.registerDiagnosticsWith( diagnosticsManager );
+                    diagnosticsManager.appendProvider( new KernelDiagnostics.StoreFiles( neoStoreDataSource.getStoreDir() ) );
                     assureLastCommitTimestampInitialized( dependencyResolver );
                 }
                 catch ( Throwable throwable )
@@ -839,10 +847,11 @@ public class HighlyAvailableEditionModule
         } );
     }
 
-    private static void assureLastCommitTimestampInitialized( DependencyResolver resolver )
+    private static void assureLastCommitTimestampInitialized( DependencyResolver globalResolver )
     {
-        MetaDataStore metaDataStore = resolver.resolveDependency( MetaDataStore.class );
-        LogicalTransactionStore txStore = resolver.resolveDependency( LogicalTransactionStore.class );
+        DependencyResolver databaseResolver = globalResolver.resolveDependency( NeoStoreDataSource.class ).getDependencyResolver();
+        MetaDataStore metaDataStore = databaseResolver.resolveDependency( MetaDataStore.class );
+        LogicalTransactionStore txStore = databaseResolver.resolveDependency( LogicalTransactionStore.class );
 
         TransactionId txInfo = metaDataStore.getLastCommittedTransaction();
         long lastCommitTimestampFromStore = txInfo.commitTimestamp();
@@ -921,6 +930,11 @@ public class HighlyAvailableEditionModule
     @Override
     public void setupSecurityModule( PlatformModule platformModule, Procedures procedures )
     {
-        EnterpriseEditionModule.setupEnterpriseSecurityModule( platformModule, procedures );
+        EnterpriseEditionModule.setupEnterpriseSecurityModule( this, platformModule, procedures );
+    }
+
+    private static <T> T resolveDatabaseDependency( Dependencies dependencies, Class<T> clazz )
+    {
+        return dependencies.resolveDependency( NeoStoreDataSource.class ).getDependencyResolver().resolveDependency( clazz );
     }
 }

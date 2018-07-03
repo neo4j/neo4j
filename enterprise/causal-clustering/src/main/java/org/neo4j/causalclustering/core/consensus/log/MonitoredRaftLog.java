@@ -34,7 +34,7 @@ public class MonitoredRaftLog extends DelegatingRaftLog
     public MonitoredRaftLog( RaftLog delegate, Monitors monitors )
     {
         super( delegate );
-        this.appendIndexMonitor = monitors.newMonitor( RaftLogAppendIndexMonitor.class, getClass() );
+        this.appendIndexMonitor = monitors.newMonitor( RaftLogAppendIndexMonitor.class, getClass().getName() );
     }
 
     @Override

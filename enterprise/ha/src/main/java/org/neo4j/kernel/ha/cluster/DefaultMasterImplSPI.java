@@ -38,9 +38,7 @@ import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -49,7 +47,6 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -65,9 +62,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     private final GraphDatabaseAPI graphDb;
     private final TransactionChecksumLookup txChecksumLookup;
     private final FileSystemAbstraction fileSystem;
-    private final LabelTokenHolder labels;
-    private final PropertyKeyTokenHolder propertyKeyTokenHolder;
-    private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
+    private final TokenHolders tokenHolders;
     private final IdGeneratorFactory idGeneratorFactory;
     private final NeoStoreDataSource neoStoreDataSource;
     private final File storeDir;
@@ -76,32 +71,26 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
 
     private final TransactionCommitProcess transactionCommitProcess;
     private final CheckPointer checkPointer;
-    private final StoreCopyCheckPointMutex mutex;
 
     public DefaultMasterImplSPI( final GraphDatabaseAPI graphDb,
                                  FileSystemAbstraction fileSystemAbstraction,
                                  Monitors monitors,
-                                 LabelTokenHolder labels, PropertyKeyTokenHolder propertyKeyTokenHolder,
-                                 RelationshipTypeTokenHolder relationshipTypeTokenHolder,
+                                 TokenHolders tokenHolders,
                                  IdGeneratorFactory idGeneratorFactory,
                                  TransactionCommitProcess transactionCommitProcess,
                                  CheckPointer checkPointer,
                                  TransactionIdStore transactionIdStore,
                                  LogicalTransactionStore logicalTransactionStore,
                                  NeoStoreDataSource neoStoreDataSource,
-                                 StoreCopyCheckPointMutex mutex,
                                  LogProvider logProvider )
     {
         this.graphDb = graphDb;
         this.fileSystem = fileSystemAbstraction;
-        this.labels = labels;
-        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
-        this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
+        this.tokenHolders = tokenHolders;
         this.idGeneratorFactory = idGeneratorFactory;
         this.transactionCommitProcess = transactionCommitProcess;
         this.checkPointer = checkPointer;
         this.neoStoreDataSource = neoStoreDataSource;
-        this.mutex = mutex;
         this.storeDir = graphDb.getStoreDir();
         this.txChecksumLookup = new TransactionChecksumLookup( transactionIdStore, logicalTransactionStore );
         this.responsePacker = new ResponsePacker( logicalTransactionStore, transactionIdStore, graphDb::storeId );
@@ -120,13 +109,13 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     @Override
     public int getOrCreateLabel( String name )
     {
-        return labels.getOrCreateId( name );
+        return tokenHolders.labelTokens().getOrCreateId( name );
     }
 
     @Override
     public int getOrCreateProperty( String name )
     {
-        return propertyKeyTokenHolder.getOrCreateId( name );
+        return tokenHolders.propertyKeyTokens().getOrCreateId( name );
     }
 
     @Override
@@ -154,7 +143,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     @Override
     public Integer createRelationshipType( String name )
     {
-        return relationshipTypeTokenHolder.getOrCreateId( name );
+        return tokenHolders.relationshipTypeTokens().getOrCreateId( name );
     }
 
     @Override
@@ -167,7 +156,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     public RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer )
     {
         StoreCopyServer streamer = new StoreCopyServer( neoStoreDataSource, checkPointer, fileSystem, storeDir,
-                monitors.newMonitor( StoreCopyServer.Monitor.class, StoreCopyServer.class ), mutex );
+                monitors.newMonitor( StoreCopyServer.Monitor.class, StoreCopyServer.class.getName() ) );
         return streamer.flushStoresAndStreamStoreFiles( STORE_COPY_CHECKPOINT_TRIGGER, writer, false );
     }
 

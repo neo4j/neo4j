@@ -27,50 +27,43 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.internal.kernel.api.NodeCursor
 
-class AllNodeScanOperator(offset: Int, argumentSize: SlotConfiguration.Size) extends Operator {
+class AllNodeScanOperator(offset: Int, argumentSize: SlotConfiguration.Size) extends StreamingOperator {
 
-  override def operate(message: Message,
-                       currentRow: MorselExecutionContext,
-                       context: QueryContext,
-                       state: QueryState): Continuation = {
-    var nodeCursor: NodeCursor = null
-    var iterationState: Iteration = null
-    val read = context.transactionalContext.dataRead
+  override def init(queryContext: QueryContext,
+                    state: QueryState,
+                    inputMorsel: MorselExecutionContext): ContinuableOperatorTask = {
+    val nodeCursor = queryContext.transactionalContext.cursors.allocateNodeCursor()
+    queryContext.transactionalContext.dataRead.allNodesScan(nodeCursor)
+    new OTask(nodeCursor, inputMorsel)
+  }
 
-    message match {
-      case StartLeafLoop(is) =>
-        nodeCursor = context.transactionalContext.cursors.allocateNodeCursor()
-        read.allNodesScan(nodeCursor)
-        iterationState = is
-      case ContinueLoopWith(ContinueWithSource(cursor, is)) =>
-        nodeCursor = cursor.asInstanceOf[NodeCursor]
-        iterationState = is
-      case _ => throw new IllegalStateException()
-    }
+  class OTask(var nodeCursor: NodeCursor, argument: MorselExecutionContext) extends ContinuableOperatorTask {
 
     var cursorHasMore = true
 
-    while (currentRow.hasMoreRows && cursorHasMore) {
-      cursorHasMore = nodeCursor.next()
-      if (cursorHasMore) {
-        iterationState.copyArgumentStateTo(currentRow, argumentSize.nLongs, argumentSize.nReferences)
-        currentRow.setLongAt(offset, nodeCursor.nodeReference())
-        currentRow.moveToNextRow()
+    override def operate(currentRow: MorselExecutionContext,
+                         context: QueryContext,
+                         state: QueryState): Unit = {
+
+      while (currentRow.hasMoreRows && cursorHasMore) {
+        cursorHasMore = nodeCursor.next()
+        if (cursorHasMore) {
+          currentRow.copyFrom(argument, argumentSize.nLongs, argumentSize.nReferences)
+          currentRow.setLongAt(offset, nodeCursor.nodeReference())
+          currentRow.moveToNextRow()
+        }
+      }
+
+      currentRow.finishedWriting()
+
+      if (!cursorHasMore) {
+        if (nodeCursor != null) {
+          nodeCursor.close()
+          nodeCursor = null
+        }
       }
     }
 
-    currentRow.finishedWriting()
-
-    if (cursorHasMore)
-      ContinueWithSource(nodeCursor, iterationState)
-    else {
-      if (nodeCursor != null) {
-        nodeCursor.close()
-        nodeCursor = null
-      }
-      EndOfLoop(iterationState)
-    }
+    override def canContinue: Boolean = cursorHasMore
   }
-
-  override def addDependency(pipeline: Pipeline): Dependency = NoDependencies
 }

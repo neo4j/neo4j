@@ -11,10 +11,10 @@
   <artifactId>neo4j-community</artifactId>
   <version>3.5.0-SNAPSHOT</version>
 
-  <name>Neo4j - Community</name>
+  <name>Neo4j - Community (Bill of Materials)</name>
   <packaging>pom</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
-  <description>A meta package containing the most used Neo4j Community libraries. Intended use: as a Maven dependency.</description>
+  <description>A project with bill-of-materials POM containing Neo4j Community dependencies.</description>
 
   <properties>
     <license-text.header>headers/GPL-3-header.txt</license-text.header>
@@ -31,11 +31,6 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-bolt</artifactId>
       <version>${project.version}</version>
     </dependency>
   </dependencies>

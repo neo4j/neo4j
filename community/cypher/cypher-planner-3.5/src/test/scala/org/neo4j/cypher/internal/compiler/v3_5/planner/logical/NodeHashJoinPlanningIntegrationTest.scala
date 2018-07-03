@@ -43,7 +43,7 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     val expected =
       Selection(
-        Seq(Not(Equals(Variable("r1")_, Variable("r2")_)_)_),
+        Ands(Set(Not(Equals(Variable("r1")_, Variable("r2")_)_)_))_,
         NodeHashJoin(
           Set("b"),
           Expand(
@@ -77,10 +77,10 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     val expected =
       Selection(
-        Seq(
+        Ands(Set(
           Not(Equals(Variable("r1") _, Variable("r2") _) _) _,
           Equals(Property(Variable("a") _, PropertyKeyName("prop") _) _, Property(Variable("c") _, PropertyKeyName("prop") _) _) _
-        ),
+        ))_,
         NodeHashJoin(
           Set("b"),
           Expand(

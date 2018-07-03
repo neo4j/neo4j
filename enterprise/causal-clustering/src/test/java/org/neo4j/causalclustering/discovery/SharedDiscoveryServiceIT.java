@@ -92,14 +92,14 @@ public class SharedDiscoveryServiceIT
         }
     }
 
-    private Callable<Void> createDiscoveryJob( MemberId member, DiscoveryServiceFactory disoveryServiceFactory,
+    private Callable<Void> createDiscoveryJob( MemberId member, DiscoveryServiceFactory discoveryServiceFactory,
             Set<MemberId> expectedTargetSet )
     {
         CentralJobScheduler jobScheduler = new CentralJobScheduler();
         jobScheduler.init();
         HostnameResolver hostnameResolver = new NoOpHostnameResolver();
 
-        CoreTopologyService topologyService = disoveryServiceFactory.coreTopologyService( config(), member,
+        CoreTopologyService topologyService = discoveryServiceFactory.coreTopologyService( config(), member,
                 jobScheduler, logProvider, userLogProvider, hostnameResolver, new TopologyServiceNoRetriesStrategy(),
                 new Monitors() );
         return sharedClientStarter( topologyService, expectedTargetSet );

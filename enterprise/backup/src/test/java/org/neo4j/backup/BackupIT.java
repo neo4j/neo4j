@@ -39,6 +39,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -46,9 +50,13 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.module.CommunityEditionModule;
+import org.neo4j.graphdb.factory.module.EditionModule;
+import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.StoreLockException;
@@ -56,11 +64,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
-import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.EditionModule;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
@@ -76,6 +80,7 @@ import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -98,12 +103,14 @@ public class BackupIT
     private final TestDirectory testDir = TestDirectory.testDirectory();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final RandomRule random = new RandomRule();
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( testDir )
             .around( fileSystemRule )
             .around( pageCacheRule )
-            .around( SuppressOutput.suppressAll() );
+            .around( SuppressOutput.suppressAll() )
+            .around( random );
 
     @Parameter
     public String recordFormatName;
@@ -427,6 +434,66 @@ public class BackupIT
         {
             db.shutdown();
         }
+    }
+
+    @Test
+    public void backupMultipleSchemaIndexes() throws InterruptedException
+    {
+        // given
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        AtomicBoolean end = new AtomicBoolean();
+        int backupPort = PortAuthority.allocatePort();
+        GraphDatabaseService db = getEmbeddedTestDataBaseService( backupPort );
+        try
+        {
+            int numberOfIndexedLabels = 10;
+            List<Label> indexedLabels = createIndexes( db, numberOfIndexedLabels );
+
+            // start thread that continuously writes to indexes
+            executorService.submit( () ->
+            {
+                while ( !end.get() )
+                {
+                    try ( Transaction tx = db.beginTx() )
+                    {
+                        db.createNode( indexedLabels.get( random.nextInt( numberOfIndexedLabels ) ) ).setProperty( "prop", random.nextValue() );
+                        tx.success();
+                    }
+                }
+            } );
+            executorService.shutdown();
+
+            // create backup
+            OnlineBackup backup = OnlineBackup.from( "127.0.0.1", backupPort ).full( backupPath.getPath() );
+            assertTrue( "Should be consistent", backup.isConsistent() );
+            end.set( true );
+            executorService.awaitTermination( 1, TimeUnit.MINUTES );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    private List<Label> createIndexes( GraphDatabaseService db, int indexCount )
+    {
+        ArrayList<Label> indexedLabels = new ArrayList<>( indexCount );
+        for ( int i = 0; i < indexCount; i++ )
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                Label label = Label.label( "label" + i );
+                indexedLabels.add( label );
+                db.schema().indexFor( label ).on( "prop" ).create();
+                tx.success();
+            }
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.success();
+        }
+        return indexedLabels;
     }
 
     @Test

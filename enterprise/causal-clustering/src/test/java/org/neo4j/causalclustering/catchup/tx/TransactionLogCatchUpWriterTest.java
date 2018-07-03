@@ -32,9 +32,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -69,6 +71,7 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.transaction.command.Commands.createNode;
@@ -119,6 +122,62 @@ public class TransactionLogCatchUpWriterTest
                 "custom-tx-logs"), false );
     }
 
+    @Test
+    public void pullRotatesWhenThresholdCrossedAndExplicitlySet() throws IOException
+    {
+        // given
+        Config config = Config.defaults();
+        config.augment( GraphDatabaseSettings.logical_log_rotation_threshold, "1m" );
+
+        // and
+        org.neo4j.kernel.impl.store.StoreId storeId = simulateStoreCopy();
+
+        // and
+        long fromTx = 0;
+        TransactionLogCatchUpWriter subject =
+                new TransactionLogCatchUpWriter( storeDir, fs, pageCache, config, NullLogProvider.getInstance(), fromTx, partOfStoreCopy, false, true );
+
+        // when 1M tx received
+        IntStream.range( 0, (int) ByteUnit.mebiBytes( 1 ) )
+                .mapToObj( TransactionLogCatchUpWriterTest::tx )
+                .map(tx -> new TxPullResponse( toCasualStoreId( storeId ), tx ))
+                .forEach( subject::onTxReceived );
+        subject.close();
+
+        // then there was a rotation
+        LogFilesBuilder logFilesBuilder = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache );
+        LogFiles logFiles = logFilesBuilder.build();
+        assertNotEquals( logFiles.getLowestLogVersion(), logFiles.getHighestLogVersion() );
+    }
+
+    @Test
+    public void pullDoesntRotateWhenThresholdCrossedAndExplicitlyOff() throws IOException
+    {
+        // given
+        Config config = Config.defaults();
+        config.augment( GraphDatabaseSettings.logical_log_rotation_threshold, "1m" );
+
+        // and
+        org.neo4j.kernel.impl.store.StoreId storeId = simulateStoreCopy();
+
+        // and
+        long fromTx = 0;
+        TransactionLogCatchUpWriter subject =
+                new TransactionLogCatchUpWriter( storeDir, fs, pageCache, config, NullLogProvider.getInstance(), fromTx, partOfStoreCopy, false, false );
+
+        // when 1M tx received
+        IntStream.range( 0, (int) ByteUnit.mebiBytes( 1 ) )
+                .mapToObj( TransactionLogCatchUpWriterTest::tx )
+                .map(tx -> new TxPullResponse( toCasualStoreId( storeId ), tx ))
+                .forEach( subject::onTxReceived );
+        subject.close();
+
+        // then there was a rotation
+        LogFilesBuilder logFilesBuilder = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache );
+        LogFiles logFiles = logFilesBuilder.build();
+        assertEquals( logFiles.getLowestLogVersion(), logFiles.getHighestLogVersion() );
+    }
+
     private void createTransactionLogWithCheckpoint( Config config, boolean logsInStoreDir ) throws IOException
     {
         org.neo4j.kernel.impl.store.StoreId storeId = simulateStoreCopy();
@@ -127,7 +186,7 @@ public class TransactionLogCatchUpWriterTest
         int endTxId = fromTxId + 5;
 
         TransactionLogCatchUpWriter catchUpWriter = new TransactionLogCatchUpWriter( storeDir, fs, pageCache, config,
-                NullLogProvider.getInstance(), fromTxId, partOfStoreCopy, logsInStoreDir );
+                NullLogProvider.getInstance(), fromTxId, partOfStoreCopy, logsInStoreDir, true );
 
         // when
         for ( int i = fromTxId; i <= endTxId; i++ )

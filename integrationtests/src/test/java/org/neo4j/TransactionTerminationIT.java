@@ -104,9 +104,9 @@ public class TransactionTerminationIT
             .around( clusterRule );
 
     @Parameters( name = "lockManager = {0}" )
-    public static Iterable<Object[]> lockManagerNames()
+    public static Iterable<String> lockManagerNames()
     {
-        return Arrays.asList( new Object[]{"forseti"}, new Object[]{"community"} );
+        return Arrays.asList( "forseti", "community" );
     }
 
     @Test

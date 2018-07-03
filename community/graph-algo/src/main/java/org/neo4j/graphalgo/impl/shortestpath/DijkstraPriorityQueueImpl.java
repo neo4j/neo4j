@@ -28,7 +28,7 @@ import org.neo4j.graphdb.Node;
  * Implementation of {@link DijkstraPriorityQueue} with just a normal java
  * priority queue.
  * @param <CostType>
- *            The datatype the path weigths are represented by.
+ *            The datatype the path weights are represented by.
  */
 public class DijkstraPriorityQueueImpl<CostType> implements
     DijkstraPriorityQueue<CostType>

@@ -26,10 +26,13 @@ import org.hamcrest.Matcher;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
-import org.neo4j.bolt.security.auth.AuthenticationException;
-import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.v1.runtime.BoltStateMachine;
-import org.neo4j.bolt.v1.runtime.StatementProcessor;
+import org.neo4j.bolt.runtime.BoltConnectionFatality;
+import org.neo4j.bolt.runtime.BoltStateMachine;
+import org.neo4j.bolt.runtime.BoltStateMachineState;
+import org.neo4j.bolt.runtime.StatementProcessor;
+import org.neo4j.bolt.v1.messaging.Reset;
+import org.neo4j.bolt.v1.runtime.BoltStateMachineV1;
+import org.neo4j.bolt.v1.runtime.ReadyState;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingBiConsumer;
@@ -44,7 +47,6 @@ import static org.junit.Assert.fail;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.FAILURE;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.IGNORED;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
-import static org.neo4j.bolt.v1.runtime.BoltStateMachine.State.READY;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.newMachine;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -212,7 +214,7 @@ public class BoltMatchers
             @Override
             public boolean matches( final Object item )
             {
-                final BoltStateMachine machine = (BoltStateMachine) item;
+                final BoltStateMachineV1 machine = (BoltStateMachineV1) item;
                 final StatementProcessor statementProcessor = machine.statementProcessor();
                 return statementProcessor != null && statementProcessor.hasTransaction();
             }
@@ -232,7 +234,7 @@ public class BoltMatchers
             @Override
             public boolean matches( final Object item )
             {
-                final BoltStateMachine machine = (BoltStateMachine) item;
+                final BoltStateMachineV1 machine = (BoltStateMachineV1) item;
                 final StatementProcessor statementProcessor = machine.statementProcessor();
                 return statementProcessor == null || !statementProcessor.hasTransaction();
             }
@@ -245,15 +247,14 @@ public class BoltMatchers
         };
     }
 
-    public static Matcher<BoltStateMachine> inState( final BoltStateMachine.State state )
+    public static Matcher<BoltStateMachine> inState( Class<? extends BoltStateMachineState> stateClass )
     {
         return new BaseMatcher<BoltStateMachine>()
         {
             @Override
             public boolean matches( final Object item )
             {
-                final BoltStateMachine machine = (BoltStateMachine) item;
-                return machine.state() == state;
+                return stateClass.isInstance( ((BoltStateMachineV1) item).state() );
             }
 
             @Override
@@ -294,8 +295,8 @@ public class BoltMatchers
                 final BoltResponseRecorder recorder = new BoltResponseRecorder();
                 try
                 {
-                    machine.reset( recorder );
-                    return recorder.responseCount() == 1 && machine.state() == READY;
+                    machine.process( Reset.INSTANCE, recorder );
+                    return recorder.responseCount() == 1 && inState( ReadyState.class ).matches( item );
                 }
                 catch ( BoltConnectionFatality boltConnectionFatality )
                 {
@@ -324,11 +325,9 @@ public class BoltMatchers
         }
     }
 
-    public static void verifyOneResponse( BoltStateMachine.State initialState,
-            ThrowingBiConsumer<BoltStateMachine,BoltResponseRecorder,BoltConnectionFatality> transition )
-            throws AuthenticationException, BoltConnectionFatality
+    public static void verifyOneResponse( ThrowingBiConsumer<BoltStateMachine,BoltResponseRecorder,BoltConnectionFatality> transition ) throws Exception
     {
-        BoltStateMachine machine = newMachine( initialState );
+        BoltStateMachine machine = newMachine();
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         try
         {

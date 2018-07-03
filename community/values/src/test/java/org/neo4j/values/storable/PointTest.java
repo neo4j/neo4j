@@ -20,14 +20,14 @@
 package org.neo4j.values.storable;
 
 import org.hamcrest.CoreMatchers;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.values.utils.InvalidValuesArgumentException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
@@ -36,10 +36,10 @@ import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 
-public class PointTest
+class PointTest
 {
     @Test
-    public void cartesianShouldEqualItself()
+    void cartesianShouldEqualItself()
     {
         assertEqual( pointValue( Cartesian, 1.0, 2.0 ), pointValue( Cartesian, 1.0, 2.0 ) );
         assertEqual( pointValue( Cartesian, -1.0, 2.0 ), pointValue( Cartesian, -1.0, 2.0 ) );
@@ -48,14 +48,14 @@ public class PointTest
     }
 
     @Test
-    public void cartesianShouldNotEqualOtherPoint()
+    void cartesianShouldNotEqualOtherPoint()
     {
         assertNotEqual( pointValue( Cartesian, 1.0, 2.0 ), pointValue( Cartesian, 3.0, 4.0 ) );
         assertNotEqual( pointValue( Cartesian, 1.0, 2.0 ), pointValue( Cartesian, -1.0, 2.0 ) );
     }
 
     @Test
-    public void geographicShouldEqualItself()
+    void geographicShouldEqualItself()
     {
         assertEqual( pointValue( WGS84, 1.0, 2.0 ), pointValue( WGS84, 1.0, 2.0 ) );
         assertEqual( pointValue( WGS84, -1.0, 2.0 ), pointValue( WGS84, -1.0, 2.0 ) );
@@ -64,30 +64,30 @@ public class PointTest
     }
 
     @Test
-    public void geographicShouldNotEqualOtherPoint()
+    void geographicShouldNotEqualOtherPoint()
     {
         assertNotEqual( pointValue( WGS84, 1.0, 2.0 ), pointValue( WGS84, 3.0, 4.0 ) );
         assertNotEqual( pointValue( WGS84, 1.0, 2.0 ), pointValue( WGS84, -1.0, 2.0 ) );
     }
 
     @Test
-    public void geographicShouldNotEqualCartesian()
+    void geographicShouldNotEqualCartesian()
     {
         assertNotEqual( pointValue( WGS84, 1.0, 2.0 ), pointValue( Cartesian, 1.0, 2.0 ) );
     }
 
     @Test
-    public void shouldHaveValueGroup()
+    void shouldHaveValueGroup()
     {
-        assertTrue( pointValue( Cartesian, 1, 2 ).valueGroup() != null );
-        assertTrue( pointValue( WGS84, 1, 2 ).valueGroup() != null );
+        assertNotNull( pointValue( Cartesian, 1, 2 ).valueGroup() );
+        assertNotNull( pointValue( WGS84, 1, 2 ).valueGroup() );
     }
 
     //-------------------------------------------------------------
     // Parser tests
 
     @Test
-    public void shouldBeAbleToParsePoints()
+    void shouldBeAbleToParsePoints()
     {
         assertEqual( pointValue( WGS84, 13.2, 56.7 ),
                 PointValue.parse( "{latitude: 56.7, longitude: 13.2}" ) );
@@ -112,14 +112,14 @@ public class PointTest
     }
 
     @Test
-    public void shouldBeAbleToParsePointWithUnquotedCrs()
+    void shouldBeAbleToParsePointWithUnquotedCrs()
     {
         assertEqual( pointValue( WGS84_3D, -74.0060, 40.7128, 567.8 ),
                 PointValue.parse( "{latitude: 40.7128, longitude: -74.0060, height: 567.8, crs:wgs-84-3D}" ) ); // - explicitly WGS84-3D, without quotes
     }
 
     @Test
-    public void shouldBeAbleToParsePointThatOverridesHeaderInformation()
+    void shouldBeAbleToParsePointThatOverridesHeaderInformation()
     {
         String headerInformation = "{crs:wgs-84}";
         String data = "{latitude: 40.7128, longitude: -74.0060, height: 567.8, crs:wgs-84-3D}";
@@ -132,28 +132,19 @@ public class PointTest
     }
 
     @Test
-    public void shouldBeAbleToParseIncompletePointWithHeaderInformation()
+    void shouldBeAbleToParseIncompletePointWithHeaderInformation()
     {
         String headerInformation = "{latitude: 40.7128}";
         String data = "{longitude: -74.0060, height: 567.8, crs:wgs-84-3D}";
 
-        try
-        {
-            PointValue.parse( data ); // this shouldn't work
-            fail( "Was able to parse point although latitude was missing" );
-        }
-        catch ( InvalidValuesArgumentException e )
-        {
-            // this is expected
-        }
+        assertThrows( InvalidValuesArgumentException.class, () -> PointValue.parse( data ) );
 
         // this should work
         PointValue.parse( data, PointValue.parseHeaderInformation( headerInformation ) );
-
     }
 
     @Test
-    public void shouldBeAbleToParseWeirdlyFormattedPoints()
+    void shouldBeAbleToParseWeirdlyFormattedPoints()
     {
         assertEqual( pointValue( WGS84, 1.0, 2.0 ), PointValue.parse( " \t\n { latitude : 2.0  ,longitude :1.0  } \t" ) );
         // TODO: Should some/all of these fail?
@@ -164,7 +155,7 @@ public class PointTest
     }
 
     @Test
-    public void shouldNotBeAbleToParsePointsWithConflictingDuplicateFields()
+    void shouldNotBeAbleToParsePointsWithConflictingDuplicateFields()
     {
         assertThat( assertCannotParse( "{latitude: 2.0, longitude: 1.0, latitude: 3.0}" ).getMessage(), CoreMatchers.containsString( "Duplicate field" ) );
         assertThat( assertCannotParse( "{latitude: 2.0, longitude: 1.0, latitude: 3.0}" ).getMessage(), CoreMatchers.containsString( "Duplicate field" ) );
@@ -174,7 +165,7 @@ public class PointTest
     }
 
     @Test
-    public void shouldNotBeAbleToParseIncompletePoints()
+    void shouldNotBeAbleToParseIncompletePoints()
     {
         assertCannotParse( "{latitude: 56.7, longitude:}" );
         assertCannotParse( "{latitude: 56.7}" );
@@ -191,15 +182,6 @@ public class PointTest
 
     private InvalidValuesArgumentException assertCannotParse( String text )
     {
-        PointValue value;
-        try
-        {
-            value = PointValue.parse( text );
-        }
-        catch ( InvalidValuesArgumentException e )
-        {
-            return e;
-        }
-        throw new AssertionError( String.format( "'%s' parsed to %s", text, value ) );
+        return assertThrows( InvalidValuesArgumentException.class, () -> PointValue.parse( text ) );
     }
 }

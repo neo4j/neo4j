@@ -39,12 +39,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Map;
 import java.util.function.Function;
 
 public class IndexReaderStub extends LeafReader
 {
-
     private Fields fields;
     private boolean allDeleted;
     private String[] elements = new String[0];
@@ -55,12 +53,6 @@ public class IndexReaderStub extends LeafReader
             new FieldInfo( "id", 0, false, true, false, IndexOptions.DOCS,
                     DocValuesType.NONE, -1, Collections.emptyMap() );
 
-    public IndexReaderStub( boolean allDeleted, final String... elements )
-    {
-        this.allDeleted = allDeleted;
-        this.elements = elements;
-    }
-
     public IndexReaderStub( Fields fields )
     {
         this.fields = fields;
@@ -69,19 +61,6 @@ public class IndexReaderStub extends LeafReader
     public IndexReaderStub( final NumericDocValues ndv )
     {
         this.ndvs = s -> ndv;
-    }
-
-    public IndexReaderStub( final Map<String,NumericDocValues> ndvs )
-    {
-        this.ndvs = s ->
-        {
-            NumericDocValues dv = ndvs.get( s );
-            if ( dv == null )
-            {
-                return DocValues.emptyNumeric();
-            }
-            return dv;
-        };
     }
 
     public void setElements( String[] elements )

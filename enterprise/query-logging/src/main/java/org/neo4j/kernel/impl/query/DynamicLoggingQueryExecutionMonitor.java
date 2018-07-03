@@ -88,6 +88,11 @@ class DynamicLoggingQueryExecutionMonitor extends LifecycleAdapter implements Qu
         registerDynamicSettingUpdater( GraphDatabaseSettings.log_queries_threshold );
         registerDynamicSettingUpdater( GraphDatabaseSettings.log_queries_rotation_threshold );
         registerDynamicSettingUpdater( GraphDatabaseSettings.log_queries_max_archives );
+        registerDynamicSettingUpdater( GraphDatabaseSettings.log_queries_runtime_logging_enabled );
+        registerDynamicSettingUpdater( GraphDatabaseSettings.log_queries_parameter_logging_enabled );
+        registerDynamicSettingUpdater( GraphDatabaseSettings.log_queries_page_detail_logging_enabled );
+        registerDynamicSettingUpdater( GraphDatabaseSettings.log_queries_allocation_logging_enabled );
+        registerDynamicSettingUpdater( GraphDatabaseSettings.log_queries_detailed_time_logging_enabled );
     }
 
     private <T> void registerDynamicSettingUpdater( Setting<T> setting )

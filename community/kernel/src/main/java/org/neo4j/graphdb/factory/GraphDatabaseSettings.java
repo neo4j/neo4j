@@ -77,6 +77,7 @@ import static org.neo4j.kernel.configuration.Settings.optionsIgnoreCase;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.range;
 import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
 
 /**
  * Settings for Neo4j.
@@ -577,7 +578,7 @@ public class GraphDatabaseSettings implements LoadableConfig
             "This improves read and write performance for non-composite indexed numbers. " +
             "lucene+native-2.0: Store strings in a native index and remaining value types like lucene+native-1.0. " +
             "This improves write performance for non-composite indexed strings. " +
-            "This version of the native string index has a value limit of 4047B, such that byte-representation " +
+            "This version of the native string index has a value limit of 4046 bytes, such that byte-representation " +
             "of a string to index cannot be larger than that limit, or the transaction trying to index such a value will fail. " +
             "This version of the native string index also has reduced performance for CONTAINS and ENDS WITH queries, " +
             "due to resorting to index scan+filter internally. " +
@@ -755,24 +756,30 @@ public class GraphDatabaseSettings implements LoadableConfig
             PATH );
 
     @Description( "Log parameters for the executed queries being logged." )
+    @Dynamic
     public static final Setting<Boolean> log_queries_parameter_logging_enabled =
             setting( "dbms.logs.query.parameter_logging_enabled", BOOLEAN, TRUE );
 
-    @Description( "Log detailed time information for the executed queries being logged." )
+    @Description( "Log detailed time information for the executed queries being logged. Requires `dbms.track_query_cpu_time=true`" )
+    @Dynamic
     public static final Setting<Boolean> log_queries_detailed_time_logging_enabled =
             setting( "dbms.logs.query.time_logging_enabled", BOOLEAN, FALSE );
 
     @Description( "Log allocated bytes for the executed queries being logged. " +
             "The logged number is cumulative over the duration of the query, " +
-            "i.e. for memory intense or long-running queries the value may be larger than the current memory allocation." )
+            "i.e. for memory intense or long-running queries the value may be larger " +
+            "than the current memory allocation. Requires `dbms.track_query_allocation=true`" )
+    @Dynamic
     public static final Setting<Boolean> log_queries_allocation_logging_enabled =
             setting( "dbms.logs.query.allocation_logging_enabled", BOOLEAN, FALSE );
 
     @Description( "Logs which runtime that was used to run the query" )
+    @Dynamic
     public static final Setting<Boolean> log_queries_runtime_logging_enabled =
             setting( "dbms.logs.query.runtime_logging_enabled", BOOLEAN, FALSE );
 
     @Description( "Log page hits and page faults for the executed queries being logged." )
+    @Dynamic
     public static final Setting<Boolean> log_queries_page_detail_logging_enabled =
             setting( "dbms.logs.query.page_logging_enabled", BOOLEAN, FALSE );
 
@@ -930,6 +937,9 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Integer> bolt_inbound_message_throttle_low_water_mark =
             buildSetting( "unsupported.dbms.bolt.inbound_message_throttle.low_watermark", INTEGER, String.valueOf( 100 ) ).constraint(
                     range( 1, Integer.MAX_VALUE ) ).build();
+
+    @Description( "Specify the SSL policy to use for the encrypted bolt connections." )
+    public static final Setting<String> bolt_ssl_policy = setting( "bolt.ssl_policy", STRING, LEGACY_POLICY_NAME );
 
     @Description( "Create an archive of an index before re-creating it if failing to load on startup." )
     @Internal

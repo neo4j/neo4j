@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
@@ -74,7 +75,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_thresho
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.IOUtils.closeAll;
-import static org.neo4j.io.pagecache.IOLimiter.unlimited;
+import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore.getLabelScanStoreFile;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY;
@@ -345,7 +346,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         return neoStores.getRelationshipStore();
     }
 
-    public RecordStore<RelationshipGroupRecord> getRelationshipGroupStore()
+    public RelationshipGroupStore getRelationshipGroupStore()
     {
         return neoStores.getRelationshipGroupStore();
     }
@@ -456,17 +457,17 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         }
         if ( neoStores != null )
         {
-            neoStores.flush( unlimited() );
+            neoStores.flush( UNLIMITED );
             flushIdFiles( neoStores, StoreType.values() );
         }
         if ( temporaryNeoStores != null )
         {
-            temporaryNeoStores.flush( unlimited() );
+            temporaryNeoStores.flush( UNLIMITED );
             flushIdFiles( temporaryNeoStores, TEMP_STORE_TYPES );
         }
         if ( labelScanStore != null )
         {
-            labelScanStore.force( unlimited() );
+            labelScanStore.force( UNLIMITED );
         }
     }
 

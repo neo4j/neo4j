@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.function.IntSupplier;
@@ -32,13 +34,17 @@ import java.util.function.LongSupplier;
 
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCacheTest;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.ConfigurablePageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.DelegatingPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
@@ -675,6 +681,59 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                 }
             }
         } );
+    }
+
+    @Test
+    void unlimitedShouldFlushInParallel()
+    {
+        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        {
+            List<File> mappedFiles = new ArrayList<>();
+            mappedFiles.add( existingFile( "a" ) );
+            mappedFiles.add( existingFile( "b" ) );
+            getPageCache( fs, maxPages, new FlushRendezvousTracer( mappedFiles.size() ), PageCursorTracerSupplier.NULL );
+
+            List<PagedFile> mappedPagedFiles = new ArrayList<>();
+            for ( File mappedFile : mappedFiles )
+            {
+                PagedFile pagedFile = pageCache.map( mappedFile, filePageSize );
+                mappedPagedFiles.add( pagedFile );
+                try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+                {
+                    assertTrue( cursor.next() );
+                    cursor.putInt( 1 );
+                }
+            }
+
+            pageCache.flushAndForce( IOLimiter.UNLIMITED );
+
+            IOUtils.closeAll( mappedPagedFiles );
+        } );
+    }
+
+    private static class FlushRendezvousTracer extends DefaultPageCacheTracer
+    {
+        private final CountDownLatch latch;
+
+        FlushRendezvousTracer( int fileCountToWaitFor )
+        {
+            latch = new CountDownLatch( fileCountToWaitFor );
+        }
+
+        @Override
+        public MajorFlushEvent beginFileFlush( PageSwapper swapper )
+        {
+            latch.countDown();
+            try
+            {
+                latch.await();
+            }
+            catch ( InterruptedException e )
+            {
+                e.printStackTrace();
+            }
+            return MajorFlushEvent.NULL;
+        }
     }
 
     private void evictAllPages( MuninnPageCache pageCache ) throws IOException

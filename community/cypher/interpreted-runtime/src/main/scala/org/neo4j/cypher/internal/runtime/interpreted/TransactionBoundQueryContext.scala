@@ -46,7 +46,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
-import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
+import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, ThreadToStatementContextBridge}
@@ -641,6 +641,12 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def getOrCreatePropertyKeyId(propertyKey: String): Int =
     tokenWrite.propertyKeyGetOrCreateForName(propertyKey)
 
+  override def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int] = {
+    val ids = new Array[Int](propertyKeys.length)
+    tokenWrite.propertyKeyGetOrCreateForNames(propertyKeys, ids)
+    ids
+  }
+
   abstract class BaseOperations[T] extends Operations[T] {
 
     def primitiveLongIteratorToScalaIterator(primitiveIterator: LongIterator): Iterator[Long] =
@@ -847,6 +853,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     callProcedure(args,
                   transactionalContext.dbmsOperations.procedureCallDbms(id,
                                                                         _,
+                                                                        transactionalContext.graph.getDependencyResolver,
                                                                         transactionalContext.securityContext,
                                                                         transactionalContext.resourceTracker))
   }
@@ -887,6 +894,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     callProcedure(args,
                   transactionalContext.dbmsOperations.procedureCallDbms(kn,
                                                                         _,
+                                                                        transactionalContext.graph.getDependencyResolver,
                                                                         transactionalContext.securityContext,
                                                                         transactionalContext.resourceTracker))
   }

@@ -100,7 +100,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
       case p => throw new CantCompileQueryException(s"$p not supported in morsel runtime")
     }
 
-    Pipeline(thisOp, IndexedSeq.empty, slots, NoDependencies)()
+    new StreamingPipeline(thisOp, slots, None)
   }
 
   override protected def build(plan: LogicalPlan, from: Pipeline): Pipeline = {
@@ -111,9 +111,8 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
         case plans.ProduceResult(_, columns) =>
           new ProduceResultOperator(slots, columns.toArray)
 
-        case plans.Selection(predicates, _) =>
-          val predicate = predicates.map(converters.toCommandPredicate).reduce(_ andWith _)
-          new FilterOperator(predicate)
+        case plans.Selection(predicate, _) =>
+          new FilterOperator(converters.toCommandPredicate(predicate))
 
         case plans.Expand(lhs, fromName, dir, types, to, relName, ExpandAll) =>
           val fromOffset = slots.getLongOffsetFor(fromName)
@@ -131,14 +130,14 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
         case plans.Sort(_, sortItems) =>
           val ordering = sortItems.map(translateColumnOrder(slots, _))
           val preSorting = new PreSortOperator(ordering)
-          source = source.addOperator(preSorting)
+          source.addOperator(preSorting)
           new MergeSortOperator(ordering)
 
         case Top(_, sortItems, limit) =>
           val ordering = sortItems.map(translateColumnOrder(slots, _))
           val countExpression = converters.toCommandExpression(limit)
           val preTop = new PreSortOperator(ordering, Some(countExpression))
-          source = source.addOperator(preTop)
+          source.addOperator(preTop)
           new MergeSortOperator(ordering, Some(countExpression))
 
         case plans.Aggregation(_, groupingExpressions, aggregationExpression) if groupingExpressions.isEmpty =>
@@ -153,7 +152,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
           }.toArray
 
           //add mapper to source
-          source = source.addOperator(new AggregationMapperOperatorNoGrouping(aggregations))
+          source.addOperator(new AggregationMapperOperatorNoGrouping(aggregations))
           new AggregationReduceOperatorNoGrouping(aggregations)
 
         case plans.Aggregation(_, groupingExpressions, aggregationExpression) =>
@@ -179,7 +178,7 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
           }.toArray
 
           //add mapper to source
-          source = source.addOperator(new AggregationMapperOperator(aggregations, groupings))
+          source.addOperator(new AggregationMapperOperator(aggregations, groupings))
           new AggregationReduceOperator(aggregations, groupings)
 
         case plans.UnwindCollection(src, variable, collection) =>
@@ -195,33 +194,20 @@ class PipelineBuilder(physicalPlan: PhysicalPlan, converters: ExpressionConverte
       }
 
     thisOp match {
-      case o: Operator =>
-        Pipeline(o, IndexedSeq.empty, slots, o.addDependency(source))()
-      case mo: MiddleOperator =>
+      case so: StreamingOperator =>
+        new StreamingPipeline(so, slots, Some(source))
+      case mo: StatelessOperator =>
         source.addOperator(mo)
+        source
+      case ro: ReduceOperator =>
+        new ReducePipeline(ro, slots, Some(source))
     }
   }
 
   override protected def build(plan: LogicalPlan, lhs: Pipeline, rhs: Pipeline): Pipeline = {
     val slots = physicalPlan.slotConfigurations(plan.id)
 
-    val thisOp = plan match {
-      case Apply(_, _) =>
-        new ApplyOperator(
-          lhs,
-          rhs)
-
-      case p => throw new CantCompileQueryException(s"$p not supported in morsel runtime")
-    }
-
-    thisOp match {
-      case o: Operator =>
-        // TODO add transitive dependency on rhs??
-        Pipeline(o, IndexedSeq.empty, slots, o.addDependency(lhs))()
-      case mo: MiddleOperator =>
-        // TODO Is this correct?
-        lhs.addOperator(mo)
-    }
+    throw new CantCompileQueryException(s"$plan not supported in morsel runtime")
   }
 }
 

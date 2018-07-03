@@ -34,10 +34,12 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
@@ -45,8 +47,6 @@ import org.neo4j.kernel.ha.factory.HighlyAvailableEditionModule;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.test.ha.ClusterRule;
@@ -141,15 +141,19 @@ public class UpdatePullerTriggersPageTransactionTrackingIT
         @Override
         protected GraphDatabaseFacadeFactory newHighlyAvailableFacadeFactory()
         {
-            return new CustomFacadeFactory();
+            return new CustomFacadeFactory( this );
         }
     }
 
     private class CustomFacadeFactory extends GraphDatabaseFacadeFactory
     {
-        CustomFacadeFactory()
+        CustomFacadeFactory( CustomHighlyAvailableGraphDatabase customHighlyAvailableGraphDatabase )
         {
-            super( DatabaseInfo.HA, HighlyAvailableEditionModule::new );
+            super( DatabaseInfo.HA, platformModule ->
+            {
+                customHighlyAvailableGraphDatabase.module = new HighlyAvailableEditionModule( platformModule );
+                return customHighlyAvailableGraphDatabase.module;
+            } );
         }
 
         @Override
@@ -159,8 +163,7 @@ public class UpdatePullerTriggersPageTransactionTrackingIT
         }
 
         @Override
-        protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
-                GraphDatabaseFacade graphDatabaseFacade )
+        protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
         {
             return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
             {

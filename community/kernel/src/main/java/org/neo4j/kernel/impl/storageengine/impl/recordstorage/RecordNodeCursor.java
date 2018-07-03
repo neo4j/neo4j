@@ -23,8 +23,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.RecordCursor;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.storageengine.api.StorageNodeCursor;
@@ -32,7 +30,6 @@ import org.neo4j.storageengine.api.StorageNodeCursor;
 public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
 {
     private NodeStore read;
-    private RecordCursor<DynamicRecord> labelCursor;
     private PageCursor pageCursor;
     private long next;
     private long highMark;
@@ -89,14 +86,14 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     @Override
     public long[] labels()
     {
-        return NodeLabelsField.get( this, labelCursor() );
+        return NodeLabelsField.get( this, read );
     }
 
     @Override
     public boolean hasLabel( int label )
     {
         //Get labels from store and put in intSet, unfortunately we get longs back
-        long[] longs = NodeLabelsField.get( this, labelCursor() );
+        long[] longs = NodeLabelsField.get( this, read );
         for ( long labelToken : longs )
         {
             if ( labelToken == label )
@@ -204,15 +201,6 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
         clear();
     }
 
-    private RecordCursor<DynamicRecord> labelCursor()
-    {
-        if ( labelCursor == null )
-        {
-            labelCursor = read.newLabelCursor();
-        }
-        return labelCursor;
-    }
-
     private boolean isSingle()
     {
         return highMark == NO_ID;
@@ -237,12 +225,6 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     @Override
     public void release()
     {
-        if ( labelCursor != null )
-        {
-            labelCursor.close();
-            labelCursor = null;
-        }
-
         if ( pageCursor != null )
         {
             pageCursor.close();

@@ -21,8 +21,8 @@ package org.neo4j.bolt.v1.messaging;
 
 import java.util.Map;
 
+import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.v1.messaging.message.RequestMessage;
-import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.bolt.v1.messaging.message.AckFailureMessage.ackFailure;

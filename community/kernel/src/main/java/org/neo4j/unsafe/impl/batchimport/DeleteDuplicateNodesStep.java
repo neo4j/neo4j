@@ -21,9 +21,9 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -31,8 +31,8 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.unsafe.impl.batchimport.staging.LonelyProcessingStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyDeleter.deletePropertyRecordIncludingValueRecords;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
-import static org.neo4j.kernel.impl.transaction.state.PropertyDeleter.deletePropertyRecordIncludingValueRecords;
 
 public class DeleteDuplicateNodesStep extends LonelyProcessingStep
 {
@@ -59,13 +59,13 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
     {
         NodeRecord nodeRecord = nodeStore.newRecord();
         PropertyRecord propertyRecord = propertyStore.newRecord();
-        try ( RecordCursor<NodeRecord> cursor = nodeStore.newRecordCursor( nodeRecord ).acquire( 0, NORMAL );
-              RecordCursor<PropertyRecord> propertyCursor = propertyStore.newRecordCursor( propertyRecord ).acquire( 0, NORMAL ) )
+        try ( PageCursor cursor = nodeStore.openPageCursorForReading( 0 );
+              PageCursor propertyCursor = propertyStore.openPageCursorForReading( 0 ) )
         {
             while ( nodeIds.hasNext() )
             {
                 long duplicateNodeId = nodeIds.next();
-                cursor.next( duplicateNodeId );
+                nodeStore.getRecordByCursor( duplicateNodeId, nodeRecord, NORMAL, cursor );
                 assert nodeRecord.inUse() : nodeRecord;
                 // Ensure heavy so that the dynamic label records gets loaded (and then deleted) too
                 nodeStore.ensureHeavy( nodeRecord );
@@ -74,7 +74,7 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
                 long nextProp = nodeRecord.getNextProp();
                 while ( !Record.NULL_REFERENCE.is( nextProp ) )
                 {
-                    propertyCursor.next( nextProp );
+                    propertyStore.getRecordByCursor( nextProp, propertyRecord, NORMAL, propertyCursor );
                     assert propertyRecord.inUse() : propertyRecord + " for " + nodeRecord;
                     propertyStore.ensureHeavy( propertyRecord );
                     propertiesRemoved += propertyRecord.numberOfProperties();

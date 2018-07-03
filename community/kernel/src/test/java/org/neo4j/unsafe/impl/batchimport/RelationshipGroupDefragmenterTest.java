@@ -33,10 +33,11 @@ import java.io.IOException;
 import java.util.BitSet;
 import java.util.Collection;
 
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.format.ForcedSecondaryUnitRecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -208,12 +209,11 @@ public class RelationshipGroupDefragmenterTest
 
     private void verifyGroupsAreSequentiallyOrderedByNode()
     {
-        RecordStore<RelationshipGroupRecord> store = stores.getRelationshipGroupStore();
+        RelationshipGroupStore store = stores.getRelationshipGroupStore();
         long firstId = store.getNumberOfReservedLowIds();
         long groupCount = store.getHighId() - firstId;
         RelationshipGroupRecord groupRecord = store.newRecord();
-        RecordCursor<RelationshipGroupRecord> groupCursor =
-                store.newRecordCursor( groupRecord ).acquire( firstId, CHECK );
+        PageCursor groupCursor = store.openPageCursorForReading( firstId );
         long highGroupId = store.getHighId();
         long currentNodeId = -1;
         int currentTypeId = -1;
@@ -221,7 +221,8 @@ public class RelationshipGroupDefragmenterTest
         int currentGroupLength = 0;
         for ( long id = firstId; id < highGroupId; id++, newGroupCount++ )
         {
-            if ( !groupCursor.next( id ) )
+            store.getRecordByCursor( id, groupRecord, CHECK, groupCursor );
+            if ( !groupRecord.inUse() )
             {
                 // This will be the case if we have double record units, just assert that fact
                 assertTrue( units > 1 );

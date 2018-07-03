@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.Loaders;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;

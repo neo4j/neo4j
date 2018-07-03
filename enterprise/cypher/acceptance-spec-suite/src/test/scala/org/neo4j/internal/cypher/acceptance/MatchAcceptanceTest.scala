@@ -37,7 +37,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createNode("id" -> 0)
     for (i <- 1 to 1000) createNode("id" -> i)
     val result = executeWith(
-      Configs.Interpreted - Configs.OldAndRule,
+      Configs.Interpreted - Configs.Before3_3AndRule,
       "MATCH (n) WHERE id(n) IN {ids} RETURN n.id",
       params = Map("ids" -> List(-2, -3, 0, -4)))
     result.executionPlanDescription() should useOperators("NodeByIdSeek")
@@ -144,7 +144,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.toList should equal(List(Map("start" -> start)))
   }
 
-  test("should allow for OPTONAL MATCH with horizon and aggregating function") {
+  test("should allow for OPTIONAL MATCH with horizon and aggregating function") {
     //This is a test to ensure that a bug does not return
     val query =
       """
@@ -988,5 +988,10 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   test("Reduce and concat gh #10978") {
     val result = executeWith(Configs.Interpreted, "RETURN REDUCE(s = 0, p in [5,8,2,9] + [1,2] | s + p) as num")
     result.toList should be(List(Map("num" -> 27)))
+  }
+
+  //TODO support 3.4 when updating dep
+  test("should handle 3 inequalities without choking in planning") {
+    executeWith(Configs.Interpreted - Configs.Version3_4, "MATCH (a:A) WHERE a.prop < 1 AND a.prop <=1 AND a.prop >=1 RETURN a.prop") shouldBe empty
   }
 }

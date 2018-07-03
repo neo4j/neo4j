@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
@@ -83,18 +83,18 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     }
 
     @Override
-    public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
+    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
             throws IndexEntryConflictException, IOException
     {
         // Manual loop due do multiple exception types
         for ( IndexSlot slot : IndexSlot.values() )
         {
-            instanceSelector.select( slot ).verifyDeferredConstraints( propertyAccessor );
+            instanceSelector.select( slot ).verifyDeferredConstraints( nodePropertyAccessor );
         }
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
+    public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor )
     {
         LazyInstanceSelector<IndexUpdater> updaterSelector =
                 new LazyInstanceSelector<>( slot -> instanceSelector.select( slot ).newPopulatingUpdater( accessor ) );

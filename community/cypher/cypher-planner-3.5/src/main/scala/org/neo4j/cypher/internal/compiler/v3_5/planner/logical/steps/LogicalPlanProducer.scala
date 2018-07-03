@@ -19,20 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.compiler.v3_5.helpers.ListSupport
+import org.neo4j.cypher.internal.compiler.v3_5.helpers.PredicateHelper.coercePredicates
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.CardinalityModel
+import org.neo4j.cypher.internal.ir.v3_5._
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.v3_5.logical.plans
+import org.neo4j.cypher.internal.v3_5.logical.plans.{DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.opencypher.v9_0.ast
 import org.opencypher.v9_0.ast._
-import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.v3_5.logical.plans
-import org.opencypher.v9_0.util.attribution.{Attributes, IdGen}
-import org.opencypher.v9_0.util.attribution.IdGen
-import org.opencypher.v9_0.util.{ExhaustiveShortestPathForbiddenException, InternalException}
 import org.opencypher.v9_0.expressions._
-import org.neo4j.cypher.internal.v3_5.logical.plans.{DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
+import org.opencypher.v9_0.util.attribution.{Attributes, IdGen}
+import org.opencypher.v9_0.util.{ExhaustiveShortestPathForbiddenException, InternalException}
 
 /*
  * The responsibility of this class is to produce the correct solved PlannerQuery when creating logical plans.
@@ -171,7 +171,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
   }
 
   def planHiddenSelection(predicates: Seq[Expression], left: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
-    annotate(Selection(predicates, left), solveds.get(left.id), context)
+    annotate(Selection(coercePredicates(predicates), left), solveds.get(left.id), context)
   }
 
   def planNodeByIdSeek(idName: String, nodeIds: SeekableArgs,
@@ -344,7 +344,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
 
   def planSelection(left: LogicalPlan, predicates: Seq[Expression], reported: Seq[Expression], context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(left.id).updateTailOrSelf(_.amendQueryGraph(_.addPredicates(reported: _*)))
-    annotate(Selection(predicates, left), solved, context)
+    annotate(Selection(coercePredicates(predicates), left), solved, context)
   }
 
   def planSelectOrAntiSemiApply(outer: LogicalPlan, inner: LogicalPlan, expr: Expression, context: LogicalPlanningContext): LogicalPlan =
@@ -647,7 +647,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
 
     val solved = solveds.get(inner.id).amendQueryGraph(_.addMutatingPatterns(pattern))
 
-    annotate(SetRelationshipPropery(inner, pattern.idName, pattern.propertyKey, pattern.expression), solved, context)
+    annotate(SetRelationshipProperty(inner, pattern.idName, pattern.propertyKey, pattern.expression), solved, context)
   }
 
   def planSetRelationshipPropertiesFromMap(inner: LogicalPlan,

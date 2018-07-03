@@ -22,24 +22,24 @@
  */
 package org.neo4j.cypher.internal.queryReduction
 
+import org.neo4j.cypher.internal.compatibility.CommunityRuntimeContextCreator
 import org.neo4j.cypher.{CypherRuntimeOption, GraphIcing}
 import org.neo4j.cypher.internal.compatibility.v3_5.WrappedMonitors
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compiler.v3_5._
-import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.v3_5.phases.{LogicalPlanState, PlannerContextCreator}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner, cartesianProductsOrValueJoins}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IDPPlannerName, PlanContext, PlannerNameFor}
 import org.neo4j.cypher.internal.queryReduction.DDmin.Oracle
-import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContextCreator
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.SingleThreadedExecutor
 import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, NormalMode}
 import org.neo4j.cypher.internal.spi.codegen.GeneratedQueryStructure
-import org.neo4j.cypher.internal.{CommunityRuntimeFactory, MasterCompiler, RewindableExecutionResult}
+import org.neo4j.cypher.internal.{CommunityRuntimeFactory, EnterpriseRuntimeContextCreator, MasterCompiler, RewindableExecutionResult}
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
@@ -62,8 +62,6 @@ import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import scala.util.Try
 
 object CypherReductionSupport {
-  private val rewriterSequencer = RewriterStepSequencer.newValidating _
-  private val astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true)
   private val stepSequencer = RewriterStepSequencer.newPlain _
   private val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
   private val config = CypherPlannerConfiguration(
@@ -79,8 +77,8 @@ object CypherReductionSupport {
     nonIndexedLabelWarningThreshold = 0,
     planWithMinimumCardinalityEstimates = true)
   private val kernelMonitors = new Monitors
-  private val compiler = CypherPlanner(astRewriter, WrappedMonitors(kernelMonitors), stepSequencer, metricsFactory, config, defaultUpdateStrategy,
-    MasterCompiler.CLOCK, CommunityRuntimeContextCreator)
+  private val compiler = CypherPlanner(WrappedMonitors(kernelMonitors), stepSequencer, metricsFactory, config, defaultUpdateStrategy,
+    MasterCompiler.CLOCK, PlannerContextCreator)
 
   private val monitor = kernelMonitors.newMonitor(classOf[IDPQueryGraphSolverMonitor])
   private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
@@ -175,7 +173,12 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
     }
   }
 
-  private def executeInTx(query: String, statement: Statement, parsingBaseState: BaseState, implicitTx: InternalTransaction, enterprise: Boolean): InternalExecutionResult = {
+  private def executeInTx(query: String,
+                          statement: Statement,
+                          parsingBaseState: BaseState,
+                          implicitTx: InternalTransaction,
+                          enterprise: Boolean
+                         ): InternalExecutionResult = {
     val neo4jtxContext = contextFactory.newContext(EMBEDDED_CONNECTION, implicitTx, query, EMPTY_MAP)
     val txContextWrapper = TransactionalContextWrapper(neo4jtxContext)
     val planContext = TransactionBoundPlanContext(txContextWrapper, devNullLogger)
@@ -187,10 +190,17 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
     baseState = rewriting.transform(baseState, planningContext)
 
     val logicalPlanState = CypherReductionSupport.compiler.planPreparedQuery(baseState, planningContext)
-
+    val readOnly = logicalPlanState.solveds(logicalPlanState.logicalPlan.id).readOnly
 
     val runtime = CommunityRuntimeFactory.getRuntime(CypherRuntimeOption.default, planningContext.config.useErrorsOverWarnings)
-    val executionPlan = runtime.compileToExecutable(logicalPlanState, planningContext)
+
+    val runtimeContextCreator = if (enterprise)
+      EnterpriseRuntimeContextCreator(GeneratedQueryStructure, new SingleThreadedExecutor(1), NullLog.getInstance())
+     else
+      CommunityRuntimeContextCreator
+
+    val runtimeContext = runtimeContextCreator.create(devNullLogger, planContext, MasterCompiler.CLOCK, Set(), readOnly)
+    val executionPlan = runtime.compileToExecutable(logicalPlanState, runtimeContext)
 
     val queryContext = new TransactionBoundQueryContext(txContextWrapper)(CypherReductionSupport.searchMonitor)
 
@@ -202,13 +212,9 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
                             planContext: PlanContext,
                             queryGraphSolver: IDPQueryGraphSolver, enterprise: Boolean) = {
     val logicalPlanIdGen = new SequentialIdGen()
-    if (enterprise) {
-      val dispatcher = new SingleThreadedExecutor(1)
-      EnterpriseRuntimeContextCreator(GeneratedQueryStructure, dispatcher, NullLog.getInstance()).create(NO_TRACING, devNullLogger, planContext, query, Set(),
-                                                                                              None, WrappedMonitors(new Monitors), metricsFactory, queryGraphSolver, config, defaultUpdateStrategy, MasterCompiler.CLOCK, logicalPlanIdGen, null)
-    } else {
-    CommunityRuntimeContextCreator.create(NO_TRACING, devNullLogger, planContext, query, Set(),
-      None, WrappedMonitors(new Monitors), metricsFactory, queryGraphSolver, config = config, updateStrategy = defaultUpdateStrategy, clock = MasterCompiler.CLOCK, logicalPlanIdGen, evaluator = null)
-    }
+    PlannerContextCreator.create(NO_TRACING, devNullLogger, planContext, query, Set(),
+                                 None, WrappedMonitors(new Monitors), metricsFactory,
+                                 queryGraphSolver, config, defaultUpdateStrategy, MasterCompiler.CLOCK,
+                                 logicalPlanIdGen, null)
   }
 }

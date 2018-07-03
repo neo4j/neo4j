@@ -40,7 +40,7 @@ public class ReplicatedIdAllocationRequestSerializer
     public static void marshal( ReplicatedIdAllocationRequest idRangeRequest, WritableChannel channel )
             throws IOException
     {
-        MemberId.MARSHAL.marshal( idRangeRequest.owner(), channel );
+        new MemberId.Marshal().marshal( idRangeRequest.owner(), channel );
         channel.putInt( idRangeRequest.idType().ordinal() );
         channel.putLong( idRangeRequest.idRangeStart() );
         channel.putInt( idRangeRequest.idRangeLength() );
@@ -48,7 +48,7 @@ public class ReplicatedIdAllocationRequestSerializer
 
     public static ReplicatedIdAllocationRequest unmarshal( ReadableChannel channel ) throws IOException, EndOfStreamException
     {
-        MemberId owner = MemberId.MARSHAL.unmarshal( channel );
+        MemberId owner = new MemberId.Marshal().unmarshal( channel );
         IdType idType = IdType.values()[ channel.getInt() ];
         long idRangeStart = channel.getLong();
         int idRangeLength = channel.getInt();

@@ -23,11 +23,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.kernel.api.explicitindex.AutoIndexOperations;
 import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexOperations;
-import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
-import org.neo4j.storageengine.api.Token;
 import org.neo4j.values.storable.Values;
 
 import static org.mockito.Mockito.mock;
@@ -40,7 +40,7 @@ import static org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing.NODE_
 public class AutoIndexOperationsTest
 {
     private final ExplicitIndexWrite ops = mock(ExplicitIndexWrite.class);
-    private final PropertyKeyTokenHolder tokens = mock( PropertyKeyTokenHolder.class );
+    private final TokenHolder tokens = mock( TokenHolder.class );
     private final AutoIndexOperations index = new InternalAutoIndexOperations( tokens, InternalAutoIndexOperations.EntityType.NODE );
 
     private final int nonIndexedProperty = 1337;
@@ -53,9 +53,9 @@ public class AutoIndexOperationsTest
     @Before
     public void setup() throws TokenNotFoundException
     {
-        when(tokens.getTokenById( nonIndexedProperty )).thenReturn( new Token( nonIndexedPropertyName, nonIndexedProperty ) );
-        when(tokens.getTokenById( indexedProperty )).thenReturn( new Token( indexedPropertyName, indexedProperty ) );
-        when(tokens.getTokenById( indexedProperty2 )).thenReturn( new Token( indexedPropertyName, indexedProperty2 ) );
+        when(tokens.getTokenById( nonIndexedProperty )).thenReturn( new NamedToken( nonIndexedPropertyName, nonIndexedProperty ) );
+        when(tokens.getTokenById( indexedProperty )).thenReturn( new NamedToken( indexedPropertyName, indexedProperty ) );
+        when(tokens.getTokenById( indexedProperty2 )).thenReturn( new NamedToken( indexedPropertyName, indexedProperty2 ) );
         index.enabled( true );
     }
 

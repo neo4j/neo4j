@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.storageengine.api.Token;
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 public interface CacheAccessBackDoor
@@ -28,9 +28,9 @@ public interface CacheAccessBackDoor
 
     void removeSchemaRuleFromCache( long id );
 
-    void addRelationshipTypeToken( RelationshipTypeToken type );
+    void addRelationshipTypeToken( NamedToken type );
 
-    void addLabelToken( Token labelId );
+    void addLabelToken( NamedToken labelId );
 
-    void addPropertyKeyToken( Token index );
+    void addPropertyKeyToken( NamedToken index );
 }

@@ -1,6 +1,4 @@
 <?xml version="1.0"?>
-
-
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.neo4j</groupId>
@@ -220,8 +218,8 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-3.3</artifactId>
-      <version>3.3.5</version>
+      <artifactId>neo4j-cypher-planner-3.4</artifactId>
+      <version>3.4.1</version>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>
@@ -260,18 +258,8 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-primitive-collections</artifactId>
-      <version>3.4.0</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-unsafe</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-resource</artifactId>
-        </exclusion>
-      </exclusions>
+      <artifactId>neo4j-legacy</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
       <dependency>

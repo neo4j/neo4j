@@ -25,68 +25,55 @@ package org.neo4j.cypher.internal.runtime.vectorized.operators
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ListSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => InterpretedQueryState}
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.values.AnyValue
 
 class UnwindOperator(collection: Expression,
                      offset: Int)
-  extends Operator with ListSupport {
+  extends StreamingOperator with ListSupport {
 
-  override def operate(source: Message,
-                       outputRow: MorselExecutionContext,
-                       context: QueryContext,
-                       state: QueryState): Continuation = {
-    var unwoundValues: java.util.Iterator[AnyValue] = null
-    var iterationState: Iteration = null
-    var inputRow: MorselExecutionContext = null
-    val queryState = new OldQueryState(context, resources = null, params = state.params)
-
-    source match {
-      case StartLoopWithSingleMorsel(ir, is) =>
-        inputRow = ir
-        iterationState = is
-        val value = collection(inputRow, queryState)
-        unwoundValues = makeTraversable(value).iterator
-
-      case ContinueLoopWith(ContinueWithDataAndSource(ir, CurrentState(inValues), is)) =>
-        inputRow = ir
-        iterationState = is
-        unwoundValues = inValues
-      case _ => throw new IllegalStateException()
-    }
-
-    do {
-      if (unwoundValues == null) {
-        val value = collection(inputRow, queryState)
-        unwoundValues = makeTraversable(value).iterator
-      }
-
-      while (unwoundValues.hasNext && outputRow.hasMoreRows) {
-        val thisValue = unwoundValues.next()
-        outputRow.copyFrom(inputRow)
-        outputRow.setRefAt(offset, thisValue)
-        outputRow.moveToNextRow()
-      }
-
-      if (!unwoundValues.hasNext) {
-        inputRow.moveToNextRow()
-        unwoundValues = null
-      }
-    } while (inputRow.hasMoreRows && outputRow.hasMoreRows)
-
-    outputRow.finishedWriting()
-
-    if (unwoundValues != null)
-      ContinueWithDataAndSource(inputRow, CurrentState(unwoundValues), iterationState)
-    else if (inputRow.hasMoreRows)
-      ContinueWithData(inputRow, iterationState)
-    else
-      EndOfLoop(iterationState)
+  override def init(context: QueryContext, state: QueryState, inputRow: MorselExecutionContext): ContinuableOperatorTask = {
+    val queryState = new InterpretedQueryState(context, resources = null, params = state.params)
+    val value = collection(inputRow, queryState)
+    val unwoundValues = makeTraversable(value).iterator
+    new OTask(inputRow, unwoundValues)
   }
 
-  override def addDependency(pipeline: Pipeline): Dependency = Lazy(pipeline)
+  class OTask(var inputRow: MorselExecutionContext,
+              var unwoundValues: java.util.Iterator[AnyValue]
+             ) extends ContinuableOperatorTask {
+
+    override def operate(outputRow: MorselExecutionContext,
+                         context: QueryContext,
+                         state: QueryState): Unit = {
+
+      val queryState = new InterpretedQueryState(context, resources = null, params = state.params)
+
+      do {
+        if (unwoundValues == null) {
+          val value = collection(inputRow, queryState)
+          unwoundValues = makeTraversable(value).iterator
+        }
+
+        while (unwoundValues.hasNext && outputRow.hasMoreRows) {
+          val thisValue = unwoundValues.next()
+          outputRow.copyFrom(inputRow)
+          outputRow.setRefAt(offset, thisValue)
+          outputRow.moveToNextRow()
+        }
+
+        if (!unwoundValues.hasNext) {
+          inputRow.moveToNextRow()
+          unwoundValues = null
+        }
+      } while (inputRow.hasMoreRows && outputRow.hasMoreRows)
+
+      outputRow.finishedWriting()
+    }
+
+    override def canContinue: Boolean = unwoundValues != null || inputRow.hasMoreRows
+  }
 
   private case class CurrentState(unwoundValues: java.util.Iterator[AnyValue])
-
 }

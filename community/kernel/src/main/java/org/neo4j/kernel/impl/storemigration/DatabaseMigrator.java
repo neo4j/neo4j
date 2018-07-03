@@ -20,11 +20,11 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
-import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.storemigration.participant.ExplicitIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.NativeLabelScanStoreMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.recovery.LogTailScanner;
-import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 import org.neo4j.logging.LogProvider;
 
 /**
@@ -51,7 +50,7 @@ public class DatabaseMigrator
     private final Config config;
     private final LogService logService;
     private final IndexProviderMap indexProviderMap;
-    private final Map<String,IndexImplementation> indexProviders;
+    private final ExplicitIndexProvider explicitIndexProvider;
     private final PageCache pageCache;
     private final RecordFormats format;
     private final LogTailScanner tailScanner;
@@ -59,7 +58,7 @@ public class DatabaseMigrator
     public DatabaseMigrator(
             MigrationProgressMonitor progressMonitor, FileSystemAbstraction fs,
             Config config, LogService logService, IndexProviderMap indexProviderMap,
-            Map<String,IndexImplementation> indexProviders, PageCache pageCache,
+            ExplicitIndexProvider indexProvider, PageCache pageCache,
             RecordFormats format, LogTailScanner tailScanner )
     {
         this.progressMonitor = progressMonitor;
@@ -67,7 +66,7 @@ public class DatabaseMigrator
         this.config = config;
         this.logService = logService;
         this.indexProviderMap = indexProviderMap;
-        this.indexProviders = indexProviders;
+        this.explicitIndexProvider = indexProvider;
         this.pageCache = pageCache;
         this.format = format;
         this.tailScanner = tailScanner;
@@ -85,7 +84,7 @@ public class DatabaseMigrator
         StoreUpgrader storeUpgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fs, pageCache,
                 logProvider );
 
-        ExplicitIndexMigrator explicitIndexMigrator = new ExplicitIndexMigrator( fs, indexProviders, logProvider );
+        ExplicitIndexMigrator explicitIndexMigrator = new ExplicitIndexMigrator( fs, explicitIndexProvider, logProvider );
         StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, config, logService );
         NativeLabelScanStoreMigrator nativeLabelScanStoreMigrator =
                 new NativeLabelScanStoreMigrator( fs, pageCache, config );

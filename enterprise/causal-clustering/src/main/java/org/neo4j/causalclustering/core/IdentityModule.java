@@ -29,8 +29,8 @@ import java.util.UUID;
 import org.neo4j.causalclustering.core.state.storage.SimpleFileStorage;
 import org.neo4j.causalclustering.core.state.storage.SimpleStorage;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -48,7 +48,7 @@ public class IdentityModule
         Log log = logProvider.getLog( getClass() );
 
         SimpleStorage<MemberId> memberIdStorage = new SimpleFileStorage<>( fileSystem, clusterStateDirectory,
-                CORE_MEMBER_ID_NAME, MemberId.MARSHAL, logProvider );
+                CORE_MEMBER_ID_NAME, new MemberId.Marshal(), logProvider );
 
         try
         {

@@ -35,9 +35,6 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.sup
 
 public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
 {
-
-    private final NumberArrayFactory numberArrayFactory;
-
     public static void recomputeCounts( NeoStores stores, PageCache pageCache )
     {
         MetaDataStore metaDataStore = stores.getMetaDataStore();
@@ -54,8 +51,9 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
     private final int highRelationshipTypeId;
     private final long lastCommittedTransactionId;
     private final ProgressReporter progressMonitor;
+    private final NumberArrayFactory numberArrayFactory;
 
-    public CountsComputer( NeoStores stores, PageCache pageCache )
+    CountsComputer( NeoStores stores, PageCache pageCache )
     {
         this( stores.getMetaDataStore().getLastCommittedTransactionId(),
                 stores.getNodeStore(), stores.getRelationshipStore(),
@@ -64,8 +62,8 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
                 NumberArrayFactory.auto( pageCache, stores.getStoreDir(), true ) );
     }
 
-    public CountsComputer( long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships,
-            int highLabelId, int highRelationshipTypeId, NumberArrayFactory numberArrayFactory )
+    private CountsComputer( long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships, int highLabelId, int highRelationshipTypeId,
+            NumberArrayFactory numberArrayFactory )
     {
         this( lastCommittedTransactionId, nodes, relationships, highLabelId, highRelationshipTypeId,
                 numberArrayFactory, SilentProgressReporter.INSTANCE );
@@ -86,23 +84,29 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
     @Override
     public void initialize( CountsAccessor.Updater countsUpdater )
     {
-        progressMonitor.start( nodes.getHighestPossibleIdInUse() + relationships.getHighestPossibleIdInUse() );
-        NodeLabelsCache cache = new NodeLabelsCache( numberArrayFactory, highLabelId );
-        try
+        if ( hasNotEmptyNodesOrRelationshipsStores() )
+        {
+            progressMonitor.start( nodes.getHighestPossibleIdInUse() + relationships.getHighestPossibleIdInUse() );
+            populateCountStore( countsUpdater );
+        }
+        progressMonitor.completed();
+    }
+
+    private boolean hasNotEmptyNodesOrRelationshipsStores()
+    {
+        return (nodes.getHighestPossibleIdInUse() != -1) || (relationships.getHighestPossibleIdInUse() != -1);
+    }
+
+    private void populateCountStore( CountsAccessor.Updater countsUpdater )
+    {
+        try ( NodeLabelsCache cache = new NodeLabelsCache( numberArrayFactory, highLabelId ) )
         {
             // Count nodes
-            superviseDynamicExecution(
-                    new NodeCountsStage( Configuration.DEFAULT, cache, nodes, highLabelId, countsUpdater,
-                            progressMonitor ) );
+            superviseDynamicExecution( new NodeCountsStage( Configuration.DEFAULT, cache, nodes, highLabelId, countsUpdater, progressMonitor ) );
             // Count relationships
             superviseDynamicExecution(
-                    new RelationshipCountsStage( Configuration.DEFAULT, cache, relationships, highLabelId,
-                            highRelationshipTypeId, countsUpdater, numberArrayFactory, progressMonitor ) );
-        }
-        finally
-        {
-            cache.close();
-            progressMonitor.completed();
+                    new RelationshipCountsStage( Configuration.DEFAULT, cache, relationships, highLabelId, highRelationshipTypeId, countsUpdater,
+                            numberArrayFactory, progressMonitor ) );
         }
     }
 

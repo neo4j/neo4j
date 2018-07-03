@@ -80,7 +80,7 @@ public class DummyThirdPartyWebService
             Map.Entry<String, List<String>> header = headerIt.next();
             if ( header.getValue().size() != 1 )
             {
-                throw new IllegalArgumentException( "Mutlivalued header: " + header.getKey() );
+                throw new IllegalArgumentException( "Multivalued header: " + header.getKey() );
             }
             theEntity.append( "\"" ).append( header.getKey() ).append( "\":\"" )
                      .append( header.getValue().get( 0 ) ).append( "\"" );

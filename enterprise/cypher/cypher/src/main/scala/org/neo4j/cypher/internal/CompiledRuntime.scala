@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.compiled.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.runtime.compiled.codegen.{CodeGenConfiguration, CodeGenerator}
-import org.neo4j.cypher.internal.runtime.compiled.{CompiledPlan, EnterpriseRuntimeContext}
+import org.neo4j.cypher.internal.runtime.compiled.CompiledPlan
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.v3_5.logical.plans.IndexUsage
@@ -46,17 +46,15 @@ object CompiledRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
   @throws[CantCompileQueryException]
   override def compileToExecutable(state: LogicalPlanState, context: EnterpriseRuntimeContext): ExecutionPlanv3_5 = {
     val codeGen = new CodeGenerator(context.codeStructure, context.clock, CodeGenConfiguration(context.debugOptions))
-    val readOnly = state.solveds(state.logicalPlan.id).readOnly
     val compiled: CompiledPlan = codeGen.generate(
       state.logicalPlan,
-      context.planContext,
+      context.tokenContext,
       state.semanticTable(),
       state.plannerName,
-      readOnly,
+      context.readOnly,
       state.cardinalities)
     new CompiledExecutionPlan(
       compiled,
-      new PlanFingerprintReference(compiled.fingerprint),
       notifications(context))
   }
 
@@ -69,7 +67,6 @@ object CompiledRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
     * Execution plan for compiled runtime. Beware: will be cached.
     */
   class CompiledExecutionPlan(val compiled: CompiledPlan,
-                              val fingerprint: PlanFingerprintReference,
                               val notifications: Set[Notification]) extends ExecutionPlanv3_5 {
 
     override def run(queryContext: QueryContext,
@@ -84,21 +81,13 @@ object CompiledRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
         } else
           compiled.executionResultBuilder(queryContext, executionMode, createTracer(executionMode, queryContext), params, taskCloser)
       } catch {
-        case (t: Throwable) =>
+        case t: Throwable =>
           taskCloser.close(success = false)
           throw t
       }
     }
 
-    override def reusability: ReusabilityState = MaybeReusable(fingerprint)
-
-    override def runtimeUsed: RuntimeName = CompiledRuntimeName
-
-    override def plannedIndexUsage: Seq[IndexUsage] = compiled.plannedIndexUsage
-
-    override def isPeriodicCommit: Boolean = compiled.periodicCommit.isDefined
-
-    override def plannerUsed: PlannerName = compiled.plannerUsed
+    override val runtimeName: RuntimeName = CompiledRuntimeName
   }
 
   private def createTracer(mode: ExecutionMode, queryContext: QueryContext): DescriptionProvider = mode match {

@@ -123,8 +123,8 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
       CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(8, 1, 9), cartesianProduct(Set("c", "d").asJava))))
   }
 
-  test("Warn for cartesian product when running 3.3") {
-    val result = innerExecuteDeprecated("explain cypher 3.3 match (a)-->(b), (c)-->(d) return *", Map.empty)
+  test("Warn for cartesian product when running 3.4") {
+    val result = innerExecuteDeprecated("explain cypher 3.4 match (a)-->(b), (c)-->(d) return *", Map.empty)
 
     result.notifications.toList should equal(List(
       CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(19, 1, 20), cartesianProduct(Set("c", "d").asJava))))
@@ -424,9 +424,9 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
     result.notifications.map(_.getCode) should contain("Neo.ClientNotification.Statement.EagerOperatorWarning")
   }
 
-  test("should warn for eager after load csv in 3.3") {
+  test("should warn for eager after load csv in 3.4") {
     val result = innerExecuteDeprecated(
-      "EXPLAIN CYPHER 3.3 MATCH (n) LOAD CSV FROM 'file:///ignore/ignore.csv' AS line WITH * DELETE n MERGE () RETURN line", Map.empty)
+      "EXPLAIN CYPHER 3.4 MATCH (n) LOAD CSV FROM 'file:///ignore/ignore.csv' AS line WITH * DELETE n MERGE () RETURN line", Map.empty)
 
     result should use("LoadCSV", "Eager")
     result.notifications.map(_.getCode) should contain("Neo.ClientNotification.Statement.EagerOperatorWarning")

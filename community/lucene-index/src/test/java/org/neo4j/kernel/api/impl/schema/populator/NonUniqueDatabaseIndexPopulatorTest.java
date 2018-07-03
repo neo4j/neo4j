@@ -20,10 +20,10 @@
 package org.neo4j.kernel.api.impl.schema.populator;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,6 +34,7 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
@@ -46,31 +47,33 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 
-public class NonUniqueDatabaseIndexPopulatorTest
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+class NonUniqueDatabaseIndexPopulatorTest
 {
-    @Rule
-    public final TestDirectory testDir = TestDirectory.testDirectory();
-    @Rule
-    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-
     private final DirectoryFactory dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
+    @Inject
+    private TestDirectory testDir;
+    @Inject
+    private DefaultFileSystemAbstraction fileSystem;
 
     private SchemaIndex index;
     private NonUniqueLuceneIndexPopulator populator;
     private final SchemaDescriptor labelSchemaDescriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         File folder = testDir.directory( "folder" );
-        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fileSystemRule.get(), folder );
+        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fileSystem, folder );
 
         IndexDescriptor descriptor = IndexDescriptorFactory.forSchema( labelSchemaDescriptor );
         index = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )
@@ -78,8 +81,8 @@ public class NonUniqueDatabaseIndexPopulatorTest
                                         .build();
     }
 
-    @After
-    public void tearDown() throws Exception
+    @AfterEach
+    void tearDown() throws Exception
     {
         if ( populator != null )
         {
@@ -89,7 +92,7 @@ public class NonUniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    public void sampleEmptyIndex() throws IOException
+    void sampleEmptyIndex() throws IOException
     {
         populator = newPopulator();
 
@@ -99,7 +102,7 @@ public class NonUniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    public void sampleIncludedUpdates() throws Exception
+    void sampleIncludedUpdates() throws Exception
     {
         populator = newPopulator();
 
@@ -116,7 +119,7 @@ public class NonUniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    public void sampleIncludedUpdatesWithDuplicates() throws Exception
+    void sampleIncludedUpdatesWithDuplicates() throws Exception
     {
         populator = newPopulator();
 
@@ -133,7 +136,7 @@ public class NonUniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    public void addUpdates() throws Exception
+    void addUpdates() throws Exception
     {
         populator = newPopulator();
 

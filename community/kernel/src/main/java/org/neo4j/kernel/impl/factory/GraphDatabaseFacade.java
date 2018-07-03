@@ -88,8 +88,8 @@ import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.GraphPropertiesProxy;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.coreapi.AutoIndexerFacade;
 import org.neo4j.kernel.impl.coreapi.IndexManagerImpl;
@@ -134,14 +134,13 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     private Schema schema;
     private Supplier<IndexManager> indexManager;
     private ThreadToStatementContextBridge statementContext;
-    protected EditionModule editionModule;
     private SPI spi;
     private TransactionalContextFactory contextFactory;
     private Config config;
-    private RelationshipTypeTokenHolder relationshipTypeTokenHolder;
+    private TokenHolders tokenHolders;
 
     /**
-     * This is what you need to implemenent to get your very own {@link GraphDatabaseFacade}. This SPI exists as a thin
+     * This is what you need to implement to get your very own {@link GraphDatabaseFacade}. This SPI exists as a thin
      * layer to make it easy to provide
      * alternate {@link org.neo4j.graphdb.GraphDatabaseService} instances without having to re-implement this whole API
      * implementation.
@@ -200,15 +199,13 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     /**
      * Create a new Core API facade, backed by the given SPI and using pre-resolved dependencies
      */
-    public void init( EditionModule editionModule, SPI spi, ThreadToStatementContextBridge txBridge, Config config,
-            RelationshipTypeTokenHolder relationshipTypeTokenHolder )
+    public void init( SPI spi, ThreadToStatementContextBridge txBridge, Config config, TokenHolders tokenHolders )
     {
-        this.editionModule = editionModule;
         this.spi = spi;
         this.config = config;
-        this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
         this.schema = new SchemaImpl( () -> txBridge.getKernelTransactionBoundToThisThread( true ) );
         this.statementContext = txBridge;
+        this.tokenHolders = tokenHolders;
         this.indexManager = Suppliers.lazySingleton( () ->
         {
             IndexProviderImpl idxProvider = new IndexProviderImpl( this, () -> txBridge.getKernelTransactionBoundToThisThread( true ) );
@@ -411,7 +408,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         InternalTransaction transaction =
                 beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
 
-        return execute( transaction, query, ValueUtils.asMapValue( parameters ) );
+        return execute( transaction, query, ValueUtils.asParameterMapValue( parameters ) );
     }
 
     @Override
@@ -420,7 +417,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     {
         InternalTransaction transaction =
                 beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, timeout, unit );
-        return execute( transaction, query, ValueUtils.asMapValue( parameters ) );
+        return execute( transaction, query, ValueUtils.asParameterMapValue( parameters ) );
     }
 
     public Result execute( InternalTransaction transaction, String query, MapValue parameters )
@@ -993,18 +990,13 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     {
         try
         {
-            return relationshipTypeTokenHolder.getTokenById( type );
+            String name = tokenHolders.relationshipTypeTokens().getTokenById( type ).name();
+            return RelationshipType.withName( name );
         }
         catch ( TokenNotFoundException e )
         {
             throw new IllegalStateException( "Kernel API returned non-existent relationship type: " + type );
         }
-    }
-
-    @Override
-    public int getRelationshipTypeIdByName( String typeName )
-    {
-        return relationshipTypeTokenHolder.getIdByName( typeName );
     }
 
     @Override

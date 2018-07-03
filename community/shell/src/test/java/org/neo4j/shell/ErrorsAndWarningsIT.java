@@ -20,19 +20,24 @@
 package org.neo4j.shell;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.io.PrintStream;
+
+import org.neo4j.test.rule.SuppressOutput;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
 public class ErrorsAndWarningsIT extends AbstractShellIT
 {
+    @Rule
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+
     @Before
     public void setup()
     {
@@ -47,34 +52,16 @@ public class ErrorsAndWarningsIT extends AbstractShellIT
         try
         {
             System.setIn( new ByteArrayInputStream( "CYPHER planner=cost CREATE ();".getBytes() ) );
-            String output = runAndCaptureOutput( new String[]{"-file", "-"} );
+            StartClient.main( new String[]{"-file", "-"} );
 
             // Then we should not get a warning
-            assertThat( output, not( containsString(
-                    "Using COST planner is unsupported for this query, please use RULE planner instead" ) ) );
+            String output = suppressOutput.getOutputVoice().toString();
+            assertThat( output, not( isEmptyString() ) );
+            assertThat( output, not( containsString( "Using COST planner is unsupported for this query, please use RULE planner instead" ) ) );
         }
         finally
         {
             System.setIn( realStdin );
-        }
-    }
-
-    private String runAndCaptureOutput( String[] arguments )
-    {
-        ByteArrayOutputStream buf = new ByteArrayOutputStream();
-        PrintStream out = new PrintStream( buf );
-        PrintStream oldOut = System.out;
-        System.setOut( out );
-
-        try
-        {
-            StartClient.main( arguments );
-            out.close();
-            return buf.toString();
-        }
-        finally
-        {
-            System.setOut( oldOut );
         }
     }
 }

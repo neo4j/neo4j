@@ -27,6 +27,7 @@ import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
@@ -47,25 +48,23 @@ import org.neo4j.causalclustering.core.state.machines.token.ReplicatedLabelToken
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedPropertyKeyTokenHolder;
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedRelationshipTypeTokenHolder;
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenStateMachine;
-import org.neo4j.causalclustering.core.state.machines.token.TokenRegistry;
 import org.neo4j.causalclustering.core.state.machines.tx.RecoverConsensusLogIndex;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionCommitProcess;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionStateMachine;
 import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
 import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.graphdb.factory.module.CommunityEditionModule;
+import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.RelationshipTypeToken;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolders;
+import org.neo4j.kernel.impl.core.TokenRegistry;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
-import org.neo4j.kernel.impl.factory.CommunityEditionModule;
-import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -75,7 +74,7 @@ import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.Token;
+import org.neo4j.storageengine.api.StorageEngine;
 
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.array_block_id_allocation_size;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.id_alloc_state_size;
@@ -103,9 +102,7 @@ public class CoreStateMachinesModule
 
     public final IdGeneratorFactory idGeneratorFactory;
     public final IdTypeConfigurationProvider idTypeConfigurationProvider;
-    public final LabelTokenHolder labelTokenHolder;
-    public final PropertyKeyTokenHolder propertyKeyTokenHolder;
-    public final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
+    public final TokenHolders tokenHolders;
     public final Locks lockManager;
     public final CommitProcessFactory commitProcessFactory;
 
@@ -125,7 +122,7 @@ public class CoreStateMachinesModule
 
         lockTokenState = life.add(
                 new DurableStateStorage<>( fileSystem, clusterStateDirectory, LOCK_TOKEN_NAME,
-                        new ReplicatedLockTokenState.Marshal( MemberId.MARSHAL ),
+                        new ReplicatedLockTokenState.Marshal( new MemberId.Marshal() ),
                         config.get( replicated_lock_token_state_size ), logProvider ) );
 
         idAllocationState = life.add(
@@ -150,35 +147,34 @@ public class CoreStateMachinesModule
 
         dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
-        TokenRegistry<RelationshipTypeToken> relationshipTypeTokenRegistry = new TokenRegistry<>( "RelationshipType" );
+        TokenRegistry relationshipTypeTokenRegistry = new TokenRegistry( TokenHolder.TYPE_RELATIONSHIP_TYPE );
+        Supplier<StorageEngine> storageEngineSupplier = () -> localDatabase.dataSource().getDependencyResolver().resolveDependency( StorageEngine.class );
         ReplicatedRelationshipTypeTokenHolder relationshipTypeTokenHolder =
                 new ReplicatedRelationshipTypeTokenHolder( relationshipTypeTokenRegistry, replicator,
-                        this.idGeneratorFactory, dependencies );
+                        this.idGeneratorFactory, storageEngineSupplier );
 
-        TokenRegistry<Token> propertyKeyTokenRegistry = new TokenRegistry<>( "PropertyKey" );
+        TokenRegistry propertyKeyTokenRegistry = new TokenRegistry( TokenHolder.TYPE_PROPERTY_KEY );
         ReplicatedPropertyKeyTokenHolder propertyKeyTokenHolder =
                 new ReplicatedPropertyKeyTokenHolder( propertyKeyTokenRegistry, replicator, this.idGeneratorFactory,
-                        dependencies );
+                        storageEngineSupplier );
 
-        TokenRegistry<Token> labelTokenRegistry = new TokenRegistry<>( "Label" );
+        TokenRegistry labelTokenRegistry = new TokenRegistry( TokenHolder.TYPE_LABEL );
         ReplicatedLabelTokenHolder labelTokenHolder =
-                new ReplicatedLabelTokenHolder( labelTokenRegistry, replicator, this.idGeneratorFactory, dependencies );
+                new ReplicatedLabelTokenHolder( labelTokenRegistry, replicator, this.idGeneratorFactory,
+                        storageEngineSupplier );
 
         ReplicatedLockTokenStateMachine replicatedLockTokenStateMachine =
                 new ReplicatedLockTokenStateMachine( lockTokenState );
 
         VersionContextSupplier versionContextSupplier = platformModule.versionContextSupplier;
-        ReplicatedTokenStateMachine<Token> labelTokenStateMachine =
-                new ReplicatedTokenStateMachine<>( labelTokenRegistry, new Token.Factory(), logProvider,
-                        versionContextSupplier );
+        ReplicatedTokenStateMachine labelTokenStateMachine =
+                new ReplicatedTokenStateMachine( labelTokenRegistry, logProvider, versionContextSupplier );
 
-        ReplicatedTokenStateMachine<Token> propertyKeyTokenStateMachine =
-                new ReplicatedTokenStateMachine<>( propertyKeyTokenRegistry, new Token.Factory(), logProvider,
-                        versionContextSupplier );
+        ReplicatedTokenStateMachine propertyKeyTokenStateMachine =
+                new ReplicatedTokenStateMachine( propertyKeyTokenRegistry, logProvider, versionContextSupplier );
 
-        ReplicatedTokenStateMachine<RelationshipTypeToken> relationshipTypeTokenStateMachine =
-                new ReplicatedTokenStateMachine<>( relationshipTypeTokenRegistry, new RelationshipTypeToken.Factory(),
-                        logProvider, versionContextSupplier );
+        ReplicatedTokenStateMachine relationshipTypeTokenStateMachine =
+                new ReplicatedTokenStateMachine( relationshipTypeTokenRegistry, logProvider, versionContextSupplier );
 
         PageCursorTracerSupplier cursorTracerSupplier = platformModule.tracers.pageCursorTracerSupplier;
         ReplicatedTransactionStateMachine replicatedTxStateMachine =
@@ -191,7 +187,7 @@ public class CoreStateMachinesModule
         lockManager = createLockManager( config, platformModule.clock, logging, replicator, myself, raftMachine,
                 replicatedLockTokenStateMachine );
 
-        RecoverConsensusLogIndex consensusLogIndexRecovery = new RecoverConsensusLogIndex( dependencies, logProvider );
+        RecoverConsensusLogIndex consensusLogIndexRecovery = new RecoverConsensusLogIndex( localDatabase, logProvider );
 
         coreStateMachines = new CoreStateMachines( replicatedTxStateMachine, labelTokenStateMachine,
                 relationshipTypeTokenStateMachine, propertyKeyTokenStateMachine, replicatedLockTokenStateMachine,
@@ -203,9 +199,7 @@ public class CoreStateMachinesModule
             return new ReplicatedTransactionCommitProcess( replicator );
         };
 
-        this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
-        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
-        this.labelTokenHolder = labelTokenHolder;
+        this.tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
     }
 
     private Map<IdType,Integer> getIdTypeAllocationSizeFromConfig( Config config )

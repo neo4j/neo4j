@@ -118,30 +118,14 @@ public class DiagnosticsReporterTest
     @Test
     public void dumpFiles() throws Exception
     {
-        DiagnosticsReporter reporter = new DiagnosticsReporter(  );
-        MyProvider myProvider = new MyProvider( fileSystemRule.get() );
-        reporter.registerOfflineProvider( myProvider );
-
-        myProvider.addFile( "logs/a.txt", createNewFileWithContent( "a.txt", "file a") );
-        myProvider.addFile( "logs/b.txt", createNewFileWithContent( "b.txt", "file b") );
+        DiagnosticsReporter reporter = setupDiagnosticsReporter();
 
         Path destination = testDirectory.file( "logs.zip" ).toPath();
 
         reporter.dump( Collections.singleton( "logs" ), destination, mock( DiagnosticsReporterProgress.class), true );
 
         // Verify content
-        URI uri = URI.create("jar:file:" + destination.toAbsolutePath().toUri().getPath() );
-
-        try ( FileSystem fs = FileSystems.newFileSystem( uri, Collections.emptyMap() ) )
-        {
-            List<String> fileA = Files.readAllLines( fs.getPath( "logs/a.txt" ) );
-            assertEquals( 1, fileA.size() );
-            assertEquals( "file a", fileA.get( 0 ) );
-
-            List<String> fileB = Files.readAllLines( fs.getPath( "logs/b.txt" ) );
-            assertEquals( 1, fileB.size() );
-            assertEquals( "file b", fileB.get( 0 ) );
-        }
+        verifyContent( destination );
     }
 
     @Test
@@ -178,7 +162,7 @@ public class DiagnosticsReporterTest
         }
 
         // Verify content
-        URI uri = URI.create("jar:file:" + destination.toAbsolutePath().toUri().getPath() );
+        URI uri = URI.create("jar:file:" + destination.toAbsolutePath().toUri().getRawPath() );
 
         try ( FileSystem fs = FileSystems.newFileSystem( uri, Collections.emptyMap() ) )
         {
@@ -188,10 +172,49 @@ public class DiagnosticsReporterTest
         }
     }
 
+    @Test
+    public void supportPathsWithSpaces() throws IOException
+    {
+        DiagnosticsReporter reporter = setupDiagnosticsReporter();
+
+        Path destination = testDirectory.file( "log files.zip" ).toPath();
+
+        reporter.dump( Collections.singleton( "logs" ), destination, mock( DiagnosticsReporterProgress.class), true );
+
+        verifyContent( destination );
+    }
+
     private File createNewFileWithContent( String name, String content ) throws IOException
     {
         Path file = testDirectory.file( name ).toPath();
         Files.write( file, content.getBytes() );
         return file.toFile();
+    }
+
+    private DiagnosticsReporter setupDiagnosticsReporter() throws IOException
+    {
+        DiagnosticsReporter reporter = new DiagnosticsReporter(  );
+        MyProvider myProvider = new MyProvider( fileSystemRule.get() );
+        reporter.registerOfflineProvider( myProvider );
+
+        myProvider.addFile( "logs/a.txt", createNewFileWithContent( "a.txt", "file a") );
+        myProvider.addFile( "logs/b.txt", createNewFileWithContent( "b.txt", "file b") );
+        return reporter;
+    }
+
+    private void verifyContent( Path destination ) throws IOException
+    {
+        URI uri = URI.create("jar:file:" + destination.toAbsolutePath().toUri().getRawPath() );
+
+        try ( FileSystem fs = FileSystems.newFileSystem( uri, Collections.emptyMap() ) )
+        {
+            List<String> fileA = Files.readAllLines( fs.getPath( "logs/a.txt" ) );
+            assertEquals( 1, fileA.size() );
+            assertEquals( "file a", fileA.get( 0 ) );
+
+            List<String> fileB = Files.readAllLines( fs.getPath( "logs/b.txt" ) );
+            assertEquals( 1, fileB.size() );
+            assertEquals( "file b", fileB.get( 0 ) );
+        }
     }
 }

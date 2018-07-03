@@ -33,11 +33,9 @@ import org.neo4j.storageengine.api.WritableChannel;
 
 import static java.lang.String.format;
 
-// TODO: basics for Serializable
 public class MemberId implements Serializable
 {
-    public static final Marshal MARSHAL = new Marshal();
-
+    private static final long serialVersionUID = -984540169345015775L;
     private final UUID uuid;
     private final String shortName;
 
@@ -90,10 +88,6 @@ public class MemberId implements Serializable
      */
     public static class Marshal extends SafeStateMarshal<MemberId>
     {
-        private Marshal()
-        {
-        }
-
         @Override
         public void marshal( MemberId memberId, WritableChannel channel ) throws IOException
         {

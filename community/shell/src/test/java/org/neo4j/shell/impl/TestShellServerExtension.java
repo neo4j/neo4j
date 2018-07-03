@@ -25,8 +25,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactoryContractTest;
 import org.neo4j.shell.ShellSettings;
 
-public class TestShellServerExtension extends
-        KernelExtensionFactoryContractTest
+public class TestShellServerExtension extends KernelExtensionFactoryContractTest
 {
     public TestShellServerExtension()
     {

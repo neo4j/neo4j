@@ -30,7 +30,7 @@ import static java.lang.String.format;
  * A value can be any {@link Number} and is represented as a {@code long} to store the raw bits and a type
  * to say if it's a long, double or float.
  *
- * Distinction between double and float exists because coersions between each other and long may differ.
+ * Distinction between double and float exists because coercions between each other and long may differ.
  * TODO this should be figured out and potentially reduced to long, double types only.
  */
 class NumberIndexKey extends NativeIndexKey<NumberIndexKey>

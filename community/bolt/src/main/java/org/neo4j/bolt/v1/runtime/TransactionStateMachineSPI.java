@@ -23,8 +23,9 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.function.Supplier;
 
-import org.neo4j.bolt.v1.runtime.TransactionStateMachine.BoltResultHandle;
-import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.bolt.runtime.BoltQuerySource;
+import org.neo4j.bolt.runtime.BoltResult;
+import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.cypher.internal.javacompat.QueryResultProvider;
 import org.neo4j.graphdb.Result;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -51,7 +52,7 @@ import org.neo4j.values.virtual.MapValue;
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 
-class TransactionStateMachineSPI implements TransactionStateMachine.SPI
+class TransactionStateMachineSPI implements org.neo4j.bolt.runtime.TransactionStateMachineSPI
 {
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
 
@@ -116,10 +117,10 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
             LoginContext loginContext, String statement, MapValue params )
     {
         InternalTransaction internalTransaction = db.beginTransaction( implicit, loginContext );
-        ClientConnectionInfo sourceDetails = new BoltConnectionInfo( querySource.principalName,
-                querySource.clientName,
-                querySource.connectionDescriptor.clientAddress(),
-                querySource.connectionDescriptor.serverAddress() );
+        ClientConnectionInfo sourceDetails = new BoltConnectionInfo( querySource.principalName(),
+                querySource.clientName(),
+                querySource.connectionDescriptor().clientAddress(),
+                querySource.connectionDescriptor().serverAddress() );
         TransactionalContext transactionalContext =
                 contextFactory.newContext( sourceDetails, internalTransaction, statement, params );
 

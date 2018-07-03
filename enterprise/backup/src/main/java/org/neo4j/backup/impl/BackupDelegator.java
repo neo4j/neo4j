@@ -55,14 +55,14 @@ class BackupDelegator extends LifecycleAdapter
 
     void copy( AdvertisedSocketAddress fromAddress, StoreId expectedStoreId, Path destDir ) throws StoreCopyFailedException
     {
-        remoteStore.copy( new CatchupAddressProvider.SingleAddressProvider( fromAddress ), expectedStoreId, destDir.toFile() );
+        remoteStore.copy( new CatchupAddressProvider.SingleAddressProvider( fromAddress ), expectedStoreId, destDir.toFile(), true );
     }
 
     CatchupResult tryCatchingUp( AdvertisedSocketAddress fromAddress, StoreId expectedStoreId, Path storeDir ) throws StoreCopyFailedException
     {
         try
         {
-            return remoteStore.tryCatchingUp( fromAddress, expectedStoreId, storeDir.toFile(), true );
+            return remoteStore.tryCatchingUp( fromAddress, expectedStoreId, storeDir.toFile(), true, true );
         }
         catch ( IOException e )
         {

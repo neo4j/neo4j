@@ -46,7 +46,7 @@ InModuleScope Neo4j-Management {
       }
     }
 
-    Context "Start service succesfully but not running" {
+    Context "Start service successfully but not running" {
       Mock Start-Service { throw "Wrong Service name" }
       Mock Start-Service -Verifiable { @{ Status = 'Start Pending'} } -ParameterFilter { $Name -eq $global:mockServiceName }
 
@@ -63,7 +63,7 @@ InModuleScope Neo4j-Management {
       }
     }
 
-    Context "Start service succesfully" {
+    Context "Start service successfully" {
       Mock Start-Service { throw "Wrong Service name" }
       Mock Start-Service -Verifiable { @{ Status = 'Running'} } -ParameterFilter { $Name -eq $global:mockServiceName }
 

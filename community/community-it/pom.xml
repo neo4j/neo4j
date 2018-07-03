@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.neo4j</groupId>
+        <artifactId>parent</artifactId>
+        <version>3.5.0-SNAPSHOT</version>
+        <relativePath>../..</relativePath>
+    </parent>
+
+    <artifactId>community-integration-tests</artifactId>
+    <version>3.5.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>Neo4j - Community Integration Tests</name>
+    <description>Neo4j community edition integration tests modules.</description>
+
+    <properties>
+        <license-text.header>headers/GPL-3-header.txt</license-text.header>
+    </properties>
+
+    <licenses>
+        <license>
+            <name>GNU General Public License, Version 3</name>
+            <url>http://www.gnu.org/licenses/gpl-3.0-standalone.html</url>
+            <comments>The software ("Software") developed and owned by Neo4j Sweden AB (referred to in this notice as "Neo4j") is
+                licensed under the GNU GENERAL PUBLIC LICENSE Version 3 to all third
+                parties and that license is included below.
+
+                However, if you have executed an End User Software License and Services
+                Agreement or an OEM Software License and Support Services Agreement, or
+                another commercial license agreement with Neo4j or one of its
+                affiliates (each, a "Commercial Agreement"), the terms of the license in
+                such Commercial Agreement will supersede the GNU GENERAL PUBLIC LICENSE
+                Version 3 and you may use the Software solely pursuant to the terms of
+                the relevant Commercial Agreement.
+            </comments>
+        </license>
+    </licenses>
+
+    <modules>
+        <module>it-test-support</module>
+        <module>kernel-it</module>
+        <module>index-it</module>
+        <module>import-it</module>
+        <module>dbms-it</module>
+        <module>algo-it</module>
+        <module>consistency-it</module>
+        <module>bolt-it</module>
+        <module>community-it</module>
+    </modules>
+
+    <profiles>
+        <profile>
+            <id>include-cypher</id>
+            <activation>
+                <property>
+                    <name>!skipCypher</name>
+                </property>
+            </activation>
+            <modules>
+                <module>cypher-it</module>
+            </modules>
+        </profile>
+    </profiles>
+</project>

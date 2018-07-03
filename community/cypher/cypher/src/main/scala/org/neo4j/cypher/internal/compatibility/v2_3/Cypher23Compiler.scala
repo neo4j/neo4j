@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, Tran
 import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.graphdb.{Node, Relationship, Result}
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.query.{IndexUsage, PlannerInfo}
+import org.neo4j.kernel.api.query.{IndexUsage, CompilerInfo}
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
@@ -48,14 +48,13 @@ import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
 
 import scala.collection.mutable
 
-trait Cypher23Compiler extends CachingCompiler[PreparedQuery] {
+trait Cypher23Compiler extends CachingPlanner[PreparedQuery] with Compiler {
 
   val graph: GraphDatabaseQueryService
   val queryCacheSize: Int
   val kernelMonitors: KernelMonitors
 
   override def parserCacheSize: Int = queryCacheSize
-  override def plannerCacheSize: Int = 0
 
   protected val rewriterSequencer: (String) => RewriterStepSequencer = {
     import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer._
@@ -68,8 +67,11 @@ trait Cypher23Compiler extends CachingCompiler[PreparedQuery] {
 
   implicit val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v2_3, preParsingNotifications: Set[org.neo4j.graphdb.Notification], offSet: frontend.v2_3.InputPosition)
-    extends ExecutionPlan {
+  class Cypher23ExecutableQuery(inner: ExecutionPlan_v2_3,
+                                preParsingNotifications: Set[org.neo4j.graphdb.Notification],
+                                offSet: frontend.v2_3.InputPosition,
+                                override val paramNames: Seq[String],
+                                override val extractedParams: MapValue) extends ExecutableQuery {
 
     private def queryContext(transactionalContext: TransactionalContextWrapper): QueryContext =
       new ExceptionTranslatingQueryContext(new TransactionBoundQueryContext(transactionalContext))
@@ -104,11 +106,11 @@ trait Cypher23Compiler extends CachingCompiler[PreparedQuery] {
         FineToReuse
     }
 
-    override val plannerInfo = new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, emptyList[IndexUsage])
+    override val compilerInfo = new CompilerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, emptyList[IndexUsage])
 
-    override def run(transactionalContext: TransactionalContext,
-                     executionMode: CypherExecutionMode,
-                     params: MapValue): Result = {
+    override def execute(transactionalContext: TransactionalContext,
+                         executionMode: CypherExecutionMode,
+                         params: MapValue): Result = {
       var map: mutable.Map[String, Any] = mutable.Map[String, Any]()
       params.foreach(new ThrowingBiConsumer[String, AnyValue, RuntimeException] {
         override def accept(t: String, u: AnyValue): Unit = map.put(t, valueHelper.fromValue(u))
@@ -122,7 +124,7 @@ trait Cypher23Compiler extends CachingCompiler[PreparedQuery] {
                        tracer: CompilationPhaseTracer,
                        preParsingNotifications: Set[org.neo4j.graphdb.Notification],
                        transactionalContext: TransactionalContext
-                      ): CacheableExecutableQuery = {
+                      ): ExecutableQuery = {
 
     exceptionHandler.runSafely {
       val notificationLogger = new RecordingNotificationLogger
@@ -138,8 +140,12 @@ trait Cypher23Compiler extends CachingCompiler[PreparedQuery] {
 
       // Log notifications/warnings from planning
       executionPlan2_3.notifications(planContext).foreach(notificationLogger += _)
-      val executionPlan = new ExecutionPlanWrapper(executionPlan2_3, preParsingNotifications, position2_3)
-      CacheableExecutableQuery(executionPlan, Seq.empty[String], ValueConversion.asValues(extractedParameters))
+      new Cypher23ExecutableQuery(
+        executionPlan2_3,
+        preParsingNotifications,
+        position2_3,
+        Seq.empty[String],
+        ValueConversion.asValues(extractedParameters))
     }
   }
 }

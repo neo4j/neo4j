@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
 import static org.neo4j.values.storable.Values.values;
 
@@ -90,7 +89,7 @@ public class NumberFullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil
                     nodeId++;
                 }
             }
-            gbpTree.checkpoint( IOLimiter.unlimited() );
+            gbpTree.checkpoint( IOLimiter.UNLIMITED );
         }
     }
 

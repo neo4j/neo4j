@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.api.query.PlannerInfo;
+import org.neo4j.kernel.api.query.CompilerInfo;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.query.clientconnection.ShellConnectionInfo;
@@ -489,7 +489,7 @@ public class ConfiguredQueryLoggerTest
 
         // when
         clock.forward( 11, TimeUnit.MILLISECONDS );
-        query.planningCompleted( new PlannerInfo( "magic", "quantum", Collections.emptyList() ) );
+        query.compilationCompleted( new CompilerInfo( "magic", "quantum", Collections.emptyList() ) );
         queryLogger.success( query );
 
         // then

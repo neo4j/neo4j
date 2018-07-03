@@ -25,10 +25,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.bolt.runtime.BoltConnection;
+import org.neo4j.bolt.runtime.BoltResponseHandler;
+import org.neo4j.bolt.runtime.BoltResult;
+import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.v1.packstream.PackOutputClosedException;
-import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
-import org.neo4j.bolt.v1.runtime.Neo4jError;
-import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 import org.neo4j.values.AnyValue;
@@ -55,11 +55,6 @@ class MessageProcessingHandler implements BoltResponseHandler
         this.handler = handler;
         this.connection = connection;
         this.log = logger;
-    }
-
-    @Override
-    public void onStart()
-    {
     }
 
     @Override

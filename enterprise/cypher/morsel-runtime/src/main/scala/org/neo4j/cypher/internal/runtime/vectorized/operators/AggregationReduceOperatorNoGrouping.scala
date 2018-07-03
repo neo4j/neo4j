@@ -28,44 +28,47 @@ import org.neo4j.cypher.internal.runtime.vectorized._
 /*
 Responsible for reducing the output of AggregationMapperOperatorNoGrouping
  */
-class AggregationReduceOperatorNoGrouping(aggregations: Array[AggregationOffsets]) extends Operator {
+class AggregationReduceOperatorNoGrouping(aggregations: Array[AggregationOffsets]) extends ReduceOperator {
 
-  override def operate(message: Message, currentRow: MorselExecutionContext, context: QueryContext, state: QueryState): Continuation = {
-    val reducers = aggregations.map(_.aggregation.createAggregationReducer)
-    var iterationState: Iteration = null
-    var inputRows: Array[MorselExecutionContext] = null
+  override def init(queryContext: QueryContext,
+                    state: QueryState,
+                    inputMorsels: Seq[MorselExecutionContext]
+                   ): ContinuableOperatorTask =
+    new OTask(inputMorsels.toArray)
 
-    //This operator will never be "interrupted" since it will always write
-    //a single value
-    message match {
-      case StartLoopWithEagerData(inputs, is) =>
-        iterationState = is
-        inputRows = inputs
-      case _ => throw new IllegalStateException()
-    }
+  class OTask(inputRows: Array[MorselExecutionContext]) extends ContinuableOperatorTask {
 
-    //Go through the morsels and collect the output from the map step
-    //and reduce the values
-    var i = 0
-    while (i < inputRows.length) {
-      val currentInputRow = inputRows(i)
-      var j = 0
-      while (j < aggregations.length) {
-        reducers(j).reduce(currentInputRow.getRefAt(aggregations(j).mapperOutputSlot))
-        j += 1
+    override def operate(currentRow: MorselExecutionContext,
+                         context: QueryContext,
+                         state: QueryState): Unit = {
+
+      val reducers = aggregations.map(_.aggregation.createAggregationReducer)
+      var morselPos = 0
+
+      //Go through the morsels and collect the output from the map step
+      //and reduce the values
+      var i = 0
+      while (i < inputRows.length) {
+        val currentInputRow = inputRows(i)
+        var j = 0
+        while (j < aggregations.length) {
+          reducers(j).reduce(currentInputRow.getRefAt(aggregations(j).mapperOutputSlot))
+          j += 1
+        }
+        i += 1
       }
-      i += 1
+
+      //Write the reduced value to output
+      i = 0
+      while (i < aggregations.length) {
+        currentRow.setRefAt(aggregations(i).reducerOutputSlot, reducers(i).result)
+        i += 1
+      }
+      currentRow.moveToNextRow()
+      currentRow.finishedWriting()
     }
 
-    //Write the reduced value to output
-    i = 0
-    while (i < aggregations.length) {
-      currentRow.setRefAt(aggregations(i).reducerOutputSlot, reducers(i).result)
-      i += 1
-    }
-    currentRow.moveToNextRow()
-    currentRow.finishedWriting()
-    EndOfLoop(iterationState)
+    // This operator will never continue since it will always write a single row
+    override def canContinue: Boolean = false
   }
-  override def addDependency(pipeline: Pipeline): Dependency = Eager(pipeline)
 }

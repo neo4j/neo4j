@@ -39,8 +39,14 @@ public class SocketAddress
 
     public SocketAddress( String hostname, int port )
     {
-        assert !hostname.contains( "[" );
-        assert !hostname.contains( "]" );
+        if ( hostname == null )
+        {
+            throw new IllegalArgumentException( "hostname cannot be null" );
+        }
+        if ( hostname.contains( "[" ) || hostname.contains( "]" ) )
+        {
+            throw new IllegalArgumentException( "hostname cannot contain '[' or ']'" );
+        }
 
         this.hostname = hostname;
         this.port = port;

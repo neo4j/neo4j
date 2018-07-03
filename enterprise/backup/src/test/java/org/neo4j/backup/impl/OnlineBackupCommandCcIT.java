@@ -40,7 +40,10 @@ import java.io.PrintStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.causalclustering.ClusterHelper;
@@ -49,6 +52,8 @@ import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
+import org.neo4j.causalclustering.discovery.IpFamily;
+import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
 import org.neo4j.causalclustering.helpers.CausalClusteringTestHelpers;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
@@ -56,6 +61,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.causalclustering.ClusterRule;
@@ -64,10 +70,13 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.util.TestHelpers;
 
 import static java.lang.String.format;
+import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.neo4j.backup.impl.OnlineBackupCommandHaIT.transactions1M;
 
 @RunWith( Parameterized.class )
 public class OnlineBackupCommandCcIT
@@ -269,6 +278,93 @@ public class OnlineBackupCommandCcIT
         assertTrue( output.contains( "Finished receiving index snapshots" ) );
     }
 
+    @Test
+    public void onlyTheLatestTransactionIsKeptAfterIncrementalBackup() throws Exception
+    {
+        // given database exists with data
+        Cluster cluster = startCluster( recordFormat );
+        createSomeData( cluster );
+
+        // and backup client is told to rotate conveniently
+        Config config = Config
+                .builder()
+                .withSetting( GraphDatabaseSettings.logical_log_rotation_threshold, "1m" )
+                .build();
+        File configOverrideFile = testDirectory.file( "neo4j-backup.conf" );
+        OnlineBackupCommandBuilder.writeConfigToFile( config, configOverrideFile );
+
+        // and we have a full backup
+        String backupName = "backupName" + recordFormat;
+        String address = CausalClusteringTestHelpers.backupAddress( clusterLeader( cluster ).database() );
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
+                "--from", address,
+                "--cc-report-dir=" + backupDir,
+                "--backup-dir=" + backupDir,
+                "--additional-config=" + configOverrideFile,
+                "--name=" + backupName ) );
+
+        // and the database contains a few more transactions
+        transactions1M( clusterLeader( cluster ).database() );
+        transactions1M( clusterLeader( cluster ).database() ); // rotation, second tx log file
+
+        // when we perform an incremental backup
+        assertEquals( 0, runBackupToolFromSameJvm(
+                "--from", address,
+                "--cc-report-dir=" + backupDir,
+                "--backup-dir=" + backupDir,
+                "--additional-config=" + configOverrideFile,
+                "--name=" + backupName ) );
+
+        // then there has been a rotation
+        BackupTransactionLogFilesHelper backupTransactionLogFilesHelper = new BackupTransactionLogFilesHelper();
+        LogFiles logFiles = backupTransactionLogFilesHelper.readLogFiles( backupDir.toPath().resolve( backupName ).toFile() );
+        long highestTxIdInLogFiles = logFiles.getHighestLogVersion();
+        assertEquals( 2, highestTxIdInLogFiles );
+
+        // and the original log has not been removed since the transactions are applied at start
+        long lowestTxIdInLogFiles = logFiles.getLowestLogVersion();
+        assertEquals( 0, lowestTxIdInLogFiles );
+    }
+
+    @Test
+    public void backupRenamesWork() throws Exception
+    {
+        // given a prexisting backup from a different store
+        String backupName = "preexistingBackup_" + recordFormat;
+        Cluster cluster = startCluster( recordFormat );
+        String firstBackupAddress = CausalClusteringTestHelpers.transactionAddress( clusterLeader( cluster ).database() );
+
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
+                "--from", firstBackupAddress,
+                "--cc-report-dir=" + backupDir,
+                "--backup-dir=" + backupDir,
+                "--name=" + backupName ) );
+        DbRepresentation firstDatabaseRepresentation = DbRepresentation.of( clusterLeader( cluster ).database() );
+
+        // and a different database
+        Cluster cluster2 = startCluster2( recordFormat );
+        DbRepresentation secondDatabaseRepresentation = DbRepresentation.of( clusterLeader( cluster2 ).database() );
+        assertNotEquals( firstDatabaseRepresentation, secondDatabaseRepresentation );
+        String secondBackupAddress = CausalClusteringTestHelpers.transactionAddress( clusterLeader( cluster2 ).database() );
+
+        // when backup is performed
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
+                "--from", secondBackupAddress,
+                "--cc-report-dir=" + backupDir,
+                "--backup-dir=" + backupDir,
+                "--name=" + backupName ) );
+        cluster2.shutdown();
+
+        // then the new backup has the correct name
+        assertEquals( secondDatabaseRepresentation, getBackupDbRepresentation( backupName, backupDir ) );
+
+        // and the old backup is in a renamed location
+        assertEquals( firstDatabaseRepresentation, getBackupDbRepresentation( backupName + ".err.0", backupDir ) );
+
+        // and the data isn't equal (sanity check)
+        assertNotEquals( firstDatabaseRepresentation, secondDatabaseRepresentation );
+    }
+
     static PrintStream wrapWithNormalOutput( PrintStream normalOutput, PrintStream nullAbleOutput )
     {
         if ( nullAbleOutput == null )
@@ -342,6 +438,19 @@ public class OnlineBackupCommandCcIT
         return cluster;
     }
 
+    private Cluster startCluster2( String recordFormat ) throws ExecutionException, InterruptedException
+    {
+        Map<String,String> sharedParams = new HashMap<>(  );
+        sharedParams.put( GraphDatabaseSettings.record_format.name(), recordFormat );
+        Cluster cluster =
+                new Cluster( testDirectory.directory( "cluster-b_" + recordFormat ), 3, 0, new SharedDiscoveryServiceFactory(), sharedParams, emptyMap(),
+                sharedParams, emptyMap(),
+                recordFormat, IpFamily.IPV4, false );
+        cluster.start();
+        createSomeData( cluster );
+        return cluster;
+    }
+
     public static DbRepresentation createSomeData( Cluster cluster )
     {
         try
@@ -377,12 +486,17 @@ public class OnlineBackupCommandCcIT
         return TestHelpers.runBackupToolFromOtherJvmToGetExitCode( testDirectory.absolutePath(), args );
     }
 
+    private int runBackupToolFromSameJvm( String... args ) throws Exception
+    {
+        return runBackupToolFromSameJvmToGetExitCode( testDirectory.absolutePath(), testDirectory.absolutePath().getName(), args );
+    }
+
     /**
      * This unused method is used for debugging, so don't remove
      */
-    private int runBackupToolFromSameJvmToGetExitCode( String... args ) throws Exception
+    public static int runBackupToolFromSameJvmToGetExitCode( File backupDir, String backupName, String... args ) throws Exception
     {
-        return new OnlineBackupCommandBuilder().withRawArgs( args ).backup( testDirectory.absolutePath(), testDirectory.absolutePath().getName() )
+        return new OnlineBackupCommandBuilder().withRawArgs( args ).backup( backupDir, backupName )
                ? 0 : 1;
     }
 }

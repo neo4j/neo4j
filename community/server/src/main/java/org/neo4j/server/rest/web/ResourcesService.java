@@ -56,7 +56,7 @@ public class ResourcesService
 
     @GET
     @Path( "htmlbrowse.js" )
-    public String getHtmlBrowseJavascript()
+    public String getHtmlBrowseJavaScript()
     {
         return JAVASCRIPT_BODY;
     }

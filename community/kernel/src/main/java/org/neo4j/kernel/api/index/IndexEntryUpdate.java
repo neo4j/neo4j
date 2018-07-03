@@ -54,7 +54,7 @@ public class IndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier>
     {
         // we do not support partial index entries
         assert indexKey.schema().getPropertyIds().length == values.length :
-                format( "IndexEntryUpdate values must be of same length as index compositness. " +
+                format( "IndexEntryUpdate values must be of same length as index compositeness. " +
                         "Index on %s, but got values %s", indexKey.schema().toString(), Arrays.toString( values ) );
         assert before == null || before.length == values.length;
 

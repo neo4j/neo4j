@@ -22,25 +22,20 @@
  */
 package org.neo4j.causalclustering.core.state.machines.token;
 
+import java.util.function.Supplier;
+
 import org.neo4j.causalclustering.core.replication.Replicator;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.impl.core.LabelTokenHolder;
+import org.neo4j.kernel.impl.core.TokenRegistry;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.storageengine.api.Token;
+import org.neo4j.storageengine.api.StorageEngine;
 
-public class ReplicatedLabelTokenHolder extends ReplicatedTokenHolder<Token> implements LabelTokenHolder
+public class ReplicatedLabelTokenHolder extends ReplicatedTokenHolder
 {
-    public ReplicatedLabelTokenHolder( TokenRegistry<Token> registry, Replicator replicator,
-            IdGeneratorFactory idGeneratorFactory, Dependencies dependencies )
+    public ReplicatedLabelTokenHolder( TokenRegistry registry, Replicator replicator,
+            IdGeneratorFactory idGeneratorFactory, Supplier<StorageEngine> storageEngineSupplier )
     {
-        super( registry, replicator, idGeneratorFactory, IdType.LABEL_TOKEN, dependencies, TokenType.LABEL );
-    }
-
-    @Override
-    protected void createToken( TransactionState txState, String tokenName, int tokenId )
-    {
-        txState.labelDoCreateForName( tokenName, tokenId );
+        super( registry, replicator, idGeneratorFactory, IdType.LABEL_TOKEN, storageEngineSupplier, TokenType.LABEL, TransactionState::labelDoCreateForName );
     }
 }

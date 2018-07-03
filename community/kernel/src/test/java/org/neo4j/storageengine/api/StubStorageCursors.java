@@ -30,12 +30,13 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -43,8 +44,10 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
+import static java.lang.Math.toIntExact;
 import static java.util.Collections.emptyIterator;
 import static org.apache.commons.lang3.ArrayUtils.contains;
+import static org.neo4j.kernel.impl.core.TokenHolder.TYPE_PROPERTY_KEY;
 
 /**
  * Implementation of {@link StorageReader} with focus on making testing the storage read cursors easy without resorting to mocking.
@@ -55,6 +58,7 @@ public class StubStorageCursors implements StorageReader
 
     private final AtomicLong nextPropertyId = new AtomicLong();
     private final AtomicLong nextTokenId = new AtomicLong();
+    private final TokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder( name -> toIntExact( nextTokenId.getAndIncrement() ), TYPE_PROPERTY_KEY );
 
     private final Map<Long,NodeData> nodeData = new HashMap<>();
     private final Map<String,Long> labelByName = new HashMap<>();
@@ -99,7 +103,7 @@ public class StubStorageCursors implements StorageReader
         }
         long propertyId = nextPropertyId.incrementAndGet();
         propertyData.put( propertyId, new PropertyData( properties ) );
-        properties.keySet().forEach( this::propertyKeyGetOrCreateForName );
+        properties.keySet().forEach( propertyKeyTokenHolder::getOrCreateId );
         return propertyId;
     }
 
@@ -116,6 +120,11 @@ public class StubStorageCursors implements StorageReader
     @Override
     public void close()
     {
+    }
+
+    public TokenHolder propertyKeyTokenHolder()
+    {
+        return propertyKeyTokenHolder;
     }
 
     @Override
@@ -144,6 +153,24 @@ public class StubStorageCursors implements StorageReader
 
     @Override
     public long reserveRelationship()
+    {
+        throw new UnsupportedOperationException( "Not implemented yet" );
+    }
+
+    @Override
+    public int reserveLabelTokenId()
+    {
+        throw new UnsupportedOperationException( "Not implemented yet" );
+    }
+
+    @Override
+    public int reservePropertyKeyTokenId()
+    {
+        throw new UnsupportedOperationException( "Not implemented yet" );
+    }
+
+    @Override
+    public int reserveRelationshipTypeTokenId()
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
@@ -242,137 +269,6 @@ public class StubStorageCursors implements StorageReader
     public String indexGetFailure( SchemaDescriptor descriptor )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
-    public int labelGetForName( String labelName )
-    {
-        return tokenGetForName( labelByName, labelName );
-    }
-
-    private int tokenGetForName( Map<String,Long> tokensByName, String name )
-    {
-        Long id = tokensByName.get( name );
-        if ( id == null )
-        {
-            throw new IllegalStateException( name );
-        }
-        return id.intValue();
-    }
-
-    @Override
-    public String labelGetName( long labelId )
-    {
-        return tokenGetName( labelById, labelId );
-    }
-
-    @Override
-    public void propertyKeyGetOrCreateForNames( String[] propertyKeys, int[] ids )
-    {
-        tokenGetOrCreateForNames( propertyKeyByName, propertyKeyById, propertyKeys, ids );
-    }
-
-    private void tokenGetOrCreateForNames( Map<String,Long> byName, Map<Long,String> byId, String[] keys, int[] ids )
-    {
-        int i = 0;
-        for ( String key : keys )
-        {
-            ids[i] = tokenGetOrCreateForName( byName, byId, key );
-        }
-    }
-
-    private String tokenGetName( Map<Long,String> tokensById, long tokenId )
-    {
-        String name = tokensById.get( tokenId );
-        if ( name == null )
-        {
-            throw new IllegalStateException( String.valueOf( tokenId ) );
-        }
-        return name;
-    }
-
-    @Override
-    public int propertyKeyGetForName( String propertyKeyName )
-    {
-        return tokenGetForName( propertyKeyByName, propertyKeyName );
-    }
-
-    @Override
-    public int propertyKeyGetOrCreateForName( String propertyKeyName )
-    {
-        return tokenGetOrCreateForName( propertyKeyByName, propertyKeyById, propertyKeyName );
-    }
-
-    @Override
-    public String propertyKeyGetName( int propertyKeyId )
-    {
-        return tokenGetName( propertyKeyById, propertyKeyId );
-    }
-
-    @Override
-    public Iterator<Token> propertyKeyGetAllTokens()
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
-    public Iterator<Token> labelsGetAllTokens()
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
-    public Iterator<Token> relationshipTypeGetAllTokens()
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
-    public int relationshipTypeGetForName( String relationshipTypeName )
-    {
-        return tokenGetForName( relationshipTypeByName, relationshipTypeName );
-    }
-
-    @Override
-    public String relationshipTypeGetName( int relationshipTypeId )
-    {
-        return tokenGetName( relationshipTypeById, relationshipTypeId );
-    }
-
-    @Override
-    public int labelGetOrCreateForName( String labelName )
-    {
-        return tokenGetOrCreateForName( labelByName, labelById, labelName );
-    }
-
-    @Override
-    public void labelGetOrCreateForNames( String[] labelNames, int[] labelIds ) throws TooManyLabelsException
-    {
-        tokenGetOrCreateForNames( labelByName, labelById, labelNames, labelIds );
-    }
-
-    private int tokenGetOrCreateForName( Map<String,Long> tokensByName, Map<Long,String> tokensById, String name )
-    {
-        Long id = tokensByName.get( name );
-        if ( id == null )
-        {
-            id = nextTokenId.incrementAndGet();
-            tokensByName.put( name, id );
-            tokensById.put( id, name );
-        }
-        return id.intValue();
-    }
-
-    @Override
-    public int relationshipTypeGetOrCreateForName( String relationshipTypeName )
-    {
-        return tokenGetOrCreateForName( relationshipTypeByName, relationshipTypeById, relationshipTypeName );
-    }
-
-    @Override
-    public void relationshipTypeGetOrCreateForNames( String[] relationshipTypeNames, int[] ids )
-    {
-        tokenGetOrCreateForNames( relationshipTypeByName, relationshipTypeById, relationshipTypeNames, ids );
     }
 
     @Override
@@ -780,7 +676,7 @@ public class StubStorageCursors implements StorageReader
         @Override
         public int propertyKey()
         {
-            return propertyKeyGetForName( current.getKey() );
+            return propertyKeyTokenHolder.getOrCreateId( current.getKey() );
         }
 
         @Override

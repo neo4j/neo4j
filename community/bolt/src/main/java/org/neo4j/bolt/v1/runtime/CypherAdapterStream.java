@@ -23,7 +23,7 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
@@ -40,7 +40,7 @@ import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
-class CypherAdapterStream extends BoltResult
+class CypherAdapterStream implements BoltResult
 {
     private final QueryResult delegate;
     private final String[] fieldNames;

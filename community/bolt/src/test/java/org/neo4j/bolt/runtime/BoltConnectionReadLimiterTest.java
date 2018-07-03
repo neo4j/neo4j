@@ -26,9 +26,11 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
+import org.neo4j.bolt.v1.messaging.Init;
 import org.neo4j.bolt.v1.runtime.Job;
 import org.neo4j.logging.Log;
 
+import static java.util.Collections.emptyMap;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -43,10 +45,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 
 public class BoltConnectionReadLimiterTest
 {
-    private static final Job job = s -> s.run( "INIT", null, null );
+    private static final Job job = machine -> machine.process( new Init( "INIT", emptyMap() ), nullResponseHandler() );
     private BoltConnection connection;
     private EmbeddedChannel channel;
     private Log log;

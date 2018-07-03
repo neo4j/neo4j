@@ -363,8 +363,8 @@ public abstract class RaftLogContractTest
     public void pruneShouldNotChangePrevIndexAfterSkipping() throws Exception
     {
         /**
-         * Given the situation where a skip happens followed by a prune, you may have the prune operation incorretly
-         * set the prevIndex to be the value of the last segment in the log, disreguarding the skip command.
+         * Given the situation where a skip happens followed by a prune, you may have the prune operation incorrectly
+         * set the prevIndex to be the value of the last segment in the log, disregarding the skip command.
          * This test ensures that in this scenario, we will respect the current prevIndex value if it has been set to
          * something in the future (i.e. skip) rather than modify it to be the value of the last segment.
          *

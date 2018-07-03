@@ -25,9 +25,6 @@ import java.util.UUID;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.v1.packstream.PackOutput;
-import org.neo4j.bolt.v1.runtime.BoltConnectionAuthFatality;
-import org.neo4j.bolt.v1.runtime.BoltProtocolBreachFatality;
-import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.Job;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.time.Clocks;
@@ -69,7 +66,7 @@ public class MetricsReportingBoltConnectionTest
     {
         verifyConnectionClosed( machine ->
         {
-            throw new BoltConnectionAuthFatality( "auth failure" );
+            throw new BoltConnectionAuthFatality( "auth failure", new RuntimeException() );
         } );
     }
 
@@ -149,7 +146,7 @@ public class MetricsReportingBoltConnectionTest
         connection.start();
         connection.enqueue( machine ->
         {
-            throw new BoltConnectionAuthFatality( "some error" );
+            throw new BoltConnectionAuthFatality( "some error", new RuntimeException() );
         } );
         connection.processNextBatch();
 

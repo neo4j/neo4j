@@ -23,7 +23,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.v3_5.logical.plans.NodeIndexSeek
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
@@ -133,4 +133,91 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with Cyp
       planComparisonStrategy = ComparePlansWithAssertion( _ should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f"), expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
     result.columnAs[Node]("f").toSet should equal(Set(nodes(122), nodes(123)))
   }
+
+  test("should be able to plan index use for inequality") {
+    val aNodes = (0 to 125).map(i => createLabeledNode(Map("prop" -> i), "Foo"))
+    val bNode = createLabeledNode(Map("prop2" -> 122), "Bar")
+    graph.createIndex("Foo", "prop")
+    val query =
+      """ MATCH (a:Foo), (b:Bar) WHERE a.prop > b.prop2
+        | RETURN a
+      """.stripMargin
+
+    val result = executeWith(Configs.All - Configs.Compiled, query,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("NodeIndexSeekByRange", "> b.prop2"),
+        expectPlansToFail = Configs.OldAndRule))
+
+    result.columnAs[Node]("a").toList should equal(List(aNodes(123), aNodes(124), aNodes(125)))
+  }
+
+  test("should be able to plan index use for starts with") {
+    val aNodes = (0 to 125).map(i => createLabeledNode(Map("prop" -> s"${i}string"), "Foo"))
+    val bNode = createLabeledNode(Map("prop2" -> "12"), "Bar")
+    graph.createIndex("Foo", "prop")
+    val query =
+      """ MATCH (a:Foo), (b:Bar) WHERE a.prop STARTS WITH b.prop2
+        | RETURN a
+      """.stripMargin
+
+    val result = executeWith(Configs.All - Configs.Compiled, query,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("NodeIndexSeekByRange", "STARTS WITH b.prop2"),
+        expectPlansToFail = Configs.OldAndRule))
+
+    result.columnAs[Node]("a").toSet should equal(Set(aNodes(12), aNodes(120), aNodes(121), aNodes(122), aNodes(123), aNodes(124), aNodes(125)))
+  }
+
+  // TODO: Not sure why this is not solved using indexes. Come back to this once we have good index support for CONTAINS and ENDS WITH
+  ignore("should be able to plan index use for CONTAINS") {
+    val aNodes = (0 to 1250).map(i => createLabeledNode(Map("prop" -> s"prefix${i}suffix"), "Foo"))
+    val bNode = createLabeledNode(Map("prop2" -> "12"), "Bar")
+    graph.createIndex("Foo", "prop")
+    val query =
+      """ MATCH (a:Foo), (b:Bar) WHERE a.prop CONTAINS b.prop2
+        | RETURN a
+      """.stripMargin
+
+    val result = executeWith(Configs.All - Configs.Compiled, query,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("NodeIndexSeekByRange", "CONTAINS b.prop2"),
+        expectPlansToFail = Configs.OldAndRule))
+
+    result.columnAs[Node]("a").toSet should equal(Set(aNodes(12), aNodes(120), aNodes(121), aNodes(122), aNodes(123), aNodes(124), aNodes(125)))
+  }
+
+  ignore("should be able to plan index use for ENDS WITH") {
+    val aNodes = (0 to 1250).map(i => createLabeledNode(Map("prop" -> s"prefix${i}"), "Foo"))
+    val bNode = createLabeledNode(Map("prop2" -> "12"), "Bar")
+    graph.createIndex("Foo", "prop")
+    val query =
+      """ MATCH (a:Foo), (b:Bar) WHERE a.prop ENDS WITH b.prop2
+        | RETURN a
+      """.stripMargin
+
+    val result = executeWith(Configs.All - Configs.Compiled, query,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("NodeIndexSeekByRange", "ENDS WITH b.prop2"),
+        expectPlansToFail = Configs.OldAndRule))
+
+    result.columnAs[Node]("a").toSet should equal(Set(aNodes(12), aNodes(120), aNodes(121), aNodes(122), aNodes(123), aNodes(124), aNodes(125)))
+  }
+
+  test("should be able to plan index use for spatial index queries") {
+    // Given
+    graph.execute(
+      """CREATE (:Bar {location: point({ x:0, y:100 })})
+        |WITH 1 as whyOwhy
+        |UNWIND range(1,200) AS y
+        |CREATE (:Foo {location: point({ x:0, y:y })})
+      """.stripMargin)
+    graph.createIndex("Foo", "location")
+    val query =
+      """ MATCH (a:Foo), (b:Bar) WHERE distance(a.location, b.location) < 2
+        | RETURN id(a)
+      """.stripMargin
+
+    val result = executeWith(Configs.Interpreted - Configs.Version3_1 - Configs.Version2_3 - Configs.AllRulePlanners, query,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("NodeIndexSeekByRange", "distance"),
+        expectPlansToFail = Configs.OldAndRule))
+
+    result.columnAs[Node]("id(a)").toList should equal(List(99, 100, 101))
+  }
+
 }

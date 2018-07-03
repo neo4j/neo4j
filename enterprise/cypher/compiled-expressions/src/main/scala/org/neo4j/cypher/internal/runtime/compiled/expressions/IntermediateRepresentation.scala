@@ -23,7 +23,8 @@
 package org.neo4j.cypher.internal.runtime.compiled.expressions
 
 import org.neo4j.codegen.MethodReference
-import org.neo4j.values.storable.{FloatingPointValue, IntegralValue, TextValue}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.NullCheck
+import org.neo4j.values.storable._
 
 import scala.reflect.ClassTag
 
@@ -86,22 +87,6 @@ case class StringLiteral(value: TextValue) extends IntermediateRepresentation
   * @param value the constant value
   */
 case class Constant(value: Any) extends IntermediateRepresentation
-
-/**
-  * Load NO_VALUE
-  */
-case object NULL extends IntermediateRepresentation
-
-/**
-  * Load TRUE
-  */
-case object TRUE extends IntermediateRepresentation
-
-
-/**
-  * Load FALSE
-  */
-case object FALSE extends IntermediateRepresentation
 
 /**
   * Loads an array literal of the given inputs
@@ -216,6 +201,24 @@ case class Throw(error: IntermediateRepresentation) extends IntermediateRepresen
 case class BooleanAnd(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
+  * Boolean || operator
+  * {{{
+  *   lhs || rhs;
+  * }}}
+  * @param lhs the left-hand side of or
+  * @param rhs the right-hand side of or
+  */
+case class BooleanOr(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
+
+/**
+  * Loads a static field
+  * @param owner The owning class
+  * @param output The type of the static field
+  * @param name The name of the static field
+  */
+case class GetStatic(owner: Class[_], output: Class[_], name: String) extends IntermediateRepresentation
+
+/**
   * Defines a method
   *
   * @param owner  the owner of the method
@@ -227,6 +230,9 @@ case class Method(owner: Class[_], output: Class[_], name: String, params: Class
 
   def asReference: MethodReference = MethodReference.methodReference(owner, output, name, params: _*)
 }
+
+case class IntermediateExpression(ir: IntermediateRepresentation, nullable: Boolean)
+
 
 /**
   * Defines a simple dsl to facilitate constructing intermediate representation
@@ -258,11 +264,14 @@ object IntermediateRepresentation {
 
   def load(variable: String): IntermediateRepresentation = Load(variable)
 
-  def noValue: IntermediateRepresentation = NULL
+  def getStatic[OWNER, OUT](name: String)(implicit owner: ClassTag[OWNER], out: ClassTag[OUT]) =
+    GetStatic(owner.runtimeClass, out.runtimeClass, name)
 
-  def truthValue: IntermediateRepresentation = TRUE
+  def noValue: IntermediateRepresentation = getStatic[Values, Value]("NO_VALUE")
 
-  def falseValue: IntermediateRepresentation = FALSE
+  def truthValue: IntermediateRepresentation = getStatic[Values, BooleanValue]("TRUE")
+
+  def falseValue: IntermediateRepresentation =  getStatic[Values, BooleanValue]("FALSE")
 
   def constant(value: Any): IntermediateRepresentation = Constant(value)
 
@@ -294,4 +303,16 @@ object IntermediateRepresentation {
   def fail(error: IntermediateRepresentation) = Throw(error)
 
   def and(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) = BooleanAnd(lhs, rhs)
+
+  def or(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) = BooleanOr(lhs, rhs)
+
+  def noValueCheck(args: IntermediateExpression*)(onNotNull: IntermediateRepresentation): IntermediateRepresentation = {
+    val nullableExpressions: Seq[IntermediateRepresentation] = args.filter(_.nullable).map(_.ir)
+    if (nullableExpressions.isEmpty) onNotNull
+    else {
+      val test = nullableExpressions.map(e => equal(e, noValue)).reduceLeft( (acc, current) => or(acc, current))
+      ternary(test, noValue, onNotNull)
+    }
+  }
+
 }

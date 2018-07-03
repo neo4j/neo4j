@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.api.index;
 
+import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -105,14 +105,44 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
             }
 
             @Override
-            public void recoveryCompleted( IndexDescriptor schemaIndexDescriptor, String indexFile, Map<String,Object> data )
+            public void recoveryCleanupRegistered( File indexFile, IndexDescriptor indexDescriptor )
+            {   // no-op
+            }
+
+            @Override
+            public void recoveryCleanupStarted( File indexFile, IndexDescriptor indexDescriptor )
+            {   // no-op
+            }
+
+            @Override
+            public void recoveryCleanupFinished( File indexFile, IndexDescriptor indexDescriptor,
+                    long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
+            {   // no-op
+            }
+
+            @Override
+            public void recoveryCleanupClosed( File indexFile, IndexDescriptor indexDescriptor )
+            {   // no-op
+            }
+
+            @Override
+            public void recoveryCleanupFailed( File indexFile, IndexDescriptor indexDescriptor, Throwable throwable )
             {   // no-op
             }
         }
 
         void failedToOpenIndex( StoreIndexDescriptor schemaIndexDescriptor, String action, Exception cause );
 
-        void recoveryCompleted( IndexDescriptor schemaIndexDescriptor, String indexFile, Map<String,Object> data );
+        void recoveryCleanupRegistered( File indexFile, IndexDescriptor indexDescriptor );
+
+        void recoveryCleanupStarted( File indexFile, IndexDescriptor indexDescriptor );
+
+        void recoveryCleanupFinished( File indexFile, IndexDescriptor indexDescriptor,
+                long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis );
+
+        void recoveryCleanupClosed( File indexFile, IndexDescriptor indexDescriptor );
+
+        void recoveryCleanupFailed( File indexFile, IndexDescriptor indexDescriptor, Throwable throwable );
     }
 
     public static final IndexProvider EMPTY =
@@ -229,7 +259,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
     @Override
     public int compareTo( IndexProvider o )
     {
-        return this.priority - o.priority;
+        return Integer.compare( this.priority, o.priority );
     }
 
     @Override

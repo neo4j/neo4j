@@ -260,7 +260,7 @@ public class OnlineBackupCommandBuilder
     {
         return Optional.ofNullable( selectedBackupProtocol )
                 .map( SelectedBackupProtocol::getName )
-                .map( argValue -> format( "--%s=%s", OnlineBackupContextBuilder.ARG_NAME_PROTO_OVERRIDE, argValue ) )
+                .map( argValue -> format( "--%s=%s", OnlineBackupContextFactory.ARG_NAME_PROTO_OVERRIDE, argValue ) )
                 .orElse( "" );
     }
 
@@ -311,7 +311,7 @@ public class OnlineBackupCommandBuilder
         return format( "--additional-config=%s", configFile );
     }
 
-    private void writeConfigToFile( Config config, File file ) throws IOException
+    static void writeConfigToFile( Config config, File file ) throws IOException
     {
         try ( Writer fileWriter = new BufferedWriter( new FileWriter( file ) ) )
         {

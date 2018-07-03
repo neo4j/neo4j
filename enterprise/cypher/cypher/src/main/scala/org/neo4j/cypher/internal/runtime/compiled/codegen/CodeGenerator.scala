@@ -25,16 +25,13 @@ package org.neo4j.cypher.internal.runtime.compiled.codegen
 import java.time.Clock
 import java.util
 
-import org.neo4j.cypher.internal.PlanFingerprint
 import org.neo4j.cypher.internal.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.CompiledRuntimeName
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.Provider
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.executionplan.{GeneratedQuery, GeneratedQueryExecution}
-import org.opencypher.v9_0.frontend.PlannerName
-import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.planner.v3_5.spi.{InstrumentedGraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.compiled.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.runtime.compiled.codegen.ir._
 import org.neo4j.cypher.internal.runtime.compiled.codegen.spi.{CodeStructure, CodeStructureResult}
@@ -42,10 +39,12 @@ import org.neo4j.cypher.internal.runtime.compiled.{CompiledExecutionResult, Comp
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, LogicalPlan2PlanDescription}
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext, compiled}
-import org.opencypher.v9_0.util.attribution.Id
-import org.opencypher.v9_0.util.{Eagerly, TaskCloser}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, ProduceResult}
 import org.neo4j.values.virtual.MapValue
+import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.opencypher.v9_0.frontend.PlannerName
+import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.util.{Eagerly, TaskCloser}
 
 class CodeGenerator(val structure: CodeStructure[GeneratedQuery],
                     clock: Clock,
@@ -57,7 +56,7 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery],
           (InternalPlanDescription) => (Provider[InternalPlanDescription], Option[QueryExecutionTracer])
 
   def generate(plan: LogicalPlan,
-               planContext: PlanContext,
+               tokenContext: TokenContext,
                semanticTable: SemanticTable,
                plannerName: PlannerName,
                readOnly: Boolean,
@@ -70,13 +69,6 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery],
         } catch {
           case e: CantCompileQueryException => throw e
           case e: Exception => throw new CantCompileQueryException(cause = e)
-        }
-
-        val fp = planContext.statistics match {
-          case igs: InstrumentedGraphStatistics =>
-            Some(PlanFingerprint(clock.millis(), planContext.txIdProvider(), igs.snapshot.freeze))
-          case _ =>
-            None
         }
 
         val description = new Provider[InternalPlanDescription] {
@@ -101,7 +93,7 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery],
           }
         }
 
-        compiled.CompiledPlan(updating = false, None, fp, plannerName, description, res.columns, builder, plan.indexUsage)
+        compiled.CompiledPlan(updating = false, description, res.columns, builder)
 
       case _ => throw new CantCompileQueryException("Can only compile plans with ProduceResult on top")
     }

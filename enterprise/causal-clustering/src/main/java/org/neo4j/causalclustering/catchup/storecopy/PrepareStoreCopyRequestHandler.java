@@ -36,26 +36,20 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 
 import static org.neo4j.causalclustering.catchup.storecopy.DataSourceChecks.hasSameStoreId;
 
 public class PrepareStoreCopyRequestHandler extends SimpleChannelInboundHandler<PrepareStoreCopyRequest>
 {
     private final CatchupServerProtocol protocol;
-    private final Supplier<CheckPointer> checkPointerSupplier;
-    private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
     private final PrepareStoreCopyFilesProvider prepareStoreCopyFilesProvider;
     private final Supplier<NeoStoreDataSource> dataSourceSupplier;
     private final StoreFileStreamingProtocol streamingProtocol = new StoreFileStreamingProtocol();
 
-    public PrepareStoreCopyRequestHandler( CatchupServerProtocol catchupServerProtocol, Supplier<CheckPointer> checkPointerSupplier,
-            StoreCopyCheckPointMutex storeCopyCheckPointMutex, Supplier<NeoStoreDataSource> dataSourceSupplier,
+    public PrepareStoreCopyRequestHandler( CatchupServerProtocol catchupServerProtocol, Supplier<NeoStoreDataSource> dataSourceSupplier,
             PrepareStoreCopyFilesProvider prepareStoreCopyFilesProvider )
     {
         this.protocol = catchupServerProtocol;
-        this.checkPointerSupplier = checkPointerSupplier;
-        this.storeCopyCheckPointMutex = storeCopyCheckPointMutex;
         this.prepareStoreCopyFilesProvider = prepareStoreCopyFilesProvider;
         this.dataSourceSupplier = dataSourceSupplier;
     }
@@ -75,7 +69,7 @@ public class PrepareStoreCopyRequestHandler extends SimpleChannelInboundHandler<
             }
             else
             {
-                CheckPointer checkPointer = checkPointerSupplier.get();
+                CheckPointer checkPointer = neoStoreDataSource.getDependencyResolver().resolveDependency( CheckPointer.class );
                 closeablesListener.add( tryCheckpointAndAcquireMutex( checkPointer ) );
                 PrepareStoreCopyFiles prepareStoreCopyFiles =
                         closeablesListener.add( prepareStoreCopyFilesProvider.prepareStoreCopyFiles( neoStoreDataSource ) );
@@ -106,6 +100,6 @@ public class PrepareStoreCopyRequestHandler extends SimpleChannelInboundHandler<
 
     private Resource tryCheckpointAndAcquireMutex( CheckPointer checkPointer ) throws IOException
     {
-        return storeCopyCheckPointMutex.storeCopy( () -> checkPointer.tryCheckPoint( new SimpleTriggerInfo( "Store copy" ) ) );
+        return dataSourceSupplier.get().getStoreCopyCheckPointMutex().storeCopy( () -> checkPointer.tryCheckPoint( new SimpleTriggerInfo( "Store copy" ) ) );
     }
 }

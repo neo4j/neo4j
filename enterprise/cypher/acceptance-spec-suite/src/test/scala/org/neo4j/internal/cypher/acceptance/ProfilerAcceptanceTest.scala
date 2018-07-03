@@ -22,16 +22,16 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.opencypher.v9_0.util.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows, Signature}
 import org.neo4j.cypher.internal.runtime.planDescription.{Argument, InternalPlanDescription}
 import org.neo4j.cypher.internal.runtime.{CreateTempFileTestSupport, InternalExecutionResult}
-import org.opencypher.v9_0.util.symbols._
 import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
 import org.neo4j.cypher.{ExecutionEngineFunSuite, ProfilerStatisticsNotReadyException, TxCounts}
 import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{Configs, TestConfiguration}
+import org.opencypher.v9_0.util.helpers.StringHelper.RichString
+import org.opencypher.v9_0.util.symbols._
 
 import scala.reflect.ClassTag
 
@@ -319,10 +319,15 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
       test("LIMIT should influence cardinality estimation by default value when expression contains timestamp()") {
         (0 until 100).map(i => createLabeledNode("Person"))
-
-        val wrongResultsConfig = Configs.Version3_1 + Configs.Version2_3 + Configs.AllRulePlanners
-        val result = executeWith(Configs.Interpreted, s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT timestamp()", wrongResultsConfig)
-        assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(result)("Limit")
+        //TODO this cannot be run with executeWith since it will occasionally succeed on 2.3 and we have decided not
+        //to fix this on 2.3. So if we fix the issue on 2.3 or if we no longer need to depend on 2.3 we should update test
+        //to run with `executeWith`
+        assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(
+          innerExecuteDeprecated(s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT timestamp()", Map.empty))("Limit")
+        assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(
+          innerExecuteDeprecated(s"PROFILE CYPHER runtime=slotted MATCH (p:Person) with 10 as x, p RETURN p LIMIT timestamp()", Map.empty))("Limit")
+        assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(
+          innerExecuteDeprecated(s"PROFILE CYPHER runtime=interpreted MATCH (p:Person) with 10 as x, p RETURN p LIMIT timestamp()", Map.empty))("Limit")
       }
 
       test ("should support profiling union queries") {
@@ -676,7 +681,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   private def assertEstimatedRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
-      plan => assert(getArgument[EstimatedRows](plan).value === expectedRows , s" wrong estiamted row count for plan: ${plan.name}")
+      plan => assert(getArgument[EstimatedRows](plan).value === expectedRows , s" wrong estimated row count for plan: ${plan.name}")
     }
   }
 

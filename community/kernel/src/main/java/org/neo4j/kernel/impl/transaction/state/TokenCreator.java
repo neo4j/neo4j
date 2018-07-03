@@ -25,15 +25,14 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.storageengine.api.Token;
 
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 
-public class TokenCreator<R extends TokenRecord, T extends Token>
+public class TokenCreator<R extends TokenRecord>
 {
-    private final TokenStore<R, T> store;
+    private final TokenStore<R> store;
 
-    public TokenCreator( TokenStore<R, T> store )
+    public TokenCreator( TokenStore<R> store )
     {
         this.store = store;
     }

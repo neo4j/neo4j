@@ -35,69 +35,56 @@ import org.neo4j.values.storable.NumberValue
   * This operator takes pre-sorted inputs, and merges them together, producing a stream of Morsels with the sorted data
   * If countExpression != None, this expression evaluates to a limit for TopN
   */
-class MergeSortOperator(orderBy: Seq[ColumnOrder], countExpression: Option[Expression] = None) extends Operator {
+class MergeSortOperator(orderBy: Seq[ColumnOrder],
+                        countExpression: Option[Expression] = None) extends ReduceOperator {
 
   private val comparator: Comparator[MorselExecutionContext] = orderBy
     .map(MorselSorting.createMorselComparator)
     .reduce((a: Comparator[MorselExecutionContext], b: Comparator[MorselExecutionContext]) => a.thenComparing(b))
+
+  override def init(queryContext: QueryContext, state: QueryState, inputs: Seq[MorselExecutionContext]): ContinuableOperatorTask = {
+
+    val sortedInputs = new PriorityQueue[MorselExecutionContext](inputs.length, comparator)
+    inputs.foreach { row =>
+      if (row.hasData) sortedInputs.add(row)
+    }
+
+    val limit = countExpression.map { count =>
+      val firstRow = sortedInputs.peek()
+      val queryState = new OldQueryState(queryContext, resources = null, params = state.params)
+      count(firstRow, queryState).asInstanceOf[NumberValue].longValue()
+    }
+
+    new OTask(sortedInputs, limit.getOrElse(Long.MaxValue))
+  }
 
   /*
   This operator works by keeping the input morsels ordered by their current element. For each row that will be
   produced, we remove the first morsel and consume the current row. If there is more data left, we re-insert
   the morsel, now pointing to the next row.
    */
-  override def operate(message: Message,
-                       outputRow: MorselExecutionContext,
-                       context: QueryContext,
-                       state: QueryState): Continuation = {
+  class OTask(val sortedInputs: PriorityQueue[MorselExecutionContext], val limit: Long) extends ContinuableOperatorTask {
 
-    var iterationState: Iteration = null
-    var sortedInputs: PriorityQueue[MorselExecutionContext] = null
     var totalPos = 0
 
-    message match {
-      case StartLoopWithEagerData(inputs, is) =>
-        iterationState = is
-        sortedInputs = new PriorityQueue[MorselExecutionContext](inputs.length, comparator)
-        inputs.foreach { row =>
-          if (row.hasData) sortedInputs.add(row)
+    override def operate(outputRow: MorselExecutionContext, context: QueryContext, state: QueryState): Unit = {
+
+      while(!sortedInputs.isEmpty && outputRow.hasMoreRows && totalPos < limit) {
+        val nextRow: MorselExecutionContext = sortedInputs.poll()
+        outputRow.copyFrom(nextRow)
+        totalPos += 1
+        nextRow.moveToNextRow()
+        outputRow.moveToNextRow()
+        // If there is more data in this Morsel, we'll re-insert it into the sortedInputs
+        if (nextRow.hasMoreRows) {
+          sortedInputs.add(nextRow)
         }
-      case ContinueLoopWith(ContinueWithSource((inputs: PriorityQueue[_], lastTotalPos: Int), is)) =>
-        sortedInputs = inputs.asInstanceOf[PriorityQueue[MorselExecutionContext]]
-        totalPos = lastTotalPos
-        iterationState = is
-      case _ => throw new IllegalStateException()
-
-    }
-
-    // potentially calculate the limit
-    val limit = countExpression.map { count =>
-      val firstRow = sortedInputs.peek()
-      val queryState = new OldQueryState(context, resources = null, params = state.params)
-      count(firstRow, queryState).asInstanceOf[NumberValue].longValue()
-    }
-    def limitNotReached = limit.fold(true){l:Long => totalPos < l}
-
-    while(!sortedInputs.isEmpty && outputRow.hasMoreRows && limitNotReached) {
-      val nextRow: MorselExecutionContext = sortedInputs.poll()
-      outputRow.copyFrom(nextRow)
-      totalPos += 1
-      nextRow.moveToNextRow()
-      outputRow.moveToNextRow()
-      // If there is more data in this Morsel, we'll re-insert it into the sortedInputs
-      if (nextRow.hasMoreRows) {
-        sortedInputs.add(nextRow)
       }
+
+      outputRow.finishedWriting()
     }
 
-    outputRow.finishedWriting()
-    if (!sortedInputs.isEmpty && limitNotReached) {
-      ContinueWithSource((sortedInputs, totalPos), iterationState)
-    } else
-      EndOfLoop(iterationState)
+    override def canContinue: Boolean = !sortedInputs.isEmpty && totalPos < limit
   }
-
-  override def addDependency(pipeline: Pipeline) = Eager(pipeline)
-
 }
 

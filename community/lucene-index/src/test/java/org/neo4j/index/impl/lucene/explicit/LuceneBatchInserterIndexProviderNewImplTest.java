@@ -19,37 +19,41 @@
  */
 package org.neo4j.index.impl.lucene.explicit;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.util.Map;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
-public class LuceneBatchInserterIndexProviderNewImplTest
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+class LuceneBatchInserterIndexProviderNewImplTest
 {
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private DefaultFileSystemAbstraction fileSystem;
 
     @Test
-    public void createBatchIndexFromAnyIndexStoreProvider() throws Exception
+    void createBatchIndexFromAnyIndexStoreProvider() throws Exception
     {
         createEndCloseIndexProvider( BatchInserters.inserter( getStoreDir() ) );
-        createEndCloseIndexProvider( BatchInserters.inserter( getStoreDir(), fileSystemRule.get() ) );
+        createEndCloseIndexProvider( BatchInserters.inserter( getStoreDir(), fileSystem ) );
         createEndCloseIndexProvider( BatchInserters.inserter( getStoreDir(), getConfig() ) );
         createEndCloseIndexProvider( BatchInserters.inserter( getStoreDir(), getConfig(), getExtensions() ) );
-        createEndCloseIndexProvider( BatchInserters.inserter( getStoreDir(), fileSystemRule.get(), getConfig() ) );
-        createEndCloseIndexProvider( BatchInserters.inserter( getStoreDir(), fileSystemRule.get(), getConfig(),
+        createEndCloseIndexProvider( BatchInserters.inserter( getStoreDir(), fileSystem, getConfig() ) );
+        createEndCloseIndexProvider( BatchInserters.inserter( getStoreDir(), fileSystem, getConfig(),
                 getExtensions() ) );
     }
 
@@ -62,7 +66,7 @@ public class LuceneBatchInserterIndexProviderNewImplTest
 
     private Iterable<KernelExtensionFactory<?>> getExtensions()
     {
-        return Iterables.asIterable( new InMemoryIndexProviderFactory() );
+        return Iterables.asIterable( new LuceneIndexProviderFactory() );
     }
 
     private Map<String,String> getConfig()

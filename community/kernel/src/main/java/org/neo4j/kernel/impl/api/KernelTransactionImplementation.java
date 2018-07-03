@@ -75,6 +75,7 @@ import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.ActiveLock;
@@ -93,6 +94,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.resources.CpuClock;
@@ -185,17 +187,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private final Lock terminationReleaseLock = new ReentrantLock();
 
-    public KernelTransactionImplementation( StatementOperationParts statementOperations,
-            SchemaWriteGuard schemaWriteGuard,
-            TransactionHooks hooks, ConstraintIndexCreator constraintIndexCreator, Procedures procedures,
-            TransactionHeaderInformationFactory headerInformationFactory, TransactionCommitProcess commitProcess,
-            TransactionMonitor transactionMonitor, Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier,
+    public KernelTransactionImplementation( StatementOperationParts statementOperations, SchemaWriteGuard schemaWriteGuard, TransactionHooks hooks,
+            ConstraintIndexCreator constraintIndexCreator, Procedures procedures, TransactionHeaderInformationFactory headerInformationFactory,
+            TransactionCommitProcess commitProcess, TransactionMonitor transactionMonitor, Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier,
             Pool<KernelTransactionImplementation> pool, Clock clock, AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef,
-            TransactionTracer transactionTracer, LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier,
-            StorageEngine storageEngine, AccessCapability accessCapability, AutoIndexing autoIndexing,
-            ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier,
-            CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics,
-            SchemaState schemaState, IndexingProvidersService indexProviders )
+            TransactionTracer transactionTracer, LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier, StorageEngine storageEngine,
+            AccessCapability accessCapability, AutoIndexing autoIndexing, ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier,
+            CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics, SchemaState schemaState,
+            IndexingProvidersService indexProviders, TokenHolders tokenHolders, Dependencies dataSourceDependencies )
     {
         this.schemaWriteGuard = schemaWriteGuard;
         this.hooks = hooks;
@@ -221,13 +220,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         DefaultCursors cursors = new DefaultCursors( storageReader );
         AllStoreHolder allStoreHolder =
                 new AllStoreHolder( storageReader, this, cursors, explicitIndexStore,
-                        procedures, schemaState );
+                        procedures, schemaState, dataSourceDependencies );
         this.operations =
                 new Operations(
                         allStoreHolder,
                         new IndexTxStateUpdater( storageReader, allStoreHolder, indexProviders ), storageReader,
                         this,
-                        new KernelToken( storageReader, this ),
+                        new KernelToken( storageReader, this, tokenHolders ),
                         cursors,
                         autoIndexing,
                         constraintIndexCreator,
@@ -381,7 +380,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public AuthSubject subjectOrAnonymous()
     {
-        return securityContext == null ? AuthSubject.ANONYMOUS : securityContext.subject();
+        SecurityContext context = this.securityContext;
+        return context == null ? AuthSubject.ANONYMOUS : context.subject();
     }
 
     public void setMetaData( Map<String, Object> data )

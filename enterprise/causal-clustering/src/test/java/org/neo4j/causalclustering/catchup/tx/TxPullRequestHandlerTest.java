@@ -24,12 +24,15 @@ package org.neo4j.causalclustering.catchup.tx;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
+import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Commands;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -62,11 +65,23 @@ public class TxPullRequestHandlerTest
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     private StoreId storeId = new StoreId( 1, 2, 3, 4 );
+    private NeoStoreDataSource datasource = mock( NeoStoreDataSource.class );
     private LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
     private TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
 
-    private TxPullRequestHandler txPullRequestHandler = new TxPullRequestHandler( new CatchupServerProtocol(), () -> storeId, () -> true,
-            () -> transactionIdStore, () -> logicalTransactionStore, new Monitors(), logProvider );
+    private TxPullRequestHandler txPullRequestHandler;
+
+    @Before
+    public void setUp()
+    {
+        DependencyResolver dependencyResolver = mock( DependencyResolver.class );
+        when( datasource.getDependencyResolver() ).thenReturn( dependencyResolver );
+        when( dependencyResolver.resolveDependency( LogicalTransactionStore.class ) ).thenReturn( logicalTransactionStore );
+        when( dependencyResolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( transactionIdStore );
+        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 15L );
+        txPullRequestHandler = new TxPullRequestHandler( new CatchupServerProtocol(), () -> storeId, () -> true,
+                () -> datasource, new Monitors(), logProvider );
+    }
 
     @Test
     public void shouldRespondWithCompleteStreamOfTransactions() throws Exception
@@ -125,13 +140,9 @@ public class TxPullRequestHandlerTest
         StoreId serverStoreId = new StoreId( 1, 2, 3, 4 );
         StoreId clientStoreId = new StoreId( 5, 6, 7, 8 );
 
-        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 15L );
-        LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
-
         TxPullRequestHandler txPullRequestHandler =
                 new TxPullRequestHandler( new CatchupServerProtocol(), () -> serverStoreId, () -> true,
-                        () -> transactionIdStore, () -> logicalTransactionStore, new Monitors(), logProvider );
+                        () -> datasource, new Monitors(), logProvider );
 
         // when
         txPullRequestHandler.channelRead0( context, new TxPullRequest( 1, clientStoreId ) );
@@ -152,7 +163,7 @@ public class TxPullRequestHandlerTest
 
         TxPullRequestHandler txPullRequestHandler =
                 new TxPullRequestHandler( new CatchupServerProtocol(), () -> storeId, () -> false,
-                        () -> transactionIdStore, () -> logicalTransactionStore, new Monitors(), logProvider );
+                        () -> datasource, new Monitors(), logProvider );
 
         // when
         txPullRequestHandler.channelRead0( context, new TxPullRequest( 1, storeId ) );

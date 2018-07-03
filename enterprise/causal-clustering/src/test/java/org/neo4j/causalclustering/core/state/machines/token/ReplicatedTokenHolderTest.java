@@ -26,17 +26,18 @@ import org.junit.Test;
 
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
+import org.neo4j.internal.kernel.api.NamedToken;
+import org.neo4j.kernel.impl.core.TokenRegistry;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
-import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -54,37 +55,37 @@ import static org.mockito.Mockito.when;
 
 public class ReplicatedTokenHolderTest
 {
-    private Dependencies dependencies = mock( Dependencies.class );
+    private Supplier storageEngineSupplier = mock( Supplier.class );
 
     @Test
     public void shouldStoreInitialTokens()
     {
         // given
-        TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
-        ReplicatedTokenHolder<Token> tokenHolder = new ReplicatedLabelTokenHolder( registry, null,
-                null, dependencies );
+        TokenRegistry registry = new TokenRegistry( "Label" );
+        ReplicatedTokenHolder tokenHolder = new ReplicatedLabelTokenHolder( registry, null,
+                null, storageEngineSupplier );
 
         // when
-        tokenHolder.setInitialTokens( asList( new Token( "name1", 1 ), new Token( "name2", 2 ) ) );
+        tokenHolder.setInitialTokens( asList( new NamedToken( "name1", 1 ), new NamedToken( "name2", 2 ) ) );
 
         // then
-        assertThat( tokenHolder.getAllTokens(), hasItems( new Token( "name1", 1 ), new Token( "name2", 2 ) ) );
+        assertThat( tokenHolder.getAllTokens(), hasItems( new NamedToken( "name1", 1 ), new NamedToken( "name2", 2 ) ) );
     }
 
     @Test
     public void shouldReturnExistingTokenId()
     {
         // given
-        TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
-        ReplicatedTokenHolder<Token> tokenHolder = new ReplicatedLabelTokenHolder( registry, null,
-                null, dependencies );
-        tokenHolder.setInitialTokens( asList( new Token( "name1", 1 ), new Token( "name2", 2 ) ) );
+        TokenRegistry registry = new TokenRegistry( "Label" );
+        ReplicatedTokenHolder tokenHolder = new ReplicatedLabelTokenHolder( registry, null,
+                null, storageEngineSupplier );
+        tokenHolder.setInitialTokens( asList( new NamedToken( "name1", 1 ), new NamedToken( "name2", 2 ) ) );
 
         // when
         Integer tokenId = tokenHolder.getOrCreateId( "name1" );
 
         // then
-        assertThat( tokenId, equalTo( 1 ));
+        assertThat( tokenId, equalTo( 1 ) );
     }
 
     @Test
@@ -92,7 +93,7 @@ public class ReplicatedTokenHolderTest
     {
         // given
         StorageEngine storageEngine = mockedStorageEngine();
-        when( dependencies.resolveDependency( StorageEngine.class ) ).thenReturn( storageEngine );
+        when( storageEngineSupplier.get() ).thenReturn( storageEngine );
 
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
         IdGenerator idGenerator = mock( IdGenerator.class );
@@ -100,22 +101,20 @@ public class ReplicatedTokenHolderTest
 
         when( idGeneratorFactory.get( any( IdType.class ) ) ).thenReturn( idGenerator );
 
-        TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
+        TokenRegistry registry = new TokenRegistry( "Label" );
         int generatedTokenId = 1;
-        ReplicatedTokenHolder<Token> tokenHolder = new ReplicatedLabelTokenHolder( registry,
-                ( content, trackResult ) ->
-                {
-                    CompletableFuture<Object> completeFuture = new CompletableFuture<>();
-                    completeFuture.complete( generatedTokenId );
-                    return completeFuture;
-                },
-                idGeneratorFactory, dependencies );
+        ReplicatedTokenHolder tokenHolder = new ReplicatedLabelTokenHolder( registry, ( content, trackResult ) ->
+        {
+            CompletableFuture<Object> completeFuture = new CompletableFuture<>();
+            completeFuture.complete( generatedTokenId );
+            return completeFuture;
+        }, idGeneratorFactory, storageEngineSupplier );
 
         // when
         Integer tokenId = tokenHolder.getOrCreateId( "name1" );
 
         // then
-        assertThat( tokenId, equalTo( generatedTokenId ));
+        assertThat( tokenId, equalTo( generatedTokenId ) );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -138,12 +137,11 @@ public class ReplicatedTokenHolderTest
                 }
             } );
             return null;
-        } ).when( storageEngine ).createCommands( anyCollection(), any( ReadableTransactionState.class ),
-                any( StorageReader.class ), any( ResourceLocker.class ), anyLong(), any( TxStateVisitor.Decorator.class ) );
+        } ).when( storageEngine ).createCommands( anyCollection(), any( ReadableTransactionState.class ), any( StorageReader.class ),
+                any( ResourceLocker.class ), anyLong(), any( TxStateVisitor.Decorator.class ) );
 
         StorageReader readLayer = mock( StorageReader.class );
         when( storageEngine.newReader() ).thenReturn( readLayer );
         return storageEngine;
     }
-
 }

@@ -322,7 +322,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case _: SetLabels |
            _: SetNodeProperty |
            _: SetNodePropertiesFromMap |
-           _: SetRelationshipPropery |
+           _: SetRelationshipProperty |
            _: SetRelationshipPropertiesFromMap |
            _: SetProperty |
            _: RemoveLabels =>
@@ -434,7 +434,13 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
             copyRefsFromRHS += ((offset, slots.getReferenceOffsetFor(key)))
           case _ => // do nothing, already added by lhs
         }
-        NodeHashJoinSlottedPipe(leftNodes, rightNodes, lhs, rhs, slots, copyLongsFromRHS.result().toArray, copyRefsFromRHS.result().toArray)(id)
+
+        val copyFromLhs = copyLongsFromRHS.result().toArray
+        val copyFromRhs = copyRefsFromRHS.result().toArray
+        if (leftNodes.length == 1)
+          NodeHashJoinSlottedPrimitivePipe(leftNodes(0), rightNodes(0), lhs, rhs, slots, copyFromLhs, copyFromRhs)(id)
+        else
+          NodeHashJoinSlottedPipe(leftNodes, rightNodes, lhs, rhs, slots, copyFromLhs, copyFromRhs)(id)
 
       case ValueHashJoin(lhsPlan, _, Equals(lhsAstExp, rhsAstExp)) =>
         val argumentSize = physicalPlan.argumentSizes(plan.id)

@@ -22,27 +22,29 @@
  */
 package org.neo4j.server.enterprise;
 
+import org.eclipse.jetty.util.thread.ThreadPool;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
-
-import org.eclipse.jetty.util.thread.ThreadPool;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
+import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
+import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.enterprise.EnterpriseGraphDatabase;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings.Mode;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.metrics.source.server.ServerThreadView;
@@ -53,15 +55,19 @@ import org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
 import org.neo4j.server.enterprise.modules.EnterpriseAuthorizationModule;
 import org.neo4j.server.enterprise.modules.JMXManagementModule;
 import org.neo4j.server.modules.AuthorizationModule;
+import org.neo4j.server.modules.DBMSModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.rest.DatabaseRoleInfoServerModule;
+import org.neo4j.server.rest.EnterpriseDiscoverableURIs;
 import org.neo4j.server.rest.MasterInfoService;
+import org.neo4j.server.rest.discovery.DiscoverableURIs;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.server.web.WebServer;
 
 import static org.neo4j.server.configuration.ServerSettings.jmx_module_enabled;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
+import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communityDiscoverableURIs;
 
 public class OpenEnterpriseNeoServer extends CommunityNeoServer
 {
@@ -161,6 +167,15 @@ public class OpenEnterpriseNeoServer extends CommunityNeoServer
     {
         return new EnterpriseAuthorizationModule( webServer, authManagerSupplier, logProvider, getConfig(),
                 getUriWhitelist() );
+    }
+
+    @Override
+    protected DBMSModule createDBMSModule()
+    {
+        // ConnectorPortRegister isn't available until runtime, so defer loading until then
+        Supplier<DiscoverableURIs> discoverableURIs  = () -> EnterpriseDiscoverableURIs.enterpriseDiscoverableURIs(
+                        getConfig(), getDependencyResolver().resolveDependency( ConnectorPortRegister.class ) );
+        return new DBMSModule( webServer, getConfig(), discoverableURIs );
     }
 
     @SuppressWarnings( "unchecked" )

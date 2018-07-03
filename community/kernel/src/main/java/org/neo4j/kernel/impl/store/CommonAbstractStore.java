@@ -24,7 +24,9 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -415,6 +417,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     /**
      * DANGER: make sure to always close this cursor.
      */
+    @Override
     public PageCursor openPageCursorForReading( long id )
     {
         try
@@ -1044,7 +1047,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         }
     }
 
-    void readIntoRecord( long id, RECORD record, RecordLoad mode, PageCursor cursor ) throws IOException
+    private void readIntoRecord( long id, RECORD record, RecordLoad mode, PageCursor cursor ) throws IOException
     {
         // Mark the record with this id regardless of whether or not we load the contents of it.
         // This is done in this method since there are multiple call sites and they all want the id
@@ -1159,41 +1162,51 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     @Override
     public <EXCEPTION extends Exception> void scanAllRecords( Visitor<RECORD,EXCEPTION> visitor ) throws EXCEPTION
     {
-        try ( RecordCursor<RECORD> cursor = newRecordCursor( newRecord() ) )
+        try ( PageCursor cursor = openPageCursorForReading( 0 ) )
         {
+            RECORD record = newRecord();
             long highId = getHighId();
-            cursor.acquire( getNumberOfReservedLowIds(), CHECK );
             for ( long id = getNumberOfReservedLowIds(); id < highId; id++ )
             {
-                if ( cursor.next( id ) )
+                getRecordByCursor( id, record, CHECK, cursor );
+                if ( record.inUse() )
                 {
-                    visitor.visit( cursor.get() );
+                    visitor.visit( record );
                 }
             }
         }
     }
 
     @Override
-    public Collection<RECORD> getRecords( long firstId, RecordLoad mode )
+    public List<RECORD> getRecords( long firstId, RecordLoad mode )
     {
-        try ( RecordCursor<RECORD> cursor = newRecordCursor( newRecord() ) )
+        if ( Record.NULL_REFERENCE.is( firstId ) )
         {
-            cursor.acquire( firstId, mode );
-            return cursor.getAll();
+            return Collections.emptyList();
         }
-    }
 
-    @Override
-    public RecordCursor<RECORD> newRecordCursor( final RECORD record )
-    {
-        return new StoreRecordCursor<>( record, this );
+        List<RECORD> records = new ArrayList<>();
+        long id = firstId;
+        try ( PageCursor cursor = openPageCursorForReading( firstId ) )
+        {
+            RECORD record;
+            do
+            {
+                record = newRecord();
+                getRecordByCursor( id, record, mode, cursor );
+                // Even unused records gets added and returned
+                records.add( record );
+                id = getNextRecordReference( record );
+            }
+            while ( !Record.NULL_REFERENCE.is( id ) );
+        }
+        return records;
     }
 
     private void verifyAfterNotRead( RECORD record, RecordLoad mode )
     {
         record.clear();
         mode.verify( record );
-
     }
 
     final void checkForDecodingErrors( PageCursor cursor, long recordId, RecordLoad mode )

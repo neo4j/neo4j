@@ -79,7 +79,7 @@ public class Validators
         }
         catch ( IOException e )
         {
-            throw new IllegalArgumentException( "Directoy '" + value + "' not writable: " + e.getMessage() );
+            throw new IllegalArgumentException( "Directory '" + value + "' not writable: " + e.getMessage() );
         }
         finally
         {

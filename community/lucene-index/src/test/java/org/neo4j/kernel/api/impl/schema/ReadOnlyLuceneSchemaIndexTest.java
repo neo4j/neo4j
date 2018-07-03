@@ -19,86 +19,81 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.partition.ReadOnlyIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ReadOnlyLuceneSchemaIndexTest
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+class ReadOnlyLuceneSchemaIndexTest
 {
-    private final TestDirectory testDirectory = TestDirectory.testDirectory();
-    private final ExpectedException expectedException = ExpectedException.none();
-    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( testDirectory )
-            .around( expectedException ).around( fileSystemRule );
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private DefaultFileSystemAbstraction fileSystem;
 
     private ReadOnlyDatabaseSchemaIndex luceneSchemaIndex;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
-        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( DirectoryFactory.PERSISTENT,
-                fileSystemRule.get(), testDirectory.directory() );
+        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( DirectoryFactory.PERSISTENT, fileSystem, testDirectory.directory() );
         Config config = Config.defaults();
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
-        luceneSchemaIndex = new ReadOnlyDatabaseSchemaIndex( indexStorage, TestIndexDescriptorFactory.forLabel( 0, 0 ),
-                                                             samplingConfig, new ReadOnlyIndexPartitionFactory() );
+        luceneSchemaIndex = new ReadOnlyDatabaseSchemaIndex( indexStorage, TestIndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig,
+                new ReadOnlyIndexPartitionFactory() );
     }
 
-    @After
-    public void tearDown() throws IOException
+    @AfterEach
+    void tearDown() throws IOException
     {
         luceneSchemaIndex.close();
     }
 
     @Test
-    public void indexDeletionIndReadOnlyModeIsNotSupported()
+    void indexDeletionIndReadOnlyModeIsNotSupported()
     {
-        expectedException.expect( UnsupportedOperationException.class );
-        luceneSchemaIndex.drop();
+        assertThrows( UnsupportedOperationException.class, () -> luceneSchemaIndex.drop() );
     }
 
     @Test
-    public void indexCreationInReadOnlyModeIsNotSupported()
+    void indexCreationInReadOnlyModeIsNotSupported()
     {
-        expectedException.expect( UnsupportedOperationException.class );
-        luceneSchemaIndex.create();
+        assertThrows( UnsupportedOperationException.class, () -> luceneSchemaIndex.create() );
     }
 
     @Test
-    public void readOnlyIndexMarkingIsNotSupported()
+    void readOnlyIndexMarkingIsNotSupported()
     {
-        expectedException.expect( UnsupportedOperationException.class );
-        luceneSchemaIndex.markAsOnline();
+        assertThrows( UnsupportedOperationException.class, () -> luceneSchemaIndex.markAsOnline() );
     }
 
     @Test
-    public void readOnlyIndexMode()
+    void readOnlyIndexMode()
     {
         assertTrue( luceneSchemaIndex.isReadOnly() );
     }
 
     @Test
-    public void writerIsNotAccessibleInReadOnlyMode()
+    void writerIsNotAccessibleInReadOnlyMode()
     {
-        expectedException.expect( UnsupportedOperationException.class );
-        luceneSchemaIndex.getIndexWriter();
+        assertThrows( UnsupportedOperationException.class, () -> luceneSchemaIndex.getIndexWriter() );
     }
 }

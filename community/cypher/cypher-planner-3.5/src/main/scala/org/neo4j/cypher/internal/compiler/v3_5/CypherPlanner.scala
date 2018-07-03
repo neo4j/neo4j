@@ -34,14 +34,14 @@ import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
 import org.opencypher.v9_0.rewriting.RewriterStepSequencer
 
-case class CypherPlanner[Context <: PlannerContext](astRewriter: ASTRewriter,
-                                                    monitors: Monitors,
+case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                                                     sequencer: String => RewriterStepSequencer,
                                                     metricsFactory: MetricsFactory,
                                                     config: CypherPlannerConfiguration,
                                                     updateStrategy: UpdateStrategy,
                                                     clock: Clock,
                                                     contextCreation: ContextCreator[Context]) {
+
   def normalizeQuery(state: BaseState, context: Context): BaseState = prepareForCaching.transform(state, context)
 
   def planPreparedQuery(state: BaseState, context: Context): LogicalPlanState = {

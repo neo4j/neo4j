@@ -100,15 +100,13 @@ object CodeGeneration {
                              "stringValue", classOf[String]), constant(value.stringValue()))
     //loads a given constant
     case Constant(value) => constant(value)
-    //Values.NO_VALUE
-    case NULL => getStatic(staticField(VALUES, VALUE, "NO_VALUE"))
-    //Values.TRUE
-    case TRUE => getStatic(staticField(VALUES, classOf[BooleanValue], "TRUE"))
-    //Values.FALSE
-    case FALSE => getStatic(staticField(VALUES, classOf[BooleanValue], "FALSE"))
+
     //new ArrayValue[]{p1, p2,...}
     case ArrayLiteral(values) => newArray(typeReference(classOf[AnyValue]),
                                           values.map(v => compileExpression(v, block)): _*)
+
+    //Foo.BAR
+    case GetStatic(owner, typ, name) => getStatic(staticField(owner, typ, name))
 
     //condition ? onTrue : onFalse
     case Ternary(condition, onTrue, onFalse) =>
@@ -156,5 +154,10 @@ object CodeGeneration {
     //lhs && rhs
     case BooleanAnd(lhs, rhs) =>
       Expression.and(compileExpression(lhs, block), compileExpression(rhs, block))
+
+    //lhs && rhs
+    case BooleanOr(lhs, rhs) =>
+      Expression.or(compileExpression(lhs, block), compileExpression(rhs, block))
+
   }
 }

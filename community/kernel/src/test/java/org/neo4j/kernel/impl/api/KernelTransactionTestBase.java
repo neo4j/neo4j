@@ -58,6 +58,7 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
@@ -82,6 +83,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
+import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 
 public class KernelTransactionTestBase
 {
@@ -167,7 +169,7 @@ public class KernelTransactionTestBase
                 new CanWrite(), AutoIndexing.UNSUPPORTED,
                 mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
                 new StandardConstraintSemantics(), mock( SchemaState.class),
-                mock( IndexingService.class) );
+                mock( IndexingService.class ), mockedTokenHolders(), new Dependencies() );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

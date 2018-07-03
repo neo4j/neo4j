@@ -32,8 +32,7 @@ import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.{Log, LogProvider}
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
-import org.opencypher.v9_0.util
-import org.opencypher.v9_0.util.InputPosition
+import org.opencypher.v9_0.util.{InputPosition, SyntaxException => InternalSyntaxException}
 
 object MasterCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
@@ -93,13 +92,13 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
   def compile(preParsedQuery: PreParsedQuery,
               tracer: CompilationPhaseTracer,
               transactionalContext: TransactionalContext
-             ): CacheableExecutableQuery = {
+             ): ExecutableQuery = {
 
     var notifications = Set.newBuilder[org.neo4j.graphdb.Notification]
     val supportedRuntimes3_1 = Seq(CypherRuntimeOption.interpreted, CypherRuntimeOption.default)
     val inputPosition = preParsedQuery.offset
 
-    def assertSupportedRuntime(ex: util.SyntaxException, runtime: CypherRuntimeOption): Unit = {
+    def assertSupportedRuntime(ex: InternalSyntaxException, runtime: CypherRuntimeOption): Unit = {
       if (!supportedRuntimes3_1.contains(runtime)) {
         if (config.useErrorsOverWarnings) {
           throw new InvalidArgumentException("The given query is not currently supported in the selected runtime")
@@ -115,9 +114,9 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
       * @param preParsedQuery the query to compile
       * @return the compiled query
       */
-    def innerCompile(preParsedQuery: PreParsedQuery): CacheableExecutableQuery = {
+    def innerCompile(preParsedQuery: PreParsedQuery): ExecutableQuery = {
 
-      if ((preParsedQuery.version == CypherVersion.v3_3 || preParsedQuery.version == CypherVersion.v3_5) && preParsedQuery.planner == CypherPlannerOption.rule) {
+      if ((preParsedQuery.version == CypherVersion.v3_4 || preParsedQuery.version == CypherVersion.v3_5) && preParsedQuery.planner == CypherPlannerOption.rule) {
         notifications += rulePlannerUnavailableFallbackNotification(preParsedQuery.offset)
         innerCompile(preParsedQuery.copy(version = CypherVersion.v3_1))
 
@@ -132,13 +131,13 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
           compiler3_5.compile(preParsedQuery, tracer, notifications.result(), transactionalContext)
         } catch {
           case ex: SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
-            val ex3_5 = ex.getCause.asInstanceOf[util.SyntaxException]
+            val ex3_5 = ex.getCause.asInstanceOf[InternalSyntaxException]
             notifications += createUniqueNotification(ex3_5, inputPosition)
             assertSupportedRuntime(ex3_5, preParsedQuery.runtime)
             innerCompile(preParsedQuery.copy(version = CypherVersion.v3_1, runtime = CypherRuntimeOption.interpreted))
 
           case ex: SyntaxException if ex.getMessage.startsWith("START is deprecated") =>
-            val ex3_5 = ex.getCause.asInstanceOf[util.SyntaxException]
+            val ex3_5 = ex.getCause.asInstanceOf[InternalSyntaxException]
             notifications += createStartUnavailableNotification(ex3_5, inputPosition)
             notifications += createStartDeprecatedNotification(ex3_5, inputPosition)
             assertSupportedRuntime(ex3_5, preParsedQuery.runtime)
@@ -161,22 +160,22 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
     innerCompile(preParsedQuery)
   }
 
-  private def createStartUnavailableNotification(ex: util.SyntaxException, inputPosition: InputPosition) = {
+  private def createStartUnavailableNotification(ex: InternalSyntaxException, inputPosition: InputPosition) = {
     val pos = convertInputPosition(ex.pos.getOrElse(inputPosition))
     START_UNAVAILABLE_FALLBACK.notification(pos)
   }
 
-  private def createStartDeprecatedNotification(ex: util.SyntaxException, inputPosition: InputPosition) = {
+  private def createStartDeprecatedNotification(ex: InternalSyntaxException, inputPosition: InputPosition) = {
     val pos = convertInputPosition(ex.pos.getOrElse(inputPosition))
     START_DEPRECATED.notification(pos, message("START", ex.getMessage))
   }
 
-  private def runtimeUnsupportedNotification(ex: util.SyntaxException, inputPosition: InputPosition) = {
+  private def runtimeUnsupportedNotification(ex: InternalSyntaxException, inputPosition: InputPosition) = {
     val pos = convertInputPosition(ex.pos.getOrElse(inputPosition))
     RUNTIME_UNSUPPORTED.notification(pos)
   }
 
-  private def createUniqueNotification(ex: util.SyntaxException, inputPosition: InputPosition) = {
+  private def createUniqueNotification(ex: InternalSyntaxException, inputPosition: InputPosition) = {
     val pos = convertInputPosition(ex.pos.getOrElse(inputPosition))
     CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification(pos)
   }

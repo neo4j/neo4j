@@ -51,7 +51,7 @@ public class DefaultFileSystemWatcherService implements FileSystemWatcherService
     }
 
     @Override
-    public void start()
+    public synchronized void start()
     {
         assert watcher == null;
         watcher = fileWatchers.newThread( eventWatcher );
@@ -59,7 +59,7 @@ public class DefaultFileSystemWatcherService implements FileSystemWatcherService
     }
 
     @Override
-    public void stop() throws Throwable
+    public synchronized void stop() throws Throwable
     {
         eventWatcher.stopWatching();
         if ( watcher != null )

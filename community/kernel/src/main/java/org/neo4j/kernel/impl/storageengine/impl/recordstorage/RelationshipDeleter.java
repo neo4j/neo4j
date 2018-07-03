@@ -1,0 +1,249 @@
+/*
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
+
+import org.neo4j.kernel.impl.locking.LockTracer;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.kernel.impl.store.InvalidRecordException;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.transaction.state.DirectionIdentifier;
+import org.neo4j.kernel.impl.transaction.state.RecordAccess;
+import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
+import org.neo4j.kernel.impl.transaction.state.RecordAccessSet;
+import org.neo4j.kernel.impl.util.DirectionWrapper;
+import org.neo4j.storageengine.api.lock.ResourceLocker;
+
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RelationshipCreator.relCount;
+
+class RelationshipDeleter
+{
+    private final RelationshipGroupGetter relGroupGetter;
+    private final PropertyDeleter propertyChainDeleter;
+
+    RelationshipDeleter( RelationshipGroupGetter relGroupGetter, PropertyDeleter propertyChainDeleter )
+    {
+        this.relGroupGetter = relGroupGetter;
+        this.propertyChainDeleter = propertyChainDeleter;
+    }
+
+    /**
+     * Deletes a relationship by its id, returning its properties which are now
+     * removed. It is assumed that the nodes it connects have already been
+     * deleted in this
+     * transaction.
+     *
+     * @param id The id of the relationship to delete.
+     */
+    void relDelete( long id, RecordAccessSet recordChanges, ResourceLocker locks )
+    {
+        RelationshipRecord record = recordChanges.getRelRecords().getOrLoad( id, null ).forChangingLinkage();
+        propertyChainDeleter.deletePropertyChain( record, recordChanges.getPropertyRecords() );
+        disconnectRelationship( record, recordChanges, locks );
+        updateNodesForDeletedRelationship( record, recordChanges, locks );
+        record.setInUse( false );
+    }
+
+    private void disconnectRelationship( RelationshipRecord rel, RecordAccessSet recordChangeSet, ResourceLocker locks )
+    {
+        disconnect( rel, RelationshipConnection.START_NEXT, recordChangeSet.getRelRecords(), locks );
+        disconnect( rel, RelationshipConnection.START_PREV, recordChangeSet.getRelRecords(), locks );
+        disconnect( rel, RelationshipConnection.END_NEXT, recordChangeSet.getRelRecords(), locks );
+        disconnect( rel, RelationshipConnection.END_PREV, recordChangeSet.getRelRecords(), locks );
+    }
+
+    private void disconnect( RelationshipRecord rel, RelationshipConnection pointer,
+            RecordAccess<RelationshipRecord, Void> relChanges, ResourceLocker locks )
+    {
+        long otherRelId = pointer.otherSide().get( rel );
+        if ( otherRelId == Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            return;
+        }
+
+        locks.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, otherRelId );
+        RelationshipRecord otherRel = relChanges.getOrLoad( otherRelId, null ).forChangingLinkage();
+        boolean changed = false;
+        long newId = pointer.get( rel );
+        boolean newIsFirst = pointer.isFirstInChain( rel );
+        if ( otherRel.getFirstNode() == pointer.compareNode( rel ) )
+        {
+            pointer.start().set( otherRel, newId, newIsFirst );
+            changed = true;
+        }
+        if ( otherRel.getSecondNode() == pointer.compareNode( rel ) )
+        {
+            pointer.end().set( otherRel, newId, newIsFirst );
+            changed = true;
+        }
+        if ( !changed )
+        {
+            throw new InvalidRecordException( otherRel + " don't match " + rel );
+        }
+    }
+
+    private void updateNodesForDeletedRelationship( RelationshipRecord rel, RecordAccessSet recordChanges,
+            ResourceLocker locks )
+    {
+        RecordProxy<NodeRecord, Void> startNodeChange =
+                recordChanges.getNodeRecords().getOrLoad( rel.getFirstNode(), null );
+        RecordProxy<NodeRecord, Void> endNodeChange =
+                recordChanges.getNodeRecords().getOrLoad( rel.getSecondNode(), null );
+
+        NodeRecord startNode = recordChanges.getNodeRecords().getOrLoad( rel.getFirstNode(), null ).forReadingLinkage();
+        NodeRecord endNode = recordChanges.getNodeRecords().getOrLoad( rel.getSecondNode(), null ).forReadingLinkage();
+        boolean loop = startNode.getId() == endNode.getId();
+
+        if ( !startNode.isDense() )
+        {
+            if ( rel.isFirstInFirstChain() )
+            {
+                startNode = startNodeChange.forChangingLinkage();
+                startNode.setNextRel( rel.getFirstNextRel() );
+            }
+            decrementTotalRelationshipCount( startNode.getId(), rel, startNode.getNextRel(),
+                    recordChanges.getRelRecords(), locks );
+        }
+        else
+        {
+            RecordProxy<RelationshipGroupRecord, Integer> groupChange =
+                    relGroupGetter.getRelationshipGroup( startNode, rel.getType(),
+                            recordChanges.getRelGroupRecords() ).group();
+            assert groupChange != null : "Relationship group " + rel.getType() + " should have existed here";
+            RelationshipGroupRecord group = groupChange.forReadingData();
+            DirectionWrapper dir = DirectionIdentifier.wrapDirection( rel, startNode );
+            if ( rel.isFirstInFirstChain() )
+            {
+                group = groupChange.forChangingData();
+                dir.setNextRel( group, rel.getFirstNextRel() );
+                if ( groupIsEmpty( group ) )
+                {
+                    deleteGroup( startNodeChange, group, recordChanges.getRelGroupRecords() );
+                }
+            }
+            decrementTotalRelationshipCount( startNode.getId(), rel, dir.getNextRel( group ),
+                    recordChanges.getRelRecords(), locks );
+        }
+
+        if ( !endNode.isDense() )
+        {
+            if ( rel.isFirstInSecondChain() )
+            {
+                endNode = endNodeChange.forChangingLinkage();
+                endNode.setNextRel( rel.getSecondNextRel() );
+            }
+            if ( !loop )
+            {
+                decrementTotalRelationshipCount( endNode.getId(), rel, endNode.getNextRel(),
+                        recordChanges.getRelRecords(), locks );
+            }
+        }
+        else
+        {
+            RecordProxy<RelationshipGroupRecord, Integer> groupChange =
+                    relGroupGetter.getRelationshipGroup( endNode, rel.getType(),
+                            recordChanges.getRelGroupRecords() ).group();
+            DirectionWrapper dir = DirectionIdentifier.wrapDirection( rel, endNode );
+            assert groupChange != null || loop : "Group has been deleted";
+            if ( groupChange != null )
+            {
+                RelationshipGroupRecord group;
+                if ( rel.isFirstInSecondChain() )
+                {
+                    group = groupChange.forChangingData();
+                    dir.setNextRel( group, rel.getSecondNextRel() );
+                    if ( groupIsEmpty( group ) )
+                    {
+                        deleteGroup( endNodeChange, group, recordChanges.getRelGroupRecords() );
+                    }
+                }
+            } // Else this is a loop-rel and the group was deleted when dealing with the start node
+            if ( !loop )
+            {
+                decrementTotalRelationshipCount( endNode.getId(), rel, dir.getNextRel( groupChange.forChangingData() ),
+                        recordChanges.getRelRecords(), locks );
+            }
+        }
+    }
+
+    private void decrementTotalRelationshipCount( long nodeId, RelationshipRecord rel, long firstRelId,
+            RecordAccess<RelationshipRecord, Void> relRecords, ResourceLocker locks )
+    {
+        if ( firstRelId == Record.NO_PREV_RELATIONSHIP.intValue() )
+        {
+            return;
+        }
+        boolean firstInChain = relIsFirstInChain( nodeId, rel );
+        if ( !firstInChain )
+        {
+            locks.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, firstRelId );
+        }
+        RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null ).forChangingLinkage();
+        if ( nodeId == firstRel.getFirstNode() )
+        {
+            firstRel.setFirstPrevRel( firstInChain ? relCount( nodeId, rel ) - 1 : relCount( nodeId, firstRel ) - 1 );
+            firstRel.setFirstInFirstChain( true );
+        }
+        if ( nodeId == firstRel.getSecondNode() )
+        {
+            firstRel.setSecondPrevRel( firstInChain ? relCount( nodeId, rel ) - 1 : relCount( nodeId, firstRel ) - 1 );
+            firstRel.setFirstInSecondChain( true );
+        }
+    }
+
+    private void deleteGroup( RecordProxy<NodeRecord, Void> nodeChange,
+                              RelationshipGroupRecord group,
+                              RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords )
+    {
+        long previous = group.getPrev();
+        long next = group.getNext();
+        if ( previous == Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {   // This is the first one, just point the node to the next group
+            nodeChange.forChangingLinkage().setNextRel( next );
+        }
+        else
+        {   // There are others before it, point the previous to the next group
+            RelationshipGroupRecord previousRecord = relGroupRecords.getOrLoad( previous, null ).forChangingLinkage();
+            previousRecord.setNext( next );
+        }
+
+        if ( next != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {   // There are groups after this one, point that next group to the previous of the group to be deleted
+            RelationshipGroupRecord nextRecord = relGroupRecords.getOrLoad( next, null ).forChangingLinkage();
+            nextRecord.setPrev( previous );
+        }
+        group.setInUse( false );
+    }
+
+    private boolean groupIsEmpty( RelationshipGroupRecord group )
+    {
+        return group.getFirstOut() == Record.NO_NEXT_RELATIONSHIP.intValue() &&
+                group.getFirstIn() == Record.NO_NEXT_RELATIONSHIP.intValue() &&
+                group.getFirstLoop() == Record.NO_NEXT_RELATIONSHIP.intValue();
+    }
+
+    private boolean relIsFirstInChain( long nodeId, RelationshipRecord rel )
+    {
+        return (nodeId == rel.getFirstNode() && rel.isFirstInFirstChain()) ||
+                (nodeId == rel.getSecondNode() && rel.isFirstInSecondChain());
+    }
+}

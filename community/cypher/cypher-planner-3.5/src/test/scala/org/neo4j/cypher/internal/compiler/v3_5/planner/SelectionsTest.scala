@@ -117,64 +117,6 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with
     result should equal(Selections(Set(Predicate(idNames("a"), covering))))
   }
 
-  test("should recognize value joins") {
-    // given WHERE x.id = z.id
-    val lhs = prop("x", "id")
-    val rhs = prop("z", "id")
-    val equalityComparison = Equals(lhs, rhs)(pos)
-    val selections = Selections.from(equalityComparison)
-
-    // when
-    val result = selections.valueJoins
-
-    // then
-    result should equal(Set(equalityComparison))
-  }
-
-  test("if one side is a literal, it's not a value join") {
-    // given WHERE x.id = 42
-    val selections = Selections.from(propEquality("x","id", 42))
-
-    // when
-    val result = selections.valueJoins
-
-    // then
-    result should be(empty)
-  }
-
-  test("if both lhs and rhs come from the same variable, it's not a value join") {
-    // given WHERE x.id1 = x.id2
-    val lhs = prop("x", "id1")
-    val rhs = prop("x", "id2")
-    val equalityComparison = Equals(lhs, rhs)(pos)
-    val selections = Selections.from(equalityComparison)
-
-    // when
-    val result = selections.valueJoins
-
-    // then
-    result should be(empty)
-  }
-
-  test("combination of predicates is not a problem") {
-    // given WHERE x.id1 = z.id AND x.id1 = x.id2 AND x.id2 = 42
-    val x_id1 = prop("x", "id1")
-    val x_id2 = prop("x", "id2")
-    val z_id = prop("z", "id")
-    val lit = literalInt(42)
-
-    val pred1 = Equals(x_id1, x_id2)(pos)
-    val pred2 = Equals(x_id1, z_id)(pos)
-    val pred3 = Equals(x_id2, lit)(pos)
-
-    val selections = Selections.from(Seq(pred1, pred2, pred3))
-
-    // when
-    val result = selections.valueJoins
-
-    // then
-    result should be(Set(pred2))
-  }
 
   private def idNames(names: String*) = names.toSet
 

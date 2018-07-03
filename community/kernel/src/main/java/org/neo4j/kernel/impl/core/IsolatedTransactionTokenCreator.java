@@ -29,7 +29,6 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 
 /**
  * Creates a key within its own transaction, such that the command(s) for creating the key
@@ -38,14 +37,11 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
  */
 abstract class IsolatedTransactionTokenCreator implements TokenCreator
 {
-    protected final IdGeneratorFactory idGeneratorFactory;
     private final Supplier<Kernel> kernelSupplier;
 
-    IsolatedTransactionTokenCreator( Supplier<Kernel> kernelSupplier,
-            IdGeneratorFactory idGeneratorFactory )
+    IsolatedTransactionTokenCreator( Supplier<Kernel> kernelSupplier )
     {
         this.kernelSupplier = kernelSupplier;
-        this.idGeneratorFactory = idGeneratorFactory;
     }
 
     @Override

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans.rewriter
 
 import org.opencypher.v9_0.util.attribution.SameId
 import org.neo4j.cypher.internal.v3_5.logical.plans.Selection
+import org.opencypher.v9_0.expressions.Ands
 import org.opencypher.v9_0.util.{Rewriter, bottomUp}
 
 case object fuseSelections extends Rewriter {
@@ -28,7 +29,7 @@ case object fuseSelections extends Rewriter {
   override def apply(input: AnyRef) = instance.apply(input)
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
-    case topSelection@Selection(predicates1, Selection(predicates2, lhs)) =>
-      Selection(predicates1 ++ predicates2, lhs)(SameId(topSelection.id))
+    case topSelection@Selection(Ands(predicates1), Selection(Ands(predicates2), lhs)) =>
+      Selection(Ands(predicates1 ++ predicates2)(predicates1.head.position), lhs)(SameId(topSelection.id))
   })
 }

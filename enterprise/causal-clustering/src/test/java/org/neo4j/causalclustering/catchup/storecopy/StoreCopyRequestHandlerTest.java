@@ -40,6 +40,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StoreFileMetadata;
@@ -67,9 +68,12 @@ public class StoreCopyRequestHandlerTest
         catchupServerProtocol = new CatchupServerProtocol();
         catchupServerProtocol.expect( CatchupServerProtocol.State.GET_STORE_FILE );
         StoreCopyRequestHandler storeCopyRequestHandler =
-                new NiceStoreCopyRequestHandler( catchupServerProtocol, () -> neoStoreDataSource, () -> checkPointer, new StoreFileStreamingProtocol(),
+                new NiceStoreCopyRequestHandler( catchupServerProtocol, () -> neoStoreDataSource, new StoreFileStreamingProtocol(),
                         fileSystemAbstraction, NullLogProvider.getInstance() );
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependency( checkPointer );
         when( neoStoreDataSource.getStoreId() ).thenReturn( new org.neo4j.kernel.impl.store.StoreId( 1, 2, 5, 3, 4 ) );
+        when( neoStoreDataSource.getDependencyResolver() ).thenReturn( dependencies );
         embeddedChannel = new EmbeddedChannel( storeCopyRequestHandler );
     }
 
@@ -122,7 +126,7 @@ public class StoreCopyRequestHandlerTest
     public void shoulResetProtocolAndGiveErrorIfFilesThrowException()
     {
         EmbeddedChannel alternativeChannel = new EmbeddedChannel(
-                new EvilStoreCopyRequestHandler( catchupServerProtocol, () -> neoStoreDataSource, () -> checkPointer, new StoreFileStreamingProtocol(),
+                new EvilStoreCopyRequestHandler( catchupServerProtocol, () -> neoStoreDataSource, new StoreFileStreamingProtocol(),
                         fileSystemAbstraction, NullLogProvider.getInstance() ) );
         try
         {
@@ -143,10 +147,10 @@ public class StoreCopyRequestHandlerTest
     private class NiceStoreCopyRequestHandler extends StoreCopyRequestHandler<StoreCopyRequest>
     {
         private NiceStoreCopyRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource,
-                Supplier<CheckPointer> checkpointerSupplier, StoreFileStreamingProtocol storeFileStreamingProtocol,
+                StoreFileStreamingProtocol storeFileStreamingProtocol,
                 FileSystemAbstraction fs, LogProvider logProvider )
         {
-            super( protocol, dataSource, checkpointerSupplier, storeFileStreamingProtocol, fs, logProvider );
+            super( protocol, dataSource, storeFileStreamingProtocol, fs, logProvider );
         }
 
         @Override
@@ -159,10 +163,9 @@ public class StoreCopyRequestHandlerTest
     private class EvilStoreCopyRequestHandler extends StoreCopyRequestHandler<StoreCopyRequest>
     {
         private EvilStoreCopyRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource,
-                Supplier<CheckPointer> checkpointerSupplier, StoreFileStreamingProtocol storeFileStreamingProtocol,
-                FileSystemAbstraction fs, LogProvider logProvider )
+                StoreFileStreamingProtocol storeFileStreamingProtocol, FileSystemAbstraction fs, LogProvider logProvider )
         {
-            super( protocol, dataSource, checkpointerSupplier, storeFileStreamingProtocol, fs, logProvider );
+            super( protocol, dataSource, storeFileStreamingProtocol, fs, logProvider );
         }
 
         @Override

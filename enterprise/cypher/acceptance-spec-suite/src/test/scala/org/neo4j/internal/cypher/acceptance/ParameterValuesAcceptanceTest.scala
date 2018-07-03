@@ -38,7 +38,7 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with CypherC
 
   // Not TCK material below; sending graph types or characters as parameters is not supported
 
-  test("ANY should be able to use varibels from the horizon") {
+  test("ANY should be able to use variables from the horizon") {
 
     val query =
       """ WITH 1 AS node, [] AS nodes1
@@ -125,37 +125,37 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with CypherC
 
   test("match with missing parameter should return error for empty db") {
     // all versions of 3.3 and 3.4
-    val config = Configs.Version3_5 + Configs.Version3_3 + Configs.Procs - Configs.AllRulePlanners
+    val config = Configs.Version3_5 + Configs.Version3_4 + Configs.Procs - Configs.AllRulePlanners
     failWithError(config, "MATCH (n:Person {name:{name}}) RETURN n", Seq("Expected parameter(s): name"))
   }
 
   test("match with missing parameter should return error for non-empty db") {
     // all versions of 3.3 and 3.4
-    val config = Configs.Version3_5 + Configs.Version3_3 + Configs.Procs - Configs.AllRulePlanners - Configs.Compiled
+    val config = Configs.Version3_5 + Configs.Version3_4 + Configs.Procs - Configs.AllRulePlanners - Configs.Compiled
     failWithError(config, "CREATE (n:Person) WITH n MATCH (n:Person {name:{name}}) RETURN n", Seq("Expected parameter(s): name"))
   }
 
   test("match with multiple missing parameters should return error for empty db") {
     // all versions of 3.3 and 3.4
-    val config = Configs.Version3_5 + Configs.Version3_3 + Configs.Procs - Configs.AllRulePlanners
+    val config = Configs.Version3_5 + Configs.Version3_4 + Configs.Procs - Configs.AllRulePlanners
     failWithError(config, "MATCH (n:Person {name:{name}, age:{age}}) RETURN n", Seq("Expected parameter(s): name, age"))
   }
 
   test("match with multiple missing parameters should return error for non-empty db") {
     // all versions of 3.3 and 3.4
-    val config = Configs.Version3_5 + Configs.Version3_3 + Configs.Procs - Configs.AllRulePlanners - Configs.Compiled
+    val config = Configs.Version3_5 + Configs.Version3_4 + Configs.Procs - Configs.AllRulePlanners - Configs.Compiled
     failWithError(config, "CREATE (n:Person) WITH n MATCH (n:Person {name:{name}, age:{age}}) RETURN n", Seq("Expected parameter(s): name, age"))
   }
 
   test("match with misspelled parameter should return error for empty db") {
     // all versions of 3.3 and 3.4
-    val config = Configs.Version3_5 + Configs.Version3_3 + Configs.Procs - Configs.AllRulePlanners
+    val config = Configs.Version3_5 + Configs.Version3_4 + Configs.Procs - Configs.AllRulePlanners
     failWithError(config, "MATCH (n:Person {name:{name}}) RETURN n", Seq("Expected parameter(s): name"), params = Map("nam" -> "Neo"))
   }
 
   test("match with misspelled parameter should return error for non-empty db") {
     // all versions of 3.3 and 3.4
-    val config = Configs.Version3_5 + Configs.Version3_3 + Configs.Procs - Configs.AllRulePlanners - Configs.Compiled
+    val config = Configs.Version3_5 + Configs.Version3_4 + Configs.Procs - Configs.AllRulePlanners - Configs.Compiled
     failWithError(config, "CREATE (n:Person) WITH n MATCH (n:Person {name:{name}}) RETURN n", Seq("Expected parameter(s): name"), params = Map("nam" -> "Neo"))
   }
 
@@ -168,5 +168,4 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     val config = Configs.Interpreted - Configs.Cost2_3
     executeWith(config, "EXPLAIN CREATE (n:Person) WITH n MATCH (n:Person {name:{name}}) RETURN n")
   }
-
 }

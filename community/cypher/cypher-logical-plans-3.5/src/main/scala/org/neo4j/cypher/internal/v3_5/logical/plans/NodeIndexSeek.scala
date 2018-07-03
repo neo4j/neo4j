@@ -23,7 +23,7 @@ import org.opencypher.v9_0.util.attribution.IdGen
 import org.opencypher.v9_0.expressions.{Expression, LabelToken, PropertyKeyToken}
 
 /**
-  * For every node with the given label and property values, produces one row with that node.
+  * For every node with the given label and property values, produces rows with that node.
   */
 case class NodeIndexSeek(idName: String,
                          label: LabelToken,

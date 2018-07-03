@@ -19,31 +19,26 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.{anyInt, anyLong}
 import org.mockito.Mockito._
-import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.util.{DummyPosition, PropertyKeyId}
-import org.opencypher.v9_0.expressions.PropertyKeyName
-import org.opencypher.v9_0.{expressions => ast}
-import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions._
-import org.neo4j.cypher.internal.runtime.interpreted.commands.values.{KeyToken, TokenType}
-import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.util.{InputPosition, PropertyKeyId}
-import org.opencypher.v9_0.expressions.PropertyKeyName
 import org.neo4j.graphdb.Node
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue
-import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
+import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.opencypher.v9_0.expressions.PropertyKeyName
+import org.opencypher.v9_0.util.{DummyPosition, PropertyKeyId}
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.{expressions => ast}
 
 class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
+
   private val pos = DummyPosition(0)
   private val entity1 = "x"
   private val entity2 = "y"
@@ -61,6 +56,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   private val qtx = mock[QueryContext]
   when(qtx.getOptPropertyKeyId(property1)).thenReturn(Some(1))
   when(qtx.getOptPropertyKeyId(property2)).thenReturn(Some(2))
+  when(qtx.getOrCreatePropertyKeyIds(ArgumentMatchers.any())).thenReturn(Array[Int]())
   when(state.query).thenReturn(qtx)
   when(state.decorator).thenReturn(NullPipeDecorator)
   private val emptyExpression = mock[Expression]
@@ -69,7 +65,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   private val expressionConverter = new ExpressionConverters(CommunityExpressionConverter)
   private def convertExpression(astExpression: ast.Expression): Expression = {
     def resolveTokens(expr: Expression, ctx: TokenContext): Expression = expr match {
-      case (keyToken: KeyToken) => keyToken.resolve(ctx)
+      case keyToken: KeyToken => keyToken.resolve(ctx)
       case _ => expr
     }
 

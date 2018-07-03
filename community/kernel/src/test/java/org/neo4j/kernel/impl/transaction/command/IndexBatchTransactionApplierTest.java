@@ -34,12 +34,15 @@ import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -54,16 +57,15 @@ public class IndexBatchTransactionApplierTest
     {
         // GIVEN
         IndexingService indexing = mock( IndexingService.class );
-        when( indexing.convertToIndexUpdates( any() ) ).thenAnswer( o -> Iterables.empty() );
+        when( indexing.convertToIndexUpdates( any(), eq( EntityType.NODE ) ) ).thenAnswer( o -> Iterables.empty() );
         LabelScanWriter writer = new OrderVerifyingLabelScanWriter( 10, 15, 20 );
         WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanSync =
                 spy( new WorkSync<>( singletonProvider( writer ) ) );
         WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexing );
         TransactionToApply tx = mock( TransactionToApply.class );
         PropertyStore propertyStore = mock( PropertyStore.class );
-        try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexing, labelScanSync,
-                indexUpdatesSync, mock( NodeStore.class ),
-                new PropertyPhysicalToLogicalConverter( propertyStore ) ) )
+        try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexing, labelScanSync, indexUpdatesSync, mock( NodeStore.class ),
+                mock( RelationshipStore.class ), new PropertyPhysicalToLogicalConverter( propertyStore ) ) )
         {
             try ( TransactionApplier txApplier = applier.startTx( tx ) )
             {

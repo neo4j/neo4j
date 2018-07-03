@@ -19,9 +19,9 @@
  */
 package org.neo4j.bolt.testing;
 
-import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
-import org.neo4j.bolt.v1.runtime.Neo4jError;
-import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.bolt.runtime.BoltResponseHandler;
+import org.neo4j.bolt.runtime.BoltResult;
+import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.values.AnyValue;
 
 /**
@@ -38,12 +38,6 @@ public class NullResponseHandler implements BoltResponseHandler
 
     private NullResponseHandler()
     {
-    }
-
-    @Override
-    public void onStart()
-    {
-        // this page intentionally left blank
     }
 
     @Override

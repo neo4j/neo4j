@@ -13,7 +13,7 @@
   <artifactId>neo4j-cypher-physical-planning</artifactId>
   <packaging>jar</packaging>
   <version>3.5.0-SNAPSHOT</version>
-  <name>Neo4j Cypher Physical Planning</name>
+  <name>Neo4j - Cypher Physical Planning</name>
   <description>A runtime for Neo4j's query language</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 

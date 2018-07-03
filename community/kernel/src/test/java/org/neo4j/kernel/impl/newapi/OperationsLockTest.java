@@ -44,9 +44,9 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.explicitindex.AutoIndexOperations;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
-import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.constraints.RelExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -62,6 +62,7 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
@@ -80,10 +81,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.existsForRelType;
-import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForLabel;
-import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForSchema;
+import static org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory.existsForRelType;
+import static org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
+import static org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory.uniqueForSchema;
 import static org.neo4j.kernel.impl.newapi.TwoPhaseNodeForRelationshipLockingTest.returnRelationships;
+import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public class OperationsLockTest
@@ -132,10 +134,10 @@ public class OperationsLockTest
         when( storageReader.constraintsGetAll() ).thenReturn( Collections.emptyIterator() );
         when( engine.newReader() ).thenReturn( storageReader );
         allStoreHolder = new AllStoreHolder( storageReader,  transaction, cursors, mock(
-                ExplicitIndexStore.class ), mock( Procedures.class ), mock( SchemaState.class ) );
+                ExplicitIndexStore.class ), mock( Procedures.class ), mock( SchemaState.class ), new Dependencies() );
         constraintIndexCreator = mock( ConstraintIndexCreator.class );
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),storageReader,
-                 transaction, new KernelToken( storageReader, transaction ), cursors, autoindexing,
+                 transaction, new KernelToken( storageReader, transaction, mockedTokenHolders() ), cursors, autoindexing,
                 constraintIndexCreator, mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ) );
         operations.initialize();
 

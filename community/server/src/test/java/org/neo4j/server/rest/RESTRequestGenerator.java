@@ -106,7 +106,7 @@ public class RESTRequestGenerator
      * Set the expected media type of the response. The test will fail if the
      * response has a different media type. Defaults to application/json.
      *
-     * @param expectedMediaType the expected media tyupe
+     * @param expectedMediaType the expected media type
      */
     public RESTRequestGenerator expectedType( final MediaType expectedMediaType )
     {

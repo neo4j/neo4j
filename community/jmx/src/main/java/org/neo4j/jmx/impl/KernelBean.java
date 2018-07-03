@@ -45,11 +45,10 @@ public class KernelBean extends Neo4jMBean implements Kernel
     private String databaseName;
     private long storeLogVersion;
 
-    KernelBean( KernelData kernel, ManagementSupport support ) throws NotCompliantMBeanException
+    KernelBean( KernelData kernel, DataSourceManager dataSourceManager, ManagementSupport support ) throws NotCompliantMBeanException
     {
         super( Kernel.class, kernel, support );
-        kernel.graphDatabase().getDependencyResolver().resolveDependency( DataSourceManager.class )
-                .addListener( new DataSourceInfo() );
+        dataSourceManager.addListener( new DataSourceInfo() );
         this.kernelVersion = kernel.version().toString();
         this.instanceId = kernel.instanceId();
         this.query = support.createMBeanQuery( instanceId );

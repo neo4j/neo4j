@@ -22,7 +22,8 @@
  */
 package org.neo4j.cypher.internal.runtime.compiled.expressions;
 
-import org.neo4j.cypher.CypherTypeException;
+import org.opencypher.v9_0.util.CypherTypeException;
+
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.Value;

@@ -22,26 +22,21 @@
  */
 package org.neo4j.causalclustering.core.state.machines.token;
 
+import java.util.function.Supplier;
+
 import org.neo4j.causalclustering.core.replication.RaftReplicator;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.TokenRegistry;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.storageengine.api.Token;
+import org.neo4j.storageengine.api.StorageEngine;
 
-public class ReplicatedPropertyKeyTokenHolder extends ReplicatedTokenHolder<Token> implements
-        PropertyKeyTokenHolder
+public class ReplicatedPropertyKeyTokenHolder extends ReplicatedTokenHolder
 {
-    public ReplicatedPropertyKeyTokenHolder( TokenRegistry<Token> registry, RaftReplicator replicator,
-            IdGeneratorFactory idGeneratorFactory, Dependencies dependencies )
+    public ReplicatedPropertyKeyTokenHolder( TokenRegistry registry, RaftReplicator replicator, IdGeneratorFactory idGeneratorFactory,
+            Supplier<StorageEngine> storageEngineSupplier )
     {
-        super( registry, replicator, idGeneratorFactory, IdType.PROPERTY_KEY_TOKEN, dependencies, TokenType.PROPERTY );
-    }
-
-    @Override
-    protected void createToken( TransactionState txState, String tokenName, int tokenId )
-    {
-        txState.propertyKeyDoCreateForName( tokenName, tokenId );
+        super( registry, replicator, idGeneratorFactory, IdType.PROPERTY_KEY_TOKEN, storageEngineSupplier, TokenType.PROPERTY,
+                TransactionState::propertyKeyDoCreateForName );
     }
 }

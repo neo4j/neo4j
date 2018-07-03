@@ -27,8 +27,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntPredicate;
 
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.storageengine.api.Token;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.is;
@@ -47,20 +47,13 @@ import static org.mockito.Mockito.when;
 public class DelegatingTokenHolderTest
 {
     private TokenCreator creator;
-    private TokenHolder<Token> holder;
+    private TokenHolder holder;
 
     @Before
     public void setUp() throws Exception
     {
         creator = mock( TokenCreator.class );
-        holder = new DelegatingTokenHolder<Token>( creator, new Token.Factory() )
-        {
-            @Override
-            protected String tokenType()
-            {
-                return "Dummy";
-            }
-        };
+        holder = new DelegatingTokenHolder( creator, "Dummy" );
     }
 
     @Test
@@ -204,23 +197,23 @@ public class DelegatingTokenHolderTest
                 token( "four", 4 ) );
     }
 
-    private void assertTokens( Iterable<Token> allTokens, Token... expectedTokens )
+    private void assertTokens( Iterable<NamedToken> allTokens, NamedToken... expectedTokens )
     {
-        Map<String,Token> existing = new HashMap<>();
-        for ( Token token : allTokens )
+        Map<String,NamedToken> existing = new HashMap<>();
+        for ( NamedToken token : allTokens )
         {
             existing.put( token.name(), token );
         }
-        Map<String,Token> expected = new HashMap<>();
-        for ( Token token : expectedTokens )
+        Map<String,NamedToken> expected = new HashMap<>();
+        for ( NamedToken token : expectedTokens )
         {
             expected.put( token.name(), token );
         }
         assertEquals( expected, existing );
     }
 
-    private Token token( String name, int id )
+    private NamedToken token( String name, int id )
     {
-        return new Token( name, id );
+        return new NamedToken( name, id );
     }
 }

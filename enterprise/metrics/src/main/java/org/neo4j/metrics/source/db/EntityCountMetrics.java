@@ -25,6 +25,8 @@ package org.neo4j.metrics.source.db;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 
+import java.util.function.Supplier;
+
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -46,21 +48,22 @@ public class EntityCountMetrics extends LifecycleAdapter
     public static final String COUNTS_NODE = name( COUNTS_PREFIX, "node" );
 
     private final MetricRegistry registry;
-    private final StoreEntityCounters storeEntityCounters;
+    private final Supplier<StoreEntityCounters> storeEntityCountersSupplier;
 
-    public EntityCountMetrics( MetricRegistry registry, StoreEntityCounters storeEntityCounters )
+    public EntityCountMetrics( MetricRegistry registry, Supplier<StoreEntityCounters> storeEntityCountersSupplier )
     {
         this.registry = registry;
-        this.storeEntityCounters = storeEntityCounters;
+        this.storeEntityCountersSupplier = storeEntityCountersSupplier;
     }
 
     @Override
     public void start()
     {
-        registry.register( COUNTS_NODE, (Gauge<Long>) storeEntityCounters::nodes );
-        registry.register( COUNTS_RELATIONSHIP, (Gauge<Long>) storeEntityCounters::relationships );
-        registry.register( COUNTS_PROPERTY, (Gauge<Long>) storeEntityCounters::properties );
-        registry.register( COUNTS_RELATIONSHIP_TYPE, (Gauge<Long>) storeEntityCounters::relationshipTypes );
+        StoreEntityCounters counters = storeEntityCountersSupplier.get();
+        registry.register( COUNTS_NODE, (Gauge<Long>) counters::nodes );
+        registry.register( COUNTS_RELATIONSHIP, (Gauge<Long>) counters::relationships );
+        registry.register( COUNTS_PROPERTY, (Gauge<Long>) counters::properties );
+        registry.register( COUNTS_RELATIONSHIP_TYPE, (Gauge<Long>) counters::relationshipTypes );
     }
 
     @Override

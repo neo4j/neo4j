@@ -21,20 +21,22 @@ package org.neo4j.index.impl.lucene.explicit;
 
 import org.eclipse.collections.api.map.primitive.MutableObjectIntMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
-import org.neo4j.kernel.lifecycle.LifeRule;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
@@ -42,46 +44,44 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.index.impl.lucene.explicit.LuceneIndexImplementation.EXACT_CONFIG;
 
-public class LuceneCommandApplierTest
+@ExtendWith( EphemeralFileSystemExtension.class )
+class LuceneCommandApplierTest
 {
-    @Rule
-    public final  EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    @Rule
-    public final LifeRule life = new LifeRule( true );
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
     private final File dir = new File( "dir" );
 
     @Test
-    public void shouldHandleMultipleIdSpaces() throws Exception
+    void shouldHandleMultipleIdSpaces() throws Exception
     {
         // GIVEN
-        fs.get().mkdirs( dir );
+        fs.mkdirs( dir );
         String indexName = "name";
         String key = "key";
-        IndexConfigStore configStore = new IndexConfigStore( dir, fs.get() );
+        IndexConfigStore configStore = new IndexConfigStore( dir, fs );
         configStore.set( Node.class, indexName, EXACT_CONFIG );
-        LuceneDataSource dataSource = life.add( spy( new LuceneDataSource( dir,
-                Config.defaults( LuceneDataSource.Configuration.ephemeral, Settings.TRUE ), configStore, fs.get(),
-                OperationalMode.single ) ) );
-
-        try ( LuceneCommandApplier applier = new LuceneCommandApplier( dataSource, false ) )
+        try ( Lifespan lifespan = new Lifespan() )
         {
-            // WHEN issuing a command where the index name is mapped to a certain id
-            IndexDefineCommand definitions = definitions(
-                    ObjectIntHashMap.newWithKeysValues( indexName, 0 ),
-                    ObjectIntHashMap.newWithKeysValues( key, 0 ) );
-            applier.visitIndexDefineCommand( definitions );
-            applier.visitIndexAddNodeCommand( addNodeToIndex( definitions, indexName, 0L ) );
-            // and then later issuing a command for that same index, but in another transaction where
-            // the local index name id is a different one
-            definitions = definitions(
-                    ObjectIntHashMap.newWithKeysValues( indexName, 1 ),
-                    ObjectIntHashMap.newWithKeysValues( key, 0 ) );
-            applier.visitIndexDefineCommand( definitions );
-            applier.visitIndexAddNodeCommand( addNodeToIndex( definitions, indexName, 1L ) );
-        }
+            Config dataSourceConfig = Config.defaults( LuceneDataSource.Configuration.ephemeral, Settings.TRUE );
+            LuceneDataSource dataSource = lifespan.add( spy( new LuceneDataSource( dir, dataSourceConfig, configStore, fs, OperationalMode.single ) ) );
 
-        // THEN both those updates should have been directed to the same index
-        verify( dataSource, times( 1 ) ).getIndexSearcher( any( IndexIdentifier.class ) );
+            try ( LuceneCommandApplier applier = new LuceneCommandApplier( dataSource, false ) )
+            {
+                // WHEN issuing a command where the index name is mapped to a certain id
+                IndexDefineCommand definitions =
+                        definitions( ObjectIntHashMap.newWithKeysValues( indexName, 0 ), ObjectIntHashMap.newWithKeysValues( key, 0 ) );
+                applier.visitIndexDefineCommand( definitions );
+                applier.visitIndexAddNodeCommand( addNodeToIndex( definitions, indexName, 0L ) );
+                // and then later issuing a command for that same index, but in another transaction where
+                // the local index name id is a different one
+                definitions = definitions( ObjectIntHashMap.newWithKeysValues( indexName, 1 ), ObjectIntHashMap.newWithKeysValues( key, 0 ) );
+                applier.visitIndexDefineCommand( definitions );
+                applier.visitIndexAddNodeCommand( addNodeToIndex( definitions, indexName, 1L ) );
+            }
+
+            // THEN both those updates should have been directed to the same index
+            verify( dataSource, times( 1 ) ).getIndexSearcher( any( IndexIdentifier.class ) );
+        }
     }
 
     private static AddNodeCommand addNodeToIndex( IndexDefineCommand definitions, String indexName, long nodeId )

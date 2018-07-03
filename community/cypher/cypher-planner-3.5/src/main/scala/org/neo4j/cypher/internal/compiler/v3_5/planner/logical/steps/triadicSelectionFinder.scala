@@ -48,7 +48,7 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
                                               patternExpression: PatternExpression, in: LogicalPlan, qg: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] = in match {
 
     // MATCH (a)-[:X]->(b)-[:X]->(c) WHERE (predicate involving (a)-[:X]->(c))
-    case Selection(predicates,exp:Expand) => findMatchingOuterExpand(positivePredicate, triadicPredicate, patternExpression, predicates, exp, qg, context)
+    case Selection(Ands(predicates),exp:Expand) => findMatchingOuterExpand(positivePredicate, triadicPredicate, patternExpression, predicates.toSeq, exp, qg, context)
 
     // MATCH (a)-[:X]->(b)-[:Y]->(c) WHERE (predicate involving (a)-[:X]->(c))
     case exp:Expand => findMatchingOuterExpand(positivePredicate, triadicPredicate, patternExpression, Seq.empty, exp, qg, context)
@@ -61,8 +61,8 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
     case exp2@Expand(exp1: Expand, _, _, _, _, _, ExpandAll) =>
       findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, Seq.empty, exp1, exp2, qg, context)
 
-    case exp2@Expand(Selection(innerPredicates, exp1: Expand), _, _, _, _, _, ExpandAll) =>
-      findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, innerPredicates, exp1, exp2, qg, context)
+    case exp2@Expand(Selection(Ands(innerPredicates), exp1: Expand), _, _, _, _, _, ExpandAll) =>
+      findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, innerPredicates.toSeq, exp1, exp2, qg, context)
 
     case _ => Seq.empty
   }
@@ -112,9 +112,9 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
     case p@PatternExpression(
       RelationshipsPattern(
         RelationshipChain(
-          NodePattern(Some(Variable(predicateFrom)), List(), None),
-          RelationshipPattern(None, predicateTypes, None, None, predicateDir, _),
-          NodePattern(Some(Variable(predicateTo)), List(), None))))
+          NodePattern(Some(Variable(predicateFrom)), List(), None, _),
+          RelationshipPattern(None, predicateTypes, None, None, predicateDir, _, _),
+          NodePattern(Some(Variable(predicateTo)), List(), None, _))))
       if predicateFrom == from && predicateTo == to && predicateTypes == types && predicateDir == dir => true
     case _ => false
   }

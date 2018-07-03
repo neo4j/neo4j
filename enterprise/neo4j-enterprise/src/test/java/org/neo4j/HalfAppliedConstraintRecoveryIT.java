@@ -293,7 +293,7 @@ public class HalfAppliedConstraintRecoveryIT
     private static void flushStores( GraphDatabaseAPI db )
     {
         db.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
-                .testAccessNeoStores().flush( IOLimiter.unlimited() );
+                .testAccessNeoStores().flush( IOLimiter.UNLIMITED );
     }
 
     private static void apply( GraphDatabaseAPI db, List<TransactionRepresentation> transactions )

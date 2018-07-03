@@ -1354,7 +1354,7 @@ public class ClusterManager
             {
                 if ( !exceptSet.contains( db ) )
                 {
-                    IOLimiter limiter = IOLimiter.unlimited();
+                    IOLimiter limiter = IOLimiter.UNLIMITED;
                     db.getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce( limiter );
                 }
             }

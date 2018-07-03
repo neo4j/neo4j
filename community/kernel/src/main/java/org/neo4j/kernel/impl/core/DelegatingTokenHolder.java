@@ -25,74 +25,30 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntIntHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntPredicate;
 
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
-import org.neo4j.storageengine.api.Token;
-import org.neo4j.storageengine.api.TokenFactory;
 
-import static org.neo4j.function.Predicates.ALWAYS_FALSE_INT;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 
 /**
- * Keeps a cache of tokens using {@link InMemoryTokenCache}.
- * When asked for a token that isn't in the cache, delegates to a TokenCreator to create the token,
- * then stores it in the cache.
+ * Keeps a registry of tokens using {@link TokenRegistry}.
+ * When asked for a token that isn't in the registry, delegates to a {@link TokenCreator} to create the token,
+ * then stores it in the registry.
  */
-public abstract class DelegatingTokenHolder<TOKEN extends Token> implements TokenHolder<TOKEN>
+public class DelegatingTokenHolder extends AbstractTokenHolderBase
 {
-    protected InMemoryTokenCache<TOKEN> tokenCache = new InMemoryTokenCache<>( tokenType() );
-
-    protected abstract String tokenType();
-
     private final TokenCreator tokenCreator;
-    private final TokenFactory<TOKEN> tokenFactory;
 
-    DelegatingTokenHolder( TokenCreator tokenCreator, TokenFactory<TOKEN> tokenFactory )
+    public DelegatingTokenHolder( TokenCreator tokenCreator, String tokenType )
     {
+        super( new TokenRegistry( tokenType ) );
         this.tokenCreator = tokenCreator;
-        this.tokenFactory = tokenFactory;
-    }
-
-    @Override
-    public void setInitialTokens( List<TOKEN> tokens ) throws NonUniqueTokenException
-    {
-        tokenCache.clear();
-        tokenCache.putAll( tokens );
-    }
-
-    @Override
-    public void addToken( TOKEN token ) throws NonUniqueTokenException
-    {
-        tokenCache.put( token );
-    }
-
-    @Override
-    public int getOrCreateId( String name )
-    {
-        Integer id = tokenCache.getId( name );
-        if ( id != null )
-        {
-            return id;
-        }
-
-        // Let's create it
-        try
-        {
-            id = createToken( name );
-            return id;
-        }
-        catch ( ReadOnlyDbException e )
-        {
-            throw new TransactionFailureException( e.getMessage(), e );
-        }
-        catch ( Throwable e )
-        {
-            throw new TransactionFailureException( "Could not create token.", e );
-        }
     }
 
     /**
@@ -102,9 +58,10 @@ public abstract class DelegatingTokenHolder<TOKEN extends Token> implements Toke
      * @return newly created token id
      * @throws KernelException
      */
-    private synchronized int createToken( String name ) throws KernelException
+    @Override
+    protected synchronized int createToken( String name ) throws KernelException
     {
-        Integer id = tokenCache.getId( name );
+        Integer id = tokenRegistry.getId( name );
         if ( id != null )
         {
             return id;
@@ -113,7 +70,7 @@ public abstract class DelegatingTokenHolder<TOKEN extends Token> implements Toke
         id = tokenCreator.createToken( name );
         try
         {
-            tokenCache.put( tokenFactory.newToken( name, id ) );
+            tokenRegistry.put( new NamedToken( name, id ) );
         }
         catch ( NonUniqueTokenException e )
         {
@@ -138,29 +95,6 @@ public abstract class DelegatingTokenHolder<TOKEN extends Token> implements Toke
         }
     }
 
-    private boolean resolveIds( String[] names, int[] ids, IntPredicate unresolvedIndexCheck )
-    {
-        boolean foundUnresolvable = false;
-        for ( int i = 0; i < ids.length; i++ )
-        {
-            Integer id = tokenCache.getId( names[i] );
-            if ( id != null )
-            {
-                ids[i] = id;
-            }
-            else
-            {
-                foundUnresolvable = true;
-                if ( unresolvedIndexCheck.test( i ) )
-                {
-                    // If the check returns `true`, it's a signal that we should stop early.
-                    break;
-                }
-            }
-        }
-        return foundUnresolvable;
-    }
-
     private synchronized void createMissingTokens( String[] names, int[] ids )
     {
         // We redo the resolving under the lock, to make sure that these ids are really missing, and won't be
@@ -171,8 +105,11 @@ public abstract class DelegatingTokenHolder<TOKEN extends Token> implements Toke
         {
             // We still have unresolved ids to create.
             ObjectIntHashMap<String> createdTokens = createUnresolvedTokens( unresolvedIndexes, names, ids );
+            List<NamedToken> createdTokensList = new ArrayList<>( createdTokens.size() );
             createdTokens.forEachKeyValue( ( name, index ) ->
-                    tokenCache.put( tokenFactory.newToken( name, ids[index] ) ) );
+                    createdTokensList.add( new NamedToken( name, ids[index] ) ) );
+
+            tokenRegistry.putAll( createdTokensList );
         }
     }
 
@@ -233,51 +170,5 @@ public abstract class DelegatingTokenHolder<TOKEN extends Token> implements Toke
         {
             throw new TransactionFailureException( "Could not create tokens.", e );
         }
-    }
-
-    @Override
-    public TOKEN getTokenById( int id ) throws TokenNotFoundException
-    {
-        TOKEN result = getTokenByIdOrNull( id );
-        if ( result == null )
-        {
-            throw new TokenNotFoundException( "Token for id " + id );
-        }
-        return result;
-    }
-
-    @Override
-    public TOKEN getTokenByIdOrNull( int id )
-    {
-        return tokenCache.getToken( id );
-    }
-
-    @Override
-    public int getIdByName( String name )
-    {
-        Integer id = tokenCache.getId( name );
-        if ( id == null )
-        {
-            return NO_ID;
-        }
-        return id;
-    }
-
-    @Override
-    public boolean getIdsByNames( String[] names, int[] ids )
-    {
-        return resolveIds( names, ids, ALWAYS_FALSE_INT );
-    }
-
-    @Override
-    public Iterable<TOKEN> getAllTokens()
-    {
-        return tokenCache.allTokens();
-    }
-
-    @Override
-    public int size()
-    {
-        return tokenCache.size();
     }
 }

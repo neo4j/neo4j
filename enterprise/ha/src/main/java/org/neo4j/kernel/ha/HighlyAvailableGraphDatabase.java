@@ -25,15 +25,13 @@ package org.neo4j.kernel.ha;
 import java.io.File;
 import java.util.Map;
 
+import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
-import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.factory.HighlyAvailableEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 
 /**
  * This has all the functionality of an Enterprise Edition embedded database, with the addition of services
@@ -41,6 +39,9 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
  */
 public class HighlyAvailableGraphDatabase extends GraphDatabaseFacade
 {
+
+    protected HighlyAvailableEditionModule module;
+
     public HighlyAvailableGraphDatabase( File storeDir, Map<String,String> params,
             GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
@@ -56,17 +57,21 @@ public class HighlyAvailableGraphDatabase extends GraphDatabaseFacade
     // used for testing in a different project, please do not remove
     protected GraphDatabaseFacadeFactory newHighlyAvailableFacadeFactory()
     {
-        return new GraphDatabaseFacadeFactory( DatabaseInfo.HA, HighlyAvailableEditionModule::new );
+        return new GraphDatabaseFacadeFactory( DatabaseInfo.HA, platformModule ->
+        {
+            module = new HighlyAvailableEditionModule( platformModule );
+            return module;
+        } );
     }
 
     public HighAvailabilityMemberState getInstanceState()
     {
-        return getDependencyResolver().resolveDependency( HighAvailabilityMemberStateMachine.class ).getCurrentState();
+        return module.memberStateMachine.getCurrentState();
     }
 
     public String role()
     {
-        return getDependencyResolver().resolveDependency( ClusterMembers.class ).getCurrentMemberRole();
+        return module.members.getCurrentMemberRole();
     }
 
     public boolean isMaster()

@@ -57,7 +57,6 @@ import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -473,14 +472,11 @@ public class StoreCopyClientTest
             CheckPointer checkPointer =
                     original.getDependencyResolver().resolveDependency( CheckPointer.class );
 
-            RequestContext requestContext = new StoreCopyServer( neoStoreDataSource, checkPointer, fs,
-                    originalDir, new Monitors().newMonitor( StoreCopyServer.Monitor.class ),
-                    new StoreCopyCheckPointMutex() )
-                    .flushStoresAndStreamStoreFiles( "test", writer, includeLogs );
+            RequestContext requestContext = new StoreCopyServer( neoStoreDataSource, checkPointer, fs, originalDir,
+                    new Monitors().newMonitor( StoreCopyServer.Monitor.class ) ).flushStoresAndStreamStoreFiles( "test", writer, includeLogs );
 
             final StoreId storeId =
-                    original.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
-                            .testAccessNeoStores().getMetaDataStore().getStoreId();
+                    original.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).getStoreId();
 
             ResponsePacker responsePacker = new ResponsePacker( logicalTransactionStore,
                     transactionIdStore, () -> storeId );

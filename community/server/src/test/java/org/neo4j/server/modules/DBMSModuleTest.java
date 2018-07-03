@@ -30,6 +30,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.rest.dbms.UserService;
+import org.neo4j.server.rest.discovery.DiscoverableURIs;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.test.rule.SuppressOutput;
 
@@ -61,7 +62,7 @@ public class DBMSModuleTest
         when( neoServer.getWebServer() ).thenReturn( webServer );
         when( config.get( GraphDatabaseSettings.auth_enabled ) ).thenReturn( true );
 
-        DBMSModule module = new DBMSModule( webServer, config );
+        DBMSModule module = new DBMSModule( webServer, config, DiscoverableURIs::new );
 
         module.start();
 
@@ -80,7 +81,7 @@ public class DBMSModuleTest
         when( neoServer.getWebServer() ).thenReturn( webServer );
         when( config.get( GraphDatabaseSettings.auth_enabled ) ).thenReturn( false );
 
-        DBMSModule module = new DBMSModule( webServer, config );
+        DBMSModule module = new DBMSModule( webServer, config, DiscoverableURIs::new );
 
         module.start();
 

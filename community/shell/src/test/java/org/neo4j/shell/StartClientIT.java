@@ -33,7 +33,7 @@ import java.io.PrintStream;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 
-import org.neo4j.bolt.BoltKernelExtension;
+import org.neo4j.bolt.BoltServer;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.AssertableLogProvider;
@@ -216,7 +216,7 @@ public class StartClientIT extends AbstractShellIT
                 getClass().getResource( "/config-with-bolt-connector.conf" ).getFile()}, mock( CtrlCHandler.class ) );
         try
         {
-            log.assertNone( inLog( startsWith( BoltKernelExtension.class.getPackage().getName() ) ).any() );
+            log.assertNone( inLog( startsWith( BoltServer.class.getPackage().getName() ) ).any() );
         }
         finally
         {

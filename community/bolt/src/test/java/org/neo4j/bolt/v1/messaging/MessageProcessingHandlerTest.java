@@ -24,8 +24,8 @@ import org.junit.Test;
 import java.io.IOException;
 
 import org.neo4j.bolt.runtime.BoltConnection;
+import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.v1.packstream.PackOutputClosedException;
-import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.AssertableLogProvider;

@@ -29,15 +29,17 @@ import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
+import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
+import org.neo4j.graphdb.factory.module.EditionModule;
+import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.impl.factory.PlatformModule;
 
 public class CoreGraphDatabase extends GraphDatabaseFacade
 {
+    private EnterpriseCoreEditionModule editionModule;
+
     protected CoreGraphDatabase()
     {
     }
@@ -50,8 +52,11 @@ public class CoreGraphDatabase extends GraphDatabaseFacade
     public CoreGraphDatabase( File storeDir, Config config,
             GraphDatabaseFacadeFactory.Dependencies dependencies, DiscoveryServiceFactory discoveryServiceFactory )
     {
-        Function<PlatformModule,EditionModule> factory =
-                platformModule -> new EnterpriseCoreEditionModule( platformModule, discoveryServiceFactory );
+        Function<PlatformModule,EditionModule> factory = platformModule ->
+        {
+            editionModule = new EnterpriseCoreEditionModule( platformModule, discoveryServiceFactory );
+            return editionModule;
+        };
         new GraphDatabaseFacadeFactory( DatabaseInfo.CORE, factory ).initFacade( storeDir, config, dependencies, this );
     }
 
@@ -62,6 +67,6 @@ public class CoreGraphDatabase extends GraphDatabaseFacade
 
     public void disableCatchupServer() throws Throwable
     {
-        ((EnterpriseCoreEditionModule) editionModule).disableCatchupServer();
+        editionModule.disableCatchupServer();
     }
 }

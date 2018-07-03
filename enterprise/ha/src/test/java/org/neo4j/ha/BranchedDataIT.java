@@ -66,7 +66,6 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.lang.String.format;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.graphdb.GraphDatabaseInternalLogIT.INTERNAL_LOG_FILE;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
@@ -200,7 +199,7 @@ public class BranchedDataIT
         cluster.await( allSeesAllAsAvailable() );
         assertFalse( thor.isMaster() );
         assertTrue( "No store-copy performed", thorHasBranched.copyCompleted );
-        assertTrue( "Store-copy unsuccessful", thorHasBranched.copySucessful );
+        assertTrue( "Store-copy unsuccessful", thorHasBranched.copySuccessful );
 
         // Now do some more transactions on current master (odin) and have thor pull those
         for ( int i = 0; i < 3; i++ )
@@ -343,7 +342,7 @@ public class BranchedDataIT
         for ( File file : Objects.requireNonNull( dir.listFiles() ) )
         {
             String fileName = file.getName();
-            if ( !fileName.equals( INTERNAL_LOG_FILE ) && !file.getName().startsWith( "branched-" ) )
+            if ( !fileName.equals( "debug.log" ) && !file.getName().startsWith( "branched-" ) )
             {
                 FileUtils.renameFile( file, new File( branchDir, file.getName() ) );
             }
@@ -375,13 +374,13 @@ public class BranchedDataIT
     private static class BranchMonitor implements Monitor
     {
         private volatile boolean copyCompleted;
-        private volatile boolean copySucessful;
+        private volatile boolean copySuccessful;
 
         @Override
         public void storeCopyCompleted( boolean wasSuccessful )
         {
             copyCompleted = true;
-            copySucessful = wasSuccessful;
+            copySuccessful = wasSuccessful;
         }
     }
 }

@@ -231,7 +231,8 @@ public class BackupStrategyCoordinatorTest
     public void havingNoStrategiesCausesAllSolutionsFailedException() throws CommandFailed
     {
         // given there are no strategies in the solution
-        subject = new BackupStrategyCoordinator( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory, Collections.emptyList() );
+        subject = new BackupStrategyCoordinator( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory,
+                Collections.emptyList() );
 
         // then we want a predictable exception (instead of NullPointer)
         expectedException.expect( CommandFailed.class );

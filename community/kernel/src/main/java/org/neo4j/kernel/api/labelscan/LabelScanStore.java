@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.labelscan;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -52,11 +51,6 @@ public interface LabelScanStore extends Lifecycle
             }
 
             @Override
-            public void lockedIndex( Exception e )
-            {   // empty
-            }
-
-            @Override
             public void notValidIndex()
             {   // empty
             }
@@ -72,7 +66,27 @@ public interface LabelScanStore extends Lifecycle
             }
 
             @Override
-            public void recoveryCompleted( Map<String,Object> data )
+            public void recoveryCleanupRegistered()
+            {   // empty
+            }
+
+            @Override
+            public void recoveryCleanupStarted()
+            {   // empty
+            }
+
+            @Override
+            public void recoveryCleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
+            {   // empty
+            }
+
+            @Override
+            public void recoveryCleanupClosed()
+            {   // empty
+            }
+
+            @Override
+            public void recoveryCleanupFailed( Throwable throwable )
             {   // empty
             }
         }
@@ -81,15 +95,21 @@ public interface LabelScanStore extends Lifecycle
 
         void noIndex();
 
-        void lockedIndex( Exception e );
-
         void notValidIndex();
 
         void rebuilding();
 
         void rebuilt( long roughNodeCount );
 
-        void recoveryCompleted( Map<String,Object> data );
+        void recoveryCleanupRegistered();
+
+        void recoveryCleanupStarted();
+
+        void recoveryCleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis );
+
+        void recoveryCleanupClosed();
+
+        void recoveryCleanupFailed( Throwable throwable );
     }
 
     /**

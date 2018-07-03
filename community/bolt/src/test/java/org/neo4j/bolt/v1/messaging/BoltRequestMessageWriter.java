@@ -23,8 +23,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Map;
 
+import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.v1.messaging.message.RequestMessage;
-import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.virtual.MapValue;
 

@@ -44,7 +44,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -162,13 +162,13 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     }
 
     @Override
-    public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
+    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
     {
         // No-op, uniqueness is checked for each update in add(IndexEntryUpdate)
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
+    public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor )
     {
         IndexUpdater updater = new IndexUpdater()
         {
@@ -304,12 +304,12 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         {
             failureBytes = ArrayUtils.EMPTY_BYTE_ARRAY;
         }
-        tree.checkpoint( IOLimiter.unlimited(), new FailureHeaderWriter( failureBytes ) );
+        tree.checkpoint( IOLimiter.UNLIMITED, new FailureHeaderWriter( failureBytes ) );
     }
 
     void markTreeAsOnline() throws IOException
     {
-        tree.checkpoint( IOLimiter.unlimited(), pc -> pc.putByte( BYTE_ONLINE ) );
+        tree.checkpoint( IOLimiter.UNLIMITED, pc -> pc.putByte( BYTE_ONLINE ) );
     }
 
     static class IndexUpdateApply<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
@@ -370,13 +370,50 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         switch ( descriptor.type() )
         {
         case GENERAL:
-            nonUniqueSampler.include( SamplingUtil.encodedStringValuesForSampling( (Object[]) update.values() ) );
+            updateNonUniqueSample( update );
             break;
         case UNIQUE:
-            uniqueSampler.increment( 1 );
+            updateUniqueSample( update );
             break;
         default:
             throw new IllegalArgumentException( "Unexpected index type " + descriptor.type() );
+        }
+    }
+
+    private void updateUniqueSample( IndexEntryUpdate<?> update )
+    {
+        switch ( update.updateMode() )
+        {
+        case ADDED:
+            uniqueSampler.increment( 1 );
+            break;
+        case REMOVED:
+            uniqueSampler.increment( -1 );
+            break;
+        case CHANGED:
+            break;
+        default:
+            throw new IllegalArgumentException( "Unsupported update mode type:" + update.updateMode() );
+        }
+    }
+
+    private void updateNonUniqueSample( IndexEntryUpdate<?> update )
+    {
+        String encodedValues = SamplingUtil.encodedStringValuesForSampling( (Object[]) update.values() );
+        switch ( update.updateMode() )
+        {
+        case ADDED:
+            nonUniqueSampler.include( encodedValues );
+            break;
+        case REMOVED:
+            nonUniqueSampler.exclude( encodedValues );
+            break;
+        case CHANGED:
+            nonUniqueSampler.exclude( SamplingUtil.encodedStringValuesForSampling( (Object[]) update.beforeValues() ) );
+            nonUniqueSampler.include( encodedValues );
+            break;
+        default:
+            throw new IllegalArgumentException( "Unsupported update mode type:" + update.updateMode() );
         }
     }
 

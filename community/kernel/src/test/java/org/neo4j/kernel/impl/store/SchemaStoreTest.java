@@ -33,7 +33,7 @@ import java.util.stream.IntStream;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -50,6 +51,7 @@ import static java.nio.ByteBuffer.wrap;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.multiToken;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
@@ -120,6 +122,45 @@ public class SchemaStoreTest
     }
 
     @Test
+    public void storeAndLoadMultiTokenSchemaRule() throws Exception
+    {
+        // GIVEN
+        int[] propertyIds = {4, 5, 6, 7};
+        int[] entityTokens = {2, 3, 4};
+        StoreIndexDescriptor indexRule =
+                forSchema( multiToken( entityTokens, EntityType.RELATIONSHIP, propertyIds ), PROVIDER_DESCRIPTOR ).withId( store.nextId() );
+
+        // WHEN
+        StoreIndexDescriptor readIndexRule =
+                (StoreIndexDescriptor) SchemaRuleSerialization.deserialize( indexRule.getId(), wrap( SchemaRuleSerialization.serialize( indexRule ) ) );
+
+        // THEN
+        assertEquals( indexRule.getId(), readIndexRule.getId() );
+        assertEquals( indexRule.schema(), readIndexRule.schema() );
+        assertEquals( indexRule, readIndexRule );
+        assertEquals( indexRule.providerDescriptor(), readIndexRule.providerDescriptor() );
+    }
+
+    @Test
+    public void storeAndLoadAnyTokenMultiTokenSchemaRule() throws Exception
+    {
+        // GIVEN
+        int[] propertyIds = {4, 5, 6, 7};
+        int[] entityTokens = {};
+        StoreIndexDescriptor indexRule = forSchema( multiToken( entityTokens, EntityType.NODE, propertyIds ), PROVIDER_DESCRIPTOR ).withId( store.nextId() );
+
+        // WHEN
+        StoreIndexDescriptor readIndexRule =
+                (StoreIndexDescriptor) SchemaRuleSerialization.deserialize( indexRule.getId(), wrap( SchemaRuleSerialization.serialize( indexRule ) ) );
+
+        // THEN
+        assertEquals( indexRule.getId(), readIndexRule.getId() );
+        assertEquals( indexRule.schema(), readIndexRule.schema() );
+        assertEquals( indexRule, readIndexRule );
+        assertEquals( indexRule.providerDescriptor(), readIndexRule.providerDescriptor() );
+    }
+
+    @Test
     public void storeAndLoad_Big_CompositeSchemaRule() throws Exception
     {
         // GIVEN
@@ -128,6 +169,25 @@ public class SchemaStoreTest
         // WHEN
         StoreIndexDescriptor readIndexRule = (StoreIndexDescriptor) SchemaRuleSerialization.deserialize(
                 indexRule.getId(), wrap( SchemaRuleSerialization.serialize( indexRule ) ) );
+
+        // THEN
+        assertEquals( indexRule.getId(), readIndexRule.getId() );
+        assertEquals( indexRule.schema(), readIndexRule.schema() );
+        assertEquals( indexRule, readIndexRule );
+        assertEquals( indexRule.providerDescriptor(), readIndexRule.providerDescriptor() );
+    }
+
+    @Test
+    public void storeAndLoad_Big_CompositeMultiTokenSchemaRule() throws Exception
+    {
+        // GIVEN
+        StoreIndexDescriptor indexRule =
+                forSchema( multiToken( IntStream.range( 1, 200 ).toArray(), EntityType.RELATIONSHIP, IntStream.range( 1, 200 ).toArray() ),
+                        PROVIDER_DESCRIPTOR ).withId( store.nextId() );
+
+        // WHEN
+        StoreIndexDescriptor readIndexRule =
+                (StoreIndexDescriptor) SchemaRuleSerialization.deserialize( indexRule.getId(), wrap( SchemaRuleSerialization.serialize( indexRule ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );

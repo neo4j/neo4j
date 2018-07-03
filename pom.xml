@@ -79,7 +79,7 @@
       -Dorg.org.neo4j.kernel.impl.newapi.DefaultCursors.trackCursors=true
       -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${java.exports} ${test.runner.jvm.settings.additional}
     </test.runner.jvm.settings>
-    <jetty.version>9.4.8.v20171121</jetty.version>
+    <jetty.version>9.4.11.v20180605</jetty.version>
     <findbugs.version>3.0.1</findbugs.version>
     <git.commit>unknown-commit</git.commit>
     <forkCounts>0</forkCounts>
@@ -87,10 +87,11 @@
 
     <license-text.header>headers/AGPL-3-header.txt</license-text.header>
 
+    <openCypher.frontend.version>9.0.3</openCypher.frontend.version>
     <scala-maven-plugin.version>3.3.2</scala-maven-plugin.version>
     <scala.version>2.11.12</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
-    <asm.version>6.1.1</asm.version>
+    <asm.version>6.2</asm.version>
     <metrics.version>4.0.2</metrics.version>
     <scala.target.vm>1.8</scala.target.vm>
     <scala.java.additional.args/>
@@ -371,9 +372,10 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.21.0</version>
+          <version>2.22.0</version>
           <configuration>
             <forkCount>${forkCounts}</forkCount>
+            <trimStackTrace>false</trimStackTrace>
             <reuseForks>true</reuseForks>
             <argLine>${test.runner.jvm.settings}</argLine>
             <runOrder>random</runOrder>
@@ -387,31 +389,15 @@
               <exclude>**/*IntegrationTest.class</exclude>
             </excludes>
           </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.junit.platform</groupId>
-              <artifactId>junit-platform-surefire-provider</artifactId>
-              <version>${junit.platform.version}</version>
-            </dependency>
-            <dependency>
-              <groupId>org.junit.vintage</groupId>
-              <artifactId>junit-vintage-engine</artifactId>
-              <version>${junit.version}</version>
-            </dependency>
-            <dependency>
-              <groupId>org.junit.jupiter</groupId>
-              <artifactId>junit-jupiter-engine</artifactId>
-              <version>${junit.version}</version>
-            </dependency>
-          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
-          <version>2.21.0</version>
+          <version>2.22.0</version>
           <configuration>
             <argLine>${test.runner.jvm.settings}</argLine>
             <forkCount>${forkCounts}</forkCount>
+            <trimStackTrace>false</trimStackTrace>
             <reuseForks>true</reuseForks>
             <runOrder>random</runOrder>
             <includes>
@@ -427,23 +413,6 @@
             </systemPropertyVariables>
             <jvm>${test.runner.jvm}</jvm>
           </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.junit.platform</groupId>
-              <artifactId>junit-platform-surefire-provider</artifactId>
-              <version>${junit.platform.version}</version>
-            </dependency>
-            <dependency>
-              <groupId>org.junit.vintage</groupId>
-              <artifactId>junit-vintage-engine</artifactId>
-              <version>${junit.version}</version>
-            </dependency>
-            <dependency>
-              <groupId>org.junit.jupiter</groupId>
-              <artifactId>junit-jupiter-engine</artifactId>
-              <version>${junit.version}</version>
-            </dependency>
-          </dependencies>
           <executions>
             <execution>
               <id>integration-test</id>
@@ -966,7 +935,7 @@
         <jdk>[9, )</jdk>
       </activation>
       <properties>
-        <java.exports>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-modules java.xml.bind</java.exports>
+        <java.exports>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</java.exports>
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <scala.java.additional.args>-nobootcp</scala.java.additional.args>
       </properties>
@@ -1049,7 +1018,7 @@
       <dependency>
         <groupId>org.neo4j.driver</groupId>
         <artifactId>neo4j-java-driver</artifactId>
-        <version>1.5.2</version>
+        <version>1.6.1</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -1090,14 +1059,6 @@
 
       <!-- The JUnit-Hamcrest-Mockito combo -->
       <dependency>
-        <groupId>org.apache.maven.surefire</groupId>
-        <artifactId>surefire-logger-api</artifactId>
-        <version>2.21.0</version>
-        <!-- to get around bug https://github.com/junit-team/junit5/issues/801 -->
-        <scope>test</scope>
-        <optional>true</optional>
-      </dependency>
-      <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-params</artifactId>
         <version>${junit.version}</version>
@@ -1110,8 +1071,14 @@
         <scope>test</scope>
       </dependency>
       <dependency>
+        <groupId>org.junit.vintage</groupId>
+        <artifactId>junit-vintage-engine</artifactId>
+        <version>${junit.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
         <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-api</artifactId>
+        <artifactId>junit-jupiter-engine</artifactId>
         <version>${junit.version}</version>
         <scope>test</scope>
       </dependency>
@@ -1138,7 +1105,7 @@
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>2.18.3</version>
+        <version>2.19.0</version>
         <scope>test</scope>
       </dependency>
 

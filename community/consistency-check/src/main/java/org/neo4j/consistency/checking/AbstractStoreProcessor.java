@@ -55,11 +55,6 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
     private final RecordCheck<LabelTokenRecord,LabelTokenConsistencyReport> labelTokenChecker;
     private final RecordCheck<RelationshipGroupRecord,RelationshipGroupConsistencyReport> relationshipGroupChecker;
 
-    public AbstractStoreProcessor()
-    {
-        this( CheckDecorator.NONE );
-    }
-
     public AbstractStoreProcessor( CheckDecorator decorator )
     {
         this.sparseNodeChecker = decorator.decorateNodeChecker( NodeRecordCheck.forSparseNodes() );

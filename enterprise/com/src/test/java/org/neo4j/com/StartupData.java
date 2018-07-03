@@ -28,19 +28,21 @@ class StartupData implements Serializable
 {
     private static final long serialVersionUID = 3570271945897559074L;
 
-    long creationTime;
-    long storeId;
-    byte applicationProtocolVersion;
-    byte internalProtocolVersion;
-    int chunkSize;
+    final int port;
+    final long creationTime;
+    final long storeId;
+    final byte applicationProtocolVersion;
+    final byte internalProtocolVersion;
+    final int chunkSize;
 
     StartupData( long creationTime, long storeId, byte internalProtocolVersion, byte applicationProtocolVersion,
-            int chunkSize )
+            int chunkSize, int port )
     {
         this.creationTime = creationTime;
         this.storeId = storeId;
         this.internalProtocolVersion = internalProtocolVersion;
         this.applicationProtocolVersion = applicationProtocolVersion;
         this.chunkSize = chunkSize;
+        this.port = port;
     }
 }

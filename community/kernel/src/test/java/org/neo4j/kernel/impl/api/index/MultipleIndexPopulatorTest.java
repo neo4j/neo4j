@@ -39,10 +39,11 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.IndexPopulation;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -65,7 +66,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
-import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 @RunWith( MockitoJUnitRunner.class )
 public class MultipleIndexPopulatorTest
@@ -77,6 +77,8 @@ public class MultipleIndexPopulatorTest
     private StoreScan storeScan;
     @Mock( answer = Answers.RETURNS_MOCKS )
     private LogProvider logProvider;
+    @Mock
+    private SchemaState schemaState;
     @InjectMocks
     private MultipleIndexPopulator multipleIndexPopulator;
 
@@ -178,7 +180,7 @@ public class MultipleIndexPopulatorTest
 
         multipleIndexPopulator.cancelIndexPopulation( populationToCancel );
 
-        multipleIndexPopulator.indexAllNodes();
+        multipleIndexPopulator.indexAllEntities();
 
         assertTrue( multipleIndexPopulator.hasPopulators() );
 
@@ -200,7 +202,7 @@ public class MultipleIndexPopulatorTest
 
         multipleIndexPopulator.cancelIndexPopulation( populationToCancel );
 
-        multipleIndexPopulator.indexAllNodes();
+        multipleIndexPopulator.indexAllEntities();
 
         assertTrue( multipleIndexPopulator.hasPopulators() );
 
@@ -219,7 +221,7 @@ public class MultipleIndexPopulatorTest
         addPopulator( indexPopulator2, 2 );
 
         multipleIndexPopulator.create();
-        multipleIndexPopulator.indexAllNodes();
+        multipleIndexPopulator.indexAllEntities();
 
         verify( indexStoreView )
                 .visitNodes( any( int[].class ), any( IntPredicate.class ), any( Visitor.class ), isNull(),
@@ -365,7 +367,7 @@ public class MultipleIndexPopulatorTest
 
         when( indexPopulator1.sampleResult() ).thenThrow( getSampleError() );
 
-        multipleIndexPopulator.indexAllNodes();
+        multipleIndexPopulator.indexAllEntities();
         multipleIndexPopulator.flipAfterPopulation();
 
         verify( indexPopulator1 ).close( false );
@@ -374,6 +376,7 @@ public class MultipleIndexPopulatorTest
         verify( indexPopulator2 ).close( true );
         verify( indexPopulator2 ).sampleResult();
         verify( indexStoreView ).replaceIndexCounts( anyLong(), anyLong(), anyLong(), anyLong() );
+        verify( schemaState ).clear();
     }
 
     @Test
@@ -387,10 +390,10 @@ public class MultipleIndexPopulatorTest
         addPopulator( indexPopulator2, 2 );
 
         doThrow( new UncheckedIOException( getPopulatorException() ) ).when( indexPopulator2 )
-                .newPopulatingUpdater( any( PropertyAccessor.class ) );
+                .newPopulatingUpdater( any( NodePropertyAccessor.class ) );
 
         IndexUpdater multipleIndexUpdater =
-                multipleIndexPopulator.newPopulatingUpdater( mock( PropertyAccessor.class ) );
+                multipleIndexPopulator.newPopulatingUpdater( mock( NodePropertyAccessor.class ) );
         IndexEntryUpdate<?> propertyUpdate = createIndexEntryUpdate( index1 );
         multipleIndexUpdater.process( propertyUpdate );
 
@@ -407,7 +410,7 @@ public class MultipleIndexPopulatorTest
         addPopulator( indexPopulator1, 2 );
 
         IndexUpdater multipleIndexUpdater =
-                multipleIndexPopulator.newPopulatingUpdater( mock( PropertyAccessor.class ) );
+                multipleIndexPopulator.newPopulatingUpdater( mock( NodePropertyAccessor.class ) );
 
         IndexEntryUpdate<?> propertyUpdate = createIndexEntryUpdate( index1 );
         multipleIndexUpdater.process( propertyUpdate );
@@ -427,7 +430,7 @@ public class MultipleIndexPopulatorTest
         doThrow( getPopulatorException() ).when( indexUpdater1 ).process( propertyUpdate );
 
         IndexUpdater multipleIndexUpdater =
-                multipleIndexPopulator.newPopulatingUpdater( mock( PropertyAccessor.class ) );
+                multipleIndexPopulator.newPopulatingUpdater( mock( NodePropertyAccessor.class ) );
 
         multipleIndexUpdater.process( propertyUpdate );
 
@@ -438,7 +441,7 @@ public class MultipleIndexPopulatorTest
     @Test
     public void testMultiplePropertyUpdateFailures() throws IOException, IndexEntryConflictException, FlipFailedKernelException
     {
-        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+        NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
         IndexEntryUpdate<?> update1 = add( 1, index1, "foo" );
         IndexEntryUpdate<?> update2 = add( 2, index1, "bar" );
         IndexUpdater updater = mock( IndexUpdater.class );
@@ -448,7 +451,7 @@ public class MultipleIndexPopulatorTest
 
         doThrow( getPopulatorException() ).when( updater ).process( any( IndexEntryUpdate.class ) );
 
-        IndexUpdater multipleIndexUpdater = multipleIndexPopulator.newPopulatingUpdater( propertyAccessor );
+        IndexUpdater multipleIndexUpdater = multipleIndexPopulator.newPopulatingUpdater( nodePropertyAccessor );
 
         multipleIndexUpdater.process( update1 );
         multipleIndexUpdater.process( update2 );
@@ -472,7 +475,7 @@ public class MultipleIndexPopulatorTest
     private IndexPopulator createIndexPopulator( IndexUpdater indexUpdater ) throws IOException
     {
         IndexPopulator indexPopulator = createIndexPopulator();
-        when( indexPopulator.newPopulatingUpdater( any( PropertyAccessor.class ) ) ).thenReturn( indexUpdater );
+        when( indexPopulator.newPopulatingUpdater( any( NodePropertyAccessor.class ) ) ).thenReturn( indexUpdater );
         return indexPopulator;
     }
 

@@ -22,9 +22,10 @@ package org.neo4j.server.rest.repr;
 import org.junit.Test;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Map;
 
-import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.server.rest.discovery.DiscoverableURIs;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -32,12 +33,13 @@ import static org.junit.Assert.assertNotNull;
 public class DiscoveryRepresentationTest
 {
     @Test
-    public void shouldCreateAMapContainingDataAndManagementURIs()
+    public void shouldCreateAMapContainingDataAndManagementURIs() throws URISyntaxException
     {
         String managementUri = "/management";
         String dataUri = "/data";
-        AdvertisedSocketAddress boltAddress = new AdvertisedSocketAddress( "localhost", 7687 );
-        DiscoveryRepresentation dr = new DiscoveryRepresentation( managementUri, dataUri, boltAddress );
+        DiscoveryRepresentation dr = new DiscoveryRepresentation(
+                new DiscoverableURIs().addRelative( "management", managementUri ).addRelative( "data",
+                        dataUri ).addAbsolute( "bolt", new URI( "bolt://localhost:7687" ) ) );
 
         Map<String,Object> mapOfUris = RepresentationTestAccess.serialize( dr );
 
@@ -53,11 +55,6 @@ public class DiscoveryRepresentationTest
 
         assertEquals( mappedManagementUri.toString(), Serializer.joinBaseWithRelativePath( baseUri, managementUri ) );
         assertEquals( mappedDataUri.toString(), Serializer.joinBaseWithRelativePath( baseUri, dataUri ) );
-        assertEquals( mappedBoltUri.toString(), toBoltUri( boltAddress ) );
-    }
-
-    private String toBoltUri( AdvertisedSocketAddress boltAddress )
-    {
-        return "bolt://" + boltAddress.getHostname() + ":" + boltAddress.getPort();
+        assertEquals( mappedBoltUri.toString(), "bolt://localhost:7687" );
     }
 }

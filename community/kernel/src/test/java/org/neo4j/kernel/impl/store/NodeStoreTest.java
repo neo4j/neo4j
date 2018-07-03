@@ -31,16 +31,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.LongSupplier;
-import java.util.stream.LongStream;
 
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
@@ -60,18 +57,13 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.NodeStore.readOwnerFromDynamicLabelsRecord;
@@ -344,24 +336,6 @@ public class NodeStoreTest
         IdGenerator idGenerator = idGeneratorFactory.get( IdType.NODE );
         verify( idGenerator, never() ).freeId( 5L );
         verify( idGenerator ).freeId( 10L );
-    }
-
-    @Test
-    @SuppressWarnings( "unchecked" )
-    public void ensureHeavy()
-    {
-        long[] labels = LongStream.range( 1, 1000 ).toArray();
-        NodeRecord node = new NodeRecord( 5 );
-        node.setLabelField( 10, Collections.emptyList() );
-        Collection<DynamicRecord> dynamicLabelRecords = DynamicNodeLabels.putSorted( node, labels,
-                mock( NodeStore.class ), new StandaloneDynamicRecordAllocator() );
-        assertThat( dynamicLabelRecords, not( empty() ) );
-        RecordCursor<DynamicRecord> dynamicLabelCursor = mock( RecordCursor.class );
-        when( dynamicLabelCursor.getAll() ).thenReturn( Iterables.asList( dynamicLabelRecords ) );
-
-        NodeStore.ensureHeavy( node, dynamicLabelCursor );
-
-        assertEquals( dynamicLabelRecords, node.getDynamicLabelRecords() );
     }
 
     private NodeStore newNodeStore( FileSystemAbstraction fs ) throws IOException

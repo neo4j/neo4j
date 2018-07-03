@@ -20,50 +20,45 @@
 package org.neo4j.kernel.impl.api;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.api.ExplicitIndexValueValidator.INSTANCE;
 import static org.neo4j.kernel.impl.api.LuceneIndexValueValidator.MAX_TERM_LENGTH;
 
-public class ExplicitIndexValueValidatorTest
+class ExplicitIndexValueValidatorTest
 {
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     @Test
-    public void nullIsNotAllowed()
+    void nullIsNotAllowed()
     {
-        expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( "Null value" );
-        INSTANCE.validate( null );
+        IllegalArgumentException iae = assertThrows( IllegalArgumentException.class, () -> INSTANCE.validate( null ) );
+        assertEquals( iae.getMessage(), "Null value" );
     }
 
     @Test
-    public void stringOverExceedLimitNotAllowed()
+    void stringOverExceedLimitNotAllowed()
     {
         int length = MAX_TERM_LENGTH * 2;
-        expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( containsString( length + " is longer than " + MAX_TERM_LENGTH ) );
-        INSTANCE.validate( RandomStringUtils.randomAlphabetic( length ) );
+        IllegalArgumentException iae = assertThrows( IllegalArgumentException.class, () -> INSTANCE.validate( RandomStringUtils.randomAlphabetic( length ) ) );
+        assertThat( iae.getMessage(), containsString( length + " is longer than " + MAX_TERM_LENGTH ) );
     }
 
     @Test
-    public void nullToStringIsNotAllowed()
+    void nullToStringIsNotAllowed()
     {
-        expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( "has null toString" );
-
-        Object testValue = Mockito.mock( Object.class );
-        Mockito.when( testValue.toString() ).thenReturn( null );
-        INSTANCE.validate( testValue );
+        Object testValue = mock( Object.class );
+        when( testValue.toString() ).thenReturn( null );
+        IllegalArgumentException iae = assertThrows( IllegalArgumentException.class, () -> INSTANCE.validate( testValue ) );
+        assertThat( iae.getMessage(), containsString( "has null toString" ) );
     }
 
     @Test
-    public void numberIsValidValue()
+    void numberIsValidValue()
     {
         INSTANCE.validate( 5 );
         INSTANCE.validate( 5.0d );
@@ -72,7 +67,7 @@ public class ExplicitIndexValueValidatorTest
     }
 
     @Test
-    public void shortStringIsValidValue()
+    void shortStringIsValidValue()
     {
         INSTANCE.validate( RandomStringUtils.randomAlphabetic( 5 ) );
         INSTANCE.validate( RandomStringUtils.randomAlphabetic( 10 ) );

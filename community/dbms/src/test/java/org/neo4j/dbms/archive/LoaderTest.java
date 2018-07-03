@@ -219,16 +219,16 @@ public class LoaderTest
 
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
         Path destination = testDirectory.file( "destination" ).toPath();
-        Path txLogsDrectory = testDirectory.directory( "subdir/txLogs" ).toPath();
-        Files.createDirectories( txLogsDrectory.getParent() );
-        try ( Closeable ignored = withPermissions( txLogsDrectory.getParent(), emptySet() ) )
+        Path txLogsDirectory = testDirectory.directory( "subdir/txLogs" ).toPath();
+        Files.createDirectories( txLogsDirectory.getParent() );
+        try ( Closeable ignored = withPermissions( txLogsDirectory.getParent(), emptySet() ) )
         {
-            new Loader().load( archive, destination, txLogsDrectory );
+            new Loader().load( archive, destination, txLogsDirectory );
             fail( "Expected an exception" );
         }
         catch ( AccessDeniedException e )
         {
-            assertEquals( txLogsDrectory.getParent().toString(), e.getMessage() );
+            assertEquals( txLogsDirectory.getParent().toString(), e.getMessage() );
         }
     }
 }

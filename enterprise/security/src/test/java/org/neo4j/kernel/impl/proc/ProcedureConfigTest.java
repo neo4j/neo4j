@@ -192,7 +192,7 @@ public class ProcedureConfigTest
     }
 
     @Test
-    public void shouldAllowFullAcsessForSeveralProceduresOddNames()
+    public void shouldAllowFullAccessForSeveralProceduresOddNames()
     {
         Config config = Config.defaults( procedure_unrestricted, "test\\.procedure.name, test*rocedure.otherName" );
         ProcedureConfig procConfig = new ProcedureConfig( config );

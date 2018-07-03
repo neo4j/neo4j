@@ -119,7 +119,7 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
       ret("est cardinality"),
       ret("winner")
     )
-    val returnClause = Return(distinct = false, ReturnItems(includeExisting = false, returnItems)(pos), None, None, None, None, Set.empty)(pos)
+    val returnClause = Return(distinct = false, ReturnItems(includeExisting = false, returnItems)(pos), None, None, None, Set.empty)(pos)
     Query(None, SingleQuery(Seq(returnClause))(pos))(pos)
   }
 

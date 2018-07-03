@@ -66,7 +66,6 @@ public class LuceneKernelExtension extends LifecycleAdapter
     @Override
     public void init()
     {
-
         delegate.init( );
     }
 

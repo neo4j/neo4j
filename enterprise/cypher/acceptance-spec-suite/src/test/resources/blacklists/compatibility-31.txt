@@ -15,9 +15,10 @@ Feature "OrderByAcceptance": Scenario "ORDER BY node problem"
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to unknown procedure should fail"
 Feature "ProcedureCallAcceptance": Scenario "In-query call to unknown procedure should fail"
 Feature "ReturnAcceptance": Scenario "LIMIT 0 should stop side effects"
+Feature "ReturnAcceptance": Scenario "RETURN true AND list"
+Feature "ReturnAcceptance": Scenario "RETURN false OR list"
 Feature "UnwindAcceptance": Scenario "Pattern comprehension in unwind with empty db"
 Feature "UnwindAcceptance": Scenario "Pattern comprehension in unwind with hits"
-
 Feature "TemporalComparisonAcceptance": Scenario "Should compare dates"
 Feature "TemporalComparisonAcceptance": Scenario "Should compare local times"
 Feature "TemporalComparisonAcceptance": Scenario "Should compare times"
@@ -51,6 +52,7 @@ Feature "TemporalArithmeticAcceptance": Scenario "Should add or subtract duratio
 Feature "TemporalArithmeticAcceptance": Scenario "Should add or subtract duration to or from date time"
 Feature "TemporalArithmeticAcceptance": Scenario "Should add or subtract durations"
 Feature "TemporalArithmeticAcceptance": Scenario "Should multiply or divide durations by numbers"
+Feature "DurationBetweenAcceptance": Scenario "Should split between boundaries correctly"
 
 // Fixed when we move from 3.1.8 to 3.1.9
 Feature "PatternPredicates": Scenario "Undirected NOOP path predicate 1"

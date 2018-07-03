@@ -26,27 +26,29 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.vectorized._
-/*
-Takes an input morsel and compacts all rows to the beginning of it, only keeping the rows that match a predicate
+import org.neo4j.values.storable.Values
+
+/**
+ * Takes an input morsel and compacts all rows to the beginning of it, only keeping the rows that match a predicate
  */
-class FilterOperator(predicate: Predicate) extends MiddleOperator {
-  override def operate(iterationState: Iteration,
-                       readingRow: MorselExecutionContext,
-                       context: QueryContext,
-                       state: QueryState): Unit = {
+class FilterOperator(predicate: Predicate) extends StatelessOperator {
 
-    val writingRow = readingRow.createClone()
-    val queryState = new OldQueryState(context, resources = null, params = state.params)
+    override def operate(readingRow: MorselExecutionContext,
+                         context: QueryContext,
+                         state: QueryState): Unit = {
 
-    while (readingRow.hasMoreRows) {
-      val matches = predicate.isTrue(readingRow, queryState)
-      if (matches) {
-        writingRow.copyFrom(readingRow)
-        writingRow.moveToNextRow()
+      val writingRow = readingRow.createClone()
+      val queryState = new OldQueryState(context, resources = null, params = state.params)
+
+      while (readingRow.hasMoreRows) {
+        val matches = predicate(readingRow, queryState) == Values.TRUE
+        if (matches) {
+          writingRow.copyFrom(readingRow)
+          writingRow.moveToNextRow()
+        }
+        readingRow.moveToNextRow()
       }
-      readingRow.moveToNextRow()
-    }
 
-    writingRow.finishedWriting()
+      writingRow.finishedWriting()
   }
 }

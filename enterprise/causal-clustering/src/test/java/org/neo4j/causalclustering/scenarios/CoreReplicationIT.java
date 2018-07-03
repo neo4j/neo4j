@@ -106,10 +106,10 @@ public class CoreReplicationIT
             tx.success();
             fail( "Should have thrown exception" );
         }
-        catch ( WriteOperationsNotAllowedException ignored )
+        catch ( WriteOperationsNotAllowedException ex )
         {
             // expected
-            assertThat( ignored.getMessage(), containsString( "No write operations are allowed" ) );
+            assertThat( ex.getMessage(), containsString( "No write operations are allowed" ) );
         }
     }
 
@@ -168,10 +168,10 @@ public class CoreReplicationIT
             tx.success();
             fail( "Should have thrown exception" );
         }
-        catch ( WriteOperationsNotAllowedException ignored )
+        catch ( WriteOperationsNotAllowedException ex )
         {
             // expected
-            assertThat( ignored.getMessage(), containsString( "No write operations are allowed" ) );
+            assertThat( ex.getMessage(), containsString( "No write operations are allowed" ) );
         }
     }
 
@@ -197,10 +197,9 @@ public class CoreReplicationIT
             tx.success();
             fail( "Should have thrown exception" );
         }
-        catch ( WriteOperationsNotAllowedException ignored )
+        catch ( WriteOperationsNotAllowedException ex )
         {
-            // expected
-            assertThat( ignored.getMessage(), containsString( "No write operations are allowed" ) );
+            assertThat( ex.getMessage(), containsString( "No write operations are allowed" ) );
         }
     }
 

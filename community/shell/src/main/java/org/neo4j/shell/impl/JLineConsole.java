@@ -26,7 +26,7 @@ import org.neo4j.shell.ShellClient;
 
 /**
  * Implements the {@link Console} interface with jLine using reflections only,
- * since we don't wan't a runtime dependency on jLine.
+ * since we don't want a runtime dependency on jLine.
  */
 public class JLineConsole implements Console
 {

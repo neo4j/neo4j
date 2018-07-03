@@ -205,7 +205,7 @@ public class Start extends TransactionProvidingApp
                 new ShellConnectionInfo( session.getId() ),
                 transaction,
                 queryText,
-                ValueUtils.asMapValue( queryParameters )
+                ValueUtils.asParameterMapValue( queryParameters )
         );
     }
 }

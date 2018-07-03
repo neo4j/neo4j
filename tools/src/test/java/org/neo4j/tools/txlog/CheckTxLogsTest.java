@@ -894,7 +894,7 @@ public class CheckTxLogsTest
     }
 
     @Test
-    public void shouldReportNoInconsistenciesIfTxIdSequenceIsStriclyIncreasingAndHasNoGaps() throws Exception
+    public void shouldReportNoInconsistenciesIfTxIdSequenceIsStrictlyIncreasingAndHasNoGaps() throws Exception
     {
         // given
 

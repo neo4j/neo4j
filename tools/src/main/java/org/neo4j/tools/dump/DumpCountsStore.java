@@ -31,6 +31,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.internal.kernel.api.NamedToken;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -40,7 +42,6 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsVisitor;
-import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -55,7 +56,6 @@ import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.Token;
 
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 
@@ -124,12 +124,12 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
 
     private final PrintStream out;
     private final Map<Long,IndexDescriptor> indexes;
-    private final List<Token> labels;
-    private final List<RelationshipTypeToken> relationshipTypes;
-    private final List<Token> propertyKeys;
+    private final List<NamedToken> labels;
+    private final List<NamedToken> relationshipTypes;
+    private final List<NamedToken> propertyKeys;
 
-    private DumpCountsStore( PrintStream out, Map<Long,IndexDescriptor> indexes, List<Token> labels,
-                             List<RelationshipTypeToken> relationshipTypes, List<Token> propertyKeys )
+    private DumpCountsStore( PrintStream out, Map<Long,IndexDescriptor> indexes, List<NamedToken> labels,
+                             List<NamedToken> relationshipTypes, List<NamedToken> propertyKeys )
     {
         this.out = out;
         this.indexes = indexes;
@@ -153,31 +153,53 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
     @Override
     public void visitNodeCount( int labelId, long count )
     {
-        out.printf( "\tNode[(%s)]:\t%d%n", label( labelId ), count );
+        out.printf( "\tNode[(%s)]:\t%d%n", labels( new int[]{labelId} ), count );
     }
 
     @Override
     public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
     {
         out.printf( "\tRelationship[(%s)-%s->(%s)]:\t%d%n",
-                    label( startLabelId ), relationshipType( typeId ), label( endLabelId ),
+                    labels( new int[]{startLabelId} ), relationshipType( typeId ), labels( new int[]{endLabelId} ),
                     count );
     }
 
     @Override
     public void visitIndexStatistics( long indexId, long updates, long size )
     {
-        IndexDescriptor index = indexes.get( indexId );
-        out.printf( "\tIndexStatistics[(%s {%s})]:\tupdates=%d, size=%d%n",
-                label( index.schema().keyId() ), propertyKeys( index.schema().getPropertyIds() ), updates, size );
+        SchemaDescriptor schema = indexes.get( indexId ).schema();
+        String tokenIds;
+        switch ( schema.entityType() )
+        {
+        case NODE:
+            tokenIds = labels( schema.getEntityTokenIds() );
+            break;
+        case RELATIONSHIP:
+            tokenIds = relationshipTypes( schema.getEntityTokenIds() );
+            break;
+        default:
+            throw new IllegalStateException( "Indexing is not supported for EntityType: " + schema.entityType() );
+        }
+        out.printf( "\tIndexStatistics[(%s {%s})]:\tupdates=%d, size=%d%n", tokenIds, propertyKeys( schema.getPropertyIds() ), updates, size );
     }
 
     @Override
     public void visitIndexSample( long indexId, long unique, long size )
     {
-        IndexDescriptor index = indexes.get( indexId );
-        out.printf( "\tIndexSample[(%s {%s})]:\tunique=%d, size=%d%n",
-                label( index.schema().keyId() ), propertyKeys( index.schema().getPropertyIds() ), unique, size );
+        SchemaDescriptor schema = indexes.get( indexId ).schema();
+        String tokenIds;
+        switch ( schema.entityType() )
+        {
+        case NODE:
+            tokenIds = labels( schema.getEntityTokenIds() );
+            break;
+        case RELATIONSHIP:
+            tokenIds = relationshipTypes( schema.getEntityTokenIds() );
+            break;
+        default:
+            throw new IllegalStateException( "Indexing is not supported for EntityType: " + schema.entityType() );
+        }
+        out.printf( "\tIndexSample[(%s {%s})]:\tunique=%d, size=%d%n", tokenIds, propertyKeys( schema.getPropertyIds() ), unique, size );
     }
 
     @Override
@@ -187,13 +209,25 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         return true;
     }
 
-    private String label( int id )
+    private String labels( int[] ids )
     {
-        if ( id == StatementConstants.ANY_LABEL )
+        if ( ids.length == 1 )
         {
-            return "";
+            if ( ids[0] == StatementConstants.ANY_LABEL )
+            {
+                return "";
+            }
         }
-        return token( new StringBuilder(), labels, ":", "label", id ).toString();
+        StringBuilder builder = new StringBuilder();
+        for ( int i = 0; i < ids.length; i++ )
+        {
+            if ( i > 0 )
+            {
+                builder.append( "," );
+            }
+            token( builder, labels, ":", "label", ids[i] ).toString();
+        }
+        return builder.toString();
     }
 
     private String propertyKeys( int[] ids )
@@ -210,6 +244,27 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         return builder.toString();
     }
 
+    private String relationshipTypes( int[] ids )
+    {
+        if ( ids.length == 1 )
+        {
+            if ( ids[0] == StatementConstants.ANY_LABEL )
+            {
+                return "";
+            }
+        }
+        StringBuilder builder = new StringBuilder();
+        for ( int i = 0; i < ids.length; i++ )
+        {
+            if ( i > 0 )
+            {
+                builder.append( "," );
+            }
+            return token( new StringBuilder().append( '[' ), relationshipTypes, ":", "type", i ).append( ']' ).toString();
+        }
+        return builder.toString();
+    }
+
     private String relationshipType( int id )
     {
         if ( id == StatementConstants.ANY_RELATIONSHIP_TYPE )
@@ -219,9 +274,9 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         return token( new StringBuilder().append( '[' ), relationshipTypes, ":", "type", id ).append( ']' ).toString();
     }
 
-    private static StringBuilder token( StringBuilder result, List<? extends Token> tokens, String pre, String handle, int id )
+    private static StringBuilder token( StringBuilder result, List<NamedToken> tokens, String pre, String handle, int id )
     {
-        Token token = null;
+        NamedToken token = null;
         // search backwards for the token
         for ( int i = (id < tokens.size()) ? id : tokens.size() - 1; i >= 0; i-- )
         {
@@ -249,11 +304,11 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         return result;
     }
 
-    private static <TOKEN extends Token> List<TOKEN> allTokensFrom( TokenStore<?, TOKEN> store )
+    private static List<NamedToken> allTokensFrom( TokenStore<?> store )
     {
-        try ( TokenStore<?, TOKEN> tokens = store )
+        try ( TokenStore<?> tokens = store )
         {
-            return tokens.getTokens( Integer.MAX_VALUE );
+            return tokens.getTokens();
         }
     }
 

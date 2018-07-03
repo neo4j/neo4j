@@ -24,9 +24,10 @@ import java.util
 import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
-import org.opencypher.v9_0.util.{LabelId, PropertyKeyId, RelTypeId}
 import org.neo4j.helpers.collection.{Pair, Visitable}
 import org.neo4j.kernel.impl.util.dbstructure.{DbStructureCollector, DbStructureLookup, DbStructureVisitor}
+import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.opencypher.v9_0.util.{LabelId, PropertyKeyId, RelTypeId}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -64,8 +65,9 @@ case class DbStructureLogicalPlanningConfiguration(cypherCompilerConfig: CypherP
     }
   }
 
-  private def indexSet(indices: util.Iterator[Pair[String, Array[String]]]): Set[(String, Seq[String])] =
-    indices.asScala.map { pair => pair.first() -> pair.other().to[Seq] }.toSet
+  private def indexSet(indices: util.Iterator[Pair[Array[String], Array[String]]]): Set[(String, Seq[String])] =
+    //We use a zero index here as to not bleed multi-token descriptors into cypher.
+    indices.asScala.map { pair => pair.first().apply(0) -> pair.other().to[Seq] }.toSet
 
   private def resolveTokens[T](iterator: util.Iterator[Pair[Integer, String]])(f: Int => T): mutable.Map[String, T] = {
     val builder = mutable.Map.newBuilder[String, T]

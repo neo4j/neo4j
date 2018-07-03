@@ -433,7 +433,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldGet404WhenDeletingNonExtistentIndex()
+    public void shouldGet404WhenDeletingNonExistentIndex()
     {
         final String indexName = indexes.newInstance();
         String indexUri = functionalTestHelper.nodeIndexUri() + indexName;

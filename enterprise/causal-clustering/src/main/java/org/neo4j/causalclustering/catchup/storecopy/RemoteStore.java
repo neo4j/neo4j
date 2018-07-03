@@ -93,7 +93,8 @@ public class RemoteStore
      * they end and pull from there, excluding the last one so that we do not
      * get duplicate entries.
      */
-    public CatchupResult tryCatchingUp( AdvertisedSocketAddress from, StoreId expectedStoreId, File storeDir, boolean keepTxLogsInDir )
+    public CatchupResult tryCatchingUp( AdvertisedSocketAddress from, StoreId expectedStoreId, File storeDir, boolean keepTxLogsInDir,
+            boolean forceTransactionLogRotation )
             throws StoreCopyFailedException, IOException
     {
         CommitState commitState = commitStateHelper.getStoreState( storeDir );
@@ -101,28 +102,32 @@ public class RemoteStore
 
         if ( commitState.transactionLogIndex().isPresent() )
         {
-            return pullTransactions( from, expectedStoreId, storeDir, commitState.transactionLogIndex().get() + 1, false, keepTxLogsInDir );
+            return pullTransactions( from, expectedStoreId, storeDir, commitState.transactionLogIndex().get() + 1, false, keepTxLogsInDir,
+                    forceTransactionLogRotation );
         }
         else
         {
             CatchupResult catchupResult;
             if ( commitState.metaDataStoreIndex() == BASE_TX_ID )
             {
-                return pullTransactions( from, expectedStoreId, storeDir, commitState.metaDataStoreIndex() + 1, false, keepTxLogsInDir );
+                return pullTransactions( from, expectedStoreId, storeDir, commitState.metaDataStoreIndex() + 1, false, keepTxLogsInDir,
+                        forceTransactionLogRotation );
             }
             else
             {
-                catchupResult = pullTransactions( from, expectedStoreId, storeDir, commitState.metaDataStoreIndex(), false, keepTxLogsInDir );
+                catchupResult = pullTransactions( from, expectedStoreId, storeDir, commitState.metaDataStoreIndex(), false, keepTxLogsInDir,
+                        forceTransactionLogRotation );
                 if ( catchupResult == E_TRANSACTION_PRUNED )
                 {
-                    return pullTransactions( from, expectedStoreId, storeDir, commitState.metaDataStoreIndex() + 1, false, keepTxLogsInDir );
+                    return pullTransactions( from, expectedStoreId, storeDir, commitState.metaDataStoreIndex() + 1, false, keepTxLogsInDir,
+                            forceTransactionLogRotation );
                 }
             }
             return catchupResult;
         }
     }
 
-    public void copy( CatchupAddressProvider addressProvider, StoreId expectedStoreId, File destDir )
+    public void copy( CatchupAddressProvider addressProvider, StoreId expectedStoreId, File destDir, boolean rotateTransactionsManually )
             throws StoreCopyFailedException
     {
         try
@@ -135,10 +140,8 @@ public class RemoteStore
 
             log.info( "Store files need to be recovered starting from: %d", lastFlushedTxId );
 
-            // Even for cluster store copy, we still write the transaction logs into the store directory itself
-            // because the destination directory is temporary. We will copy them to the correct place later.
             CatchupResult catchupResult = pullTransactions( addressProvider.primary(), expectedStoreId, destDir,
-                    lastFlushedTxId, true, true );
+                    lastFlushedTxId, true, true, rotateTransactionsManually );
             if ( catchupResult != SUCCESS_END_OF_STREAM )
             {
                 throw new StoreCopyFailedException( "Failed to pull transactions: " + catchupResult );
@@ -151,7 +154,7 @@ public class RemoteStore
     }
 
     private CatchupResult pullTransactions( AdvertisedSocketAddress from, StoreId expectedStoreId, File storeDir, long fromTxId,
-            boolean asPartOfStoreCopy, boolean keepTxLogsInStoreDir )
+            boolean asPartOfStoreCopy, boolean keepTxLogsInStoreDir, boolean rotateTransactionsManually )
             throws IOException, StoreCopyFailedException
     {
         StoreCopyClientMonitor storeCopyClientMonitor =
@@ -159,7 +162,7 @@ public class RemoteStore
         storeCopyClientMonitor.startReceivingTransactions( fromTxId );
         long previousTxId = fromTxId - 1;
         try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, config,
-                logProvider, fromTxId, asPartOfStoreCopy, keepTxLogsInStoreDir ) )
+                logProvider, fromTxId, asPartOfStoreCopy, keepTxLogsInStoreDir, rotateTransactionsManually ) )
         {
             log.info( "Pulling transactions from %s starting with txId: %d", from, fromTxId );
             CatchupResult lastStatus;

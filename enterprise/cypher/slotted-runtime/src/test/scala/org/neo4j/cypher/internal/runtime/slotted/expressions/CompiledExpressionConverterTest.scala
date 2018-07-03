@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.expressions
 
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.logging.BufferingLog
 import org.opencypher.v9_0.ast.AstConstructionTestSupport
@@ -30,7 +31,7 @@ class CompiledExpressionConverterTest extends CypherFunSuite with AstConstructio
   test("should log unexpected errors") {
     // Given
     val log = new BufferingLog
-    val converter = new CompiledExpressionConverter(log)
+    val converter = new CompiledExpressionConverter(log, SlotConfiguration.empty)
 
     // When
     //There is a limit of 65535 on the length of a String literal, so by exceeding that limit

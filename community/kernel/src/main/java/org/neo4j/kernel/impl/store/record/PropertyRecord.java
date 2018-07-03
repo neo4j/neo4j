@@ -140,6 +140,11 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
         return -1;
     }
 
+    public long getEntityId()
+    {
+        return entityId;
+    }
+
     /**
      * Gets the sum of the sizes of the blocks in this record, in bytes.
      */

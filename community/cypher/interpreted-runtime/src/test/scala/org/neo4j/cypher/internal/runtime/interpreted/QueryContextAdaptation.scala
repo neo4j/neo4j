@@ -87,6 +87,8 @@ trait QueryContextAdaptation {
 
   override def getOrCreatePropertyKeyId(propertyKey: String): Int = ???
 
+  override def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int] = ???
+
   override def isLabelSetOnNode(label: Int, node: Long): Boolean = ???
 
   override def indexReference(label: Int, properties: Int*): IndexReference = ???

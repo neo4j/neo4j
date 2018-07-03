@@ -38,7 +38,7 @@ public class MonitoredTermStateStorage implements StateStorage<TermState>
     public MonitoredTermStateStorage( StateStorage<TermState> delegate, Monitors monitors )
     {
         this.delegate = delegate;
-        this.termMonitor = monitors.newMonitor( RaftTermMonitor.class, getClass(), TERM_TAG );
+        this.termMonitor = monitors.newMonitor( RaftTermMonitor.class, getClass().getName(), TERM_TAG );
     }
 
     @Override

@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -67,6 +68,7 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
+import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 
 public class KernelTransactionTerminationTest
 {
@@ -350,7 +352,7 @@ public class KernelTransactionTerminationTest
                     mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(),
                     AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ),
                     EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class),
-                    mock( IndexingService.class ) );
+                    mock( IndexingService.class ), mockedTokenHolders(), new Dependencies() );
 
             this.monitor = monitor;
         }
