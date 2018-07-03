@@ -22,54 +22,84 @@
  */
 package org.neo4j.cypher.internal.runtime.parallel
 
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.mutable.ArrayBuffer
 
 /**
-  * Tracer of a scheduler.
+  * The sloppy event writer is intended for in IDE debugging, and stupidly assumes that once flush is
+  * called there will be no concurrent writes, so it's fine to just clear the internal data structures
+  * with little thread safety. This kinda works in a single query test environment.
   */
-class SpatulaTracer extends SchedulerTracer {
-
+class SloppyEventWriter extends EventWriter {
   private val MAGIC_NUMBER = 1024
-  private val queryCounter = new AtomicInteger()
-
   private val dataByThread: Array[ArrayBuffer[DataPoint]] =
     (0 until MAGIC_NUMBER).map(_ => new ArrayBuffer[DataPoint]).toArray
+
+  override def report(dataPoint: DataPoint): Unit = {
+    dataByThread(dataPoint.threadId.toInt) += dataPoint
+  }
+
+  override def flush(): Unit = {
+    val stringOutput = result()
+    dataByThread.foreach(_.clear())
+    println(stringOutput)
+  }
+
+  private def result(): String = {
+    val t0 = dataByThread.filter(_.nonEmpty).map(_.head.startTime).min
+
+    def toDuration(nanoSnapshot:Long) = TimeUnit.NANOSECONDS.toMicros(nanoSnapshot-t0)
+
+    val sb = new StringBuilder
+    sb ++= "queryId threadId scheduledTime(us) startTime(us) stopTime(us) pipeline\n"
+    for (dp <- dataByThread.flatten) {
+      sb ++= "  %d    %5d    %10d  %10d  %10d    %s\n"
+        .format(dp.queryId,
+                dp.threadId, 
+                toDuration(dp.scheduledTime),
+                toDuration(dp.startTime),
+                toDuration(dp.stopTime),
+                dp.task.toString)
+    }
+    sb.result()
+  }
+}
+
+/**
+  * Tracer of a scheduler.
+  */
+class SpatulaTracer(eventWriter: EventWriter) extends SchedulerTracer {
+
+  private val queryCounter = new AtomicInteger()
 
   override def traceQuery(): QueryExecutionTracer =
     QueryTracer(queryCounter.incrementAndGet())
 
   case class QueryTracer(id: Int) extends QueryExecutionTracer {
-    override def scheduleWorkUnit(task: Task): Unit = {}
+    override def scheduleWorkUnit(task: Task): ScheduledWorkUnitEvent = {
+      val scheduledTime = currentTime()
+      ScheduledWorkUnit(id, scheduledTime)
+    }
 
+    override def stopQuery(): Unit =
+      eventWriter.flush()
+  }
+
+  case class ScheduledWorkUnit(id: Int, scheduledTime: Long) extends ScheduledWorkUnitEvent {
     override def startWorkUnit(task: Task): WorkUnitEvent = {
       val startTime = currentTime()
-      WorkUnit(id, Thread.currentThread().getId, startTime, task)
+      WorkUnit(id, Thread.currentThread().getId, scheduledTime, startTime, task)
     }
   }
 
-  case class WorkUnit(queryId: Int, threadId: Long, startTime: Long, task: Task) extends WorkUnitEvent {
+  case class WorkUnit(queryId: Int, threadId: Long, scheduledTime: Long, startTime: Long, task: Task) extends WorkUnitEvent {
     override def stop(): Unit = {
       val stopTime = currentTime()
-      dataByThread(threadId.asInstanceOf[Int]) += DataPoint(queryId, threadId, startTime, stopTime, task)
+      eventWriter.report(DataPoint(queryId, threadId, scheduledTime, startTime, stopTime, task))
     }
   }
-
-  case class DataPoint(queryId: Int, threadId: Long, startTime: Long, stopTime: Long, task: Task)
 
   private def currentTime(): Long = System.nanoTime()
-
-  def result(): String = {
-    val t0 = dataByThread.filter(_.nonEmpty).map(_.head.startTime).min
-    def t(x:Long) = (x-t0) / 1000
-
-    val sb = new StringBuilder
-    sb ++= "queryId threadId startTime(us) stopTime(us) pipeline\n"
-    for (dp <- dataByThread.flatten) {
-      sb ++= "  %d    %5d    %10d  %10d    %s\n"
-        .format(dp.queryId, dp.threadId, t(dp.startTime), t(dp.stopTime), dp.task.toString)
-    }
-    sb.result()
-  }
 }
