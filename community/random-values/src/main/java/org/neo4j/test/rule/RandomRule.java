@@ -18,6 +18,11 @@ package org.neo4j.test.rule;/*
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.MultipleFailureException;
+import org.junit.runners.model.Statement;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -25,11 +30,6 @@ import java.lang.annotation.Target;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
-
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.MultipleFailureException;
-import org.junit.runners.model.Statement;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.values.storable.RandomValues;
@@ -79,11 +79,11 @@ public class RandomRule implements TestRule
                     Seed methodSeed = description.getAnnotation( Seed.class );
                     if ( methodSeed != null )
                     {
-                        seed = methodSeed.value();
+                        setSeed( methodSeed.value() );
                     }
                     else
                     {
-                        seed = currentTimeMillis();
+                        setSeed( currentTimeMillis() );
                     }
                 }
                 reset();
@@ -267,6 +267,11 @@ public class RandomRule implements TestRule
     public RandomValues randomValues()
     {
         return randoms;
+    }
+
+    public void setSeed( long seed )
+    {
+        this.seed = seed;
     }
 
     @Retention( RetentionPolicy.RUNTIME )
