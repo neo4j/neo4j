@@ -25,6 +25,7 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
+import org.neo4j.procedure.Mode;
 
 import static java.util.Collections.singletonList;
 import static org.neo4j.helpers.collection.Iterators.asRawIterator;
@@ -59,6 +60,7 @@ public class ListComponentsProcedure extends CallableProcedure.BasicProcedure
                 // at the same time, list of versions rather than single version.
                 .out( "versions", NTList( NTString ) )
                 .out( "edition", NTString )
+                .mode( Mode.DBMS )
                 .description( "List DBMS components and their versions." )
                 .build() );
         this.neo4jVersion = neo4jVersion;

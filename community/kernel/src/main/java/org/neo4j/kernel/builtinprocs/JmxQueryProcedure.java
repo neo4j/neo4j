@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
+import org.neo4j.procedure.Mode;
 
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.Pair.pair;
@@ -61,6 +62,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
                 .out( "name", Neo4jTypes.NTString )
                 .out( "description", Neo4jTypes.NTString )
                 .out( "attributes", Neo4jTypes.NTMap )
+                .mode( Mode.DBMS )
                 .description( "Query JMX management data by domain and name. For instance, \"org.neo4j:*\"" )
                 .build() );
         this.jmxServer = jmxServer;

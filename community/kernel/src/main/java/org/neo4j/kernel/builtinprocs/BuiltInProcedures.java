@@ -516,7 +516,7 @@ public class BuiltInProcedures
     }
 
     @Description( "Check if a relationship explicit index exists" )
-    @Procedure( "db.index.explicit.existsForRelationships" )
+    @Procedure( name = "db.index.explicit.existsForRelationships", mode = READ )
     public Stream<BooleanResult> relationshipManualIndexExists( @Name( "indexName" ) String explicitIndexName )
     {
         return Stream.of( new BooleanResult( graphDatabaseAPI.index().existsForRelationships( explicitIndexName ) ) );

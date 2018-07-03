@@ -159,11 +159,11 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         "List all user functions in the DBMS.", "DBMS"} ),
                 equalTo( new Object[]{"dbms.components", "dbms.components() :: (name :: STRING?, versions :: LIST? OF" +
                                                          " STRING?, edition :: STRING?)",
-                        "List DBMS components and their versions.", "READ"} ),
+                        "List DBMS components and their versions.", "DBMS"} ),
                 equalTo( new Object[]{"dbms.queryJmx", "dbms.queryJmx(query :: STRING?) :: (name :: STRING?, " +
                                                        "description :: STRING?, attributes :: MAP?)",
                         "Query JMX management data by domain and name." +
-                        " For instance, \"org.neo4j:*\"", "READ"} ),
+                        " For instance, \"org.neo4j:*\"", "DBMS"} ),
                 equalTo( new Object[]{"db.createLabel", "db.createLabel(newLabel :: STRING?) :: VOID", "Create a label", "WRITE"
                 } ),
                 equalTo( new Object[]{"db.createProperty", "db.createProperty(newProperty :: STRING?) :: VOID",
@@ -232,7 +232,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         "Check if a node explicit index exists", "READ"} ),
                 equalTo( new Object[]{ "db.index.explicit.existsForRelationships",
                         "db.index.explicit.existsForRelationships(indexName :: STRING?) :: (success :: BOOLEAN?)",
-                        "Check if a relationship explicit index exists", "DEFAULT"} ),
+                        "Check if a relationship explicit index exists", "READ"} ),
                 equalTo( new Object[]{ "db.index.explicit.list",
                         "db.index.explicit.list() :: (type :: STRING?, name :: STRING?, config :: MAP?)",
                         "List all explicit indexes - YIELD type,name,config", "READ"} ),
