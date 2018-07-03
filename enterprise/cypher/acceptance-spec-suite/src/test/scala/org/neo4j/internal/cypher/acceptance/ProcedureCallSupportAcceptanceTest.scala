@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.ResourceTracker
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.proc.{Context, FieldSignature, Neo4jTypes}
+import org.neo4j.kernel.impl.proc.Procedures
 
 class ProcedureCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
 
@@ -116,5 +117,22 @@ class ProcedureCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
       "REL",
       "prop"
     )
+  }
+
+  test("should call procedure with query parameters overriding default values") {
+    import collection.JavaConverters._
+    registerTestProcedures()
+
+    graph.execute("UNWIND [1,2,3] AS i CREATE (a:Cat)")
+
+    val result = graph.execute(
+      "CALL org.neo4j.aNodeWithLabel", params = Map("label" -> "Cat".asInstanceOf[AnyRef]).asJava)
+
+    result.next().get("node") should not be null
+    result.hasNext should be(false)
+  }
+
+  private def registerTestProcedures(): Unit = {
+    graph.getDependencyResolver.resolveDependency(classOf[Procedures]).registerProcedure(classOf[TestProcedure])
   }
 }
