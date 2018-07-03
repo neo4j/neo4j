@@ -56,7 +56,7 @@ trait ScheduledWorkUnitEvent {
   /**
     * Trace the start of a work unit event for this query execution
     */
-  def startWorkUnit(task: Task): WorkUnitEvent
+  def start(): WorkUnitEvent
 }
 
 /**
@@ -83,7 +83,13 @@ trait EventWriter {
   def flush(): Unit
 }
 
-case class DataPoint(queryId: Int, threadId: Long, scheduledTime: Long, startTime: Long, stopTime: Long, task: Task)
+case class DataPoint(queryId: Int,
+                     schedulingThreadId: Long,
+                     scheduledTime: Long,
+                     executionThreadId: Long,
+                     startTime: Long,
+                     stopTime: Long,
+                     task: Task)
 
 object SchedulerTracer {
   val NoSchedulerTracer: SchedulerTracer = new SchedulerTracer {
@@ -96,7 +102,7 @@ object SchedulerTracer {
   }
 
   val NoScheduledWorkUnitEvent: ScheduledWorkUnitEvent = new ScheduledWorkUnitEvent {
-    override def startWorkUnit(task: Task): WorkUnitEvent = NoWorkUnitEvent
+    override def start(): WorkUnitEvent = NoWorkUnitEvent
   }
 
   val NoWorkUnitEvent: WorkUnitEvent = new WorkUnitEvent {
