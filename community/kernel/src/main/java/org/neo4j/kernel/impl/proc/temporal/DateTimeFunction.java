@@ -114,8 +114,8 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue>
         private static final String DESCRIPTION =
                 "Create a DateTime given the seconds and nanoseconds since the start of the epoch.";
         private static final List<FieldSignature> SIGNATURE = Arrays.asList(
-                inputField( "seconds", Neo4jTypes.NTInteger ),
-                inputField( "nanoseconds", Neo4jTypes.NTInteger ) );
+                inputField( "seconds", Neo4jTypes.NTAny ),
+                inputField( "nanoseconds", Neo4jTypes.NTAny ) );
         private final UserFunctionSignature signature;
 
         private FromEpoch()
@@ -144,7 +144,8 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue>
                     return DateTimeValue.ofEpoch(seconds, nanoseconds);
                 }
             }
-            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "Invalid call signature" );
+            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "Invalid call signature for " + getClass().getSimpleName() +
+                ": Provided input was " + Arrays.toString( input ) );
         }
     }
 
@@ -153,7 +154,7 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue>
         private static final String DESCRIPTION =
                 "Create a DateTime given the milliseconds since the start of the epoch.";
         private static final List<FieldSignature> SIGNATURE = Arrays.asList(
-                inputField( "milliseconds", Neo4jTypes.NTInteger ) );
+                inputField( "milliseconds", Neo4jTypes.NTAny ) );
         private final UserFunctionSignature signature;
 
         private FromEpochMillis()
@@ -181,7 +182,8 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue>
                     return DateTimeValue.ofEpochMillis( milliseconds );
                 }
             }
-            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "Invalid call signature" );
+            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "Invalid call signature for " + getClass().getSimpleName() +
+                    ": Provided input was " + Arrays.toString( input ) );
         }
     }
 }

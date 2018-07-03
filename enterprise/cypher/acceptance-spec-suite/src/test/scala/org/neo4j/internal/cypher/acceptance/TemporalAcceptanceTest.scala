@@ -865,6 +865,23 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     }
   }
 
+  test("should not accept wrong argument types") {
+    graph.execute("CREATE ({str: 'a', num: 5, b: true})")
+    val returnQueries = Seq(
+      "duration.between(n.str,n.str)",
+      "date(n.num)",
+      "date.transaction(n.num)",
+      "duration(n.num)",
+      "datetime.fromEpoch(n.b, n.b)",
+      "datetime.fromEpochMillis(n.b)"
+    )
+    for(returnQuery <- returnQueries) {
+      withClue("executing " + returnQuery) {
+        failWithError(failConf2, "MATCH (n) RETURN " + returnQuery, Seq("Invalid call signature"), Seq("CypherExecutionException"))
+      }
+    }
+  }
+
   // Time with named timezone
 
   test("parse time with named time zone should not be supported") {

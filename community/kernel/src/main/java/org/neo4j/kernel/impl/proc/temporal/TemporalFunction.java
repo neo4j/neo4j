@@ -184,7 +184,8 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         }
         else
         {
-            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "Invalid call signature" );
+            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "Invalid call signature for " + getClass().getSimpleName() +
+                    ": Provided input was " + Arrays.toString( input ) );
         }
     }
 
@@ -231,7 +232,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
     private static class Now<T extends AnyValue> extends SubFunction<T>
     {
         private static final List<FieldSignature> SIGNATURE = singletonList( inputField(
-                "timezone", Neo4jTypes.NTString, nullValue( Neo4jTypes.NTString ) ) );
+                "timezone", Neo4jTypes.NTAny, nullValue( Neo4jTypes.NTAny ) ) );
         private final Key<Clock> key;
 
         Now( TemporalFunction<T> function, String clock )
@@ -270,7 +271,8 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
             }
             else
             {
-                throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "Invalid call signature" );
+                throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "Invalid call signature for " + getClass().getSimpleName() +
+                    ": Provided input was " + Arrays.toString( input ) );
             }
         }
     }
@@ -306,7 +308,8 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
                             function.defaultZone );
                 }
             }
-            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "Invalid call signature" );
+            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "Invalid call signature for " + getClass().getSimpleName() +
+                    ": Provided input was " + Arrays.toString( args ) );
         }
 
         private static TemporalUnit unit( String unit )

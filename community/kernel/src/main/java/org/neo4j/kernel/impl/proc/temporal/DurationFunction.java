@@ -85,7 +85,8 @@ class DurationFunction implements CallableUserFunction
                 return DurationValue.build( map );
             }
         }
-        throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "Invalid call signature" );
+        throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "Invalid call signature for " + getClass().getSimpleName() +
+                ": Provided input was " + Arrays.toString( input ) );
     }
 
     private static class Between implements CallableUserFunction
@@ -147,7 +148,8 @@ class DurationFunction implements CallableUserFunction
                     return DurationValue.between( unit, from, to );
                 }
             }
-            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "Invalid call signature" );
+            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "Invalid call signature for " + getClass().getSimpleName() +
+                ": Provided input was " + Arrays.toString( input ) );
         }
     }
 }
