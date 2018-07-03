@@ -103,6 +103,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     private long[] long3Array;
     private byte[][] byteArrayArray;
 
+    /* <initializers> */
     void clear()
     {
         type = null;
@@ -116,6 +117,91 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         currentArrayOffset = 0;
     }
 
+    void initializeToDummyValue()
+    {
+        type = Type.NUMBER;
+        long0 = 0;
+        long1 = 0;
+        inclusion = NEUTRAL;
+    }
+
+    // todo is this simple lowest approach viable?
+    void initValueAsLowest( ValueGroup valueGroup )
+    {
+        type = valueGroup == ValueGroup.UNKNOWN ? LOWEST_TYPE_BY_VALUE_GROUP : GenericLayout.TYPE_BY_GROUP[valueGroup.ordinal()];
+        long0 = Long.MIN_VALUE;
+        long1 = Long.MIN_VALUE;
+        long2 = Long.MIN_VALUE;
+        long3 = Long.MIN_VALUE;
+        byteArray = null;
+        if ( type == Type.TEXT )
+        {
+            long3 = FALSE;
+        }
+        inclusion = LOW;
+    }
+
+    // todo is this simple highest approach viable?
+    void initValueAsHighest( ValueGroup valueGroup )
+    {
+        type = valueGroup == ValueGroup.UNKNOWN ? HIGHEST_TYPE_BY_VALUE_GROUP : GenericLayout.TYPE_BY_GROUP[valueGroup.ordinal()];
+        long0 = Long.MAX_VALUE;
+        long1 = Long.MAX_VALUE;
+        long2 = Long.MAX_VALUE;
+        long3 = Long.MAX_VALUE;
+        byteArray = null;
+        if ( type == Type.TEXT )
+        {
+            long3 = TRUE;
+        }
+        inclusion = HIGH;
+    }
+
+    void initAsPrefixLow( String prefix )
+    {
+        clear();
+        writeString( prefix );
+        long2 = FALSE;
+        inclusion = LOW;
+        // Don't set ignoreLength = true here since the "low" a.k.a. left side of the range should care about length.
+        // This will make the prefix lower than those that matches the prefix (their length is >= that of the prefix)
+    }
+
+    void initAsPrefixHigh( String prefix )
+    {
+        clear();
+        writeString( prefix );
+        long2 = TRUE;
+        inclusion = HIGH;
+    }
+    /* </initializers> */
+
+    /* <copyFrom> */
+    void copyFrom( GenericKeyState key )
+    {
+        this.type = key.type;
+        this.long0 = key.long0;
+        this.long1 = key.long1;
+        this.long2 = key.long2;
+        this.long3 = key.long3;
+        this.copyByteArrayFromIfExists( key, (int) key.long0 );
+        this.inclusion = key.inclusion;
+    }
+
+    private void copyByteArrayFromIfExists( GenericKeyState key, int targetLength )
+    {
+        if ( key.type == Type.TEXT )
+        {
+            setBytesLength( targetLength );
+            System.arraycopy( key.byteArray, 0, byteArray, 0, targetLength );
+        }
+        else
+        {
+            byteArray = null;
+        }
+    }
+    /* </copyFrom> */
+
     Value assertCorrectType( Value value )
     {
         if ( Values.isGeometryValue( value ) || Values.isArrayValue( value ) )
@@ -125,6 +211,75 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         return value;
     }
 
+    void writeValue( Value value, NativeIndexKey.Inclusion inclusion )
+    {
+        value.writeTo( this );
+        this.inclusion = inclusion;
+    }
+
+    int compareValueTo( GenericKeyState other )
+    {
+        int typeComparison = GenericLayout.TYPE_COMPARATOR.compare( type, other.type );
+        if ( typeComparison != 0 )
+        {
+            return typeComparison;
+        }
+
+        int valueComparison = internalCompareValueTo( other );
+        if ( valueComparison != 0 )
+        {
+            return valueComparison;
+        }
+
+        return inclusion.compareTo( other.inclusion );
+    }
+
+    /* <size> */
+    int size()
+    {
+        return valueSize() + TYPE_ID_SIZE;
+    }
+
+    private int valueSize()
+    {
+        // TODO copy-pasted from individual keys
+        // TODO also put this in Type enum
+        switch ( type )
+        {
+        case ZONED_DATE_TIME:
+            return Long.BYTES +    /* epochSecond */
+                    Integer.BYTES + /* nanoOfSecond */
+                    Integer.BYTES;  /* timeZone */
+        case LOCAL_DATE_TIME:
+            return Long.BYTES +    /* epochSecond */
+                    Integer.BYTES;  /* nanoOfSecond */
+        case DATE:
+            return Long.BYTES;     /* epochDay */
+        case ZONED_TIME:
+            return Long.BYTES +    /* nanosOfDayUTC */
+                    Integer.BYTES;  /* zoneOffsetSeconds */
+        case LOCAL_TIME:
+            return Long.BYTES;     /* nanoOfDay */
+        case DURATION:
+            return Long.BYTES +    /* totalAvgSeconds */
+                    Integer.BYTES + /* nanosOfSecond */
+                    Long.BYTES +    /* months */
+                    Long.BYTES;     /* days */
+        case TEXT:
+            return Short.SIZE +    /* short field with bytesLength value */
+                    (int) long0;    /* bytesLength */
+        case BOOLEAN:
+            return Byte.BYTES;     /* byte for this boolean value */
+        case NUMBER:
+            return Byte.BYTES +    /* type of value */
+                    Long.BYTES;     /* raw value bits */
+        default:
+            throw new IllegalArgumentException( "Unknown type " + type );
+        }
+    }
+    /* </size> */
+
+    /* <asValue> */
     Value asValue()
     {
         switch ( type )
@@ -239,56 +394,9 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         }
         return array;
     }
+    /* </asValue> */
 
-    // todo is this simple lowest approach viable?
-    void initValueAsLowest( ValueGroup valueGroup )
-    {
-        type = valueGroup == ValueGroup.UNKNOWN ? LOWEST_TYPE_BY_VALUE_GROUP : GenericLayout.TYPE_BY_GROUP[valueGroup.ordinal()];
-        long0 = Long.MIN_VALUE;
-        long1 = Long.MIN_VALUE;
-        long2 = Long.MIN_VALUE;
-        long3 = Long.MIN_VALUE;
-        byteArray = null;
-        if ( type == Type.TEXT )
-        {
-            long3 = FALSE;
-        }
-        inclusion = LOW;
-    }
-
-    // todo is this simple highest approach viable?
-    void initValueAsHighest( ValueGroup valueGroup )
-    {
-        type = valueGroup == ValueGroup.UNKNOWN ? HIGHEST_TYPE_BY_VALUE_GROUP : GenericLayout.TYPE_BY_GROUP[valueGroup.ordinal()];
-        long0 = Long.MAX_VALUE;
-        long1 = Long.MAX_VALUE;
-        long2 = Long.MAX_VALUE;
-        long3 = Long.MAX_VALUE;
-        byteArray = null;
-        if ( type == Type.TEXT )
-        {
-            long3 = TRUE;
-        }
-        inclusion = HIGH;
-    }
-
-    int compareValueTo( GenericKeyState other )
-    {
-        int typeComparison = GenericLayout.TYPE_COMPARATOR.compare( type, other.type );
-        if ( typeComparison != 0 )
-        {
-            return typeComparison;
-        }
-
-        int valueComparison = internalCompareValueTo( other );
-        if ( valueComparison != 0 )
-        {
-            return valueComparison;
-        }
-
-        return inclusion.compareTo( other.inclusion );
-    }
-
+    /* <compare> */
     private int internalCompareValueTo( GenericKeyState that )
     {
         switch ( type )
@@ -384,50 +492,517 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         return x == 0 ? this.arrayLength - that.arrayLength : x;
     }
 
-    private void copyByteArrayFromIfExists( GenericKeyState key, int targetLength )
+    private static int compareNumber(
+            long this_long0, long this_long1,
+            long that_long0, long that_long1 )
     {
-        if ( key.type == Type.TEXT )
+        return RawBits.compare( this_long0, (byte) this_long1, that_long0, (byte) that_long1 );
+    }
+
+    private static int compareBoolean(
+            long this_long0,
+            long that_long0 )
+    {
+        return Long.compare( this_long0, that_long0 );
+    }
+
+    private static int compareText(
+            byte[] this_byteArray, long this_long0, long this_long2, long this_long3,
+            byte[] that_byteArray, long that_long0, long that_long2, long that_long3 )
+    {
+        if ( this_byteArray != that_byteArray )
         {
-            setBytesLength( targetLength );
-            System.arraycopy( key.byteArray, 0, byteArray, 0, targetLength );
+            if ( this_byteArray == null )
+            {
+                return isHighestText( this_long3 ) ? 1 : -1;
+            }
+            if ( that_byteArray == null )
+            {
+                return isHighestText( that_long3 ) ? -1 : 1;
+            }
         }
         else
         {
-            byteArray = null;
+            return 0;
         }
+
+        return unsignedByteArrayCompare( this_byteArray, (int) this_long0, that_byteArray, (int) that_long0, booleanOf( this_long2 ) | booleanOf( that_long2 ) );
     }
 
-    private void setBytesLength( int length )
+    private static int compareZonedDateTime(
+            long this_long0, long this_long1, long this_long2, long this_long3,
+            long that_long0, long that_long1, long that_long2, long that_long3 )
     {
-        if ( booleanOf( long1 ) || byteArray == null || byteArray.length < length )
+        int compare = Long.compare( this_long0, that_long0 );
+        if ( compare == 0 )
         {
-            long1 = FALSE;
-
-            // allocate a bit more than required so that there's a higher chance that this byte[] instance
-            // can be used for more keys than just this one
-            byteArray = new byte[length + length / 2];
+            compare = Integer.compare( (int) this_long1, (int) that_long1 );
+            if ( compare == 0 &&
+                    // We need to check validity upfront without throwing exceptions, because the PageCursor might give garbage bytes
+                    TimeZones.validZoneOffset( (int) this_long3 ) &&
+                    TimeZones.validZoneOffset( (int) that_long3 ) )
+            {
+                // In the rare case of comparing the same instant in different time zones, we settle for
+                // mapping to values and comparing using the general values comparator.
+                compare = Values.COMPARATOR.compare(
+                        zonedDateTimeAsValue( this_long0, this_long1, this_long2, this_long3 ),
+                        zonedDateTimeAsValue( that_long0, that_long1, that_long2, that_long3 ) );
+            }
         }
-        long0 = length;
+        return compare;
     }
 
-    void initAsPrefixLow( String prefix )
+    private static int compareLocalDateTime(
+            long this_long0, long this_long1,
+            long that_long0, long that_long1 )
     {
-        clear();
-        writeString( prefix );
-        long2 = FALSE;
-        inclusion = LOW;
-        // Don't set ignoreLength = true here since the "low" a.k.a. left side of the range should care about length.
-        // This will make the prefix lower than those that matches the prefix (their length is >= that of the prefix)
+        int compare = Long.compare( this_long1, that_long1 );
+        if ( compare == 0 )
+        {
+            compare = Integer.compare( (int) this_long0, (int) that_long0 );
+        }
+        return compare;
     }
 
-    void initAsPrefixHigh( String prefix )
+    private static int compareDate(
+            long this_long0,
+            long that_long0 )
     {
-        clear();
-        writeString( prefix );
-        long2 = TRUE;
-        inclusion = HIGH;
+        return Long.compare( this_long0, that_long0 );
     }
 
+    private static int compareZonedTime(
+            long this_long0, long this_long1,
+            long that_long0, long that_long1 )
+    {
+        int compare = Long.compare( this_long0, that_long0 );
+        if ( compare == 0 )
+        {
+            compare = Integer.compare( (int) this_long1, (int) that_long1 );
+        }
+        return compare;
+    }
+
+    private static int compareLocalTime(
+            long this_long0,
+            long that_long0 )
+    {
+        return Long.compare( this_long0, that_long0 );
+    }
+
+    private static int compareDuration(
+            long this_long0, long this_long1, long this_long2, long this_long3,
+            long that_long0, long that_long1, long that_long2, long that_long3 )
+    {
+        int comparison = Long.compare( this_long0, that_long0 );
+        if ( comparison == 0 )
+        {
+            comparison = Integer.compare( (int) this_long1, (int) that_long1 );
+            if ( comparison == 0 )
+            {
+                comparison = Long.compare( this_long2, that_long2 );
+                if ( comparison == 0 )
+                {
+                    comparison = Long.compare( this_long3, that_long3 );
+                }
+            }
+        }
+        return comparison;
+    }
+    /* </compare> */
+
+    /* <put> */
+    void put( PageCursor cursor )
+    {
+        cursor.putByte( type.typeId );
+        switch ( type )
+        {
+        case ZONED_DATE_TIME:
+            putZonedDateTime( cursor, long0, long1, long2, long3 );
+            break;
+        case LOCAL_DATE_TIME:
+            putLocalDateTime( cursor, long0, long1 );
+            break;
+        case DATE:
+            putDate( cursor, long0 );
+            break;
+        case ZONED_TIME:
+            putZonedTime( cursor, long0, long1 );
+            break;
+        case LOCAL_TIME:
+            putLocalTime( cursor, long0 );
+            break;
+        case DURATION:
+            putDuration( cursor, long0, long1, long2, long3 );
+            break;
+        case TEXT:
+            putText( cursor, byteArray, long0 );
+            break;
+        case BOOLEAN:
+            putBoolean( cursor, long0 );
+            break;
+        case NUMBER:
+            putNumber( cursor, long0, long1 );
+            break;
+        case ZONED_DATE_TIME_ARRAY:
+            putArray( cursor, ( c, i ) -> putZonedDateTime( c, long0Array[i], long1Array[i], long2Array[i], long3Array[i] ) );
+            break;
+        case LOCAL_DATE_TIME_ARRAY:
+            putArray( cursor, ( c, i ) -> putLocalDateTime( c, long0Array[i], long1Array[i] ) );
+            break;
+        case DATE_ARRAY:
+            putArray( cursor, ( c, i ) -> putDate( c, long0Array[i] ) );
+            break;
+        case ZONED_TIME_ARRAY:
+            putArray( cursor, ( c, i ) -> putZonedTime( c, long0Array[i], long1Array[i] ) );
+            break;
+        case LOCAL_TIME_ARRAY:
+            putArray( cursor, ( c, i ) -> putLocalTime( c, long0Array[i] ) );
+            break;
+        case DURATION_ARRAY:
+            putArray( cursor, ( c, i ) -> putDuration( c, long0Array[i], long1Array[i], long2Array[i], long3Array[i] ) );
+            break;
+        case TEXT_ARRAY:
+            putArray( cursor, ( c, i ) -> putText( c, byteArrayArray[i], long0Array[i] ) );
+            break;
+        case BOOLEAN_ARRAY:
+            putArray( cursor, ( c, i ) -> putBoolean( c, long0Array[i] ) );
+            break;
+        case NUMBER_ARRAY:
+            putArray( cursor, ( c, i ) -> putNumber( c, long0Array[i], long1Array[i] ) );
+            break;
+        default:
+            throw new IllegalArgumentException( "Unknown type " + type );
+        }
+    }
+
+    interface ArrayElementWriter
+    {
+        void write( PageCursor cursor, int i );
+    }
+
+    private void putArray( PageCursor cursor, ArrayElementWriter writer )
+    {
+        cursor.putInt( arrayLength );
+        for ( int i = 0; i < arrayLength; i++ )
+        {
+            writer.write( cursor, i );
+        }
+    }
+
+    private static void putNumber( PageCursor cursor, long long0, long long1 )
+    {
+        cursor.putByte( (byte) long1 );
+        cursor.putLong( long0 );
+    }
+
+    private static void putBoolean( PageCursor cursor, long long0 )
+    {
+        cursor.putByte( (byte) long0 );
+    }
+
+    private static void putText( PageCursor cursor, byte[] byteArray, long long0 )
+    {
+        // TODO short/int weird asymmetry ey?
+        cursor.putShort( (short) long0 );
+        cursor.putBytes( byteArray, 0, (int) long0 );
+    }
+
+    private static void putDuration( PageCursor cursor, long long0, long long1, long long2, long long3 )
+    {
+        cursor.putLong( long0 );
+        cursor.putInt( (int) long1 );
+        cursor.putLong( long2 );
+        cursor.putLong( long3 );
+    }
+
+    private static void putLocalTime( PageCursor cursor, long long0 )
+    {
+        cursor.putLong( long0 );
+    }
+
+    private static void putZonedTime( PageCursor cursor, long long0, long long1 )
+    {
+        cursor.putLong( long0 );
+        cursor.putInt( (int) long1 );
+    }
+
+    private static void putDate( PageCursor cursor, long long0 )
+    {
+        cursor.putLong( long0 );
+    }
+
+    private static void putLocalDateTime( PageCursor cursor, long long0, long long1 )
+    {
+        cursor.putLong( long1 );
+        cursor.putInt( (int) long0 );
+    }
+
+    private static void putZonedDateTime( PageCursor cursor, long long0, long long1, long long2, long long3 )
+    {
+        cursor.putLong( long0 );
+        cursor.putInt( (int) long1 );
+        if ( long2 >= 0 )
+        {
+            cursor.putInt( (int) long2 | ZONE_ID_FLAG );
+        }
+        else
+        {
+            cursor.putInt( (int) long3 & ZONE_ID_MASK );
+        }
+    }
+    /* </put> */
+
+    /* <read> */
+    void read( PageCursor cursor, int size )
+    {
+        if ( size <= TYPE_ID_SIZE )
+        {
+            initializeToDummyValue();
+            return;
+        }
+
+        byte typeId = cursor.getByte();
+        if ( typeId < 0 || typeId >= GenericLayout.TYPES.length )
+        {
+            initializeToDummyValue();
+            return;
+        }
+
+        size -= TYPE_ID_SIZE;
+        type = GenericLayout.TYPE_BY_ID[typeId];
+        inclusion = NEUTRAL;
+        switch ( type )
+        {
+        case ZONED_DATE_TIME:
+            readZonedDateTime( cursor );
+            break;
+        case LOCAL_DATE_TIME:
+            readLocalDateTime( cursor );
+            break;
+        case DATE:
+            readDate( cursor );
+            break;
+        case ZONED_TIME:
+            readZonedTime( cursor );
+            break;
+        case LOCAL_TIME:
+            readLocalTime( cursor );
+            break;
+        case DURATION:
+            readDuration( cursor );
+            break;
+        case TEXT:
+            readText( cursor, size );
+            break;
+        case BOOLEAN:
+            readBoolean( cursor );
+            break;
+        case NUMBER:
+            readNumber( cursor );
+            break;
+        case ZONED_DATE_TIME_ARRAY:
+            readArray( cursor, ArrayType.ZONED_DATE_TIME, this::readZonedDateTime );
+            break;
+        case LOCAL_DATE_TIME_ARRAY:
+            readArray( cursor, ArrayType.LOCAL_DATE_TIME, this::readLocalDateTime );
+            break;
+        case DATE_ARRAY:
+            readArray( cursor, ArrayType.DATE, this::readDate );
+            break;
+        case ZONED_TIME_ARRAY:
+            readArray( cursor, ArrayType.ZONED_DATE_TIME, this::readZonedDateTime );
+            break;
+        case LOCAL_TIME_ARRAY:
+            readArray( cursor, ArrayType.LOCAL_TIME, this::readLocalTime );
+            break;
+        case DURATION_ARRAY:
+            readArray( cursor, ArrayType.DURATION, this::readDuration );
+            break;
+        case TEXT_ARRAY:
+            readTextArray( cursor, size );
+            break;
+        case BOOLEAN_ARRAY:
+            readArray( cursor, ArrayType.BOOLEAN, this::readBoolean );
+            break;
+        case NUMBER_ARRAY:
+            readNumberArray( cursor );
+            break;
+        default:
+            throw new IllegalArgumentException( "Unknown type " + type );
+        }
+    }
+
+    private void readArray( PageCursor cursor, ArrayType type, ArrayElementReader reader )
+    {
+        if ( setArrayLengthWhenReading( cursor ) )
+        {
+            beginArray( arrayLength, type );
+            for ( int i = 0; i < arrayLength; i++ )
+            {
+                reader.readFrom( cursor );
+            }
+            endArray();
+        }
+    }
+
+    private void readNumberArray( PageCursor cursor )
+    {
+        if ( setArrayLengthWhenReading( cursor ) )
+        {
+            long1 = cursor.getByte(); // number type, like: byte, int, short a.s.o.
+            initializeNumberArray( arrayLength );
+            ArrayType numberType = numberArrayTypeOf( (byte) long1 );
+            if ( numberType == null )
+            {
+                initializeToDummyValue();
+                return;
+            }
+
+            beginArray( arrayLength, numberType );
+            for ( int i = 0; i < arrayLength; i++ )
+            {
+                long0Array[i] = cursor.getLong();
+            }
+            endArray();
+        }
+    }
+
+    private ArrayType numberArrayTypeOf( byte numberType )
+    {
+        switch ( numberType )
+        {
+        case RawBits.BYTE:
+            return ArrayType.BYTE;
+        case RawBits.SHORT:
+            return ArrayType.SHORT;
+        case RawBits.INT:
+            return ArrayType.INT;
+        case RawBits.LONG:
+            return ArrayType.LONG;
+        case RawBits.FLOAT:
+            return ArrayType.FLOAT;
+        case RawBits.DOUBLE:
+            return ArrayType.DOUBLE;
+        }
+        // bad read, hopefully
+        return null;
+    }
+
+    private void readTextArray( PageCursor cursor, int maxSize )
+    {
+        if ( setArrayLengthWhenReading( cursor ) )
+        {
+            initializeTextArray( arrayLength );
+            beginArray( arrayLength, ArrayType.STRING );
+            for ( int i = 0; i < arrayLength; i++ )
+            {
+                short bytesLength = cursor.getShort();
+                if ( bytesLength <= 0 || bytesLength > maxSize )
+                {
+                    initializeToDummyValue();
+                    return;
+                }
+                // long1 == text byte[] have been handed out to a UTF8StringValue and so must not be overwritten with next value
+                if ( booleanOf( long1 ) || byteArrayArray[i] == null || byteArrayArray[i].length < bytesLength )
+                {
+                    long1 = FALSE;
+
+                    // allocate a bit more than required so that there's a higher chance that this byte[] instance
+                    // can be used for more keys than just this one
+                    byteArrayArray[i] = new byte[bytesLength + bytesLength / 2];
+                }
+                long0Array[i] = bytesLength;
+                cursor.getBytes( byteArrayArray[i], 0, bytesLength );
+            }
+            endArray();
+        }
+    }
+
+    private boolean setArrayLengthWhenReading( PageCursor cursor )
+    {
+        arrayLength = cursor.getInt();
+        if ( arrayLength < 0 || arrayLength >= BIGGEST_REASONABLE_ARRAY_LENGTH )
+        {
+            initializeToDummyValue();
+            return false;
+        }
+
+        isArray = true;
+        return true;
+    }
+
+    private void readNumber( PageCursor cursor )
+    {
+        long1 = cursor.getByte();
+        long0 = cursor.getLong();
+    }
+
+    private void readBoolean( PageCursor cursor )
+    {
+        writeBoolean( cursor.getByte() == TRUE );
+    }
+
+    private void readText( PageCursor cursor, int maxSize )
+    {
+        // For performance reasons cannot be redirected to writeString, due to byte[] reuse
+        short bytesLength = cursor.getShort();
+        if ( bytesLength <= 0 || bytesLength > maxSize )
+        {
+            initializeToDummyValue();
+            return;
+        }
+        setBytesLength( bytesLength );
+        cursor.getBytes( byteArray, 0, bytesLength );
+    }
+
+    private void readDuration( PageCursor cursor )
+    {
+        // TODO unify order of fields
+        long totalAvgSeconds = cursor.getLong();
+        int nanosOfSecond = cursor.getInt();
+        long months = cursor.getLong();
+        long days = cursor.getLong();
+        writeDuration( months, days, totalAvgSeconds, nanosOfSecond );
+    }
+
+    private void readLocalTime( PageCursor cursor )
+    {
+        writeLocalTime( cursor.getLong() );
+    }
+
+    private void readZonedTime( PageCursor cursor )
+    {
+        writeTime( cursor.getLong(), cursor.getInt() );
+    }
+
+    private void readDate( PageCursor cursor )
+    {
+        writeDate( cursor.getLong() );
+    }
+
+    private void readLocalDateTime( PageCursor cursor )
+    {
+        writeLocalDateTime( cursor.getLong(), cursor.getInt() );
+    }
+
+    private void readZonedDateTime( PageCursor cursor )
+    {
+        long epochSecondUTC = cursor.getLong();
+        int nanoOfSecond = cursor.getInt();
+        int encodedZone = cursor.getInt();
+        if ( isZoneId( encodedZone ) )
+        {
+            writeDateTime( epochSecondUTC, nanoOfSecond, asZoneId( encodedZone ) );
+        }
+        else
+        {
+            writeDateTime( epochSecondUTC, nanoOfSecond, asZoneOffset( encodedZone ) );
+        }
+    }
+    /* </read> */
+
+    /* <write> (write to field state from Value or cursor) */
     @Override
     protected void writeDate( long epochDay ) throws RuntimeException
     {
@@ -695,6 +1270,196 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         }
     }
 
+    /* <write.array> */
+    @Override
+    public void beginArray( int size, ArrayType arrayType ) throws RuntimeException
+    {
+        initializeTypeFromArrayType( arrayType );
+        isArray = true;
+        arrayLength = size;
+        currentArrayOffset = 0;
+        switch ( type )
+        {
+        case ZONED_DATE_TIME_ARRAY:
+            initializeZonedDateTimeArray( size );
+            break;
+        case LOCAL_DATE_TIME_ARRAY:
+            initializeLocalDateTimeArray( size );
+            break;
+        case DATE_ARRAY:
+            initializeDateArray( size );
+            break;
+        case ZONED_TIME_ARRAY:
+            initializeZonedTimeArray( size );
+            break;
+        case LOCAL_TIME_ARRAY:
+            initializeLocalTimeArray( size );
+            break;
+        case DURATION_ARRAY:
+            initializeDurationArray( size );
+            break;
+        case TEXT_ARRAY:
+            initializeTextArray( size );
+            break;
+        case BOOLEAN_ARRAY:
+            initializeBooleanArray( size );
+            break;
+        case NUMBER_ARRAY:
+            initializeNumberArray( size );
+            break;
+        }
+    }
+
+    @Override
+    public void endArray() throws RuntimeException
+    {
+        // TODO do something here?
+    }
+
+    private void initializeTypeFromArrayType( ArrayType arrayType )
+    {
+        switch ( arrayType )
+        {
+        case BYTE:
+            type = Type.NUMBER_ARRAY;
+            long1 = RawBits.BYTE;
+            break;
+        case SHORT:
+            type = Type.NUMBER_ARRAY;
+            long1 = RawBits.SHORT;
+            break;
+        case INT:
+            type = Type.NUMBER_ARRAY;
+            long1 = RawBits.INT;
+            break;
+        case LONG:
+            type = Type.NUMBER_ARRAY;
+            long1 = RawBits.LONG;
+            break;
+        case FLOAT:
+            type = Type.NUMBER_ARRAY;
+            long1 = RawBits.FLOAT;
+            break;
+        case DOUBLE:
+            type = Type.NUMBER_ARRAY;
+            long1 = RawBits.DOUBLE;
+            break;
+        case BOOLEAN:
+            type = Type.BOOLEAN_ARRAY;
+            break;
+        case STRING:
+            type = Type.TEXT_ARRAY;
+            break;
+        case CHAR:
+            type = Type.TEXT_ARRAY;
+            break;
+        case POINT:
+            throw new UnsupportedOperationException( "Not implemented yet" );
+        case ZONED_DATE_TIME:
+            type = Type.ZONED_DATE_TIME_ARRAY;
+            break;
+        case LOCAL_DATE_TIME:
+            type = Type.LOCAL_DATE_TIME_ARRAY;
+            break;
+        case DATE:
+            type = Type.DATE_ARRAY;
+            break;
+        case ZONED_TIME:
+            type = Type.ZONED_TIME_ARRAY;
+            break;
+        case LOCAL_TIME:
+            type = Type.LOCAL_TIME_ARRAY;
+            break;
+        case DURATION:
+            type = Type.DURATION_ARRAY;
+            break;
+        default:
+            throw new IllegalArgumentException( "Unknown array type " + arrayType );
+        }
+    }
+
+    private void initializeNumberArray( int size )
+    {
+        long0Array = ensureBigEnough( long0Array, size );
+        // plain long1 for number type
+    }
+
+    private void initializeBooleanArray( int size )
+    {
+        long0Array = ensureBigEnough( long0Array, size );
+    }
+
+    private void initializeTextArray( int size )
+    {
+        long0Array = ensureBigEnough( long0Array, size );
+        // plain long1 for bytesDereferenced
+        byteArrayArray = ensureBigEnough( byteArrayArray, size );
+    }
+
+    private void initializeDurationArray( int size )
+    {
+        long0Array = ensureBigEnough( long0Array, size );
+        long1Array = ensureBigEnough( long1Array, size );
+        long2Array = ensureBigEnough( long2Array, size );
+        long3Array = ensureBigEnough( long3Array, size );
+    }
+
+    private void initializeLocalTimeArray( int size )
+    {
+        long0Array = ensureBigEnough( long0Array, size );
+    }
+
+    private void initializeZonedTimeArray( int size )
+    {
+        long0Array = ensureBigEnough( long0Array, size );
+        long1Array = ensureBigEnough( long1Array, size );
+    }
+
+    private void initializeDateArray( int size )
+    {
+        long0Array = ensureBigEnough( long0Array, size );
+    }
+
+    private void initializeLocalDateTimeArray( int size )
+    {
+        long0Array = ensureBigEnough( long0Array, size );
+        long1Array = ensureBigEnough( long1Array, size );
+    }
+
+    private void initializeZonedDateTimeArray( int size )
+    {
+        long0Array = ensureBigEnough( long0Array, size );
+        long1Array = ensureBigEnough( long1Array, size );
+        long2Array = ensureBigEnough( long2Array, size );
+        long3Array = ensureBigEnough( long3Array, size );
+    }
+    /* </write.array> */
+    /* </write> */
+
+    /* <helpers> */
+    private void setBytesLength( int length )
+    {
+        if ( booleanOf( long1 ) || byteArray == null || byteArray.length < length )
+        {
+            long1 = FALSE;
+
+            // allocate a bit more than required so that there's a higher chance that this byte[] instance
+            // can be used for more keys than just this one
+            byteArray = new byte[length + length / 2];
+        }
+        long0 = length;
+    }
+
+    private static byte[][] ensureBigEnough( byte[][] array, int targetLength )
+    {
+        return array == null || array.length < targetLength ? new byte[targetLength][] : array;
+    }
+
+    private static long[] ensureBigEnough( long[] array, int targetLength )
+    {
+        return array == null || array.length < targetLength ? new long[targetLength] : array;
+    }
+
     private static NumberValue numberAsValue( long long0, long long1 )
     {
         // There's a difference between composing a single text value and a array text value
@@ -799,788 +1564,6 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         return longValue == TRUE;
     }
 
-    private static int compareNumber(
-            long this_long0, long this_long1,
-            long that_long0, long that_long1 )
-    {
-        return RawBits.compare( this_long0, (byte) this_long1, that_long0, (byte) that_long1 );
-    }
-
-    private static int compareBoolean(
-            long this_long0,
-            long that_long0 )
-    {
-        return Long.compare( this_long0, that_long0 );
-    }
-
-    private static int compareText(
-            byte[] this_byteArray, long this_long0, long this_long2, long this_long3,
-            byte[] that_byteArray, long that_long0, long that_long2, long that_long3 )
-    {
-        if ( this_byteArray != that_byteArray )
-        {
-            if ( this_byteArray == null )
-            {
-                return isHighestText( this_long3 ) ? 1 : -1;
-            }
-            if ( that_byteArray == null )
-            {
-                return isHighestText( that_long3 ) ? -1 : 1;
-            }
-        }
-        else
-        {
-            return 0;
-        }
-
-        return unsignedByteArrayCompare( this_byteArray, (int) this_long0, that_byteArray, (int) that_long0, booleanOf( this_long2 ) | booleanOf( that_long2 ) );
-    }
-
-    private static int compareZonedDateTime(
-            long this_long0, long this_long1, long this_long2, long this_long3,
-            long that_long0, long that_long1, long that_long2, long that_long3 )
-    {
-        int compare = Long.compare( this_long0, that_long0 );
-        if ( compare == 0 )
-        {
-            compare = Integer.compare( (int) this_long1, (int) that_long1 );
-            if ( compare == 0 &&
-                    // We need to check validity upfront without throwing exceptions, because the PageCursor might give garbage bytes
-                    TimeZones.validZoneOffset( (int) this_long3 ) &&
-                    TimeZones.validZoneOffset( (int) that_long3 ) )
-            {
-                // In the rare case of comparing the same instant in different time zones, we settle for
-                // mapping to values and comparing using the general values comparator.
-                compare = Values.COMPARATOR.compare(
-                        zonedDateTimeAsValue( this_long0, this_long1, this_long2, this_long3 ),
-                        zonedDateTimeAsValue( that_long0, that_long1, that_long2, that_long3 ) );
-            }
-        }
-        return compare;
-    }
-
-    private static int compareLocalDateTime(
-            long this_long0, long this_long1,
-            long that_long0, long that_long1 )
-    {
-        int compare = Long.compare( this_long1, that_long1 );
-        if ( compare == 0 )
-        {
-            compare = Integer.compare( (int) this_long0, (int) that_long0 );
-        }
-        return compare;
-    }
-
-    private static int compareDate(
-            long this_long0,
-            long that_long0 )
-    {
-        return Long.compare( this_long0, that_long0 );
-    }
-
-    private static int compareZonedTime(
-            long this_long0, long this_long1,
-            long that_long0, long that_long1 )
-    {
-        int compare = Long.compare( this_long0, that_long0 );
-        if ( compare == 0 )
-        {
-            compare = Integer.compare( (int) this_long1, (int) that_long1 );
-        }
-        return compare;
-    }
-
-    private static int compareLocalTime(
-            long this_long0,
-            long that_long0 )
-    {
-        return Long.compare( this_long0, that_long0 );
-    }
-
-    private static int compareDuration(
-            long this_long0, long this_long1, long this_long2, long this_long3,
-            long that_long0, long that_long1, long that_long2, long that_long3 )
-    {
-        int comparison = Long.compare( this_long0, that_long0 );
-        if ( comparison == 0 )
-        {
-            comparison = Integer.compare( (int) this_long1, (int) that_long1 );
-            if ( comparison == 0 )
-            {
-                comparison = Long.compare( this_long2, that_long2 );
-                if ( comparison == 0 )
-                {
-                    comparison = Long.compare( this_long3, that_long3 );
-                }
-            }
-        }
-        return comparison;
-    }
-
-    void copyFrom( GenericKeyState key )
-    {
-        this.type = key.type;
-        this.long0 = key.long0;
-        this.long1 = key.long1;
-        this.long2 = key.long2;
-        this.long3 = key.long3;
-        this.copyByteArrayFromIfExists( key, (int) key.long0 );
-        this.inclusion = key.inclusion;
-    }
-
-    int size()
-    {
-        return valueSize() + TYPE_ID_SIZE;
-    }
-
-    private int valueSize()
-    {
-        // TODO copy-pasted from individual keys
-        // TODO also put this in Type enum
-        switch ( type )
-        {
-        case ZONED_DATE_TIME:
-            return Long.BYTES +    /* epochSecond */
-                   Integer.BYTES + /* nanoOfSecond */
-                   Integer.BYTES;  /* timeZone */
-        case LOCAL_DATE_TIME:
-            return Long.BYTES +    /* epochSecond */
-                   Integer.BYTES;  /* nanoOfSecond */
-        case DATE:
-            return Long.BYTES;     /* epochDay */
-        case ZONED_TIME:
-            return Long.BYTES +    /* nanosOfDayUTC */
-                   Integer.BYTES;  /* zoneOffsetSeconds */
-        case LOCAL_TIME:
-            return Long.BYTES;     /* nanoOfDay */
-        case DURATION:
-            return Long.BYTES +    /* totalAvgSeconds */
-                   Integer.BYTES + /* nanosOfSecond */
-                   Long.BYTES +    /* months */
-                   Long.BYTES;     /* days */
-        case TEXT:
-            return Short.SIZE +    /* short field with bytesLength value */
-                   (int) long0;    /* bytesLength */
-        case BOOLEAN:
-            return Byte.BYTES;     /* byte for this boolean value */
-        case NUMBER:
-            return Byte.BYTES +    /* type of value */
-                   Long.BYTES;     /* raw value bits */
-        default:
-            throw new IllegalArgumentException( "Unknown type " + type );
-        }
-    }
-
-    void put( PageCursor cursor )
-    {
-        cursor.putByte( type.typeId );
-        switch ( type )
-        {
-        case ZONED_DATE_TIME:
-            putZonedDateTime( cursor, long0, long1, long2, long3 );
-            break;
-        case LOCAL_DATE_TIME:
-            putLocalDateTime( cursor, long0, long1 );
-            break;
-        case DATE:
-            putDate( cursor, long0 );
-            break;
-        case ZONED_TIME:
-            putZonedTime( cursor, long0, long1 );
-            break;
-        case LOCAL_TIME:
-            putLocalTime( cursor, long0 );
-            break;
-        case DURATION:
-            putDuration( cursor, long0, long1, long2, long3 );
-            break;
-        case TEXT:
-            putText( cursor, byteArray, long0 );
-            break;
-        case BOOLEAN:
-            putBoolean( cursor, long0 );
-            break;
-        case NUMBER:
-            putNumber( cursor, long0, long1 );
-            break;
-        case ZONED_DATE_TIME_ARRAY:
-            putArray( cursor, ( c, i ) -> putZonedDateTime( c, long0Array[i], long1Array[i], long2Array[i], long3Array[i] ) );
-            break;
-        case LOCAL_DATE_TIME_ARRAY:
-            putArray( cursor, ( c, i ) -> putLocalDateTime( c, long0Array[i], long1Array[i] ) );
-            break;
-        case DATE_ARRAY:
-            putArray( cursor, ( c, i ) -> putDate( c, long0Array[i] ) );
-            break;
-        case ZONED_TIME_ARRAY:
-            putArray( cursor, ( c, i ) -> putZonedTime( c, long0Array[i], long1Array[i] ) );
-            break;
-        case LOCAL_TIME_ARRAY:
-            putArray( cursor, ( c, i ) -> putLocalTime( c, long0Array[i] ) );
-            break;
-        case DURATION_ARRAY:
-            putArray( cursor, ( c, i ) -> putDuration( c, long0Array[i], long1Array[i], long2Array[i], long3Array[i] ) );
-            break;
-        case TEXT_ARRAY:
-            putArray( cursor, ( c, i ) -> putText( c, byteArrayArray[i], long0Array[i] ) );
-            break;
-        case BOOLEAN_ARRAY:
-            putArray( cursor, ( c, i ) -> putBoolean( c, long0Array[i] ) );
-            break;
-        case NUMBER_ARRAY:
-            putArray( cursor, ( c, i ) -> putNumber( c, long0Array[i], long1Array[i] ) );
-            break;
-        default:
-            throw new IllegalArgumentException( "Unknown type " + type );
-        }
-    }
-
-    interface ArrayElementWriter
-    {
-        void write( PageCursor cursor, int i );
-    }
-
-    private void putArray( PageCursor cursor, ArrayElementWriter writer )
-    {
-        cursor.putInt( arrayLength );
-        for ( int i = 0; i < arrayLength; i++ )
-        {
-            writer.write( cursor, i );
-        }
-    }
-
-    private static void putNumber( PageCursor cursor, long long0, long long1 )
-    {
-        cursor.putByte( (byte) long1 );
-        cursor.putLong( long0 );
-    }
-
-    private static void putBoolean( PageCursor cursor, long long0 )
-    {
-        cursor.putByte( (byte) long0 );
-    }
-
-    private static void putText( PageCursor cursor, byte[] byteArray, long long0 )
-    {
-        // TODO short/int weird asymmetry ey?
-        cursor.putShort( (short) long0 );
-        cursor.putBytes( byteArray, 0, (int) long0 );
-    }
-
-    private static void putDuration( PageCursor cursor, long long0, long long1, long long2, long long3 )
-    {
-        cursor.putLong( long0 );
-        cursor.putInt( (int) long1 );
-        cursor.putLong( long2 );
-        cursor.putLong( long3 );
-    }
-
-    private static void putLocalTime( PageCursor cursor, long long0 )
-    {
-        cursor.putLong( long0 );
-    }
-
-    private static void putZonedTime( PageCursor cursor, long long0, long long1 )
-    {
-        cursor.putLong( long0 );
-        cursor.putInt( (int) long1 );
-    }
-
-    private static void putDate( PageCursor cursor, long long0 )
-    {
-        cursor.putLong( long0 );
-    }
-
-    private static void putLocalDateTime( PageCursor cursor, long long0, long long1 )
-    {
-        cursor.putLong( long1 );
-        cursor.putInt( (int) long0 );
-    }
-
-    private static void putZonedDateTime( PageCursor cursor, long long0, long long1, long long2, long long3 )
-    {
-        cursor.putLong( long0 );
-        cursor.putInt( (int) long1 );
-        if ( long2 >= 0 )
-        {
-            cursor.putInt( (int) long2 | ZONE_ID_FLAG );
-        }
-        else
-        {
-            cursor.putInt( (int) long3 & ZONE_ID_MASK );
-        }
-    }
-
-    @Override
-    public void beginArray( int size, ArrayType arrayType ) throws RuntimeException
-    {
-        switch ( arrayType )
-        {
-        case BYTE:
-            type = Type.NUMBER_ARRAY;
-            long1 = RawBits.BYTE;
-            break;
-        case SHORT:
-            type = Type.NUMBER_ARRAY;
-            long1 = RawBits.SHORT;
-            break;
-        case INT:
-            type = Type.NUMBER_ARRAY;
-            long1 = RawBits.INT;
-            break;
-        case LONG:
-            type = Type.NUMBER_ARRAY;
-            long1 = RawBits.LONG;
-            break;
-        case FLOAT:
-            type = Type.NUMBER_ARRAY;
-            long1 = RawBits.FLOAT;
-            break;
-        case DOUBLE:
-            type = Type.NUMBER_ARRAY;
-            long1 = RawBits.DOUBLE;
-            break;
-        case BOOLEAN:
-            type = Type.BOOLEAN_ARRAY;
-            break;
-        case STRING:
-            type = Type.TEXT_ARRAY;
-            break;
-        case CHAR:
-            type = Type.TEXT_ARRAY;
-            break;
-        case POINT:
-            throw new UnsupportedOperationException( "Not implemented yet" );
-        case ZONED_DATE_TIME:
-            type = Type.ZONED_DATE_TIME_ARRAY;
-            break;
-        case LOCAL_DATE_TIME:
-            type = Type.LOCAL_DATE_TIME_ARRAY;
-            break;
-        case DATE:
-            type = Type.DATE_ARRAY;
-            break;
-        case ZONED_TIME:
-            type = Type.ZONED_TIME_ARRAY;
-            break;
-        case LOCAL_TIME:
-            type = Type.LOCAL_TIME_ARRAY;
-            break;
-        case DURATION:
-            type = Type.DURATION_ARRAY;
-            break;
-        default:
-            throw new IllegalArgumentException( "Unknown array type " + arrayType );
-        }
-        isArray = true;
-        arrayLength = size;
-        currentArrayOffset = 0;
-        switch ( type )
-        {
-        case ZONED_DATE_TIME_ARRAY:
-            initializeZonedDateTimeArray( size );
-            break;
-        case LOCAL_DATE_TIME_ARRAY:
-            initializeLocalDateTimeArray( size );
-            break;
-        case DATE_ARRAY:
-            initializeDateArray( size );
-            break;
-        case ZONED_TIME_ARRAY:
-            initializeZonedTimeArray( size );
-            break;
-        case LOCAL_TIME_ARRAY:
-            initializeLocalTimeArray( size );
-            break;
-        case DURATION_ARRAY:
-            initializeDurationArray( size );
-            break;
-        case TEXT_ARRAY:
-            initializeTextArray( size );
-            break;
-        case BOOLEAN_ARRAY:
-            initializeBooleanArray( size );
-            break;
-        case NUMBER_ARRAY:
-            initializeNumberArray( size );
-            break;
-        }
-    }
-
-    private void initializeNumberArray( int size )
-    {
-        long0Array = ensureBigEnough( long0Array, size );
-        // plain long1 for number type
-    }
-
-    private void initializeBooleanArray( int size )
-    {
-        long0Array = ensureBigEnough( long0Array, size );
-    }
-
-    private void initializeTextArray( int size )
-    {
-        long0Array = ensureBigEnough( long0Array, size );
-        // plain long1 for bytesDereferenced
-        byteArrayArray = ensureBigEnough( byteArrayArray, size );
-    }
-
-    private void initializeDurationArray( int size )
-    {
-        long0Array = ensureBigEnough( long0Array, size );
-        long1Array = ensureBigEnough( long1Array, size );
-        long2Array = ensureBigEnough( long2Array, size );
-        long3Array = ensureBigEnough( long3Array, size );
-    }
-
-    private void initializeLocalTimeArray( int size )
-    {
-        long0Array = ensureBigEnough( long0Array, size );
-    }
-
-    private void initializeZonedTimeArray( int size )
-    {
-        long0Array = ensureBigEnough( long0Array, size );
-        long1Array = ensureBigEnough( long1Array, size );
-    }
-
-    private void initializeDateArray( int size )
-    {
-        long0Array = ensureBigEnough( long0Array, size );
-    }
-
-    private void initializeLocalDateTimeArray( int size )
-    {
-        long0Array = ensureBigEnough( long0Array, size );
-        long1Array = ensureBigEnough( long1Array, size );
-    }
-
-    private void initializeZonedDateTimeArray( int size )
-    {
-        long0Array = ensureBigEnough( long0Array, size );
-        long1Array = ensureBigEnough( long1Array, size );
-        long2Array = ensureBigEnough( long2Array, size );
-        long3Array = ensureBigEnough( long3Array, size );
-    }
-
-    private byte[][] ensureBigEnough( byte[][] array, int targetLength )
-    {
-        return array == null || array.length < targetLength ? new byte[targetLength][] : array;
-    }
-
-    private static long[] ensureBigEnough( long[] array, int targetLength )
-    {
-        return array == null || array.length < targetLength ? new long[targetLength] : array;
-    }
-
-    @Override
-    public void endArray() throws RuntimeException
-    {
-        // TODO do something here?
-    }
-
-    private Type arrayType( ArrayType arrayType )
-    {
-        switch ( arrayType )
-        {
-        case BYTE:
-            return Type.NUMBER_ARRAY;
-        case SHORT:
-            return Type.NUMBER_ARRAY;
-        case INT:
-            return Type.NUMBER_ARRAY;
-        case LONG:
-            return Type.NUMBER_ARRAY;
-        case FLOAT:
-            return Type.NUMBER_ARRAY;
-        case DOUBLE:
-            return Type.NUMBER_ARRAY;
-        case BOOLEAN:
-            return Type.BOOLEAN_ARRAY;
-        case STRING:
-            return Type.TEXT_ARRAY;
-        case CHAR:
-            return Type.TEXT_ARRAY;
-        case POINT:
-            throw new UnsupportedOperationException( "Not implemented yet" );
-        case ZONED_DATE_TIME:
-            return Type.ZONED_DATE_TIME_ARRAY;
-        case LOCAL_DATE_TIME:
-            return Type.LOCAL_DATE_TIME_ARRAY;
-        case DATE:
-            return Type.DATE_ARRAY;
-        case ZONED_TIME:
-            return Type.ZONED_TIME_ARRAY;
-        case LOCAL_TIME:
-            return Type.LOCAL_TIME_ARRAY;
-        case DURATION:
-            return Type.DURATION_ARRAY;
-        default:
-            throw new IllegalArgumentException( "Unknown array type " + arrayType );
-        }
-    }
-
-    void read( PageCursor cursor, int size )
-    {
-        if ( size <= TYPE_ID_SIZE )
-        {
-            initializeToDummyValue();
-            return;
-        }
-
-        byte typeId = cursor.getByte();
-        if ( typeId < 0 || typeId >= GenericLayout.TYPES.length )
-        {
-            initializeToDummyValue();
-            return;
-        }
-
-        size -= TYPE_ID_SIZE;
-        type = GenericLayout.TYPE_BY_ID[typeId];
-        inclusion = NEUTRAL;
-        switch ( type )
-        {
-        case ZONED_DATE_TIME:
-            readZonedDateTime( cursor );
-            break;
-        case LOCAL_DATE_TIME:
-            readLocalDateTime( cursor );
-            break;
-        case DATE:
-            readDate( cursor );
-            break;
-        case ZONED_TIME:
-            readZonedTime( cursor );
-            break;
-        case LOCAL_TIME:
-            readLocalTime( cursor );
-            break;
-        case DURATION:
-            readDuration( cursor );
-            break;
-        case TEXT:
-            readText( cursor, size );
-            break;
-        case BOOLEAN:
-            readBoolean( cursor );
-            break;
-        case NUMBER:
-            readNumber( cursor );
-            break;
-        case ZONED_DATE_TIME_ARRAY:
-            readArray( cursor, ArrayType.ZONED_DATE_TIME, this::readZonedDateTime );
-            break;
-        case LOCAL_DATE_TIME_ARRAY:
-            readArray( cursor, ArrayType.LOCAL_DATE_TIME, this::readLocalDateTime );
-            break;
-        case DATE_ARRAY:
-            readArray( cursor, ArrayType.DATE, this::readDate );
-            break;
-        case ZONED_TIME_ARRAY:
-            readArray( cursor, ArrayType.ZONED_DATE_TIME, this::readZonedDateTime );
-            break;
-        case LOCAL_TIME_ARRAY:
-            readArray( cursor, ArrayType.LOCAL_TIME, this::readLocalTime );
-            break;
-        case DURATION_ARRAY:
-            readArray( cursor, ArrayType.DURATION, this::readDuration );
-            break;
-        case TEXT_ARRAY:
-            readTextArray( cursor, size );
-            break;
-        case BOOLEAN_ARRAY:
-            readArray( cursor, ArrayType.BOOLEAN, this::readBoolean );
-            break;
-        case NUMBER_ARRAY:
-            readNumberArray( cursor );
-            break;
-        default:
-            throw new IllegalArgumentException( "Unknown type " + type );
-        }
-    }
-
-    private void readNumberArray( PageCursor cursor )
-    {
-        if ( setArrayLengthWhenReading( cursor ) )
-        {
-            long1 = cursor.getByte(); // number type, like: byte, int, short a.s.o.
-            initializeNumberArray( arrayLength );
-            ArrayType numberType = arrayTypeOf( (byte) long1 );
-            if ( numberType == null )
-            {
-                initializeToDummyValue();
-                return;
-            }
-
-            beginArray( arrayLength, numberType );
-            for ( int i = 0; i < arrayLength; i++ )
-            {
-                long0Array[i] = cursor.getLong();
-            }
-            endArray();
-        }
-    }
-
-    private ArrayType arrayTypeOf( byte numberType )
-    {
-        switch ( numberType )
-        {
-        case RawBits.BYTE:
-            return ArrayType.BYTE;
-        case RawBits.SHORT:
-            return ArrayType.SHORT;
-        case RawBits.INT:
-            return ArrayType.INT;
-        case RawBits.LONG:
-            return ArrayType.LONG;
-        case RawBits.FLOAT:
-            return ArrayType.FLOAT;
-        case RawBits.DOUBLE:
-            return ArrayType.DOUBLE;
-        }
-        // bad read, hopefully
-        return null;
-    }
-
-    private void readTextArray( PageCursor cursor, int maxSize )
-    {
-        if ( setArrayLengthWhenReading( cursor ) )
-        {
-            initializeTextArray( arrayLength );
-            beginArray( arrayLength, ArrayType.STRING );
-            for ( int i = 0; i < arrayLength; i++ )
-            {
-                short bytesLength = cursor.getShort();
-                if ( bytesLength <= 0 || bytesLength > maxSize )
-                {
-                    initializeToDummyValue();
-                    return;
-                }
-                // long1 == text byte[] have been handed out to a UTF8StringValue and so must not be overwritten with next value
-                if ( booleanOf( long1 ) || byteArrayArray[i] == null || byteArrayArray[i].length < bytesLength )
-                {
-                    long1 = FALSE;
-
-                    // allocate a bit more than required so that there's a higher chance that this byte[] instance
-                    // can be used for more keys than just this one
-                    byteArrayArray[i] = new byte[bytesLength + bytesLength / 2];
-                }
-                long0Array[i] = bytesLength;
-                cursor.getBytes( byteArrayArray[i], 0, bytesLength );
-            }
-            endArray();
-        }
-    }
-
-    private void readArray( PageCursor cursor, ArrayType type, ArrayElementReader reader )
-    {
-        if ( setArrayLengthWhenReading( cursor ) )
-        {
-            beginArray( arrayLength, type );
-            for ( int i = 0; i < arrayLength; i++ )
-            {
-                reader.readFrom( cursor );
-            }
-            endArray();
-        }
-    }
-
-    private boolean setArrayLengthWhenReading( PageCursor cursor )
-    {
-        arrayLength = cursor.getInt();
-        if ( arrayLength < 0 || arrayLength >= BIGGEST_REASONABLE_ARRAY_LENGTH )
-        {
-            initializeToDummyValue();
-            return false;
-        }
-
-        isArray = true;
-        return true;
-    }
-
-    void initializeToDummyValue()
-    {
-        type = Type.NUMBER;
-        long0 = 0;
-        long1 = 0;
-        inclusion = NEUTRAL;
-    }
-
-    private void readNumber( PageCursor cursor )
-    {
-        long1 = cursor.getByte();
-        long0 = cursor.getLong();
-    }
-
-    private void readBoolean( PageCursor cursor )
-    {
-        writeBoolean( cursor.getByte() == TRUE );
-    }
-
-    private void readText( PageCursor cursor, int maxSize )
-    {
-        // For performance reasons cannot be redirected to writeString, due to byte[] reuse
-        short bytesLength = cursor.getShort();
-        if ( bytesLength <= 0 || bytesLength > maxSize )
-        {
-            initializeToDummyValue();
-            return;
-        }
-        setBytesLength( bytesLength );
-        cursor.getBytes( byteArray, 0, bytesLength );
-    }
-
-    private void readDuration( PageCursor cursor )
-    {
-        // TODO unify order
-        long totalAvgSeconds = cursor.getLong();
-        int nanosOfSecond = cursor.getInt();
-        long months = cursor.getLong();
-        long days = cursor.getLong();
-        writeDuration( months, days, totalAvgSeconds, nanosOfSecond );
-    }
-
-    private void readLocalTime( PageCursor cursor )
-    {
-        writeLocalTime( cursor.getLong() );
-    }
-
-    private void readZonedTime( PageCursor cursor )
-    {
-        writeTime( cursor.getLong(), cursor.getInt() );
-    }
-
-    private void readDate( PageCursor cursor )
-    {
-        writeDate( cursor.getLong() );
-    }
-
-    private void readLocalDateTime( PageCursor cursor )
-    {
-        writeLocalDateTime( cursor.getLong(), cursor.getInt() );
-    }
-
-    private void readZonedDateTime( PageCursor cursor )
-    {
-        long epochSecondUTC = cursor.getLong();
-        int nanoOfSecond = cursor.getInt();
-        int encodedZone = cursor.getInt();
-        if ( isZoneId( encodedZone ) )
-        {
-            writeDateTime( epochSecondUTC, nanoOfSecond, asZoneId( encodedZone ) );
-        }
-        else
-        {
-            writeDateTime( epochSecondUTC, nanoOfSecond, asZoneOffset( encodedZone ) );
-        }
-    }
-
-    void writeValue( Value value, NativeIndexKey.Inclusion inclusion )
-    {
-        value.writeTo( this );
-        this.inclusion = inclusion;
-    }
-
     @FunctionalInterface
     interface ArrayElementComparator
     {
@@ -1598,4 +1581,5 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     {
         T from( int i );
     }
+    /* </helpers> */
 }
