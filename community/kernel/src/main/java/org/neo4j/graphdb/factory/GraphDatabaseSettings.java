@@ -357,6 +357,16 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Dynamic
     public static final Setting<Boolean> track_query_allocation = setting( "dbms.track_query_allocation", BOOLEAN, FALSE );
 
+    @Description( "Write morsel runtime tracing output to this here place." )
+    @Internal
+    public static final Setting<File> morsel_runtime_trace =
+            pathSetting( "unsupported.cypher.morsel_runtime_trace", "scheduler.trace" );
+
+    @Description( "Enable tracing of morsel runtime scheduler." )
+    @Internal
+    public static final Setting<Boolean> enable_morsel_runtime_trace =
+            setting( "unsupported.cypher.enable_morsel_runtime_trace", BOOLEAN, FALSE );
+
     @Description( "The size of the morsels" )
     @Internal
     public static final Setting<Integer> cypher_morsel_size =
