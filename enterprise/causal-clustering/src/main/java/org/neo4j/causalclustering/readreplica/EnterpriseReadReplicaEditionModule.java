@@ -59,6 +59,7 @@ import org.neo4j.causalclustering.discovery.HostnameResolver;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.discovery.TopologyServiceMultiRetryStrategy;
 import org.neo4j.causalclustering.discovery.TopologyServiceRetryStrategy;
+import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.causalclustering.discovery.procedures.ReadReplicaRoleProcedure;
 import org.neo4j.causalclustering.handlers.DuplexPipelineWrapperFactory;
 import org.neo4j.causalclustering.handlers.PipelineWrapper;
@@ -147,6 +148,9 @@ import static org.neo4j.causalclustering.discovery.ResolutionResolverFactory.cho
  */
 public class EnterpriseReadReplicaEditionModule extends EditionModule
 {
+    private final TopologyService topologyService;
+    private final LogProvider logProvider;
+
     public EnterpriseReadReplicaEditionModule( final PlatformModule platformModule, final DiscoveryServiceFactory discoveryServiceFactory, MemberId myself )
     {
         LogService logging = platformModule.logging;
@@ -203,7 +207,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
         commitProcessFactory = readOnly();
 
-        LogProvider logProvider = platformModule.logging.getInternalLogProvider();
+        logProvider = platformModule.logging.getInternalLogProvider();
         LogProvider userLogProvider = platformModule.logging.getUserLogProvider();
 
         logProvider.getLog( getClass() ).info( String.format( "Generated new id: %s", myself ) );
@@ -212,7 +216,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         configureDiscoveryService( discoveryServiceFactory, dependencies, config, logProvider );
 
-        TopologyService topologyService = discoveryServiceFactory.topologyService( config, logProvider, platformModule.jobScheduler, myself, hostnameResolver,
+        topologyService = discoveryServiceFactory.topologyService( config, logProvider, platformModule.jobScheduler, myself, hostnameResolver,
                 resolveStrategy( config, logProvider ) );
 
         life.add( dependencies.satisfyDependency( topologyService ) );
@@ -381,6 +385,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         procedures.registerProcedure( EnterpriseBuiltInDbmsProcedures.class, true );
         procedures.registerProcedure( EnterpriseBuiltInProcedures.class, true );
         procedures.register( new ReadReplicaRoleProcedure() );
+        procedures.register( new ClusterOverviewProcedure( topologyService, logProvider ) );
     }
 
     private CommitProcessFactory readOnly()
