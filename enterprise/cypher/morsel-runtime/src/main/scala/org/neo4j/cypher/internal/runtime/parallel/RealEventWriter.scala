@@ -38,11 +38,11 @@ class RealEventWriter(lineWriter: String => Unit) extends EventWriter {
   private var t0: Long = -1
 
   override def report(dataPoint: DataPoint): Unit = {
-    buffersByThread(dataPoint.threadId.toInt).produce(dataPoint)
+    buffersByThread(dataPoint.executionThreadId.toInt).produce(dataPoint)
   }
 
   private val SEPARATOR = ","
-  private val HEADER = Array("queryId", "threadId", "scheduledTime(us)", "startTime(us)", "stopTime(us)", "pipeline")
+  private val HEADER = Array("queryId", "schedulingThreadId", "schedulingTime(us)", "executionThreadId", "startTime(us)", "stopTime(us)", "pipeline")
 
   override def flush(): Unit = {
     val dataByThread =
@@ -53,7 +53,7 @@ class RealEventWriter(lineWriter: String => Unit) extends EventWriter {
       }
 
     if (t0 == -1) {
-      t0 = dataByThread.filter(_.nonEmpty).map(_.head.startTime).min
+      t0 = dataByThread.filter(_.nonEmpty).map(_.head.scheduledTime).min
       lineWriter(HEADER.mkString(SEPARATOR))
     }
 
@@ -68,8 +68,9 @@ class RealEventWriter(lineWriter: String => Unit) extends EventWriter {
 
     Array(
       dataPoint.queryId.toString,
-      dataPoint.threadId.toString,
+      dataPoint.schedulingThreadId,
       toDuration(dataPoint.scheduledTime).toString,
+      dataPoint.executionThreadId.toString,
       toDuration(dataPoint.startTime).toString,
       toDuration(dataPoint.stopTime).toString,
       dataPoint.task.toString
