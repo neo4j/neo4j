@@ -79,24 +79,6 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue>
     }
 
     @Override
-    protected DateTimeValue positionalCreate( AnyValue[] input )
-    {
-        if ( input.length != 8 )
-        {
-            throw new IllegalArgumentException( "expected 8 arguments" );
-        }
-        return DateTimeValue.datetime(
-                anInt( "year", input[0] ),
-                anInt( "month", input[1] ),
-                anInt( "day", input[2] ),
-                anInt( "hour", input[3] ),
-                anInt( "minute", input[4] ),
-                anInt( "second", input[5] ),
-                anInt( "nanos", input[6] ),
-                aString( "timezone", input[7] ) );
-    }
-
-    @Override
     protected DateTimeValue truncate( TemporalUnit unit, TemporalValue input, MapValue fields, Supplier<ZoneId> defaultZone )
     {
         return DateTimeValue.truncate( unit, input, fields, defaultZone );

@@ -82,8 +82,6 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
 
     protected abstract T select( AnyValue from, Supplier<ZoneId> defaultZone );
 
-    protected abstract T positionalCreate( AnyValue[] input );
-
     protected abstract T truncate( TemporalUnit unit, TemporalValue input, MapValue fields, Supplier<ZoneId> defaultZone );
 
     private static final List<FieldSignature> INPUT_SIGNATURE = singletonList( inputField(
@@ -159,10 +157,6 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         if ( input == null || input.length == 0 || input[0] == NO_VALUE || input[0] == null )
         {
             return now( ctx.get( DEFAULT_CLOCK ), null, defaultZone );
-        }
-        else if ( input.length > 1 )
-        {
-            return positionalCreate( input );
         }
         else if ( input[0] instanceof TextValue )
         {

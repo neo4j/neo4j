@@ -66,21 +66,6 @@ class TimeFunction extends TemporalFunction<TimeValue>
     }
 
     @Override
-    protected TimeValue positionalCreate( AnyValue[] input )
-    {
-        if ( input.length != 5 )
-        {
-            throw new IllegalArgumentException( "expected 5 arguments" );
-        }
-        return TimeValue.time(
-                anInt( "hour", input[0] ),
-                anInt( "minute", input[1] ),
-                anInt( "second", input[2] ),
-                anInt( "nanos", input[3] ),
-                aString( "offset", input[4] ) );
-    }
-
-    @Override
     protected TimeValue truncate( TemporalUnit unit, TemporalValue input, MapValue fields, Supplier<ZoneId> defaultZone )
     {
         return TimeValue.truncate( unit, input, fields, defaultZone );

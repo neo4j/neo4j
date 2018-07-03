@@ -66,20 +66,6 @@ class LocalTimeFunction extends TemporalFunction<LocalTimeValue>
     }
 
     @Override
-    protected LocalTimeValue positionalCreate( AnyValue[] input )
-    {
-        if ( input.length != 4 )
-        {
-            throw new IllegalArgumentException( "expected 4 arguments" );
-        }
-        return LocalTimeValue.localTime(
-                anInt( "hour", input[0] ),
-                anInt( "minute", input[1] ),
-                anInt( "second", input[2] ),
-                anInt( "nanos", input[3] ) );
-    }
-
-    @Override
     protected LocalTimeValue truncate( TemporalUnit unit, TemporalValue input, MapValue fields, Supplier<ZoneId> defaultZone )
     {
         return LocalTimeValue.truncate( unit, input, fields, defaultZone );
