@@ -671,11 +671,10 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
     annotate(RemoveLabels(inner, pattern.idName, pattern.labels), solved, context)
   }
 
-  def planForeachApply(left: LogicalPlan, innerUpdates: LogicalPlan, pattern: ForeachPattern, context: LogicalPlanningContext): LogicalPlan = {
-
+  def planForeachApply(left: LogicalPlan, innerUpdates: LogicalPlan, pattern: ForeachPattern, context: LogicalPlanningContext, expression: Expression): LogicalPlan = {
     val solved = solveds.get(left.id).amendQueryGraph(_.addMutatingPatterns(pattern))
 
-    annotate(ForeachApply(left, innerUpdates, pattern.variable, pattern.expression), solved, context)
+    annotate(ForeachApply(left, innerUpdates, pattern.variable, expression), solved, context)
   }
 
   def planEager(inner: LogicalPlan, context: LogicalPlanningContext): LogicalPlan =

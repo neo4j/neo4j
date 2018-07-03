@@ -202,7 +202,11 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
     failWithError(config, query, List("Expected to find a node at"))
   }
 
-  test("should FOREACH over nodes in path") {
+  test("foreach with inner function invocation should work ") {
+    // given
+    val foo = createLabeledNode("Foo")
+    val bar = createLabeledNode("Bar")
+    relate(foo, bar)
 
     val a = createNode()
     val b = createNode()
@@ -211,8 +215,16 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
     val query =
       """MATCH p = ()-->()
         |FOREACH (n IN nodes(p) | SET n.marked = true)""".stripMargin
-
     val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
     assertStats(result, propertiesWritten = 2)
+  }
+
+  test("should handle building FOREACH on pattern comprehension") {
+    graph.execute("CREATE (:X)-[:T]->(), (:X)")
+
+    val result = executeWith(
+      expectSucceed = Configs.Interpreted - Configs.BackwardsCompatibility - Configs.AllRulePlanners,
+      query = "FOREACH (x in  [ (p:X)-->() | p ] | SET x.prop = 12 )")
+    assertStats(result, propertiesWritten = 1)
   }
 }

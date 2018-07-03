@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.PhysicalPlanningAttributes.{ArgumentSizes, SlotConfigurations}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration.Size
+import org.neo4j.cypher.internal.ir.v3_5.{HasHeaders, NoHeaders, ShortestPathPattern}
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.ast.ProcedureResultItem
 import org.opencypher.v9_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_5.{HasHeaders, NoHeaders, ShortestPathPattern}
-import org.opencypher.v9_0.util.attribution.Id
-import org.opencypher.v9_0.util.{Foldable, InternalException, UnNamedNameGenerator}
-import org.opencypher.v9_0.util.symbols._
 import org.opencypher.v9_0.expressions._
-import org.neo4j.cypher.internal.v3_5.logical.plans._
+import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.util.symbols._
+import org.opencypher.v9_0.util.{Foldable, InternalException, UnNamedNameGenerator}
 import org.opencypher.v9_0.{expressions => parserAst}
 
 import scala.collection.mutable
@@ -664,6 +664,16 @@ object SlotAllocation {
       case _ =>
         lhs
     }
+
+  // TODO: We might get a list expression that has not been properly typed (RollupApply). Instead of failing,
+  // we are forgiving and just act like we know nothing at compile time
+  private def getTypeOf(semanticTable: SemanticTable, listExpression: Expression): TypeSpec = {
+    if (semanticTable.seen(listExpression)) {
+      semanticTable.getActualTypeFor(listExpression)
+    } else {
+      TypeSpec.all
+    }
+  }
 
   private def addGroupingMap(groupingExpressions: Map[String, Expression], incoming: SlotConfiguration, outgoing: SlotConfiguration) = {
     groupingExpressions foreach {

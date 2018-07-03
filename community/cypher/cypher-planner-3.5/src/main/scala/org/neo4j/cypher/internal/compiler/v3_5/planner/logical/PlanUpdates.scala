@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.{LogicalPlanProducer, mergeUniqueIndexSeekLeafPlanner}
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.{LogicalPlanProducer, PatternExpressionSolver, mergeUniqueIndexSeekLeafPlanner}
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.opencypher.v9_0.util.InternalException
-import org.opencypher.v9_0.expressions.{ContainerIndex, PathExpression, Variable}
+import org.opencypher.v9_0.expressions.{ContainerIndex, Expression, PathExpression, Variable}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 /*
@@ -32,14 +32,15 @@ import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 case object PlanUpdates
   extends ((PlannerQuery, LogicalPlan, Boolean, LogicalPlanningContext, Solveds, Cardinalities) => (LogicalPlan, LogicalPlanningContext)) {
 
+  private val patternExpressionSolver = PatternExpressionSolver()
+
   private def computePlan(plan: LogicalPlan, query: PlannerQuery, firstPlannerQuery: Boolean, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities) = {
     var updatePlan = plan
-    var ctx = context
     val iterator = query.queryGraph.mutatingPatterns.iterator
     while(iterator.hasNext) {
-      updatePlan = planUpdate(updatePlan, iterator.next(), firstPlannerQuery, ctx, solveds, cardinalities)
+      updatePlan = planUpdate(updatePlan, iterator.next(), firstPlannerQuery, context, solveds, cardinalities)
     }
-    (updatePlan, ctx)
+    (updatePlan, context)
   }
 
   override def apply(query: PlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): (LogicalPlan, LogicalPlanningContext) = {
@@ -73,10 +74,13 @@ case object PlanUpdates
     pattern match {
       //FOREACH
       case foreach: ForeachPattern =>
+        val (updatedSource: LogicalPlan, newExpressions: Seq[Expression]) =
+          patternExpressionSolver.apply(source, Seq(foreach.expression), context, solveds, cardinalities)
+
         val innerLeaf = context.logicalPlanProducer
-          .planArgument(Set.empty, Set.empty, source.availableSymbols + foreach.variable, context)
+          .planArgument(Set.empty, Set.empty, updatedSource.availableSymbols + foreach.variable, context)
         val innerUpdatePlan = planAllUpdatesRecursively(foreach.innerUpdates, innerLeaf)
-        context.logicalPlanProducer.planForeachApply(source, innerUpdatePlan, foreach, context)
+        context.logicalPlanProducer.planForeachApply(updatedSource, innerUpdatePlan, foreach, context, newExpressions.head)
 
       //CREATE ()
       //CREATE (a)-[:R]->(b)
