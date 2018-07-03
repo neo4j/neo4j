@@ -34,6 +34,8 @@ import scala.collection.mutable.ArrayBuffer
 
 abstract class SchedulerTest extends CypherFunSuite {
 
+  private val tracer = NOOP.NoSchedulerTracer
+
   def newScheduler(maxConcurrency: Int): Scheduler
 
   test("execute simple task") {
@@ -47,7 +49,7 @@ abstract class SchedulerTest extends CypherFunSuite {
     val queryExecution = s.execute(NoopTask(() => {
       sb ++= "great success"
       taskThreadId.set(Thread.currentThread().getId)
-    }))
+    }), tracer)
 
     queryExecution.await()
 
@@ -65,13 +67,13 @@ abstract class SchedulerTest extends CypherFunSuite {
       for ( i <- 0 until 1000 ) yield
         s.execute(NoopTask(() => {
           map.put(i, Thread.currentThread().getId)
-        }))
+        }), tracer)
 
     futures.foreach(f => f.await())
 
     if (s.isMultiThreaded) {
-      map.size() should equal(concurrency)
       val countsPerThread = map.toSeq.groupBy(kv => kv._2).mapValues(_.size)
+      countsPerThread.size() should equal(concurrency)
       for ((threadId, count) <- countsPerThread) {
         count should be > 1
       }
@@ -91,7 +93,7 @@ abstract class SchedulerTest extends CypherFunSuite {
         NoopTask(() => result += "upon"),
         NoopTask(() => result += "a"),
         NoopTask(() => result += "time")
-      )))
+      )), tracer)
 
     queryExecution.await()
     result should equal(Set("once", "upon", "a", "time"))
@@ -111,7 +113,7 @@ abstract class SchedulerTest extends CypherFunSuite {
       PushToEager(List(1,2,3), aggregator),
       PushToEager(List(4,5,6), aggregator)))
 
-    val queryExecution = s.execute(tasks)
+    val queryExecution = s.execute(tasks, tracer)
 
     queryExecution.await()
     output.toSet should equal(Set(1, 2, 3, 4, 5, 6))
