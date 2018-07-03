@@ -75,7 +75,7 @@ public class TestProcedure
 
     @Procedure( "org.neo4j.aNodeWithLabel" )
     @Description( "org.neo4j.aNodeWithLabel" )
-    public Stream<NodeResult> aNodeWithLabel( @Name( "label" ) String label )
+    public Stream<NodeResult> aNodeWithLabel( @Name( value = "label", defaultValue = "Dog" ) String label )
     {
         Result result = db.execute( "MATCH (n:" + label + ") RETURN n LIMIT 1" );
         return result.stream().map( row -> new NodeResult( (Node)row.get( "n" ) ) );

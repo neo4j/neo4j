@@ -27,11 +27,11 @@ import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, ProcedurePla
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, Expression => CommandExpression}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, ParameterExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, QueryState}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.runtime.planDescription.{Argument, NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.util.v3_4.TaskCloser
+import org.neo4j.cypher.internal.util.v3_4.{InvalidArgumentException, TaskCloser}
 import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
@@ -64,8 +64,10 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
     (r._1, r._2, resultSymbols(i)._2)
   })
 
-  private val argExprCommands: Seq[CommandExpression] = argExprs.map(converter.toCommandExpression) ++
-    signature.inputSignature.drop(argExprs.size).flatMap(_.default).map(o => Literal(o.value))
+  private val actualArgs: Seq[CommandExpression] =  argExprs.map(converter.toCommandExpression) // This list can be shorter than signature.inputSignature.length
+  private val parameterArgs: Seq[ParameterExpression] =  signature.inputSignature.map(s => ParameterExpression(s.name))
+  private val maybeDefaultArgs: Seq[Option[CommandExpression]] =  signature.inputSignature.map(_.default).map(option => option.map( df => Literal(df.value)))
+  private val zippedArgCandidates = actualArgs.map(Some(_)).zipAll(parameterArgs.zip(maybeDefaultArgs), None, null).map { case (a, (b, c)) => (a, b, c)}
 
   override def run(ctx: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult = {
     val input = evaluateArguments(ctx, params)
@@ -111,7 +113,18 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
 
   private def evaluateArguments(ctx: QueryContext, params: MapValue): Seq[Any] = {
     val state = new QueryState(ctx, ExternalCSVResource.empty, params)
-    argExprCommands.map(expr => ctx.asObject(expr.apply(ExecutionContext.empty, state)))
+    val args = zippedArgCandidates.map {
+      // an actual argument (or even a parameter that ResolvedCall puts there instead if there is no default value)
+      case (Some(actualArg), _, _) => actualArg
+      // There is a default value, but also a parameter that should be preferred
+      case (_, paramArg@ParameterExpression(name), _) if params.containsKey(name) => paramArg
+      // There is a default value
+      case (_, _, Some(defaultArg)) => defaultArg
+      // There is nothing we can use
+      case (_, ParameterExpression(name), _) => throw new InvalidArgumentException(s"Invalid procedure call. Parameter for $name not specified.")
+    }
+
+    args.map(expr => ctx.asObject(expr.apply(ExecutionContext.empty, state)))
   }
 
   private def createNormalPlan =
