@@ -20,18 +20,8 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.cypher.internal.runtime.vectorized.dispatcher
+package org.neo4j.cypher.internal.runtime.parallel
 
-import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.vectorized.Pipeline
-import org.opencypher.v9_0.util.TaskCloser
-import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
-import org.neo4j.values.virtual.MapValue
-
-trait Dispatcher {
-  def execute[E <: Exception](operators: Pipeline,
-                              queryContext: QueryContext,
-                              params: MapValue,
-                              taskCloser: TaskCloser)(visitor: QueryResultVisitor[E]): Unit
+class SingleThreadSchedulerTest extends SchedulerTest {
+  override def newScheduler(maxConcurrency: Int): Scheduler = new SingleThreadScheduler( )
 }
-

@@ -34,7 +34,8 @@ import org.neo4j.cypher.internal.planner.v3_5.spi.{IDPPlannerName, PlanContext, 
 import org.neo4j.cypher.internal.queryReduction.DDmin.Oracle
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted._
-import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.SingleThreadedExecutor
+import org.neo4j.cypher.internal.runtime.parallel.SingleThreadScheduler
+import org.neo4j.cypher.internal.runtime.vectorized.Dispatcher
 import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, NormalMode}
 import org.neo4j.cypher.internal.spi.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.internal.{CommunityRuntimeFactory, EnterpriseRuntimeContextCreator, MasterCompiler, RewindableExecutionResult}
@@ -194,7 +195,7 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
     val runtime = CommunityRuntimeFactory.getRuntime(CypherRuntimeOption.default, planningContext.config.useErrorsOverWarnings)
 
     val runtimeContextCreator = if (enterprise)
-      EnterpriseRuntimeContextCreator(GeneratedQueryStructure, new SingleThreadedExecutor(1), NullLog.getInstance(), CypherReductionSupport.config)
+      EnterpriseRuntimeContextCreator(GeneratedQueryStructure, new Dispatcher(1, new SingleThreadScheduler()), NullLog.getInstance(), CypherReductionSupport.config)
      else
       CommunityRuntimeContextCreator
 
