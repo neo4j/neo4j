@@ -19,6 +19,12 @@
  */
 package org.neo4j.bolt.v1.messaging.decoder;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Point;
@@ -29,9 +35,9 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 /**
  * {@link AnyValueWriter Writer} that allows to convert {@link AnyValue} to any primitive Java type. It explicitly
- * prohibits conversion of nodes, relationships and points. They are not expected in auth token map.
+ * prohibits conversion of nodes, relationships, spatial and temporal types. They are not expected in auth token map.
  */
-class AuthTokenValuesWriter extends BaseToObjectValueWriter<RuntimeException>
+class PrimitiveOnlyValueWriter extends BaseToObjectValueWriter<RuntimeException>
 {
     Object valueAsObject( AnyValue value )
     {
@@ -55,5 +61,47 @@ class AuthTokenValuesWriter extends BaseToObjectValueWriter<RuntimeException>
     protected Point newPoint( CoordinateReferenceSystem crs, double[] coordinate )
     {
         throw new UnsupportedOperationException( "INIT message metadata should not contain points" );
+    }
+
+    @Override
+    public void writeByteArray( byte[] value )
+    {
+        throw new UnsupportedOperationException( "INIT message metadata should not contain byte arrays" );
+    }
+
+    @Override
+    public void writeDuration( long months, long days, long seconds, int nanos )
+    {
+        throw new UnsupportedOperationException( "INIT message metadata should not contain durations" );
+    }
+
+    @Override
+    public void writeDate( LocalDate localDate )
+    {
+        throw new UnsupportedOperationException( "INIT message metadata should not contain dates" );
+    }
+
+    @Override
+    public void writeLocalTime( LocalTime localTime )
+    {
+        throw new UnsupportedOperationException( "INIT message metadata should not contain local dates" );
+    }
+
+    @Override
+    public void writeTime( OffsetTime offsetTime )
+    {
+        throw new UnsupportedOperationException( "INIT message metadata should not contain time values" );
+    }
+
+    @Override
+    public void writeLocalDateTime( LocalDateTime localDateTime )
+    {
+        throw new UnsupportedOperationException( "INIT message metadata should not contain local date-time values" );
+    }
+
+    @Override
+    public void writeDateTime( ZonedDateTime zonedDateTime )
+    {
+        throw new UnsupportedOperationException( "INIT message metadata should not contain date-time values" );
     }
 }

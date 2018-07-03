@@ -66,7 +66,7 @@ public class InitDecoder implements RequestMessageDecoder
     private static Map<String,Object> readAuthToken( Neo4jPack.Unpacker unpacker ) throws IOException
     {
         MapValue authTokenValue = unpacker.unpackMap();
-        AuthTokenValuesWriter writer = new AuthTokenValuesWriter();
+        PrimitiveOnlyValueWriter writer = new PrimitiveOnlyValueWriter();
         Map<String,Object> tokenMap = new HashMap<>( authTokenValue.size() );
         authTokenValue.foreach( ( key, value ) -> tokenMap.put( key, writer.valueAsObject( value ) ) );
         return tokenMap;
