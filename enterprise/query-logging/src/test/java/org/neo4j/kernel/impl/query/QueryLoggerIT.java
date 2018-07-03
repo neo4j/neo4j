@@ -267,7 +267,7 @@ public class QueryLoggerIT
                 query ) ) );
     }
 
-    private String clientConnectionInfo()
+    private static String clientConnectionInfo()
     {
         return ClientConnectionInfo.EMBEDDED_CONNECTION.withUsername( AUTH_DISABLED.username() ).asConnectionDetails();
     }

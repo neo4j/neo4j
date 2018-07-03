@@ -95,15 +95,13 @@ public class DataSourceModule
         File storeDir = platformModule.storeDir;
         DiagnosticsManager diagnosticsManager = platformModule.diagnosticsManager;
         this.queryExecutor = queryExecutionEngineSupplier;
-        Monitors monitors = new Monitors();
+        Monitors monitors = platformModule.monitors;
 
         threadToTransactionBridge = deps.satisfyDependency( new ThreadToStatementContextBridge( platformModule.availabilityGuard ) );
 
         transactionEventHandlers = new TransactionEventHandlers( graphDatabaseFacade );
 
         diagnosticsManager.prependProvider( config );
-
-        platformModule.life.add( platformModule.kernelExtensions );
 
         // Factories for things that needs to be created later
         PageCache pageCache = platformModule.pageCache;
@@ -164,7 +162,8 @@ public class DataSourceModule
                 editionModule.idController,
                 platformModule.databaseInfo,
                 platformModule.versionContextSupplier,
-                platformModule.collectionsFactorySupplier ) );
+                platformModule.collectionsFactorySupplier,
+                platformModule.kernelExtensionFactories ) );
 
         dataSourceManager.register( neoStoreDataSource );
 

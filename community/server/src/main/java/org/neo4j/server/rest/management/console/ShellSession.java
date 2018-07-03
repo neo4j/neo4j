@@ -23,7 +23,7 @@ import java.rmi.RemoteException;
 import java.util.HashMap;
 
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.extension.KernelExtensions;
+import org.neo4j.kernel.extension.GlobalKernelExtensions;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
@@ -49,7 +49,7 @@ public class ShellSession implements ScriptSession
         try
         {
             this.log = graph.getDependencyResolver().resolveDependency( LogService.class ).getInternalLog( getClass() );
-            ShellServerKernelExtension extension = graph.getDependencyResolver().resolveDependency( KernelExtensions
+            ShellServerKernelExtension extension = graph.getDependencyResolver().resolveDependency( GlobalKernelExtensions
                     .class ).resolveDependency( ShellServerKernelExtension.class );
 
             ShellServer server = extension.getServer();

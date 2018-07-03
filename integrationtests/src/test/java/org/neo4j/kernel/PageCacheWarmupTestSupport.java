@@ -37,7 +37,7 @@ import org.neo4j.util.concurrent.BinaryLatch;
 
 class PageCacheWarmupTestSupport
 {
-    void createTestData( GraphDatabaseService db )
+    static void createTestData( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -59,7 +59,7 @@ class PageCacheWarmupTestSupport
         }
     }
 
-    long waitForCacheProfile( GraphDatabaseAPI db )
+    static long waitForCacheProfile( GraphDatabaseAPI db )
     {
         AtomicLong pageCount = new AtomicLong();
         BinaryLatch profileLatch = new BinaryLatch();
@@ -71,7 +71,7 @@ class PageCacheWarmupTestSupport
         return pageCount.get();
     }
 
-    BinaryLatch pauseProfile( GraphDatabaseAPI db )
+    static BinaryLatch pauseProfile( GraphDatabaseAPI db )
     {
         Monitors monitors = db.getDependencyResolver().resolveDependency( Monitors.class );
         return new PauseProfileMonitor( monitors );

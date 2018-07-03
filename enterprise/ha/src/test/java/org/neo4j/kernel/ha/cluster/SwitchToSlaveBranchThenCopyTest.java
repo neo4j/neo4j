@@ -316,6 +316,7 @@ public class SwitchToSlaveBranchThenCopyTest
 
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
         when( dataSource.getStoreId() ).thenReturn( storeId );
+        when( dataSource.getDependencyResolver() ).thenReturn( resolver );
 
         TransactionStats transactionCounters = mock( TransactionStats.class );
         when( transactionCounters.getNumberOfActiveTransactions() ).thenReturn( 0L );
@@ -334,7 +335,7 @@ public class SwitchToSlaveBranchThenCopyTest
                 argThat( storeId -> true ), any( LifeSupport.class ) ) ).thenReturn( masterClient );
 
         return spy( new SwitchToSlaveBranchThenCopy( new File( "" ), NullLogService.getInstance(),
-                configMock(), resolver,
+                configMock(),
                 mock( HaIdGeneratorFactory.class ),
                 mock( DelegateInvocationHandler.class ),
                 mock( ClusterMemberAvailability.class ),

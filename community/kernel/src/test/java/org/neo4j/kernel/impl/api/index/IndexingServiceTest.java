@@ -45,6 +45,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntPredicate;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.BoundedIterable;
@@ -81,6 +82,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.AssertableLogProvider;
@@ -369,7 +371,7 @@ public class IndexingServiceTest
         IndexAccessor indexAccessor = mock( IndexAccessor.class );
         when( provider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( indexAccessor );
-        IndexProviderMap providerMap = new DefaultIndexProviderMap( provider );
+        IndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( provider ) ) );
         TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
         StoreIndexDescriptor onlineIndex     = storeIndex( 1, 1, 1, PROVIDER_DESCRIPTOR );
@@ -409,7 +411,8 @@ public class IndexingServiceTest
         // given
         IndexProvider provider = mock( IndexProvider.class );
         when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
-        IndexProviderMap providerMap = new DefaultIndexProviderMap( provider );
+        DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( buildIndexDependencies( provider ) );
+        providerMap.init();
         TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
         StoreIndexDescriptor onlineIndex     = storeIndex( 1, 1, 1, PROVIDER_DESCRIPTOR );
@@ -931,7 +934,7 @@ public class IndexingServiceTest
         IndexAccessor indexAccessor = mock( IndexAccessor.class );
         when( provider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( indexAccessor );
-        IndexProviderMap providerMap = new DefaultIndexProviderMap( provider );
+        IndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( provider ) ) );
         TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
         List<StoreIndexDescriptor> indexes = new ArrayList<>();
@@ -980,7 +983,8 @@ public class IndexingServiceTest
         IndexAccessor indexAccessor = mock( IndexAccessor.class );
         when( provider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( indexAccessor );
-        IndexProviderMap providerMap = new DefaultIndexProviderMap( provider );
+        DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( buildIndexDependencies( provider ) );
+        providerMap.init();
         TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
         List<StoreIndexDescriptor> indexes = new ArrayList<>();
@@ -1255,9 +1259,9 @@ public class IndexingServiceTest
 
         Config config = Config.defaults( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, "false" );
 
+        DefaultIndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( indexProvider ) ) );
         return life.add( IndexingServiceFactory.createIndexingService( config,
-                        life.add( new CentralJobScheduler() ),
-                        new DefaultIndexProviderMap( indexProvider ),
+                        life.add( new CentralJobScheduler() ), providerMap,
                         storeView,
                         nameLookup,
                         loop( iterator( rules ) ),
@@ -1428,5 +1432,12 @@ public class IndexingServiceTest
                 mock( IndexSamplingController.class ), mock( TokenNameLookup.class ),
                 mock( JobScheduler.class ), mock( SchemaState.class ), mock( MultiPopulatorFactory.class ),
                 logProvider, IndexingService.NO_MONITOR );
+    }
+
+    private static DependencyResolver buildIndexDependencies( IndexProvider provider )
+    {
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependency( provider );
+        return dependencies;
     }
 }

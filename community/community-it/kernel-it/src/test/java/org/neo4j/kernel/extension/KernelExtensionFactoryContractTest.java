@@ -24,7 +24,7 @@ import org.junit.Test;
 
 import java.util.Map;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.facade.embedded.EmbeddedGraphDatabase;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -33,7 +33,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 
 /**
@@ -54,9 +54,9 @@ public abstract class KernelExtensionFactoryContractTest
         this.key = key;
     }
 
-    public GraphDatabaseAPI graphdb( int instance )
+    protected GraphDatabaseAPI graphDb( int instance )
     {
-        Map<String, String> config = configuration( true, instance );
+        Map<String, String> config = configuration( instance );
         return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( config ).newGraphDatabase();
     }
 
@@ -64,22 +64,13 @@ public abstract class KernelExtensionFactoryContractTest
      * Override to create default configuration for the {@link org.neo4j.kernel.extension.KernelExtensionFactory}
      * under test.
      *
-     * @param shouldLoad <code>true</code> if configuration that makes the
-     *                   extension load should be created, <code>false</code> if
-     *                   configuration that makes the extension not load should be
-     *                   created.
      * @param instance   used for differentiating multiple instances that will run
      *                   simultaneously.
      * @return configuration for an {@link EmbeddedGraphDatabase} that
      */
-    protected Map<String, String> configuration( boolean shouldLoad, int instance )
+    protected Map<String, String> configuration( int instance )
     {
         return MapUtil.stringMap();
-    }
-
-    private static KernelExtensions getExtensions( GraphDatabaseService graphdb )
-    {
-        return ((GraphDatabaseAPI) graphdb).getDependencyResolver().resolveDependency( KernelExtensions.class );
     }
 
     @Test
@@ -113,8 +104,7 @@ public abstract class KernelExtensionFactoryContractTest
         }
 
         assertNotNull( "Could not load the kernel extension with the provided key", instance );
-        assertTrue( "Class of the loaded instance is a subclass of the extension class",
-                instance.getClass() == extClass );
+        assertSame( "Class of the loaded instance is a subclass of the extension class", instance.getClass(), extClass );
     }
 
     @Test
@@ -134,20 +124,6 @@ public abstract class KernelExtensionFactoryContractTest
         two = newInstance();
         assertEquals( "loaded instance and new instance have different hash codes", one.hashCode(), two.hashCode() );
         assertEquals( "loaded instance and new instance are not equals", one, two );
-    }
-
-    @Test
-    public void canLoadKernelExtension()
-    {
-        GraphDatabaseService graphdb = graphdb( 0 );
-        try
-        {
-            assertTrue( "Failed to load extension", getExtensions( graphdb ).isRegistered( extClass ) );
-        }
-        finally
-        {
-            graphdb.shutdown();
-        }
     }
 
     private KernelExtensionFactory<?> newInstance()

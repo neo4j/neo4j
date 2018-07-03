@@ -82,18 +82,15 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
 
     private final Config config;
     private final UsageData usageData;
-    private final IdGeneratorFactory idGeneratorFactory;
 
     private String storeId;
 
     private NeoStoreDataSource neoStoreDataSource;
 
-    DefaultUdcInformationCollector( Config config, DataSourceManager dataSourceManager,
-            IdGeneratorFactory idGeneratorFactory, UsageData usageData )
+    DefaultUdcInformationCollector( Config config, DataSourceManager dataSourceManager, UsageData usageData )
     {
         this.config = config;
         this.usageData = usageData;
-        this.idGeneratorFactory = idGeneratorFactory;
 
         if ( dataSourceManager != null )
         {
@@ -339,7 +336,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
 
     private long getNumberOfIdsInUse( IdType type )
     {
-        return idGeneratorFactory.get( type ).getNumberOfIdsInUse();
+        return neoStoreDataSource.getDependencyResolver().resolveDependency( IdGeneratorFactory.class ).get( type ).getNumberOfIdsInUse();
     }
 
     private String toCommaString( Object values )

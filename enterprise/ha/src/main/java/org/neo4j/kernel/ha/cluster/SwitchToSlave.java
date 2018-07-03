@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
@@ -45,7 +44,6 @@ import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
@@ -107,7 +105,6 @@ public abstract class SwitchToSlave
             RequestContextFactory.class,
             TransactionCommittingResponseUnpacker.class,
             IndexConfigStore.class,
-            OnlineBackupKernelExtension.class,
             FileSystemWatcherService.class
     };
     private final StoreCopyClient storeCopyClient;
@@ -117,7 +114,6 @@ public abstract class SwitchToSlave
     final Log userLog;
     final Log msgLog;
     protected final Config config;
-    protected final DependencyResolver resolver;
     private final HaIdGeneratorFactory idGeneratorFactory;
     private final DelegateInvocationHandler<Master> masterDelegateHandler;
     private final ClusterMemberAvailability clusterMemberAvailability;
@@ -132,17 +128,14 @@ public abstract class SwitchToSlave
     private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
     private final TransactionStats transactionCounters;
 
-    SwitchToSlave( HaIdGeneratorFactory idGeneratorFactory, DependencyResolver resolver, Monitors monitors,
-                   RequestContextFactory requestContextFactory, DelegateInvocationHandler<Master>
-                           masterDelegateHandler, ClusterMemberAvailability clusterMemberAvailability,
-                   MasterClientResolver masterClientResolver, Monitor monitor, PullerFactory pullerFactory,
-                   UpdatePuller updatePuller, Function<Slave, SlaveServer> slaveServerFactory, Config config,
-                   LogService logService, PageCache pageCache, File storeDir,
-                   Supplier<TransactionIdStore> transactionIdStoreSupplier, TransactionStats
-                           transactionCounters, Supplier<NeoStoreDataSource> neoDataSourceSupplier, StoreCopyClient storeCopyClient )
+    SwitchToSlave( HaIdGeneratorFactory idGeneratorFactory, Monitors monitors, RequestContextFactory requestContextFactory,
+            DelegateInvocationHandler<Master> masterDelegateHandler, ClusterMemberAvailability clusterMemberAvailability,
+            MasterClientResolver masterClientResolver, Monitor monitor, PullerFactory pullerFactory, UpdatePuller updatePuller,
+            Function<Slave,SlaveServer> slaveServerFactory, Config config, LogService logService, PageCache pageCache, File storeDir,
+            Supplier<TransactionIdStore> transactionIdStoreSupplier, TransactionStats transactionCounters, Supplier<NeoStoreDataSource> neoDataSourceSupplier,
+            StoreCopyClient storeCopyClient )
     {
         this.idGeneratorFactory = idGeneratorFactory;
-        this.resolver = resolver;
         this.monitors = monitors;
         this.requestContextFactory = requestContextFactory;
         this.masterDelegateHandler = masterDelegateHandler;
@@ -257,9 +250,9 @@ public abstract class SwitchToSlave
         return slaveUri;
     }
 
-    void checkMyStoreIdAndMastersStoreId( StoreId myStoreId, URI masterUri, DependencyResolver resolver )
+    void checkMyStoreIdAndMastersStoreId( StoreId myStoreId, URI masterUri )
     {
-        ClusterMembers clusterMembers = resolver.resolveDependency( ClusterMembers.class );
+        ClusterMembers clusterMembers = resolveDatabaseDependency( ClusterMembers.class );
         InstanceId serverId = HighAvailabilityModeSwitcher.getServerId( masterUri );
         Iterable<ClusterMember> members = clusterMembers.getMembers();
         ClusterMember master = firstOrNull( filter( hasInstanceId( serverId ), members ) );
@@ -282,6 +275,11 @@ public abstract class SwitchToSlave
         }
     }
 
+    protected <T> T resolveDatabaseDependency( Class<T> clazz )
+    {
+        return neoDataSourceSupplier.get().getDependencyResolver().resolveDependency( clazz );
+    }
+
     private URI startHaCommunication( LifeSupport haCommunicationLife, NeoStoreDataSource neoDataSource,
                                       URI me, URI masterUri, StoreId storeId, CancellationRequest
                                               cancellationRequest )
@@ -289,8 +287,7 @@ public abstract class SwitchToSlave
     {
         MasterClient master = newMasterClient( masterUri, me, neoDataSource.getStoreId(), haCommunicationLife );
 
-        TransactionObligationFulfiller obligationFulfiller =
-                resolver.resolveDependency( TransactionObligationFulfiller.class );
+        TransactionObligationFulfiller obligationFulfiller = resolveDatabaseDependency( TransactionObligationFulfiller.class );
         UpdatePullerScheduler updatePullerScheduler = updatePullerFactory.createUpdatePullerScheduler( updatePuller );
 
         Slave slaveImpl = new SlaveImpl( obligationFulfiller );
@@ -352,7 +349,7 @@ public abstract class SwitchToSlave
         return URI.create( "ha://" + host + ":" + serverSocketAddress.getPort() + "?serverId=" + serverId );
     }
 
-    private String ensureWrapForIpv6Uri( String host )
+    private static String ensureWrapForIpv6Uri( String host )
     {
         if ( host.contains( ":" ) && !host.contains( "[" ) )
         {
@@ -377,7 +374,7 @@ public abstract class SwitchToSlave
         msgLog.debug( "Starting services again" );
         for ( Class<? extends Lifecycle> serviceClass : SwitchToSlave.SERVICES_TO_RESTART_FOR_STORE_COPY )
         {
-            resolver.resolveDependency( serviceClass ).start();
+            resolveDatabaseDependency( serviceClass ).start();
         }
     }
 
@@ -508,7 +505,7 @@ public abstract class SwitchToSlave
             Class<? extends Lifecycle> serviceClass = SERVICES_TO_RESTART_FOR_STORE_COPY[i];
             try
             {
-                resolver.resolveDependency( serviceClass ).stop();
+                resolveDatabaseDependency( serviceClass ).stop();
             }
             catch ( Exception exception )
             {
@@ -523,7 +520,7 @@ public abstract class SwitchToSlave
 
     private void awaitDatabaseStart() throws InterruptedException
     {
-        DatabaseAvailability databaseAvailability = resolver.resolveDependency( DatabaseAvailability.class );
+        DatabaseAvailability databaseAvailability = resolveDatabaseDependency( DatabaseAvailability.class );
         while ( !databaseAvailability.isStarted() )
         {
             TimeUnit.MILLISECONDS.sleep( 10 );

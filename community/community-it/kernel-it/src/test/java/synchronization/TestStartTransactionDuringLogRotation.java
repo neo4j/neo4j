@@ -154,10 +154,4 @@ public class TestStartTransactionDuringLogRotation
             completeLogRotationLatch.countDown();
         }
     }
-
-    // One might be tempted to create a similar test for schema change transactions, e.g.
-    // ones that do something like `db.schema().indexFor( label ).on( "a" ).create();`.
-    // However, those will always fail because they will try to grab the schema write lock,
-    // which they will never be able to get, because the transaction we have stuck in log
-    // rotation will already be holding the schema read lock.
 }

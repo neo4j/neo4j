@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
@@ -112,8 +113,12 @@ public class OnlineIndexUpdatesTest
         relationshipStore = neoStores.getRelationshipStore();
         propertyStore = neoStores.getPropertyStore();
         scheduler = new CentralJobScheduler();
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependency( EMPTY );
+        DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( dependencies );
+        life.add( providerMap );
         indexingService =
-                IndexingServiceFactory.createIndexingService( Config.defaults(), scheduler, new DefaultIndexProviderMap( EMPTY ),
+                IndexingServiceFactory.createIndexingService( Config.defaults(), scheduler, providerMap,
                         new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores ), SchemaUtil.idTokenNameLookup, empty(),
                         NullLogProvider.getInstance(), IndexingService.NO_MONITOR, new DatabaseSchemaState( NullLogProvider.getInstance() ) );
         propertyPhysicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
@@ -126,7 +131,7 @@ public class OnlineIndexUpdatesTest
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         life.shutdown();
         neoStores.close();

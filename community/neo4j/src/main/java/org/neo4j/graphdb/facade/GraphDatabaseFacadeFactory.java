@@ -177,8 +177,7 @@ public class GraphDatabaseFacadeFactory
         platform.dependencies.satisfyDependency( new NonTransactionalDbmsOperations( procedures ) );
         edition.setupSecurityModule( platform, procedures );
 
-        final DataSourceModule dataSource = createDataSource( platform, edition, queryEngine::get, procedures );
-
+        platform.life.add( platform.globalKernelExtensions );
         platform.life.add( createBoltServer( platform ) );
         platform.life.add( new VmPauseMonitorComponent( config, platform.logging.getInternalLog( VmPauseMonitorComponent.class ), platform.jobScheduler ) );
         platform.life.add( new PublishPageCacheTracerMetricsAfterStart( platform.tracers.pageCursorTracerSupplier ) );
@@ -188,6 +187,8 @@ public class GraphDatabaseFacadeFactory
         platform.life.add( databaseAvailability );
         platform.life.add( new StartupWaiter( platform.availabilityGuard, edition.transactionStartTimeout ) );
         platform.life.setLast( platform.eventHandlers );
+
+        final DataSourceModule dataSource = createDataSource( platform, edition, queryEngine::get, procedures );
 
         Logger msgLog = platform.logging.getInternalLog( getClass() ).infoLogger();
         CoreAPIAvailabilityGuard coreAPIAvailabilityGuard = edition.coreAPIAvailabilityGuard;

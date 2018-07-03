@@ -33,14 +33,11 @@ public class TestShellServerExtension extends KernelExtensionFactoryContractTest
     }
 
     @Override
-    protected Map<String, String> configuration( boolean shouldLoad, int instance )
+    protected Map<String, String> configuration( int instance )
     {
-        Map<String, String> configuration = super.configuration( shouldLoad, instance );
-        if ( shouldLoad )
-        {
-            configuration.put( ShellSettings.remote_shell_enabled.name(), Settings.TRUE );
-            configuration.put( ShellSettings.remote_shell_name.name(), "neo4j-shell-" + instance );
-        }
+        Map<String, String> configuration = super.configuration( instance );
+        configuration.put( ShellSettings.remote_shell_enabled.name(), Settings.TRUE );
+        configuration.put( ShellSettings.remote_shell_name.name(), "neo4j-shell-" + instance );
         return configuration;
     }
 }

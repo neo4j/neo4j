@@ -178,7 +178,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         {
             try
             {
-                /**
+                /*
                  * Do different things depending on whether the cluster member is in master or slave state
                  */
                 if ( role.equals( HighAvailabilityModeSwitcher.MASTER ) )

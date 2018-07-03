@@ -19,6 +19,7 @@
  */
 package org.neo4j.ext.udc.impl;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -45,6 +46,7 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.test.rule.TestDirectory;
@@ -67,9 +69,23 @@ public class DefaultUdcInformationCollectorTest
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private final UsageData usageData = new UsageData( mock( JobScheduler.class ) );
+
+    private final DataSourceManager dataSourceManager = new DataSourceManager();
+    private final NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
     private final DefaultUdcInformationCollector collector = new DefaultUdcInformationCollector(
-            Config.defaults(), null,
-            new StubIdGeneratorFactory(), usageData );
+            Config.defaults(), dataSourceManager, usageData );
+
+    @Before
+    public void setUp()
+    {
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependencies( new StubIdGeneratorFactory() );
+        when( dataSource.getDependencyResolver() ).thenReturn( dependencies );
+        when( dataSource.getStoreId() ).thenReturn( StoreId.DEFAULT );
+
+        dataSourceManager.start();
+        dataSourceManager.register( dataSource );
+    }
 
     @Test
     public void shouldIncludeTheMacAddress()
@@ -163,14 +179,7 @@ public class DefaultUdcInformationCollectorTest
     @Test
     public void shouldReportStoreSizes() throws Throwable
     {
-        DataSourceManager dataSourceManager = new DataSourceManager();
-        NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
-        dataSourceManager.start();
-
-        UdcInformationCollector collector = new DefaultUdcInformationCollector( Config.defaults(), dataSourceManager, new StubIdGeneratorFactory(), usageData );
-
-        when( dataSource.getStoreId() ).thenReturn( StoreId.DEFAULT );
-        dataSourceManager.register( dataSource );
+        UdcInformationCollector collector = new DefaultUdcInformationCollector( Config.defaults(), dataSourceManager, usageData );
 
         when( dataSource.listStoreFiles( false ) ).thenReturn( asResourceIterator( testFiles().iterator() ) );
         Map<String, String> udcParams = collector.getUdcParams();

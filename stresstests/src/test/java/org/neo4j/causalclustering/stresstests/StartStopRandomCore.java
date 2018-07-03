@@ -29,11 +29,11 @@ import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.TemporaryStoreDirectory;
 import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.consistency.ConsistencyCheckService;
+import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.consistency.ConsistencyCheckTool.runConsistencyCheckTool;
@@ -57,23 +57,22 @@ class StartStopRandomCore extends RepeatOnRandomCore
     protected void doWorkOnMember( ClusterMember member ) throws InterruptedException
     {
         File storeDir = member.database().getStoreDir();
-        KernelExtensions kernelExtensions = member.database().getDependencyResolver().resolveDependency( KernelExtensions.class );
         log.info( "Stopping: " + member );
         member.shutdown();
-        assertStoreConsistent( storeDir, kernelExtensions );
+        assertStoreConsistent( storeDir );
         Thread.sleep( 5000 );
         log.info( "Starting: " + member );
         member.start();
     }
 
-    private void assertStoreConsistent( File storeDir, KernelExtensions kernelExtensions )
+    private void assertStoreConsistent( File storeDir )
     {
         File parent = storeDir.getParentFile();
         try ( TemporaryStoreDirectory storeDirectory = new TemporaryStoreDirectory( fs, pageCache, parent );
               PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
         {
             fs.copyRecursively( storeDir, storeDirectory.storeDir() );
-            new CopiedStoreRecovery( Config.defaults(), kernelExtensions.listFactories(),  pageCache )
+            new CopiedStoreRecovery( Config.defaults(), GraphDatabaseDependencies.newDependencies().kernelExtensions(),  pageCache )
                     .recoverCopiedStore( storeDirectory.storeDir() );
             ConsistencyCheckService.Result result = runConsistencyCheckTool( new String[]{storeDir.getAbsolutePath()},
                     new PrintStream( NULL_OUTPUT_STREAM ), new PrintStream( NULL_OUTPUT_STREAM ) );

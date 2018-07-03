@@ -32,7 +32,6 @@ import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.storecopy.MoveAfterCopy;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreCopyClientMonitor;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -68,32 +67,17 @@ public class SwitchToSlaveCopyThenBranch extends SwitchToSlave
 {
     private final LogService logService;
 
-    public SwitchToSlaveCopyThenBranch( File storeDir,
-                                        LogService logService,
-                                        FileSystemAbstraction fileSystemAbstraction,
-                                        Config config,
-                                        DependencyResolver resolver,
-                                        HaIdGeneratorFactory idGeneratorFactory,
-                                        DelegateInvocationHandler<Master> masterDelegateHandler,
-                                        ClusterMemberAvailability clusterMemberAvailability,
-                                        RequestContextFactory requestContextFactory,
-                                        PullerFactory pullerFactory,
-                                        Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                        MasterClientResolver masterClientResolver,
-                                        SwitchToSlave.Monitor monitor,
-                                        StoreCopyClientMonitor storeCopyMonitor,
-                                        Supplier<NeoStoreDataSource> neoDataSourceSupplier,
-                                        Supplier<TransactionIdStore> transactionIdStoreSupplier,
-                                        Function<Slave, SlaveServer> slaveServerFactory,
-                                        UpdatePuller updatePuller,
-                                        PageCache pageCache,
-                                        Monitors monitors,
-                                        TransactionStats transactionCounters )
+    public SwitchToSlaveCopyThenBranch( File storeDir, LogService logService, FileSystemAbstraction fileSystemAbstraction, Config config,
+            HaIdGeneratorFactory idGeneratorFactory, DelegateInvocationHandler<Master> masterDelegateHandler,
+            ClusterMemberAvailability clusterMemberAvailability, RequestContextFactory requestContextFactory, PullerFactory pullerFactory,
+            Iterable<KernelExtensionFactory<?>> kernelExtensions, MasterClientResolver masterClientResolver, Monitor monitor,
+            StoreCopyClientMonitor storeCopyMonitor, Supplier<NeoStoreDataSource> neoDataSourceSupplier,
+            Supplier<TransactionIdStore> transactionIdStoreSupplier, Function<Slave,SlaveServer> slaveServerFactory, UpdatePuller updatePuller,
+            PageCache pageCache, Monitors monitors, TransactionStats transactionCounters )
     {
         this( storeDir,
                 logService,
                 config,
-                resolver,
                 idGeneratorFactory,
                 masterDelegateHandler,
                 clusterMemberAvailability,
@@ -116,7 +100,6 @@ public class SwitchToSlaveCopyThenBranch extends SwitchToSlave
     SwitchToSlaveCopyThenBranch( File storeDir,
                                  LogService logService,
                                  Config config,
-                                 DependencyResolver resolver,
                                  HaIdGeneratorFactory idGeneratorFactory,
                                  DelegateInvocationHandler<Master> masterDelegateHandler,
                                  ClusterMemberAvailability clusterMemberAvailability,
@@ -133,7 +116,7 @@ public class SwitchToSlaveCopyThenBranch extends SwitchToSlave
                                  Monitors monitors,
                                  TransactionStats transactionCounters )
     {
-        super( idGeneratorFactory, resolver, monitors, requestContextFactory, masterDelegateHandler,
+        super( idGeneratorFactory, monitors, requestContextFactory, masterDelegateHandler,
                 clusterMemberAvailability, masterClientResolver, monitor, pullerFactory, updatePuller,
                 slaveServerFactory, config, logService, pageCache, storeDir,
                 transactionIdStoreSupplier,
@@ -149,7 +132,7 @@ public class SwitchToSlaveCopyThenBranch extends SwitchToSlave
         try
         {
             userLog.info( "Checking store consistency with master" );
-            checkMyStoreIdAndMastersStoreId( storeId, masterUri, resolver );
+            checkMyStoreIdAndMastersStoreId( storeId, masterUri );
             checkDataConsistencyWithMaster( masterUri, masterClient, storeId, txIdStore );
             userLog.info( "Store is consistent" );
         }

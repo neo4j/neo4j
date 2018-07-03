@@ -49,7 +49,6 @@ import static org.junit.Assert.fail;
 
 public class ConcurrentChangesOnEntitiesTest
 {
-
     private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     private final TestDirectory testDirectory = TestDirectory.testDirectory();
 

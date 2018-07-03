@@ -47,8 +47,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensions;
-import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.extension.DatabaseKernelExtensions;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
@@ -57,6 +56,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.DuplicatingLog;
@@ -65,7 +65,6 @@ import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateKernelExtensions;
-import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.loadIndexProviders;
 import static org.neo4j.io.file.Files.createOrOpenAsOutputStream;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
@@ -230,18 +229,17 @@ public class ConsistencyCheckService
         // Bootstrap kernel extensions
         Monitors monitors = new Monitors();
         LifeSupport life = new LifeSupport();
-        KernelExtensions extensions = life.add( instantiateKernelExtensions( storeDir,
+        DatabaseKernelExtensions extensions = life.add( instantiateKernelExtensions( storeDir,
                 fileSystem, config, new SimpleLogService( logProvider, logProvider ), pageCache,
                 RecoveryCleanupWorkCollector.IGNORE,
                 // May be enterprise edition, but in consistency checker we only care about the operational mode
                 COMMUNITY,
                 monitors ) );
+        DefaultIndexProviderMap indexes = life.add( new DefaultIndexProviderMap( extensions ) );
 
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
             life.start();
-
-            IndexProviderMap indexes = loadIndexProviders( extensions );
 
             LabelScanStore labelScanStore =
                     new NativeLabelScanStore( pageCache, storeDir, fileSystem, FullStoreChangeStream.EMPTY, true, monitors,

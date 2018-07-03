@@ -26,8 +26,8 @@ import java.util.Map;
 
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactoryContractTest;
-import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
+import org.neo4j.ports.allocation.PortAuthority;
 
 public class OnlineBackupExtensionIT extends KernelExtensionFactoryContractTest
 {
@@ -37,14 +37,11 @@ public class OnlineBackupExtensionIT extends KernelExtensionFactoryContractTest
     }
 
     @Override
-    protected Map<String, String> configuration( boolean shouldLoad, int instance )
+    protected Map<String, String> configuration( int instance )
     {
-        Map<String, String> configuration = super.configuration( shouldLoad, instance );
-        if ( shouldLoad )
-        {
-            configuration.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.TRUE );
-            configuration.put( OnlineBackupSettings.online_backup_server.name(), "127.0.0.1:" + PortAuthority.allocatePort() );
-        }
+        Map<String, String> configuration = super.configuration( instance );
+        configuration.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.TRUE );
+        configuration.put( OnlineBackupSettings.online_backup_server.name(), "127.0.0.1:" + PortAuthority.allocatePort() );
         return configuration;
     }
 }

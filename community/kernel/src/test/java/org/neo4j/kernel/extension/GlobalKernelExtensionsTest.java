@@ -35,7 +35,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.Iterables.iterable;
 
-public class KernelExtensionsTest
+public class GlobalKernelExtensionsTest
 {
     @Test
     public void shouldConsultUnsatisfiedDependencyHandler()
@@ -45,8 +45,7 @@ public class KernelExtensionsTest
         UnsatisfiedDependencyStrategy handler = mock( UnsatisfiedDependencyStrategy.class );
         Dependencies dependencies = new Dependencies(); // that hasn't got anything.
         TestingExtensionFactory extensionFactory = new TestingExtensionFactory();
-        KernelExtensions extensions = new KernelExtensions( context, extensions( extensionFactory ),
-                dependencies, handler );
+        GlobalKernelExtensions extensions = new GlobalKernelExtensions( context, iterable( extensionFactory ), dependencies, handler );
 
         // WHEN
         LifeSupport life = new LifeSupport();
@@ -62,11 +61,6 @@ public class KernelExtensionsTest
         {
             life.shutdown();
         }
-    }
-
-    private Iterable<KernelExtensionFactory<?>> extensions( TestingExtensionFactory extension )
-    {
-        return iterable( extension );
     }
 
     private interface TestingDependencies

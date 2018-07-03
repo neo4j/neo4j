@@ -196,6 +196,8 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     @Override
     public void init()
     {
+        validateDefaultProviderExisting();
+
         indexMapRef.modify( indexMap ->
         {
             Map<InternalIndexState, List<IndexLogRecord>> indexStates = new EnumMap<>( InternalIndexState.class );
@@ -234,6 +236,16 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             logIndexStateSummary( "init", indexStates );
             return indexMap;
         } );
+    }
+
+    private void validateDefaultProviderExisting()
+    {
+        if ( providerMap == null || providerMap.getDefaultProvider() == null )
+        {
+            throw new IllegalStateException( "You cannot run the database without an index provider, " +
+                    "please make sure that a valid provider (subclass of " + IndexProvider.class.getName() +
+                    ") is on your classpath." );
+        }
     }
 
     // Recovery semantics: This is to be called after init, and after the database has run recovery.

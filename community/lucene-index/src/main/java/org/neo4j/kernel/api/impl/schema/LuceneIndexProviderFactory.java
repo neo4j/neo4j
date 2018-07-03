@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;
@@ -71,7 +72,7 @@ public class LuceneIndexProviderFactory extends
 
     public LuceneIndexProviderFactory()
     {
-        super( KEY );
+        super( ExtensionType.DATABASE, KEY );
     }
 
     @Override

@@ -25,7 +25,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,7 +40,6 @@ import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
-import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -81,8 +79,8 @@ public class StoreSizeBeanTest
     private final File storeDir = new File( "" );
     private final LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDir, fs ).build();
     private final ExplicitIndexProvider explicitIndexProviderLookup = mock( ExplicitIndexProvider.class );
-    private final IndexProvider indexProvider = mockedIndexProvider( "providah1" );
-    private final IndexProvider indexProvider2 = mockedIndexProvider( "providah" );
+    private final IndexProvider indexProvider = mockedIndexProvider( "provider1" );
+    private final IndexProvider indexProvider2 = mockedIndexProvider( "provider2" );
     private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
     private StoreSize storeSizeBean;
     private File storeDirAbsolute;
@@ -94,14 +92,18 @@ public class StoreSizeBeanTest
     @Before
     public void setUp()
     {
+        Dependencies dependencies = new Dependencies();
         DataSourceManager dataSourceManager = new DataSourceManager();
         GraphDatabaseAPI db = mock( GraphDatabaseAPI.class );
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
-        IndexProviderMap indexProviderMap = new DefaultIndexProviderMap( indexProvider,
-                Collections.singleton( indexProvider2 ) );
+
+        dependencies.satisfyDependency( indexProvider );
+        dependencies.satisfyDependency( indexProvider2 );
+
+        DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( dependencies );
+        indexProviderMap.init();
 
         // Setup all dependencies
-        Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( fs );
         dependencies.satisfyDependencies( dataSourceManager );
         dependencies.satisfyDependency( logFiles );
@@ -121,7 +123,7 @@ public class StoreSizeBeanTest
         storeSizeBean = (StoreSize) new StoreSizeBean().createMBean( data );
     }
 
-    private IndexProvider mockedIndexProvider( String name )
+    private static IndexProvider mockedIndexProvider( String name )
     {
         IndexProvider provider = mock( IndexProvider.class );
         when( provider.getProviderDescriptor() ).thenReturn( new Descriptor( name, "1" ) );
@@ -289,7 +291,7 @@ public class StoreSizeBeanTest
         }
     }
 
-    private long getExpected( int lower, int upper )
+    private static long getExpected( int lower, int upper )
     {
         long expected = 0;
         for ( int i = lower; i <= upper; i++ )

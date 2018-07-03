@@ -20,6 +20,7 @@
 package org.neo4j.test.rule;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -142,7 +143,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 RecoveryCleanupWorkCollector.IMMEDIATE,
                 new BufferedIdController(
                         new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, idConfigurationProvider ), jobScheduler ),
-                DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP );
+                DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP, Collections.emptyList() );
         return dataSource;
     }
 

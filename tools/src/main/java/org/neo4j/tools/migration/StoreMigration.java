@@ -32,13 +32,10 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.extension.KernelExtensions;
-import org.neo4j.kernel.extension.dependency.AllByPrioritySelectionStrategy;
+import org.neo4j.kernel.extension.DatabaseKernelExtensions;
 import org.neo4j.kernel.impl.api.DefaultExplicitIndexProvider;
-import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -127,7 +124,7 @@ public class StoreMigration
                     RecoveryCleanupWorkCollector.IMMEDIATE );
 
             KernelContext kernelContext = new SimpleKernelContext( storeDirectory, DatabaseInfo.UNKNOWN, deps );
-            KernelExtensions kernelExtensions = life.add( new KernelExtensions(
+            DatabaseKernelExtensions kernelExtensions = life.add( new DatabaseKernelExtensions(
                     kernelContext, GraphDatabaseDependencies.newDependencies().kernelExtensions(),
                     deps, ignore() ) );
 
@@ -135,14 +132,10 @@ public class StoreMigration
                     .withConfig( config ).build();
             LogTailScanner tailScanner = new LogTailScanner( logFiles, new VersionAwareLogEntryReader<>(), monitors );
 
+            DefaultIndexProviderMap indexProviderMap = life.add( new DefaultIndexProviderMap( kernelExtensions ) );
+
             // Add the kernel store migrator
             life.start();
-
-            AllByPrioritySelectionStrategy<IndexProvider> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
-            IndexProvider defaultIndexProvider = kernelExtensions.resolveDependency( IndexProvider.class,
-                    indexProviderSelection );
-            IndexProviderMap indexProviderMap = new DefaultIndexProviderMap( defaultIndexProvider,
-                    indexProviderSelection.lowerPrioritizedCandidates() );
 
             long startTime = System.currentTimeMillis();
             DatabaseMigrator migrator = new DatabaseMigrator( progressMonitor, fs, config, logService,

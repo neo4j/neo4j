@@ -22,8 +22,9 @@ package org.neo4j.kernel.impl.transaction.state;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
+import org.neo4j.kernel.impl.util.Dependencies;
 
-import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -40,9 +41,14 @@ public class DefaultIndexProviderMapTest
         when( provider1.getProviderDescriptor() ).thenReturn( descriptor );
         IndexProvider provider2 = mock( IndexProvider.class );
         when( provider2.getProviderDescriptor() ).thenReturn( descriptor );
+        when( provider1.compareTo( provider2 ) ).thenReturn( 1 );
+
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependency( provider1 );
+        dependencies.satisfyDependency( provider2 );
 
         // when
-        assertThrows( IllegalArgumentException.class, () -> new DefaultIndexProviderMap( provider1, singletonList( provider2 ) ) );
+        assertThrows( IllegalArgumentException.class, () -> new DefaultIndexProviderMap( dependencies ).init() );
     }
 
     @Test
@@ -51,8 +57,12 @@ public class DefaultIndexProviderMapTest
         // given
         IndexProvider provider = mock( IndexProvider.class );
         when( provider.getProviderDescriptor() ).thenReturn( new Descriptor( "provider", "1.2" ) );
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependency( provider );
 
         // when
-        assertThrows( IllegalArgumentException.class, () -> new DefaultIndexProviderMap( provider ).lookup( new Descriptor( "provider2", "1.2" ) ) );
+        DefaultIndexProviderMap defaultIndexProviderMap = new DefaultIndexProviderMap( dependencies );
+        defaultIndexProviderMap.init();
+        assertThrows( IndexProviderNotFoundException.class, () -> defaultIndexProviderMap.lookup( new Descriptor( "provider2", "1.2" ) ) );
     }
 }

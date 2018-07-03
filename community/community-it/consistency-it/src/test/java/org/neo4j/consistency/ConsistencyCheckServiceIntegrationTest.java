@@ -269,7 +269,7 @@ public class ConsistencyCheckServiceIntegrationTest
         assertTrue( result.isSuccessful() );
     }
 
-    private void createIndex( GraphDatabaseService gds, Label label, String propKey )
+    private static void createIndex( GraphDatabaseService gds, Label label, String propKey )
     {
         IndexDefinition indexDefinition;
 
@@ -286,7 +286,7 @@ public class ConsistencyCheckServiceIntegrationTest
         }
     }
 
-    private File findFile( String targetFile, File directory )
+    private static File findFile( String targetFile, File directory )
     {
         File file = new File( directory, targetFile );
         if ( !file.exists() )

@@ -40,11 +40,12 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.dependency.AllByPrioritySelectionStrategy;
+import org.neo4j.kernel.extension.DatabaseKernelExtensions;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
@@ -75,6 +76,7 @@ import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -267,24 +269,18 @@ public class NeoStoreDataSource extends LifecycleAdapter
     private StorageEngine storageEngine;
     private NeoStoreTransactionLogModule transactionLogModule;
     private NeoStoreKernelModule kernelModule;
+    private final Iterable<KernelExtensionFactory<?>> kernelExtensionFactories;
 
-    public NeoStoreDataSource( File storeDir, Config config, IdGeneratorFactory idGeneratorFactory,
-            LogService logService, JobScheduler scheduler, TokenNameLookup tokenNameLookup,
-            DependencyResolver dependencyResolver, TokenHolders tokenHolders,
-            StatementLocksFactory statementLocksFactory, SchemaWriteGuard schemaWriteGuard,
-            TransactionEventHandlers transactionEventHandlers, IndexingService.Monitor indexingServiceMonitor,
-            FileSystemAbstraction fs, TransactionMonitor transactionMonitor, DatabaseHealth databaseHealth,
-            LogFileCreationMonitor physicalLogMonitor,
-            TransactionHeaderInformationFactory transactionHeaderInformationFactory,
-            CommitProcessFactory commitProcessFactory,
-            AutoIndexing autoIndexing,
-            IndexConfigStore indexConfigStore,
-            ExplicitIndexProvider explicitIndexProvider,
-            PageCache pageCache, ConstraintSemantics constraintSemantics, Monitors monitors,
-            Tracers tracers, Procedures procedures, IOLimiter ioLimiter, AvailabilityGuard availabilityGuard,
-            SystemNanoClock clock, AccessCapability accessCapability, StoreCopyCheckPointMutex storeCopyCheckPointMutex,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdController idController,
-            DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier )
+    public NeoStoreDataSource( File storeDir, Config config, IdGeneratorFactory idGeneratorFactory, LogService logService, JobScheduler scheduler,
+            TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver, TokenHolders tokenHolders, StatementLocksFactory statementLocksFactory,
+            SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers, IndexingService.Monitor indexingServiceMonitor,
+            FileSystemAbstraction fs, TransactionMonitor transactionMonitor, DatabaseHealth databaseHealth, LogFileCreationMonitor physicalLogMonitor,
+            TransactionHeaderInformationFactory transactionHeaderInformationFactory, CommitProcessFactory commitProcessFactory, AutoIndexing autoIndexing,
+            IndexConfigStore indexConfigStore, ExplicitIndexProvider explicitIndexProvider, PageCache pageCache, ConstraintSemantics constraintSemantics,
+            Monitors monitors, Tracers tracers, Procedures procedures, IOLimiter ioLimiter, AvailabilityGuard availabilityGuard, SystemNanoClock clock,
+            AccessCapability accessCapability, StoreCopyCheckPointMutex storeCopyCheckPointMutex, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            IdController idController, DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier,
+            CollectionsFactorySupplier collectionsFactorySupplier, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -322,6 +318,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         this.idController = idController;
         this.databaseInfo = databaseInfo;
         this.versionContextSupplier = versionContextSupplier;
+        this.kernelExtensionFactories = kernelExtensionFactories;
         msgLog = logProvider.getLog( getClass() );
         this.lockService = new ReentrantLockService();
         this.commitProcessFactory = commitProcessFactory;
@@ -337,22 +334,12 @@ public class NeoStoreDataSource extends LifecycleAdapter
     public void start() throws IOException
     {
         dataSourceDependencies = new Dependencies( dependencyResolver );
+        dataSourceDependencies.satisfyDependency( monitors );
         dataSourceDependencies.satisfyDependency( tokenHolders );
 
         life = new LifeSupport();
-
+        life.add( initializeExtensions( dataSourceDependencies ) );
         life.add( recoveryCleanupWorkCollector );
-
-        AllByPrioritySelectionStrategy<IndexProvider> indexProviderSelection =
-                new AllByPrioritySelectionStrategy<>();
-        IndexProvider defaultIndexProvider =
-                dependencyResolver.resolveDependency( IndexProvider.class, indexProviderSelection );
-
-        indexProviderMap =
-                new DefaultIndexProviderMap( defaultIndexProvider,
-                        indexProviderSelection.lowerPrioritizedCandidates() );
-        dataSourceDependencies.satisfyDependency( indexProviderMap );
-
         dataSourceDependencies.satisfyDependency( lockService );
         life.add( indexConfigStore );
 
@@ -491,6 +478,19 @@ public class NeoStoreDataSource extends LifecycleAdapter
          * kernel panics.
          */
         databaseHealth.healed();
+    }
+
+    private LifeSupport initializeExtensions( Dependencies dependencies )
+    {
+        LifeSupport extensionsLife = new LifeSupport();
+
+        extensionsLife.add( new DatabaseKernelExtensions( new SimpleKernelContext( storeDir, databaseInfo, dependencies ), kernelExtensionFactories,
+                dependencies, UnsatisfiedDependencyStrategies.fail() ) );
+
+        indexProviderMap = extensionsLife.add( new DefaultIndexProviderMap( dependencies ) );
+        dependencies.satisfyDependency( indexProviderMap );
+        extensionsLife.init();
+        return extensionsLife;
     }
 
     private static RecordFormats selectStoreFormats( Config config, File storeDir, FileSystemAbstraction fs, PageCache pageCache,

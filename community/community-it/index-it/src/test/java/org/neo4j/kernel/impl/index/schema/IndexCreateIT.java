@@ -28,6 +28,7 @@ import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 
 import static org.junit.Assert.assertEquals;
@@ -77,7 +78,7 @@ public class IndexCreateIT extends KernelIntegrationTest
             creator.create( schemaWrite, forLabel( 0, 0 ), "something-completely-different" );
             fail( "Should have failed" );
         }
-        catch ( IllegalArgumentException e )
+        catch ( IndexProviderNotFoundException e )
         {
             // then good
         }

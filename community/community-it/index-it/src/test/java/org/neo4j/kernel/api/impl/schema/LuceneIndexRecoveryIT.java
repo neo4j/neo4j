@@ -38,6 +38,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -309,7 +310,7 @@ public class LuceneIndexRecoveryIT
     private KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies> createAlwaysInitiallyPopulatingLuceneIndexFactory()
     {
         return new KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies>(
-                LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() )
+                ExtensionType.DATABASE, LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() )
         {
             @Override
             public Lifecycle newInstance( KernelContext context, LuceneIndexProviderFactory.Dependencies dependencies )
@@ -331,7 +332,7 @@ public class LuceneIndexRecoveryIT
     private KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies> createLuceneIndexFactory()
     {
         return new KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies>(
-                LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() )
+                ExtensionType.DATABASE, LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() )
         {
 
             @Override

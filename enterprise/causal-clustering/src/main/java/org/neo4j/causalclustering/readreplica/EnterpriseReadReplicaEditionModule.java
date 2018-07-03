@@ -284,7 +284,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 new TxPullClient( catchUpClient, platformModule.monitors ),
                 new TransactionLogCatchUpFactory(), config, platformModule.monitors );
 
-        CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
+        CopiedStoreRecovery copiedStoreRecovery =
+                new CopiedStoreRecovery( config, platformModule.kernelExtensionFactories, platformModule.pageCache );
 
         txPulling.add( copiedStoreRecovery );
 

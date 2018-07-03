@@ -33,6 +33,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.SchemaState;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -51,6 +52,7 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -95,7 +97,7 @@ public class RecordStorageEngineRule extends ExternalResource
 
     private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache,
                                      IndexProvider indexProvider, DatabaseHealth databaseHealth, File storeDirectory,
-                                     Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer,
+                                     Function<BatchTransactionApplierFacade, BatchTransactionApplierFacade> transactionApplierTransformer,
                                      Monitors monitors )
     {
         if ( !fs.fileExists( storeDirectory ) && !fs.mkdir( storeDirectory ) )
@@ -109,14 +111,19 @@ public class RecordStorageEngineRule extends ExternalResource
         JobScheduler scheduler = life.add( new CentralJobScheduler() );
         Config config = Config.defaults();
 
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependency( indexProvider );
+
         BufferingIdGeneratorFactory bufferingIdGeneratorFactory =
                 new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS,
                         new CommunityIdTypeConfigurationProvider() );
+        DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( dependencies );
+        life.add( indexProviderMap );
         return life.add( new ExtendedRecordStorageEngine( storeDirectory, config, pageCache, fs,
                 NullLogProvider.getInstance(), mockedTokenHolders(),
                 mock( SchemaState.class ), new StandardConstraintSemantics(),
-                scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(),
-                indexProvider, IndexingService.NO_MONITOR, databaseHealth, explicitIndexProviderLookup, indexConfigStore,
+                scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(), indexProviderMap,
+                IndexingService.NO_MONITOR, databaseHealth, explicitIndexProviderLookup, indexConfigStore,
                 new SynchronizedArrayIdOrderingQueue( 20 ), idGeneratorFactory,
                 new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer, monitors,
                 RecoveryCleanupWorkCollector.IMMEDIATE, OperationalMode.single ) );
@@ -196,7 +203,7 @@ public class RecordStorageEngineRule extends ExternalResource
         ExtendedRecordStorageEngine( File storeDir, Config config, PageCache pageCache, FileSystemAbstraction fs,
                 LogProvider logProvider, TokenHolders tokenHolders, SchemaState schemaState,
                 ConstraintSemantics constraintSemantics, JobScheduler scheduler, TokenNameLookup tokenNameLookup,
-                LockService lockService, IndexProvider indexProvider,
+                LockService lockService, IndexProviderMap indexProviderMap,
                 IndexingService.Monitor indexingServiceMonitor, DatabaseHealth databaseHealth,
                 ExplicitIndexProvider explicitIndexProviderLookup,
                 IndexConfigStore indexConfigStore, IdOrderingQueue explicitIndexTransactionOrdering,
@@ -205,7 +212,7 @@ public class RecordStorageEngineRule extends ExternalResource
                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, OperationalMode operationalMode )
         {
             super( storeDir, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics, scheduler, tokenNameLookup,
-                    lockService, new DefaultIndexProviderMap( indexProvider ),
+                    lockService, indexProviderMap,
                     indexingServiceMonitor, databaseHealth, explicitIndexProviderLookup, indexConfigStore, explicitIndexTransactionOrdering, idGeneratorFactory,
                     idController, monitors, recoveryCleanupWorkCollector, operationalMode, EmptyVersionContextSupplier.EMPTY );
             this.transactionApplierTransformer = transactionApplierTransformer;

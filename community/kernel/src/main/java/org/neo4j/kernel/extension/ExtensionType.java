@@ -17,12 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.extension;
 
-public class IndexProviderNotFoundException extends RuntimeException
+import org.neo4j.kernel.lifecycle.Lifecycle;
+
+/**
+ * This determines the life cycle that the extension should be part of.
+ * <p>
+ * {@link #DATABASE} implies that the extension should be able to handle restarts where you can have
+ * any number of {@link Lifecycle#start()} and {@link Lifecycle#stop()} calls in between the
+ * {@link Lifecycle#init()} and {@link Lifecycle#shutdown()}.
+ */
+public enum ExtensionType
 {
-    public IndexProviderNotFoundException( String message )
-    {
-        super( message );
-    }
+    GLOBAL,
+    DATABASE
 }

@@ -20,10 +20,8 @@
 package org.neo4j.kernel.extension;
 
 import java.lang.reflect.ParameterizedType;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -33,20 +31,23 @@ import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-public class KernelExtensions extends DependencyResolver.Adapter implements Lifecycle
+import static java.util.stream.Collectors.toList;
+import static org.neo4j.helpers.collection.Iterables.stream;
+
+public abstract class AbstractKernelExtensions extends DependencyResolver.Adapter implements Lifecycle
 {
     private final KernelContext kernelContext;
-    private final List<KernelExtensionFactory<?>> kernelExtensionFactories = new ArrayList<>();
+    private final List<KernelExtensionFactory<?>> kernelExtensionFactories;
     private final Dependencies dependencies;
     private final LifeSupport life = new LifeSupport();
     private final UnsatisfiedDependencyStrategy unsatisfiedDependencyStrategy;
 
-    public KernelExtensions( KernelContext kernelContext, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories,
-                             Dependencies dependencies, UnsatisfiedDependencyStrategy unsatisfiedDependencyStrategy )
+    AbstractKernelExtensions( KernelContext kernelContext, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories, Dependencies dependencies,
+            UnsatisfiedDependencyStrategy unsatisfiedDependencyStrategy, ExtensionType extensionType )
     {
         this.kernelContext = kernelContext;
         this.unsatisfiedDependencyStrategy = unsatisfiedDependencyStrategy;
-        kernelExtensionFactories.forEach( this.kernelExtensionFactories::add );
+        this.kernelExtensionFactories = stream( kernelExtensionFactories ).filter( e -> e.getExtensionType() == extensionType ).collect( toList() );
         this.dependencies = dependencies;
     }
 
@@ -58,7 +59,7 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
             Object kernelExtensionDependencies = getKernelExtensionDependencies( kernelExtensionFactory );
             try
             {
-                Lifecycle dependency = newInstance( kernelExtensionFactory, kernelExtensionDependencies );
+                Lifecycle dependency = newInstance( kernelContext, kernelExtensionFactory, kernelExtensionDependencies );
                 Objects.requireNonNull( dependency, kernelExtensionFactory.toString() + " returned a null " +
                         "KernelExtension" );
                 life.add( dependencies.satisfyDependency( dependency ) );
@@ -70,12 +71,6 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
         }
 
         life.init();
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private <T> Lifecycle newInstance( KernelExtensionFactory<T> factory, Object dependencies )
-    {
-        return factory.newInstance( kernelContext, (T)dependencies );
     }
 
     @Override
@@ -96,25 +91,13 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
         life.shutdown();
     }
 
-    boolean isRegistered( Class<?> kernelExtensionFactoryClass )
-    {
-        for ( KernelExtensionFactory<?> kernelExtensionFactory : kernelExtensionFactories )
-        {
-            if ( kernelExtensionFactoryClass.isInstance( kernelExtensionFactory ) )
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
     @Override
     public <T> T resolveDependency( final Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
     {
         List<T> filteredAndCasted = life.getLifecycleInstances().stream()
                 .filter( type::isInstance )
                 .map( type::cast )
-                .collect( Collectors.toList() );
+                .collect( toList() );
         return selector.select( type, filteredAndCasted );
     }
 
@@ -125,8 +108,9 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
         return DependenciesProxy.dependencies(dependencies, configurationClass);
     }
 
-    public Iterable<KernelExtensionFactory<?>> listFactories()
+    @SuppressWarnings( "unchecked" )
+    private static <T> Lifecycle newInstance( KernelContext kernelContext, KernelExtensionFactory<T> factory, Object dependencies )
     {
-        return kernelExtensionFactories;
+        return factory.newInstance( kernelContext, (T)dependencies );
     }
 }

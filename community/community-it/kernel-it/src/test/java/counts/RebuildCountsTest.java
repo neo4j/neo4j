@@ -51,10 +51,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_background_sampling_enabled;
-
-import static org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class RebuildCountsTest
@@ -187,7 +186,6 @@ public class RebuildCountsTest
         File beta = new File( storeFileBase + CountsTracker.RIGHT );
         assertTrue( snapshot.deleteFile( alpha ) );
         assertTrue( snapshot.deleteFile( beta ) );
-
     }
 
     private FileSystemAbstraction shutdown()

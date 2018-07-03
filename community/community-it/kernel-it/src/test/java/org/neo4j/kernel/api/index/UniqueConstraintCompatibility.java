@@ -44,6 +44,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -1006,7 +1007,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
         PredefinedIndexProviderFactory( IndexProvider indexProvider )
         {
-            super( indexProvider.getClass().getSimpleName() );
+            super( ExtensionType.DATABASE, indexProvider.getClass().getSimpleName() );
             this.indexProvider = indexProvider;
         }
     }

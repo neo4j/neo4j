@@ -17,12 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.extension;
 
-public class IndexProviderNotFoundException extends RuntimeException
+import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.util.Dependencies;
+
+public class DatabaseKernelExtensions extends AbstractKernelExtensions
 {
-    public IndexProviderNotFoundException( String message )
+    public DatabaseKernelExtensions( KernelContext kernelContext, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories,
+                             Dependencies dependencies, UnsatisfiedDependencyStrategy unsatisfiedDependencyStrategy )
     {
-        super( message );
+        super( kernelContext, kernelExtensionFactories, dependencies, unsatisfiedDependencyStrategy, ExtensionType.DATABASE );
     }
 }

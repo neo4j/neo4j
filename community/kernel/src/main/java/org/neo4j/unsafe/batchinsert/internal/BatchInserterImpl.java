@@ -78,10 +78,9 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.DatabaseKernelExtensions;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
-import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -294,12 +293,11 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         Monitors monitors = new Monitors();
         deps.satisfyDependencies( fileSystem, config, logService, indexStoreView, pageCache, monitors,
                 RecoveryCleanupWorkCollector.IMMEDIATE );
-        KernelExtensions extensions = life.add( new KernelExtensions(
+        DatabaseKernelExtensions extensions = life.add( new DatabaseKernelExtensions(
                 new SimpleKernelContext( storeDir, DatabaseInfo.UNKNOWN, deps ),
                 kernelExtensions, deps, UnsatisfiedDependencyStrategies.ignore() ) );
 
-        IndexProvider provider = extensions.resolveDependency( IndexProvider.class, HighestSelectionStrategy.INSTANCE );
-        indexProviderMap = new DefaultIndexProviderMap( provider );
+        indexProviderMap = life.add( new DefaultIndexProviderMap( extensions ) );
 
         TokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder( this::createNewPropertyKeyId, TokenHolder.TYPE_PROPERTY_KEY );
         propertyKeyTokenHolder.setInitialTokens( propertyKeyTokenStore.getTokens() );

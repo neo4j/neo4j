@@ -64,6 +64,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
@@ -547,7 +548,7 @@ public class SchemaIndexHaIT
 
         ControllingIndexProviderFactory( Map<GraphDatabaseService,IndexProvider> perDbIndexProvider, Predicate<GraphDatabaseService> injectLatchPredicate )
         {
-            super( CONTROLLED_PROVIDER_DESCRIPTOR.getKey() );
+            super( ExtensionType.DATABASE, CONTROLLED_PROVIDER_DESCRIPTOR.getKey() );
             this.perDbIndexProvider = perDbIndexProvider;
             this.injectLatchPredicate = injectLatchPredicate;
         }

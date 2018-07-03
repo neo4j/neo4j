@@ -48,7 +48,7 @@ import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensions;
+import org.neo4j.kernel.extension.DatabaseKernelExtensions;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -75,6 +75,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -93,7 +94,6 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateKernelExtensions;
-import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.loadIndexProviders;
 
 public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implements TestRule
 {
@@ -215,9 +215,9 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
                                             Config config, LogProvider logProvider, Monitors monitors )
     {
         LogService logService = new SimpleLogService( logProvider, logProvider );
-        KernelExtensions extensions = life.add( instantiateKernelExtensions( storeDir, fileSystem, config, logService,
+        DatabaseKernelExtensions extensions = life.add( instantiateKernelExtensions( storeDir, fileSystem, config, logService,
                 pageCache, RecoveryCleanupWorkCollector.IGNORE, DatabaseInfo.COMMUNITY, monitors ) );
-        return loadIndexProviders( extensions );
+        return life.add( new DefaultIndexProviderMap( extensions ) );
     }
 
     public File directory()

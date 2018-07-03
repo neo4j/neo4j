@@ -27,7 +27,6 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
@@ -329,14 +328,6 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
     public String toString()
     {
         return format( "RaftInstance{role=%s, term=%d, currentMembers=%s}", currentRole, term(), votingMembers() );
-    }
-
-    public static class BootstrapException extends Exception
-    {
-        BootstrapException( Throwable cause )
-        {
-            super( cause );
-        }
     }
 
     public long term()

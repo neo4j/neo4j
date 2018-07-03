@@ -36,7 +36,8 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
-import org.neo4j.kernel.extension.KernelExtensions;
+import org.neo4j.kernel.extension.GlobalKernelExtensions;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.impl.api.LogRotationMonitor;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
@@ -109,7 +110,8 @@ public class PlatformModule
 
     public final DataSourceManager dataSourceManager;
 
-    public final KernelExtensions kernelExtensions;
+    public final GlobalKernelExtensions globalKernelExtensions;
+    public final Iterable<KernelExtensionFactory<?>> kernelExtensionFactories;
 
     public final URLAccessRule urlAccessRule;
 
@@ -204,9 +206,10 @@ public class PlatformModule
 
         transactionMonitor = dependencies.satisfyDependency( createTransactionStats() );
 
-        kernelExtensions = dependencies.satisfyDependency( new KernelExtensions(
-                new SimpleKernelContext( storeDir, databaseInfo, dependencies ),
-                externalDependencies.kernelExtensions(), dependencies, UnsatisfiedDependencyStrategies.fail() ) );
+        kernelExtensionFactories = externalDependencies.kernelExtensions();
+        globalKernelExtensions = dependencies.satisfyDependency(
+                new GlobalKernelExtensions( new SimpleKernelContext( storeDir, databaseInfo, dependencies ), kernelExtensionFactories, dependencies,
+                        UnsatisfiedDependencyStrategies.fail() ) );
 
         urlAccessRule = dependencies.satisfyDependency( URLAccessRules.combined( externalDependencies.urlAccessRules() ) );
 
@@ -240,7 +243,7 @@ public class PlatformModule
     }
 
     @SuppressWarnings( "unchecked" )
-    private <T> T firstImplementor( Class<T> type, Object... candidates )
+    private static <T> T firstImplementor( Class<T> type, Object... candidates )
     {
         for ( Object candidate : candidates )
         {
@@ -252,7 +255,7 @@ public class PlatformModule
         return null;
     }
 
-    private void publishPlatformInfo( UsageData sysInfo )
+    private static void publishPlatformInfo( UsageData sysInfo )
     {
         sysInfo.set( UsageDataKeys.version, Version.getNeo4jVersion() );
         sysInfo.set( UsageDataKeys.revision, Version.getKernelVersion() );
@@ -331,7 +334,7 @@ public class PlatformModule
         return pageCache;
     }
 
-    private CollectionsFactorySupplier createCollectionsFactorySupplier( Config config )
+    private static CollectionsFactorySupplier createCollectionsFactorySupplier( Config config )
     {
         final GraphDatabaseSettings.TransactionStateMemoryAllocation allocation = config.get( GraphDatabaseSettings.tx_state_memory_allocation );
         switch ( allocation )

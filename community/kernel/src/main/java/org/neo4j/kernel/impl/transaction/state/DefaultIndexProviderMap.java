@@ -19,34 +19,39 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
+import org.neo4j.kernel.extension.dependency.AllByPrioritySelectionStrategy;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class DefaultIndexProviderMap implements IndexProviderMap
+public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexProviderMap
 {
-    private final IndexProvider defaultIndexProvider;
     private final Map<Descriptor,IndexProvider> indexProvidersByDescriptor = new HashMap<>();
     private final Map<String,IndexProvider> indexProvidersByName = new HashMap<>();
+    private final DependencyResolver dependencies;
+    private IndexProvider defaultIndexProvider;
 
-    public DefaultIndexProviderMap( IndexProvider defaultIndexProvider )
+    public DefaultIndexProviderMap( DependencyResolver dependencies )
     {
-        this( defaultIndexProvider, Collections.emptyList() );
+        this.dependencies = dependencies;
     }
 
-    public DefaultIndexProviderMap( IndexProvider defaultIndexProvider,
-            Iterable<IndexProvider> additionalIndexProviders )
+    @Override
+    public void init()
     {
-        this.defaultIndexProvider = defaultIndexProvider;
+        AllByPrioritySelectionStrategy<IndexProvider> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
+
+        defaultIndexProvider = dependencies.resolveDependency( IndexProvider.class, indexProviderSelection );
         put( defaultIndexProvider.getProviderDescriptor(), defaultIndexProvider );
-        for ( IndexProvider provider : additionalIndexProviders )
+        for ( IndexProvider provider : indexProviderSelection.lowerPrioritizedCandidates() )
         {
             Descriptor providerDescriptor = provider.getProviderDescriptor();
             Objects.requireNonNull( providerDescriptor );
@@ -69,43 +74,52 @@ public class DefaultIndexProviderMap implements IndexProviderMap
     @Override
     public IndexProvider getDefaultProvider()
     {
+        assertInit();
         return defaultIndexProvider;
     }
 
     @Override
     public IndexProvider lookup( Descriptor providerDescriptor )
     {
+        assertInit();
         IndexProvider provider = indexProvidersByDescriptor.get( providerDescriptor );
-        if ( provider != null )
-        {
-            return provider;
-        }
+        assertProviderFound( provider, providerDescriptor.name() );
 
-        throw notFound( providerDescriptor.name() );
+        return provider;
     }
 
     @Override
     public IndexProvider lookup( String providerDescriptorName ) throws IndexProviderNotFoundException
     {
+        assertInit();
         IndexProvider provider = indexProvidersByName.get( providerDescriptorName );
-        if ( provider != null )
-        {
-            return provider;
-        }
+        assertProviderFound( provider, providerDescriptorName );
 
-        throw notFound( providerDescriptorName );
-    }
-
-    private IllegalArgumentException notFound( String name )
-    {
-        return new IllegalArgumentException( "Tried to get index provider with name " + name +
-                " whereas available providers in this session being " + indexProvidersByName.keySet() + ", and default being " +
-                defaultIndexProvider.getProviderDescriptor().name() );
+        return provider;
     }
 
     @Override
     public void accept( Consumer<IndexProvider> visitor )
     {
+        assertInit();
         indexProvidersByDescriptor.values().forEach( visitor );
+    }
+
+    private void assertProviderFound( IndexProvider provider, String providerDescriptorName )
+    {
+        if ( provider == null )
+        {
+            throw new IndexProviderNotFoundException( "Tried to get index provider with name " + providerDescriptorName +
+                    " whereas available providers in this session being " + indexProvidersByName.keySet() + ", and default being " +
+                    defaultIndexProvider.getProviderDescriptor().name() );
+        }
+    }
+
+    private void assertInit()
+    {
+        if ( defaultIndexProvider == null )
+        {
+            throw new IllegalStateException( "DefaultIndexProviderMap must be part of life cycle and initialized before getting providers." );
+        }
     }
 }

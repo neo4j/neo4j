@@ -27,35 +27,24 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.DatabaseKernelExtensions;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
-import org.neo4j.kernel.extension.dependency.AllByPrioritySelectionStrategy;
-import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
-import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.monitoring.Monitors;
 
 /**
- * Utility for loading {@link IndexProvider} instances from {@link KernelExtensions}.
+ * Utility for loading {@link IndexProvider} instances from {@link DatabaseKernelExtensions}.
  */
 public class SchemaIndexExtensionLoader
 {
-    public static IndexProviderMap loadIndexProviders( KernelExtensions extensions )
-    {
-        AllByPrioritySelectionStrategy<IndexProvider> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
-        IndexProvider defaultIndexProvider =
-                extensions.resolveDependency( IndexProvider.class, indexProviderSelection );
-        return new DefaultIndexProviderMap( defaultIndexProvider,
-                indexProviderSelection.lowerPrioritizedCandidates() );
-    }
 
     @SuppressWarnings( "unchecked" )
-    public static KernelExtensions instantiateKernelExtensions( File storeDir, FileSystemAbstraction fileSystem,
+    public static DatabaseKernelExtensions instantiateKernelExtensions( File storeDir, FileSystemAbstraction fileSystem,
             Config config, LogService logService, PageCache pageCache,
             RecoveryCleanupWorkCollector recoveryCollector, DatabaseInfo databaseInfo, Monitors monitors )
     {
@@ -64,6 +53,6 @@ public class SchemaIndexExtensionLoader
         @SuppressWarnings( "rawtypes" )
         Iterable kernelExtensions = Service.load( KernelExtensionFactory.class );
         KernelContext kernelContext = new SimpleKernelContext( storeDir, databaseInfo, deps );
-        return new KernelExtensions( kernelContext, kernelExtensions, deps, UnsatisfiedDependencyStrategies.ignore() );
+        return new DatabaseKernelExtensions( kernelContext, kernelExtensions, deps, UnsatisfiedDependencyStrategies.ignore() );
     }
 }

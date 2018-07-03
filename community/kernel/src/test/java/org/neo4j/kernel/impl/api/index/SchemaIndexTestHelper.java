@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -58,7 +59,7 @@ public class SchemaIndexTestHelper
 
         private SingleInstanceIndexProviderFactory( String key, IndexProvider provider )
         {
-            super( key );
+            super( ExtensionType.DATABASE, key );
             this.provider = provider;
         }
 

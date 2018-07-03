@@ -20,13 +20,12 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingControllerFactory;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -49,13 +48,6 @@ public class IndexingServiceFactory
                                           IndexingService.Monitor monitor,
                                           SchemaState schemaState )
     {
-        if ( providerMap == null || providerMap.getDefaultProvider() == null )
-        {
-            throw new IllegalStateException( "You cannot run the database without an index provider, " +
-                                             "please make sure that a valid provider (subclass of " + IndexProvider.class.getName() +
-                                             ") is on your classpath." );
-        }
-
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         MultiPopulatorFactory multiPopulatorFactory = MultiPopulatorFactory.forConfig( config );
         IndexMapReference indexMapRef = new IndexMapReference();

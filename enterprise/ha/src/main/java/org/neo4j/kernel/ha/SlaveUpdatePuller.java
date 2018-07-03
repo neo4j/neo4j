@@ -131,7 +131,7 @@ public class SlaveUpdatePuller implements Runnable, UpdatePuller, JobScheduler.C
             "org.neo4j.kernel.ha.SlaveUpdatePuller.AVAILABILITY_AWAIT_MILLIS", 5000 );
     public static final String UPDATE_PULLER_THREAD_PREFIX = "UpdatePuller@";
 
-    static final Condition NEXT_TICKET = ( currentTicket, targetTicket ) -> currentTicket >= targetTicket;
+    private static final Condition NEXT_TICKET = ( currentTicket, targetTicket ) -> currentTicket >= targetTicket;
 
     private volatile boolean halted;
     private final AtomicInteger targetTicket = new AtomicInteger();

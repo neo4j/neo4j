@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.index;
 import org.neo4j.index.impl.lucene.explicit.LuceneIndexImplementation;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -43,7 +44,7 @@ public class LuceneKernelExtensionFactory extends KernelExtensionFactory<LuceneK
 
     public LuceneKernelExtensionFactory()
     {
-        super( LuceneIndexImplementation.SERVICE_NAME );
+        super( ExtensionType.DATABASE, LuceneIndexImplementation.SERVICE_NAME );
     }
 
     @Override

@@ -600,10 +600,10 @@ public class HighlyAvailableEditionModule
         {
             case branch_then_copy:
                 return new SwitchToSlaveBranchThenCopy( platformModule.storeDir, logging,
-                        platformModule.fileSystem, config, dependencies, idGeneratorFactory,
+                        platformModule.fileSystem, config, idGeneratorFactory,
                         masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
                         pullerFactory,
-                        platformModule.kernelExtensions.listFactories(), masterClientResolver,
+                        platformModule.kernelExtensionFactories, masterClientResolver,
                         monitors.newMonitor( SwitchToSlave.Monitor.class ),
                         monitors.newMonitor( StoreCopyClientMonitor.class ),
                         dependencies.provideDependency( NeoStoreDataSource.class ),
@@ -612,10 +612,10 @@ public class HighlyAvailableEditionModule
                         monitors, platformModule.transactionMonitor );
             case copy_then_branch:
                 return new SwitchToSlaveCopyThenBranch( platformModule.storeDir, logging,
-                        platformModule.fileSystem, config, dependencies, idGeneratorFactory,
+                        platformModule.fileSystem, config, idGeneratorFactory,
                         masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
                         pullerFactory,
-                        platformModule.kernelExtensions.listFactories(), masterClientResolver,
+                        platformModule.kernelExtensionFactories, masterClientResolver,
                         monitors.newMonitor( SwitchToSlave.Monitor.class ),
                         monitors.newMonitor( StoreCopyClientMonitor.class ),
                         dependencies.provideDependency( NeoStoreDataSource.class ),
