@@ -54,7 +54,6 @@ import org.neo4j.values.virtual.VirtualValues;
 import static java.lang.Double.parseDouble;
 import static java.lang.Long.parseLong;
 import static java.lang.String.format;
-import static org.neo4j.values.storable.PointValue.ALLOWED_KEYS;
 import static org.neo4j.values.storable.Values.EMPTY_STRING;
 import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -72,6 +71,7 @@ public final class CypherFunctions
 {
     private static final BigDecimal MAX_LONG = BigDecimal.valueOf( Long.MAX_VALUE );
     private static final BigDecimal MIN_LONG = BigDecimal.valueOf( Long.MIN_VALUE );
+    private static String[] POINT_KEYS = new String[]{"crs", "x", "y", "z", "longitude", "latitude", "height", "srid"};
 
     private CypherFunctions()
     {
@@ -955,7 +955,7 @@ public final class CypherFunctions
     private static Value asPoint( DbAccess access, VirtualNodeValue nodeValue )
     {
         MapValueBuilder builder = new MapValueBuilder();
-        for ( String key : ALLOWED_KEYS )
+        for ( String key : POINT_KEYS )
         {
             Value value = access.nodeProperty( nodeValue.id(), key );
             if ( value == NO_VALUE )
@@ -971,7 +971,7 @@ public final class CypherFunctions
     private static Value asPoint( DbAccess access, VirtualRelationshipValue relationshipValue )
     {
         MapValueBuilder builder = new MapValueBuilder();
-        for ( String key : ALLOWED_KEYS )
+        for ( String key : POINT_KEYS )
         {
             Value value = access.relationshipProperty( relationshipValue.id(), key );
             if ( value == NO_VALUE )
