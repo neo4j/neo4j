@@ -19,128 +19,189 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan
 
+import java.io.PrintWriter
 import java.util
 
-import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.function.ThrowingBiConsumer
-import org.neo4j.graphdb.NotFoundException
-import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
-import org.neo4j.helpers.collection.Iterators
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.InterpretedRuntimeName
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.profiler.PlanDescriptionBuilder
+import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
+import org.neo4j.cypher.result.{QueryProfile, QueryResult, RuntimeResult}
+import org.neo4j.graphdb.ResourceIterator
+import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable._
-import org.neo4j.values.virtual.{ListValue, MapValue}
+import org.neo4j.values.storable.Values
+import org.opencypher.v9_0.util.TaskCloser
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
-import scala.collection.JavaConverters
+import scala.collection.JavaConverters._
 
-// We're going to get back here.
-class StandardInternalExecutionResultTestTODO extends CypherFunSuite {
+//noinspection NameBooleanParameters,RedundantDefaultArgument
+class StandardInternalExecutionResultTest extends CypherFunSuite {
 
-  def runtimeResult(row: util.Map[String, Any] = new util.HashMap()): RuntimeResult = ???
+  // INITIATE
 
-  def executionResult(row: util.Map[String, Any] = new util.HashMap()): StandardInternalExecutionResult = ???
-
-  test("should return scala objects") {
-    val result = executionResult(javaMap("foo" -> "", "bar" -> ""))
-
-    result.fieldNames() should equal(List("foo", "bar"))
+  test("should not materialize or close read-only result") {
+    assertMaterializationAndCloseOfInit(READ_ONLY, false, false)
   }
 
-  test("should return java objects for string") {
-    val result = executionResult(javaMap("foo" -> "bar"))
-
-    Iterators.asList(result.javaColumnAs[String]("foo")) should equal(javaList("bar"))
+  test("should materialize but not close read-write result") {
+    assertMaterializationAndCloseOfInit(READ_WRITE, true, false)
   }
 
-  test("should return java objects for list") {
-    val result = executionResult(javaMap("foo" -> javaList(42L)))
-
-    Iterators.asList(result.javaColumnAs[List[Integer]]("foo")) should equal(javaList(javaList(42L)))
+  test("should materialize and close write-only result") {
+    assertMaterializationAndCloseOfInit(WRITE, true, true)
   }
 
-  test("should return java objects for map") {
-    val result = executionResult(javaMap("foo" -> javaMap("key" -> "value")))
-
-    Iterators.asList(result.javaColumnAs[Map[String, Any]]("foo")) should equal(javaList(javaMap("key" -> "value")))
+  test("should close pre-exhausted schema-write result") {
+    assertMaterializationAndCloseOfInit(SCHEMA_WRITE, true, true, TestRuntimeResult(Nil, resultRequested = true))
   }
 
-  test("should throw if non-existing column") {
-    val result = executionResult(javaMap("foo" -> "bar"))
-
-    a [NotFoundException] shouldBe thrownBy(result.javaColumnAs[String]("baz"))
+  test("should consume and close result without field names") {
+    assertMaterializationAndCloseOfInit(READ_WRITE, true, true, TestRuntimeResult(Nil, fieldNames = Array()))
   }
 
-  test("should return a java iterator for string") {
-    val result = executionResult(javaMap("foo" -> "bar"))
-
-    Iterators.asList(result.javaIterator) should equal(javaList(javaMap("foo" -> "bar")))
-  }
-
-  test("should return a java iterator for list") {
-    val result = executionResult(javaMap("foo" -> javaList(42L)))
-
-    Iterators.asList(result.javaIterator) should equal(javaList(javaMap("foo" -> javaList(42L))))
-  }
-
-  test("should return a java iterator for map") {
-    val result = executionResult(javaMap("foo" -> javaMap("key" -> "value")))
-
-    Iterators.asList(result.javaIterator) should equal(javaList(javaMap("foo" -> javaMap("key" -> "value"))))
-  }
-
-  test("javaIterator hasNext should not call accept if results already consumed") {
+  private def assertMaterializationAndCloseOfInit(queryType: InternalQueryType,
+                                                  shouldMaterialize: Boolean,
+                                                  shouldClose: Boolean,
+                                                  inner: TestRuntimeResult = TestRuntimeResult(List(1))): Unit = {
     // given
-    val result = executionResult()
+    val x = standardInternalExecutionResult(inner, queryType)
 
     // when
-    result.accept(new ResultVisitor[Exception] {
-      override def visit(row: ResultRow): Boolean = {
-        false
-      }
-    })
+    x.initiate()
 
     // then
-    result.javaIterator.hasNext should be(false)
+    if (shouldMaterialize)
+      inner.consumptionState should be(ConsumptionState.EXHAUSTED)
+    else
+      inner.consumptionState should be(ConsumptionState.NOT_STARTED)
+
+    x.isMaterialized should be(shouldMaterialize)
+    x.isClosed should be(shouldClose)
   }
 
-  test("close should work after result is consumed") {
+  // ITERATE
+
+  test("should not materialize iterable result when javaIterator") {
+    assertMaterializationOfMethod(false, false, TestRuntimeResult(List(1), isIterable = true), _.javaIterator.hasNext)
+  }
+
+  test("should not materialize iterable result when javaColumnAs") {
+    assertMaterializationOfMethod(false, false, TestRuntimeResult(List(1), isIterable = true), _.javaColumnAs[Int]("x").hasNext)
+  }
+
+  test("should materialize not iterable result when javaIterator") {
+    assertMaterializationOfMethod(true, true, TestRuntimeResult(List(1), isIterable = false), _.javaIterator.hasNext)
+  }
+
+  test("should materialize not iterable result when javaColumnAs") {
+    assertMaterializationOfMethod(true, true, TestRuntimeResult(List(1), isIterable = false), _.javaColumnAs[Int]("x").hasNext)
+  }
+
+  // DUMP TO STRING
+
+  test("should not materialize when dumpToString I") {
+    assertMaterializationOfMethod(false, true, TestRuntimeResult(List(1), isIterable = true), _.dumpToString())
+    assertMaterializationOfMethod(false, true, TestRuntimeResult(List(1), isIterable = false), _.dumpToString())
+  }
+
+  test("should not materialize when dumpToString II") {
+    assertMaterializationOfMethod(false, true, TestRuntimeResult(List(1), isIterable = true), _.dumpToString(mock[PrintWriter]))
+    assertMaterializationOfMethod(false, true, TestRuntimeResult(List(1), isIterable = false), _.dumpToString(mock[PrintWriter]))
+  }
+
+  // ACCEPT
+
+  test("should not materialize when accept I") {
+    assertMaterializationOfMethod(false, true, TestRuntimeResult(List(1), isIterable = true), _.accept(mock[ResultVisitor[Exception]]))
+    assertMaterializationOfMethod(false, true, TestRuntimeResult(List(1), isIterable = false), _.accept(mock[ResultVisitor[Exception]]))
+  }
+
+  test("should not materialize when accept II") {
+    assertMaterializationOfMethod(false, true, TestRuntimeResult(List(1), isIterable = true), _.accept(mock[QueryResult.QueryResultVisitor[Exception]]))
+    assertMaterializationOfMethod(false, true, TestRuntimeResult(List(1), isIterable = false), _.accept(mock[QueryResult.QueryResultVisitor[Exception]]))
+  }
+
+  private def assertMaterializationOfMethod(shouldMaterialize: Boolean,
+                                            shouldExhaust: Boolean,
+                                            inner: TestRuntimeResult = TestRuntimeResult(List(1)),
+                                            f: InternalExecutionResult => Unit): Unit = {
     // given
-    val result = executionResult(javaMap("a" -> "1", "b" -> "2"))
+    val x = standardInternalExecutionResult(inner, READ_ONLY)
+    x.initiate()
 
     // when
-    result.accept(new ResultVisitor[Exception] {
-      override def visit(row: ResultRow): Boolean = {
-        true
-      }
-    })
-
-    result.close()
+    f(x)
 
     // then
-    // call of close actually worked
+    if (shouldExhaust)
+      inner.consumptionState should be(ConsumptionState.EXHAUSTED)
+    else
+      inner.consumptionState should not be ConsumptionState.EXHAUSTED
+
+    x.isMaterialized should be(shouldMaterialize)
   }
 
-  import JavaConverters._
-  private def toObjectConverter(a: AnyRef): AnyRef = a match {
-    case Values.NO_VALUE => null
-    case s: TextValue => s.stringValue()
-    case b: BooleanValue => Boolean.box(b.booleanValue())
-    case f: FloatingPointValue => Double.box(f.doubleValue())
-    case i: IntegralValue => Long.box(i.longValue())
-    case l: ListValue =>
-      val list = new util.ArrayList[AnyRef]
-      l.iterator().asScala.foreach(a => list.add(toObjectConverter(a)))
-      list
-    case m: MapValue =>
-      val map = new util.HashMap[String, AnyRef]()
-      m.foreach(new ThrowingBiConsumer[String, AnyValue, RuntimeException] {
-        override def accept(t: String, u: AnyValue): Unit = map.put(t, toObjectConverter(u))
-      })
-      map
+  private def standardInternalExecutionResult(inner: RuntimeResult, queryType: InternalQueryType) =
+    new StandardInternalExecutionResult(
+      mock[QueryContext],
+      InterpretedRuntimeName,
+      inner,
+      new TaskCloser,
+      queryType,
+      Set.empty,
+      NormalMode,
+      mock[PlanDescriptionBuilder]
+    )
+
+  case class TestRuntimeResult(values: Seq[Int],
+                               isIterable: Boolean = true,
+                               var resultRequested: Boolean = false,
+                               override val fieldNames: Array[String] = Array("x", "y")
+                              ) extends RuntimeResult {
+
+    private val iterator = values.iterator
+
+    override def asIterator(): ResourceIterator[util.Map[String, AnyRef]] = {
+      resultRequested = true
+      new ResourceIterator[util.Map[String, AnyRef]] {
+
+        override def close(): Unit = {}
+
+        override def hasNext: Boolean = iterator.hasNext
+
+        override def next(): util.Map[String, AnyRef] = {
+          val value = iterator.next()
+          fieldNames.map(key => (key,value.asInstanceOf[AnyRef])).toMap.asJava
+        }
+      }
+    }
+
+    override def consumptionState: RuntimeResult.ConsumptionState =
+      if (!resultRequested) ConsumptionState.NOT_STARTED
+      else if (iterator.hasNext) ConsumptionState.HAS_MORE
+      else ConsumptionState.EXHAUSTED
+
+    override def accept[E <: Exception](visitor: QueryResult.QueryResultVisitor[E]): Unit = {
+      resultRequested = true
+      while (iterator.hasNext) {
+        val value = Values.of(iterator.next())
+        val record = new QueryResult.Record {
+          override def fields(): Array[AnyValue] = Array().padTo(fieldNames.length, value)
+        }
+        visitor.visit(record)
+      }
+    }
+
+    override def queryStatistics(): QueryStatistics = QueryStatistics()
+
+    override def queryProfile(): QueryProfile = QueryProfile.NONE
+
+    override def close(): Unit = {
+      resultRequested = true
+      while (iterator.hasNext)
+        iterator.next()
+    }
   }
-
-  private def javaList[T](elements: T*): util.List[T] = elements.toList.asJava
-
-  private def javaMap[K, V](pairs: (K, V)*): util.Map[K, V] = pairs.toMap.asJava
-
 }

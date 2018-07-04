@@ -70,7 +70,7 @@ class StandardInternalExecutionResult(context: QueryContext,
    */
 
   private var materializedResult: util.ArrayList[Array[AnyValue]] = _
-  private def isMaterialized: Boolean = materializedResult != null
+  protected[executionplan] def isMaterialized: Boolean = materializedResult != null
   private def materializeResult(): Unit = {
     materializedResult = new util.ArrayList()
     if (isOpen)
