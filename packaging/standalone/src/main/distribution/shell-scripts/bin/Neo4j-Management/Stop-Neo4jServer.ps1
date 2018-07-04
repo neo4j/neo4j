@@ -41,50 +41,50 @@ non-zero = an error occured
 This function is private to the powershell module
 
 #>
-Function Stop-Neo4jServer
+function Stop-Neo4jServer
 {
-  [cmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='Medium')]
-  param (
-    [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
-    [PSCustomObject]$Neo4jServer
+  [CmdletBinding(SupportsShouldProcess = $true,ConfirmImpact = 'Medium')]
+  param(
+    [Parameter(Mandatory = $true,ValueFromPipeline = $true)]
+    [pscustomobject]$Neo4jServer
 
   )
-  
-  Begin
+
+  begin
   {
   }
 
-  Process
+  process
   {
-      $ServiceName = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
-      $Found = Get-Service -Name $ServiceName -ComputerName '.' -ErrorAction 'SilentlyContinue'
-      if ($Found)
-      {
-        $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $Neo4jServer -ForServerStop
-        if ($prunsrv -eq $null) { throw "Could not determine the command line for PRUNSRV" }
+    $ServiceName = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
+    $Found = Get-Service -Name $ServiceName -ComputerName '.' -ErrorAction 'SilentlyContinue'
+    if ($Found)
+    {
+      $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $Neo4jServer -ForServerStop
+      if ($prunsrv -eq $null) { throw "Could not determine the command line for PRUNSRV" }
 
-        Write-Verbose "Stopping Neo4j service"
-        $result = Invoke-ExternalCommand -Command $prunsrv.cmd -CommandArgs $prunsrv.args
+      Write-Verbose "Stopping Neo4j service"
+      $result = Invoke-ExternalCommand -Command $prunsrv.cmd -CommandArgs $prunsrv.args
 
-        # Process the output
-        if ($result.exitCode -eq 0) {
-          Write-Host "Neo4j service stopped"
-        } else {
-          Write-Host "Neo4j service did not stop"
-          # Write out STDERR if it did not stop
-          Write-Host $result.capturedOutput
-        }
-
-        Write-Output $result.exitCode
+      # Process the output
+      if ($result.exitCode -eq 0) {
+        Write-Host "Neo4j service stopped"
+      } else {
+        Write-Host "Neo4j service did not stop"
+        # Write out STDERR if it did not stop
+        Write-Host $result.capturedOutput
       }
-      else 
-      {
-        Write-Host "Service stop failed - service '$ServiceName' not found"
-        Write-Output 1
-      }
+
+      Write-Output $result.exitCode
+    }
+    else
+    {
+      Write-Host "Service stop failed - service '$ServiceName' not found"
+      Write-Output 1
+    }
   }
-  
-  End
+
+  end
   {
   }
 }

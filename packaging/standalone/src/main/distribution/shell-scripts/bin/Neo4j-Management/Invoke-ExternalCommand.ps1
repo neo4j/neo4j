@@ -45,50 +45,50 @@ capturedOutput
 This function is private to the powershell module
 
 #>
-Function Invoke-ExternalCommand
+function Invoke-ExternalCommand
 {
-  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
-  param (
-    [Parameter(Mandatory=$true,ValueFromPipeline=$false,Position=0)]
+  [CmdletBinding(SupportsShouldProcess = $false,ConfirmImpact = 'Low')]
+  param(
+    [Parameter(Mandatory = $true,ValueFromPipeline = $false,Position = 0)]
     [string]$Command = '',
 
-    [parameter(Mandatory=$false,ValueFromRemainingArguments=$true)]
+    [Parameter(Mandatory = $false,ValueFromRemainingArguments = $true)]
     [Object[]]$CommandArgs = @()
-   )
-  
-  Begin
+  )
+
+  begin
   {
   }
 
-  Process
+  process
   {
     # Merge Command and CommandArgs into a single array that each element
     # is checked against a space and surrounded with double quoates if
     # they are already not
     $ComSpecArgs = @()
-    If ($Command -match ' ' -and -not($Command -match '\".+\"'))
+    if ($Command -match ' ' -and -not ($Command -match '\".+\"'))
     {
-        $ComSpecArgs += "`"$Command`""
+      $ComSpecArgs += "`"$Command`""
     }
-    Else
+    else
     {
-        $ComSpecArgs += $Command
+      $ComSpecArgs += $Command
     }
 
-    Foreach ($Arg in $CommandArgs)
+    foreach ($Arg in $CommandArgs)
     {
-        If ($Arg -match ' ' -and -Not($Arg -match '\".+\"'))
-        {
-            $ComSpecArgs += "`"$Arg`""
-        }
-        Else
-        {
-            $ComSpecArgs += $Arg
-        }
+      if ($Arg -match ' ' -and -not ($Arg -match '\".+\"'))
+      {
+        $ComSpecArgs += "`"$Arg`""
+      }
+      else
+      {
+        $ComSpecArgs += $Arg
+      }
     }
     $ComSpecArgs += "2>&1"
 
-    Write-Verbose "Invoking $ComSpecArgs" 
+    Write-Verbose "Invoking $ComSpecArgs"
     # cmd.exe is a bit picky about its translation of command line arguments
     # to the actual command to be executed and this is the only one that
     # found to be running both on Windows 7 and Windows 10
@@ -97,10 +97,10 @@ Function Invoke-ExternalCommand
     $Output = & $env:ComSpec /S /C """ " $ComSpecArgs " """
     Write-Verbose "Command returned with exit code $LastExitCode"
 
-    Write-Output @{'exitCode' = $LastExitCode; 'capturedOutput' = $Output}
+    Write-Output @{ 'exitCode' = $LastExitCode; 'capturedOutput' = $Output }
   }
-  
-  End
+
+  end
   {
   }
 }

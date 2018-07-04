@@ -53,24 +53,24 @@ Get-Neo4jHome
 This function is private to the powershell module
 
 #>
-Function Get-Neo4jServer
+function Get-Neo4jServer
 {
-  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
-  param (
-    [Parameter(Mandatory=$false,ValueFromPipeline=$true)]
-    [alias('Home')]
+  [CmdletBinding(SupportsShouldProcess = $false,ConfirmImpact = 'Low')]
+  param(
+    [Parameter(Mandatory = $false,ValueFromPipeline = $true)]
+    [Alias('Home')]
     [AllowEmptyString()]
     [string]$Neo4jHome = ''
   )
 
-  Begin
+  begin
   {
   }
 
-  Process
+  process
   {
     # Get and check the Neo4j Home directory
-    if ( ($Neo4jHome -eq '') -or ($Neo4jHome -eq $null) )
+    if (($Neo4jHome -eq '') -or ($Neo4jHome -eq $null))
     {
       Write-Error "Could not detect the Neo4j Home directory"
       return
@@ -112,7 +112,7 @@ Function Get-Neo4jServer
 
     # Scan the lib dir...
     Get-ChildItem (Join-Path -Path $Neo4jHome -ChildPath 'lib') | Where-Object { $_.Name -like 'neo4j-server-*.jar' } | ForEach-Object -Process `
-    {
+       {
       # if neo4j-server-enterprise-<version>.jar exists then this is the enterprise version
       if ($_.Name -like 'neo4j-server-enterprise-*.jar') { $serverProperties.ServerType = 'Enterprise' }
 
@@ -130,51 +130,51 @@ Function Get-Neo4jServer
 
     # Get additional settings...
     $setting = (Get-Neo4jSetting -ConfigurationFile 'neo4j.conf' -Name 'dbms.mode' -Neo4jServer $serverObject)
-    if ($setting -ne $null) { $serverObject.DatabaseMode = $setting.Value }
+    if ($setting -ne $null) { $serverObject.DatabaseMode = $setting.value }
 
     # Set process level environment variables
     #  These should mirror the same paths in neo4j-shared.sh
-    $dirSettings = @{'NEO4J_DATA'    = @{'config_var' = 'dbms.directories.data';    'default' = (Join-Path $Neo4jHome 'data')}
-       'NEO4J_LIB'     = @{'config_var' = 'dbms.directories.lib';     'default' = (Join-Path $Neo4jHome 'lib')}
-       'NEO4J_LOGS'    = @{'config_var' = 'dbms.directories.logs';    'default' = (Join-Path $Neo4jHome 'logs')}
-       'NEO4J_PLUGINS' = @{'config_var' = 'dbms.directories.plugins'; 'default' = (Join-Path $Neo4jHome 'plugins')}
-       'NEO4J_RUN'     = @{'config_var' = 'dbms.directories.run';     'default' = (Join-Path $Neo4jHome 'run')}
+    $dirSettings = @{ 'NEO4J_DATA' = @{ 'config_var' = 'dbms.directories.data'; 'default' = (Join-Path $Neo4jHome 'data') }
+      'NEO4J_LIB' = @{ 'config_var' = 'dbms.directories.lib'; 'default' = (Join-Path $Neo4jHome 'lib') }
+      'NEO4J_LOGS' = @{ 'config_var' = 'dbms.directories.logs'; 'default' = (Join-Path $Neo4jHome 'logs') }
+      'NEO4J_PLUGINS' = @{ 'config_var' = 'dbms.directories.plugins'; 'default' = (Join-Path $Neo4jHome 'plugins') }
+      'NEO4J_RUN' = @{ 'config_var' = 'dbms.directories.run'; 'default' = (Join-Path $Neo4jHome 'run') }
     }
-    foreach($name in $dirSettings.Keys)
+    foreach ($name in $dirSettings.Keys)
     {
-        $definition = $dirSettings[$name]
-        $configured = (Get-Neo4jSetting -ConfigurationFile 'neo4j.conf' -Name $definition['config_var'] -Neo4jServer $serverObject)
-        $value = $definition['default']
-        if ($configured -ne $null) { $value = $configured.Value }
-        
-        if ($value -ne $null) {
-          if (-Not (Test-Path $value -IsValid)) {
-            throw "'$value' is not a valid path entry on this system."
-          }
+      $definition = $dirSettings[$name]
+      $configured = (Get-Neo4jSetting -ConfigurationFile 'neo4j.conf' -Name $definition['config_var'] -Neo4jServer $serverObject)
+      $value = $definition['default']
+      if ($configured -ne $null) { $value = $configured.value }
 
-          $absolutePathRegex = '(^\\|^/|^[A-Za-z]:)'
-          if (-Not ($value -match $absolutePathRegex)) {
-            $value = (Join-Path -Path $Neo4jHome -ChildPath $value)
-          }
+      if ($value -ne $null) {
+        if (-not (Test-Path $value -IsValid)) {
+          throw "'$value' is not a valid path entry on this system."
         }
-        Set-Neo4jEnv $name $value
+
+        $absolutePathRegex = '(^\\|^/|^[A-Za-z]:)'
+        if (-not ($value -match $absolutePathRegex)) {
+          $value = (Join-Path -Path $Neo4jHome -ChildPath $value)
+        }
+      }
+      Set-Neo4jEnv $name $value
     }
 
     # Set log dir on server object
     $serverObject.LogDir = (Get-Neo4jEnv 'NEO4J_LOGS')
 
     #  NEO4J_CONF and NEO4J_HOME are used by the Neo4j Admin Tool
-    if ( (Get-Neo4jEnv 'NEO4J_CONF') -eq $null) { Set-Neo4jEnv "NEO4J_CONF" $ConfDir }
-    if ( (Get-Neo4jEnv 'NEO4J_HOME') -eq $null) { Set-Neo4jEnv "NEO4J_HOME" $Neo4jHome }
+    if ((Get-Neo4jEnv 'NEO4J_CONF') -eq $null) { Set-Neo4jEnv "NEO4J_CONF" $ConfDir }
+    if ((Get-Neo4jEnv 'NEO4J_HOME') -eq $null) { Set-Neo4jEnv "NEO4J_HOME" $Neo4jHome }
 
     # Any deprecation warnings
     $WrapperPath = Join-Path -Path $ConfDir -ChildPath 'neo4j-wrapper.conf'
-    If (Test-Path -Path $WrapperPath) { Write-Warning "$WrapperPath is deprecated and support for it will be removed in a future version of Neo4j; please move all your settings to neo4j.conf" }
+    if (Test-Path -Path $WrapperPath) { Write-Warning "$WrapperPath is deprecated and support for it will be removed in a future version of Neo4j; please move all your settings to neo4j.conf" }
 
     Write-Output $serverObject
   }
 
-  End
+  end
   {
   }
 }

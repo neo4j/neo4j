@@ -17,9 +17,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
-$sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path).Replace(".Tests.", ".")
+$sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path).Replace(".Tests.",".")
 $common = Join-Path (Split-Path -Parent $here) 'Common.ps1'
-. $common
+.$common
 
 Import-Module "$src\Neo4j-Management.psm1"
 
@@ -76,10 +76,10 @@ InModuleScope Neo4j-Management {
       Mock Test-Path -Verifiable { return $true } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\Java Runtime Environment')
       }
-      Mock Get-ItemProperty -Verifiable { return @{ 'CurrentVersion' = '9.9'} } -ParameterFilter {
+      Mock Get-ItemProperty -Verifiable { return @{ 'CurrentVersion' = '9.9' } } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\Java Runtime Environment')
       }
-      Mock Get-ItemProperty -Verifiable { return @{ 'JavaHome' = $javaHome} } -ParameterFilter {
+      Mock Get-ItemProperty -Verifiable { return @{ 'JavaHome' = $javaHome } } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\Java Runtime Environment\9.9')
       }
 
@@ -99,10 +99,10 @@ InModuleScope Neo4j-Management {
       Mock Test-Path -Verifiable { return $true } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment')
       }
-      Mock Get-ItemProperty -Verifiable { return @{ 'CurrentVersion' = '9.9'} } -ParameterFilter {
+      Mock Get-ItemProperty -Verifiable { return @{ 'CurrentVersion' = '9.9' } } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment')
       }
-      Mock Get-ItemProperty -Verifiable { return @{ 'JavaHome' = $javaHome} } -ParameterFilter {
+      Mock Get-ItemProperty -Verifiable { return @{ 'JavaHome' = $javaHome } } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment\9.9')
       }
 
@@ -123,10 +123,10 @@ InModuleScope Neo4j-Management {
       Mock Test-Path -Verifiable { return $true } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment')
       }
-      Mock Get-ItemProperty -Verifiable { return @{ 'CurrentVersion' = '9.9'} } -ParameterFilter {
+      Mock Get-ItemProperty -Verifiable { return @{ 'CurrentVersion' = '9.9' } } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment')
       }
-      Mock Get-ItemProperty -Verifiable { return @{ 'JavaHome' = $javaHome} } -ParameterFilter {
+      Mock Get-ItemProperty -Verifiable { return @{ 'JavaHome' = $javaHome } } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment\9.9')
       }
 
@@ -178,7 +178,7 @@ InModuleScope Neo4j-Management {
 
     Context "Server Invoke - Should set heap size" {
       $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
-        -NeoConfSettings 'dbms.memory.heap.initial_size=123k','dbms.memory.heap.max_size=234g'
+         -NeoConfSettings 'dbms.memory.heap.initial_size=123k','dbms.memory.heap.max_size=234g'
 
       $result = Get-Java -ForServer -Neo4jServer $serverObject
       $resultArgs = ($result.args -join ' ')
@@ -194,7 +194,7 @@ InModuleScope Neo4j-Management {
 
     Context "Server Invoke - Should default heap size unit to megabytes" {
       $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
-        -NeoConfSettings 'dbms.memory.heap.initial_size=123','dbms.memory.heap.max_size=234'
+         -NeoConfSettings 'dbms.memory.heap.initial_size=123','dbms.memory.heap.max_size=234'
 
       $result = Get-Java -ForServer -Neo4jServer $serverObject
       $resultArgs = ($result.args -join ' ')
@@ -210,7 +210,7 @@ InModuleScope Neo4j-Management {
 
     Context "Server Invoke - Enable Default GC Logs" {
       $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
-        -NeoConfSettings 'dbms.logs.gc.enabled=true'
+         -NeoConfSettings 'dbms.logs.gc.enabled=true'
 
       $result = Get-Java -ForServer -Neo4jServer $serverObject
       $resultArgs = ($result.args -join ' ')
@@ -250,7 +250,7 @@ InModuleScope Neo4j-Management {
 
     Context "Server Invoke - Enable Specific GC Logs" {
       $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
-        -NeoConfSettings 'dbms.logs.gc.enabled=true','dbms.logs.gc.options=key1=value1 key2=value2'
+         -NeoConfSettings 'dbms.logs.gc.enabled=true','dbms.logs.gc.options=key1=value1 key2=value2'
 
       $result = Get-Java -ForServer -Neo4jServer $serverObject
       $resultArgs = ($result.args -join ' ')
@@ -315,23 +315,23 @@ InModuleScope Neo4j-Management {
       }
     }
 
-	Context "Server Invoke - Should handle paths with spaces" {
+    Context "Server Invoke - Should handle paths with spaces" {
       $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
-	    -RootDir 'TestDrive:\Neo4j Home' `
-        -NeoConfSettings 'dbms.logs.gc.enabled=true'
+         -RootDir 'TestDrive:\Neo4j Home' `
+         -NeoConfSettings 'dbms.logs.gc.enabled=true'
 
       $result = Get-Java -ForServer -Neo4jServer $serverObject
-	  $argList = $result.args
+      $argList = $result.args
 
-	  It "should have literal quotes around config path" {
-		$argList -contains "--config-dir=`"TestDrive:\Neo4j Home\conf`"" | Should Be True
-	  }
-	  It "should have literal quotes around home path" {
-		$argList -contains "--home-dir=`"TestDrive:\Neo4j Home`"" | Should Be True
-	  }
-	  It "should have literal quotes around gclog path" {
-		$argList -contains "-Xloggc:`"TestDrive:\Neo4j Home/gc.log`"" | Should Be True
-	  }
+      It "should have literal quotes around config path" {
+        $argList -contains "--config-dir=`"TestDrive:\Neo4j Home\conf`"" | Should Be True
+      }
+      It "should have literal quotes around home path" {
+        $argList -contains "--home-dir=`"TestDrive:\Neo4j Home`"" | Should Be True
+      }
+      It "should have literal quotes around gclog path" {
+        $argList -contains "-Xloggc:`"TestDrive:\Neo4j Home/gc.log`"" | Should Be True
+      }
     }
   }
 }

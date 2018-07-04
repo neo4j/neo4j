@@ -42,26 +42,26 @@ Only supported on version 3.x Neo4j Community and Enterprise Edition databases
 This function is private to the powershell module
 
 #>
-Function Invoke-Neo4jUtility
+function Invoke-Neo4jUtility
 {
-  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
-  param (
-    [Parameter(Mandatory=$false,ValueFromPipeline=$false,Position=0)]
+  [CmdletBinding(SupportsShouldProcess = $false,ConfirmImpact = 'Low')]
+  param(
+    [Parameter(Mandatory = $false,ValueFromPipeline = $false,Position = 0)]
     [string]$Command = ''
 
-    ,[parameter(Mandatory=$false,ValueFromRemainingArguments=$true)]
+    ,[Parameter(Mandatory = $false,ValueFromRemainingArguments = $true)]
     [object[]]$CommandArgs = @()
   )
 
-  Begin
+  begin
   {
   }
 
-  Process
+  process
   {
     # Determine the Neo4j Home Directory.  Uses the NEO4J_HOME enironment variable or a parent directory of this script
     $Neo4jHome = Get-Neo4jEnv 'NEO4J_HOME'
-    if ( ($Neo4jHome -eq $null) -or (-not (Test-Path -Path $Neo4jHome)) ) {
+    if (($Neo4jHome -eq $null) -or (-not (Test-Path -Path $Neo4jHome))) {
       $Neo4jHome = Split-Path -Path (Split-Path -Path $PSScriptRoot -Parent) -Parent
     }
     if ($Neo4jHome -eq $null) { throw "Could not determine the Neo4j home Directory.  Set the NEO4J_HOME environment variable and retry" }
@@ -124,11 +124,11 @@ Function Invoke-Neo4jUtility
     $ShellArgs += $CommandArgs
 
     Write-Verbose "Starting neo4j utility using command line $($JavaCMD.java) $ShellArgs"
-    $result = (Start-Process -FilePath $JavaCMD.java -ArgumentList $ShellArgs -Wait -NoNewWindow -PassThru)
-    return $result.ExitCode
+    $result = (Start-Process -FilePath $JavaCMD.java -ArgumentList $ShellArgs -Wait -NoNewWindow -Passthru)
+    return $result.exitCode
   }
 
-  End
+  end
   {
   }
 }

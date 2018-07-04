@@ -41,29 +41,29 @@ non-zero = an error occured
 This function is private to the powershell module
 
 #>
-Function Start-Neo4jServer
+function Start-Neo4jServer
 {
-  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low',DefaultParameterSetName='WindowsService')]
-  param (
-    [Parameter(Mandatory=$true,ValueFromPipeline=$false)]
-    [PSCustomObject]$Neo4jServer
+  [CmdletBinding(SupportsShouldProcess = $false,ConfirmImpact = 'Low',DefaultParameterSetName = 'WindowsService')]
+  param(
+    [Parameter(Mandatory = $true,ValueFromPipeline = $false)]
+    [pscustomobject]$Neo4jServer
 
-    ,[Parameter(Mandatory=$true,ParameterSetName='Console')]
+    ,[Parameter(Mandatory = $true,ParameterSetName = 'Console')]
     [switch]$Console
 
-    ,[Parameter(Mandatory=$true,ParameterSetName='WindowsService')]
-    [switch]$Service   
+    ,[Parameter(Mandatory = $true,ParameterSetName = 'WindowsService')]
+    [switch]$Service
   )
-  
-  Begin
+
+  begin
   {
   }
 
-  Process
+  process
   {
     # Running Neo4j as a console app
     if ($PsCmdlet.ParameterSetName -eq 'Console')
-    {      
+    {
       $JavaCMD = Get-Java -Neo4jServer $Neo4jServer -ForServer -ErrorAction Stop
       if ($JavaCMD -eq $null)
       {
@@ -72,12 +72,12 @@ Function Start-Neo4jServer
       }
 
       Write-Verbose "Starting Neo4j as a console with command line $($JavaCMD.java) $($JavaCMD.args)"
-      $result = (Start-Process -FilePath $JavaCMD.java -ArgumentList $JavaCMD.args -Wait -NoNewWindow -PassThru -WorkingDirectory $Neo4jServer.Home)
+      $result = (Start-Process -FilePath $JavaCMD.java -ArgumentList $JavaCMD.args -Wait -NoNewWindow -Passthru -WorkingDirectory $Neo4jServer.Home)
       Write-Verbose "Returned exit code $($result.ExitCode)"
 
-      Write-Output $result.ExitCode
+      Write-Output $result.exitCode
     }
-    
+
     # Running Neo4j as a windows service
     if ($PsCmdlet.ParameterSetName -eq 'WindowsService')
     {
@@ -101,7 +101,7 @@ Function Start-Neo4jServer
         }
 
         Write-Output $result.exitCode
-      } 
+      }
       else
       {
         Write-Host "Service start failed - service '$ServiceName' not found"
@@ -109,8 +109,8 @@ Function Start-Neo4jServer
       }
     }
   }
-  
-  End
+
+  end
   {
   }
 }

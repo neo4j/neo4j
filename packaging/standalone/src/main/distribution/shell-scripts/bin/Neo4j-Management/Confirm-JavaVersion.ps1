@@ -39,18 +39,18 @@ System.Boolean
 This function is private to the powershell module
 
 #>
-Function Confirm-JavaVersion
+function Confirm-JavaVersion
 {
-  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
-  param (
-    [Parameter(Mandatory=$true,ValueFromPipeline=$false)]
-    [String]$Path
+  [CmdletBinding(SupportsShouldProcess = $false,ConfirmImpact = 'Low')]
+  param(
+    [Parameter(Mandatory = $true,ValueFromPipeline = $false)]
+    [string]$Path
   )
 
-  Begin {    
+  begin {
   }
-  
-  Process {
+
+  process {
     $result = Invoke-ExternalCommand -Command $Path -CommandArgs @('-version')
 
     # Check the output
@@ -58,23 +58,23 @@ Function Confirm-JavaVersion
       Write-Warning "Unable to determine Java Version"
       Write-Host $result.capturedOutput
       return $true
-    }    
+    }
 
     if ($result.capturedOutput.Count -eq 0) {
       Write-Verbose "Java did not output version information"
       Write-Warning "Unable to determine Java Version"
       return $true
     }
-    
+
     $javaHelpText = "* Please use Oracle(R) Java(TM) 8, OpenJDK(TM) or IBM J9 to run Neo4j Server.`n" +
-                    "* Please see https://neo4j.com/docs/ for Neo4j installation instructions."
+    "* Please see https://neo4j.com/docs/ for Neo4j installation instructions."
 
     # Read the contents of the redirected output
     $content = $result.capturedOutput -join "`n`r"
-    
+
     # Use a simple regular expression to extract the java version
     Write-Verbose "Java version response: $content"
-    if ($matches -ne $null) { $matches.Clear() }  
+    if ($matches -ne $null) { $matches.Clear() }
     if ($content -match 'version \"(.+)\"') {
       $javaVersion = $matches[1]
       Write-Verbose "Java Version detected as $javaVersion"
@@ -83,26 +83,26 @@ Function Confirm-JavaVersion
       Write-Warning "Unable to determine Java Version"
       return $true
     }
-    
+
     # Check for Java Version Compatibility
     # Anything less than Java 1.8 will block execution
     # Note - This text comparsion will fail for '1.10.xxx' due to how string based comparisons of numbers works.
     if ($javaVersion -lt '1.8') {
-      Write-Warning "ERROR! Neo4j cannot be started using java version $($javaVersion)"      
+      Write-Warning "ERROR! Neo4j cannot be started using java version $($javaVersion)"
       Write-Warning $javaHelpText
       return $false
     }
-    
+
     # Check for Java Edition
     $regex = '(Java HotSpot\(TM\)|OpenJDK|IBM) (64-Bit Server|Server|Client|J9) VM'
     if (-not ($content -match $regex)) {
-      Write-Warning "WARNING! You are using an unsupported Java runtime"      
+      Write-Warning "WARNING! You are using an unsupported Java runtime"
       Write-Warning $javaHelpText
     }
 
     return $true
   }
-  
-  End {
+
+  end {
   }
 }

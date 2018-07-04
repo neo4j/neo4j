@@ -17,9 +17,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
-$sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path).Replace(".Tests.", ".")
+$sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path).Replace(".Tests.",".")
 $common = Join-Path (Split-Path -Parent $here) 'Common.ps1'
-. $common
+.$common
 
 Import-Module "$src\Neo4j-Management.psm1"
 
@@ -39,13 +39,13 @@ InModuleScope Neo4j-Management {
     Mock Confirm-JavaVersion { $true }
     # Mock Neo4j environment
     Mock Get-Neo4jEnv { $global:mockNeo4jHome } -ParameterFilter { $Name -eq 'NEO4J_HOME' }
-    Mock Set-Neo4jEnv { }
+    Mock Set-Neo4jEnv {}
 
     Context "Invalid or missing specified neo4j installation" {
       $serverObject = global:New-InvalidNeo4jInstall
 
       It "return throw if invalid or missing neo4j directory" {
-        { Get-Neo4jPrunsrv -Neo4jServer $serverObject -ForServerInstall  -ErrorAction Stop }  | Should Throw
+        { Get-Neo4jPrunsrv -Neo4jServer $serverObject -ForServerInstall -ErrorAction Stop } | Should Throw
       }
     }
 
@@ -53,25 +53,25 @@ InModuleScope Neo4j-Management {
       $serverObject = global:New-MockNeo4jInstall -WindowsService ''
 
       It "return throw if invalid or missing service name" {
-        { Get-Neo4jPrunsrv -Neo4jServer $serverObject -ForServerInstall  -ErrorAction Stop }  | Should Throw
+        { Get-Neo4jPrunsrv -Neo4jServer $serverObject -ForServerInstall -ErrorAction Stop } | Should Throw
       }
     }
 
     Context "Select PRUNSRV based on OS architecture" {
       $serverObject = global:New-MockNeo4jInstall
       $testCases = @(
-        @{ 'AddressWidth' = 32; 'exe' = 'prunsrv-i386.exe'},
-        @{ 'AddressWidth' = 64; 'exe' = 'prunsrv-amd64.exe'}
+        @{ 'AddressWidth' = 32; 'exe' = 'prunsrv-i386.exe' },
+        @{ 'AddressWidth' = 64; 'exe' = 'prunsrv-amd64.exe' }
       ) | ForEach-Object -Process {
         $testCase = $_
-          Mock Get-WMIObject { @{ 'AddressWidth' = $testCase.AddressWidth}}
+        Mock Get-WmiObject { @{ 'AddressWidth' = $testCase.Addresswidth } }
 
-          $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $serverObject -ForServerInstall
+        $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $serverObject -ForServerInstall
 
-          It "return $($testCase.exe) on $($testCase.AddressWidth)bit operating system" {
-            $prunsrv.cmd  | Should Match ([regex]::Escape($testCase.exe) + '$')
-          }
+        It "return $($testCase.exe) on $($testCase.AddressWidth)bit operating system" {
+          $prunsrv.cmd | Should Match ([regex]::Escape($testCase.exe) + '$')
         }
+      }
     }
 
     Context "PRUNSRV arguments" {
@@ -115,7 +115,7 @@ InModuleScope Neo4j-Management {
     }
 
     Context "PRUNSRV arguments are quoted" {
-      $quotedStringRegex = ([regex]::New("^"".*""$"))
+      $quotedStringRegex = ([regex]::new("^"".*""$"))
       $serverObject = global:New-MockNeo4jInstall -RootDir "TestDrive:\Neo4j Install With Space"
 
       It "on service install" {
@@ -150,10 +150,10 @@ InModuleScope Neo4j-Management {
 
     Context "Server Invoke - Additional Java Parameters" {
       $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
-        -NeoConfSettings 'dbms.logs.gc.enabled=true'
+         -NeoConfSettings 'dbms.logs.gc.enabled=true'
 
       $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $serverObject -ForServerInstall
-      $jvmArgs = ($prunsrv.args | Where-Object { $_ -match '^\"--JvmOptions='})
+      $jvmArgs = ($prunsrv.args | Where-Object { $_ -match '^\"--JvmOptions=' })
 
       It "should specify UTF8 encoding" {
         $jvmArgs | Should Match ([regex]::Escape('-Dfile.encoding=UTF-8'))
@@ -171,7 +171,7 @@ InModuleScope Neo4j-Management {
 
       # Create a mock configuration with JVM settings set
       $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
-        -NeoConfSettings "dbms.memory.heap.initial_size=$mockJvmMs","dbms.memory.heap.max_size=$mockJvmMx"
+         -NeoConfSettings "dbms.memory.heap.initial_size=$mockJvmMs","dbms.memory.heap.max_size=$mockJvmMx"
 
       $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $serverObject -ForServerInstall
       $prunArgs = ($prunsrv.args -join ' ')

@@ -41,19 +41,19 @@ non-zero = an error occured
 This function is private to the powershell module
 
 #>
-Function Uninstall-Neo4jServer
+function Uninstall-Neo4jServer
 {
-  [cmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='Medium')]
-  param (
-    [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
-    [PSCustomObject]$Neo4jServer
+  [CmdletBinding(SupportsShouldProcess = $true,ConfirmImpact = 'Medium')]
+  param(
+    [Parameter(Mandatory = $true,ValueFromPipeline = $true)]
+    [pscustomobject]$Neo4jServer
   )
-  
-  Begin
+
+  begin
   {
   }
 
-  Process
+  process
   {
     $ServiceName = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
     $Found = Get-Service -Name $ServiceName -ComputerName '.' -ErrorAction 'SilentlyContinue'
@@ -75,14 +75,14 @@ Function Uninstall-Neo4jServer
       }
 
       Write-Output $result.exitCode
-      } else {
-        Write-Verbose "Windows Service $ServiceName does not exist"
-        Write-Host "Neo4j uninstalled"
-        return 0
-      }
+    } else {
+      Write-Verbose "Windows Service $ServiceName does not exist"
+      Write-Host "Neo4j uninstalled"
+      return 0
+    }
   }
-  
-  End
+
+  end
   {
   }
 }

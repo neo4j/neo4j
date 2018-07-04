@@ -36,30 +36,30 @@ non-zero = an error occured
 Only supported on version 3.x Neo4j Enterprise Edition databases
 
 #>
-Function Invoke-Neo4jBackup
+function Invoke-Neo4jBackup
 {
-  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
-  param (
-    [parameter(Mandatory=$false,ValueFromRemainingArguments=$true)]
+  [CmdletBinding(SupportsShouldProcess = $false,ConfirmImpact = 'Low')]
+  param(
+    [Parameter(Mandatory = $false,ValueFromRemainingArguments = $true)]
     [object[]]$CommandArgs = @()
   )
-  
-  Begin
+
+  begin
   {
   }
-  
-  Process
+
+  process
   {
     try {
-      Return [int](Invoke-Neo4jUtility -Command 'Backup' -CommandArgs $CommandArgs -ErrorAction 'Stop')      
+      return [int](Invoke-Neo4jUtility -Command 'Backup' -CommandArgs $CommandArgs -ErrorAction 'Stop')
     }
     catch {
       Write-Error $_
-      Return 1
+      return 1
     }
   }
-  
-  End
+
+  end
   {
   }
 }

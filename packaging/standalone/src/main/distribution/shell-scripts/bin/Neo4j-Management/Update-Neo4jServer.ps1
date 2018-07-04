@@ -41,19 +41,19 @@ non-zero = an error occured
 This function is private to the powershell module
 
 #>
-Function Update-Neo4jServer
+function Update-Neo4jServer
 {
-  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Medium')]
-  param (
-    [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
-    [PSCustomObject]$Neo4jServer
+  [CmdletBinding(SupportsShouldProcess = $false,ConfirmImpact = 'Medium')]
+  param(
+    [Parameter(Mandatory = $true,ValueFromPipeline = $true)]
+    [pscustomobject]$Neo4jServer
   )
 
-  Begin
+  begin
   {
   }
 
-  Process
+  process
   {
     $ServiceName = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
     $Found = Get-Service -Name $ServiceName -ComputerName '.' -ErrorAction 'SilentlyContinue'
@@ -81,7 +81,7 @@ Function Update-Neo4jServer
     }
   }
 
-  End
+  end
   {
   }
 }

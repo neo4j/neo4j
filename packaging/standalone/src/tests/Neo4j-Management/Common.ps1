@@ -25,7 +25,7 @@ $src = Resolve-Path -Path "$($here)\..\..\main\distribution\shell-scripts\bin\Ne
 $global:mockServiceName = 'neo4j'
 $global:mockNeo4jHome = 'TestDrive:\Neo4j'
 
-Function global:New-MockJavaHome() {
+function global:New-MockJavaHome () {
   $javaHome = "TestDrive:\JavaHome"
 
   New-Item $javaHome -ItemType Directory | Out-Null
@@ -40,19 +40,19 @@ Function global:New-MockJavaHome() {
   return $javaHome
 }
 
-Function global:New-InvalidNeo4jInstall($ServerType = 'Enterprise', $ServerVersion = '99.99', $DatabaseMode = '') {
+function global:New-InvalidNeo4jInstall ($ServerType = 'Enterprise',$ServerVersion = '99.99',$DatabaseMode = '') {
   $serverObject = (New-Object -TypeName PSCustomObject -Property @{
-    'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
-    'ConfDir' = 'TestDrive:\some-dir-that-doesnt-exist\conf';
-    'LogDir' = 'TestDrive:\some-dir-that-doesnt-exist\logs';
-    'ServerVersion' = $ServerVersion;
-    'ServerType' = $ServerType;
-    'DatabaseMode' = $DatabaseMode;
-  })
+      'Home' = 'TestDrive:\some-dir-that-doesnt-exist';
+      'ConfDir' = 'TestDrive:\some-dir-that-doesnt-exist\conf';
+      'LogDir' = 'TestDrive:\some-dir-that-doesnt-exist\logs';
+      'ServerVersion' = $ServerVersion;
+      'ServerType' = $ServerType;
+      'DatabaseMode' = $DatabaseMode;
+    })
   return $serverObject
 }
 
-Function global:New-MockNeo4jInstall(
+function global:New-MockNeo4jInstall (
   $IncludeFiles = $true,
   $RootDir = $global:mockNeo4jHome,
   $ServerType = 'Community',
@@ -60,7 +60,7 @@ Function global:New-MockNeo4jInstall(
   $DatabaseMode = '',
   $WindowsService = $global:mockServiceName,
   $NeoConfSettings = @()
-  ) {
+) {
   # Creates a skeleton directory and file structure of a Neo4j Installation
   New-Item $RootDir -ItemType Directory | Out-Null
   New-Item "$RootDir\lib" -ItemType Directory | Out-Null
@@ -92,12 +92,12 @@ Function global:New-MockNeo4jInstall(
   }
 
   $serverObject = (New-Object -TypeName PSCustomObject -Property @{
-    'Home' = $RootDir;
-    'ConfDir' = "$RootDir\conf";
-    'LogDir' = (Join-Path -Path $RootDir -ChildPath 'logs');
-    'ServerVersion' = $ServerVersion;
-    'ServerType' = $ServerType;
-    'DatabaseMode' = $DatabaseMode;
-  })
+      'Home' = $RootDir;
+      'ConfDir' = "$RootDir\conf";
+      'LogDir' = (Join-Path -Path $RootDir -ChildPath 'logs');
+      'ServerVersion' = $ServerVersion;
+      'ServerType' = $ServerType;
+      'DatabaseMode' = $DatabaseMode;
+    })
   return $serverObject
 }
