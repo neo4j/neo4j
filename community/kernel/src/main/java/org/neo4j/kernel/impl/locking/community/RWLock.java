@@ -619,7 +619,7 @@ class RWLock
         sb.append( "Locking transactions:\n" );
         for ( TxLockElement tle : txLockElementMap.values() )
         {
-            sb.append( "" ).append( tle.tx ).append( "(" ).append( tle.readCount ).append( "r," )
+            sb.append( tle.tx ).append( "(" ).append( tle.readCount ).append( "r," )
               .append( tle.writeCount ).append( "w)\n" );
         }
         return sb.toString();

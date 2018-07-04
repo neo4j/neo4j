@@ -31,7 +31,7 @@ import static java.lang.Math.max;
  */
 public class StringEncoder implements Encoder
 {
-    private static long UPPER_INT_MASK = 0x00000000_FFFFFFFFL;
+    private static final long UPPER_INT_MASK = 0x00000000_FFFFFFFFL;
     private static final int FOURTH_BYTE = 0x000000FF;
 
     // fixed values

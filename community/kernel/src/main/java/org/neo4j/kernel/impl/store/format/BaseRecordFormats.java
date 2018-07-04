@@ -68,7 +68,7 @@ public abstract class BaseRecordFormats implements RecordFormats
     @Override
     public boolean equals( Object obj )
     {
-        if ( obj == null || !(obj instanceof RecordFormats) )
+        if ( !(obj instanceof RecordFormats) )
         {
             return false;
         }

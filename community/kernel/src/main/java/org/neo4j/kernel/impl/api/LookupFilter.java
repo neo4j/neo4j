@@ -97,17 +97,13 @@ public class LookupFilter
         if ( predicate.type() == IndexQuery.IndexQueryType.exact )
         {
             IndexQuery.ExactPredicate exactPredicate = (IndexQuery.ExactPredicate) predicate;
-            if ( isNumberGeometryOrArray( exactPredicate.value() ) )
-            {
-                return true;
-            }
+            return isNumberGeometryOrArray( exactPredicate.value() );
         }
-        else if ( predicate.type() == IndexQuery.IndexQueryType.range &&
-                  ( predicate.valueGroup() == ValueGroup.NUMBER || predicate.valueGroup() == ValueGroup.GEOMETRY ) )
+        else
         {
-            return true;
+            return predicate.type() == IndexQuery.IndexQueryType.range &&
+                    (predicate.valueGroup() == ValueGroup.NUMBER || predicate.valueGroup() == ValueGroup.GEOMETRY);
         }
-        return false;
     }
 
     private static boolean isNumberGeometryOrArray( Value value )

@@ -25,5 +25,5 @@ public enum IndexSlot
     NUMBER,
     SPATIAL,
     TEMPORAL,
-    LUCENE;
+    LUCENE
 }

@@ -26,7 +26,6 @@ import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
-import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
@@ -132,9 +131,7 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
             while ( addedRelationships.hasNext() )
             {
                 RelationshipState relationshipState = read.txState().getRelationshipState( addedRelationships.next() );
-                relationshipState.accept(
-                        (RelationshipVisitor<RuntimeException>) ( relationshipId, typeId, startNodeId, endNodeId ) ->
-                                txTypes.add( typeId ) );
+                relationshipState.accept( ( relationshipId, typeId, startNodeId, endNodeId ) -> txTypes.add( typeId ) );
             }
         }
     }
