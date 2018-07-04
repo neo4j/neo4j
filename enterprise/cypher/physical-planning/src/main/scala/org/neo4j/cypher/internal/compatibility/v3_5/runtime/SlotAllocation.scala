@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.{expressions => parserAst}
 
 import scala.collection.mutable
+import scala.util.Try
 
 /**
   * This object knows how to configure slots for a logical plan tree.
@@ -649,9 +650,9 @@ object SlotAllocation {
       case ForeachApply(_, _, variableName, listExpression) =>
         // The slot for the iteration variable of foreach needs to be available as an argument on the rhs of the apply
         // so we allocate it on the lhs (even though its value will not be needed after the foreach is done)
-        val typeSpec = semanticTable.getActualTypeFor(listExpression)
-        val listOfNodes = typeSpec.contains(ListType(CTNode))
-        val listOfRels = typeSpec.contains(ListType(CTRelationship))
+        val maybeTypeSpec = Try(semanticTable.getActualTypeFor(listExpression)).toOption
+        val listOfNodes = maybeTypeSpec.exists(_.contains(ListType(CTNode)))
+        val listOfRels = maybeTypeSpec.exists(_.contains(ListType(CTRelationship)))
 
         (listOfNodes, listOfRels) match {
           case (true, false) => lhs.newLong(variableName, true, CTNode)
