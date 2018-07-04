@@ -22,22 +22,25 @@
  */
 package cypher.features
 
-import java.io.File
-import java.net.URI
+import java.util
 
-import org.opencypher.tools.tck.api.{CypherTCK, Scenario}
+import cypher.features.ScenarioTestHelper.{createTests, printComputedBlacklist}
+import org.junit.Ignore
+import org.junit.jupiter.api.Assertions.fail
+import org.junit.jupiter.api.{DynamicTest, TestFactory}
 
-class AcceptanceTests extends BaseFeatureTest {
+class CostSlottedAcceptanceTests extends BaseAcceptanceTest {
 
-  // these two should be empty on commit!
-  // Use a substring match, for example "UnwindAcceptance"
-  override val featureToRun = ""
-  override val scenarioToRun = ""
+  // If you want to only run a specific feature or scenario, go to the BaseAcceptanceTest
 
-  val featuresURI: URI = getClass.getResource("/cypher/features").toURI
+  @TestFactory
+  def runCostSlotted(): util.Collection[DynamicTest] = {
+    createTests(scenarios, CostSlottedTestConfig)
+  }
 
-  override val scenarios: Seq[Scenario] = {
-    val all = CypherTCK.parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios)
-    filterScenarios(all)
+  @Ignore
+  def generateBlacklistCostSlotted(): Unit = {
+    printComputedBlacklist(scenarios, CostSlottedTestConfig)
+    fail("Do not forget to add @ignore to this method")
   }
 }

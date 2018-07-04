@@ -24,18 +24,19 @@ package cypher.features
 
 import java.nio.file.FileSystems
 
-import org.junit.jupiter.api.AfterEach
+import org.junit.Assert.fail
+import org.junit.jupiter.api.{AfterEach, Test}
 import org.opencypher.tools.tck.api.{CypherTCK, Scenario}
 
-class TCKTests extends BaseFeatureTest {
+abstract class BaseTCKTests extends BaseFeatureTest {
 
   // these two should be empty on commit!
-  override val featureToRun = ""
-  override val scenarioToRun = ""
+  val featureToRun = ""
+  val scenarioToRun = ""
 
-  override val scenarios: Seq[Scenario] = {
+  val scenarios: Seq[Scenario] = {
     val allScenarios: Seq[Scenario] = CypherTCK.allTckScenarios.filterNot(testsWithEncodingProblems)
-    filterScenarios(allScenarios)
+    filterScenarios(allScenarios, featureToRun, scenarioToRun)
   }
 
   // those tests run into some utf-8 encoding problems on some of our machines at the moment - fix for that is on the way on TCK side
@@ -50,4 +51,17 @@ class TCKTests extends BaseFeatureTest {
     //TODO: This method can be removed with new release of TCK (1.0.0-M10)
     FileSystems.getFileSystem(CypherTCK.getClass.getResource(CypherTCK.featuresPath).toURI).close()
   }
+
+  @Test
+  def debugTokensNeedToBeEmpty(): Unit = {
+    // besides the obvious reason this test is also here (and not using assert)
+    // to ensure that any import optimizer doesn't remove the correct import for fail (used by the commented out methods further down)
+    if (!scenarioToRun.equals(""))
+      fail("scenarioToRun is only for debugging and should not be committed")
+
+    if (!featureToRun.equals(""))
+      fail("featureToRun is only for debugging and should not be committed")
+  }
 }
+
+

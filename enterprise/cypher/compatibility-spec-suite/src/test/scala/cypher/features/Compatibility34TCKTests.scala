@@ -22,20 +22,25 @@
  */
 package cypher.features
 
-import org.opencypher.tools.tck.api.Scenario
+import java.util
 
-abstract class BaseFeatureTest {
+import cypher.features.ScenarioTestHelper.{createTests, printComputedBlacklist}
+import org.junit.Ignore
+import org.junit.jupiter.api.Assertions.fail
+import org.junit.jupiter.api.{DynamicTest, TestFactory}
 
-  def filterScenarios(allScenarios: Seq[Scenario], featureToRun: String, scenarioToRun: String): Seq[Scenario] = {
-    if (featureToRun.nonEmpty) {
-      val filteredFeature = allScenarios.filter(s => s.featureName.contains(featureToRun))
-      if (scenarioToRun.nonEmpty) {
-        filteredFeature.filter(s => s.name.contains(scenarioToRun))
-      } else
-        filteredFeature
-    } else if (scenarioToRun.nonEmpty) {
-      allScenarios.filter(s => s.name.contains(scenarioToRun))
-    } else
-      allScenarios
+class Compatibility34TCKTests extends BaseTCKTests {
+
+  // If you want to only run a specific feature or scenario, go to the BaseTCKTests
+
+  @TestFactory
+  def runCompatibility34(): util.Collection[DynamicTest] = {
+    createTests(scenarios, Compatibility34TestConfig)
+  }
+
+  @Ignore
+  def generateBlacklistCompatibility34(): Unit = {
+    printComputedBlacklist(scenarios, Compatibility34TestConfig)
+    fail("Do not forget to add @ignore to this method")
   }
 }
