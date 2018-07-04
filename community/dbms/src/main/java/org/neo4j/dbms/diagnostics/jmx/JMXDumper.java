@@ -21,9 +21,12 @@ package org.neo4j.dbms.diagnostics.jmx;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Optional;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -108,8 +111,9 @@ public class JMXDumper
         Path pidFile = this.homeDir.resolve( "run/neo4j.pid" );
         if ( this.fs.fileExists( pidFile.toFile() ) )
         {
-            try ( BufferedReader reader = new BufferedReader( this.fs.openAsReader( pidFile.toFile(), Charset
-                    .defaultCharset() ) ) )
+            // The file cannot be opened with write permissions on Windows
+            try ( InputStream inputStream = Files.newInputStream( pidFile, StandardOpenOption.READ );
+                    BufferedReader reader = new BufferedReader( new InputStreamReader( inputStream ) ) )
             {
                 String pidFileContent = reader.readLine();
                 try
