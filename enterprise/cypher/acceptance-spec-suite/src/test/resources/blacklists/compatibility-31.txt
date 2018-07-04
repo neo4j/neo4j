@@ -53,6 +53,3 @@ Feature "TemporalArithmeticAcceptance": Scenario "Should add or subtract duratio
 Feature "TemporalArithmeticAcceptance": Scenario "Should add or subtract durations"
 Feature "TemporalArithmeticAcceptance": Scenario "Should multiply or divide durations by numbers"
 Feature "DurationBetweenAcceptance": Scenario "Should split between boundaries correctly"
-
-// Fixed when we move from 3.1.8 to 3.1.9
-Feature "PatternPredicates": Scenario "Undirected NOOP path predicate 1"
