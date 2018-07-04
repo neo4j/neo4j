@@ -26,10 +26,10 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.metrics.MetricsSettings;
 import org.neo4j.metrics.source.server.ServerMetrics;
@@ -37,18 +37,19 @@ import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.TestDirectory;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.metrics.MetricsTestHelper.metricsCsv;
 import static org.neo4j.metrics.MetricsTestHelper.readLongValue;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class ServerMetricsIT
 {
     @Rule
-    public final TemporaryFolder folder = new TemporaryFolder();
+    public final TestDirectory folder = TestDirectory.testDirectory();
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
@@ -56,13 +57,12 @@ public class ServerMetricsIT
     public void shouldShowServerMetrics() throws Throwable
     {
         // Given
-        String path = folder.getRoot().getAbsolutePath();
-        File metricsPath = new File( path + "/metrics" );
+        File metrics = folder.file( "metrics" );
         NeoServer server = EnterpriseServerBuilder.serverOnRandomPorts()
-                .usingDataDir( path )
+                .usingDataDir( folder.graphDbDir().getAbsolutePath() )
                 .withProperty( MetricsSettings.metricsEnabled.name(), "true" )
                 .withProperty( MetricsSettings.csvEnabled.name(), "true" )
-                .withProperty( MetricsSettings.csvPath.name(), metricsPath.getPath() )
+                .withProperty( MetricsSettings.csvPath.name(), metrics.getPath() )
                 .withProperty( MetricsSettings.csvInterval.name(), "100ms" )
                 .persistent()
                 .build();
@@ -82,8 +82,8 @@ public class ServerMetricsIT
             }
 
             // then
-            assertMetricsExists( metricsPath, ServerMetrics.THREAD_JETTY_ALL );
-            assertMetricsExists( metricsPath, ServerMetrics.THREAD_JETTY_IDLE );
+            assertMetricsExists( metrics, ServerMetrics.THREAD_JETTY_ALL );
+            assertMetricsExists( metrics, ServerMetrics.THREAD_JETTY_IDLE );
         }
         finally
         {
@@ -91,10 +91,10 @@ public class ServerMetricsIT
         }
     }
 
-    private void assertMetricsExists( File metricsPath, String metricsName ) throws IOException, InterruptedException
+    private static void assertMetricsExists( File metricsPath, String metricsName ) throws IOException, InterruptedException
     {
         File file = metricsCsv( metricsPath, metricsName );
         long threadCount = readLongValue( file );
-        assertThat( threadCount, greaterThan( 0L ) );
+        assertEventually( () -> threadCount, greaterThan( 0L ), 1, TimeUnit.MINUTES );
     }
 }
