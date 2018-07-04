@@ -40,7 +40,7 @@ trait QueryExecutionTracer {
   /**
     * Trace the scheduling of a work unit for this query execution
     */
-  def scheduleWorkUnit(task: Task): ScheduledWorkUnitEvent
+  def scheduleWorkUnit(task: Task, upstreamWorkUnitEvent: Option[WorkUnitEvent]): ScheduledWorkUnitEvent
 
   /**
     * End of query execution
@@ -65,6 +65,11 @@ trait ScheduledWorkUnitEvent {
 trait WorkUnitEvent {
 
   /**
+    * Unique identifier
+    */
+  def id: Long
+
+  /**
     * Trace the stop of this work unit event.
     */
   def stop(): Unit
@@ -83,7 +88,9 @@ trait EventWriter {
   def flush(): Unit
 }
 
-case class DataPoint(queryId: Int,
+case class DataPoint(id: Long,
+                     upstreamId: Long,
+                     queryId: Int,
                      schedulingThreadId: Long,
                      scheduledTime: Long,
                      executionThreadId: Long,
@@ -97,7 +104,7 @@ object SchedulerTracer {
   }
 
   val NoQueryExecutionTracer: QueryExecutionTracer = new QueryExecutionTracer {
-    override def scheduleWorkUnit(task: Task): ScheduledWorkUnitEvent = NoScheduledWorkUnitEvent
+    override def scheduleWorkUnit(task: Task, upstreamWorkUnitEvent: Option[WorkUnitEvent]): ScheduledWorkUnitEvent = NoScheduledWorkUnitEvent
     override def stopQuery(): Unit = {}
   }
 
@@ -107,6 +114,8 @@ object SchedulerTracer {
 
   val NoWorkUnitEvent: WorkUnitEvent = new WorkUnitEvent {
     override def stop(): Unit = {}
+
+    override def id: Long = -1
   }
 }
 

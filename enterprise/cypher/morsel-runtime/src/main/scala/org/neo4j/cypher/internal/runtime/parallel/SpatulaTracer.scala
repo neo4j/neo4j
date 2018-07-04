@@ -53,11 +53,15 @@ class SloppyEventWriter extends EventWriter {
     def toDuration(nanoSnapshot:Long) = TimeUnit.NANOSECONDS.toMicros(nanoSnapshot-t0)
 
     val sb = new StringBuilder
-    sb ++= "queryId threadId scheduledTime(us) startTime(us) stopTime(us) pipeline\n"
+    sb ++= "  %15s  %15s  %10s  %10s  %20s  %20s  %15s  %15s  %s\n"
+      .format("id","upstreamId","queryId","threadId","schedulingThreadId","scheduledTime(us)","startTime(us)","stopTime(us)","pipeline")
     for (dp <- dataByThread.flatten) {
-      sb ++= "  %d    %5d    %10d  %10d  %10d    %s\n"
-        .format(dp.queryId,
+      sb ++= "  %15d  %15d  %10d  %10d  %20d  %20d  %15d  %15d  %s\n"
+        .format(dp.id,
+                dp.upstreamId,
+                dp.queryId,
                 dp.executionThreadId,
+                dp.schedulingThreadId,
                 toDuration(dp.scheduledTime),
                 toDuration(dp.startTime),
                 toDuration(dp.stopTime),
@@ -77,25 +81,46 @@ class SpatulaTracer(eventWriter: EventWriter) extends SchedulerTracer {
   override def traceQuery(): QueryExecutionTracer =
     QueryTracer(queryCounter.incrementAndGet())
 
-  case class QueryTracer(id: Int) extends QueryExecutionTracer {
-    override def scheduleWorkUnit(task: Task): ScheduledWorkUnitEvent = {
+  case class QueryTracer(queryId: Int) extends QueryExecutionTracer {
+    private final val NO_UPSTREAM : Long = -1
+    override def scheduleWorkUnit(task: Task, upstreamWorkUnit: Option[WorkUnitEvent]): ScheduledWorkUnitEvent = {
       val scheduledTime = currentTime()
       val schedulingThread = Thread.currentThread().getId
-      ScheduledWorkUnit(id, scheduledTime, schedulingThread, task)
+      val upstreamWorkUnitId = upstreamWorkUnit.map(_.id).getOrElse(NO_UPSTREAM)
+      ScheduledWorkUnit(upstreamWorkUnitId, queryId, scheduledTime, schedulingThread, task)
     }
 
     override def stopQuery(): Unit =
       eventWriter.flush()
   }
 
-  case class ScheduledWorkUnit(id: Int, scheduledTime: Long, schedulingThreadId: Long, task: Task) extends ScheduledWorkUnitEvent {
+  case class ScheduledWorkUnit(upstreamWorkUnitId: Long, queryId: Int, scheduledTime: Long, schedulingThreadId: Long, task: Task) extends ScheduledWorkUnitEvent {
     override def start(): WorkUnitEvent = {
       val startTime = currentTime()
-      WorkUnit(id, schedulingThreadId, scheduledTime, Thread.currentThread().getId, startTime, task)
+      WorkUnit(workUnitId,
+               upstreamWorkUnitId,
+               queryId,
+               schedulingThreadId,
+               scheduledTime,
+               Thread.currentThread().getId,
+               startTime,
+               task)
     }
+
+    /*
+    Pseudo unique ID, it is not impossible that multiple tasks are scheduled at the same time
+    TODO better (more unique) id calculation. options:
+    id = WorkUnitEvent.scheduledTime                   <- collisions possible but unlikely (especially with ns)
+    id = task.id                                       <- many collisions: does not yet exist, but could use Pipeline IDs assigned by PipelineBuilder
+    id = WorkUnitEvent.scheduledTime & (task.id << 48) <- collisions possible but unlikely (assumes task.id range fits in 16 bits)
+    id = using something like a IdBatch concept that only requires threadsafe operation to retrieve a new batch of IDs
+    */
+    private def workUnitId = scheduledTime
   }
 
-  case class WorkUnit(queryId: Int,
+  case class WorkUnit(override val id: Long,
+                      upstreamId: Long,
+                      queryId: Int,
                       schedulingThreadId: Long,
                       scheduledTime: Long,
                       executionThreadId: Long,
@@ -105,7 +130,7 @@ class SpatulaTracer(eventWriter: EventWriter) extends SchedulerTracer {
     override def stop(): Unit = {
       val stopTime = currentTime()
       eventWriter.report(
-        DataPoint(queryId, schedulingThreadId, scheduledTime, executionThreadId, startTime, stopTime, task))
+        DataPoint(id, upstreamId, queryId, schedulingThreadId, scheduledTime, executionThreadId, startTime, stopTime, task))
     }
   }
 

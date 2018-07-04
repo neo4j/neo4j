@@ -42,7 +42,15 @@ class RealEventWriter(lineWriter: String => Unit) extends EventWriter {
   }
 
   private val SEPARATOR = ","
-  private val HEADER = Array("queryId", "schedulingThreadId", "schedulingTime(us)", "executionThreadId", "startTime(us)", "stopTime(us)", "pipeline")
+  private val HEADER = Array("id",
+                             "upstreamId",
+                             "queryId",
+                             "schedulingThreadId",
+                             "schedulingTime(us)",
+                             "executionThreadId",
+                             "startTime(us)",
+                             "stopTime(us)",
+                             "pipeline")
 
   override def flush(): Unit = {
     val dataByThread =
@@ -67,6 +75,8 @@ class RealEventWriter(lineWriter: String => Unit) extends EventWriter {
     def toDuration(nanoSnapshot:Long) = TimeUnit.NANOSECONDS.toMicros(nanoSnapshot-t0)
 
     Array(
+      dataPoint.id,
+      dataPoint.upstreamId,
       dataPoint.queryId.toString,
       dataPoint.schedulingThreadId,
       toDuration(dataPoint.scheduledTime).toString,
