@@ -328,7 +328,7 @@ public class DateTimeValueTest
                 .add( "minute", 35 )
                 .add( "second", 57 )
                 .add( "nanosecond", 1000000000 )
-                .assertThrows( InvalidValuesArgumentException.class, "Invalid nanosecond: 1000000000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid value for Nanosecond: 1000000000" );
         asserting( fromValues( builder( clock ) ))
                 .add( "year", 2018 )
                 .add( "month", 1 )
@@ -337,7 +337,7 @@ public class DateTimeValueTest
                 .add( "minute", 35 )
                 .add( "second", 57 )
                 .add( "microsecond", 1000000 )
-                .assertThrows( InvalidValuesArgumentException.class, "Invalid microsecond: 1000000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid value for Microsecond: 1000000" );
         asserting( fromValues( builder( clock ) ))
                 .add( "year", 2018 )
                 .add( "month", 1 )
@@ -346,7 +346,7 @@ public class DateTimeValueTest
                 .add( "minute", 35 )
                 .add( "second", 57 )
                 .add( "millisecond", 1000 )
-                .assertThrows( InvalidValuesArgumentException.class, "Invalid millisecond: 1000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid value for Millisecond: 1000" );
         asserting( fromValues( builder( clock ) ))
                 .add( "year", 2018 )
                 .add( "month", 1 )
@@ -356,7 +356,7 @@ public class DateTimeValueTest
                 .add( "second", 57 )
                 .add( "millisecond", 1 )
                 .add( "nanosecond", 1000000 )
-                .assertThrows( InvalidValuesArgumentException.class, "Invalid nanosecond: 1000000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid value for Nanosecond: 1000000" );
         asserting( fromValues( builder( clock ) ))
                 .add( "year", 2018 )
                 .add( "month", 1 )
@@ -366,7 +366,7 @@ public class DateTimeValueTest
                 .add( "second", 57 )
                 .add( "microsecond", 1 )
                 .add( "nanosecond", 1000 )
-                .assertThrows( InvalidValuesArgumentException.class, "Invalid nanosecond: 1000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid value for Nanosecond: 1000" );
         asserting( fromValues( builder( clock ) ))
                 .add( "year", 2018 )
                 .add( "month", 1 )
@@ -376,7 +376,7 @@ public class DateTimeValueTest
                 .add( "second", 57 )
                 .add( "millisecond", 1 )
                 .add( "microsecond", 1000 )
-                .assertThrows( InvalidValuesArgumentException.class, "Invalid microsecond: 1000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid value for Microsecond: 1000" );
         asserting( fromValues( builder( clock ) ))
                 .add( "year", 2018 )
                 .add( "month", 1 )
@@ -387,7 +387,7 @@ public class DateTimeValueTest
                 .add( "millisecond", 1 )
                 .add( "microsecond", 1000 )
                 .add( "nanosecond", 999 )
-                .assertThrows( InvalidValuesArgumentException.class, "Invalid microsecond: 1000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid value for Microsecond: 1000" );
         asserting( fromValues( builder( clock ) ))
                 .add( "year", 2018 )
                 .add( "month", 1 )
@@ -398,7 +398,7 @@ public class DateTimeValueTest
                 .add( "millisecond", 1 )
                 .add( "microsecond", 999 )
                 .add( "nanosecond", 1000 )
-                .assertThrows( InvalidValuesArgumentException.class, "Invalid nanosecond: 1000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid value for Nanosecond: 1000" );
     }
 
     @Test
