@@ -33,7 +33,7 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 /**
  * Writable lucene index representation that wraps provided index implementation and
  * allow read only operations only on top of it.
- * @param <T> - particular index implementation
+ * @param <INDEX> - particular index implementation
  */
 public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, READER extends IndexReader> implements DatabaseIndex<READER>
 {

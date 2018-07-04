@@ -24,7 +24,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 
 public class IndexPopulationFailedKernelException extends KernelException
 {
-    private static final String FORMAT_MESSAGE = "Failed to populate %s";
+    private static final String FORMAT_MESSAGE = "Failed to populate index %s";
 
     public IndexPopulationFailedKernelException( String indexUserDescription, Throwable cause )
     {
