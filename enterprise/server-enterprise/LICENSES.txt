@@ -49,7 +49,6 @@ Apache Software License, Version 2.0
   Metrics Core
   Netty
   Netty/All-in-One
-  Objenesis
   opencsv
   openCypher AST for the Cypher Query Language
   openCypher Expressions

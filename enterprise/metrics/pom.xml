@@ -18,7 +18,7 @@
 
   <properties>
     <license-text.header>headers/AGPL-3-header.txt</license-text.header>
-    <prometheus.client.version>0.1.0</prometheus.client.version>
+    <prometheus.client.version>0.4.0</prometheus.client.version>
     <moduleName>org.neo4j.metrics</moduleName>
   </properties>
 

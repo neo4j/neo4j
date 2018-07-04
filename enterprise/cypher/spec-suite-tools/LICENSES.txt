@@ -29,7 +29,6 @@ Apache Software License, Version 2.0
   MongoDB Java Driver
   Netty/All-in-One
   nscala-time
-  Objenesis
   openCypher AST for the Cypher Query Language
   openCypher Expressions
   openCypher Front End

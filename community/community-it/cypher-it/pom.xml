@@ -175,8 +175,6 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
-            <scope>test</scope>
-            <version>3.0</version>
         </dependency>
     </dependencies>
 </project>
