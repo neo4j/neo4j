@@ -114,7 +114,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val result = executeWith(Configs.Interpreted, "MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n",
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
-        plan should includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":User(firstname,lastname)")// includeSomewhere.aPlan("NodeIndexSeek").containingOther(":User(firstname,lastname)")
+        plan should includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":User(firstname,lastname)")
         plan should not(includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":User(firstname)"))
         plan should not(includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":User(lastname)"))
       }, Configs.Before3_3AndRule))

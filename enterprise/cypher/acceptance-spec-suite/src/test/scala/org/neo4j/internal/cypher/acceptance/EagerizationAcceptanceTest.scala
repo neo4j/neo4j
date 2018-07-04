@@ -2818,8 +2818,7 @@ class EagerizationAcceptanceTest
   private def testEagerPlanComparisonStrategy(expectedEagerCount: Int,
                                               expectPlansToFailPredicate: TestConfiguration = TestConfiguration.empty,
                                               optimalEagerCount: Int = -1): PlanComparisonStrategy = {
-    val failureMessage = s"Unexpected number of eagers. Expected $expectedEagerCount" + (if(optimalEagerCount != -1) s", optimal $optimalEagerCount" else "")
-    ComparePlansWithAssertion((plan) => plan should includeSomewhere.nTimes(expectedEagerCount, aPlan().withName(EagerRegEx)), expectPlansToFailPredicate)
+    ComparePlansWithAssertion(plan => plan should includeSomewhere.nTimes(expectedEagerCount, aPlan().withName(EagerRegEx)), expectPlansToFailPredicate)
   }
 
 }

@@ -182,7 +182,7 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with Cyp
       """.stripMargin
 
     val result = executeWith(Configs.All - Configs.Compiled, query,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeekByRange").containingArgument("CONTAINS b.prop2"),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeekByRange").containingArgument(":Foo(prop CONTAINS b.prop2)"),
         expectPlansToFail = Configs.OldAndRule))
 
     result.columnAs[Node]("a").toSet should equal(Set(aNodes(12), aNodes(120), aNodes(121), aNodes(122), aNodes(123), aNodes(124), aNodes(125)))
@@ -198,7 +198,7 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with Cyp
       """.stripMargin
 
     val result = executeWith(Configs.All - Configs.Compiled, query,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeekByRange").containingArgument("ENDS WITH b.prop2"),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeekByRange").containingArgument(":FOO(prop ENDS WITH b.prop2)"),
         expectPlansToFail = Configs.OldAndRule))
 
     result.columnAs[Node]("a").toSet should equal(Set(aNodes(12), aNodes(120), aNodes(121), aNodes(122), aNodes(123), aNodes(124), aNodes(125)))
@@ -218,8 +218,10 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with Cyp
         | RETURN id(a)
       """.stripMargin
 
+    // Matches the word "distance" anywhere in the argument string
+    val distanceRegex = ".*distance.*".r
     val result = executeWith(Configs.Interpreted - Configs.Version3_1 - Configs.Version2_3 - Configs.AllRulePlanners, query,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeekByRange").containingArgumentRegex(".*distance.*".r),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeekByRange").containingArgumentRegex(distanceRegex),
         expectPlansToFail = Configs.OldAndRule))
 
     result.columnAs[Node]("id(a)").toList should equal(List(99, 100, 101))
