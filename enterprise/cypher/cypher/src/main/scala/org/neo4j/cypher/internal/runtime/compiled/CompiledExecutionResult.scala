@@ -27,6 +27,7 @@ import java.util
 import org.neo4j.cypher.internal.executionplan.GeneratedQueryExecution
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
+import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.graphdb.ResourceIterator
 
@@ -38,7 +39,7 @@ class CompiledExecutionResult(context: QueryContext,
                               override val queryProfile: QueryProfile)
   extends RuntimeResult {
 
-  private var isDone = false
+  private var resultRequested = false
 
   def executionMode: ExecutionMode = compiledCode.executionMode()
 
@@ -46,7 +47,7 @@ class CompiledExecutionResult(context: QueryContext,
 
   override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {
     compiledCode.accept(visitor)
-    isDone = true
+    resultRequested = true
   }
 
   override def queryStatistics() = QueryStatistics()
@@ -56,7 +57,9 @@ class CompiledExecutionResult(context: QueryContext,
   override def asIterator(): ResourceIterator[util.Map[String, AnyRef]] =
     throw new UnsupportedOperationException("The compiled runtime is not iterable")
 
-  override def isExhausted: Boolean = isDone
+  override def consumptionState: RuntimeResult.ConsumptionState =
+    if (!resultRequested) ConsumptionState.NOT_STARTED
+    else ConsumptionState.EXHAUSTED
 
   override def close(): Unit = {}
 }

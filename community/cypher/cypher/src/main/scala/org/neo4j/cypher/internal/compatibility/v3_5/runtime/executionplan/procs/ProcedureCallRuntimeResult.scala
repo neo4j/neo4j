@@ -26,6 +26,7 @@ import java.util
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
 import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
+import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{OperatorProfile, QueryProfile, RuntimeResult}
 import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.graphdb.spatial.{Geometry, Point}
@@ -144,7 +145,10 @@ class ProcedureCallRuntimeResult(context: QueryContext,
 
   override def isIterable: Boolean = true
 
-  override def isExhausted: Boolean = resultRequested && !executionResults.hasNext
+  override def consumptionState: RuntimeResult.ConsumptionState =
+    if (!resultRequested) ConsumptionState.NOT_STARTED
+    else if (executionResults.hasNext) ConsumptionState.HAS_MORE
+    else ConsumptionState.EXHAUSTED
 
   override def close(): Unit = {}
 

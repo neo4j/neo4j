@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.procs
 
 import java.util
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.profiler.InterpretedProfileInformation
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
+import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.helpers.collection.Iterators
@@ -43,7 +43,7 @@ case class SchemaWriteRuntimeResult(ctx: QueryContext) extends RuntimeResult {
 
   override def asIterator(): ResourceIterator[util.Map[String, AnyRef]] = Iterators.emptyResourceIterator()
 
-  override def isExhausted: Boolean = true
+  override def consumptionState: RuntimeResult.ConsumptionState = ConsumptionState.EXHAUSTED
 
   override def close(): Unit = {}
 

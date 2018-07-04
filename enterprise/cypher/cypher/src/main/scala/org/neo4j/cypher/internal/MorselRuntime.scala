@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.runtime.vectorized.expressions.MorselExpression
 import org.neo4j.cypher.internal.runtime.vectorized.{Dispatcher, Pipeline, PipelineBuilder}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
+import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.values.virtual.MapValue
@@ -110,11 +111,11 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
                                 dispatcher: Dispatcher,
                                 schedulerTracer: SchedulerTracer) extends RuntimeResult {
 
-    private var isDone = false
+    private var resultRequested = false
 
     override def accept[E <: Exception](visitor: QueryResultVisitor[E]): Unit = {
       dispatcher.execute(operators, queryContext, params, schedulerTracer)(visitor)
-      isDone = true
+      resultRequested = true
     }
 
     override def queryStatistics(): runtime.QueryStatistics = queryContext.getOptStatistics.getOrElse(QueryStatistics())
@@ -124,7 +125,9 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
     override def asIterator(): ResourceIterator[java.util.Map[String, AnyRef]] =
       throw new UnsupportedOperationException("The Morsel runtime is not iterable")
 
-    override def isExhausted: Boolean = isDone
+    override def consumptionState: RuntimeResult.ConsumptionState =
+      if (!resultRequested) ConsumptionState.NOT_STARTED
+      else ConsumptionState.EXHAUSTED
 
     override def close(): Unit = {}
 

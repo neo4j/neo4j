@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.profiler.PlanDescrip
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
+import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{NotFoundException, Notification, ResourceIterator}
@@ -51,7 +52,7 @@ class StandardInternalExecutionResult(context: QueryContext,
   override def initiate(): Unit = {
 
     // OBS: check before materialization
-    val noRows = runtimeResult.isExhausted
+    val consumedBeforeInit = runtimeResult.consumptionState == ConsumptionState.EXHAUSTED
 
     // By policy we materialize the result directly unless it's a read only query.
     if (queryType != READ_ONLY) {
@@ -59,7 +60,7 @@ class StandardInternalExecutionResult(context: QueryContext,
     }
 
     // ... and if we do not return any rows, we close all resources.
-    if (noRows || queryType == WRITE || fieldNames().isEmpty) {
+    if (consumedBeforeInit || queryType == WRITE || fieldNames().isEmpty) {
       close(Success)
     }
   }
@@ -239,7 +240,7 @@ class StandardInternalExecutionResult(context: QueryContext,
   override lazy val executionPlanDescription: InternalPlanDescription = {
 
     if (executionMode == ProfileMode) {
-      if (!runtimeResult.isExhausted) {
+      if (runtimeResult.consumptionState != ConsumptionState.EXHAUSTED) {
         taskCloser.close(success = false)
         throw new ProfilerStatisticsNotReadyException()
       }

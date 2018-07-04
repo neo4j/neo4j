@@ -27,6 +27,13 @@ import org.neo4j.graphdb.ResourceIterator;
  */
 public interface RuntimeResult extends AutoCloseable
 {
+    enum ConsumptionState
+    {
+        NOT_STARTED,
+        HAS_MORE,
+        EXHAUSTED
+    };
+
     /**
      * Names of the returned fields of this result.
      */
@@ -43,10 +50,10 @@ public interface RuntimeResult extends AutoCloseable
     ResourceIterator<java.util.Map<String, Object>> asIterator();
 
     /**
-     * True if this result has been completely served either via {@link RuntimeResult#asIterator} or
-     * {@link RuntimeResult#accept(QueryResult.QueryResultVisitor)}.
+     * Returns the consumption state of this result. This state changes when the result is served
+     * either via {@link RuntimeResult#asIterator} or {@link RuntimeResult#accept(QueryResult.QueryResultVisitor)}.
      */
-    boolean isExhausted();
+    ConsumptionState consumptionState();
 
     /**
      * Consume this result using a visitor.
