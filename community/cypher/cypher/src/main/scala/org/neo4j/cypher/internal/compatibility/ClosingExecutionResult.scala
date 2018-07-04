@@ -52,16 +52,21 @@ import org.neo4j.kernel.impl.query.QueryExecutionMonitor
   * @param runSafely RunSafely which converts any exception into the public exception space (subtypes of org.neo4j.cypher.CypherException)
   * @param innerMonitor monitor to report closing of the query to
   */
-class ClosingExecutionResult(val query: ExecutingQuery, val inner: InternalExecutionResult, runSafely: RunSafely)
-                            (implicit innerMonitor: QueryExecutionMonitor)
-  extends InternalExecutionResult {
+class ClosingExecutionResult private(val query: ExecutingQuery,
+                                     val inner: InternalExecutionResult,
+                                     runSafely: RunSafely,
+                                     innerMonitor: QueryExecutionMonitor) extends InternalExecutionResult {
 
   self =>
 
   private val monitor = OnlyOnceQueryExecutionMonitor(innerMonitor)
 
-  if (inner.isClosed)
-    monitor.endSuccess(query)
+  override def initiate(): Unit = {
+    safely { inner.initiate() }
+
+    if (inner.isClosed)
+      monitor.endSuccess(query)
+  }
 
   override def javaIterator: graphdb.ResourceIterator[java.util.Map[String, AnyRef]] = {
     safely {
@@ -137,7 +142,7 @@ class ClosingExecutionResult(val query: ExecutingQuery, val inner: InternalExecu
       case Failure => monitor.endFailure(query, null)
       case Error(t) => monitor.endFailure(query, t)
     }
-  })(t => monitor.endFailure(query, t))
+  })( handleErrorOnClose(reason) )
 
   override def queryType: InternalQueryType = safely { inner.queryType }
 
@@ -173,5 +178,40 @@ class ClosingExecutionResult(val query: ExecutingQuery, val inner: InternalExecu
       close(Success)
     }
 
+  private def closeOnError(t: Throwable): Unit = {
+    try {
+      close(Error(t))
+    } catch {
+      case thrownDuringClose: Throwable =>
+        // ignore
+    }
+  }
+
+  private def handleErrorOnClose(closeReason: CloseReason)(thrownDuringClose: Throwable): Unit =
+    closeReason match {
+      case Error(thrownBeforeClose) =>
+        try {
+          thrownBeforeClose.addSuppressed(thrownDuringClose)
+        } catch {
+          case _: Throwable => // Ignore
+        }
+        monitor.endFailure(query, thrownBeforeClose)
+
+      case _ =>
+        monitor.endFailure(query, thrownDuringClose)
+    }
+
   override def isClosed: Boolean = inner.isClosed
+}
+
+object ClosingExecutionResult {
+  def wrapAndInitiate(query: ExecutingQuery,
+                      inner: InternalExecutionResult,
+                      runSafely: RunSafely,
+                      innerMonitor: QueryExecutionMonitor): ClosingExecutionResult = {
+
+    val result = new ClosingExecutionResult(query, inner, runSafely, innerMonitor)
+    result.initiate()
+    result
+  }
 }

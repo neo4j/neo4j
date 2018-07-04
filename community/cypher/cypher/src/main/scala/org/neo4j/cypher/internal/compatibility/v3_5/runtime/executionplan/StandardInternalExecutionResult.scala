@@ -48,6 +48,22 @@ class StandardInternalExecutionResult(context: QueryContext,
 
   self =>
 
+  override def initiate(): Unit = {
+
+    // OBS: check before materialization
+    val noRows = runtimeResult.isExhausted
+
+    // By policy we materialize the result directly unless it's a read only query.
+    if (queryType != READ_ONLY) {
+      materializeResult()
+    }
+
+    // ... and if we do not return any rows, we close all resources.
+    if (noRows || queryType == WRITE || fieldNames().isEmpty) {
+      close(Success)
+    }
+  }
+
   /*
   ======= RESULT MATERIALIZATION ==========
    */
@@ -57,34 +73,13 @@ class StandardInternalExecutionResult(context: QueryContext,
   private def materializeResult(): Unit = {
     materializedResult = new util.ArrayList()
     if (isOpen)
-      try {
-        runtimeResult.accept(new QueryResultVisitor[Exception] {
-          override def visit(row: QueryResult.Record): Boolean = {
-            materializedResult.add(row.fields().clone())
-            row.release()
-            true
-          }
-        })
-      } catch {
-        case t: Throwable =>
-          throw closeOnError(t)
-      }
-  }
-
-  private val noRows = runtimeResult.isExhausted // OBS: check before materialization
-
-  /**
-    * By policy we materialize the result directly unless it's a read only query.
-    */
-  if (queryType != READ_ONLY) {
-    materializeResult()
-  }
-
-  /**
-    * ...and if we do not return any rows, we close all resources.
-    */
-  if (noRows || queryType == WRITE || fieldNames().isEmpty) {
-    close(Success)
+      runtimeResult.accept(new QueryResultVisitor[Exception] {
+        override def visit(row: QueryResult.Record): Boolean = {
+          materializedResult.add(row.fields().clone())
+          row.release()
+          true
+        }
+      })
   }
 
   /*

@@ -206,10 +206,13 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
           }
 
         new ExecutionResult(
-          new ClosingExecutionResult(
+          ClosingExecutionResult.wrapAndInitiate(
             transactionalContext.executingQuery(),
             internalExecutionResult,
-            runSafely)(kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])))
+            runSafely,
+            kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
+          )
+        )
       }
     }
 

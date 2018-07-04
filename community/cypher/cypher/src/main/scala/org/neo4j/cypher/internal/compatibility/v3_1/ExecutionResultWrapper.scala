@@ -57,6 +57,8 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult3_1,
                              val offset : Option[frontend.v3_1.InputPosition])
   extends InternalExecutionResult3_5  {
 
+  override def initiate(): Unit = {} // done in inner constructor
+
   override def javaIterator: ResourceIterator[util.Map[String, AnyRef]] =
     inner.javaIterator.asInstanceOf[ResourceIterator[util.Map[String, AnyRef]]]
 

@@ -36,6 +36,8 @@ case class ExplainExecutionResult(fieldNames: Array[String],
                                   notifications: Set[Notification])
   extends InternalExecutionResult {
 
+  override def initiate(): Unit = {}
+
   override def javaIterator: ResourceIterator[util.Map[String, AnyRef]] = Iterators.emptyResourceIterator()
   override def javaColumns: util.List[String] = Collections.emptyList()
 

@@ -65,7 +65,7 @@ trait Cypher23Compiler extends CachingPlanner[PreparedQuery] with Compiler {
 
   protected val compiler: v2_3.CypherCompiler
 
-  implicit val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
+  private val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
   class Cypher23ExecutableQuery(inner: ExecutionPlan_v2_3,
                                 preParsingNotifications: Set[org.neo4j.graphdb.Notification],
@@ -90,7 +90,7 @@ trait Cypher23Compiler extends CachingPlanner[PreparedQuery] with Compiler {
           .run(queryContext(TransactionalContextWrapper(transactionalContext)), transactionalContext.statement, innerExecutionMode, params)
 
         new ExecutionResult(
-          new ClosingExecutionResult(
+          ClosingExecutionResult.wrapAndInitiate(
             query,
             new ExecutionResultWrapper(
               innerResult,
@@ -99,7 +99,8 @@ trait Cypher23Compiler extends CachingPlanner[PreparedQuery] with Compiler {
               preParsingNotifications,
               Some(offSet)
             ),
-            exceptionHandler.runSafely)
+            exceptionHandler.runSafely,
+            executionMonitor)
         )
       }
     }

@@ -31,6 +31,11 @@ import scala.collection.JavaConverters._
 
 trait InternalExecutionResult extends QueryResult {
 
+  /**
+    * Perform any initial logic, such a materialization and early closing.
+    */
+  def initiate(): Unit
+
   def javaColumns: java.util.List[String] = java.util.Arrays.asList(fieldNames():_*)
   def javaColumnAs[T](column: String): ResourceIterator[T]
   def javaIterator: ResourceIterator[java.util.Map[String, AnyRef]]
@@ -74,20 +79,6 @@ trait InternalExecutionResult extends QueryResult {
   def close(reason: CloseReason): Unit
 
   override def close(): Unit = close(Success)
-
-  def closeOnError(t: Throwable): Throwable = {
-    try {
-      close(Error(t))
-    } catch {
-      case thrownDuringClose: Throwable =>
-        try {
-          t.addSuppressed(thrownDuringClose)
-        } catch {
-          case _: Throwable => // Ignore
-        }
-    }
-    t
-  }
 }
 
 sealed trait CloseReason
