@@ -185,86 +185,90 @@ public class SchemaCalculator
 
     private void scanEverythingBelongingToRelationships( Read dataRead, CursorFactory cursors )
     {
-        RelationshipScanCursor relationshipScanCursor = cursors.allocateRelationshipScanCursor();
-        PropertyCursor propertyCursor = cursors.allocatePropertyCursor();
-        dataRead.allRelationshipsScan( relationshipScanCursor );
-        while ( relationshipScanCursor.next() )
+        try ( RelationshipScanCursor relationshipScanCursor = cursors.allocateRelationshipScanCursor();
+                PropertyCursor propertyCursor = cursors.allocatePropertyCursor() )
         {
-            int typeId = relationshipScanCursor.type();
-            relationshipScanCursor.properties( propertyCursor );
-            MutableIntSet propertyIds = IntSets.mutable.empty();
-
-            while ( propertyCursor.next() )
+            dataRead.allRelationshipsScan( relationshipScanCursor );
+            while ( relationshipScanCursor.next() )
             {
-                int propertyKey = propertyCursor.propertyKey();
+                int typeId = relationshipScanCursor.type();
+                relationshipScanCursor.properties( propertyCursor );
+                MutableIntSet propertyIds = IntSets.mutable.empty();
 
-                Value currentValue = propertyCursor.propertyValue();
-                Pair<Integer,Integer> key = Pair.of( typeId, propertyKey );
-                updateValueTypeInMapping( currentValue, key, relationshipTypeIdANDPropertyTypeIdToValueTypeMapping );
+                while ( propertyCursor.next() )
+                {
+                    int propertyKey = propertyCursor.propertyKey();
 
-                propertyIds.add( propertyKey );
+                    Value currentValue = propertyCursor.propertyValue();
+                    Pair<Integer,Integer> key = Pair.of( typeId, propertyKey );
+                    updateValueTypeInMapping( currentValue, key, relationshipTypeIdANDPropertyTypeIdToValueTypeMapping );
+
+                    propertyIds.add( propertyKey );
+                }
+                propertyCursor.close();
+
+                MutableIntSet oldPropertyKeySet = relationshipTypeIdToPropertyKeysMapping.getOrDefault( typeId, emptyPropertyIdSet );
+
+                // find out which old properties we did not visited and mark them as nullable
+                if ( !(oldPropertyKeySet == emptyPropertyIdSet) )
+                {
+                    // we can and need to skip this if we found the empty set
+                    oldPropertyKeySet.removeAll( propertyIds );
+                    oldPropertyKeySet.forEach( id -> {
+                        Pair<Integer,Integer> key = Pair.of( typeId, id );
+                        relationshipTypeIdANDPropertyTypeIdToValueTypeMapping.get( key ).setNullable();
+                    } );
+                }
+
+                propertyIds.addAll( oldPropertyKeySet );
+                relationshipTypeIdToPropertyKeysMapping.put( typeId, propertyIds );
             }
-            propertyCursor.close();
-
-            MutableIntSet oldPropertyKeySet = relationshipTypeIdToPropertyKeysMapping.getOrDefault( typeId, emptyPropertyIdSet );
-
-            // find out which old properties we did not visited and mark them as nullable
-            if ( !(oldPropertyKeySet == emptyPropertyIdSet) )
-            {
-                // we can and need to skip this if we found the empty set
-                oldPropertyKeySet.removeAll( propertyIds );
-                oldPropertyKeySet.forEach( id -> {
-                    Pair<Integer,Integer> key = Pair.of( typeId, id );
-                    relationshipTypeIdANDPropertyTypeIdToValueTypeMapping.get( key ).setNullable();
-                } );
-            }
-
-            propertyIds.addAll( oldPropertyKeySet );
-            relationshipTypeIdToPropertyKeysMapping.put( typeId, propertyIds );
+            relationshipScanCursor.close();
         }
-        relationshipScanCursor.close();
     }
 
     private void scanEverythingBelongingToNodes( Read dataRead, CursorFactory cursors )
     {
-        NodeCursor nodeCursor = cursors.allocateNodeCursor();
-        PropertyCursor propertyCursor = cursors.allocatePropertyCursor();
-        dataRead.allNodesScan( nodeCursor );
-        while ( nodeCursor.next() )
+        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor();
+                PropertyCursor propertyCursor = cursors.allocatePropertyCursor() )
         {
-            // each node
-            LabelSet labels = nodeCursor.labels();
-            nodeCursor.properties( propertyCursor );
-            MutableIntSet propertyIds = IntSets.mutable.empty();
-
-            while ( propertyCursor.next() )
+            dataRead.allNodesScan( nodeCursor );
+            while ( nodeCursor.next() )
             {
-                Value currentValue = propertyCursor.propertyValue();
-                int propertyKeyId = propertyCursor.propertyKey();
-                Pair<LabelSet,Integer> key = Pair.of( labels, propertyKeyId );
-                updateValueTypeInMapping( currentValue, key, labelSetANDNodePropertyKeyIdToValueTypeMapping );
+                // each node
+                LabelSet labels = nodeCursor.labels();
+                nodeCursor.properties( propertyCursor );
+                MutableIntSet propertyIds = IntSets.mutable.empty();
 
-                propertyIds.add( propertyKeyId );
+                while ( propertyCursor.next() )
+                {
+                    Value currentValue = propertyCursor.propertyValue();
+                    int propertyKeyId = propertyCursor.propertyKey();
+                    Pair<LabelSet,Integer> key = Pair.of( labels, propertyKeyId );
+                    updateValueTypeInMapping( currentValue, key, labelSetANDNodePropertyKeyIdToValueTypeMapping );
+
+                    propertyIds.add( propertyKeyId );
+                }
+                propertyCursor.close();
+
+                MutableIntSet oldPropertyKeySet = labelSetToPropertyKeysMapping.getOrDefault( labels, emptyPropertyIdSet );
+
+                // find out which old properties we did not visited and mark them as nullable
+                if ( !(oldPropertyKeySet == emptyPropertyIdSet) )
+                {
+                    // we can and need (!) to skip this if we found the empty set
+                    oldPropertyKeySet.removeAll( propertyIds );
+                    oldPropertyKeySet.forEach( id -> {
+                        Pair<LabelSet,Integer> key = Pair.of( labels, id );
+                        labelSetANDNodePropertyKeyIdToValueTypeMapping.get( key ).setNullable();
+                    } );
+                }
+
+                propertyIds.addAll( oldPropertyKeySet );
+                labelSetToPropertyKeysMapping.put( labels, propertyIds );
             }
-            propertyCursor.close();
-
-            MutableIntSet oldPropertyKeySet = labelSetToPropertyKeysMapping.getOrDefault( labels, emptyPropertyIdSet );
-
-            // find out which old properties we did not visited and mark them as nullable
-            if ( !(oldPropertyKeySet == emptyPropertyIdSet) )
-            {
-                // we can and need (!) to skip this if we found the empty set
-                oldPropertyKeySet.removeAll( propertyIds );
-                oldPropertyKeySet.forEach( id -> {
-                    Pair<LabelSet,Integer> key = Pair.of( labels, id );
-                    labelSetANDNodePropertyKeyIdToValueTypeMapping.get( key ).setNullable();
-                } );
-            }
-
-            propertyIds.addAll( oldPropertyKeySet );
-            labelSetToPropertyKeysMapping.put( labels, propertyIds );
+            nodeCursor.close();
         }
-        nodeCursor.close();
     }
 
     private <X, Y> void updateValueTypeInMapping( Value currentValue, Pair<X,Y> key, Map<Pair<X,Y>,ValueTypeDecider> mappingToUpdate )
