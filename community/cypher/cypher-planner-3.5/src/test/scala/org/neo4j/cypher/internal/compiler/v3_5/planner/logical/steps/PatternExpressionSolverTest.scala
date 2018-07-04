@@ -32,7 +32,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     // given MATCH (a) RETURN (a)-->() as x
     val otherSide = newMockedLogicalPlan("  NODE1")
     val strategy = newMockedStrategyWithMultiplePlans(otherSide)
-    val pathStep = mock[PathStep]
+    val pathStep = NilPathStep
 
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep))
     val (context, solveds, cardinalities) = logicalPlanningContext(strategy)
@@ -55,8 +55,8 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val strategy = newMockedStrategyWithMultiplePlans(b1, b2)
     val (context, solveds, cardinalities) = logicalPlanningContext(strategy)
     val source = newMockedLogicalPlan(solveds, cardinalities, "a")
-    val pathStep1 = mock[PathStep]
-    val pathStep2 = mock[PathStep]
+    val pathStep1 = NilPathStep
+    val pathStep2 = NilPathStep
 
     // when
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep1, namedPatExpr2 -> pathStep2))
@@ -81,8 +81,8 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val strategy = newMockedStrategyWithMultiplePlans(b1, b2)
     val (context, solveds, cardinalities) = logicalPlanningContext(strategy)
     val source = newMockedLogicalPlan(solveds, cardinalities, "a")
-    val pathStep1 = mock[PathStep]
-    val pathStep2 = mock[PathStep]
+    val pathStep1 = NilPathStep
+    val pathStep2 = NilPathStep
 
     // when
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep1, namedPatExpr2 -> pathStep2))
@@ -108,8 +108,8 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val strategy = newMockedStrategyWithMultiplePlans(b1, b2)
     val (context, solveds, cardinalities) = logicalPlanningContext(strategy)
     val source = newMockedLogicalPlan(solveds, cardinalities, "a")
-    val pathStep1 = mock[PathStep]
-    val pathStep2 = mock[PathStep]
+    val pathStep1 = NilPathStep
+    val pathStep2 = NilPathStep
 
     // when
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep1, namedPatExpr2 -> pathStep2))
