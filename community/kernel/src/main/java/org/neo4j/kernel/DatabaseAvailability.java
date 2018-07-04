@@ -41,6 +41,7 @@ public class DatabaseAvailability extends LifecycleAdapter
     private final AvailabilityGuard availabilityGuard;
     private final TransactionStats transactionMonitor;
     private final long awaitActiveTransactionDeadlineMillis;
+    private volatile boolean started;
 
     public DatabaseAvailability( AvailabilityGuard availabilityGuard, TransactionStats transactionMonitor,
             long awaitActiveTransactionDeadlineMillis )
@@ -57,17 +58,24 @@ public class DatabaseAvailability extends LifecycleAdapter
     public void start()
     {
         availabilityGuard.fulfill( AVAILABILITY_REQUIREMENT );
+        started = true;
     }
 
     @Override
     public void stop()
     {
+        started = false;
         // Database is no longer available for use
         // Deny beginning new transactions
         availabilityGuard.require( AVAILABILITY_REQUIREMENT );
 
         // Await transactions stopped
         awaitTransactionsClosedWithinTimeout();
+    }
+
+    public boolean isStarted()
+    {
+        return started;
     }
 
     private void awaitTransactionsClosedWithinTimeout()

@@ -182,8 +182,10 @@ public class GraphDatabaseFacadeFactory
         platform.life.add( createBoltServer( platform ) );
         platform.life.add( new VmPauseMonitorComponent( config, platform.logging.getInternalLog( VmPauseMonitorComponent.class ), platform.jobScheduler ) );
         platform.life.add( new PublishPageCacheTracerMetricsAfterStart( platform.tracers.pageCursorTracerSupplier ) );
-        platform.life.add( new DatabaseAvailability( platform.availabilityGuard, platform.transactionMonitor,
-                config.get( GraphDatabaseSettings.shutdown_transaction_end_timeout ).toMillis() ) );
+        DatabaseAvailability databaseAvailability = new DatabaseAvailability( platform.availabilityGuard, platform.transactionMonitor,
+                config.get( GraphDatabaseSettings.shutdown_transaction_end_timeout ).toMillis() );
+        platform.dependencies.satisfyDependency( databaseAvailability );
+        platform.life.add( databaseAvailability );
         platform.life.add( new StartupWaiter( platform.availabilityGuard, edition.transactionStartTimeout ) );
         platform.life.setLast( platform.eventHandlers );
 

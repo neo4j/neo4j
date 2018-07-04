@@ -46,6 +46,7 @@ import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.BranchedDataException;
@@ -300,6 +301,8 @@ public class SwitchToSlaveBranchThenCopyTest
         when( clusterMembers.getMembers() ).thenReturn( singletonList( master ) );
 
         Dependencies resolver = new Dependencies();
+        DatabaseAvailability databaseAvailability = mock( DatabaseAvailability.class );
+        when( databaseAvailability.isStarted() ).thenReturn( true );
         resolver.satisfyDependencies( requestContextFactory, clusterMembers,
                 mock( TransactionObligationFulfiller.class ),
                 mock( OnlineBackupKernelExtension.class ),
@@ -307,7 +310,8 @@ public class SwitchToSlaveBranchThenCopyTest
                 mock( TransactionCommittingResponseUnpacker.class ),
                 mock( DataSourceManager.class ),
                 mock( StoreLockerLifecycleAdapter.class ),
-                mock( FileSystemWatcherService.class )
+                mock( FileSystemWatcherService.class ),
+                databaseAvailability
                 );
 
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );

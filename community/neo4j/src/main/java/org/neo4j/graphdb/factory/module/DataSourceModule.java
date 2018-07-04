@@ -51,7 +51,6 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 
 /**
  * Datasource module for {@link GraphDatabaseFacadeFactory}. This implements all the
@@ -98,7 +97,6 @@ public class DataSourceModule
 
         threadToTransactionBridge = deps.satisfyDependency( new ThreadToStatementContextBridge( platformModule.availabilityGuard ) );
 
-        deps.satisfyDependency( graphDatabaseFacade );
         transactionEventHandlers = new TransactionEventHandlers( graphDatabaseFacade );
 
         diagnosticsManager.prependProvider( config );

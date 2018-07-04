@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.time.Clock;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -47,6 +48,7 @@ import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.BranchedDataException;
@@ -500,6 +502,7 @@ public abstract class SwitchToSlave
     void stopServices() throws Exception
     {
         msgLog.debug( "Stopping services to handle branched store" );
+        awaitDatabaseStart();
         for ( int i = SERVICES_TO_RESTART_FOR_STORE_COPY.length - 1; i >= 0; i-- )
         {
             Class<? extends Lifecycle> serviceClass = SERVICES_TO_RESTART_FOR_STORE_COPY[i];
@@ -515,6 +518,15 @@ public abstract class SwitchToSlave
             {
                 throw new Exception( "Unexpected error while stopping services to handle branched data", throwable );
             }
+        }
+    }
+
+    private void awaitDatabaseStart() throws InterruptedException
+    {
+        DatabaseAvailability databaseAvailability = resolver.resolveDependency( DatabaseAvailability.class );
+        while ( !databaseAvailability.isStarted() )
+        {
+            TimeUnit.MILLISECONDS.sleep( 10 );
         }
     }
 
