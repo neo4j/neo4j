@@ -963,7 +963,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         int nanosOfSecond = cursor.getInt();
         long months = cursor.getLong();
         long days = cursor.getLong();
-        writeDuration( months, days, totalAvgSeconds, nanosOfSecond );
+        writeDurationWithTotalAvgSeconds( months, days, totalAvgSeconds, nanosOfSecond );
     }
 
     private void readLocalTime( PageCursor cursor )
@@ -1252,17 +1252,23 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     @Override
     public void writeDuration( long months, long days, long seconds, int nanos )
     {
+        long totalAvgSeconds = months * AVG_MONTH_SECONDS + days * AVG_DAY_SECONDS + seconds;
+        writeDurationWithTotalAvgSeconds( months, days, totalAvgSeconds, nanos );
+    }
+
+    private void writeDurationWithTotalAvgSeconds( long months, long days, long totalAvgSeconds, int nanos )
+    {
         if ( !isArray )
         {
             type = Type.DURATION;
-            long0 = months * AVG_MONTH_SECONDS + days * AVG_DAY_SECONDS + seconds;
+            long0 = totalAvgSeconds;
             long1 = nanos;
             long2 = months;
             long3 = days;
         }
         else
         {
-            long0Array[currentArrayOffset] = months * AVG_MONTH_SECONDS + days * AVG_DAY_SECONDS + seconds;
+            long0Array[currentArrayOffset] = totalAvgSeconds;
             long1Array[currentArrayOffset] = nanos;
             long2Array[currentArrayOffset] = months;
             long3Array[currentArrayOffset] = days;
