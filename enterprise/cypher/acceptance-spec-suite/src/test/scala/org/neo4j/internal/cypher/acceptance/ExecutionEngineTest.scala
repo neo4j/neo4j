@@ -130,9 +130,7 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate(n1, n2, "KNOWS")
     relate(n1, n3, "KNOWS")
 
-    dumpToString(Configs.AbsolutelyAll + Configs.Morsel,
-      s"match (node)-[rel:KNOWS]->(x) where id(node) = ${n1.getId} return x, node"
-    )
+    dumpToString(s"match (node)-[rel:KNOWS]->(x) where id(node) = ${n1.getId} return x, node")
   }
 
   test("should Find Nodes By Exact Index Lookup") {
@@ -405,7 +403,7 @@ order by a.COL1""".format(a, b))
   test("shouldToStringArraysPrettily") {
     createNode("foo" -> Array("one", "two"))
 
-    val string = dumpToString(Configs.AbsolutelyAll + Configs.Morsel,  """match (n) where id(n) = 0 return n.foo""")
+    val string = dumpToString("match (n) where id(n) = 0 return n.foo")
 
     string should include("""["one","two"]""")
   }

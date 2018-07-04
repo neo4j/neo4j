@@ -24,7 +24,6 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.opencypher.v9_0.util.test_helpers.WindowsStringSafe
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
@@ -33,7 +32,7 @@ class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
   test("format node") {
     createNode(Map("prop1" -> "A", "prop2" -> 2))
 
-    dumpToString(Configs.AbsolutelyAll + Configs.Morsel, "match (n) return n") should
+    dumpToString("match (n) return n") should
       equal(
         """+----------------------------+
           || n                          |
@@ -47,7 +46,7 @@ class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
   test("format relationship") {
     relate(createNode(), createNode(), "T", Map("prop1" -> "A", "prop2" -> 2))
 
-    dumpToString(Configs.AbsolutelyAll + Configs.Morsel, "match ()-[r]->() return r") should equal(
+    dumpToString("match ()-[r]->() return r") should equal(
       """+--------------------------+
         || r                        |
         |+--------------------------+
@@ -58,7 +57,7 @@ class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
   }
 
   test("format collection of maps") {
-    dumpToString(Configs.AbsolutelyAll + Configs.Morsel,  """RETURN [{ inner: 'Map1' }, { inner: 'Map2' }]""") should
+    dumpToString( """RETURN [{ inner: 'Map1' }, { inner: 'Map2' }]""") should
       equal(
         """+----------------------------------------+
           || [{ inner: 'Map1' }, { inner: 'Map2' }] |

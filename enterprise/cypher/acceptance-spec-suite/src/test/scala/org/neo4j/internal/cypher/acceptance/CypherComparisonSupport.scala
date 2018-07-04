@@ -129,40 +129,37 @@ trait CypherComparisonSupport extends CypherTestSupport {
     possibleErrors == Seq.empty || (actualError != null && possibleErrors.exists(s => actualError.replaceAll("\\r", "").contains(s.replaceAll("\\r", ""))))
   }
 
-  protected def dumpToString(expectSucceed: TestConfiguration,
-                             query: String,
+  /**
+    * Execute query on all compatibility versions and dump the result into a string.
+    *
+    * Asserts that the same string is created by all versions and return that string. No other preparser
+    * options are given except for the version.
+    */
+  protected def dumpToString(query: String,
                              params: Map[String, Any] = Map.empty): String = {
 
+    case class DumpResult(maybeResult:Try[String], version: Version)
+
     val paramValue = asMapValue(params)
-
-    case class DumpResult(maybeResult:Try[String], scenario: TestScenario)
-
     val results: Seq[DumpResult] =
-      Configs.AbsolutelyAll.scenarios.toSeq.map {
-        scenario => {
-          val queryText = s"CYPHER ${scenario.preparserOptions} $query"
+      Versions.orderedVersions.map {
+        version => {
+          val queryText = s"CYPHER ${version.name} $query"
           val txContext = graph.transactionalContext(query = queryText -> params)
           val maybeResult =
             Try(eengine.execute(queryText, paramValue, txContext).resultAsString())
-          DumpResult(maybeResult, scenario)
+          DumpResult(maybeResult, version)
         }
       }
 
-    val (corrects, incorrects) = results.partition(t => expectSucceed.containsScenario(t.scenario))
-    val reference = corrects.head.maybeResult.get
-    for (correct <- corrects) {
-      withClue(s"Failed with scenario '${correct.scenario.preparserOptions}'") {
-        correct.maybeResult.get should equal(reference)
-      }
-    }
-    for (incorrect <- incorrects) {
-      withClue(s"Unexpectedly succeeded with scenario '${incorrect.scenario.preparserOptions}'") {
-        incorrect.maybeResult match {
-          case Success(result) =>
-            result should not equal reference
-          case Failure(error) =>
-            // expected
-        }
+    val successes = results.filter(_.maybeResult.isSuccess)
+    if (successes.isEmpty)
+      fail(s"No compatibility mode managed to execute ´$query´")
+
+    val reference = successes.head.maybeResult.get
+    for (result <- results) {
+      withClue(s"Failed with version '${result.version.name}'") {
+        result.maybeResult.get should equal(reference)
       }
     }
     reference
