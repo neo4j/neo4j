@@ -26,9 +26,9 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
-  val expectedToSucceed = Configs.Interpreted - Configs.Version2_3
+  private val expectedToSucceed = Configs.Interpreted - Configs.Version2_3
 
-  val expectedToFail = TestConfiguration(Versions(Versions.Default, V3_1, V3_2), Planners.all, Runtimes.Default)
+  private val expectedToFail = TestConfiguration(Versions(Versions.Default, V3_1, V3_2), Planners.all, Runtimes.Default)
 
   test("point function should work with literal map") {
     val result = executeWith(expectedToSucceed, "RETURN point({latitude: 12.78, longitude: 56.7}) as point",
@@ -63,9 +63,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("point function should throw on unrecognized map entry") {
-    // Fixed in 3.1.9
-    val notYetFixed = Configs.Version3_1 + Configs.AllRulePlanners
-    failWithError(expectedToFail - notYetFixed, "RETURN point({x: 2, y:3, a: 4}) as point", Seq("Unknown key 'a' for creating new point"))
+    failWithError(Configs.Cost3_2, "RETURN point({x: 2, y:3, a: 4}) as point", Seq("Unknown key 'a' for creating new point"))
   }
 
   test("point function should work with integer arguments") {
