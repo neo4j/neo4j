@@ -29,9 +29,10 @@ import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
 
 class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
-  val pointConfig = Configs.Interpreted - Configs.Version2_3
-  val equalityConfig = Configs.Interpreted - Configs.OldAndRule
-  val latestPointConfig = Configs.Interpreted - Configs.BackwardsCompatibility - Configs.AllRulePlanners
+  private val pointConfig = Configs.Interpreted - Configs.Version2_3
+  private val equalityConfig = Configs.Interpreted - Configs.OldAndRule
+  private val unrecognizedKeyPointConfig = Configs.Interpreted - Configs.OldAndRule
+  private val latestPointConfig = Configs.Interpreted - Configs.BackwardsCompatibility - Configs.AllRulePlanners
 
   test("toString on points") {
     executeWith(latestPointConfig, "RETURN toString(point({x:1, y:2})) AS s").toList should equal(List(Map("s" -> "point({x: 1.0, y: 2.0, crs: 'cartesian'})")))
@@ -55,7 +56,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("point function should work with literal map and 3D cartesian coordinates") {
-    val result = executeWith(pointConfig - Configs.Version3_1 - Configs.AllRulePlanners,
+    val result = executeWith(unrecognizedKeyPointConfig - Configs.Version3_1 - Configs.AllRulePlanners,
       "RETURN point({x: 2.3, y: 4.5, z: 6.7, crs: 'cartesian-3D'}) as point",
       expectedDifferentResults = Configs.Version3_1 + Configs.AllRulePlanners,
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
@@ -65,7 +66,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("point function should work with literal map and srid") {
-    val result = executeWith(pointConfig, "RETURN point({x: 2.3, y: 4.5, srid: 4326}) as point",
+    val result = executeWith(unrecognizedKeyPointConfig, "RETURN point({x: 2.3, y: 4.5, srid: 4326}) as point",
       expectedDifferentResults = Configs.Version3_1 + Configs.AllRulePlanners,
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
@@ -90,7 +91,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("point function should work with node with some invalid properties") {
-    val result = executeWith(pointConfig, "CREATE (n {latitude: 12.78, longitude: 56.7, banana: 'yes', some: 1.2, andAlso: [1,2]}) RETURN point(n) as point",
+    val result = executeWith(unrecognizedKeyPointConfig, "CREATE (n {latitude: 12.78, longitude: 56.7, banana: 'yes', some: 1.2, andAlso: [1,2]}) RETURN point(n) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
