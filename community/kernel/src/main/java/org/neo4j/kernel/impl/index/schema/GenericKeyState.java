@@ -64,6 +64,24 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 
 class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 {
+    // TODO copy-pasted from individual keys
+    // TODO also put this in Type enum
+    private static final int SIZE_ZONED_DATE_TIME = Long.BYTES +    /* epochSecond */
+                                                    Integer.BYTES + /* nanoOfSecond */
+                                                    Integer.BYTES;  /* timeZone */
+    private static final int SIZE_LOCAL_DATE_TIME = Long.BYTES +    /* epochSecond */
+                                                    Integer.BYTES;  /* nanoOfSecond */
+    private static final int SIZE_DATE =            Long.BYTES;     /* epochDay */
+    private static final int SIZE_ZONED_TIME =      Long.BYTES +    /* nanosOfDayUTC */
+                                                    Integer.BYTES;  /* zoneOffsetSeconds */
+    private static final int SIZE_LOCAL_TIME =      Long.BYTES;     /* nanoOfDay */
+    private static final int SIZE_DURATION =        Long.BYTES +    /* totalAvgSeconds */
+                                                    Integer.BYTES + /* nanosOfSecond */
+                                                    Long.BYTES +    /* months */
+                                                    Long.BYTES;     /* days */
+    private static final int SIZE_BOOLEAN =         Byte.BYTES;     /* byte for this boolean value */
+    private static final int SIZE_NUMBER =          Byte.BYTES +    /* type of value */
+                                                    Long.BYTES;     /* raw value bits */
     // TODO figure out in a future-proof way
     private static final int BIGGEST_REASONABLE_ARRAY_LENGTH = PAGE_SIZE / 2 / Integer.SIZE;
 
@@ -186,6 +204,13 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         this.long3 = key.long3;
         this.copyByteArrayFromIfExists( key, (int) key.long0 );
         this.inclusion = key.inclusion;
+        this.isArray = key.isArray;
+        if ( key.isArray )
+        {
+            // Todo Continue here. Currently lots of IndexProviderCompatibilityTestSuite fails due to arrays not being properly initialized
+            // Todo 1. Copy only the correct arrays.
+            // Todo 2. Make sure array are always initialized properly...
+        }
     }
 
     private void copyByteArrayFromIfExists( GenericKeyState key, int targetLength )
@@ -204,7 +229,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 
     Value assertCorrectType( Value value )
     {
-        if ( Values.isGeometryValue( value ) || Values.isArrayValue( value ) )
+        if ( Values.isGeometryValue( value ) )
         {
             throw new IllegalArgumentException( "Unsupported value " + value );
         }
@@ -242,37 +267,51 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 
     private int valueSize()
     {
-        // TODO copy-pasted from individual keys
-        // TODO also put this in Type enum
         switch ( type )
         {
         case ZONED_DATE_TIME:
-            return Long.BYTES +    /* epochSecond */
-                    Integer.BYTES + /* nanoOfSecond */
-                    Integer.BYTES;  /* timeZone */
+            return SIZE_ZONED_DATE_TIME;
         case LOCAL_DATE_TIME:
-            return Long.BYTES +    /* epochSecond */
-                    Integer.BYTES;  /* nanoOfSecond */
+            return SIZE_LOCAL_DATE_TIME;
         case DATE:
-            return Long.BYTES;     /* epochDay */
+            return SIZE_DATE;
         case ZONED_TIME:
-            return Long.BYTES +    /* nanosOfDayUTC */
-                    Integer.BYTES;  /* zoneOffsetSeconds */
+            return SIZE_ZONED_TIME;
         case LOCAL_TIME:
-            return Long.BYTES;     /* nanoOfDay */
+            return SIZE_LOCAL_TIME;
         case DURATION:
-            return Long.BYTES +    /* totalAvgSeconds */
-                    Integer.BYTES + /* nanosOfSecond */
-                    Long.BYTES +    /* months */
-                    Long.BYTES;     /* days */
+            return SIZE_DURATION;
         case TEXT:
             return Short.SIZE +    /* short field with bytesLength value */
                     (int) long0;    /* bytesLength */
         case BOOLEAN:
-            return Byte.BYTES;     /* byte for this boolean value */
+            return SIZE_BOOLEAN;
         case NUMBER:
-            return Byte.BYTES +    /* type of value */
-                    Long.BYTES;     /* raw value bits */
+            return SIZE_NUMBER;
+        case ZONED_DATE_TIME_ARRAY:
+            return arrayLength * SIZE_ZONED_DATE_TIME;
+        case LOCAL_DATE_TIME_ARRAY:
+            return arrayLength * SIZE_LOCAL_DATE_TIME;
+        case DATE_ARRAY:
+            return arrayLength * SIZE_DATE;
+        case ZONED_TIME_ARRAY:
+            return arrayLength * SIZE_ZONED_TIME;
+        case LOCAL_TIME_ARRAY:
+            return arrayLength * SIZE_LOCAL_TIME;
+        case DURATION_ARRAY:
+            return arrayLength * SIZE_DURATION;
+        case TEXT_ARRAY:
+            int stringArraySize = 0;
+            for ( int i = 0; i < arrayLength; i++ )
+            {
+                stringArraySize += Short.SIZE + /* short field with bytesLength value */
+                        (int) long0Array[i];    /* bytesLength */
+            }
+            return stringArraySize;
+        case BOOLEAN_ARRAY:
+            return arrayLength * SIZE_BOOLEAN;
+        case NUMBER_ARRAY:
+            return arrayLength * SIZE_NUMBER;
         default:
             throw new IllegalArgumentException( "Unknown type " + type );
         }
@@ -669,7 +708,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
             putArray( cursor, ( c, i ) -> putBoolean( c, long0Array[i] ) );
             break;
         case NUMBER_ARRAY:
-            putArray( cursor, ( c, i ) -> putNumber( c, long0Array[i], long1Array[i] ) );
+            putArray( cursor, ( c, i ) -> putNumber( c, long0Array[i], long1 ) );
             break;
         default:
             throw new IllegalArgumentException( "Unknown type " + type );

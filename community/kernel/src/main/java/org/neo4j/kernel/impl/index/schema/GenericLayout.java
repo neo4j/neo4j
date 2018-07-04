@@ -34,7 +34,6 @@ class GenericLayout extends IndexLayout<CompositeGenericKey>
     private final int numberOfSlots;
 
     // Order doesn't matter since it's each Type's ValueGroup that matters and will be used for comparison
-    // Order doesn't matter since it's each Type's ValueGroup that matters and will be used for comparison
     enum Type
     {
         ZONED_DATE_TIME( ValueGroup.ZONED_DATE_TIME, (byte) 0 ),

@@ -107,7 +107,13 @@ public abstract class IndexProviderCompatibilityTestSuite
             this.valueSet1 = allValues(
                     testSuite.supportsSpatial(),
                     testSuite.supportsTemporal(),
-                    Arrays.asList( Values.of( "string1" ), Values.of( 42 ), Values.of( true ) ),
+                    Arrays.asList(
+                            Values.of( "string1" ),
+                            Values.of( 42 ),
+                            Values.of( true ),
+                            Values.of( new String[]{"arrayString1", "arraysString2"} ),
+                            Values.of( new long[]{314, 1337} ), // todo add the other number array types
+                            Values.of( new boolean[]{false, true} ) ),
                     Arrays.asList(
                             DateValue.epochDate( 2 ),
                             LocalTimeValue.localTime( 100000 ),
@@ -137,7 +143,7 @@ public abstract class IndexProviderCompatibilityTestSuite
                             DurationValue.duration( 10, 20, 31, 40 ),
                             DurationValue.duration( 10, 20, 30, 41 ) ),
                     Arrays.asList( Values.pointValue( CoordinateReferenceSystem.Cartesian, 0, 0 ),
-                                   Values.pointValue( CoordinateReferenceSystem.WGS84, 12.78, 56.7 ) ) );
+                            Values.pointValue( CoordinateReferenceSystem.WGS84, 12.78, 56.7 ) ) );
 
             this.valueSet2 = allValues(
                     testSuite.supportsSpatial(),
