@@ -74,7 +74,7 @@ public class BoltProtocolV1 implements BoltProtocol
 
         pipeline.addLast( new ChunkDecoder() );
         pipeline.addLast( new MessageAccumulator() );
-        pipeline.addLast( new MessageDecoder( neo4jPack::newUnpacker, messageReader, logging ) );
+        pipeline.addLast( new MessageDecoder( neo4jPack, messageReader, logging ) );
         pipeline.addLast( new HouseKeeper( connection, logging ) );
     }
 
@@ -91,7 +91,7 @@ public class BoltProtocolV1 implements BoltProtocol
 
     public static BoltRequestMessageReader createBoltMessageReaderV1( BoltChannel channel, Neo4jPack neo4jPack, BoltConnection connection, LogService logging )
     {
-        BoltResponseMessageWriter responseWriter = new BoltResponseMessageWriter( neo4jPack::newPacker, connection.output(), logging, channel.log() );
+        BoltResponseMessageWriter responseWriter = new BoltResponseMessageWriter( neo4jPack, connection.output(), logging, channel.log() );
         return new BoltRequestMessageReaderV1( connection, responseWriter, channel.log(), logging );
     }
 }

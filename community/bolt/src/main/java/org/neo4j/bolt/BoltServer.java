@@ -124,12 +124,12 @@ public class BoltServer extends LifecycleAdapter
                 createConnectionFactory( config, boltSchedulerProvider, throttleGroup, logService, clock );
         BoltStateMachineFactory boltStateMachineFactory = createBoltFactory( authentication, clock );
 
-        BoltProtocolFactory boltProtocolInstaller = createBoltProtocolInstallerFactory( boltConnectionFactory, boltStateMachineFactory );
+        BoltProtocolFactory boltProtocolFactory = createBoltProtocolFactory( boltConnectionFactory, boltStateMachineFactory );
 
         if ( !config.enabledBoltConnectors().isEmpty() && !config.get( GraphDatabaseSettings.disconnected ) )
         {
             NettyServer server = new NettyServer( jobScheduler.threadFactory( boltNetworkIO ),
-                    createConnectors( boltProtocolInstaller, throttleGroup, boltLogging, log ), connectorPortRegister, userLog );
+                    createConnectors( boltProtocolFactory, throttleGroup, boltLogging, log ), connectorPortRegister, userLog );
             life.add( server );
             log.info( "Bolt server loaded" );
         }
@@ -152,15 +152,15 @@ public class BoltServer extends LifecycleAdapter
                         config.get( GraphDatabaseSettings.bolt_inbound_message_throttle_high_water_mark ) ), monitors );
     }
 
-    private Map<BoltConnector,ProtocolInitializer> createConnectors( BoltProtocolFactory handlerFactory,
+    private Map<BoltConnector,ProtocolInitializer> createConnectors( BoltProtocolFactory boltProtocolFactory,
             TransportThrottleGroup throttleGroup, BoltMessageLogging boltLogging, Log log )
     {
         return config.enabledBoltConnectors()
                 .stream()
-                .collect( toMap( identity(), connector -> createProtocolInitializer( connector, handlerFactory, throttleGroup, boltLogging, log ) ) );
+                .collect( toMap( identity(), connector -> createProtocolInitializer( connector, boltProtocolFactory, throttleGroup, boltLogging, log ) ) );
     }
 
-    private ProtocolInitializer createProtocolInitializer( BoltConnector connector, BoltProtocolFactory handlerFactory,
+    private ProtocolInitializer createProtocolInitializer( BoltConnector connector, BoltProtocolFactory boltProtocolFactory,
             TransportThrottleGroup throttleGroup, BoltMessageLogging boltLogging, Log log )
     {
         SslContext sslCtx;
@@ -198,7 +198,7 @@ public class BoltServer extends LifecycleAdapter
 
         ListenSocketAddress listenAddress = config.get( connector.listen_address );
         return new SocketTransport( connector.key(), listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(), boltLogging,
-                throttleGroup, handlerFactory );
+                throttleGroup, boltProtocolFactory );
     }
 
     private static SslContext createSslContext( SslPolicyLoader sslPolicyFactory, Config config )
@@ -225,7 +225,7 @@ public class BoltServer extends LifecycleAdapter
                 dependencyResolver.resolveDependency( UserManagerSupplier.class ) );
     }
 
-    private BoltProtocolFactory createBoltProtocolInstallerFactory( BoltConnectionFactory connectionFactory,
+    private BoltProtocolFactory createBoltProtocolFactory( BoltConnectionFactory connectionFactory,
             BoltStateMachineFactory stateMachineFactory )
     {
         return new DefaultBoltProtocolFactory( connectionFactory, stateMachineFactory, logService );

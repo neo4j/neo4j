@@ -27,6 +27,8 @@ import java.time.Clock;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.security.auth.Authentication;
+import org.neo4j.bolt.v1.BoltProtocolV1;
+import org.neo4j.bolt.v2.BoltProtocolV2;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -47,8 +49,8 @@ public class BoltStateMachineFactoryImplTest
     private static final Clock CLOCK = Clock.systemUTC();
     private static final BoltChannel CHANNEL = mock( BoltChannel.class );
 
-    @ParameterizedTest
-    @ValueSource( longs = {1, 2} )
+    @ParameterizedTest( name = "V{0}" )
+    @ValueSource( longs = {BoltProtocolV1.VERSION, BoltProtocolV2.VERSION} )
     public void shouldCreateBoltStateMachines( long protocolVersion )
     {
         BoltStateMachineFactoryImpl factory = newBoltFactory();

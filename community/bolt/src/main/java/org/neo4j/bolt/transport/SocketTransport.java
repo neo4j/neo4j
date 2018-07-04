@@ -40,12 +40,12 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
     private final LogProvider logging;
     private final BoltMessageLogging boltLogging;
     private final TransportThrottleGroup throttleGroup;
-    private final BoltProtocolFactory handlerFactory;
+    private final BoltProtocolFactory boltProtocolFactory;
 
     public SocketTransport( String connector, ListenSocketAddress address, SslContext sslCtx, boolean encryptionRequired,
                             LogProvider logging, BoltMessageLogging boltLogging,
                             TransportThrottleGroup throttleGroup,
-                            BoltProtocolFactory handlerFactory )
+                            BoltProtocolFactory boltProtocolFactory )
     {
         this.connector = connector;
         this.address = address;
@@ -54,7 +54,7 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
         this.logging = logging;
         this.boltLogging = boltLogging;
         this.throttleGroup = throttleGroup;
-        this.handlerFactory = handlerFactory;
+        this.boltProtocolFactory = boltProtocolFactory;
     }
 
     @Override
@@ -74,7 +74,7 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
                 ch.closeFuture().addListener( future -> throttleGroup.uninstall( ch ) );
 
                 TransportSelectionHandler transportSelectionHandler = new TransportSelectionHandler( connector, sslCtx,
-                        encryptionRequired, false, logging, handlerFactory, boltLogging );
+                        encryptionRequired, false, logging, boltProtocolFactory, boltLogging );
 
                 ch.pipeline().addLast( transportSelectionHandler );
             }

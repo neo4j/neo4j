@@ -25,7 +25,7 @@ import org.neo4j.bolt.BoltProtocol;
 /**
  * Represents a component that instantiates Bolt protocol handlers.
  *
- * @see BoltProtocolPipelineInstaller
+ * @see BoltProtocol
  */
 @FunctionalInterface
 public interface BoltProtocolFactory

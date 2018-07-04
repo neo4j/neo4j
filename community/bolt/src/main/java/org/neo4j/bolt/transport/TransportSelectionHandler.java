@@ -52,10 +52,10 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     private final boolean isEncrypted;
     private final LogProvider logging;
     private final BoltMessageLogging boltLogging;
-    private final BoltProtocolFactory handlerFactory;
+    private final BoltProtocolFactory boltProtocolFactory;
 
     TransportSelectionHandler( String connector, SslContext sslCtx, boolean encryptionRequired, boolean isEncrypted, LogProvider logging,
-            BoltProtocolFactory handlerFactory, BoltMessageLogging boltLogging )
+            BoltProtocolFactory boltProtocolFactory, BoltMessageLogging boltLogging )
     {
         this.connector = connector;
         this.sslCtx = sslCtx;
@@ -63,7 +63,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
         this.isEncrypted = isEncrypted;
         this.logging = logging;
         this.boltLogging = boltLogging;
-        this.handlerFactory = handlerFactory;
+        this.boltProtocolFactory = boltProtocolFactory;
     }
 
     @Override
@@ -121,7 +121,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     {
         ChannelPipeline p = ctx.pipeline();
         p.addLast( sslCtx.newHandler( ctx.alloc() ) );
-        p.addLast( new TransportSelectionHandler( connector, null, encryptionRequired, true, logging, handlerFactory, boltLogging ) );
+        p.addLast( new TransportSelectionHandler( connector, null, encryptionRequired, true, logging, boltProtocolFactory, boltLogging ) );
         p.remove( this );
     }
 
@@ -147,7 +147,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
 
     private ProtocolHandshaker newHandshaker( ChannelHandlerContext ctx )
     {
-        return new ProtocolHandshaker( handlerFactory, BoltChannel.open( connector, ctx.channel(), boltLogging.newLogger( ctx.channel() ) ), logging,
+        return new ProtocolHandshaker( boltProtocolFactory, BoltChannel.open( connector, ctx.channel(), boltLogging.newLogger( ctx.channel() ) ), logging,
                 encryptionRequired, isEncrypted );
     }
 }

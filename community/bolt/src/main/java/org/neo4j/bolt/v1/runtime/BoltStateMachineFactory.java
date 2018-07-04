@@ -30,6 +30,7 @@ public interface BoltStateMachineFactory
     /**
      * Generate a new state machine.
      *
+     * @param protocolVersion used to select state machine version
      * @param boltChannel channel over which Bolt massages can be exchanged
      * @return new {@link BoltStateMachine} instance
      */

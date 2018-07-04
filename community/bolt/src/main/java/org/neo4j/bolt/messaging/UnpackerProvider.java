@@ -17,19 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.runtime;
+package org.neo4j.bolt.messaging;
 
-import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.v1.packstream.PackInput;
 
-public interface BoltConnectionFactory
+public interface UnpackerProvider
 {
-    /**
-     * Create a new connection bound to the specified channel
-     *
-     * @param channel the underlying channel
-     * @param boltStateMachine to handle state change of the connection
-     * @return the newly created connection instance
-     */
-    BoltConnection newConnection( BoltChannel channel, BoltStateMachine boltStateMachine );
-
+    Neo4jPack.Unpacker newUnpacker( PackInput input );
 }
