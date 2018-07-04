@@ -85,8 +85,8 @@ public class BatchInsertIndexProviderTest
         Map<String,String> config = stringMap( default_schema_provider.name(), schemaIndex.providerName() );
         BatchInserter inserter = newBatchInserter( config );
         inserter.createDeferredSchemaIndex( TestLabels.LABEL_ONE ).on( "key" ).create();
-
-        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter, config );
+        inserter.shutdown();
+        GraphDatabaseService db = graphDatabaseService( inserter.getStoreDir(), config );
         try ( Transaction tx = db.beginTx() )
         {
             DependencyResolver dependencyResolver = ((GraphDatabaseAPI) db).getDependencyResolver();
@@ -108,12 +108,11 @@ public class BatchInsertIndexProviderTest
         return BatchInserters.inserter( storeDir.absolutePath(), fileSystemRule.get(), config );
     }
 
-    private GraphDatabaseService switchToEmbeddedGraphDatabaseService( BatchInserter inserter, Map<String, String> config )
+    private GraphDatabaseService graphDatabaseService( String storeDir, Map<String, String> config )
     {
-        inserter.shutdown();
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fileSystemRule.get() );
-        GraphDatabaseService db = factory.newImpermanentDatabaseBuilder( new File( inserter.getStoreDir() ) )
+        GraphDatabaseService db = factory.newImpermanentDatabaseBuilder( new File( storeDir ) )
                 // Shouldn't be necessary to set dense node threshold since it's a stick config
                 .setConfig( config )
                 .newGraphDatabase();
