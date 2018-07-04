@@ -53,8 +53,8 @@ case class PlanRegexNameMatcher(expectedNameRegex: Regex) extends PlanNameMatche
   override def apply(plan: InternalPlanDescription): MatchResult = {
     MatchResult(
       matches = expectedNameRegex.pattern.matcher(plan.name).matches(),
-      rawFailureMessage = s"Expected a plan with name $expectedName but got ${plan.name}.",
-      rawNegatedFailureMessage = s"Expected no plan with name $expectedName."
+      rawFailureMessage = s"Expected a plan with name matched by the Regex $expectedName but got ${plan.name}.",
+      rawNegatedFailureMessage = s"Expected no plan with name matched by the Regex $expectedName."
     )
   }
 }

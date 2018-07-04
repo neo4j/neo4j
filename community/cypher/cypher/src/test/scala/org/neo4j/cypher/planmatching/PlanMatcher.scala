@@ -30,8 +30,7 @@ import org.scalatest.matchers.{MatchResult, Matcher}
 import scala.util.matching.Regex
 
 /**
-  * An immutable matcher for plan descriptions. The methods allow to obtain a new PlanMatcher that asserts on everything this assert on
-  * plus a new assertion (or overriding an assertion).
+  * An immutable matcher for plan descriptions. The methods allow to obtain a new PlanMatcher and adding or overriding an assertion of this PlanMatcher.
   */
 trait PlanMatcher extends Matcher[InternalPlanDescription] {
   /**
@@ -145,7 +144,7 @@ case class CountInTree(expectedCount: Int, inner: PlanMatcher, atLeast: Boolean 
     MatchResult(
       matches = if (atLeast) count >= expectedCount else count == expectedCount,
       rawFailureMessage = s"Expected to find $toPlanDescription\n ${if (atLeast) "at least " else ""}$expectedCount times but found it $count times.",
-      rawNegatedFailureMessage = s"Did not expect to find $toPlanDescription\n more than ${expectedCount - 1} times."
+      rawNegatedFailureMessage = s"Did not expect to find $toPlanDescription\n ${if (atLeast) s"more than ${expectedCount - 1}" else s"exactly $expectedCount"} times but found it $count times."
     )
   }
 

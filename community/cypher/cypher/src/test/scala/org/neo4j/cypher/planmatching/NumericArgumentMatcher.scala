@@ -67,9 +67,9 @@ trait NumericArgumentMatcher extends Matcher[InternalPlanDescription] {
         matches = false,
         rawFailureMessage = s"No $argString found.",
         rawNegatedFailureMessage = "")
-      case Some(rows) => MatchResult(
-        matches = matches(rows),
-        rawFailureMessage = s"Expected ${plan.name} to have $argMatcherDesc $argString but had $rows $argString.",
+      case Some(amount) => MatchResult(
+        matches = matches(amount),
+        rawFailureMessage = s"Expected ${plan.name} to have $argMatcherDesc $argString but had $amount $argString.",
         rawNegatedFailureMessage = s"Expected ${plan.name} not to have $argMatcherDesc $argString."
       )
     }
@@ -80,7 +80,7 @@ trait NumericArgumentMatcher extends Matcher[InternalPlanDescription] {
   * Matches an Argument by exact comparison
   */
 abstract class ExactArgumentMatcher(override val expectedValue: Long) extends NumericArgumentMatcher {
-  override def matches(rows: Long): Boolean = expectedValue == rows
+  override def matches(amount: Long): Boolean = expectedValue == amount
 
   override val argMatcherDesc: String = expectedValue.toString
 }
@@ -88,16 +88,16 @@ abstract class ExactArgumentMatcher(override val expectedValue: Long) extends Nu
 /**
   * Matches an Argument by range between two values
   */
-abstract class RangeArgumentMatcher(expectedRowsMin: Long, expectedRowsMax: Long) extends NumericArgumentMatcher {
-  override val expectedValue: Long = expectedRowsMin
+abstract class RangeArgumentMatcher(expectedAmountMin: Long, expectedAmountMax: Long) extends NumericArgumentMatcher {
+  override val expectedValue: Long = expectedAmountMin
 
-  override def matches(rows: Long): Boolean = expectedRowsMin <= rows && rows <= expectedRowsMax
+  override def matches(amount: Long): Boolean = expectedAmountMin <= amount && amount <= expectedAmountMax
 
   override val argMatcherDesc: String =
-    if (expectedRowsMax == Long.MaxValue) {
-      s"$expectedRowsMin or more"
+    if (expectedAmountMax == Long.MaxValue) {
+      s"$expectedAmountMin or more"
     } else {
-      s"between $expectedRowsMin and $expectedRowsMax"
+      s"between $expectedAmountMin and $expectedAmountMax"
     }
 }
 
@@ -117,7 +117,7 @@ trait ActualRowsMatcher extends NumericArgumentMatcher {
   * Macthes the estimated rows from planning
   */
 trait EstimatedRowsMatcher extends NumericArgumentMatcher {
-  override val argString: String = "rows"
+  override val argString: String = "estimated rows"
 
   override def maybeMatchingArgument(plan: InternalPlanDescription): Option[Long] =
     plan.arguments.collectFirst {
