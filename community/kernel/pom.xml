@@ -273,6 +273,14 @@ the relevant Commercial Agreement.
             <scope>test</scope>
         </dependency>
         <dependency>
+            <!-- this is necessary because you have a dependency on :neo4j-logging test jar-->
+            <!-- and as we all know, test scoped dependencies from that test jar are not fetched transitively-->
+            <!-- you should stop with the test jar dependencies; it is bad form, not cricket mate-->
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-values</artifactId>
             <version>${project.version}</version>
