@@ -45,6 +45,7 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Visitor;
@@ -490,59 +491,80 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
         final IndexRule[] rules = getIndexesNeedingPopulation();
         final List<IndexPopulatorWithSchema> populators = new ArrayList<>( rules.length );
-
-        final SchemaDescriptor[] descriptors = new LabelSchemaDescriptor[rules.length];
-
-        for ( int i = 0; i < rules.length; i++ )
+        try
         {
-            IndexRule rule = rules[i];
-            SchemaIndexDescriptor index = rule.getIndexDescriptor();
-            descriptors[i] = index.schema();
-            IndexPopulator populator = schemaIndexProviders.lookup( rule.getProviderDescriptor() )
-                                                .getPopulator( rule.getId(), index, new IndexSamplingConfig( config ) );
-            populator.create();
-            populators.add( new IndexPopulatorWithSchema( populator, index ) );
+            final SchemaDescriptor[] descriptors = new LabelSchemaDescriptor[rules.length];
+
+            for ( int i = 0; i < rules.length; i++ )
+            {
+                IndexRule rule = rules[i];
+                SchemaIndexDescriptor index = rule.getIndexDescriptor();
+                descriptors[i] = index.schema();
+                IndexPopulator populator = schemaIndexProviders.lookup( rule.getProviderDescriptor() )
+                        .getPopulator( rule.getId(), index, new IndexSamplingConfig( config ) );
+                populator.create();
+                populators.add( new IndexPopulatorWithSchema( populator, index ) );
+            }
+
+            Visitor<NodeUpdates,IOException> propertyUpdateVisitor = updates ->
+            {
+                // Do a lookup from which property has changed to a list of indexes worried about that property.
+                // We do not need to load additional properties as the NodeUpdates for a full node store scan already
+                // include all properties for the node.
+                for ( IndexEntryUpdate<IndexPopulatorWithSchema> indexUpdate : updates.forIndexKeys( populators ) )
+                {
+                    try
+                    {
+                        indexUpdate.indexKey().add( indexUpdate );
+                    }
+                    catch ( IndexEntryConflictException conflict )
+                    {
+                        throw conflict.notAllowed( indexUpdate.indexKey().index() );
+                    }
+                }
+                return true;
+            };
+
+            List<SchemaDescriptor> descriptorList = Arrays.asList( descriptors );
+            int[] labelIds = descriptorList.stream()
+                    .mapToInt( SchemaDescriptor::keyId )
+                    .toArray();
+
+            int[] propertyKeyIds = descriptorList.stream()
+                    .flatMapToInt( d -> Arrays.stream( d.getPropertyIds() ) )
+                    .toArray();
+
+            try ( InitialNodeLabelCreationVisitor labelUpdateVisitor = new InitialNodeLabelCreationVisitor() )
+            {
+                StoreScan<IOException> storeScan = indexStoreView.visitNodes( labelIds,
+                        propertyKeyId -> PrimitiveIntCollections.contains( propertyKeyIds, propertyKeyId ),
+                        propertyUpdateVisitor, labelUpdateVisitor, true );
+                storeScan.run();
+
+                for ( IndexPopulatorWithSchema populator : populators )
+                {
+                    populator.verifyDeferredConstraints( indexStoreView );
+                    populator.setPopulationCompletedSuccessfully( true );
+                }
+            }
         }
-
-        Visitor<NodeUpdates, IOException> propertyUpdateVisitor = updates ->
+        finally
         {
-            // Do a lookup from which property has changed to a list of indexes worried about that property.
-            // We do not need to load additional properties as the NodeUpdates for a full node store scan already
-            // include all properties for the node.
-            for ( IndexEntryUpdate<IndexPopulatorWithSchema> indexUpdate : updates.forIndexKeys( populators ) )
+            Throwable throwable = null;
+            for ( IndexPopulatorWithSchema populator : populators )
             {
                 try
                 {
-                    indexUpdate.indexKey().add( indexUpdate );
+                    populator.close();
                 }
-                catch ( IndexEntryConflictException conflict )
+                catch ( Throwable t )
                 {
-                    throw conflict.notAllowed( indexUpdate.indexKey().index() );
+                    throwable = Exceptions.chain( throwable, t );
                 }
-            }
-            return true;
-        };
-
-        List<SchemaDescriptor> descriptorList = Arrays.asList( descriptors );
-        int[] labelIds = descriptorList.stream()
-                .mapToInt( SchemaDescriptor::keyId )
-                .toArray();
-
-        int[] propertyKeyIds = descriptorList.stream()
-                .flatMapToInt( d -> Arrays.stream( d.getPropertyIds() ) )
-                .toArray();
-
-        try ( InitialNodeLabelCreationVisitor labelUpdateVisitor = new InitialNodeLabelCreationVisitor() )
-        {
-            StoreScan<IOException> storeScan = indexStoreView.visitNodes( labelIds,
-                    propertyKeyId -> PrimitiveIntCollections.contains( propertyKeyIds, propertyKeyId ),
-                    propertyUpdateVisitor, labelUpdateVisitor, true );
-            storeScan.run();
-
-            for ( IndexPopulatorWithSchema populator : populators )
-            {
-                populator.verifyDeferredConstraints( indexStoreView );
-                populator.close( true );
+                if ( throwable != null )
+                {
+                    throw new RuntimeException( throwable );
+                }
             }
         }
     }
@@ -1308,6 +1330,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         private final IndexPopulator populator;
         private final SchemaIndexDescriptor index;
         private Collection<IndexEntryUpdate<?>> batchedUpdates = new ArrayList<>( batchSize );
+        private boolean populationCompletedSuccessfully;
 
         IndexPopulatorWithSchema( IndexPopulator populator, SchemaIndexDescriptor index )
         {
@@ -1342,6 +1365,16 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         {
             populator.add( batchedUpdates );
             populator.verifyDeferredConstraints( propertyAccessor );
+        }
+
+        void setPopulationCompletedSuccessfully( boolean value )
+        {
+            this.populationCompletedSuccessfully = value;
+        }
+
+        void close() throws IOException
+        {
+            close( populationCompletedSuccessfully );
         }
 
         @Override
