@@ -66,23 +66,6 @@ class LocalDateTimeFunction extends TemporalFunction<LocalDateTimeValue>
     }
 
     @Override
-    protected LocalDateTimeValue positionalCreate( AnyValue[] input )
-    {
-        if ( input.length != 7 )
-        {
-            throw new IllegalArgumentException( "expected 7 arguments" );
-        }
-        return LocalDateTimeValue.localDateTime(
-                anInt( "year", input[0] ),
-                anInt( "month", input[1] ),
-                anInt( "day", input[2] ),
-                anInt( "hour", input[3] ),
-                anInt( "minute", input[4] ),
-                anInt( "second", input[5] ),
-                anInt( "nanos", input[6] ) );
-    }
-
-    @Override
     protected LocalDateTimeValue truncate( TemporalUnit unit, TemporalValue input, MapValue fields, Supplier<ZoneId> defaultZone )
     {
         return LocalDateTimeValue.truncate( unit, input, fields, defaultZone );

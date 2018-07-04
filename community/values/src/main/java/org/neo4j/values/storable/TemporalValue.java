@@ -495,7 +495,14 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                 throw new InvalidValuesArgumentException( "Builder state empty" );
             }
             state.checkAssignments( this.supportsDate() );
-            return buildInternal();
+            try
+            {
+                return buildInternal();
+            }
+            catch ( DateTimeException e )
+            {
+                throw new InvalidValuesArgumentException( e.getMessage(), e );
+            }
         }
 
         <Temp extends Temporal> Temp assignAllFields( Temp temp )
@@ -1383,15 +1390,15 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         long ns = safeCastIntegral( "nanosecond", nanosecond, Field.nanosecond.defaultValue );
         if ( ms < 0 || ms >= 1000 )
         {
-            throw new InvalidValuesArgumentException( "Invalid millisecond: " + ms );
+            throw new InvalidValuesArgumentException( "Invalid value for Millisecond: " + ms );
         }
         if ( us < 0 || us >= (millisecond != null ? 1000 : 1000_000) )
         {
-            throw new InvalidValuesArgumentException( "Invalid microsecond: " + us );
+            throw new InvalidValuesArgumentException( "Invalid value for Microsecond: " + us );
         }
         if ( ns < 0 || ns >= ( microsecond != null ? 1000 : millisecond != null ? 1000_000 : 1000_000_000 ) )
         {
-            throw new InvalidValuesArgumentException( "Invalid nanosecond: " + ns );
+            throw new InvalidValuesArgumentException( "Invalid value for Nanosecond: " + ns );
         }
         return (int) (ms * 1000_000 + us * 1000 + ns);
     }

@@ -66,19 +66,6 @@ class DateFunction extends TemporalFunction<DateValue>
     }
 
     @Override
-    protected DateValue positionalCreate( AnyValue[] input )
-    {
-        if ( input.length != 3 )
-        {
-            throw new IllegalArgumentException( "expected 3 arguments" );
-        }
-        return DateValue.date(
-                anInt( "year", input[0] ),
-                anInt( "month", input[1] ),
-                anInt( "day", input[2] ) );
-    }
-
-    @Override
     protected DateValue truncate( TemporalUnit unit, TemporalValue input, MapValue fields, Supplier<ZoneId> defaultZone )
     {
         return DateValue.truncate( unit, input, fields, defaultZone );

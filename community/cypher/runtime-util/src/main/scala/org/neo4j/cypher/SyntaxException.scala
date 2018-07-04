@@ -29,15 +29,13 @@ class SyntaxException(message: String, val query:String,  val offset: Option[Int
   def this(message:String, cause: Throwable) = this(message,"",None, cause)
   def this(message:String) = this(message,"",None,null)
 
-  override def toString = offset match {
+  override def getMessage: String = offset match {
     case Some(idx) =>
       //split can be empty if query = '\n'
       val split = query.split("\r?\n").toList
       message + lineSeparator() + findErrorLine(idx, if (split.nonEmpty) split else List(""))
     case None => message
   }
-
-  override def getMessage = toString
 
   override val status = Status.Statement.SyntaxError
 
