@@ -265,6 +265,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     public void testIndexSeekExactWithRangeByBoolean() throws Exception
     {
         Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
+        Assume.assumeTrue( "Assume support for boolean range queries", testSuite.supportsBooleanRangeQueries() );
 
         updateAndCommit( asList(
                 add( 1L, descriptor.schema(), true, false ),
@@ -471,6 +472,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     public void testIndexSeekRangeWithExistsByBoolean() throws Exception
     {
         Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
+        Assume.assumeTrue( "Assume support for boolean range queries", testSuite.supportsBooleanRangeQueries() );
 
         updateAndCommit( asList(
                 add( 1L, descriptor.schema(), false, "someString" ),

@@ -32,6 +32,7 @@ import java.util.List;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.PointValue;
@@ -114,6 +115,24 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
+    public void testIndexSeekByBoolean() throws Exception
+    {
+        Assume.assumeTrue( "Assume support for boolean range queries", testSuite.supportsBooleanRangeQueries() );
+
+        updateAndCommit( asList(
+                add( 1L, descriptor.schema(), false ),
+                add( 2L, descriptor.schema(), true ) ) );
+
+        assertThat( query( range( 1, BooleanValue.FALSE, true, BooleanValue.TRUE, true ) ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( query( range( 1, BooleanValue.FALSE, false, BooleanValue.TRUE, true ) ), equalTo( singletonList( 2L ) ) );
+        assertThat( query( range( 1, BooleanValue.FALSE, true, BooleanValue.TRUE, false ) ), equalTo( singletonList( 1L ) ) );
+        assertThat( query( range( 1, BooleanValue.FALSE, false, BooleanValue.TRUE, false ) ), equalTo( EMPTY_LIST ) );
+        assertThat( query( range( 1, null, true, BooleanValue.TRUE, true ) ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( query( range( 1, BooleanValue.FALSE, true, null, true ) ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( query( range( 1, BooleanValue.TRUE, true, BooleanValue.FALSE, true ) ), equalTo( EMPTY_LIST ) );
+    }
+
+    @Test
     public void testIndexSeekByPrefix() throws Exception
     {
         updateAndCommit( asList(
@@ -137,22 +156,6 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                 add( 2L, descriptor.schema(), 2L ),
                 add( 2L, descriptor.schema(), 20L ) ) );
         assertThat( query( IndexQuery.stringPrefix( 1, "2" ) ), equalTo( singletonList( 1L ) ) );
-    }
-
-    @Test
-    public void shouldUpdateWithAllValues() throws Exception
-    {
-        // GIVEN
-        List<IndexEntryUpdate<?>> updates = updates( valueSet1 );
-        updateAndCommit( updates );
-
-        // then
-        int propertyKeyId = descriptor.schema().getPropertyId();
-        for ( NodeAndValue entry : valueSet1 )
-        {
-            List<Long> result = query( IndexQuery.exact( propertyKeyId, entry.value ) );
-            assertThat( result, equalTo( Collections.singletonList( entry.nodeId ) ) );
-        }
     }
 
     @Test
@@ -195,6 +198,22 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
             ) );
 
         assertThat( query( range( 1, p1, true, p2, true ) ), Matchers.contains( 1L, 2L ) );
+    }
+
+    @Test
+    public void shouldUpdateWithAllValues() throws Exception
+    {
+        // GIVEN
+        List<IndexEntryUpdate<?>> updates = updates( valueSet1 );
+        updateAndCommit( updates );
+
+        // then
+        int propertyKeyId = descriptor.schema().getPropertyId();
+        for ( NodeAndValue entry : valueSet1 )
+        {
+            List<Long> result = query( IndexQuery.exact( propertyKeyId, entry.value ) );
+            assertThat( result, equalTo( Collections.singletonList( entry.nodeId ) ) );
+        }
     }
 
     @Test

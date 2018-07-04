@@ -62,4 +62,10 @@ public class GenericIndexProviderCompatibilitySuiteTest extends IndexProviderCom
     {
         return true;
     }
+
+    @Override
+    public boolean supportsBooleanRangeQueries()
+    {
+        return true;
+    }
 }
