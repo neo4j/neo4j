@@ -28,19 +28,20 @@ import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
 
 class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
-  val pointConfig = Configs.Interpreted - Configs.Version2_3
-  val distanceConfig = Configs.Interpreted - Configs.Before3_3AndRule
+  private val pointConfig = Configs.Interpreted - Configs.Version2_3
+  private val unrecognizedKeyPointConfig: TestConfiguration = pointConfig - Configs.Before3_3AndRule
+  private val distanceConfig = Configs.Interpreted - Configs.Before3_3AndRule
 
   test("distance function should work on co-located points") {
     val result = executeWith(pointConfig, "WITH point({latitude: 12.78, longitude: 56.7}) as point RETURN distance(point,point) as dist",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point", "dist"),
-        expectPlansToFail = Configs.AllRulePlanners))
+    planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point", "dist"),
+    expectPlansToFail = Configs.AllRulePlanners))
 
     result.toList should equal(List(Map("dist" -> 0.0)))
   }
 
   test("distance function should work on co-located points in 3D") {
-    val result = executeWith(pointConfig, "WITH point({latitude: 12.78, longitude: 56.7, height: 198.2}) as point RETURN distance(point,point) as dist",
+    val result = executeWith(unrecognizedKeyPointConfig, "WITH point({latitude: 12.78, longitude: 56.7, height: 198.2}) as point RETURN distance(point,point) as dist",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point", "dist"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -72,7 +73,7 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
   }
 
   test("distance function should work on nearby points in 3D") {
-    val result = executeWith(pointConfig,
+    val result = executeWith(unrecognizedKeyPointConfig,
       """
         |WITH point({longitude: 12.78, latitude: 56.7, height: 100}) as p1, point({latitude: 56.71, longitude: 12.79, height: 100}) as p2
         |RETURN distance(p1,p2) as dist
@@ -97,7 +98,7 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
   }
 
   test("distance function should work on distant points in 3D") {
-    val result = executeWith(pointConfig,
+    val result = executeWith(unrecognizedKeyPointConfig,
       """
         |WITH point({latitude: 56.7, longitude: 12.78, height: 100}) as p1, point({longitude: -51.9, latitude: -16.7, height: 100}) as p2
         |RETURN distance(p1,p2) as dist
@@ -110,7 +111,7 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
   }
 
   test("distance function should work on 3D cartesian points") {
-    val result = executeWith(pointConfig,
+    val result = executeWith(unrecognizedKeyPointConfig,
       """
         |WITH point({x: 1.2, y: 3.4, z: 5.6}) as p1, point({x: 1.2, y: 3.4, z: 6.6}) as p2
         |RETURN distance(p1,p2) as dist
@@ -123,7 +124,7 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
   }
 
   test("distance function should not fail if provided with points from different CRS") {
-    val localConfig = pointConfig - Configs.Before3_3AndRule
+    val localConfig = unrecognizedKeyPointConfig
       val res = executeWith(localConfig,
         """WITH point({x: 2.3, y: 4.5, crs: 'cartesian'}) as p1, point({longitude: 1.1, latitude: 5.4, crs: 'WGS-84'}) as p2
         |RETURN distance(p1,p2) as dist""".stripMargin)
@@ -131,7 +132,7 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
   }
 
   test("distance function should return null if provided with points with different dimensions") {
-    val result = executeWith(pointConfig,
+    val result = executeWith(unrecognizedKeyPointConfig,
       """WITH point({x: 2.3, y: 4.5}) as p1, point({x: 1.2, y: 3.4, z: 5.6}) as p2
         |RETURN distance(p1,p2) as dist""".stripMargin,
       expectedDifferentResults = Configs.Version3_1 + Configs.AllRulePlanners // TODO should rather throw error
