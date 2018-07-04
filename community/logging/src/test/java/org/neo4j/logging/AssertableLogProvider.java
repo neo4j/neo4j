@@ -42,7 +42,7 @@ import org.neo4j.helpers.collection.Iterators;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-import static org.apache.commons.text.StringEscapeUtils.escapeJava;
+import static org.apache.commons.lang3.StringEscapeUtils.escapeJava;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.arrayContaining;
