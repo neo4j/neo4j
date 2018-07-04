@@ -49,7 +49,7 @@ public interface RuntimeResult extends AutoCloseable
     boolean isExhausted();
 
     /**
-     * Consume this result using a visitor. Will complain if {@link RuntimeResult#isIterable()} is false.
+     * Consume this result using a visitor.
      */
     <E extends Exception> void accept( QueryResult.QueryResultVisitor<E> visitor )
             throws E;
