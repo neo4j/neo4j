@@ -111,7 +111,7 @@ public class RaftReplicatorTest
         replicatingThread.join( DEFAULT_TIMEOUT_MS );
         assertEquals( leader, outbound.lastTo );
 
-        verify( replicationMonitor, times( 1 ) ).startReplication( content );
+        verify( replicationMonitor, times( 1 ) ).startReplication();
         verify( replicationMonitor, atLeast( 1 ) ).replicationAttempt();
         verify( replicationMonitor, times( 1 ) ).successfulReplication();
         verify( replicationMonitor, never() ).failedReplication( any() );
@@ -142,7 +142,7 @@ public class RaftReplicatorTest
         capturedProgress.last.setReplicated();
         replicatingThread.join( DEFAULT_TIMEOUT_MS );
 
-        verify( replicationMonitor, times( 1 ) ).startReplication( content );
+        verify( replicationMonitor, times( 1 ) ).startReplication();
         verify( replicationMonitor, atLeast( 2 ) ).replicationAttempt();
         verify( replicationMonitor, times( 1 ) ).successfulReplication();
         verify( replicationMonitor, never() ).failedReplication( any() );
@@ -199,7 +199,7 @@ public class RaftReplicatorTest
         replicatingThread.join();
         assertThat( replicatingThread.getReplicationException().getCause(), Matchers.instanceOf( AvailabilityGuard.UnavailableException.class ) );
 
-        verify( replicationMonitor, times( 1 ) ).startReplication( content );
+        verify( replicationMonitor, times( 1 ) ).startReplication();
         verify( replicationMonitor, times( 1 ) ).replicationAttempt();
         verify( replicationMonitor, never() ).successfulReplication();
         verify( replicationMonitor, times( 1 ) ).failedReplication( any() );

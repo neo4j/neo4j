@@ -22,11 +22,9 @@
  */
 package org.neo4j.causalclustering.core.replication.monitoring;
 
-import org.neo4j.causalclustering.core.replication.ReplicatedContent;
-
 public interface ReplicationMonitor
 {
-    void startReplication( ReplicatedContent command );
+    void startReplication();
 
     void replicationAttempt();
 
