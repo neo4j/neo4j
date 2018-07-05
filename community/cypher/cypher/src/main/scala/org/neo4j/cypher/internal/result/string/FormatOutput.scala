@@ -17,62 +17,60 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan
-
-import java.io.PrintWriter
+package org.neo4j.cypher.internal.result.string
 
 import org.neo4j.graphdb.QueryStatistics
-
-import scala.collection.Map
 
 /**
  * Creates formatted tabular output.
  */
-object formatOutput extends ((PrintWriter, Seq[String], Seq[Map[String, String]], QueryStatistics) => Unit) {
+object FormatOutput {
 
-  def apply(writer: PrintWriter, columns: Seq[String],
-            result: Seq[Map[String, String]], queryStatistics: QueryStatistics) {
+  def format(writer: FormatOutputWriter,
+             columns: Array[String],
+             result: Seq[Array[String]],
+             queryStatistics: QueryStatistics): Unit = {
 
-    def makeSize(txt: String, wantedSize: Int): String = {
-      val actualSize = txt.length()
+    def makeSize(str: String, wantedSize: Int): String = {
+      val actualSize = str.length()
       if (actualSize > wantedSize) {
-        txt.slice(0, wantedSize)
+        str.slice(0, wantedSize)
       } else if (actualSize < wantedSize) {
-        txt + repeat(" ", wantedSize - actualSize)
-      } else txt
+        str.padTo(wantedSize, ' ')
+      } else str
     }
 
-    def repeat(x: String, size: Int): String = (1 to size).map((i) => x).mkString
+    def repeat(x: String, size: Int): String = (1 to size).map(i => x).mkString
 
-    def createString(columnSizes: Map[String, Int], m: Map[String, String]) = {
-      columns.map(c => {
-        val length = columnSizes.get(c).get
-        val txt = m.get(c).get
-        val value = makeSize(txt, length)
-        value
+    def createLine(columnSizes: Array[Int], row: Array[String]): String = {
+      columnSizes.indices.map(i => {
+        val length = columnSizes(i)
+        val valueString = row(i)
+        makeSize(valueString, length)
       }).mkString("| ", " | ", " |")
     }
 
-    def calculateColumnSizes(result: Seq[Map[String, String]]) = {
-      val columnSizes = new scala.collection.mutable.OpenHashMap[String, Int] ++ columns.map(name => name -> name.length)
+    def calculateColumnSizes(result: Seq[Array[String]]): Array[Int] = {
+      val columnSizes = columns.map(_.length)
 
-      result.foreach((m) => {
-        m.foreach((kv) => {
-          val length = kv._2.length
-          if (!columnSizes.contains(kv._1) || columnSizes.get(kv._1).get < length) {
-            columnSizes.put(kv._1, length)
-          }
-        })
-      })
-      columnSizes.toMap
+      for {
+        row <- result
+        i <- columns.indices
+      } {
+        val column = columns(i)
+        val valueLength = row(i).length
+        if (columnSizes(i) < valueLength)
+          columnSizes(i) = valueLength
+      }
+
+      columnSizes
     }
 
     if (columns.nonEmpty) {
-      val headers = columns.map((c) => Map(c -> c)).reduceLeft(_ ++ _)
       val columnSizes = calculateColumnSizes(result)
-      val headerLine = createString(columnSizes, headers)
+      val headerLine = createLine(columnSizes, columns)
       val lineWidth = headerLine.length - 2
-      val --- = "+" + repeat("-", lineWidth) + "+"
+      val --- = "+".padTo(lineWidth + 1, '-') + "+"
 
       val row = if (result.size > 1) "rows" else "row"
       val footer = "%d %s".format(result.size, row)
@@ -81,7 +79,7 @@ object formatOutput extends ((PrintWriter, Seq[String], Seq[Map[String, String]]
       writer.println(headerLine)
       writer.println(---)
 
-      result.foreach(resultLine => writer.println(createString(columnSizes, resultLine)))
+      result.foreach(resultLine => writer.println(createLine(columnSizes, resultLine)))
 
       writer.println(---)
       writer.println(footer)

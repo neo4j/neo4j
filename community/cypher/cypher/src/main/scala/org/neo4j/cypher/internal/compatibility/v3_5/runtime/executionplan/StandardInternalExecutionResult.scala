@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan
 
-import java.io.{PrintWriter, StringWriter}
+import java.io.PrintWriter
 import java.util
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.{MapBasedRow, RuntimeTextValueConverter}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.MapBasedRow
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.profiler.PlanDescriptionBuilder
+import org.neo4j.cypher.internal.result.string.ResultStringBuilder
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
@@ -210,23 +211,15 @@ class StandardInternalExecutionResult(context: QueryContext,
    */
 
   override def dumpToString(): String = {
-    val stringWriter = new StringWriter()
-    val writer = new PrintWriter(stringWriter)
-    dumpToString(writer)
-    writer.close()
-    stringWriter.getBuffer.toString
+    val resultStringBuilder = ResultStringBuilder(fieldNames(), context.transactionalContext)
+    accept(resultStringBuilder)
+    resultStringBuilder.result(queryStatistics())
   }
 
   override def dumpToString(writer: PrintWriter): Unit = {
-    val builder = Seq.newBuilder[Map[String, String]]
-    val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
-    val runtimeTextValueConverter = new RuntimeTextValueConverter(scalaValues, context.transactionalContext)
-
-    accept(row => {
-      builder += runtimeTextValueConverter.dumpRowToString(fieldNames(), row)
-    })
-
-    formatOutput(writer, runtimeResult.fieldNames(), builder.result(), queryStatistics())
+    val resultStringBuilder = ResultStringBuilder(fieldNames(), context.transactionalContext)
+    accept(resultStringBuilder)
+    resultStringBuilder.result(writer, queryStatistics())
   }
 
   /*

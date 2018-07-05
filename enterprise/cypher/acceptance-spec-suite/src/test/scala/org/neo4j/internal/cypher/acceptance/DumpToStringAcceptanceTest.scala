@@ -29,31 +29,50 @@ class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
 
   implicit val windowsSafe = WindowsStringSafe
 
-  test("format node") {
-    createNode(Map("prop1" -> "A", "prop2" -> 2))
+  test("basic dumpToString") {
+    dumpToString(
+      """UNWIND [
+        |  {a:1,                b:true },
+        |  {a:'Hello there...', b:5.467},
+        |  {a:[1,2],            b:'Hi!'}
+        |  ] AS map
+        |RETURN map.a AS a, map.b AS bColumn""".stripMargin) should
+      equal("""+----------------------------+
+              || a                | bColumn |
+              |+----------------------------+
+              || 1                | true    |
+              || "Hello there..." | 5.467   |
+              || [1,2]            | "Hi!"   |
+              |+----------------------------+
+              |3 rows
+              |""".stripMargin)
+  }
 
-    dumpToString("match (n) return n") should
-      equal(
-        """+----------------------------+
-          || n                          |
-          |+----------------------------+
-          || Node[0]{prop1:"A",prop2:2} |
-          |+----------------------------+
-          |1 row
-          |""".stripMargin)
+  test("format node") {
+    createNode(Map("prop" -> "A"))
+
+    dumpToString("match (n) return n, 2 AS int") should
+      equal("""+-------------------------+
+              || n                 | int |
+              |+-------------------------+
+              || Node[0]{prop:"A"} | 2   |
+              |+-------------------------+
+              |1 row
+              |""".stripMargin)
   }
 
   test("format relationship") {
-    relate(createNode(), createNode(), "T", Map("prop1" -> "A", "prop2" -> 2))
+    relate(createNode(), createNode(), "T", Map("prop" -> "A"))
 
-    dumpToString("match ()-[r]->() return r") should equal(
-      """+--------------------------+
-        || r                        |
-        |+--------------------------+
-        || :T[0]{prop1:"A",prop2:2} |
-        |+--------------------------+
-        |1 row
-        |""".stripMargin)
+    dumpToString("match ()-[r]->() return r") should
+        equal("""+-----------------+
+                || r               |
+                |+-----------------+
+                || :T[0]{prop:"A"} |
+                |+-----------------+
+                |1 row
+                |""".stripMargin)
+
   }
 
   test("format collection of maps") {
