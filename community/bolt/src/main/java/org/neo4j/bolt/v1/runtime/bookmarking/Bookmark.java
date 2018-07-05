@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.v1.runtime.bookmarking;
 
+import java.util.Objects;
+
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
@@ -42,12 +44,6 @@ public class Bookmark
         this.txId = txId;
     }
 
-    @Override
-    public String toString()
-    {
-        return format( BOOKMARK_TX_PREFIX + "%d", txId );
-    }
-
     public static Bookmark fromParamsOrNull( MapValue params ) throws BookmarkFormatException
     {
         // try to parse multiple bookmarks, if available
@@ -64,6 +60,33 @@ public class Bookmark
     public long txId()
     {
         return txId;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        Bookmark bookmark = (Bookmark) o;
+        return txId == bookmark.txId;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( txId );
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( BOOKMARK_TX_PREFIX + "%d", txId );
     }
 
     private static Bookmark parseMultipleBookmarks( MapValue params ) throws BookmarkFormatException

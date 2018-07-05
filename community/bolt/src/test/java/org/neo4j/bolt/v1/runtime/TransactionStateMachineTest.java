@@ -19,14 +19,14 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
 import java.util.Optional;
 
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
+import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -43,7 +43,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -53,16 +53,15 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.security.auth.AuthenticationResult.AUTH_DISABLED;
-import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
-public class TransactionStateMachineTest
+class TransactionStateMachineTest
 {
     private TransactionStateMachineSPI stateMachineSPI;
     private TransactionStateMachine.MutableTransactionState mutableState;
     private TransactionStateMachine stateMachine;
 
-    @Before
-    public void createMocks()
+    @BeforeEach
+    void createMocks()
     {
         stateMachineSPI = mock( TransactionStateMachineSPI.class );
         mutableState = mock(TransactionStateMachine.MutableTransactionState.class);
@@ -70,162 +69,89 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldTransitionToExplicitTransactionOnBegin() throws Exception
+    void shouldTransitionToExplicitTransactionOnBegin() throws Exception
     {
-        assertEquals( TransactionStateMachine.State.AUTO_COMMIT.run(
-                mutableState, stateMachineSPI, "begin", EMPTY_MAP ),
-                TransactionStateMachine.State.EXPLICIT_TRANSACTION );
-        assertEquals( TransactionStateMachine.State.AUTO_COMMIT.run(
-                mutableState, stateMachineSPI, "BEGIN", EMPTY_MAP ),
-                TransactionStateMachine.State.EXPLICIT_TRANSACTION );
-        assertEquals( TransactionStateMachine.State.AUTO_COMMIT.run(
-                mutableState, stateMachineSPI, "   begin   ", EMPTY_MAP ),
-                TransactionStateMachine.State.EXPLICIT_TRANSACTION );
-        assertEquals( TransactionStateMachine.State.AUTO_COMMIT.run(
-                mutableState, stateMachineSPI, "   BeGiN ;   ", EMPTY_MAP ),
-                TransactionStateMachine.State.EXPLICIT_TRANSACTION );
+        assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION,
+                TransactionStateMachine.State.AUTO_COMMIT.beginTransaction( null, mutableState, stateMachineSPI ) );
     }
 
     @Test
-    public void shouldTransitionToAutoCommitOnCommit() throws Exception
+    void shouldTransitionToAutoCommitOnCommit() throws Exception
     {
-        assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
-                mutableState, stateMachineSPI, "commit", EMPTY_MAP ),
-                TransactionStateMachine.State.AUTO_COMMIT );
-        assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
-                mutableState, stateMachineSPI, "COMMIT", EMPTY_MAP ),
-                TransactionStateMachine.State.AUTO_COMMIT );
-        assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
-                mutableState, stateMachineSPI, "   commit   ", EMPTY_MAP ),
-                TransactionStateMachine.State.AUTO_COMMIT );
-        assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
-                mutableState, stateMachineSPI, "   CoMmIt ;   ", EMPTY_MAP ),
-                TransactionStateMachine.State.AUTO_COMMIT );
+        assertEquals( TransactionStateMachine.State.AUTO_COMMIT,
+                TransactionStateMachine.State.EXPLICIT_TRANSACTION.commitTransaction( mutableState, stateMachineSPI ) );
     }
 
     @Test
-    public void shouldTransitionToAutoCommitOnRollback() throws Exception
+    void shouldTransitionToAutoCommitOnRollback() throws Exception
     {
-        assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
-                mutableState, stateMachineSPI, "rollback", EMPTY_MAP ),
-                TransactionStateMachine.State.AUTO_COMMIT );
-        assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
-                mutableState, stateMachineSPI, "ROLLBACK", EMPTY_MAP ),
-                TransactionStateMachine.State.AUTO_COMMIT );
-        assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
-                mutableState, stateMachineSPI, "   rollback   ", EMPTY_MAP ),
-                TransactionStateMachine.State.AUTO_COMMIT );
-        assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
-                mutableState, stateMachineSPI, "   RoLlBaCk ;   ", EMPTY_MAP ),
-                TransactionStateMachine.State.AUTO_COMMIT );
+        assertEquals( TransactionStateMachine.State.AUTO_COMMIT,
+                TransactionStateMachine.State.EXPLICIT_TRANSACTION.rollbackTransaction( mutableState, stateMachineSPI ) );
     }
 
     @Test
-    public void shouldThrowOnBeginInExplicitTransaction() throws Exception
+    void shouldThrowOnBeginInExplicitTransaction() throws Exception
     {
-        try
-        {
-            TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
-                    mutableState, stateMachineSPI, "begin", EMPTY_MAP );
-        }
-        catch ( QueryExecutionKernelException ex )
-        {
-            assertEquals("Nested transactions are not supported.", ex.getMessage() );
-        }
-        try
-        {
-            TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
-                    mutableState, stateMachineSPI, " BEGIN ", EMPTY_MAP );
-        }
-        catch ( QueryExecutionKernelException ex )
-        {
-            assertEquals("Nested transactions are not supported.", ex.getMessage() );
-        }
+        QueryExecutionKernelException e = assertThrows( QueryExecutionKernelException.class, () ->
+                TransactionStateMachine.State.EXPLICIT_TRANSACTION.beginTransaction( null, mutableState, stateMachineSPI ) );
+
+        assertEquals( "Nested transactions are not supported.", e.getMessage() );
     }
 
     @Test
-    public void shouldThrowOnRollbackInAutoCommit() throws Exception
+    void shouldAllowRollbackInAutoCommit() throws Exception
     {
-        try
-        {
-            TransactionStateMachine.State.AUTO_COMMIT.run(
-                    mutableState, stateMachineSPI, "rollback", EMPTY_MAP );
-        }
-        catch ( QueryExecutionKernelException ex )
-        {
-            assertEquals("No current transaction to rollback.", ex.getMessage() );
-        }
-        try
-        {
-            TransactionStateMachine.State.AUTO_COMMIT.run(
-                    mutableState, stateMachineSPI, " ROLLBACK ", EMPTY_MAP );
-        }
-        catch ( QueryExecutionKernelException ex )
-        {
-            assertEquals("No current transaction to rollback.", ex.getMessage() );
-        }
+        assertEquals( TransactionStateMachine.State.AUTO_COMMIT,
+                TransactionStateMachine.State.AUTO_COMMIT.rollbackTransaction( mutableState, stateMachineSPI ) );
     }
 
     @Test
-    public void shouldThrowOnCommitInAutoCommit() throws Exception
+    void shouldThrowOnCommitInAutoCommit() throws Exception
     {
-        try
-        {
-            TransactionStateMachine.State.AUTO_COMMIT.run(
-                    mutableState, stateMachineSPI, "commit", EMPTY_MAP );
-        }
-        catch ( QueryExecutionKernelException ex )
-        {
-            assertEquals("No current transaction to commit.", ex.getMessage() );
-        }
-        try
-        {
-            TransactionStateMachine.State.AUTO_COMMIT.run(
-                    mutableState, stateMachineSPI, " COMMIT ", EMPTY_MAP );
-        }
-        catch ( QueryExecutionKernelException ex )
-        {
-            assertEquals("No current transaction to commit.", ex.getMessage() );
-        }
+        QueryExecutionKernelException e = assertThrows( QueryExecutionKernelException.class, () ->
+                TransactionStateMachine.State.AUTO_COMMIT.commitTransaction( mutableState, stateMachineSPI ) );
+
+        assertEquals( "No current transaction to commit.", e.getMessage() );
     }
 
     @Test
-    public void shouldNotWaitWhenNoBookmarkSupplied() throws Exception
+    void shouldNotWaitWhenNoBookmarkSupplied() throws Exception
     {
-        stateMachine.run( "BEGIN", EMPTY_MAP );
+        stateMachine.beginTransaction( null );
         verify( stateMachineSPI, never() ).awaitUpToDate( anyLong() );
     }
 
     @Test
-    public void shouldAwaitSingleBookmark() throws Exception
+    void shouldAwaitSingleBookmark() throws Exception
     {
-        stateMachine.run( "BEGIN", map( "bookmark", "neo4j:bookmark:v1:tx15" ) );
+        MapValue params = map( "bookmark", "neo4j:bookmark:v1:tx15" );
+        stateMachine.beginTransaction( Bookmark.fromParamsOrNull( params ) );
         verify( stateMachineSPI ).awaitUpToDate( 15 );
     }
 
     @Test
-    public void shouldAwaitMultipleBookmarks() throws Exception
+    void shouldAwaitMultipleBookmarks() throws Exception
     {
         MapValue params = map( "bookmarks", asList(
                 "neo4j:bookmark:v1:tx15", "neo4j:bookmark:v1:tx5", "neo4j:bookmark:v1:tx92", "neo4j:bookmark:v1:tx9" )
         );
-        stateMachine.run( "BEGIN", params );
+        stateMachine.beginTransaction( Bookmark.fromParamsOrNull( params ) );
         verify( stateMachineSPI ).awaitUpToDate( 92 );
     }
 
     @Test
-    public void shouldAwaitMultipleBookmarksWhenBothSingleAndMultipleSupplied() throws Exception
+    void shouldAwaitMultipleBookmarksWhenBothSingleAndMultipleSupplied() throws Exception
     {
         MapValue params = map(
                 "bookmark", "neo4j:bookmark:v1:tx42",
                 "bookmarks", asList( "neo4j:bookmark:v1:tx47", "neo4j:bookmark:v1:tx67", "neo4j:bookmark:v1:tx45" )
         );
-        stateMachine.run( "BEGIN", params );
+        stateMachine.beginTransaction( Bookmark.fromParamsOrNull( params ) );
         verify( stateMachineSPI ).awaitUpToDate( 67 );
     }
 
     @Test
-    public void shouldStartWithAutoCommitState()
+    void shouldStartWithAutoCommitState()
     {
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
@@ -237,7 +163,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldDoNothingInAutoCommitTransactionUponInitialisationWhenValidated() throws Exception
+    void shouldDoNothingInAutoCommitTransactionUponInitialisationWhenValidated() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
@@ -259,7 +185,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldResetInAutoCommitTransactionWhileStatementIsRunningWhenValidated() throws Exception
+    void shouldResetInAutoCommitTransactionWhileStatementIsRunningWhenValidated() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
@@ -289,14 +215,14 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldResetInExplicitTransactionUponTxBeginWhenValidated() throws Exception
+    void shouldResetInExplicitTransactionUponTxBeginWhenValidated() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         // start an explicit transaction
-        stateMachine.run( "BEGIN", map() );
+        stateMachine.beginTransaction( null );
         assertThat( stateMachine.state, is( TransactionStateMachine.State.EXPLICIT_TRANSACTION ) );
         assertNotNull( stateMachine.ctx.currentTransaction );
 
@@ -314,14 +240,14 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldResetInExplicitTransactionWhileStatementIsRunningWhenValidated() throws Exception
+    void shouldResetInExplicitTransactionWhileStatementIsRunningWhenValidated() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         // start an explicit transaction
-        stateMachine.run( "BEGIN", map() );
+        stateMachine.beginTransaction( null );
         assertThat( stateMachine.state, is( TransactionStateMachine.State.EXPLICIT_TRANSACTION ) );
         assertNotNull( stateMachine.ctx.currentTransaction );
 
@@ -341,7 +267,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldUnbindTxAfterRun() throws Exception
+    void shouldUnbindTxAfterRun() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
@@ -353,7 +279,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldUnbindTxAfterStreamResult() throws Exception
+    void shouldUnbindTxAfterStreamResult() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
@@ -369,7 +295,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldThrowDuringRunIfPendingTerminationNoticeExists() throws Exception
+    void shouldThrowDuringRunIfPendingTerminationNoticeExists() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
@@ -377,23 +303,14 @@ public class TransactionStateMachineTest
 
         stateMachine.ctx.pendingTerminationNotice = Status.Transaction.TransactionTimedOut;
 
-        try
-        {
-            stateMachine.run( "SOME STATEMENT", null );
-            fail( "exception expected" );
-        }
-        catch ( TransactionTerminatedException t )
-        {
-            assertThat( t.status(), is( Status.Transaction.TransactionTimedOut ) );
-        }
-        catch ( Throwable t )
-        {
-            fail( "expected TransactionTerminated but got " + t.getMessage() );
-        }
+        TransactionTerminatedException e = assertThrows( TransactionTerminatedException.class,
+                () -> stateMachine.run( "SOME STATEMENT", null ) );
+
+        assertEquals( Status.Transaction.TransactionTimedOut, e.status() );
     }
 
     @Test
-    public void shouldThrowDuringStreamResultIfPendingTerminationNoticeExists() throws Exception
+    void shouldThrowDuringStreamResultIfPendingTerminationNoticeExists() throws Exception
     {
         KernelTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
@@ -402,43 +319,25 @@ public class TransactionStateMachineTest
         stateMachine.run( "SOME STATEMENT", null );
         stateMachine.ctx.pendingTerminationNotice = Status.Transaction.TransactionTimedOut;
 
-        try
+        TransactionTerminatedException e = assertThrows( TransactionTerminatedException.class, () ->
         {
             stateMachine.streamResult( boltResult ->
             {
-
-            });
-
-            fail( "exception expected" );
-        }
-        catch ( TransactionTerminatedException t )
-        {
-            assertThat( t.status(), is( Status.Transaction.TransactionTimedOut ) );
-        }
-        catch ( Throwable t )
-        {
-            fail( "expected TransactionTerminated but got " + t.getMessage() );
-        }
+            } );
+        } );
+        assertEquals( Status.Transaction.TransactionTimedOut, e.status() );
     }
 
     @Test
-    public void shouldCloseResultAndTransactionHandlesWhenExecutionFails() throws Exception
+    void shouldCloseResultAndTransactionHandlesWhenExecutionFails() throws Exception
     {
         KernelTransaction transaction = newTransaction();
         BoltResultHandle resultHandle = newResultHandle( new RuntimeException( "some error" ) );
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction, resultHandle );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
-        try
-        {
-            stateMachine.run( "SOME STATEMENT", null );
-
-            fail( "exception expected" );
-        }
-        catch ( RuntimeException t )
-        {
-            assertEquals( t.getMessage(), "some error" );
-        }
+        RuntimeException e = assertThrows( RuntimeException.class, () -> stateMachine.run( "SOME STATEMENT", null ) );
+        assertEquals( "some error", e.getMessage() );
 
         assertNull( stateMachine.ctx.currentResultHandle );
         assertNull( stateMachine.ctx.currentResult );
@@ -446,7 +345,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldCloseResultAndTransactionHandlesWhenConsumeFails() throws Exception
+    void shouldCloseResultAndTransactionHandlesWhenConsumeFails() throws Exception
     {
         KernelTransaction transaction = newTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
@@ -457,19 +356,14 @@ public class TransactionStateMachineTest
         assertNotNull( stateMachine.ctx.currentResultHandle );
         assertNotNull( stateMachine.ctx.currentResult );
 
-        try
+        RuntimeException e = assertThrows( RuntimeException.class, () ->
         {
             stateMachine.streamResult( boltResult ->
             {
                 throw new RuntimeException( "some error" );
             } );
-
-            fail( "exception expected" );
-        }
-        catch ( RuntimeException t )
-        {
-            assertEquals( t.getMessage(), "some error" );
-        }
+        } );
+        assertEquals( "some error", e.getMessage() );
 
         assertNull( stateMachine.ctx.currentResultHandle );
         assertNull( stateMachine.ctx.currentResult );
@@ -477,28 +371,23 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldCloseResultHandlesWhenExecutionFailsInExplicitTransaction() throws Exception
+    void shouldCloseResultHandlesWhenExecutionFailsInExplicitTransaction() throws Exception
     {
         KernelTransaction transaction = newTransaction();
         BoltResultHandle resultHandle = newResultHandle( new RuntimeException( "some error" ) );
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction, resultHandle );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
-        try
+        RuntimeException e = assertThrows( RuntimeException.class, () ->
         {
-            stateMachine.run( "BEGIN", ValueUtils.asMapValue( Collections.emptyMap() ) );
+            stateMachine.beginTransaction( null );
             stateMachine.streamResult( boltResult ->
             {
 
-            });
+            } );
             stateMachine.run( "SOME STATEMENT", null );
-
-            fail( "exception expected" );
-        }
-        catch ( RuntimeException t )
-        {
-            assertEquals( t.getMessage(), "some error" );
-        }
+        } );
+        assertEquals( "some error", e.getMessage() );
 
         assertNull( stateMachine.ctx.currentResultHandle );
         assertNull( stateMachine.ctx.currentResult );
@@ -506,13 +395,13 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldCloseResultHandlesWhenConsumeFailsInExplicitTransaction() throws Exception
+    void shouldCloseResultHandlesWhenConsumeFailsInExplicitTransaction() throws Exception
     {
         KernelTransaction transaction = newTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
-        stateMachine.run( "BEGIN", ValueUtils.asMapValue( Collections.emptyMap() ) );
+        stateMachine.beginTransaction( null );
         stateMachine.streamResult( boltResult ->
         {
 
@@ -522,19 +411,14 @@ public class TransactionStateMachineTest
         assertNotNull( stateMachine.ctx.currentResultHandle );
         assertNotNull( stateMachine.ctx.currentResult );
 
-        try
+        RuntimeException e = assertThrows( RuntimeException.class, () ->
         {
             stateMachine.streamResult( boltResult ->
             {
                 throw new RuntimeException( "some error" );
             } );
-
-            fail( "exception expected" );
-        }
-        catch ( RuntimeException t )
-        {
-            assertEquals( t.getMessage(), "some error" );
-        }
+        } );
+        assertEquals( "some error", e.getMessage() );
 
         assertNull( stateMachine.ctx.currentResultHandle );
         assertNull( stateMachine.ctx.currentResult );
@@ -564,7 +448,7 @@ public class TransactionStateMachineTest
         return new TransactionStateMachine( stateMachineSPI, AUTH_DISABLED, new FakeClock() );
     }
 
-    private MapValue map( Object... keyValues )
+    private static MapValue map( Object... keyValues )
     {
         return ValueUtils.asMapValue( MapUtil.map( keyValues ) );
     }

@@ -24,13 +24,18 @@ import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.runtime.StatementMetadata;
+import org.neo4j.bolt.runtime.StatementProcessor;
 import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
+import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.MapValue;
 
+import static org.neo4j.bolt.v1.runtime.RunMessageChecker.isBegin;
+import static org.neo4j.bolt.v1.runtime.RunMessageChecker.isCommit;
+import static org.neo4j.bolt.v1.runtime.RunMessageChecker.isRollback;
 import static org.neo4j.util.Preconditions.checkState;
 import static org.neo4j.values.storable.Values.stringArray;
 
@@ -90,13 +95,10 @@ public class ReadyState implements BoltStateMachineState
 
     private BoltStateMachineState processRunMessage( RunMessage message, StateMachineContext context ) throws BoltConnectionFatality
     {
-        String statement = message.statement();
-        MapValue params = message.params();
-
         try
         {
             long start = context.clock().millis();
-            StatementMetadata statementMetadata = context.connectionState().getStatementProcessor().run( statement, params );
+            StatementMetadata statementMetadata = processRunMessage( message, context.connectionState().getStatementProcessor() );
             long end = context.clock().millis();
 
             context.connectionState().onMetadata( "fields", stringArray( statementMetadata.fieldNames() ) );
@@ -113,6 +115,30 @@ public class ReadyState implements BoltStateMachineState
         {
             context.handleFailure( t, false );
             return failedState;
+        }
+    }
+
+    private static StatementMetadata processRunMessage( RunMessage message, StatementProcessor statementProcessor ) throws KernelException
+    {
+        if ( isBegin( message ) )
+        {
+            Bookmark bookmark = Bookmark.fromParamsOrNull( message.params() );
+            statementProcessor.beginTransaction( bookmark );
+            return StatementMetadata.EMPTY;
+        }
+        else if ( isCommit( message ) )
+        {
+            statementProcessor.commitTransaction();
+            return StatementMetadata.EMPTY;
+        }
+        else if ( isRollback( message ) )
+        {
+            statementProcessor.rollbackTransaction();
+            return StatementMetadata.EMPTY;
+        }
+        else
+        {
+            return statementProcessor.run( message.statement(), message.params() );
         }
     }
 

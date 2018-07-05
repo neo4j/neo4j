@@ -21,7 +21,6 @@ package org.neo4j.bolt.v1.runtime;
 
 import java.time.Clock;
 import java.util.Optional;
-import java.util.regex.Pattern;
 
 import org.neo4j.bolt.runtime.BoltQuerySource;
 import org.neo4j.bolt.runtime.BoltResult;
@@ -45,10 +44,6 @@ import org.neo4j.values.virtual.MapValue;
 
 public class TransactionStateMachine implements StatementProcessor
 {
-    private static final Pattern BEGIN = Pattern.compile("(?i)^\\s*BEGIN\\s*;?\\s*$");
-    private static final Pattern COMMIT = Pattern.compile("(?i)^\\s*COMMIT\\s*;?\\s*$");
-    private static final Pattern ROLLBACK = Pattern.compile("(?i)^\\s*ROLLBACK\\s*;?\\s*$");
-
     final TransactionStateMachineSPI spi;
     final MutableTransactionState ctx;
     State state = State.AUTO_COMMIT;
@@ -73,6 +68,22 @@ public class TransactionStateMachine implements StatementProcessor
     }
 
     @Override
+    public void beginTransaction( Bookmark bookmark ) throws KernelException
+    {
+        before();
+        try
+        {
+            ensureNoPendingTerminationNotice();
+
+            state = state.beginTransaction( bookmark, ctx, spi );
+        }
+        finally
+        {
+            after();
+        }
+    }
+
+    @Override
     public StatementMetadata run( String statement, MapValue params ) throws KernelException
     {
         before();
@@ -83,11 +94,6 @@ public class TransactionStateMachine implements StatementProcessor
             state = state.run( ctx, spi, statement, params );
 
             return ctx.currentStatementMetadata;
-        }
-        catch ( TransactionFailureException ex )
-        {
-            state = State.AUTO_COMMIT;
-            throw ex;
         }
         finally
         {
@@ -104,6 +110,42 @@ public class TransactionStateMachine implements StatementProcessor
             ensureNoPendingTerminationNotice();
 
             state.streamResult( ctx, resultConsumer );
+        }
+        finally
+        {
+            after();
+        }
+    }
+
+    @Override
+    public void commitTransaction() throws KernelException
+    {
+        before();
+        try
+        {
+            ensureNoPendingTerminationNotice();
+
+            state = state.commitTransaction( ctx, spi );
+        }
+        catch ( TransactionFailureException ex )
+        {
+            state = State.AUTO_COMMIT;
+            throw ex;
+        }
+        finally
+        {
+            after();
+        }
+    }
+
+    @Override
+    public void rollbackTransaction() throws KernelException
+    {
+        before();
+        try
+        {
+            ensureNoPendingTerminationNotice();
+            state = state.rollbackTransaction( ctx, spi );
         }
         finally
         {
@@ -197,52 +239,36 @@ public class TransactionStateMachine implements StatementProcessor
         AUTO_COMMIT
                 {
                     @Override
-                    State run( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement,
-                               MapValue params ) throws KernelException
-
+                    State beginTransaction( Bookmark bookmark, MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException
                     {
-                        if ( BEGIN.matcher( statement ).matches() )
-                        {
-                            ctx.currentTransaction = spi.beginTransaction( ctx.loginContext );
+                        ctx.currentTransaction = spi.beginTransaction( ctx.loginContext );
 
-                            Bookmark bookmark = Bookmark.fromParamsOrNull( params );
-                            if ( bookmark != null )
-                            {
-                                spi.awaitUpToDate( bookmark.txId() );
-                                ctx.currentResult = new BookmarkResult( bookmark );
-                            }
-                            else
-                            {
-                                ctx.currentResult = BoltResult.EMPTY;
-                            }
-
-                            return EXPLICIT_TRANSACTION;
-                        }
-                        else if ( COMMIT.matcher( statement ).matches() )
+                        if ( bookmark != null )
                         {
-                            throw new QueryExecutionKernelException(
-                                    new InvalidSemanticsException( "No current transaction to commit." ) );
-                        }
-                        else if ( ROLLBACK.matcher( statement ).matches() )
-                        {
-                            ctx.currentResult = BoltResult.EMPTY;
-                            return AUTO_COMMIT;
+                            spi.awaitUpToDate( bookmark.txId() );
+                            ctx.currentResult = new BookmarkResult( bookmark );
                         }
                         else
                         {
-                            if ( statement.isEmpty() )
-                            {
-                                statement = ctx.lastStatement;
-                            }
-                            else
-                            {
-                                ctx.lastStatement = statement;
-                            }
-
-                            execute( ctx, spi, statement, params, spi.isPeriodicCommit( statement ) );
-
-                            return AUTO_COMMIT;
+                            ctx.currentResult = BoltResult.EMPTY;
                         }
+
+                        return EXPLICIT_TRANSACTION;
+                    }
+
+                    @Override
+                    State run( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params ) throws KernelException
+                    {
+                        if ( statement.isEmpty() )
+                        {
+                            statement = ctx.lastStatement;
+                        }
+                        else
+                        {
+                            ctx.lastStatement = statement;
+                        }
+                        execute( ctx, spi, statement, params, spi.isPeriodicCommit( statement ) );
+                        return AUTO_COMMIT;
                     }
 
                     void execute( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params, boolean isPeriodicCommit )
@@ -279,8 +305,7 @@ public class TransactionStateMachine implements StatementProcessor
                     }
 
                     @Override
-                    void streamResult( MutableTransactionState ctx,
-                                       ThrowingConsumer<BoltResult, Exception> resultConsumer ) throws Exception
+                    void streamResult( MutableTransactionState ctx, ThrowingConsumer<BoltResult,Exception> resultConsumer ) throws Exception
                     {
                         assert ctx.currentResult != null;
 
@@ -294,61 +319,51 @@ public class TransactionStateMachine implements StatementProcessor
                             closeTransaction( ctx, success );
                         }
                     }
+
+                    @Override
+                    State commitTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException
+                    {
+                        throw new QueryExecutionKernelException( new InvalidSemanticsException( "No current transaction to commit." ) );
+                    }
+
+                    @Override
+                    State rollbackTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi )
+                    {
+                        ctx.currentResult = BoltResult.EMPTY;
+                        return AUTO_COMMIT;
+                    }
                 },
         EXPLICIT_TRANSACTION
                 {
                     @Override
-                    State run( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params )
-                            throws KernelException
+                    State beginTransaction( Bookmark bookmark, MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException
                     {
-                        if ( BEGIN.matcher( statement ).matches() )
-                        {
-                            throw new QueryExecutionKernelException(
-                                    new InvalidSemanticsException( "Nested transactions are not supported." ) );
-                        }
-                        else if ( COMMIT.matcher( statement ).matches() )
-                        {
-                            closeTransaction( ctx, true );
-                            long txId = spi.newestEncounteredTxId();
-                            Bookmark bookmark = new Bookmark( txId );
-                            ctx.currentResult = new BookmarkResult( bookmark );
+                        throw new QueryExecutionKernelException( new InvalidSemanticsException( "Nested transactions are not supported." ) );
+                    }
 
-                            return AUTO_COMMIT;
-                        }
-                        else if ( ROLLBACK.matcher( statement ).matches() )
+                    @Override
+                    State run( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params ) throws KernelException
+                    {
+                        if ( statement.isEmpty() )
                         {
-                            closeTransaction( ctx, false );
-                            ctx.currentResult = BoltResult.EMPTY;
-                            return AUTO_COMMIT;
+                            statement = ctx.lastStatement;
                         }
                         else
                         {
-                            if ( statement.isEmpty() )
-                            {
-                                statement = ctx.lastStatement;
-                            }
-                            else
-                            {
-                                ctx.lastStatement = statement;
-                            }
-                            if ( spi.isPeriodicCommit( statement ) )
-                            {
-                                throw new QueryExecutionKernelException( new InvalidSemanticsException(
-                                        "Executing queries that use periodic commit in an " +
-                                                "open transaction is not possible." ) );
-                            }
-                            else
-                            {
-                                BoltResultHandle resultHandle = execute( ctx, spi, statement, params );
-                                startExecution( ctx, resultHandle );
-                                return EXPLICIT_TRANSACTION;
-                            }
+                            ctx.lastStatement = statement;
                         }
-                    }
-
-                    private BoltResultHandle execute( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params )
-                    {
-                        return executeQuery( ctx, spi, statement, params );
+                        if ( spi.isPeriodicCommit( statement ) )
+                        {
+                            throw new QueryExecutionKernelException( new InvalidSemanticsException(
+                                    "Executing queries that use periodic commit in an " +
+                                    "open transaction is not possible." ) );
+                        }
+                        else
+                        {
+                            BoltResultHandle resultHandle = spi.executeQuery( ctx.querySource, ctx.loginContext, statement, params );
+                            startExecution( ctx, resultHandle );
+                            return EXPLICIT_TRANSACTION;
+                        }
                     }
 
                     @Override
@@ -358,12 +373,35 @@ public class TransactionStateMachine implements StatementProcessor
                         assert ctx.currentResult != null;
                         consumeResult( ctx, resultConsumer );
                     }
+
+                    @Override
+                    State commitTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException
+                    {
+                        closeTransaction( ctx, true );
+                        long txId = spi.newestEncounteredTxId();
+                        Bookmark bookmark = new Bookmark( txId );
+                        ctx.currentResult = new BookmarkResult( bookmark );
+                        return AUTO_COMMIT;
+                    }
+
+                    @Override
+                    State rollbackTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException
+                    {
+                        closeTransaction( ctx, false );
+                        ctx.currentResult = BoltResult.EMPTY;
+                        return AUTO_COMMIT;
+                    }
                 };
+
+        abstract State beginTransaction( Bookmark bookmark, MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException;
 
         abstract State run( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params ) throws KernelException;
 
-        abstract void streamResult( MutableTransactionState ctx,
-                                    ThrowingConsumer<BoltResult, Exception> resultConsumer ) throws Exception;
+        abstract void streamResult( MutableTransactionState ctx, ThrowingConsumer<BoltResult,Exception> resultConsumer ) throws Exception;
+
+        abstract State commitTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException;
+
+        abstract State rollbackTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException;
 
         void terminateQueryAndRollbackTransaction( MutableTransactionState ctx ) throws TransactionFailureException
         {
@@ -450,12 +488,6 @@ public class TransactionStateMachine implements StatementProcessor
             }
         }
 
-    }
-
-    private static BoltResultHandle executeQuery( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement,
-                                                  MapValue params )
-    {
-        return spi.executeQuery( ctx.querySource, ctx.loginContext, statement, params );
     }
 
     static class MutableTransactionState

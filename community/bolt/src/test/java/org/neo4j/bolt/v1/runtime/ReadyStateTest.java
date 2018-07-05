@@ -21,9 +21,12 @@ package org.neo4j.bolt.v1.runtime;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Clock;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
@@ -38,6 +41,7 @@ import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
+import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 
 import static java.util.Arrays.asList;
@@ -49,6 +53,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
@@ -59,6 +65,7 @@ class ReadyStateTest
     private final BoltStateMachineState streamingState = mock( BoltStateMachineState.class );
     private final BoltStateMachineState interruptedState = mock( BoltStateMachineState.class );
     private final BoltStateMachineState failedState = mock( BoltStateMachineState.class );
+    private final StatementProcessor statementProcessor = mock( StatementProcessor.class );
 
     private final StateMachineContext context = mock( StateMachineContext.class );
     private final MutableConnectionState connectionState = new MutableConnectionState();
@@ -72,6 +79,7 @@ class ReadyStateTest
 
         when( context.connectionState() ).thenReturn( connectionState );
         when( context.clock() ).thenReturn( Clock.systemUTC() );
+        connectionState.setStatementProcessor( statementProcessor );
     }
 
     @Test
@@ -98,9 +106,7 @@ class ReadyStateTest
     {
         StatementMetadata statementMetadata = mock( StatementMetadata.class );
         when( statementMetadata.fieldNames() ).thenReturn( new String[]{"foo", "bar", "baz"} );
-        StatementProcessor statementProcessor = mock( StatementProcessor.class );
         when( statementProcessor.run( any(), any() ) ).thenReturn( statementMetadata );
-        connectionState.setStatementProcessor( statementProcessor );
 
         BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
         connectionState.setResponseHandler( responseHandler );
@@ -117,10 +123,7 @@ class ReadyStateTest
     void shouldHandleAuthFailureDuringRunMessageProcessing() throws Exception
     {
         AuthorizationExpiredException error = new AuthorizationExpiredException( "Hello" );
-
-        StatementProcessor statementProcessor = mock( StatementProcessor.class );
         when( statementProcessor.run( any(), any() ) ).thenThrow( error );
-        connectionState.setStatementProcessor( statementProcessor );
 
         BoltStateMachineState nextState = state.process( new RunMessage( "RETURN 1", EMPTY_MAP ), context );
 
@@ -132,10 +135,7 @@ class ReadyStateTest
     void shouldHandleFailureDuringRunMessageProcessing() throws Exception
     {
         RuntimeException error = new RuntimeException( "Hello" );
-
-        StatementProcessor statementProcessor = mock( StatementProcessor.class );
         when( statementProcessor.run( any(), any() ) ).thenThrow( error );
-        connectionState.setStatementProcessor( statementProcessor );
 
         BoltStateMachineState nextState = state.process( new RunMessage( "RETURN 1", EMPTY_MAP ), context );
 
@@ -180,5 +180,61 @@ class ReadyStateTest
         {
             assertNull( state.process( message, context ) );
         }
+    }
+
+    @Test
+    void shouldBeginTransactionWithoutBookmark() throws Exception
+    {
+        BoltStateMachineState newState = state.process( new RunMessage( "BEGIN", EMPTY_MAP ), context );
+        assertEquals( streamingState, newState );
+        verify( statementProcessor ).beginTransaction( null );
+    }
+
+    @Test
+    void shouldBeginTransactionWithSingleBookmark() throws Exception
+    {
+        Map<String,Object> params = map( "bookmark", "neo4j:bookmark:v1:tx15" );
+
+        BoltStateMachineState newState = state.process( new RunMessage( "BEGIN", asMapValue( params ) ), context );
+        assertEquals( streamingState, newState );
+        verify( statementProcessor ).beginTransaction( new Bookmark( 15 ) );
+    }
+
+    @Test
+    void shouldBeginTransactionWithMultipleBookmarks() throws Exception
+    {
+        Map<String,Object> params = map( "bookmarks",
+                asList( "neo4j:bookmark:v1:tx7", "neo4j:bookmark:v1:tx1", "neo4j:bookmark:v1:tx92", "neo4j:bookmark:v1:tx39" ) );
+
+        BoltStateMachineState newState = state.process( new RunMessage( "BEGIN", asMapValue( params ) ), context );
+        assertEquals( streamingState, newState );
+        verify( statementProcessor ).beginTransaction( new Bookmark( 92 ) );
+    }
+
+    @ParameterizedTest
+    @ValueSource( strings = {"begin", "BEGIN", "   begin   ", "   BeGiN ;   "} )
+    void shouldBeginTransaction( String statement ) throws Exception
+    {
+        BoltStateMachineState newState = state.process( new RunMessage( statement ), context );
+        assertEquals( streamingState, newState );
+        verify( statementProcessor ).beginTransaction( any() );
+    }
+
+    @ParameterizedTest
+    @ValueSource( strings = {"commit", "COMMIT", "   commit   ", "   CoMmIt ;   "} )
+    void shouldCommitTransaction( String statement ) throws Exception
+    {
+        BoltStateMachineState newState = state.process( new RunMessage( statement ), context );
+        assertEquals( streamingState, newState );
+        verify( statementProcessor ).commitTransaction();
+    }
+
+    @ParameterizedTest
+    @ValueSource( strings = {"rollback", "ROLLBACK", "   rollback   ", "   RoLlBaCk ;   "} )
+    void shouldRollbackTransaction( String statement ) throws Exception
+    {
+        BoltStateMachineState newState = state.process( new RunMessage( statement ), context );
+        assertEquals( streamingState, newState );
+        verify( statementProcessor ).rollbackTransaction();
     }
 }

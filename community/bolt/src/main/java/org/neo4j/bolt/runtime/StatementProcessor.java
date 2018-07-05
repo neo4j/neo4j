@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.runtime;
 
+import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -26,9 +27,15 @@ import org.neo4j.values.virtual.MapValue;
 
 public interface StatementProcessor
 {
+    void beginTransaction( Bookmark bookmark ) throws KernelException;
+
     StatementMetadata run( String statement, MapValue params ) throws KernelException;
 
     void streamResult( ThrowingConsumer<BoltResult,Exception> resultConsumer ) throws Exception;
+
+    void commitTransaction() throws KernelException;
+
+    void rollbackTransaction() throws KernelException;
 
     void reset() throws TransactionFailureException;
 
@@ -45,6 +52,12 @@ public interface StatementProcessor
     StatementProcessor EMPTY = new StatementProcessor()
     {
         @Override
+        public void beginTransaction( Bookmark bookmark ) throws KernelException
+        {
+            throw new UnsupportedOperationException( "Unable to begin a transaction" );
+        }
+
+        @Override
         public StatementMetadata run( String statement, MapValue params ) throws KernelException
         {
             throw new UnsupportedOperationException( "Unable to run statements" );
@@ -54,6 +67,18 @@ public interface StatementProcessor
         public void streamResult( ThrowingConsumer<BoltResult,Exception> resultConsumer ) throws Exception
         {
             throw new UnsupportedOperationException( "Unable to stream results" );
+        }
+
+        @Override
+        public void commitTransaction() throws KernelException
+        {
+            throw new UnsupportedOperationException( "Unable to commit a transaction" );
+        }
+
+        @Override
+        public void rollbackTransaction() throws KernelException
+        {
+            throw new UnsupportedOperationException( "Unable to rollback a transaction" );
         }
 
         @Override
