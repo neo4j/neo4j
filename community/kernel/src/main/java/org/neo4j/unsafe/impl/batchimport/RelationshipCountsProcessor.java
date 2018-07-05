@@ -124,6 +124,13 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
         }
     }
 
+    @Override
+    public void close()
+    {
+        labelsCounts.close();
+        wildcardCounts.close();
+    }
+
     public void addCountsFrom( RelationshipCountsProcessor from )
     {
         mergeCounts( labelsCounts, from.labelsCounts );

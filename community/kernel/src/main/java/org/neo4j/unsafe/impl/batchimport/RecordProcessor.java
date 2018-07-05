@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
  *
  * @param <T>
  */
-public interface RecordProcessor<T extends AbstractBaseRecord>
+public interface RecordProcessor<T extends AbstractBaseRecord> extends AutoCloseable
 {
     /**
      * Processes an item.
@@ -36,6 +36,9 @@ public interface RecordProcessor<T extends AbstractBaseRecord>
     boolean process( T item );
 
     void done();
+
+    @Override
+    void close();
 
     class Multiple<T extends AbstractBaseRecord> implements RecordProcessor<T>
     {
@@ -64,6 +67,15 @@ public interface RecordProcessor<T extends AbstractBaseRecord>
             for ( RecordProcessor<T> processor : processors )
             {
                 processor.done();
+            }
+        }
+
+        @Override
+        public void close()
+        {
+            for ( RecordProcessor<T> processor : processors )
+            {
+                processor.close();
             }
         }
     }

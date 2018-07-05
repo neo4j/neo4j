@@ -33,8 +33,8 @@ import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongBitsManipulator;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
-import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor.Visitable;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.ParallelSort.Comparator;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
@@ -852,6 +852,7 @@ public class EncodingIdMapper implements IdMapper
     public void close()
     {
         dataCache.close();
+        groupCache.close();
         if ( trackerCache != null )
         {
             trackerCache.close();
