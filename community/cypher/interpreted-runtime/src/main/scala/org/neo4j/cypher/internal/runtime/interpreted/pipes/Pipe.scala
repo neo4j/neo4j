@@ -49,7 +49,7 @@ trait Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext]
 
   // Used by profiling to identify where to report dbhits and rows
-  def id(): Id
+  def id: Id
 
   // TODO: Alternatively we could pass the logicalPlanId when we create contexts, and in the SlottedQueryState use the
   // SlotConfigurations map to get the slot configuration needed for the context creation,
@@ -81,4 +81,6 @@ abstract class PipeWithSource(source: Pipe) extends Pipe {
     throw new UnsupportedOperationException("This method should never be called on PipeWithSource")
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext]
+  private[pipes] def testCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+    internalCreateResults(input, state)
 }
