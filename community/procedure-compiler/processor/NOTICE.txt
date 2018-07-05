@@ -28,5 +28,12 @@ Third-party licenses
 Apache Software License, Version 2.0
   Auto Common Libraries
   AutoService
+  error-prone annotations
+  FindBugs-jsr305
   Guava: Google Core Libraries for Java
+  J2ObjC Annotations
+
+MIT License
+  Animal Sniffer Annotations
+  Checker Qual
 
