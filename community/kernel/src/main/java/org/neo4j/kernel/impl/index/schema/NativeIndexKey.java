@@ -85,7 +85,7 @@ abstract class NativeIndexKey<SELF extends NativeIndexKey<SELF>> extends Tempora
     void initialize( long entityId )
     {
         this.compareId = DEFAULT_COMPARE_ID;
-        this.entityId = entityId;
+        setEntityId( entityId );
     }
 
     abstract Value[] asValues();

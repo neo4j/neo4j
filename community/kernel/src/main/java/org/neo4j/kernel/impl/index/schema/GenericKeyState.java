@@ -1291,12 +1291,12 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         {
             type = Type.TEXT;
             byteArray = encoded;
-            long0 = byteArray.length;
+            long0 = encoded.length;
         }
         else
         {
             byteArrayArray[currentArrayOffset] = encoded;
-            long0Array[currentArrayOffset] = byteArray.length;
+            long0Array[currentArrayOffset] = encoded.length;
             currentArrayOffset++;
         }
         long1 = FALSE;
@@ -1702,6 +1702,12 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     private static boolean booleanOf( long longValue )
     {
         return longValue == TRUE;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "GenericKeyState[%s]", asValue().toString() );
     }
 
     @FunctionalInterface

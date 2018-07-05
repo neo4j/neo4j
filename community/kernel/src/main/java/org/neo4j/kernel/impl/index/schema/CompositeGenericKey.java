@@ -154,7 +154,7 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
             return;
         }
 
-        setEntityId( cursor.getLong() );
+        initialize( cursor.getLong() );
         int offset = cursor.getOffset();
         for ( GenericKeyState state : states )
         {
