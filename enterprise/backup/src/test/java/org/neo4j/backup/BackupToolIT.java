@@ -31,6 +31,7 @@ import org.junit.rules.ExpectedException;
 import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.neo4j.backup.impl.BackupProtocolService;
 import org.neo4j.backup.impl.ConsistencyCheck;
@@ -46,6 +47,7 @@ import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -71,7 +73,7 @@ public class BackupToolIT
     @Before
     public void setUp()
     {
-        backupDir = testDirectory.directory( "backups/graph.db" ).toPath();
+        backupDir = Paths.get( testDirectory.directory().getPath(), "backups", DataSourceManager.DEFAULT_DATABASE_NAME );
         fs = new DefaultFileSystemAbstraction();
         pageCache = StandalonePageCacheFactory.createPageCache( fs );
         backupTool = new BackupTool( new BackupProtocolService(), mock( PrintStream.class ) );

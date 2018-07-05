@@ -298,9 +298,9 @@ public interface BatchInserter
     void shutdown();
 
     /**
-     * Returns the path to this Neo4j store.
+     * Returns the path to default neo4j database.
      *
-     * @return the path to this Neo4j store.
+     * @return the path to default Neo4j database.
      */
     String getStoreDir();
 

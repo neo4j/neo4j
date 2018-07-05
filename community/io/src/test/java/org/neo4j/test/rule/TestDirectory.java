@@ -56,7 +56,7 @@ import static java.lang.String.format;
  */
 public class TestDirectory extends ExternalResource
 {
-    public static final String DATABASE_DIRECTORY = "graph-db";
+    private static final String DEFAULT_DATABASE_DIRECTORY = "graph.db";
 
     private final FileSystemAbstraction fileSystem;
     private File testClassBaseFolder;
@@ -160,12 +160,12 @@ public class TestDirectory extends ExternalResource
 
     public File graphDbDir()
     {
-        return directory( DATABASE_DIRECTORY );
+        return directory( DEFAULT_DATABASE_DIRECTORY );
     }
 
     public File makeGraphDbDir() throws IOException
     {
-        return cleanDirectory( DATABASE_DIRECTORY );
+        return cleanDirectory( DEFAULT_DATABASE_DIRECTORY );
     }
 
     public void cleanup() throws IOException

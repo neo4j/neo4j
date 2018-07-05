@@ -87,7 +87,7 @@ public class ConstraintIndexFailureIT
 
     private GraphDatabaseService startDatabase()
     {
-        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.directory().getAbsoluteFile() );
+        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.directory() );
     }
 
     private void dbWithConstraint()
@@ -110,7 +110,7 @@ public class ConstraintIndexFailureIT
 
     private void storeIndexFailure( String failure ) throws IOException
     {
-        File luceneIndexDirectory = subProviderDirectoryStructure( storeDir.directory() )
+        File luceneIndexDirectory = subProviderDirectoryStructure( storeDir.graphDbDir() )
                 .forProvider( PROVIDER_DESCRIPTOR ).directoryForIndex( 1 );
         PartitionedIndexStorage indexStorage = LuceneIndexStorageBuilder.create()
                 .withFileSystem( fileSystemRule.get() )

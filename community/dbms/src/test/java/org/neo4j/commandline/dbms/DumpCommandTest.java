@@ -48,6 +48,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -259,7 +260,7 @@ class DumpCommandTest
     void shouldDefaultToGraphDB() throws Exception
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
-        Path databaseDir = dataDir.resolve( "databases/graph.db" );
+        Path databaseDir = dataDir.resolve( "databases/" + DataSourceManager.DEFAULT_DATABASE_NAME );
         putStoreInDirectory( databaseDir );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
 
@@ -333,7 +334,7 @@ class DumpCommandTest
                             "that is mounted in a running Neo4j server.%n" +
                             "%n" +
                             "options:%n" +
-                            "  --database=<name>         Name of database. [default:graph.db]%n" +
+                            "  --database=<name>         Name of database. [default:" + DataSourceManager.DEFAULT_DATABASE_NAME + "]%n" +
                             "  --to=<destination-path>   Destination (file or folder) of database dump.%n" ),
                     baos.toString() );
         }

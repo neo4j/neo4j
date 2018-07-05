@@ -109,7 +109,7 @@ public class ImportToolTest
     @Rule
     public final RandomRule random = new RandomRule();
     @Rule
-    public final SuppressOutput suppressOutput = SuppressOutput.suppress( SuppressOutput.System.values() );
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     private int dataIndex;
 
     @Test

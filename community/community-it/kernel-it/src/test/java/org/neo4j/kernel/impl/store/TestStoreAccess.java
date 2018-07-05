@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.store;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -35,6 +34,7 @@ import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertTrue;
@@ -45,9 +45,10 @@ public class TestStoreAccess
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private final Monitors monitors = new Monitors();
-    private final File storeDir = new File( "dir" ).getAbsoluteFile();
 
     @Test
     public void openingThroughStoreAccessShouldNotTriggerRecovery() throws Throwable
@@ -55,11 +56,9 @@ public class TestStoreAccess
         try ( EphemeralFileSystemAbstraction snapshot = produceUncleanStore() )
         {
             assertTrue( "Store should be unclean", isUnclean( snapshot ) );
-            File messages = new File( storeDir, "debug.log" );
-            snapshot.deleteFile( messages );
 
             PageCache pageCache = pageCacheRule.getPageCache( snapshot );
-            new StoreAccess( snapshot, pageCache, storeDir, Config.defaults() ).initialize().close();
+            new StoreAccess( snapshot, pageCache, testDirectory.graphDbDir(), Config.defaults() ).initialize().close();
             assertTrue( "Store should be unclean", isUnclean( snapshot ) );
         }
     }
@@ -67,7 +66,7 @@ public class TestStoreAccess
     private EphemeralFileSystemAbstraction produceUncleanStore()
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() )
-                .newImpermanentDatabase( storeDir );
+                .newImpermanentDatabase( testDirectory.directory() );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
@@ -82,6 +81,6 @@ public class TestStoreAccess
     {
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fileSystem, pageCache, Config.defaults(), monitors );
-        return requiredChecker.isRecoveryRequiredAt( storeDir );
+        return requiredChecker.isRecoveryRequiredAt( testDirectory.graphDbDir() );
     }
 }

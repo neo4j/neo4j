@@ -50,6 +50,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
@@ -256,7 +257,7 @@ public class CatchupServerIT
 
     private File databaseFileToClientFile( File file ) throws IOException
     {
-        String relativePathToDatabaseDir = relativePath( new File( temporaryDirectory, "graph-db" ), file );
+        String relativePathToDatabaseDir = relativePath( new File( temporaryDirectory, DataSourceManager.DEFAULT_DATABASE_NAME ), file );
         return new File( temporaryDirectory, relativePathToDatabaseDir );
     }
 

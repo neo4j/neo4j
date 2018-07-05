@@ -40,6 +40,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Level;
 
@@ -107,7 +108,7 @@ public class ReadReplica implements ClusterMember<ReadReplicaGraphDatabase>
         memberConfig = Config.defaults( config );
 
         this.discoveryServiceFactory = discoveryServiceFactory;
-        storeDir = new File( new File( new File( neo4jHome, "data" ), "databases" ), "graph.db" );
+        storeDir = new File( new File( new File( neo4jHome, "data" ), "databases" ), DataSourceManager.DEFAULT_DATABASE_NAME );
 
         //noinspection ResultOfMethodCallIgnored
         storeDir.mkdirs();

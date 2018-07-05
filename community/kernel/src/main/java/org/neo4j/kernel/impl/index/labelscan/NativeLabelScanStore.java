@@ -165,24 +165,24 @@ public class NativeLabelScanStore implements LabelScanStore
      */
     private static final Consumer<PageCursor> writeClean = pageCursor -> pageCursor.putByte( CLEAN );
 
-    public NativeLabelScanStore( PageCache pageCache, File storeDir, FileSystemAbstraction fs, FullStoreChangeStream fullStoreChangeStream,
+    public NativeLabelScanStore( PageCache pageCache, File databaseDirectory, FileSystemAbstraction fs, FullStoreChangeStream fullStoreChangeStream,
             boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
-        this( pageCache, storeDir, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
+        this( pageCache, databaseDirectory, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
                 /*means no opinion about page size*/ 0 );
     }
 
     /*
      * Test access to be able to control page size.
      */
-    NativeLabelScanStore( PageCache pageCache, File storeDir, FileSystemAbstraction fs,
+    NativeLabelScanStore( PageCache pageCache, File databaseDirectory, FileSystemAbstraction fs,
                 FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors,
                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, int pageSize )
     {
         this.pageCache = pageCache;
         this.pageSize = pageSize;
         this.fullStoreChangeStream = fullStoreChangeStream;
-        this.storeFile = getLabelScanStoreFile( storeDir );
+        this.storeFile = getLabelScanStoreFile( databaseDirectory );
         this.singleWriter = new NativeLabelScanWriter( 1_000 );
         this.readOnly = readOnly;
         this.monitors = monitors;
@@ -194,12 +194,12 @@ public class NativeLabelScanStore implements LabelScanStore
     /**
      * Returns the file backing the label scan store.
      *
-     * @param storeDir The store directory to use.
+     * @param databaseDirectory The store directory to use.
      * @return the file backing the label scan store
      */
-    public static File getLabelScanStoreFile( File storeDir )
+    public static File getLabelScanStoreFile( File databaseDirectory )
     {
-        return new File( storeDir, FILE_NAME );
+        return new File( databaseDirectory, FILE_NAME );
     }
 
     /**

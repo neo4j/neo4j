@@ -48,6 +48,7 @@ import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -208,7 +209,7 @@ class LoadCommandTest
     @Test
     void shouldDefaultToGraphDb() throws Exception
     {
-        Path databaseDir = homeDir.resolve( "data/databases/graph.db" );
+        Path databaseDir = homeDir.resolve( "data/databases/" + DataSourceManager.DEFAULT_DATABASE_NAME );
         Files.createDirectories( databaseDir );
 
         new LoadCommand( homeDir, configDir, loader ).execute( new String[]{"--from=something"} );
@@ -293,7 +294,7 @@ class LoadCommandTest
                             "%n" +
                             "options:%n" +
                             "  --from=<archive-path>   Path to archive created with the dump command.%n" +
-                            "  --database=<name>       Name of database. [default:graph.db]%n" +
+                            "  --database=<name>       Name of database. [default:" + DataSourceManager.DEFAULT_DATABASE_NAME + "]%n" +
                             "  --force=<true|false>    If an existing database should be replaced.%n" +
                             "                          [default:false]%n" ),
                     baos.toString() );

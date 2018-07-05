@@ -106,7 +106,7 @@ public class LuceneDataSource extends LifecycleAdapter
 
     public static final Analyzer WHITESPACE_ANALYZER = new WhitespaceAnalyzer();
     public static final Analyzer KEYWORD_ANALYZER = new KeywordAnalyzer();
-    private final File storeDir;
+    private final File databaseDirectory;
     private final Config config;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final OperationalMode operationalMode;
@@ -123,10 +123,10 @@ public class LuceneDataSource extends LifecycleAdapter
     /**
      * Constructs this data source.
      */
-    public LuceneDataSource( File storeDir, Config config, IndexConfigStore indexStore,
+    public LuceneDataSource( File databaseDirectory, Config config, IndexConfigStore indexStore,
             FileSystemAbstraction fileSystemAbstraction, OperationalMode operationalMode )
     {
-        this.storeDir = storeDir;
+        this.databaseDirectory = databaseDirectory;
         this.config = config;
         this.indexStore = indexStore;
         this.typeCache = new IndexTypeCache( indexStore );
@@ -142,7 +142,7 @@ public class LuceneDataSource extends LifecycleAdapter
         readOnly = isReadOnly( config, operationalMode );
         indexSearchers = new IndexClockCache( config.get( Configuration.lucene_searcher_cache_size ) );
         this.baseStorePath = filesystemFacade.ensureDirectoryExists( fileSystemAbstraction,
-                getLuceneIndexStoreDirectory( storeDir ) );
+                getLuceneIndexStoreDirectory( databaseDirectory ) );
         filesystemFacade.cleanWriteLocks( baseStorePath );
         this.typeCache = new IndexTypeCache( indexStore );
         this.indexReferenceFactory = readOnly ?
@@ -192,9 +192,9 @@ public class LuceneDataSource extends LifecycleAdapter
         }
     }
 
-    public static File getLuceneIndexStoreDirectory( File storeDir )
+    public static File getLuceneIndexStoreDirectory( File databaseDirectory )
     {
-        return new File( storeDir, "index" );
+        return new File( databaseDirectory, "index" );
     }
 
     IndexType getType( IndexIdentifier identifier, boolean recovery ) throws ExplicitIndexNotFoundKernelException

@@ -121,7 +121,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
     }
 
     /**
-     * Print a tree view of all the files in the graph.db directory with files sizes.
+     * Print a tree view of all the files in the database directory with files sizes.
      *
      * @param sources destination of the sources.
      */

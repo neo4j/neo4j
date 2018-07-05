@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -267,7 +268,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
                 GraphDatabaseFacade graphDatabaseFacade )
         {
-            config.augment( GraphDatabaseSettings.database_path, storeDir.getAbsolutePath() );
+            config.augment( GraphDatabaseSettings.database_path, new File( storeDir, DataSourceManager.DEFAULT_DATABASE_NAME ).getAbsolutePath() );
             if ( impermanent )
             {
                 config.augment( ephemeral, TRUE );

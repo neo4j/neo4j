@@ -123,7 +123,7 @@ public class ManyPropertyKeysIT
 
     private GraphDatabaseAPI database()
     {
-        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsoluteFile() );
+        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.directory() );
     }
 
     private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount )

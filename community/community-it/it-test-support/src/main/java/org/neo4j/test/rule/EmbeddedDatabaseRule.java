@@ -53,13 +53,13 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     @Override
     public File getStoreDir()
     {
-        return testDirectory.graphDbDir();
+        return testDirectory.directory();
     }
 
     @Override
     public String getStoreDirAbsolutePath()
     {
-        return testDirectory.graphDbDir().getAbsolutePath();
+        return testDirectory.directory().getAbsolutePath();
     }
 
     @Override
@@ -71,7 +71,7 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     @Override
     protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )
     {
-        return factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
+        return factory.newEmbeddedDatabaseBuilder( testDirectory.directory() );
     }
 
     @Override

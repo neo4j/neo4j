@@ -97,11 +97,11 @@ public final class StoreFileBean extends ManagementBeanProvider
                 {
                     try
                     {
-                        return ds.getStoreDir().getCanonicalFile().getAbsoluteFile();
+                        return ds.getDatabaseDirectory().getCanonicalFile().getAbsoluteFile();
                     }
                     catch ( IOException e )
                     {
-                        return ds.getStoreDir().getAbsoluteFile();
+                        return ds.getDatabaseDirectory().getAbsoluteFile();
                     }
                 }
             } );

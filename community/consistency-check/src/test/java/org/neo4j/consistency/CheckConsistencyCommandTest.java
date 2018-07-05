@@ -40,6 +40,7 @@ import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -344,7 +345,7 @@ public class CheckConsistencyCommandTest
                             "good idea. See 'neo4j-admin help' for details.%n" +
                             "%n" +
                             "options:%n" +
-                            "  --database=<name>                        Name of database. [default:graph.db]%n" +
+                            "  --database=<name>                        Name of database. [default:" + DataSourceManager.DEFAULT_DATABASE_NAME + "]%n" +
                             "  --backup=</path/to/backup>               Path to backup to check consistency%n" +
                             "                                           of. Cannot be used together with%n" +
                             "                                           --database. [default:]%n" +

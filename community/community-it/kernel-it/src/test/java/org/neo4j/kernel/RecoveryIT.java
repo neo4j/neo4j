@@ -96,6 +96,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -146,7 +147,7 @@ public class RecoveryIT
     @Test
     public void idGeneratorsRebuildAfterRecovery() throws IOException
     {
-        GraphDatabaseService database = startDatabase( directory.graphDbDir() );
+        GraphDatabaseService database = startDatabase( directory.directory() );
         int numberOfNodes = 10;
         try ( Transaction transaction = database.beginTx() )
         {
@@ -160,7 +161,7 @@ public class RecoveryIT
         // copying only transaction log simulate non clean shutdown db that should be able to recover just from logs
         File restoreDbStoreDir = copyTransactionLogs();
 
-        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir );
+        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir.getParentFile() );
         try ( Transaction tx = recoveredDatabase.beginTx() )
         {
             assertEquals( numberOfNodes, count( recoveredDatabase.getAllNodes() ) );
@@ -176,7 +177,7 @@ public class RecoveryIT
     @Test
     public void reportProgressOnRecovery() throws IOException
     {
-        GraphDatabaseService database = startDatabase( directory.graphDbDir() );
+        GraphDatabaseService database = startDatabase( directory.directory() );
         for ( int i = 0; i < 10; i++ )
         {
             try ( Transaction transaction = database.beginTx() )
@@ -187,7 +188,7 @@ public class RecoveryIT
         }
 
         File restoreDbStoreDir = copyTransactionLogs();
-        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir );
+        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir.getParentFile() );
         try ( Transaction transaction = recoveredDatabase.beginTx() )
         {
             assertEquals( 10, count( recoveredDatabase.getAllNodes() ) );
@@ -202,7 +203,7 @@ public class RecoveryIT
     @Test
     public void shouldRecoverIdsCorrectlyWhenWeCreateAndDeleteANodeInTheSameRecoveryRun() throws IOException
     {
-        GraphDatabaseService database = startDatabase( directory.graphDbDir() );
+        GraphDatabaseService database = startDatabase( directory.directory() );
         Label testLabel = Label.label( "testLabel" );
         final String propertyToDelete = "propertyToDelete";
         final String validPropertyName = "validProperty";
@@ -233,7 +234,7 @@ public class RecoveryIT
         File restoreDbStoreDir = copyTransactionLogs();
 
         // database should be restored and node should have expected properties
-        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir );
+        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir.getParentFile() );
         try ( Transaction ignored = recoveredDatabase.beginTx() )
         {
             Node node = findNodeByLabel( recoveredDatabase, testLabel );
@@ -382,9 +383,8 @@ public class RecoveryIT
     public void shouldSeeTheSameRecordsAtCheckpointAsAfterReverseRecovery() throws Exception
     {
         // given
-        File storeDir = directory.absolutePath();
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase( storeDir );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase( directory.directory() );
         produceRandomGraphUpdates( db, 100 );
         checkPoint( db );
         EphemeralFileSystemAbstraction checkPointFs = fs.snapshot();
@@ -456,7 +456,7 @@ public class RecoveryIT
                 }
                 .setFileSystem( crashedFs )
                 .setMonitors( monitors )
-                .newImpermanentDatabase( storeDir )
+                .newImpermanentDatabase( directory.directory() )
                 .shutdown();
 
         // then
@@ -466,7 +466,7 @@ public class RecoveryIT
         {
             // Here we verify that the neostore contents, record by record are exactly the same when comparing
             // the store as it was right after the checkpoint with the store as it was right after reverse recovery completed.
-            assertSameStoreContents( checkPointFs, reversedFs.get(), storeDir );
+            assertSameStoreContents( checkPointFs, reversedFs.get(), directory.graphDbDir() );
         }
         finally
         {
@@ -475,12 +475,12 @@ public class RecoveryIT
         }
     }
 
-    private long lastCommittedTxId( GraphDatabaseService db )
+    private static long lastCommittedTxId( GraphDatabaseService db )
     {
         return ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
     }
 
-    private void assertSameStoreContents( EphemeralFileSystemAbstraction fs1, EphemeralFileSystemAbstraction fs2, File storeDir )
+    private static void assertSameStoreContents( EphemeralFileSystemAbstraction fs1, EphemeralFileSystemAbstraction fs2, File storeDir )
     {
         NullLogProvider logProvider = NullLogProvider.getInstance();
         VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
@@ -507,7 +507,7 @@ public class RecoveryIT
         }
     }
 
-    private <RECORD extends AbstractBaseRecord> void assertSameStoreContents( RecordStore<RECORD> store1, RecordStore<RECORD> store2 )
+    private static <RECORD extends AbstractBaseRecord> void assertSameStoreContents( RecordStore<RECORD> store1, RecordStore<RECORD> store2 )
     {
         long highId1 = store1.getHighId();
         long highId2 = store2.getHighId();
@@ -522,12 +522,12 @@ public class RecoveryIT
         }
     }
 
-    private void flush( GraphDatabaseService db )
+    private static void flush( GraphDatabaseService db )
     {
         ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce( IOLimiter.UNLIMITED );
     }
 
-    private void checkPoint( GraphDatabaseService db ) throws IOException
+    private static void checkPoint( GraphDatabaseService db ) throws IOException
     {
         ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( CheckPointer.class )
                 .forceCheckPoint( new SimpleTriggerInfo( "Manual trigger" ) );
@@ -670,14 +670,14 @@ public class RecoveryIT
         assertEquals( crashUpdatesPerNode, recoveredUpdatesPerNode );
     }
 
-    private Map<Long,Map<Long,Collection<IndexEntryUpdate<?>>>> splitPerNode( Map<Long,Collection<IndexEntryUpdate<?>>> updates )
+    private static Map<Long,Map<Long,Collection<IndexEntryUpdate<?>>>> splitPerNode( Map<Long,Collection<IndexEntryUpdate<?>>> updates )
     {
         Map<Long,Map<Long,Collection<IndexEntryUpdate<?>>>> result = new HashMap<>();
         updates.forEach( ( indexId, indexUpdates ) -> result.put( indexId, splitPerNode( indexUpdates ) ) );
         return result;
     }
 
-    private Map<Long,Collection<IndexEntryUpdate<?>>> splitPerNode( Collection<IndexEntryUpdate<?>> updates )
+    private static Map<Long,Collection<IndexEntryUpdate<?>>> splitPerNode( Collection<IndexEntryUpdate<?>> updates )
     {
         Map<Long,Collection<IndexEntryUpdate<?>>> perNode = new HashMap<>();
         updates.forEach( update -> perNode.computeIfAbsent( update.getEntityId(), nodeId -> new ArrayList<>() ).add( update ) );
@@ -749,7 +749,7 @@ public class RecoveryIT
         }
     }
 
-    private Node findNodeByLabel( GraphDatabaseService database, Label testLabel )
+    private static Node findNodeByLabel( GraphDatabaseService database, Label testLabel )
     {
         try ( ResourceIterator<Node> nodes = database.findNodes( testLabel ) )
         {
@@ -797,7 +797,7 @@ public class RecoveryIT
         return resolver.resolveDependency( DatabaseHealth.class );
     }
 
-    private String createLongString()
+    private static String createLongString()
     {
         String[] strings = new String[(int) ByteUnit.kibiBytes( 2 )];
         Arrays.fill( strings, "a" );
@@ -806,15 +806,16 @@ public class RecoveryIT
 
     private File copyTransactionLogs() throws IOException
     {
-        File restoreDbStoreDir = this.directory.directory( "restore-db" );
+        File restoreDbStoreDir = new File( this.directory.directory( "restore-db" ), DataSourceManager.DEFAULT_DATABASE_NAME );
+        restoreDbStoreDir.mkdir();
         move( fileSystemRule.get(), this.directory.graphDbDir(), restoreDbStoreDir );
         return restoreDbStoreDir;
     }
 
     private static void move( FileSystemAbstraction fs, File fromDirectory, File toDirectory ) throws IOException
     {
-        assert fs.isDirectory( fromDirectory );
-        assert fs.isDirectory( toDirectory );
+        assertTrue( fs.isDirectory( fromDirectory ) );
+        assertTrue( fs.isDirectory( toDirectory ) );
 
         LogFiles transactionLogFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( fromDirectory, fs ).build();
         File[] logFiles = transactionLogFiles.logFiles();

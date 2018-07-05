@@ -100,9 +100,9 @@ public class LuceneIndexImplementation extends LifecycleAdapter implements Index
     }
 
     @Override
-    public File getIndexImplementationDirectory( File storeDir )
+    public File getIndexImplementationDirectory( File databaseDirectory )
     {
-        return LuceneDataSource.getLuceneIndexStoreDirectory(storeDir);
+        return LuceneDataSource.getLuceneIndexStoreDirectory( databaseDirectory );
     }
 
     @Override

@@ -42,6 +42,6 @@ public class DatabaseDiagnostics extends LifecycleAdapter
     {
         diagnosticsManager.prependProvider( new KernelDiagnostics.Versions( databaseInfo, neoStoreDataSource.getStoreId() ) );
         neoStoreDataSource.registerDiagnosticsWith( diagnosticsManager );
-        diagnosticsManager.appendProvider( new KernelDiagnostics.StoreFiles( neoStoreDataSource.getStoreDir() ) );
+        diagnosticsManager.appendProvider( new KernelDiagnostics.StoreFiles( neoStoreDataSource.getDatabaseDirectory() ) );
     }
 }

@@ -69,13 +69,12 @@ public class CheckPointerIntegrationTest
 
     private GraphDatabaseBuilder builder;
     private FileSystemAbstraction fs;
-    private File storeDir;
 
     @Before
     public void setup()
     {
         fs = fsRule.get();
-        storeDir = testDirectory.graphDbDir();
+        File storeDir = testDirectory.directory();
         builder = new TestGraphDatabaseFactory().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .newImpermanentDatabaseBuilder( storeDir );
     }
@@ -128,13 +127,13 @@ public class CheckPointerIntegrationTest
         db.shutdown();
 
         // then - 2 check points have been written in the log
-        List<CheckPoint> checkPoints = new CheckPointCollector( storeDir, fs ).find( 0 );
+        List<CheckPoint> checkPoints = new CheckPointCollector( testDirectory.graphDbDir(), fs ).find( 0 );
 
         assertTrue( "Expected at least two (at least one for time interval and one for shutdown), was " +
                 checkPoints.toString(), checkPoints.size() >= 2 );
     }
 
-    private boolean checkPointInTxLog( GraphDatabaseService db ) throws IOException
+    private static boolean checkPointInTxLog( GraphDatabaseService db ) throws IOException
     {
         LogFiles logFiles = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( LogFiles.class );
         LogFile logFile = logFiles.getLogFile();
@@ -178,7 +177,7 @@ public class CheckPointerIntegrationTest
         db.shutdown();
 
         // then - 2 check points have been written in the log
-        List<CheckPoint> checkPoints = new CheckPointCollector( storeDir, fs ).find( 0 );
+        List<CheckPoint> checkPoints = new CheckPointCollector( testDirectory.graphDbDir(), fs ).find( 0 );
 
         assertEquals( 2, checkPoints.size() );
     }
@@ -203,7 +202,7 @@ public class CheckPointerIntegrationTest
         db.shutdown();
 
         // then - 1 check point has been written in the log
-        List<CheckPoint> checkPoints = new CheckPointCollector( storeDir, fs ).find( 0 );
+        List<CheckPoint> checkPoints = new CheckPointCollector( testDirectory.graphDbDir(), fs ).find( 0 );
 
         assertEquals( 1, checkPoints.size() );
     }
@@ -222,12 +221,12 @@ public class CheckPointerIntegrationTest
         graphDatabaseBuilder.newGraphDatabase().shutdown();
 
         // then - 2 check points have been written in the log
-        List<CheckPoint> checkPoints = new CheckPointCollector( storeDir, fs ).find( 0 );
+        List<CheckPoint> checkPoints = new CheckPointCollector( testDirectory.graphDbDir(), fs ).find( 0 );
 
         assertEquals( 2, checkPoints.size() );
     }
 
-    private void triggerCheckPointAttempt( GraphDatabaseService db ) throws Exception
+    private static void triggerCheckPointAttempt( GraphDatabaseService db ) throws Exception
     {
         // Simulates triggering the checkpointer background job which runs now and then, checking whether
         // or not there's a need to perform a checkpoint.

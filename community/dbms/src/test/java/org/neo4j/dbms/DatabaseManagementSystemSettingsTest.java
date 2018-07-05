@@ -25,6 +25,7 @@ import java.io.File;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -36,6 +37,6 @@ class DatabaseManagementSystemSettingsTest
     {
         Config config = Config.defaults( GraphDatabaseSettings.data_directory, "the-data-directory" );
         assertThat( config.get( GraphDatabaseSettings.database_path ),
-                equalTo( new File( "the-data-directory/databases/graph.db" ) ) );
+                equalTo( new File( "the-data-directory/databases/" + DataSourceManager.DEFAULT_DATABASE_NAME ) ) );
     }
 }

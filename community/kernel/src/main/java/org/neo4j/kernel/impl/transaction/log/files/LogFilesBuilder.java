@@ -58,7 +58,7 @@ public class LogFilesBuilder
 {
     private boolean readOnly;
     private PageCache pageCache;
-    private File storeDirectory;
+    private File databaseDirectory;
     private File logsDirectory;
     private Config config;
     private Long rotationThreshold;
@@ -75,13 +75,13 @@ public class LogFilesBuilder
     /**
      * Builder for fully functional transactional log files.
      * Log files will be able to access store and external components information, perform rotations, etc.
-     * @param storeDirectory store directory
+     * @param databaseDirectory store directory
      * @param fileSystem log files filesystem
      */
-    public static LogFilesBuilder builder( File storeDirectory, FileSystemAbstraction fileSystem )
+    public static LogFilesBuilder builder( File databaseDirectory, FileSystemAbstraction fileSystem )
     {
         LogFilesBuilder filesBuilder = new LogFilesBuilder();
-        filesBuilder.storeDirectory = storeDirectory;
+        filesBuilder.databaseDirectory = databaseDirectory;
         filesBuilder.fileSystem = fileSystem;
         return filesBuilder;
     }
@@ -90,13 +90,13 @@ public class LogFilesBuilder
      * Build log files that can access and operate only on active set of log files without ability to
      * rotate and create any new one. Appending to current log file still possible.
      * Store and external components access available in read only mode.
-     * @param storeDirectory store directory
+     * @param databaseDirectory store directory
      * @param fileSystem log file system
      * @param pageCache page cache for read only store info access
      */
-    public static LogFilesBuilder activeFilesBuilder( File storeDirectory, FileSystemAbstraction fileSystem, PageCache pageCache )
+    public static LogFilesBuilder activeFilesBuilder( File databaseDirectory, FileSystemAbstraction fileSystem, PageCache pageCache )
     {
-        LogFilesBuilder builder = builder( storeDirectory, fileSystem );
+        LogFilesBuilder builder = builder( databaseDirectory, fileSystem );
         builder.pageCache = pageCache;
         builder.readOnly = true;
         return builder;
@@ -191,22 +191,23 @@ public class LogFilesBuilder
             File neo4jHome = config.get( GraphDatabaseSettings.neo4j_home );
             File databasePath = config.get( database_path );
             File logicalLogsLocation = config.get( GraphDatabaseSettings.logical_logs_location );
-            if ( storeDirectory.equals( neo4jHome ) && databasePath.equals( logicalLogsLocation ) )
+            if ( databaseDirectory.getParentFile().equals( neo4jHome ) && databasePath.equals( logicalLogsLocation ) )
             {
-                return storeDirectory;
+                return databaseDirectory;
             }
             if ( logicalLogsLocation.isAbsolute() )
             {
+                // rewrite for default db?
                 return logicalLogsLocation;
             }
-            if ( neo4jHome == null || !storeDirectory.equals( databasePath ) )
+            if ( neo4jHome == null || !databaseDirectory.equals( databasePath ) )
             {
                 Path relativeLogicalLogPath = databasePath.toPath().relativize( logicalLogsLocation.toPath() );
-                return new File( storeDirectory, relativeLogicalLogPath.toString() );
+                return new File( databaseDirectory, relativeLogicalLogPath.toString() );
             }
             return logicalLogsLocation;
         }
-        return storeDirectory;
+        return databaseDirectory;
     }
 
     TransactionLogFilesContext buildContext() throws IOException
@@ -268,9 +269,9 @@ public class LogFilesBuilder
         if ( readOnly )
         {
             requireNonNull( pageCache, "Read only log files require page cache to be able to read current log version." );
-            requireNonNull( storeDirectory,"Store directory is required.");
+            requireNonNull( databaseDirectory,"Store directory is required.");
             ReadOnlyLogVersionRepository logVersionRepository =
-                    new ReadOnlyLogVersionRepository( pageCache, storeDirectory );
+                    new ReadOnlyLogVersionRepository( pageCache, databaseDirectory );
             return () -> logVersionRepository;
         }
         else
@@ -304,8 +305,8 @@ public class LogFilesBuilder
         {
             requireNonNull( pageCache, "Read only log files require page cache to be able to read commited " +
                     "transaction info from store store." );
-            requireNonNull( storeDirectory, "Store directory is required." );
-            ReadOnlyTransactionIdStore transactionIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDirectory );
+            requireNonNull( databaseDirectory, "Store directory is required." );
+            ReadOnlyTransactionIdStore transactionIdStore = new ReadOnlyTransactionIdStore( pageCache, databaseDirectory );
             return transactionIdStore::getLastCommittedTransactionId;
         }
         else
@@ -335,8 +336,8 @@ public class LogFilesBuilder
         {
             requireNonNull( pageCache, "Read only log files require page cache to be able to read commited " +
                     "transaction info from store store." );
-            requireNonNull( storeDirectory, "Store directory is required." );
-            ReadOnlyTransactionIdStore transactionIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDirectory );
+            requireNonNull( databaseDirectory, "Store directory is required." );
+            ReadOnlyTransactionIdStore transactionIdStore = new ReadOnlyTransactionIdStore( pageCache, databaseDirectory );
             return transactionIdStore::committingTransactionId;
         }
         else

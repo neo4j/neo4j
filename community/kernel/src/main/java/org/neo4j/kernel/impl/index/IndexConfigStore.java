@@ -54,11 +54,11 @@ public class IndexConfigStore extends LifecycleAdapter
     private ByteBuffer dontUseBuffer = ByteBuffer.allocate( 100 );
     private final FileSystemAbstraction fileSystem;
 
-    public IndexConfigStore( File graphDbStoreDir, FileSystemAbstraction fileSystem )
+    public IndexConfigStore( File databaseDirectory, FileSystemAbstraction fileSystem )
     {
         this.fileSystem = fileSystem;
-        this.file = new File( graphDbStoreDir, INDEX_DB_FILE_NAME );
-        this.oldFile = new File( graphDbStoreDir, OLD_INDEX_DB_FILE_NAME );
+        this.file = new File( databaseDirectory, INDEX_DB_FILE_NAME );
+        this.oldFile = new File( databaseDirectory, OLD_INDEX_DB_FILE_NAME );
     }
 
     private ByteBuffer buffer( int size )

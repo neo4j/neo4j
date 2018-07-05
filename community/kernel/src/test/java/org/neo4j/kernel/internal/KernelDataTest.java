@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -161,7 +162,7 @@ public class KernelDataTest
         Kernel( String desiredId )
         {
             super( fileSystemRule.get(), pageCacheRule.getPageCache( fileSystemRule.get() ),
-                    new File( "graph.db" ), Config.defaults( forced_kernel_id, desiredId), mock( GraphDatabaseAPI.class ) );
+                    new File( DataSourceManager.DEFAULT_DATABASE_NAME ), Config.defaults( forced_kernel_id, desiredId), mock( GraphDatabaseAPI.class ) );
             kernels.add( this );
         }
 

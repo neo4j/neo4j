@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -36,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -49,8 +49,9 @@ import static org.neo4j.test.mockito.matcher.LogMatchers.startEntry;
 public class KernelRecoveryTest
 {
     @Rule
-    public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private final File storeDir = new File( "dir" ).getAbsoluteFile();
+    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
     public void shouldHandleWritesProperlyAfterRecovery() throws Exception
@@ -71,7 +72,7 @@ public class KernelRecoveryTest
             db.shutdown();
 
             // Then the logical log should be in sync
-            File logFile = new File( storeDir, TransactionLogFiles.DEFAULT_NAME + ".0" );
+            File logFile = new File( testDirectory.graphDbDir(), TransactionLogFiles.DEFAULT_NAME + ".0" );
             assertThat( logEntries( crashedFs, logFile ), containsExactly(
                     // Tx before recovery
                     startEntry( -1, -1 ), commandEntry( node1, NodeCommand.class ),
@@ -86,15 +87,14 @@ public class KernelRecoveryTest
         }
     }
 
-    private GraphDatabaseService newDB( FileSystemAbstraction fs ) throws IOException
+    private GraphDatabaseService newDB( FileSystemAbstraction fs )
     {
-        fs.mkdirs( storeDir );
         return new TestGraphDatabaseFactory()
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
-                .newImpermanentDatabase( storeDir );
+                .newImpermanentDatabase( testDirectory.directory() );
     }
 
-    private long createNode( GraphDatabaseService db )
+    private static long createNode( GraphDatabaseService db )
     {
         long node1;
         try ( Transaction tx = db.beginTx() )

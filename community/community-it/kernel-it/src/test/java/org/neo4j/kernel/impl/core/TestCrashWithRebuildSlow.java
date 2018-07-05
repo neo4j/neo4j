@@ -69,14 +69,13 @@ public class TestCrashWithRebuildSlow
     @Rule
     public final TestDirectory testDir = TestDirectory.testDirectory();
     @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Test
     public void crashAndRebuildSlowWithDynamicStringDeletions() throws Exception
     {
-        File storeDir = new File( "dir" ).getAbsoluteFile();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                .setFileSystem( fs.get() ).newImpermanentDatabaseBuilder( storeDir )
+                .setFileSystem( fs.get() ).newImpermanentDatabaseBuilder( testDir.directory() )
                 .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
                 .newGraphDatabase();
         List<Long> deletedNodeIds = produceNonCleanDefraggedStringStore( db );
@@ -108,10 +107,10 @@ public class TestCrashWithRebuildSlow
         assertThat( snapshotChecksum, equalTo( checksumBefore ) );
 
         // Recover with unsupported.dbms.id_generator_fast_rebuild_enabled=false
-        assertNumberOfFreeIdsEquals( storeDir, snapshot, 0 );
+        assertNumberOfFreeIdsEquals( testDir.graphDbDir(), snapshot, 0 );
         GraphDatabaseAPI newDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .setFileSystem( snapshot )
-                .newImpermanentDatabaseBuilder( storeDir )
+                .newImpermanentDatabaseBuilder( testDir.directory() )
                 .setConfig( GraphDatabaseSettings.rebuild_idgenerators_fast, FALSE )
                 .newGraphDatabase();
         Map<IdType,Long> highIdsAfterCrash = getHighIds( newDb );
@@ -215,9 +214,9 @@ public class TestCrashWithRebuildSlow
         return highIds;
     }
 
-    private static void assertNumberOfFreeIdsEquals( File storeDir, FileSystemAbstraction fs, long numberOfFreeIds )
+    private static void assertNumberOfFreeIdsEquals( File databaseDirectory, FileSystemAbstraction fs, long numberOfFreeIds )
     {
-        long fileSize = fs.getFileSize( new File( storeDir, "neostore.propertystore.db.strings.id" ) );
+        long fileSize = fs.getFileSize( new File( databaseDirectory, "neostore.propertystore.db.strings.id" ) );
         long fileSizeWithoutHeader = fileSize - 9;
         long actualFreeIds = fileSizeWithoutHeader / 8;
 

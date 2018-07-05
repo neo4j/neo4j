@@ -42,6 +42,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.not;
@@ -62,7 +63,9 @@ public class TestGraphProperties
     public static final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
     private TestGraphDatabaseFactory factory;
 
     @Before
@@ -174,7 +177,7 @@ public class TestGraphProperties
     @Test
     public void firstRecordOtherThanZeroIfNotFirst()
     {
-        File storeDir = new File( "/store/dir" ).getAbsoluteFile();
+        File storeDir = testDirectory.directory();
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase( storeDir );
         Transaction tx = db.beginTx();
         Node node = db.createNode();
@@ -191,7 +194,7 @@ public class TestGraphProperties
         db.shutdown();
 
         Config config = Config.defaults();
-        StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ),
+        StoreFactory storeFactory = new StoreFactory( testDirectory.graphDbDir(), config, new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         NeoStores neoStores = storeFactory.openAllNeoStores();
         long prop = neoStores.getMetaDataStore().getGraphNextProp();

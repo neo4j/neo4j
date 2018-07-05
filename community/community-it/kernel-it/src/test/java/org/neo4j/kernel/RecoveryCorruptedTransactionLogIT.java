@@ -110,7 +110,7 @@ public class RecoveryCorruptedTransactionLogIT
     @Before
     public void setUp() throws Exception
     {
-        storeDir = directory.graphDbDir();
+        storeDir = directory.directory();
         monitors.addMonitorListener( recoveryMonitor );
         databaseFactory = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider ).setMonitors( monitors );
         logFiles = buildDefaultLogFiles();
@@ -506,7 +506,7 @@ public class RecoveryCorruptedTransactionLogIT
     private void addCorruptedCommandsToLastLogFile() throws IOException
     {
         PositiveLogFilesBasedLogVersionRepository versionRepository = new PositiveLogFilesBasedLogVersionRepository( logFiles );
-        LogFiles internalLogFiles = LogFilesBuilder.builder( storeDir, fileSystemRule )
+        LogFiles internalLogFiles = LogFilesBuilder.builder( directory.graphDbDir(), fileSystemRule )
                 .withLogVersionRepository( versionRepository )
                 .withTransactionIdStore( new SimpleTransactionIdStore() ).build();
         try ( Lifespan lifespan = new Lifespan( internalLogFiles ) )
@@ -546,7 +546,7 @@ public class RecoveryCorruptedTransactionLogIT
 
     private LogFiles buildDefaultLogFiles() throws IOException
     {
-        return LogFilesBuilder.builder( storeDir, fileSystemRule )
+        return LogFilesBuilder.builder( directory.graphDbDir(), fileSystemRule )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() ).build();
     }

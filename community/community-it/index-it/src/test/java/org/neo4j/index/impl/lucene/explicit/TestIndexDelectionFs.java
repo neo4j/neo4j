@@ -19,20 +19,20 @@
  */
 package org.neo4j.index.impl.lucene.explicit;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -41,16 +41,17 @@ public class TestIndexDelectionFs
 {
     private static GraphDatabaseAPI db;
 
-    @BeforeClass
-    public static void doBefore() throws IOException
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+
+    @Before
+    public void doBefore()
     {
-        File directory = new File( "target/test-data/deletion" );
-        FileUtils.deleteRecursively( directory );
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( directory );
+        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.directory() );
     }
 
-    @AfterClass
-    public static void doAfter()
+    @After
+    public void doAfter()
     {
         db.shutdown();
     }
@@ -61,7 +62,7 @@ public class TestIndexDelectionFs
         String indexName = "index";
         String otherIndexName = "other-index";
 
-        File indexBaseDir = new File( db.getStoreDir(), "index" );
+        File indexBaseDir = new File( testDirectory.graphDbDir(), "index" );
         File pathToLuceneIndex = LuceneDataSource.getFileDirectory( indexBaseDir,
                 new IndexIdentifier( IndexEntityType.Node, indexName ) );
         File pathToOtherLuceneIndex = LuceneDataSource.getFileDirectory( indexBaseDir,

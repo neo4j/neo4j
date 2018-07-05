@@ -71,6 +71,7 @@ import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogTimeZone;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
@@ -85,7 +86,6 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 
 import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
 import static java.nio.charset.Charset.defaultCharset;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
@@ -110,21 +110,13 @@ public class CsvInputBatchImportIT
 {
     /** Don't support these counts at the moment so don't compute them */
     private static final boolean COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS = false;
-    private String nameOf( InputEntity node )
-    {
-        return (String) node.properties()[1];
-    }
-    private int indexOf( InputEntity node )
-    {
-        return Integer.parseInt(((String) node.properties()[1]).split( "\\s" )[1] ) ;
-    }
 
     @Rule
     public final TestDirectory directory = TestDirectory.testDirectory();
     @Rule
-    public  final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    private final long seed = currentTimeMillis();
-    private final Random random = new Random( seed );
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    @Rule
+    public final RandomRule random = new RandomRule();
 
     private static final Supplier<ZoneId> testDefaultTimeZone = () -> ZoneId.of( "Asia/Shanghai" );
 
@@ -140,22 +132,10 @@ public class CsvInputBatchImportIT
         List<InputEntity> relationshipData = randomRelationshipData( nodeData );
 
         // WHEN
-        boolean success = false;
-        try
-        {
-            importer.doImport( csv( nodeDataAsFile( nodeData ), relationshipDataAsFile( relationshipData ),
-                    IdType.STRING, lowBufferSize( COMMAS ), silentBadCollector( 0 ) ) );
-            // THEN
-            verifyImportedData( nodeData, relationshipData );
-            success = true;
-        }
-        finally
-        {
-            if ( !success )
-            {
-                System.err.println( "Seed " + seed );
-            }
-        }
+        importer.doImport( csv( nodeDataAsFile( nodeData ), relationshipDataAsFile( relationshipData ),
+                IdType.STRING, lowBufferSize( COMMAS ), silentBadCollector( 0 ) ) );
+        // THEN
+        verifyImportedData( nodeData, relationshipData );
     }
 
     public static Input csv( File nodes, File relationships, IdType idType,
@@ -207,7 +187,7 @@ public class CsvInputBatchImportIT
             node.property( "localTime", LocalTime.of( 1, i % 60, 0 ) );
             node.property( "localDateTime", LocalDateTime.of( 2011, 9, 11, 8, i % 60 ) );
             node.property( "duration", Period.of( 2, -3, i % 30 ) );
-            node.labels( randomLabels( random ) );
+            node.labels( randomLabels( random.random() ) );
             nodes.add( node );
         }
         return nodes;
@@ -320,8 +300,7 @@ public class CsvInputBatchImportIT
     // Below is code for verifying the imported data
     // ======================================================
 
-    private void verifyImportedData( List<InputEntity> nodeData,
-            List<InputEntity> relationshipData )
+    private void verifyImportedData( List<InputEntity> nodeData, List<InputEntity> relationshipData )
     {
         // Build up expected data for the verification below
         Map<String/*id*/, InputEntity> expectedNodes = new HashMap<>();
@@ -336,7 +315,7 @@ public class CsvInputBatchImportIT
                 expectedRelationships, expectedNodeCounts, expectedRelationshipCounts );
 
         // Do the verification
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.graphDbDir() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.directory() );
         try ( Transaction tx = db.beginTx() )
         {
             // Verify nodes
@@ -396,7 +375,7 @@ public class CsvInputBatchImportIT
                 assertEquals( "Label count mismatch for label " + count.first(),
                         count.other().longValue(),
                         neoStores.getCounts()
-                                .nodeCount( count.first().intValue(), newDoubleLongRegister() )
+                                .nodeCount( count.first(), newDoubleLongRegister() )
                                 .readSecond() );
             }
 
@@ -486,7 +465,7 @@ public class CsvInputBatchImportIT
         return from -> from == null ? anyValue : translationTable.get( from );
     }
 
-    private Set<String> names( Iterable<Label> labels )
+    private static Set<String> names( Iterable<Label> labels )
     {
         Set<String> names = new HashSet<>();
         for ( Label label : labels )
@@ -496,15 +475,10 @@ public class CsvInputBatchImportIT
         return names;
     }
 
-    private void buildUpExpectedData(
-            List<InputEntity> nodeData,
-            List<InputEntity> relationshipData,
-            Map<String, InputEntity> expectedNodes,
-            Map<String, String[]> expectedNodeNames,
-            Map<String, Map<String,Consumer<Object>>> expectedNodePropertyVerifiers,
-            Map<String, Map<String, Map<String, AtomicInteger>>> expectedRelationships,
-            Map<String, AtomicLong> nodeCounts,
-            Map<String, Map<String, Map<String, AtomicLong>>> relationshipCounts )
+    private static void buildUpExpectedData( List<InputEntity> nodeData, List<InputEntity> relationshipData, Map<String,InputEntity> expectedNodes,
+            Map<String,String[]> expectedNodeNames, Map<String,Map<String,Consumer<Object>>> expectedNodePropertyVerifiers,
+            Map<String,Map<String,Map<String,AtomicInteger>>> expectedRelationships, Map<String,AtomicLong> nodeCounts,
+            Map<String,Map<String,Map<String,AtomicLong>>> relationshipCounts )
     {
         for ( InputEntity node : nodeData )
         {
@@ -560,10 +534,7 @@ public class CsvInputBatchImportIT
                 }
                 else
                 {
-                    verify = actualValue ->
-                    {
-                        assertEquals( expectedValue, actualValue );
-                    };
+                    verify = actualValue -> assertEquals( expectedValue, actualValue );
                 }
                 propertyVerifiers.put( (String) node.propertyKey( i ), verify  );
             }
@@ -639,7 +610,7 @@ public class CsvInputBatchImportIT
         }
     }
 
-    private void countNodeLabels( Map<String, AtomicLong> nodeCounts, String[] labels )
+    private static void countNodeLabels( Map<String,AtomicLong> nodeCounts, String[] labels )
     {
         Set<String> seen = new HashSet<>();
         for ( String labelName : labels )
@@ -649,6 +620,16 @@ public class CsvInputBatchImportIT
                 nodeCounts.get( labelName ).incrementAndGet();
             }
         }
+    }
+
+    private static String nameOf( InputEntity node )
+    {
+        return (String) node.properties()[1];
+    }
+
+    private static int indexOf( InputEntity node )
+    {
+        return Integer.parseInt( ((String) node.properties()[1]).split( "\\s" )[1] );
     }
 
 }

@@ -68,7 +68,7 @@ public class LogVersionUpgradeCheckerIT
         // Try to start with upgrading disabled
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() )
-                .newImpermanentDatabaseBuilder( storeDirectory.graphDbDir() )
+                .newImpermanentDatabaseBuilder( storeDirectory.directory() )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, "false" )
                 .newGraphDatabase();
         db.shutdown();
@@ -84,7 +84,7 @@ public class LogVersionUpgradeCheckerIT
         // Try to start with upgrading disabled
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() )
-                .newImpermanentDatabaseBuilder( storeDirectory.graphDbDir() )
+                .newImpermanentDatabaseBuilder( storeDirectory.directory() )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, "false" )
                 .newGraphDatabase();
         db.shutdown();
@@ -98,7 +98,7 @@ public class LogVersionUpgradeCheckerIT
         // Try to start with upgrading enabled
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() )
-                .newImpermanentDatabaseBuilder( storeDirectory.graphDbDir() )
+                .newImpermanentDatabaseBuilder( storeDirectory.directory() )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, "true" )
                 .newGraphDatabase();
         db.shutdown();
@@ -108,7 +108,7 @@ public class LogVersionUpgradeCheckerIT
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs )
-                .newImpermanentDatabaseBuilder( storeDirectory.graphDbDir() )
+                .newImpermanentDatabaseBuilder( storeDirectory.directory() )
                 .newGraphDatabase();
 
         try ( Transaction tx = db.beginTx() )

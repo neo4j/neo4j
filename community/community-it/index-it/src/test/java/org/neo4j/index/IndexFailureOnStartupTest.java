@@ -37,6 +37,7 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -144,7 +145,7 @@ public class IndexFailureOnStartupTest
     {
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
         {
-            File indexDir = indexRootDirectory( db.getStoreDir() );
+            File indexDir = indexRootDirectory( new File( db.getStoreDir(), DataSourceManager.DEFAULT_DATABASE_NAME ) );
             File[] files = indexDir.listFiles( pathname -> pathname.isFile() && pathname.getName().startsWith( "archive-" ) );
             if ( files == null || files.length == 0 )
             {

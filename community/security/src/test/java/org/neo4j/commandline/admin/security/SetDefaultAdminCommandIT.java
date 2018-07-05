@@ -32,6 +32,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.FileUserRepository;
@@ -62,7 +63,7 @@ public class SetDefaultAdminCommandIT
     @Before
     public void setup()
     {
-        File graphDir = new File( "graph-db" );
+        File graphDir = new File( DataSourceManager.DEFAULT_DATABASE_NAME );
         confDir = new File( graphDir, "conf" );
         homeDir = new File( graphDir, "home" );
         out = mock( OutsideWorld.class );

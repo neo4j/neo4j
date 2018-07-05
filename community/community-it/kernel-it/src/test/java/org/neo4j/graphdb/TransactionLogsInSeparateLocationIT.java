@@ -50,22 +50,22 @@ public class TransactionLogsInSeparateLocationIT
     @Test
     public void databaseWithTransactionLogsInSeparateRelativeLocation() throws IOException
     {
-        File storeDir = testDirectory.graphDbDir();
-        File txDirectory = new File( storeDir, "transaction-logs" );
-        performTransactions( txDirectory.getName(), storeDir );
-        verifyTransactionLogs( txDirectory, storeDir );
+        File databaseDirectory = testDirectory.graphDbDir();
+        File txDirectory = new File( databaseDirectory, "transaction-logs" );
+        performTransactions( txDirectory.getName(), testDirectory.directory() );
+        verifyTransactionLogs( txDirectory, databaseDirectory );
     }
 
     @Test
     public void databaseWithTransactionLogsInSeparateAbsoluteLocation() throws IOException
     {
-        File storeDir = testDirectory.graphDbDir();
+        File databaseDirectory = testDirectory.graphDbDir();
         File txDirectory = testDirectory.directory( "transaction-logs" );
-        performTransactions( txDirectory.getAbsolutePath(), storeDir );
-        verifyTransactionLogs( txDirectory, storeDir );
+        performTransactions( txDirectory.getAbsolutePath(), testDirectory.directory() );
+        verifyTransactionLogs( txDirectory, databaseDirectory );
     }
 
-    private void performTransactions( String txPath, File storeDir )
+    private static void performTransactions( String txPath, File storeDir )
     {
         GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.logical_logs_location, txPath )

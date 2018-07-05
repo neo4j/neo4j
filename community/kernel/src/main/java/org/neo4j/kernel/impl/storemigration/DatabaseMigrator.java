@@ -75,9 +75,9 @@ public class DatabaseMigrator
     /**
      * Performs construction of {@link StoreUpgrader} and all of the necessary participants and performs store
      * migration if that is required.
-     * @param storeDir store to migrate
+     * @param databaseDirectory store to migrate
      */
-    public void migrate( File storeDir )
+    public void migrate( File databaseDirectory )
     {
         LogProvider logProvider = logService.getInternalLogProvider();
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ), format, tailScanner );
@@ -96,6 +96,6 @@ public class DatabaseMigrator
         storeUpgrader.addParticipant( storeMigrator );
         storeUpgrader.addParticipant( nativeLabelScanStoreMigrator );
         storeUpgrader.addParticipant( countsMigrator );
-        storeUpgrader.migrateIfNeeded( storeDir );
+        storeUpgrader.migrateIfNeeded( databaseDirectory );
     }
 }

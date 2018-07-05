@@ -58,7 +58,7 @@ public class DynamicIndexStoreViewIT
     public void populateDbWithConcurrentUpdates() throws Exception
     {
         GraphDatabaseService database =
-                new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
+                new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.directory() );
         try
         {
             RandomValues randomValues = RandomValues.create();

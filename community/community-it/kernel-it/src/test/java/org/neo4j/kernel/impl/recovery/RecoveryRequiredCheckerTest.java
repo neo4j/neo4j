@@ -55,11 +55,13 @@ public class RecoveryRequiredCheckerTest
     private final Monitors monitors = new Monitors();
     private EphemeralFileSystemAbstraction fileSystem;
     private File storeDir;
+    private File databaseDirectory;
 
     @Before
     public void setup()
     {
-        storeDir = testDirectory.graphDbDir();
+        storeDir = testDirectory.directory();
+        databaseDirectory = testDirectory.graphDbDir();
         fileSystem = fileSystemRule.get();
         new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir ).shutdown();
     }
@@ -70,7 +72,7 @@ public class RecoveryRequiredCheckerTest
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache );
 
-        assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( false ) );
+        assertThat( recoverer.isRecoveryRequiredAt( databaseDirectory ), is( false ) );
     }
 
     @Test
@@ -82,7 +84,7 @@ public class RecoveryRequiredCheckerTest
             PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
             RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystemAbstraction, pageCache );
 
-            assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( true ) );
+            assertThat( recoverer.isRecoveryRequiredAt( databaseDirectory ), is( true ) );
         }
     }
 
@@ -95,11 +97,11 @@ public class RecoveryRequiredCheckerTest
 
             RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystemAbstraction, pageCache );
 
-            assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( true ) );
+            assertThat( recoverer.isRecoveryRequiredAt( databaseDirectory ), is( true ) );
 
             new TestGraphDatabaseFactory().setFileSystem( fileSystemAbstraction ).newImpermanentDatabase( storeDir ).shutdown();
 
-            assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( false ) );
+            assertThat( recoverer.isRecoveryRequiredAt( databaseDirectory ), is( false ) );
         }
     }
 
@@ -127,7 +129,7 @@ public class RecoveryRequiredCheckerTest
 
             RecoveryRequiredChecker recoverer = getRecoveryChecker( fileSystemAbstraction, pageCache, config );
 
-            assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( true ) );
+            assertThat( recoverer.isRecoveryRequiredAt( databaseDirectory ), is( true ) );
 
             new TestGraphDatabaseFactory()
                     .setFileSystem( fileSystemAbstraction )
@@ -136,7 +138,7 @@ public class RecoveryRequiredCheckerTest
                     .newGraphDatabase()
                     .shutdown();
 
-            assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( false ) );
+            assertThat( recoverer.isRecoveryRequiredAt( databaseDirectory ), is( false ) );
         }
     }
 
@@ -155,8 +157,7 @@ public class RecoveryRequiredCheckerTest
         return new RecoveryRequiredChecker( fileSystem, pageCache, config, monitors );
     }
 
-    private FileSystemAbstraction createSomeDataAndCrash( File store, EphemeralFileSystemAbstraction fileSystem,
-            Config config )
+    private FileSystemAbstraction createSomeDataAndCrash( File store, EphemeralFileSystemAbstraction fileSystem, Config config )
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                         .setFileSystem( fileSystem )

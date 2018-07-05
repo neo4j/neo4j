@@ -60,7 +60,7 @@ public class ExplicitIndexMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void migrate( File storeDir, File migrationDir, ProgressReporter progressMonitor,
+    public void migrate( File databaseDirectory, File migrationDir, ProgressReporter progressMonitor,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
         IndexImplementation indexImplementation = explicitIndexProvider.getProviderByName( LUCENE_EXPLICIT_INDEX_PROVIDER_NAME );
@@ -70,7 +70,7 @@ public class ExplicitIndexMigrator extends AbstractStoreMigrationParticipant
             RecordFormats to = RecordFormatSelector.selectForVersion( versionToMigrateTo );
             if ( !from.hasCompatibleCapabilities( to, CapabilityType.INDEX ) )
             {
-                originalExplicitIndexesRoot = indexImplementation.getIndexImplementationDirectory( storeDir );
+                originalExplicitIndexesRoot = indexImplementation.getIndexImplementationDirectory( databaseDirectory );
                 migrationExplicitIndexesRoot = indexImplementation.getIndexImplementationDirectory( migrationDir );
                 if ( isNotEmptyDirectory( originalExplicitIndexesRoot ) )
                 {

@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -80,6 +81,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -529,15 +531,16 @@ public class NeoStoresTest
     public void setVersion() throws Exception
     {
         FileSystemAbstraction fileSystem = fs.get();
-        File storeDir = new File( "target/test-data/set-version" ).getAbsoluteFile();
+        File storeDir = dir.directory();
         createTestDatabase( fileSystem, storeDir ).shutdown();
-        assertEquals( 0, MetaDataStore.setRecord( pageCache, new File( storeDir,
+        File databaseDirectory = dir.graphDbDir();
+        assertEquals( 0, MetaDataStore.setRecord( pageCache, new File( databaseDirectory,
                 MetaDataStore.DEFAULT_NAME ).getAbsoluteFile(), Position.LOG_VERSION, 10 ) );
-        assertEquals( 10, MetaDataStore.setRecord( pageCache, new File( storeDir,
+        assertEquals( 10, MetaDataStore.setRecord( pageCache, new File( databaseDirectory,
                 MetaDataStore.DEFAULT_NAME ).getAbsoluteFile(), Position.LOG_VERSION, 12 ) );
 
         Config config = Config.defaults();
-        StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
+        StoreFactory sf = new StoreFactory( databaseDirectory, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
                 fileSystem, LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
 
         NeoStores neoStores = sf.openAllNeoStores();
@@ -623,9 +626,9 @@ public class NeoStoresTest
     @Test
     public void shouldInitializeTheTxIdToOne()
     {
+        File storeDir = Paths.get( DataSourceManager.DEFAULT_DATABASE_NAME, "neostore" ).toFile();
         StoreFactory factory =
-                new StoreFactory(
-                        new File( "graph.db/neostore" ), Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ),
+                new StoreFactory( storeDir, Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ),
                         pageCache, fs.get(),
                         LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
 

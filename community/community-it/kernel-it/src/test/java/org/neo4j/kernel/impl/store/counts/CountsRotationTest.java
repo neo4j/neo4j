@@ -116,7 +116,7 @@ public class CountsRotationTest
     public void setup()
     {
         fs = fsRule.get();
-        dir = testDir.directory( "dir" ).getAbsoluteFile();
+        dir = testDir.directory();
         dbBuilder = new TestGraphDatabaseFactory().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .newImpermanentDatabaseBuilder( dir );
         pageCache = pcRule.getPageCache( fs );
@@ -395,7 +395,7 @@ public class CountsRotationTest
     private CountsTracker createCountsTracker( PageCache pageCache, Config config )
     {
         return new CountsTracker( NullLogProvider.getInstance(), fs, pageCache, config,
-                new File( dir.getPath(), COUNTS_STORE_BASE ), EmptyVersionContextSupplier.EMPTY );
+                new File( testDir.graphDbDir().getPath(), COUNTS_STORE_BASE ), EmptyVersionContextSupplier.EMPTY );
     }
 
     private void checkPoint( GraphDatabaseAPI db ) throws IOException
@@ -406,12 +406,12 @@ public class CountsRotationTest
 
     private File alphaStoreFile()
     {
-        return new File( dir.getPath(), COUNTS_STORE_BASE + CountsTracker.LEFT );
+        return new File( testDir.graphDbDir().getPath(), COUNTS_STORE_BASE + CountsTracker.LEFT );
     }
 
     private File betaStoreFile()
     {
-        return new File( dir.getPath(), COUNTS_STORE_BASE + CountsTracker.RIGHT );
+        return new File( testDir.graphDbDir().getPath(), COUNTS_STORE_BASE + CountsTracker.RIGHT );
     }
 
     private Collection<Pair<? extends CountsKey, Long>> allRecords( CountsVisitor.Visitable store )

@@ -78,11 +78,11 @@ public class RecoverIndexDropIT
     {
         // given a transaction stream ending in an INDEX DROP command.
         CommittedTransactionRepresentation dropTransaction = prepareDropTransaction();
-        File storeDir = directory.graphDbDir();
+        File storeDir = directory.directory();
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         createIndex( db );
         db.shutdown();
-        appendDropTransactionToTransactionLog( storeDir, dropTransaction );
+        appendDropTransactionToTransactionLog( directory.graphDbDir(), dropTransaction );
 
         // when recovering this (the drop transaction with the index file intact)
         Monitors monitors = new Monitors();
@@ -107,7 +107,7 @@ public class RecoverIndexDropIT
         }
     }
 
-    private IndexDefinition createIndex( GraphDatabaseService db )
+    private static IndexDefinition createIndex( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -117,9 +117,9 @@ public class RecoverIndexDropIT
         }
     }
 
-    private void appendDropTransactionToTransactionLog( File storeDir, CommittedTransactionRepresentation dropTransaction ) throws IOException
+    private void appendDropTransactionToTransactionLog( File databaseDirectory, CommittedTransactionRepresentation dropTransaction ) throws IOException
     {
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDir, fs ).build();
+        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseDirectory, fs ).build();
         File logFile = logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() );
         StoreChannel writeStoreChannel = fs.open( logFile, OpenMode.READ_WRITE );
         writeStoreChannel.position( writeStoreChannel.size() );
@@ -150,7 +150,7 @@ public class RecoverIndexDropIT
         }
     }
 
-    private CommittedTransactionRepresentation extractLastTransaction( GraphDatabaseAPI db ) throws IOException
+    private static CommittedTransactionRepresentation extractLastTransaction( GraphDatabaseAPI db ) throws IOException
     {
         LogicalTransactionStore txStore = db.getDependencyResolver().resolveDependency( LogicalTransactionStore.class );
         CommittedTransactionRepresentation transaction = null;

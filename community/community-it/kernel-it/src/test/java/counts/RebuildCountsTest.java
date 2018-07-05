@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
@@ -65,15 +66,18 @@ public class RebuildCountsTest
 
     @Rule
     public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
     private final AssertableLogProvider userLogProvider = new AssertableLogProvider();
     private final AssertableLogProvider internalLogProvider = new AssertableLogProvider();
-    private final File storeDir = new File( "store" ).getAbsoluteFile();
 
     private GraphDatabaseService db;
+    private File storeDir;
 
     @Before
     public void before() throws IOException
     {
+        storeDir = testDirectory.directory();
         restart( fsRule.get() );
     }
 
@@ -181,7 +185,7 @@ public class RebuildCountsTest
 
     private void deleteCounts( FileSystemAbstraction snapshot )
     {
-        final File storeFileBase = new File( storeDir, MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
+        final File storeFileBase = new File( testDirectory.graphDbDir(), MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
         File alpha = new File( storeFileBase + CountsTracker.LEFT );
         File beta = new File( storeFileBase + CountsTracker.RIGHT );
         assertTrue( snapshot.deleteFile( alpha ) );

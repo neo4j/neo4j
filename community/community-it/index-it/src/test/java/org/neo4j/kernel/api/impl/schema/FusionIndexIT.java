@@ -34,6 +34,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -131,7 +132,8 @@ public class FusionIndexIT
 
     private void deleteIndexFilesFor( IndexProvider.Descriptor descriptor )
     {
-        File rootDirectory = subProviderDirectoryStructure( storeDir ).forProvider( descriptor ).rootDirectory();
+        File databaseDirectory = new File( this.storeDir, DataSourceManager.DEFAULT_DATABASE_NAME );
+        File rootDirectory = subProviderDirectoryStructure( databaseDirectory ).forProvider( descriptor ).rootDirectory();
         File[] files = fs.listFiles( rootDirectory );
         for ( File indexFile : files )
         {

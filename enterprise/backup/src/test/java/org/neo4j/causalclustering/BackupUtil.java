@@ -30,6 +30,7 @@ import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.restore.RestoreDatabaseCommand;
 
 import static org.junit.Assert.assertEquals;
@@ -53,7 +54,7 @@ public class BackupUtil
     public static void restoreFromBackup( File backup, FileSystemAbstraction fsa, ClusterMember clusterMember ) throws IOException, CommandFailed
     {
         Config config = clusterMember.config();
-        RestoreDatabaseCommand restoreDatabaseCommand = new RestoreDatabaseCommand( fsa, backup, config, "graph-db", true );
+        RestoreDatabaseCommand restoreDatabaseCommand = new RestoreDatabaseCommand( fsa, backup, config, DataSourceManager.DEFAULT_DATABASE_NAME, true );
         restoreDatabaseCommand.execute();
     }
 }

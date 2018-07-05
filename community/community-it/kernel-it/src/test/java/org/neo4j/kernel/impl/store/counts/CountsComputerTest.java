@@ -89,7 +89,7 @@ public class CountsComputerTest
     public void setup()
     {
         fs = fsRule.get();
-        dir = testDir.directory( "dir" ).getAbsoluteFile();
+        dir = testDir.directory();
         dbBuilder = new TestGraphDatabaseFactory().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .newImpermanentDatabaseBuilder( dir );
         pageCache = pcRule.getPageCache( fs );
@@ -350,7 +350,8 @@ public class CountsComputerTest
         cleanupCountsForRebuilding();
 
         IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fs );
-        StoreFactory storeFactory = new StoreFactory( dir, CONFIG, idGenFactory, pageCache, fs, LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
+        StoreFactory storeFactory =
+                new StoreFactory( testDir.graphDbDir(), CONFIG, idGenFactory, pageCache, fs, LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
         try ( Lifespan life = new Lifespan();
               NeoStores neoStores = storeFactory.openAllNeoStores() )
         {

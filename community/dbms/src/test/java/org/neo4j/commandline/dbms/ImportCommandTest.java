@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -247,7 +248,7 @@ class ImportCommandTest
                             "%n" +
                             "options:%n" +
                             "  --database=<name>%n" +
-                            "      Name of database. [default:graph.db]%n" +
+                            "      Name of database. [default:" + DataSourceManager.DEFAULT_DATABASE_NAME + "]%n" +
                             "  --additional-config=<config-file-path>%n" +
                             "      Configuration file to supply additional configuration in. [default:]%n" +
                             "  --mode=<database|csv>%n" +

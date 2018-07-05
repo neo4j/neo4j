@@ -145,23 +145,23 @@ public class StoreMigratorTest
     @Test
     public void extractTransactionInformationFromLogsInCustomRelativeLocation() throws Exception
     {
-        File storeDir = directory.graphDbDir();
-        File customLogLocation = new File( storeDir, "customLogLocation" );
-        extractTransactionalInformationFromLogs( customLogLocation.getName(), customLogLocation, storeDir );
+        File databaseDirectory = directory.graphDbDir();
+        File customLogLocation = new File( databaseDirectory, "customLogLocation" );
+        extractTransactionalInformationFromLogs( customLogLocation.getName(), customLogLocation, databaseDirectory, directory.directory() );
     }
 
     @Test
     public void extractTransactionInformationFromLogsInCustomAbsoluteLocation() throws Exception
     {
-        File storeDir = directory.graphDbDir();
+        File databaseDirectory = directory.graphDbDir();
         File customLogLocation = directory.directory( "customLogLocation" );
-        extractTransactionalInformationFromLogs( customLogLocation.getAbsolutePath(), customLogLocation, storeDir );
+        extractTransactionalInformationFromLogs( customLogLocation.getAbsolutePath(), customLogLocation, databaseDirectory, directory.directory() );
     }
 
-    private void extractTransactionalInformationFromLogs( String path, File customLogLocation, File storeDir ) throws IOException
+    private void extractTransactionalInformationFromLogs( String path, File customLogLocation, File databaseDirectory, File storeDir ) throws IOException
     {
         LogService logService = new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
-        File neoStore = new File( storeDir, DEFAULT_NAME );
+        File neoStore = new File( databaseDirectory, DEFAULT_NAME );
 
         GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( logical_logs_location, path ).newGraphDatabase();
@@ -179,7 +179,7 @@ public class StoreMigratorTest
                 MetaDataRecordFormat.FIELD_NOT_PRESENT );
         Config config = Config.defaults( logical_logs_location, path );
         StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService );
-        LogPosition logPosition = migrator.extractTransactionLogPosition( neoStore, storeDir, 100 );
+        LogPosition logPosition = migrator.extractTransactionLogPosition( neoStore, databaseDirectory, 100 );
 
         File[] logFiles = customLogLocation.listFiles();
         assertNotNull( logFiles );

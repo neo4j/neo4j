@@ -196,11 +196,11 @@ public class BatchInsertTest
     }
 
     @ClassRule
-    public static TestDirectory globalStoreDir = TestDirectory.testDirectory( BatchInsertTest.class );
+    public static TestDirectory globalTestDirectory = TestDirectory.testDirectory();
     @ClassRule
     public static DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @Rule
-    public TestDirectory storeDir = TestDirectory.testDirectory( getClass() );
+    public TestDirectory localTestDirectory = TestDirectory.testDirectory();
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
 
@@ -212,7 +212,7 @@ public class BatchInsertTest
         // Global inserter can be used in tests which simply want to verify "local" behaviour,
         // e.g. create a node with some properties and read them back.
         globalInserter = BatchInserters.inserter(
-                globalStoreDir.directory( "global" ), fileSystemRule.get(), stringMap() );
+                globalTestDirectory.directory( "global" ), fileSystemRule.get(), stringMap() );
     }
 
     @After
@@ -225,40 +225,6 @@ public class BatchInsertTest
     public static void shutDownGlobalInserter()
     {
         globalInserter.shutdown();
-    }
-
-    private Map<String, String> configuration()
-    {
-        return stringMap( GraphDatabaseSettings.dense_node_threshold.name(), String.valueOf( denseNodeThreshold ) );
-    }
-
-    private BatchInserter newBatchInserter() throws Exception
-    {
-        return BatchInserters.inserter( storeDir.absolutePath(), fileSystemRule.get(), configuration() );
-    }
-
-    private BatchInserter newBatchInserterWithIndexProvider( KernelExtensionFactory<?> provider ) throws Exception
-    {
-        return BatchInserters.inserter( storeDir.absolutePath(), fileSystemRule.get(), configuration(), singletonList( provider ) );
-    }
-
-    private GraphDatabaseService switchToEmbeddedGraphDatabaseService( BatchInserter inserter )
-    {
-        inserter.shutdown();
-        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-        factory.setFileSystem( fileSystemRule.get() );
-        GraphDatabaseService db = factory.newImpermanentDatabaseBuilder( new File( inserter.getStoreDir() ) )
-                // Shouldn't be necessary to set dense node threshold since it's a stick config
-                .setConfig( configuration() )
-                .newGraphDatabase();
-
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
-            tx.success();
-        }
-
-        return db;
     }
 
     @Test
@@ -628,7 +594,7 @@ public class BatchInsertTest
     @Test
     public void messagesLogGetsClosed() throws Exception
     {
-        File storeDir = this.storeDir.graphDbDir();
+        File storeDir = localTestDirectory.graphDbDir();
         BatchInserter inserter = BatchInserters.inserter( storeDir, fileSystemRule.get(), stringMap() );
         inserter.shutdown();
         assertTrue( new File( storeDir, INTERNAL_LOG_FILE ).delete() );
@@ -1413,10 +1379,44 @@ public class BatchInsertTest
         // then no exception should be thrown, this mimics GraphDatabaseService behaviour
     }
 
+    private Map<String, String> configuration()
+    {
+        return stringMap( GraphDatabaseSettings.dense_node_threshold.name(), String.valueOf( denseNodeThreshold ) );
+    }
+
+    private BatchInserter newBatchInserter() throws Exception
+    {
+        return BatchInserters.inserter( localTestDirectory.graphDbDir(), fileSystemRule.get(), configuration() );
+    }
+
+    private BatchInserter newBatchInserterWithIndexProvider( KernelExtensionFactory<?> provider ) throws Exception
+    {
+        return BatchInserters.inserter( localTestDirectory.graphDbDir(), fileSystemRule.get(), configuration(), singletonList( provider ) );
+    }
+
+    private GraphDatabaseService switchToEmbeddedGraphDatabaseService( BatchInserter inserter )
+    {
+        inserter.shutdown();
+        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
+        factory.setFileSystem( fileSystemRule.get() );
+        GraphDatabaseService db = factory.newImpermanentDatabaseBuilder( localTestDirectory.directory() )
+                // Shouldn't be necessary to set dense node threshold since it's a stick config
+                .setConfig( configuration() )
+                .newGraphDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+            tx.success();
+        }
+
+        return db;
+    }
+
     private LabelScanStore getLabelScanStore()
     {
         DefaultFileSystemAbstraction fs = fileSystemRule.get();
-        return new NativeLabelScanStore( pageCacheRule.getPageCache( fs ), storeDir.absolutePath(), fs,
+        return new NativeLabelScanStore( pageCacheRule.getPageCache( fs ), localTestDirectory.graphDbDir(), fs,
                 FullStoreChangeStream.EMPTY, true, new Monitors(), RecoveryCleanupWorkCollector.IMMEDIATE );
     }
 

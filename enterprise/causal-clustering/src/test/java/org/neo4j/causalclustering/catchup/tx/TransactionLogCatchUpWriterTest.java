@@ -58,6 +58,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.LogTailScanner;
@@ -104,7 +105,7 @@ public class TransactionLogCatchUpWriterTest
     @Before
     public void setup()
     {
-        storeDir = dir.directory( "graph.db" );
+        storeDir = dir.directory( DataSourceManager.DEFAULT_DATABASE_NAME );
         fs = fsRule.get();
         pageCache = pageCacheRule.getPageCache( fs );
     }

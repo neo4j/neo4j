@@ -23,10 +23,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-import org.junit.runners.Suite;
-import org.junit.runners.Suite.SuiteClasses;
 
 import java.io.File;
 import java.util.HashMap;
@@ -53,63 +49,20 @@ import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
-@RunWith( Suite.class )
-@SuiteClasses( {IdGeneratorRebuildFailureEmulationTest.FailureBeforeRebuild.class} )
 public class IdGeneratorRebuildFailureEmulationTest
 {
-    @RunWith( JUnit4.class )
-    public static final class FailureBeforeRebuild extends IdGeneratorRebuildFailureEmulationTest
-    {
-        @Override
-        protected void emulateFailureOnRebuildOf( NeoStores neoStores )
-        {
-            // emulate a failure during rebuild by not issuing this call:
-            // neostores.makeStoreOk();
-        }
-    }
-
-    private void performTest( String neostoreFileName )
-    {
-        File idFile = new File( storeDir, neostoreFileName + ".id" );
-        // emulate the need for rebuilding id generators by deleting it
-        fs.deleteFile( idFile );
-        NeoStores neoStores = null;
-        try
-        {
-            neoStores = factory.openAllNeoStores();
-            // emulate a failure during rebuild:
-            emulateFailureOnRebuildOf( neoStores );
-        }
-        catch ( UnderlyingStorageException expected )
-        {
-            assertThat( expected.getMessage(), startsWith( "Id capacity exceeded" ) );
-        }
-        finally
-        {
-            // we want close to not misbehave
-            // (and for example truncate the file based on the wrong highId)
-            if ( neoStores != null )
-            {
-                neoStores.close();
-            }
-        }
-    }
-
-    void emulateFailureOnRebuildOf( NeoStores neoStores )
-    {
-        fail( "emulateFailureOnRebuildOf(NeoStores) must be overridden" );
-    }
-
     private FileSystem fs;
     private StoreFactory factory;
-    private final File storeDir = new File( "dir" ).getAbsoluteFile();
+    private File storeDirectory;
 
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
 
@@ -117,13 +70,14 @@ public class IdGeneratorRebuildFailureEmulationTest
     public void initialize()
     {
         fs = new FileSystem();
-        GraphDatabaseService graphdb = new Database( storeDir );
+        storeDirectory = testDirectory.directory();
+        GraphDatabaseService graphdb = new Database( storeDirectory );
         createInitialData( graphdb );
         graphdb.shutdown();
         Map<String, String> params = new HashMap<>();
         params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.FALSE );
         Config config = Config.defaults( params );
-        factory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ),
+        factory = new StoreFactory( testDirectory.graphDbDir(), config, new DefaultIdGeneratorFactory( fs ),
                 pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
     }
 
@@ -133,7 +87,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         GraphDatabaseService graphdb = null;
         try
         {
-            graphdb = new Database( storeDir );
+            graphdb = new Database( storeDirectory );
             verifyData( graphdb );
         }
         finally
@@ -147,6 +101,21 @@ public class IdGeneratorRebuildFailureEmulationTest
                 fs.disposeAndAssertNoOpenFiles();
             }
             fs = null;
+        }
+    }
+
+    private void performTest( String neostoreFileName )
+    {
+        File idFile = new File( testDirectory.graphDbDir(), neostoreFileName + ".id" );
+        // emulate the need for rebuilding id generators by deleting it
+        fs.deleteFile( idFile );
+        try ( NeoStores neoStores = factory.openAllNeoStores() )
+        {
+            // emulate a failure during rebuild:
+        }
+        catch ( UnderlyingStorageException expected )
+        {
+            assertThat( expected.getMessage(), startsWith( "Id capacity exceeded" ) );
         }
     }
 
@@ -310,13 +279,5 @@ public class IdGeneratorRebuildFailureEmulationTest
     public void neostore_relationshiptypestore_db_names()
     {
         performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME );
-    }
-
-    private IdGeneratorRebuildFailureEmulationTest()
-    {
-        if ( IdGeneratorRebuildFailureEmulationTest.class == getClass() )
-        {
-            throw new UnsupportedOperationException( "This class is effectively abstract" );
-        }
     }
 }

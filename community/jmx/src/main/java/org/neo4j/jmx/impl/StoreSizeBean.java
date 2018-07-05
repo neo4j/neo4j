@@ -80,7 +80,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
     static class StoreSizeImpl extends Neo4jMBean implements StoreSize
     {
         private final FileSystemAbstraction fs;
-        private final File storePath;
+        private final File databasePath;
 
         private LogFiles logFiles;
         private ExplicitIndexProvider explicitIndexProviderLookup;
@@ -92,7 +92,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
             super( management, isMXBean );
 
             fs = management.getKernelData().getFilesystemAbstraction();
-            storePath = resolveStorePath( management );
+            databasePath = resolveStorePath( management );
 
             DataSourceManager dataSourceManager = management.resolveDependency( DataSourceManager.class );
             dataSourceManager.addListener( new DataSourceManager.Listener()
@@ -189,7 +189,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
             // Add explicit indices
             for ( IndexImplementation index : explicitIndexProviderLookup.allIndexProviders() )
             {
-                size += FileUtils.size( fs, index.getIndexImplementationDirectory( storePath ) );
+                size += FileUtils.size( fs, index.getIndexImplementationDirectory( databasePath ) );
             }
 
             // Add schema index
@@ -214,12 +214,12 @@ public final class StoreSizeBean extends ManagementBeanProvider
         @Override
         public long getTotalStoreSize()
         {
-            return storePath == null ? 0L : FileUtils.size( fs, storePath );
+            return databasePath == null ? 0L : FileUtils.size( fs, databasePath );
         }
 
         private long sizeOf( String name )
         {
-            return storePath == null ? 0L : FileUtils.size( fs, new File( storePath, name ) );
+            return databasePath == null ? 0L : FileUtils.size( fs, new File( databasePath, name ) );
         }
 
         private static class TotalSizeVersionVisitor implements LogVersionVisitor

@@ -185,7 +185,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private final LifeSupport life;
     private final NeoStores neoStores;
     private final IndexConfigStore indexStore;
-    private final File storeDir;
+    private final File databaseDirectory;
     private final TokenHolders tokenHolders;
     private final IdGeneratorFactory idGeneratorFactory;
     private final IndexProviderMap indexProviderMap;
@@ -236,7 +236,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private final Locks.Client noopLockClient = new NoOpClient();
     private final long maxNodeId;
 
-    public BatchInserterImpl( final File storeDir, final FileSystemAbstraction fileSystem,
+    public BatchInserterImpl( final File databaseDirectory, final FileSystemAbstraction fileSystem,
                        Map<String, String> stringParams, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
     {
         rejectAutoUpgrade( stringParams );
@@ -245,7 +245,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         this.config = Config.defaults( params );
 
         life = new LifeSupport();
-        this.storeDir = storeDir;
+        this.databaseDirectory = databaseDirectory;
         storeLocker = tryLockStore( fileSystem );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, NullLog.getInstance(),
@@ -253,7 +253,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
         life.add( new PageCacheLifecycle( pageCache ) );
 
-        config.augment( logs_directory, storeDir.getCanonicalPath() );
+        config.augment( logs_directory, databaseDirectory.getCanonicalPath() );
         File internalLog = config.get( store_internal_log_path );
 
         StoreLogService logService = life.add( StoreLogService.withInternalLog( internalLog).build( fileSystem ) );
@@ -263,9 +263,9 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
 
         LogProvider internalLogProvider = logService.getInternalLogProvider();
-        RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, storeDir, fileSystem,
+        RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, databaseDirectory, fileSystem,
                 pageCache, internalLogProvider );
-        StoreFactory sf = new StoreFactory( this.storeDir, config, idGeneratorFactory, pageCache, fileSystem,
+        StoreFactory sf = new StoreFactory( this.databaseDirectory, config, idGeneratorFactory, pageCache, fileSystem,
                 recordFormats, internalLogProvider, EmptyVersionContextSupplier.EMPTY );
 
         maxNodeId = recordFormats.node().getMaxId();
@@ -294,8 +294,9 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         Monitors monitors = new Monitors();
         deps.satisfyDependencies( fileSystem, config, logService, indexStoreView, pageCache, monitors,
                 RecoveryCleanupWorkCollector.IMMEDIATE );
+
         DatabaseKernelExtensions extensions = life.add( new DatabaseKernelExtensions(
-                new SimpleKernelContext( storeDir, DatabaseInfo.UNKNOWN, deps ),
+                new SimpleKernelContext( databaseDirectory, DatabaseInfo.UNKNOWN, deps ),
                 kernelExtensions, deps, UnsatisfiedDependencyStrategies.ignore() ) );
 
         indexProviderMap = life.add( new DefaultIndexProviderMap( extensions ) );
@@ -308,10 +309,10 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         labelTokenHolder.setInitialTokens( labelTokenStore.getTokens() );
         this.tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
 
-        indexStore = life.add( new IndexConfigStore( this.storeDir, fileSystem ) );
+        indexStore = life.add( new IndexConfigStore( this.databaseDirectory, fileSystem ) );
         schemaCache = new SchemaCache( new StandardConstraintSemantics(), schemaStore, indexProviderMap );
 
-        labelScanStore = new NativeLabelScanStore( pageCache, storeDir, fileSystem, FullStoreChangeStream.EMPTY, false, monitors,
+        labelScanStore = new NativeLabelScanStore( pageCache, databaseDirectory, fileSystem, FullStoreChangeStream.EMPTY, false, monitors,
                 RecoveryCleanupWorkCollector.IMMEDIATE );
         life.add( labelScanStore );
         actions = new BatchSchemaActions();
@@ -331,7 +332,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
     private StoreLocker tryLockStore( FileSystemAbstraction fileSystem )
     {
-        StoreLocker storeLocker = new GlobalStoreLocker( fileSystem, this.storeDir );
+        StoreLocker storeLocker = new GlobalStoreLocker( fileSystem, this.databaseDirectory );
         try
         {
             storeLocker.checkLock();
@@ -1018,7 +1019,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     @Override
     public String toString()
     {
-        return "EmbeddedBatchInserter[" + storeDir + "]";
+        return "EmbeddedBatchInserter[" + databaseDirectory + "]";
     }
 
     private Map<String, Object> getPropertyChain( long nextProp )
@@ -1105,7 +1106,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     @Override
     public String getStoreDir()
     {
-        return storeDir.getPath();
+        return databaseDirectory.getPath();
     }
 
     @Override

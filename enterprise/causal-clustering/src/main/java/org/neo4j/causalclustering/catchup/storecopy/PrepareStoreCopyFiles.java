@@ -105,7 +105,7 @@ public class PrepareStoreCopyFiles implements AutoCloseable
 
     private StoreResource toStoreResource( StoreFileMetadata storeFileMetadata ) throws IOException
     {
-        File storeDir = neoStoreDataSource.getStoreDir();
+        File storeDir = neoStoreDataSource.getDatabaseDirectory();
         File file = storeFileMetadata.file();
         String relativePath = relativePath( storeDir, file );
         return new StoreResource( file, relativePath, storeFileMetadata.recordSize(), fileSystemAbstraction );

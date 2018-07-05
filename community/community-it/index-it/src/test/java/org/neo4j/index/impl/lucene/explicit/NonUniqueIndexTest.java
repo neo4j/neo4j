@@ -132,7 +132,7 @@ public class NonUniqueIndexTest
                     }
                 };
             }
-        }.newFacade( resources.directory().graphDbDir(), config,
+        }.newFacade( resources.directory().directory(), config,
                 graphDatabaseFactoryState.databaseDependencies() );
     }
 

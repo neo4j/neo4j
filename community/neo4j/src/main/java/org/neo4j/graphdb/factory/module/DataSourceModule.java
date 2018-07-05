@@ -92,7 +92,7 @@ public class DataSourceModule
 
         tokenHolders = editionModule.tokenHoldersSupplier.get();
 
-        File storeDir = platformModule.storeDir;
+        File databaseDirectory = new File( platformModule.storeDir, DataSourceManager.DEFAULT_DATABASE_NAME );
         DiagnosticsManager diagnosticsManager = platformModule.diagnosticsManager;
         this.queryExecutor = queryExecutionEngineSupplier;
         Monitors monitors = new Monitors( platformModule.monitors );
@@ -116,7 +116,7 @@ public class DataSourceModule
 
         autoIndexing = new InternalAutoIndexing( platformModule.config, tokenHolders.propertyKeyTokens() );
 
-        IndexConfigStore indexConfigStore = new IndexConfigStore( storeDir, fileSystem );
+        IndexConfigStore indexConfigStore = new IndexConfigStore( databaseDirectory, fileSystem );
         deps.satisfyDependencies( indexConfigStore );
         DefaultExplicitIndexProvider explicitIndexProvider = new DefaultExplicitIndexProvider();
         deps.satisfyDependencies( explicitIndexProvider );
@@ -127,7 +127,7 @@ public class DataSourceModule
         deps.satisfyDependency( storeCopyCheckPointMutex );
 
         neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource(
-                storeDir,
+                databaseDirectory,
                 config,
                 editionModule.idGeneratorFactory,
                 logging,

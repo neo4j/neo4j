@@ -115,9 +115,10 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
     public void shouldOpen3_2DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
     {
         // given
-        File storeDir = unzip( getClass(), ZIP_FILE_3_2, directory.absolutePath() );
+        unzip( getClass(), ZIP_FILE_3_2, directory.graphDbDir() );
         IndexRecoveryTracker indexRecoveryTracker = new IndexRecoveryTracker();
 
+        File storeDir = directory.directory();
         // when
         GraphDatabaseAPI db = setupDb( storeDir, indexRecoveryTracker );
 
@@ -173,8 +174,9 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
     public void shouldOpen3_3DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
     {
         // given
-        File storeDir = unzip( getClass(), ZIP_FILE_3_3, directory.absolutePath() );
+        unzip( getClass(), ZIP_FILE_3_3, directory.graphDbDir() );
         IndexRecoveryTracker indexRecoveryTracker = new IndexRecoveryTracker();
+        File storeDir = directory.directory();
 
         // when
         GraphDatabaseAPI db = setupDb( storeDir, indexRecoveryTracker );

@@ -122,7 +122,7 @@ public class KernelBean extends Neo4jMBean implements Kernel
             isReadOnly = ds.isReadOnly();
             storeId = id.getRandomId();
 
-            File storeDir = ds.getStoreDir();
+            File storeDir = ds.getDatabaseDirectory();
             try
             {
                 storeDir = storeDir.getCanonicalFile();

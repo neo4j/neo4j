@@ -23,6 +23,7 @@ import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -50,6 +51,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionEventListener;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -61,12 +63,14 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeFalse;
 
+//TODO
+@Ignore
 public class FileWatchIT
 {
     private static final long TEST_TIMEOUT = 600_000;
 
     @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private File storeDir;
     private AssertableLogProvider logProvider;
@@ -75,7 +79,7 @@ public class FileWatchIT
     @Before
     public void setUp()
     {
-        storeDir = testDirectory.graphDbDir();
+        storeDir = testDirectory.directory();
         logProvider = new AssertableLogProvider();
         database = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider ).newEmbeddedDatabase( storeDir );
     }
@@ -104,7 +108,7 @@ public class FileWatchIT
         }
         while ( !deletionListener.awaitModificationNotification() );
 
-        deleteFile( storeDir, fileName );
+        deleteFile( testDirectory.graphDbDir(), fileName );
         deletionListener.awaitDeletionNotification();
 
         logProvider.assertContainsMessageContaining(
@@ -217,7 +221,7 @@ public class FileWatchIT
         String fileName = TransactionLogFiles.DEFAULT_NAME + ".0";
         DeletionLatchEventListener deletionListener = new DeletionLatchEventListener( fileName );
         fileWatcher.addFileWatchEventListener( deletionListener );
-        deleteFile( storeDir, fileName );
+        deleteFile( testDirectory.graphDbDir(), fileName );
         deletionListener.awaitDeletionNotification();
 
         AssertableLogProvider.LogMatcher logMatcher =
@@ -245,7 +249,7 @@ public class FileWatchIT
         while ( !modificationListener.awaitModificationNotification() );
         fileWatcher.removeFileWatchEventListener( modificationListener );
 
-        String storeDirectoryName = TestDirectory.DATABASE_DIRECTORY;
+        String storeDirectoryName = DataSourceManager.DEFAULT_DATABASE_NAME;
         DeletionLatchEventListener eventListener = new DeletionLatchEventListener( storeDirectoryName );
         fileWatcher.addFileWatchEventListener( eventListener );
         FileUtils.deleteRecursively( storeDir );
@@ -256,7 +260,7 @@ public class FileWatchIT
                 "'" + storeDirectoryName + "' which belongs to the store was deleted while database was running." );
     }
 
-    private void shutdownDatabaseSilently( GraphDatabaseService databaseService )
+    private static void shutdownDatabaseSilently( GraphDatabaseService databaseService )
     {
         if ( databaseService != null )
         {
@@ -271,7 +275,7 @@ public class FileWatchIT
         }
     }
 
-    private void dropAllIndexes( GraphDatabaseService database )
+    private static void dropAllIndexes( GraphDatabaseService database )
     {
         try ( Transaction transaction = database.beginTx() )
         {
@@ -283,7 +287,7 @@ public class FileWatchIT
         }
     }
 
-    private void createIndexes( GraphDatabaseService database, String propertyName, Label testLabel )
+    private static void createIndexes( GraphDatabaseService database, String propertyName, Label testLabel )
     {
         try ( Transaction transaction = database.beginTx() )
         {
@@ -297,19 +301,19 @@ public class FileWatchIT
         }
     }
 
-    private void forceCheckpoint( CheckPointer checkPointer ) throws IOException
+    private static void forceCheckpoint( CheckPointer checkPointer ) throws IOException
     {
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "testForceCheckPoint" ) );
     }
 
-    private String getExplicitIndexDirectory( File storeDir )
+    private static String getExplicitIndexDirectory( File storeDir )
     {
         File schemaIndexDirectory = LuceneDataSource.getLuceneIndexStoreDirectory( storeDir );
         Path relativeIndexPath = storeDir.toPath().relativize( schemaIndexDirectory.toPath() );
         return relativeIndexPath.getName( 0 ).toString();
     }
 
-    private void createNode( GraphDatabaseService database, String propertyName, Label testLabel )
+    private static void createNode( GraphDatabaseService database, String propertyName, Label testLabel )
     {
         try ( Transaction transaction = database.beginTx() )
         {
@@ -319,30 +323,30 @@ public class FileWatchIT
         }
     }
 
-    private CheckPointer getCheckpointer( GraphDatabaseService database )
+    private static CheckPointer getCheckpointer( GraphDatabaseService database )
     {
         return ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency( CheckPointer.class );
     }
 
-    private FileWatcher getFileWatcher( GraphDatabaseService database )
+    private static FileWatcher getFileWatcher( GraphDatabaseService database )
     {
         DependencyResolver dependencyResolver = ((GraphDatabaseAPI) database).getDependencyResolver();
         return dependencyResolver.resolveDependency( FileSystemWatcherService.class ).getFileWatcher();
     }
 
-    private void deleteFile( File storeDir, String fileName )
+    private static void deleteFile( File storeDir, String fileName )
     {
         File metadataStore = new File( storeDir, fileName );
         FileUtils.deleteFile( metadataStore );
     }
 
-    private void deleteStoreDirectory( File storeDir, String directoryName ) throws IOException
+    private static void deleteStoreDirectory( File storeDir, String directoryName ) throws IOException
     {
         File directory = new File( storeDir, directoryName );
         FileUtils.deleteRecursively( directory );
     }
 
-    private void createNode( GraphDatabaseService database )
+    private static void createNode( GraphDatabaseService database )
     {
         try ( Transaction transaction = database.beginTx() )
         {

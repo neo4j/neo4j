@@ -36,6 +36,8 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
  */
 public class DataSourceManager implements Lifecycle, Supplier<Kernel>
 {
+    public static final String DEFAULT_DATABASE_NAME = "graph.db";
+
     public interface Listener
     {
         void registered( NeoStoreDataSource dataSource );

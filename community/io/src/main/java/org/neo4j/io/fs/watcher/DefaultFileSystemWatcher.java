@@ -143,7 +143,7 @@ public class DefaultFileSystemWatcher implements FileWatcher
         }
     }
 
-    private String getContext( WatchEvent<?> watchEvent )
+    private static String getContext( WatchEvent<?> watchEvent )
     {
         return Objects.toString( watchEvent.context(), StringUtils.EMPTY );
     }

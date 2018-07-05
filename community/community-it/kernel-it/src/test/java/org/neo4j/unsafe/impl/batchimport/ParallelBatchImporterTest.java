@@ -56,9 +56,11 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
@@ -98,9 +100,10 @@ public class ParallelBatchImporterTest
     private final TestDirectory directory = TestDirectory.testDirectory();
     private final RandomRule random = new RandomRule();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( directory ).around( random ).around( fileSystemRule );
+    public RuleChain ruleChain = RuleChain.outerRule( directory ).around( random ).around( fileSystemRule ).around( suppressOutput );
 
     private static final int NODE_COUNT = 10_000;
     private static final int RELATIONSHIPS_PER_NODE = 5;
@@ -168,7 +171,7 @@ public class ParallelBatchImporterTest
         ExecutionMonitor processorAssigner = eagerRandomSaturation( config.maxNumberOfProcessors() );
         File storeDir = directory.directory( "dir" + random.nextAlphaNumericString( 8, 8 ) );
         storeDir.mkdirs();
-        final BatchImporter inserter = new ParallelBatchImporter( storeDir,
+        final BatchImporter inserter = new ParallelBatchImporter( new File( storeDir, DataSourceManager.DEFAULT_DATABASE_NAME ),
                 fileSystemRule.get(), null, config, NullLogService.getInstance(),
                 processorAssigner, EMPTY, Config.defaults(), getFormat(), NO_MONITOR );
 
@@ -234,11 +237,12 @@ public class ParallelBatchImporterTest
     protected void assertConsistent( File storeDir ) throws ConsistencyCheckIncompleteException
     {
         ConsistencyCheckService consistencyChecker = new ConsistencyCheckService();
-        Result result = consistencyChecker.runFullConsistencyCheck( storeDir,
+        File databaseDirectory = new File( storeDir, DataSourceManager.DEFAULT_DATABASE_NAME );
+        Result result = consistencyChecker.runFullConsistencyCheck( databaseDirectory,
                 Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" ),
                 ProgressMonitorFactory.NONE,
                 NullLogProvider.getInstance(), false );
-        assertTrue( "Database contains inconsistencies, there should be a report in " + storeDir,
+        assertTrue( "Database contains inconsistencies, there should be a report in " + databaseDirectory,
                 result.isSuccessful() );
     }
 

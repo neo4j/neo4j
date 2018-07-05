@@ -99,7 +99,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 @RunWith( Enclosed.class )
 public class StoreUpgradeIT
 {
-    // NOTE: the zip files must contain the database files and NOT the graph.db folder itself!!!
+    // NOTE: the zip files must contain the databases files and NOT the database folder itself!!!
     private static final List<Store[]> STORES23 = Arrays.asList(
             new Store[]{new Store( "0.A.6-empty.zip",
                     0 /* node count */,

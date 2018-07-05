@@ -46,6 +46,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.configuration.ssl.SslPolicyConfigValidator;
 import org.neo4j.kernel.impl.factory.Edition;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogTimeZone;
 
@@ -105,7 +106,7 @@ public class GraphDatabaseSettings implements LoadableConfig
             setting( "unsupported.dbms.directories.neo4j_home", PATH, NO_DEFAULT );
 
     @Description( "Name of the database to load" )
-    public static final Setting<String> active_database = setting( "dbms.active_database", STRING, "graph.db" );
+    public static final Setting<String> active_database = setting( "dbms.active_database", STRING, DataSourceManager.DEFAULT_DATABASE_NAME );
 
     @Description( "Path of the data directory. You must not configure more than one Neo4j installation to use the " +
             "same data directory." )

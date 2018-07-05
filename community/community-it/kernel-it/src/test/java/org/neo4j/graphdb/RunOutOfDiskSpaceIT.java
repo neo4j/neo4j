@@ -54,7 +54,7 @@ public class RunOutOfDiskSpaceIT
         // Given
         TransactionFailureException exceptionThrown = null;
 
-        File storeDir = testDirectory.absolutePath();
+        File storeDir = testDirectory.directory();
         LimitedFileSystemGraphDatabase db = new LimitedFileSystemGraphDatabase( storeDir );
 
         try ( Transaction tx = db.beginTx() )
@@ -89,7 +89,7 @@ public class RunOutOfDiskSpaceIT
         db.shutdown();
 
         PageCache pageCache = pageCacheRule.getPageCache( db.getFileSystem() );
-        File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        File neoStore = new File( testDirectory.graphDbDir(), MetaDataStore.DEFAULT_NAME );
         assertEquals( logVersion, MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION ) );
     }
 
@@ -148,7 +148,7 @@ public class RunOutOfDiskSpaceIT
         db.shutdown();
 
         PageCache pageCache = pageCacheRule.getPageCache( db.getFileSystem() );
-        File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        File neoStore = new File( testDirectory.graphDbDir(), MetaDataStore.DEFAULT_NAME );
         assertEquals( logVersion, MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION ) );
     }
 

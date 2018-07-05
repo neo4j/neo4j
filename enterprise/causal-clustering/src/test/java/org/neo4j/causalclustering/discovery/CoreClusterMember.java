@@ -47,6 +47,7 @@ import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Level;
 
@@ -140,7 +141,7 @@ public class CoreClusterMember implements ClusterMember<CoreGraphDatabase>
         File dataDir = new File( neo4jHome, "data" );
         clusterStateDir = ClusterStateDirectory.withoutInitializing( dataDir ).get();
         raftLogDir = new File( clusterStateDir, RAFT_LOG_DIRECTORY_NAME );
-        storeDir = new File( new File( dataDir, "databases" ), "graph.db" );
+        storeDir = new File( new File( dataDir, "databases" ), DataSourceManager.DEFAULT_DATABASE_NAME );
         memberConfig = Config.defaults( config );
 
         this.dbName = memberConfig.get( CausalClusteringSettings.database );

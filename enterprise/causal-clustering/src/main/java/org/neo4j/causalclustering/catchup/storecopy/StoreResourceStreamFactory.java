@@ -49,7 +49,7 @@ public class StoreResourceStreamFactory
     {
         NeoStoreDataSource dataSource = dataSourceSupplier.get();
 
-        File storeDir = dataSource.getStoreDir();
+        File storeDir = dataSource.getDatabaseDirectory();
         ResourceIterator<StoreFileMetadata> files = dataSource.listStoreFiles( false );
 
         return new RawCursor<StoreResource,IOException>()

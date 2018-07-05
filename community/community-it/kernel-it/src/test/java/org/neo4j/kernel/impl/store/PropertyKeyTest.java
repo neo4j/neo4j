@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.store;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,6 +31,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
@@ -41,20 +41,21 @@ import static org.junit.Assert.assertEquals;
 public class PropertyKeyTest
 {
     @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
     public void lazyLoadWithinWriteTransaction() throws Exception
     {
         // Given
         FileSystemAbstraction fileSystem = fs.get();
-        File dir = new File( "dir" ).getAbsoluteFile();
-        BatchInserter inserter = BatchInserters.inserter( dir, fileSystem );
+        BatchInserter inserter = BatchInserters.inserter( testDirectory.graphDbDir(), fileSystem );
         int count = 3000;
         long nodeId = inserter.createNode( mapWithManyProperties( count /* larger than initial property index load threshold */ ) );
         inserter.shutdown();
 
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( dir );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( testDirectory.directory() );
 
         // When
         try ( Transaction tx = db.beginTx() )

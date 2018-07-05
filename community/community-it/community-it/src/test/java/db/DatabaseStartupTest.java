@@ -51,7 +51,7 @@ public class DatabaseStartupTest
     {
         // given
         // create a store
-        File storeDir = testDirectory.graphDbDir();
+        File storeDir = testDirectory.directory();
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         try ( Transaction tx = db.beginTx() )
         {
@@ -64,7 +64,7 @@ public class DatabaseStartupTest
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
                 PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
         {
-            MetaDataStore.setRecord( pageCache, new File( storeDir, MetaDataStore.DEFAULT_NAME ),
+            MetaDataStore.setRecord( pageCache, new File( testDirectory.graphDbDir(), MetaDataStore.DEFAULT_NAME ),
                     MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ));
         }
 
@@ -88,7 +88,7 @@ public class DatabaseStartupTest
     {
         // given
         // create a store
-        File storeDir = testDirectory.graphDbDir();
+        File storeDir = testDirectory.directory();
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         try ( Transaction tx = db.beginTx() )
         {
@@ -102,7 +102,7 @@ public class DatabaseStartupTest
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
         {
-            MetaDataStore.setRecord( pageCache, new File( storeDir, MetaDataStore.DEFAULT_NAME ),
+            MetaDataStore.setRecord( pageCache, new File( testDirectory.graphDbDir(), MetaDataStore.DEFAULT_NAME ),
                     MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( badStoreVersion ) );
         }
 

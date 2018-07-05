@@ -24,6 +24,7 @@ import java.io.File;
 
 import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.helpers.Args;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 
 public class Database extends OptionalNamedArg
 {
@@ -36,7 +37,7 @@ public class Database extends OptionalNamedArg
 
     public Database( String description )
     {
-        super( ARG_DATABASE, "name", "graph.db", description );
+        super( ARG_DATABASE, "name", DataSourceManager.DEFAULT_DATABASE_NAME, description );
     }
 
     private static String validate( String dbName )
