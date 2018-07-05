@@ -158,7 +158,11 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
         int offset = cursor.getOffset();
         for ( GenericKeyState state : states )
         {
-            state.read( cursor, keySize );
+            if ( !state.read( cursor, keySize ) )
+            {
+                initializeToDummyValue();
+                return;
+            }
             int offsetAfterRead = cursor.getOffset();
             keySize -= offsetAfterRead - offset;
             offset = offsetAfterRead;
