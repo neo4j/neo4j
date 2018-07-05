@@ -63,13 +63,13 @@ function Get-KeyValuePairsFromConfFile
         $keyName = $matches[1].Trim()
         if ($properties.Contains($keyName))
         {
-          # There is already a property with this name so it must by a collection of properties.  Turn the value into an array and add it
-          if (($properties. "$keyName").GetType().ToString() -eq 'System.String') { $properties. "$keyName" = [string[]]@($properties. "$keyName") }
-          $properties. "$keyName" = $properties. "$keyName" + $matches[2].Trim()
+          # There is already a property with this name so it must be a collection of properties.  Turn the value into an array and add it
+          if ($properties[$keyName] -is [string]) { $properties[$keyName] = [string[]]@($properties[$keyName]) }
+          $properties[$keyName] = $properties[$keyName] + $matches[2].Trim()
         }
         else
         {
-          $properties. "$keyName" = $matches[2].Trim()
+          $properties[$keyName] = $matches[2].Trim()
         }
       }
     }
