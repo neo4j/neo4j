@@ -776,4 +776,6 @@
       <license>(GPL-2.0 OR MIT)</license>
     </artifact>
   </missing-artifacts>
+  <dislike-exemption>cypher-codemirror</dislike-exemption>
+  <dislike-exemption>cypher-editor-support</dislike-exemption>
 </licensing-requirements>
