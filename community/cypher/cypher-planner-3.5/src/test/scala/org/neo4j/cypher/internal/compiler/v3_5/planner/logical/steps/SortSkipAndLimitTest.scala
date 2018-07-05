@@ -21,19 +21,20 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
-import org.opencypher.v9_0.ast
-import org.opencypher.v9_0.ast.{AscSortItem, SortItem}
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.expressions._
 import org.neo4j.cypher.internal.v3_5.logical.plans._
+import org.opencypher.v9_0.ast
+import org.opencypher.v9_0.ast.{AscSortItem, SortItem}
+import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   val x: Expression = UnsignedDecimalIntegerLiteral("110") _
   val y: Expression = UnsignedDecimalIntegerLiteral("10") _
-  val variableSortItem: AscSortItem = ast.AscSortItem(Variable("n") _) _
+  val sortVariable = Variable("n") _
+  val variableSortItem: AscSortItem = ast.AscSortItem(sortVariable) _
   val columnOrder: ColumnOrder = Ascending("n")
 
   private val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
@@ -84,7 +85,53 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     // then
     result should equal(Sort(startPlan, Seq(columnOrder)))
 
-    solveds.get(result.id).horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(sortItems = Seq(variableSortItem))))
+    solveds.get(result.id).horizon should equal(RegularQueryProjection(Map(sortVariable.name -> sortVariable), QueryShuffle(sortItems = Seq(variableSortItem))))
+  }
+
+  test("should add sort and pre-projection") {
+    val mSortVar = Variable("m")(pos)
+    val mSortItem = ast.AscSortItem(mSortVar)(pos)
+    // given a plan that solves "n"
+    val (query, context, startPlan, solveds, cardinalities) = queryGraphWith(
+      // The requirement to sort by m
+      sortItems = Seq(mSortItem),
+      projectionsMap = Map(
+        // an already solved projection
+        sortVariable.name -> sortVariable(pos),
+        // a projection necessary for the sorting
+        "m" -> mSortVar,
+        // and a projection that sort will not take care of
+        "notSortColumn" -> UnsignedDecimalIntegerLiteral("5")(pos)))
+
+    // when
+    val result = sortSkipAndLimit(startPlan, query, context, solveds, cardinalities)
+
+    // then
+    result should equal(Sort(Projection(startPlan, Map("m" -> mSortVar)), Seq(Ascending("m"))))
+
+    solveds.get(result.id).horizon should equal(RegularQueryProjection(Map(mSortVar.name -> mSortVar), QueryShuffle(sortItems = Seq(mSortItem))))
+  }
+
+  test("should add sort without pre-projection if things are already projected") {
+    val sortExpression = Add(sortVariable(pos), UnsignedDecimalIntegerLiteral("5")(pos))(pos)
+    // given a plan that solves "n"
+    val (query, context, startPlan, solveds, cardinalities) = queryGraphWith(
+      // The requirement to sort by m
+      sortItems = Seq(variableSortItem),
+      projectionsMap = Map(
+        // an already solved projection
+        sortVariable.name -> sortExpression,
+        // and a projection that sort will not take care of
+        "notSortColumn" -> UnsignedDecimalIntegerLiteral("5")(pos)),
+      solved = RegularPlannerQuery(QueryGraph.empty, RegularQueryProjection(Map(sortVariable.name -> sortExpression))))
+
+    // when
+    val result = sortSkipAndLimit(startPlan, query, context, solveds, cardinalities)
+
+    // then
+    result should equal(Sort(startPlan, Seq(columnOrder)))
+
+    solveds.get(result.id).horizon should equal(RegularQueryProjection(Map(sortVariable.name -> sortExpression), QueryShuffle(sortItems = Seq(variableSortItem))))
   }
 
   test("should add the correct plans when query uses both ORDER BY, SKIP and LIMIT") {
@@ -105,20 +152,21 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
   private def queryGraphWith(skip: Option[Expression] = None,
                              limit: Option[Expression] = None,
                              sortItems: Seq[SortItem] = Seq.empty,
-                             projectionsMap: Map[String, Expression] = Map("n" -> Variable("n")(pos))) = {
+                             projectionsMap: Map[String, Expression] = Map("n" -> sortVariable(pos)),
+                             solved: PlannerQuery = RegularPlannerQuery(QueryGraph.empty.addPatternNodes("n"))):
+  (RegularPlannerQuery, LogicalPlanningContext, LogicalPlan, Solveds, Cardinalities) = {
     val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
     val projection = RegularQueryProjection(
-    projections = projectionsMap,
-    shuffle = QueryShuffle(sortItems, skip, limit)
+      projections = projectionsMap,
+      shuffle = QueryShuffle(sortItems, skip, limit)
     )
 
     val qg = QueryGraph(patternNodes = Set("n"))
     val query = RegularPlannerQuery(queryGraph = qg, horizon = projection)
 
 
-    val solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes("n"))
     val plan = newMockedLogicalPlanWithSolved(idNames = Set("n"), solveds = solveds, solved = solved)
 
     (query, context, plan, solveds, cardinalities)

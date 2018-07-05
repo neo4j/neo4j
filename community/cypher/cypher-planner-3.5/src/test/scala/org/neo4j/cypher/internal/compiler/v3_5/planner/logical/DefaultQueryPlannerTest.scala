@@ -108,7 +108,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     when(context.costComparisonListener).thenReturn(devNullListener)
     when(context.withStrictness(any())).thenReturn(context)
     val producer = mock[LogicalPlanProducer]
-    when(producer.planStarProjection(any(), any(), any(), any())).thenReturn(lp)
+    when(producer.planStarProjection(any(), any(), any())).thenReturn(lp)
     when(producer.planEmptyProjection(any(),any())).thenReturn(lp)
     when(context.logicalPlanProducer).thenReturn(producer)
     val queryPlanner = QueryPlanner(planSingleQuery = PlanSingleQuery())

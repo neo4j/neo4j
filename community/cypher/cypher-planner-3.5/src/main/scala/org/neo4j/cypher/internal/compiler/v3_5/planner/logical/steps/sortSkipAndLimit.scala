@@ -37,9 +37,12 @@ object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
           addLimit(l, addSkip(s, plan, context), context)
 
         case (sortItems, s, l) =>
+          // Sort needs its sort columns to be variables, thus we need to project these columns already now
           require(sortItems.forall(_.expression.isInstanceOf[Variable]))
+          val columnsToProjectForSort = p.projections.filter { case (name, _) => sortItems.map(_.expression).exists { case Variable(varname) => varname == name } }
+          val preProjected = projection(plan, columnsToProjectForSort, context, solveds, cardinalities)
           val columnOrders = sortItems.map(columnOrder)
-          val sortedPlan = context.logicalPlanProducer.planSort(plan, columnOrders, sortItems, context)
+          val sortedPlan = context.logicalPlanProducer.planSort(preProjected, columnOrders, sortItems, context)
 
           addLimit(l, addSkip(s, sortedPlan, context), context)
       }

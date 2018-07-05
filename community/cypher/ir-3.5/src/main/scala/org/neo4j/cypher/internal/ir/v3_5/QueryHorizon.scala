@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.ir.v3_5
 
-import org.opencypher.v9_0.util.InternalException
 import org.opencypher.v9_0.ast.AliasedReturnItem
 import org.opencypher.v9_0.expressions.{Expression, StringLiteral, Variable}
+import org.opencypher.v9_0.util.InternalException
 
 trait QueryHorizon {
 
@@ -67,7 +67,7 @@ sealed abstract class QueryProjection extends QueryHorizon {
   def projections: Map[String, Expression]
   def shuffle: QueryShuffle
   def keySet: Set[String]
-  def withProjections(projections: Map[String, Expression]): QueryProjection
+  def withAddedProjections(projections: Map[String, Expression]): QueryProjection
   def withShuffle(shuffle: QueryShuffle): QueryProjection
 
   override def dependingExpressions: Seq[Expression] = shuffle.sortItems.map(_.expression)
@@ -103,8 +103,8 @@ final case class RegularQueryProjection(projections: Map[String, Expression] = M
       shuffle = shuffle ++ other.shuffle
     )
 
-  override def withProjections(projections: Map[String, Expression]): RegularQueryProjection =
-    copy(projections = projections)
+  override def withAddedProjections(projections: Map[String, Expression]): RegularQueryProjection =
+    copy(projections = this.projections ++ projections)
 
   def withShuffle(shuffle: QueryShuffle) =
     copy(shuffle = shuffle)
@@ -129,8 +129,8 @@ final case class AggregatingQueryProjection(groupingExpressions: Map[String, Exp
 
   override def dependingExpressions = super.dependingExpressions ++ groupingExpressions.values ++ aggregationExpressions.values
 
-  override def withProjections(groupingKeys: Map[String, Expression]): AggregatingQueryProjection =
-    copy(groupingExpressions = groupingKeys)
+  override def withAddedProjections(groupingKeys: Map[String, Expression]): AggregatingQueryProjection =
+    copy(groupingExpressions = this.groupingExpressions ++ groupingKeys)
 
   override def withShuffle(shuffle: QueryShuffle) =
     copy(shuffle = shuffle)
@@ -148,8 +148,8 @@ final case class DistinctQueryProjection(groupingKeys: Map[String, Expression] =
 
   override def dependingExpressions: Seq[Expression] = super.dependingExpressions ++ groupingKeys.values
 
-  override def withProjections(groupingKeys: Map[String, Expression]): DistinctQueryProjection =
-    copy(groupingKeys = groupingKeys)
+  override def withAddedProjections(groupingKeys: Map[String, Expression]): DistinctQueryProjection =
+    copy(groupingKeys = this.groupingKeys ++ groupingKeys)
 
   override def withShuffle(shuffle: QueryShuffle): DistinctQueryProjection =
     copy(shuffle = shuffle)

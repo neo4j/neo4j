@@ -1059,4 +1059,22 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     //Then
     result.toList should equal(List(Map("r" -> r)))
   }
+
+  test("Should pick a sensible plan for WITH and WHERE") {
+    val result = innerExecuteDeprecated(
+      """
+        MATCH (a:A)
+        WITH a.name AS name WHERE name = 'boo'
+        RETURN name
+        """
+    )
+
+    result.executionPlanDescription() should includeSomewhere
+      .aPlan("Filter")
+      .containingArgumentRegex("name = \\$`  AUTOSTRING\\d+`".r)
+      .onTopOf(aPlan("Projection")
+        .containingVariables("name")
+        .containingArgument("{name : a.name}")
+      )
+  }
 }

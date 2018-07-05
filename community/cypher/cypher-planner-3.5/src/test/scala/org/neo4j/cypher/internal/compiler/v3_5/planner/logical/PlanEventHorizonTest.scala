@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.{LogicalPlanningTestSupport2, ProcedureCallProjection}
-import org.opencypher.v9_0.ast.ProcedureResultItem
-import org.neo4j.cypher.internal.ir.v3_5.{RegularPlannerQuery, RegularQueryProjection}
+import org.opencypher.v9_0.ast.{AscSortItem, ProcedureResultItem}
+import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, QueryShuffle, RegularPlannerQuery, RegularQueryProjection}
 import org.opencypher.v9_0.util.symbols._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.expressions.{Namespace, ProcedureName, SignedDecimalIntegerLiteral}
+import org.opencypher.v9_0.expressions.{Namespace, ProcedureName, SignedDecimalIntegerLiteral, Variable}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 
 class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -64,6 +64,40 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       // Then
       producedPlan should equal(ProcedureCall(inputPlan, call))
+    }
+  }
+
+  test("should plan entire projection if there is no pre-projection") {
+    // Given
+    new given().withLogicalPlanningContext { (cfg, context, solveds, _) =>
+      val literal = SignedDecimalIntegerLiteral("42")(pos)
+      val sortItems = Seq(AscSortItem(Variable("a")(pos))(pos))
+      val pq = RegularPlannerQuery(horizon = RegularQueryProjection(Map("a" -> Variable("a")(pos), "b" -> literal, "c" -> literal), QueryShuffle(sortItems)))
+      val inputPlan = Argument(Set("a"))
+      solveds.set(inputPlan.id, PlannerQuery.empty)
+
+      // When
+      val producedPlan = PlanEventHorizon(pq, inputPlan, context, solveds, new StubCardinalities)
+
+      // Then
+      producedPlan should equal(Projection(Sort(inputPlan, Seq(Ascending("a"))), Map("b" -> literal, "c" -> literal)))
+    }
+  }
+
+  test("should plan partial projection if there is a pre-projection for sorting") {
+    // Given
+    new given().withLogicalPlanningContext { (cfg, context, solveds, _) =>
+      val literal = SignedDecimalIntegerLiteral("42")(pos)
+      val sortItems = Seq(AscSortItem(Variable("a")(pos))(pos))
+      val pq = RegularPlannerQuery(horizon = RegularQueryProjection(Map("a" -> literal, "b" -> literal, "c" -> literal), QueryShuffle(sortItems)))
+      val inputPlan = Argument()
+      solveds.set(inputPlan.id, PlannerQuery.empty)
+
+      // When
+      val producedPlan = PlanEventHorizon(pq, inputPlan, context, solveds, new StubCardinalities)
+
+      // Then
+      producedPlan should equal(Projection(Sort(Projection(inputPlan, Map("a" -> literal)), Seq(Ascending("a"))), Map("b" -> literal, "c" -> literal)))
     }
   }
 }

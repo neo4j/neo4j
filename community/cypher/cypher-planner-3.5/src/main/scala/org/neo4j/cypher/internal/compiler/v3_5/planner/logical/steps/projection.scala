@@ -20,25 +20,36 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
-import org.opencypher.v9_0.expressions.{Expression, Variable}
+import org.neo4j.cypher.internal.ir.v3_5.QueryProjection
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.opencypher.v9_0.expressions.{Expression, Variable}
 
 object projection {
 
   def apply(in: LogicalPlan, projs: Map[String, Expression], context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
 
-    val (plan, projectionsMap) = PatternExpressionSolver()(in, projs, context, solveds, cardinalities)
+    // if we had a previous projection it might have projected something already
+    // we only want to project what's left from that previous projection
+    val alreadySolvedProjections = solveds.get(in.id).tailOrSelf.horizon match {
+      case solvedProjection: QueryProjection => solvedProjection.projections.keys
+      case _ => Seq.empty
+    }
+    val stillToSolveProjection = projs -- alreadySolvedProjections
+
+    val (plan, projectionsMap) = PatternExpressionSolver()(in, stillToSolveProjection, context, solveds, cardinalities)
 
     val ids = plan.availableSymbols
 
     val projectAllCoveredIds: Set[(String, Expression)] = ids.map(id => id -> Variable(id)(null))
     val projections: Set[(String, Expression)] = projectionsMap.toIndexedSeq.toSet
 
-    if (projections.subsetOf(projectAllCoveredIds) || projections == projectAllCoveredIds) {
-      context.logicalPlanProducer.planStarProjection(plan, projectionsMap, projs, context)
+    // The projections that are not covered yet
+    val projectionsDiff = (projections -- projectAllCoveredIds).toMap
+    if (projectionsDiff.isEmpty) {
+      context.logicalPlanProducer.planStarProjection(plan, projs, context)
     } else {
-      context.logicalPlanProducer.planRegularProjection(plan, projectionsMap, projs, context)
+      context.logicalPlanProducer.planRegularProjection(plan, projectionsDiff, projs, context)
     }
   }
 }

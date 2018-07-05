@@ -410,8 +410,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
   def planEmptyProjection(inner: LogicalPlan, context: LogicalPlanningContext): LogicalPlan =
     annotate(EmptyResult(inner), solveds.get(inner.id), context)
 
-  def planStarProjection(inner: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
-    val newSolved: PlannerQuery = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.withProjections(reported)))
+  def planStarProjection(inner: LogicalPlan, reported: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
+    val newSolved: PlannerQuery = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.withAddedProjections(reported)))
     // Keep cardinality, but change solved
     val keptAttributes = Attributes(idGen, cardinalities)
     val newPlan = inner.copyPlanWithIdGen(keptAttributes.copy(inner.id))
@@ -419,7 +419,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
   }
 
   def planRegularProjection(inner: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
-    val solved: PlannerQuery = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.withProjections(reported)))
+    val solved: PlannerQuery = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.withAddedProjections(reported)))
     annotate(Projection(inner, expressions), solved, context)
   }
 

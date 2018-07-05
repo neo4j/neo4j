@@ -308,3 +308,56 @@ Feature: OrderByAcceptance
       | 'B' |
       | 'C' |
     And no side effects
+
+  Scenario: ORDER BY which needs to evaluate expression in WITH
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A {age: 10, name: 'A'})
+      CREATE (:A {age: 9, name: 'B'})
+      CREATE (:A {age: 12, name: 'C'})
+      CREATE (:A {age: 16, name: 'D'})
+      CREATE (:A {age: 14, name: 'E'})
+      CREATE (:A {age: 4, name: 'F'})
+      """
+    When executing query:
+      """
+      MATCH (a:A)
+      WITH a ORDER BY a.age
+      RETURN a.name
+      """
+    Then the result should be, in order:
+      | a.name   |
+      | 'F'      |
+      | 'B'      |
+      | 'A'      |
+      | 'C'      |
+      | 'E'      |
+      | 'D'      |
+    And no side effects
+
+  Scenario: ORDER BY which needs to evaluate expression in RETURN
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A {age: 10, name: 'A'})
+      CREATE (:A {age: 9, name: 'B'})
+      CREATE (:A {age: 12, name: 'C'})
+      CREATE (:A {age: 16, name: 'D'})
+      CREATE (:A {age: 14, name: 'E'})
+      CREATE (:A {age: 4, name: 'F'})
+      """
+    When executing query:
+      """
+      MATCH (a:A)
+      RETURN * ORDER BY a.age
+      """
+    Then the result should be, in order:
+      | a                         |
+      | (:A {age: 4, name: 'F'})  |
+      | (:A {age: 9, name: 'B'})  |
+      | (:A {age: 10, name: 'A'}) |
+      | (:A {age: 12, name: 'C'}) |
+      | (:A {age: 14, name: 'E'}) |
+      | (:A {age: 16, name: 'D'}) |
+    And no side effects
