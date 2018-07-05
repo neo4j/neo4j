@@ -28,12 +28,17 @@ import org.junit.runners.Parameterized.Parameters;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.function.Function;
 
 import org.neo4j.test.Randoms;
+import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
+import org.neo4j.unsafe.impl.batchimport.cache.PageCachedNumberArrayFactory;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.CHUNKED_FIXED_SIZE;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.HEAP;
@@ -42,6 +47,8 @@ import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.OFF_HEA
 @RunWith( Parameterized.class )
 public class StringCollisionValuesTest
 {
+    @Rule
+    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, getClass() );
     @Rule
     public final RandomRule random = new RandomRule().withConfiguration( new Randoms.Default()
     {
@@ -53,19 +60,24 @@ public class StringCollisionValuesTest
     } );
 
     @Parameters
-    public static Collection<NumberArrayFactory> data()
+    public static Collection<Function<PageCacheAndDependenciesRule,NumberArrayFactory>> data()
     {
-        return Arrays.asList( HEAP, OFF_HEAP, AUTO_WITHOUT_PAGECACHE, CHUNKED_FIXED_SIZE );
+        return Arrays.asList(
+                storage -> HEAP,
+                storage -> OFF_HEAP,
+                storage -> AUTO_WITHOUT_PAGECACHE,
+                storage -> CHUNKED_FIXED_SIZE,
+                storage -> new PageCachedNumberArrayFactory( storage.pageCache(), storage.directory().directory() ) );
     }
 
     @Parameter( 0 )
-    public NumberArrayFactory factory;
+    public Function<PageCacheAndDependenciesRule,NumberArrayFactory> factory;
 
     @Test
     public void shouldStoreAndLoadStrings()
     {
         // given
-        try ( StringCollisionValues values = new StringCollisionValues( factory, 10_000 ) )
+        try ( StringCollisionValues values = new StringCollisionValues( factory.apply( storage ), 10_000 ) )
         {
             // when
             long[] offsets = new long[100];
@@ -82,6 +94,29 @@ public class StringCollisionValuesTest
             {
                 assertEquals( strings[i], values.get( offsets[i] ) );
             }
+        }
+    }
+
+    @Test
+    public void shouldMoveOverToNextChunkOnNearEnd()
+    {
+        // given
+        try ( StringCollisionValues values = new StringCollisionValues( factory.apply( storage ), 10_000 ) )
+        {
+            char[] chars = new char[PAGE_SIZE - 3];
+            Arrays.fill( chars, 'a' );
+
+            // when
+            String string = String.valueOf( chars );
+            long offset = values.add( string );
+            String secondString = "abcdef";
+            long secondOffset = values.add( secondString );
+
+            // then
+            String readString = (String) values.get( offset );
+            assertEquals( string, readString );
+            String readSecondString = (String) values.get( secondOffset );
+            assertEquals( secondString, readSecondString );
         }
     }
 }
