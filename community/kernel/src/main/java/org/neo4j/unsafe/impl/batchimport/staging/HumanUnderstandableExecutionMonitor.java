@@ -90,11 +90,11 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     private static final int DOT_GROUPS_PER_LINE = 5;
     private static final int PERCENTAGES_PER_LINE = 5;
 
-    // assigned later on
     private final PrintStream out;
     private final Monitor monitor;
     private final ExternalMonitor externalMonitor;
     private DependencyResolver dependencyResolver;
+    private boolean newInternalStage;
 
     // progress of current stage
     private long goal;
@@ -209,6 +209,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         {
             stashedProgress += progress;
             progress = 0;
+            newInternalStage = true;
         }
         lastReportTime = currentTimeMillis();
     }
@@ -302,6 +303,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         this.stashedProgress = 0;
         this.progress = 0;
         this.currentStage = stage;
+        this.newInternalStage = false;
     }
 
     private void updateProgress( long progress )
@@ -368,7 +370,13 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
             {
                 out.print( ' ' );
             }
-            out.print( '.' );
+            char dotChar = '.';
+            if ( newInternalStage )
+            {
+                newInternalStage = false;
+                dotChar = '-';
+            }
+            out.print( dotChar );
             current++;
         }
     }
