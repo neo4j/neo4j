@@ -32,6 +32,7 @@ import org.neo4j.unsafe.impl.batchimport.RelationshipGroupStage;
 import org.neo4j.unsafe.impl.batchimport.ScanAndCacheGroupsStage;
 import org.neo4j.unsafe.impl.batchimport.SparseNodeFirstRelationshipStage;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
+import org.neo4j.unsafe.impl.batchimport.cache.PageCacheArrayFactoryMonitor;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
@@ -70,7 +71,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         boolean somethingElseBrokeMyNiceOutput();
     }
 
-    public static final ExternalMonitor NO_EXTERNAL_MONITOR = () -> false;
+    static final ExternalMonitor NO_EXTERNAL_MONITOR = () -> false;
 
     enum ImportStage
     {
@@ -95,6 +96,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     private final ExternalMonitor externalMonitor;
     private DependencyResolver dependencyResolver;
     private boolean newInternalStage;
+    private PageCacheArrayFactoryMonitor pageCacheArrayFactoryMonitor;
 
     // progress of current stage
     private long goal;
@@ -103,7 +105,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     private ImportStage currentStage;
     private long lastReportTime;
 
-    public HumanUnderstandableExecutionMonitor( PrintStream out, Monitor monitor, ExternalMonitor externalMonitor )
+    HumanUnderstandableExecutionMonitor( PrintStream out, Monitor monitor, ExternalMonitor externalMonitor )
     {
         this.out = out;
         this.monitor = monitor;
@@ -118,6 +120,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         BatchingNeoStores neoStores = dependencyResolver.resolveDependency( BatchingNeoStores.class );
         IdMapper idMapper = dependencyResolver.resolveDependency( IdMapper.class );
         NodeRelationshipCache nodeRelationshipCache = dependencyResolver.resolveDependency( NodeRelationshipCache.class );
+        pageCacheArrayFactoryMonitor = dependencyResolver.resolveDependency( PageCacheArrayFactoryMonitor.class );
 
         long biggestCacheMemory = estimatedCacheSize( neoStores,
                 nodeRelationshipCache.memoryEstimation( estimates.numberOfNodes() ),
@@ -130,7 +133,6 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
                 ESTIMATED_DISK_SPACE_USAGE, bytes(
                         nodesDiskUsage( estimates, neoStores ) +
                         relationshipsDiskUsage( estimates, neoStores ) +
-                        // TODO also add some padding to include relationship groups?
                         estimates.sizeOfNodeProperties() + estimates.sizeOfRelationshipProperties() ),
                 ESTIMATED_REQUIRED_MEMORY_USAGE, bytes( biggestCacheMemory ) );
         out.println();
@@ -216,13 +218,11 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
 
     private void endPrevious()
     {
-        updateProgress( goal ); // previous ended
-        // TODO print some end stats for this stage?
+        updateProgress( goal );
     }
 
     private void initializeNodeImport( Estimates estimates, IdMapper idMapper, BatchingNeoStores neoStores )
     {
-        // TODO how to handle UNKNOWN?
         long numberOfNodes = estimates.numberOfNodes();
         printStageHeader( "(1/4) Node import",
                 ESTIMATED_NUMBER_OF_NODES, count( numberOfNodes ),
@@ -340,7 +340,6 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
             }
         }
 
-        // TODO not quite right
         this.progress = max( this.progress, progress );
     }
 
@@ -378,6 +377,19 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
             }
             out.print( dotChar );
             current++;
+
+            printPageCacheAllocationWarningIfUsed();
+        }
+    }
+
+    private void printPageCacheAllocationWarningIfUsed()
+    {
+        String allocation = pageCacheArrayFactoryMonitor.pageCacheAllocationOrNull();
+        if ( allocation != null )
+        {
+            System.err.println();
+            System.err.println( "WARNING:" );
+            System.err.println( allocation );
         }
     }
 

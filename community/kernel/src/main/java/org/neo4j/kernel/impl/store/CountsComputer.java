@@ -61,7 +61,7 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
                 stores.getNodeStore(), stores.getRelationshipStore(),
                 (int) stores.getLabelTokenStore().getHighId(),
                 (int) stores.getRelationshipTypeTokenStore().getHighId(),
-                NumberArrayFactory.auto( pageCache, stores.getStoreDir(), true ) );
+                NumberArrayFactory.auto( pageCache, stores.getStoreDir(), true, NumberArrayFactory.NO_MONITOR ) );
     }
 
     public CountsComputer( long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships,

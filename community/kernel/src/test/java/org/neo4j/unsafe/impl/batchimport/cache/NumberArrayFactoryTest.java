@@ -21,8 +21,10 @@ package org.neo4j.unsafe.impl.batchimport.cache;
 
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -34,6 +36,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.NO_MONITOR;
 
 public class NumberArrayFactoryTest
 {
@@ -43,7 +47,7 @@ public class NumberArrayFactoryTest
     public void shouldPickFirstAvailableCandidateLongArray()
     {
         // GIVEN
-        NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.HEAP );
+        NumberArrayFactory factory = new NumberArrayFactory.Auto( NO_MONITOR, NumberArrayFactory.HEAP );
 
         // WHEN
         LongArray array = factory.newLongArray( KILO, -1 );
@@ -60,7 +64,7 @@ public class NumberArrayFactoryTest
         // GIVEN
         NumberArrayFactory lowMemoryFactory = mock( NumberArrayFactory.class );
         doThrow( OutOfMemoryError.class ).when( lowMemoryFactory ).newLongArray( anyLong(), anyLong(), anyLong() );
-        NumberArrayFactory factory = new NumberArrayFactory.Auto( lowMemoryFactory, NumberArrayFactory.HEAP );
+        NumberArrayFactory factory = new NumberArrayFactory.Auto( NO_MONITOR, lowMemoryFactory, NumberArrayFactory.HEAP );
 
         // WHEN
         LongArray array = factory.newLongArray( KILO, -1 );
@@ -76,9 +80,10 @@ public class NumberArrayFactoryTest
     public void shouldThrowOomOnNotEnoughMemory()
     {
         // GIVEN
+        FailureMonitor monitor = new FailureMonitor();
         NumberArrayFactory lowMemoryFactory = mock( NumberArrayFactory.class );
         doThrow( OutOfMemoryError.class ).when( lowMemoryFactory ).newLongArray( anyLong(), anyLong(), anyLong() );
-        NumberArrayFactory factory = new NumberArrayFactory.Auto( lowMemoryFactory );
+        NumberArrayFactory factory = new NumberArrayFactory.Auto( monitor, lowMemoryFactory );
 
         // WHEN
         try
@@ -89,6 +94,7 @@ public class NumberArrayFactoryTest
         catch ( OutOfMemoryError e )
         {
             // THEN OK
+            assertFalse( monitor.called );
         }
     }
 
@@ -96,7 +102,8 @@ public class NumberArrayFactoryTest
     public void shouldPickFirstAvailableCandidateIntArray()
     {
         // GIVEN
-        NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.HEAP );
+        FailureMonitor monitor = new FailureMonitor();
+        NumberArrayFactory factory = new NumberArrayFactory.Auto( monitor, NumberArrayFactory.HEAP );
 
         // WHEN
         IntArray array = factory.newIntArray( KILO, -1 );
@@ -105,6 +112,8 @@ public class NumberArrayFactoryTest
         // THEN
         assertTrue( array instanceof HeapIntArray );
         assertEquals( 12345, array.get( KILO - 10 ) );
+        assertEquals( NumberArrayFactory.HEAP, monitor.successfulFactory );
+        assertFalse( monitor.attemptedAllocationFailures.iterator().hasNext() );
     }
 
     @Test
@@ -113,7 +122,7 @@ public class NumberArrayFactoryTest
         // GIVEN
         NumberArrayFactory lowMemoryFactory = mock( NumberArrayFactory.class );
         doThrow( OutOfMemoryError.class ).when( lowMemoryFactory ).newIntArray( anyLong(), anyInt(), anyLong() );
-        NumberArrayFactory factory = new NumberArrayFactory.Auto( lowMemoryFactory, NumberArrayFactory.HEAP );
+        NumberArrayFactory factory = new NumberArrayFactory.Auto( NO_MONITOR, lowMemoryFactory, NumberArrayFactory.HEAP );
 
         // WHEN
         IntArray array = factory.newIntArray( KILO, -1 );
@@ -126,35 +135,41 @@ public class NumberArrayFactoryTest
     }
 
     @Test
-    public void shouldEvenCatchOtherExceptionsAndTryNext()
+    public void shouldCatchArithmeticExceptionsAndTryNext()
     {
         // GIVEN
         NumberArrayFactory throwingMemoryFactory = mock( NumberArrayFactory.class );
-        doThrow( ArithmeticException.class ).when( throwingMemoryFactory )
-                .newByteArray( anyLong(), any( byte[].class ), anyLong() );
-        NumberArrayFactory factory = new NumberArrayFactory.Auto( throwingMemoryFactory, NumberArrayFactory.HEAP );
+        ArithmeticException failure = new ArithmeticException( "This is an artificial failure" );
+        doThrow( failure ).when( throwingMemoryFactory ).newByteArray( anyLong(), any( byte[].class ), anyLong() );
+        FailureMonitor monitor = new FailureMonitor();
+        NumberArrayFactory factory = new NumberArrayFactory.Auto( monitor, throwingMemoryFactory, NumberArrayFactory.HEAP );
+        int itemSize = 4;
 
         // WHEN
-        ByteArray array = factory.newByteArray( KILO, new byte[4], 0 );
+        ByteArray array = factory.newByteArray( KILO, new byte[itemSize], 0 );
         array.setInt( KILO - 10, 0, 12345 );
 
         // THEN
         verify( throwingMemoryFactory, times( 1 ) ).newByteArray( eq( KILO ), any( byte[].class ), eq( 0L ) );
         assertTrue( array instanceof HeapByteArray );
         assertEquals( 12345, array.getInt( KILO - 10, 0 ) );
+        assertEquals( KILO * itemSize, monitor.memory );
+        assertEquals( NumberArrayFactory.HEAP, monitor.successfulFactory );
+        assertEquals( throwingMemoryFactory, single( monitor.attemptedAllocationFailures ).getFactory() );
+        assertThat( single( monitor.attemptedAllocationFailures ).getFailure().getMessage(), containsString( failure.getMessage() ) );
     }
 
     @Test
     public void heapArrayShouldAllowVeryLargeBases()
     {
-        NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.HEAP );
+        NumberArrayFactory factory = new NumberArrayFactory.Auto( NO_MONITOR, NumberArrayFactory.HEAP );
         verifyVeryLargeBaseSupport( factory );
     }
 
     @Test
     public void offHeapArrayShouldAllowVeryLargeBases()
     {
-        NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.OFF_HEAP );
+        NumberArrayFactory factory = new NumberArrayFactory.Auto( NO_MONITOR, NumberArrayFactory.OFF_HEAP );
         verifyVeryLargeBaseSupport( factory );
     }
 
@@ -167,5 +182,23 @@ public class NumberArrayFactoryTest
         assertThat( into[0], is( (byte) 0 ) );
         assertThat( factory.newIntArray( 10, 1, base ).get( base + 1 ), is( 1 ) );
         assertThat( factory.newLongArray( 10, 1, base ).get( base + 1 ), is( 1L ) );
+    }
+
+    private static class FailureMonitor implements NumberArrayFactory.Monitor
+    {
+        private boolean called;
+        private long memory;
+        private NumberArrayFactory successfulFactory;
+        private Iterable<NumberArrayFactory.AllocationFailure> attemptedAllocationFailures;
+
+        @Override
+        public void allocationSuccessful( long memory, NumberArrayFactory successfulFactory,
+                Iterable<NumberArrayFactory.AllocationFailure> attemptedAllocationFailures )
+        {
+            this.memory = memory;
+            this.successfulFactory = successfulFactory;
+            this.attemptedAllocationFailures = attemptedAllocationFailures;
+            this.called = true;
+        }
     }
 }
