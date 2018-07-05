@@ -44,7 +44,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 
-import static java.lang.Integer.toHexString;
 import static java.lang.String.format;
 
 /**
@@ -55,7 +54,7 @@ public class BoltResponseMessageWriterV1 implements BoltResponseMessageWriter
     private final PackOutput output;
     private final Neo4jPack.Packer packer;
     private final Log log;
-    private final Map<Byte,ResponseMessageEncoder> encoders;
+    private final Map<Byte,ResponseMessageEncoder<ResponseMessage>> encoders;
 
     public BoltResponseMessageWriterV1( PackProvider packerProvider, PackOutput output, LogService logService,
             BoltMessageLogger messageLogger )
@@ -66,14 +65,14 @@ public class BoltResponseMessageWriterV1 implements BoltResponseMessageWriter
         this.encoders = registerEncoders( messageLogger );
     }
 
-    private Map<Byte,ResponseMessageEncoder> registerEncoders( BoltMessageLogger messageLogger )
+    private Map<Byte,ResponseMessageEncoder<ResponseMessage>> registerEncoders( BoltMessageLogger messageLogger )
     {
-        Map<Byte,ResponseMessageEncoder> encoders = new HashMap<>();
+        Map<Byte,ResponseMessageEncoder<?>> encoders = new HashMap<>();
         encoders.put( SuccessMessage.SIGNATURE, new SuccessMessageEncoder( messageLogger ) );
         encoders.put( RecordMessage.SIGNATURE, new RecordMessageEncoder() );
         encoders.put( IgnoredMessage.SIGNATURE, new IgnoredMessageEncoder( messageLogger ) );
         encoders.put( FailureMessage.SIGNATURE, new FailureMessageEncoder( messageLogger ) );
-        return encoders;
+        return (Map)encoders;
     }
 
     @Override
@@ -97,11 +96,11 @@ public class BoltResponseMessageWriterV1 implements BoltResponseMessageWriter
         output.beginMessage();
         try
         {
-            ResponseMessageEncoder encoder = encoders.get( message.signature() );
+            ResponseMessageEncoder<ResponseMessage> encoder = encoders.get( message.signature() );
             if ( encoder == null )
             {
                 throw new BoltIOException( Status.Request.InvalidFormat,
-                        format( "Message signature %s is not supported in this protocol version.", toHexString( message.signature() ) ) );
+                        format( "Message %s is not supported in this protocol version.", message ) );
             }
             encoder.encode( packer, message );
             packingFailed = false;
@@ -114,7 +113,7 @@ public class BoltResponseMessageWriterV1 implements BoltResponseMessageWriter
                 // packing failed, there might be some half-written data in the output buffer right now
                 // notify output about the failure so that it cleans up the buffer
                 output.messageFailed();
-                log.error( "Failed to write full %s message because: %s", message.signature(), error.getMessage() );
+                log.error( "Failed to write full %s message because: %s", message, error.getMessage() );
             }
             throw error;
         }

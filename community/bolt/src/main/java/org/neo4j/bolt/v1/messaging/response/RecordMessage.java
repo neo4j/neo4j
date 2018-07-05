@@ -65,9 +65,7 @@ public class RecordMessage implements ResponseMessage
     @Override
     public String toString()
     {
-        return "ItemMessage{" +
-               "datas=" + value +
-               '}';
+        return "RECORD " + value;
     }
 
     public QueryResult.Record record()

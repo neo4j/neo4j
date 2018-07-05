@@ -51,6 +51,6 @@ public class IgnoredMessage implements ResponseMessage
     @Override
     public String toString()
     {
-        return "IgnoredMessage{}";
+        return "IGNORED";
     }
 }

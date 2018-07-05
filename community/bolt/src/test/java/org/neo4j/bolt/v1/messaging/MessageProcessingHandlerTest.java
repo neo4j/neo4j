@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
+import org.neo4j.bolt.v1.messaging.response.FailureMessage;
 import org.neo4j.bolt.v1.messaging.response.SuccessMessage;
 import org.neo4j.bolt.v1.packstream.PackOutputClosedException;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -148,7 +149,7 @@ public class MessageProcessingHandlerTest
     {
         BoltResponseMessageWriter handler = newResponseHandlerMock();
 
-        doThrow( error ).when( handler ).write( any( org.neo4j.bolt.v1.messaging.response.FailureMessage.class ) );
+        doThrow( error ).when( handler ).write( any( FailureMessage.class ) );
         return handler;
     }
 

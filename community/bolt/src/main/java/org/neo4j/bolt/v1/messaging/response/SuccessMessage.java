@@ -65,9 +65,7 @@ public class SuccessMessage implements ResponseMessage
     @Override
     public String toString()
     {
-        return "SuccessMessage{" +
-               "metadata=" + metadata +
-               '}';
+        return "SUCCESS " + metadata;
     }
 
     public MapValue meta()
