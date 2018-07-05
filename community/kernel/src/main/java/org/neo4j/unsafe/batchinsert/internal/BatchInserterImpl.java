@@ -45,7 +45,6 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Visitor;
@@ -55,6 +54,7 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -550,22 +550,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
         finally
         {
-            Throwable throwable = null;
-            for ( IndexPopulatorWithSchema populator : populators )
-            {
-                try
-                {
-                    populator.close();
-                }
-                catch ( Throwable t )
-                {
-                    throwable = Exceptions.chain( throwable, t );
-                }
-                if ( throwable != null )
-                {
-                    throw new RuntimeException( throwable );
-                }
-            }
+            IOUtils.closeAll( populators );
         }
     }
 
@@ -1324,7 +1309,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
     }
 
-    private static class IndexPopulatorWithSchema extends IndexPopulator.Adapter implements SchemaDescriptorSupplier
+    private static class IndexPopulatorWithSchema extends IndexPopulator.Adapter implements SchemaDescriptorSupplier, AutoCloseable
     {
         private static final int batchSize = 1_000;
         private final IndexPopulator populator;
@@ -1372,7 +1357,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             this.populationCompletedSuccessfully = value;
         }
 
-        void close() throws IOException
+        public void close() throws IOException
         {
             close( populationCompletedSuccessfully );
         }
