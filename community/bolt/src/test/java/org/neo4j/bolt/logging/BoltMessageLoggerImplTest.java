@@ -124,7 +124,7 @@ public class BoltMessageLoggerImplTest
     public void logInit()
     {
         // when
-        boltMessageLogger.logInit( "userAgent" );
+        boltMessageLogger.logUserAgent( "userAgent" );
         // then
         verify( boltMessageLog ).info( REMOTE_ADDRESS, CORRELATION_ID, "C INIT userAgent" );
 

@@ -77,4 +77,10 @@ public class BoltStateMachineV1Context implements StateMachineContext
     {
         return clock;
     }
+
+    @Override
+    public String connectionId()
+    {
+        return machine.id();
+    }
 }

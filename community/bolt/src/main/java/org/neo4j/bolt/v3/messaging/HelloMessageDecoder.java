@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.messaging.decoder;
+package org.neo4j.bolt.v3.messaging;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -28,15 +28,15 @@ import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.bolt.v1.messaging.request.InitMessage;
+import org.neo4j.bolt.v1.messaging.decoder.PrimitiveOnlyValueWriter;
 import org.neo4j.values.virtual.MapValue;
 
-public class InitMessageDecoder implements RequestMessageDecoder
+public class HelloMessageDecoder implements RequestMessageDecoder
 {
     private final BoltResponseHandler responseHandler;
     private final BoltMessageLogger messageLogger;
 
-    public InitMessageDecoder( BoltResponseHandler responseHandler, BoltMessageLogger messageLogger )
+    public HelloMessageDecoder( BoltResponseHandler responseHandler, BoltMessageLogger messageLogger )
     {
         this.responseHandler = responseHandler;
         this.messageLogger = messageLogger;
@@ -45,7 +45,7 @@ public class InitMessageDecoder implements RequestMessageDecoder
     @Override
     public int signature()
     {
-        return InitMessage.SIGNATURE;
+        return HelloMessage.SIGNATURE;
     }
 
     @Override
@@ -57,18 +57,13 @@ public class InitMessageDecoder implements RequestMessageDecoder
     @Override
     public RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException
     {
-        String userAgent = unpacker.unpackString();
-        Map<String,Object> authToken = readAuthToken( unpacker );
-        messageLogger.logUserAgent( userAgent );
-        return new InitMessage( userAgent, authToken );
-    }
-
-    private static Map<String,Object> readAuthToken( Neo4jPack.Unpacker unpacker ) throws IOException
-    {
-        MapValue authTokenValue = unpacker.unpackMap();
+        MapValue helloMeta = unpacker.unpackMap();
         PrimitiveOnlyValueWriter writer = new PrimitiveOnlyValueWriter();
-        Map<String,Object> tokenMap = new HashMap<>( authTokenValue.size() );
-        authTokenValue.foreach( ( key, value ) -> tokenMap.put( key, writer.valueAsObject( value ) ) );
-        return tokenMap;
+        Map<String,Object> meta = new HashMap<>( helloMeta.size() );
+        helloMeta.foreach( ( key, value ) -> meta.put( key, writer.valueAsObject( value ) ) );
+        HelloMessage helloMessage = new HelloMessage( meta );
+
+        messageLogger.logUserAgent( helloMessage.userAgent() );
+        return helloMessage;
     }
 }

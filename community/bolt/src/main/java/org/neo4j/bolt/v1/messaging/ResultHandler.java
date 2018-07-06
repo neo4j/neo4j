@@ -27,9 +27,9 @@ import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.logging.Log;
 import org.neo4j.values.AnyValue;
 
-class ResultHandler extends MessageProcessingHandler
+public class ResultHandler extends MessageProcessingHandler
 {
-    ResultHandler( BoltResponseMessageWriter handler, BoltConnection connection, Log log )
+    public ResultHandler( BoltResponseMessageWriter handler, BoltConnection connection, Log log )
     {
         super( handler, connection, log );
     }

@@ -234,6 +234,12 @@ public class BoltStateMachineV1 implements BoltStateMachine
     }
 
     @Override
+    public String id()
+    {
+        return id;
+    }
+
+    @Override
     public String owner()
     {
         return connectionState.getOwner();
@@ -351,7 +357,7 @@ public class BoltStateMachineV1 implements BoltStateMachine
         }
     }
 
-    private static States buildStates()
+    protected States buildStates()
     {
         ConnectedState connected = new ConnectedState();
         ReadyState ready = new ReadyState();
@@ -379,12 +385,12 @@ public class BoltStateMachineV1 implements BoltStateMachine
         return new States( connected, failed );
     }
 
-    private static class States
+    public static class States
     {
         final BoltStateMachineState initial;
         final BoltStateMachineState failed;
 
-        States( BoltStateMachineState initial, BoltStateMachineState failed )
+        public States( BoltStateMachineState initial, BoltStateMachineState failed )
         {
             this.initial = initial;
             this.failed = failed;

@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.util.ValueUtils;
 
 public class BoltRequestMessageWriter
 {
-    private final Neo4jPack.Packer packer;
+    protected final Neo4jPack.Packer packer;
 
     public BoltRequestMessageWriter( Neo4jPack.Packer packer )
     {

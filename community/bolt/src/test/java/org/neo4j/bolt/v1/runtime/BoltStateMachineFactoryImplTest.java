@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -26,9 +27,11 @@ import java.time.Clock;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltStateMachine;
+import org.neo4j.bolt.runtime.BoltStateMachineFactoryImpl;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.bolt.v2.BoltProtocolV2;
+import org.neo4j.bolt.v3.BoltStateMachineV3;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -40,24 +43,50 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.udc.UsageData;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class BoltStateMachineFactoryImplTest
+class BoltStateMachineFactoryImplTest
 {
     private static final Clock CLOCK = Clock.systemUTC();
     private static final BoltChannel CHANNEL = mock( BoltChannel.class );
 
     @ParameterizedTest( name = "V{0}" )
     @ValueSource( longs = {BoltProtocolV1.VERSION, BoltProtocolV2.VERSION} )
-    public void shouldCreateBoltStateMachines( long protocolVersion )
+    void shouldCreateBoltStateMachines( long protocolVersion )
     {
         BoltStateMachineFactoryImpl factory = newBoltFactory();
 
         BoltStateMachine boltStateMachine = factory.newStateMachine( protocolVersion, CHANNEL );
 
         assertNotNull( boltStateMachine );
+        assertThat( boltStateMachine, instanceOf( BoltStateMachineV1.class ) );
+    }
+
+    @Test
+    void shouldCreateBoltStateMachinesV3()
+    {
+        BoltStateMachineFactoryImpl factory = newBoltFactory();
+
+        BoltStateMachine boltStateMachine = factory.newStateMachine( 3L, CHANNEL );
+
+        assertNotNull( boltStateMachine );
+        assertThat( boltStateMachine, instanceOf( BoltStateMachineV3.class ) );
+    }
+
+    @ParameterizedTest( name = "V{0}" )
+    @ValueSource( longs = {999, -1} )
+    void shouldReturnNullIfVersionIsUnknown( long protocolVersion )
+    {
+        BoltStateMachineFactoryImpl factory = newBoltFactory();
+
+        BoltStateMachine boltStateMachine = factory.newStateMachine( protocolVersion, CHANNEL );
+
+        assertNull( boltStateMachine );
     }
 
     private static BoltStateMachineFactoryImpl newBoltFactory()

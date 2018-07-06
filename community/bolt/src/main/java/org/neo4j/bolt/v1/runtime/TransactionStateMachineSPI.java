@@ -52,7 +52,7 @@ import org.neo4j.values.virtual.MapValue;
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 
-class TransactionStateMachineSPI implements org.neo4j.bolt.runtime.TransactionStateMachineSPI
+public class TransactionStateMachineSPI implements org.neo4j.bolt.runtime.TransactionStateMachineSPI
 {
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
 
@@ -64,7 +64,7 @@ class TransactionStateMachineSPI implements org.neo4j.bolt.runtime.TransactionSt
     private final Duration txAwaitDuration;
     private final Clock clock;
 
-    TransactionStateMachineSPI( GraphDatabaseAPI db, AvailabilityGuard availabilityGuard, Duration txAwaitDuration, Clock clock )
+    public TransactionStateMachineSPI( GraphDatabaseAPI db, AvailabilityGuard availabilityGuard, Duration txAwaitDuration, Clock clock )
     {
         this.db = db;
         this.txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );

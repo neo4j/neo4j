@@ -28,6 +28,7 @@ import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BoltStateMachine;
+import org.neo4j.bolt.runtime.BoltStateMachineFactory;
 import org.neo4j.bolt.transport.pipeline.ChunkDecoder;
 import org.neo4j.bolt.transport.pipeline.HouseKeeper;
 import org.neo4j.bolt.transport.pipeline.MessageAccumulator;
@@ -35,7 +36,6 @@ import org.neo4j.bolt.transport.pipeline.MessageDecoder;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageReaderV1;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriterV1;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
-import org.neo4j.bolt.v1.runtime.BoltStateMachineFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 
 /**
@@ -61,7 +61,7 @@ public class BoltProtocolV1 implements BoltProtocol
         this.connection = connectionFactory.newConnection( channel, stateMachine );
 
         this.neo4jPack = createPack();
-        this.messageReader = createBoltMessageReaderV1( channel, neo4jPack, connection, logging );
+        this.messageReader = createMessageReader( channel, neo4jPack, connection, logging );
     }
 
     /**
@@ -89,7 +89,7 @@ public class BoltProtocolV1 implements BoltProtocol
         return VERSION;
     }
 
-    public static BoltRequestMessageReader createBoltMessageReaderV1( BoltChannel channel, Neo4jPack neo4jPack, BoltConnection connection, LogService logging )
+    protected BoltRequestMessageReader createMessageReader( BoltChannel channel, Neo4jPack neo4jPack, BoltConnection connection, LogService logging )
     {
         BoltResponseMessageWriterV1 responseWriter = new BoltResponseMessageWriterV1( neo4jPack, connection.output(), logging, channel.log() );
         return new BoltRequestMessageReaderV1( connection, responseWriter, channel.log(), logging );

@@ -17,10 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime;
+package org.neo4j.bolt.runtime;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.runtime.BoltStateMachine;
 
 /**
  * Factory class for Bolt runtime environments.

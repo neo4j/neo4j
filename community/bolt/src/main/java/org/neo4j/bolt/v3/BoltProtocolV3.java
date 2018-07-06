@@ -17,26 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v2;
+package org.neo4j.bolt.v3;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.messaging.Neo4jPack;
+import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BoltStateMachineFactory;
 import org.neo4j.bolt.v1.BoltProtocolV1;
+import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriterV1;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
+import org.neo4j.bolt.v3.messaging.BoltRequestMessageReaderV3;
 import org.neo4j.kernel.impl.logging.LogService;
 
-public class BoltProtocolV2 extends BoltProtocolV1
+/**
+ * Bolt protocol V3. It hosts all the components that are specific to BoltV3
+ */
+public class BoltProtocolV3 extends BoltProtocolV1
 {
-    public static final long VERSION = 2;
+    public static final long VERSION = 3;
 
-    public BoltProtocolV2( BoltChannel channel, BoltConnectionFactory connectionFactory, BoltStateMachineFactory machineFactory, LogService logging )
+    public BoltProtocolV3( BoltChannel channel, BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory, LogService logging )
     {
-        super( channel, connectionFactory, machineFactory, logging );
+        super( channel, connectionFactory, stateMachineFactory, logging );
     }
 
-    @Override
     protected Neo4jPack createPack()
     {
         return new Neo4jPackV2();
@@ -46,5 +52,11 @@ public class BoltProtocolV2 extends BoltProtocolV1
     public long version()
     {
         return VERSION;
+    }
+
+    protected BoltRequestMessageReader createMessageReader( BoltChannel channel, Neo4jPack neo4jPack, BoltConnection connection, LogService logging )
+    {
+        BoltResponseMessageWriterV1 responseWriter = new BoltResponseMessageWriterV1( neo4jPack, connection.output(), logging, channel.log() );
+        return new BoltRequestMessageReaderV3( connection, responseWriter, channel.log(), logging );
     }
 }

@@ -47,4 +47,6 @@ public interface BoltStateMachine extends ManagedBoltStateMachine, AutoCloseable
 
     @Override
     void close();
+
+    String id();
 }

@@ -40,7 +40,7 @@ public interface BoltMessageLogger
 
     void serverError( String eventName, Status status );
 
-    void logInit( String userAgent );
+    void logUserAgent( String userAgent );
 
     void logRun();
 

@@ -37,9 +37,9 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
  * {@link AnyValueWriter Writer} that allows to convert {@link AnyValue} to any primitive Java type. It explicitly
  * prohibits conversion of nodes, relationships, spatial and temporal types. They are not expected in auth token map.
  */
-class PrimitiveOnlyValueWriter extends BaseToObjectValueWriter<RuntimeException>
+public class PrimitiveOnlyValueWriter extends BaseToObjectValueWriter<RuntimeException>
 {
-    Object valueAsObject( AnyValue value )
+    public Object valueAsObject( AnyValue value )
     {
         value.writeTo( this );
         return value();

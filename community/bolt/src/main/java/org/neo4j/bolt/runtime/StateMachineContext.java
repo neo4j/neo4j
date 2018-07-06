@@ -34,4 +34,6 @@ public interface StateMachineContext
     MutableConnectionState connectionState();
 
     Clock clock();
+
+    String connectionId();
 }

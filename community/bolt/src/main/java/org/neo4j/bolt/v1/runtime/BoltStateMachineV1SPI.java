@@ -35,7 +35,7 @@ import org.neo4j.kernel.internal.Version;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
-class BoltStateMachineV1SPI implements BoltStateMachineSPI
+public class BoltStateMachineV1SPI implements BoltStateMachineSPI
 {
     private final BoltConnectionDescriptor connectionDescriptor;
     private final UsageData usageData;
@@ -45,7 +45,7 @@ class BoltStateMachineV1SPI implements BoltStateMachineSPI
     private final String version;
     private final TransactionStateMachineSPI transactionSpi;
 
-    BoltStateMachineV1SPI( BoltConnectionDescriptor connectionDescriptor, UsageData usageData, LogService logging, Authentication authentication,
+    public BoltStateMachineV1SPI( BoltConnectionDescriptor connectionDescriptor, UsageData usageData, LogService logging, Authentication authentication,
             BoltConnectionTracker connectionTracker, TransactionStateMachineSPI transactionStateMachineSPI )
     {
         this.connectionDescriptor = connectionDescriptor;

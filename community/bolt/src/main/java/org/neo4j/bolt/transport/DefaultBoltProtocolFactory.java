@@ -19,12 +19,15 @@
  */
 package org.neo4j.bolt.transport;
 
+import java.io.IOException;
+
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
+import org.neo4j.bolt.runtime.BoltStateMachineFactory;
 import org.neo4j.bolt.v1.BoltProtocolV1;
-import org.neo4j.bolt.v1.runtime.BoltStateMachineFactory;
 import org.neo4j.bolt.v2.BoltProtocolV2;
+import org.neo4j.bolt.v3.BoltProtocolV3;
 import org.neo4j.kernel.impl.logging.LogService;
 
 public class DefaultBoltProtocolFactory implements BoltProtocolFactory
@@ -51,6 +54,10 @@ public class DefaultBoltProtocolFactory implements BoltProtocolFactory
         else if ( protocolVersion == BoltProtocolV2.VERSION )
         {
             return new BoltProtocolV2( channel, connectionFactory, stateMachineFactory, logService );
+        }
+        else if ( protocolVersion == BoltProtocolV3.VERSION )
+        {
+            return new BoltProtocolV3( channel, connectionFactory, stateMachineFactory, logService );
         }
         else
         {

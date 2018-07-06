@@ -31,7 +31,7 @@ import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.BoltProtocolV1;
-import org.neo4j.bolt.v1.runtime.BoltStateMachineFactory;
+import org.neo4j.bolt.runtime.BoltStateMachineFactory;
 import org.neo4j.bolt.v2.BoltProtocolV2;
 import org.neo4j.kernel.impl.logging.NullLogService;
 

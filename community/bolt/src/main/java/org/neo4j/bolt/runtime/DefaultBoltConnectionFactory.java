@@ -27,6 +27,8 @@ import org.neo4j.bolt.v1.transport.ChunkedOutput;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static java.util.Objects.requireNonNull;
+
 public class DefaultBoltConnectionFactory implements BoltConnectionFactory
 {
     private final BoltSchedulerProvider schedulerProvider;
@@ -52,6 +54,9 @@ public class DefaultBoltConnectionFactory implements BoltConnectionFactory
     @Override
     public BoltConnection newConnection( BoltChannel channel, BoltStateMachine stateMachine )
     {
+        requireNonNull( channel );
+        requireNonNull( stateMachine );
+
         BoltScheduler scheduler = schedulerProvider.get( channel );
         BoltConnectionQueueMonitor connectionQueueMonitor =
                 queueMonitor == null ? scheduler : new BoltConnectionQueueMonitorAggregate( scheduler, queueMonitor );

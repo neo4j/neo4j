@@ -17,16 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime;
+package org.neo4j.bolt.runtime;
 
 import java.time.Clock;
 import java.time.Duration;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.runtime.BoltStateMachine;
-import org.neo4j.bolt.runtime.BoltStateMachineSPI;
-import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
 import org.neo4j.bolt.security.auth.Authentication;
+import org.neo4j.bolt.v1.BoltProtocolV1;
+import org.neo4j.bolt.v1.runtime.BoltStateMachineV1;
+import org.neo4j.bolt.v1.runtime.BoltStateMachineV1SPI;
+import org.neo4j.bolt.v2.BoltProtocolV2;
+import org.neo4j.bolt.v3.BoltProtocolV3;
+import org.neo4j.bolt.v3.BoltStateMachineV3;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
@@ -62,7 +65,18 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
     @Override
     public BoltStateMachine newStateMachine( long protocolVersion, BoltChannel boltChannel )
     {
-        return newStateMachineV1( boltChannel );
+        if ( protocolVersion == BoltProtocolV1.VERSION || protocolVersion == BoltProtocolV2.VERSION )
+        {
+            return newStateMachineV1( boltChannel );
+        }
+        else if ( protocolVersion == BoltProtocolV3.VERSION )
+        {
+            return newStateMachineV3( boltChannel );
+        }
+        else
+        {
+            return null;
+        }
     }
 
     private BoltStateMachine newStateMachineV1( BoltChannel boltChannel )
@@ -70,6 +84,13 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
         TransactionStateMachineSPI transactionSPI = createTxSpi( clock );
         BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( boltChannel, usageData, logging, authentication, connectionTracker, transactionSPI );
         return new BoltStateMachineV1( boltSPI, boltChannel, clock );
+    }
+
+    private BoltStateMachine newStateMachineV3( BoltChannel boltChannel )
+    {
+        TransactionStateMachineSPI transactionSPI = createTxSpi( clock );
+        BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( boltChannel, usageData, logging, authentication, connectionTracker, transactionSPI );
+        return new BoltStateMachineV3( boltSPI, boltChannel, clock );
     }
 
     private TransactionStateMachineSPI createTxSpi( Clock clock )

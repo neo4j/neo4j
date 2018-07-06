@@ -37,7 +37,7 @@ import org.neo4j.bolt.transport.pipeline.ChunkDecoder;
 import org.neo4j.bolt.transport.pipeline.HouseKeeper;
 import org.neo4j.bolt.transport.pipeline.MessageAccumulator;
 import org.neo4j.bolt.transport.pipeline.MessageDecoder;
-import org.neo4j.bolt.v1.runtime.BoltStateMachineFactory;
+import org.neo4j.bolt.runtime.BoltStateMachineFactory;
 import org.neo4j.kernel.impl.logging.NullLogService;
 
 import static org.hamcrest.Matchers.instanceOf;

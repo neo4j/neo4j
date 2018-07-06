@@ -40,7 +40,7 @@ import org.neo4j.values.virtual.MapValueBuilder;
 
 import static org.neo4j.bolt.v1.messaging.response.IgnoredMessage.IGNORED_MESSAGE;
 
-class MessageProcessingHandler implements BoltResponseHandler
+public class MessageProcessingHandler implements BoltResponseHandler
 {
     // Errors that are expected when the client disconnects mid-operation
     private static final Set<Status> CLIENT_MID_OP_DISCONNECT_ERRORS =
@@ -54,7 +54,7 @@ class MessageProcessingHandler implements BoltResponseHandler
     private Neo4jError error;
     private boolean ignored;
 
-    MessageProcessingHandler( BoltResponseMessageWriter messageWriter, BoltConnection connection, Log logger )
+    public MessageProcessingHandler( BoltResponseMessageWriter messageWriter, BoltConnection connection, Log logger )
     {
         this.messageWriter = messageWriter;
         this.connection = connection;
