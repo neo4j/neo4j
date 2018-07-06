@@ -78,7 +78,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
  */
 public class TransactionRecordState implements RecordState
 {
-    private static final CommandComparator COMMAND_SORTER = new CommandComparator();
+    private static final CommandComparator COMMAND_COMPARATOR = new CommandComparator();
     private static final Command[] EMPTY_COMMANDS = new Command[0];
 
     private final NeoStores neoStores;
@@ -170,7 +170,7 @@ public class TransactionRecordState implements RecordState
                 integrityValidator.validateNodeRecord( record );
                 nodeCommands[i++] = new Command.NodeCommand( change.getBefore(), record );
             }
-            Arrays.sort( nodeCommands, COMMAND_SORTER );
+            Arrays.sort( nodeCommands, COMMAND_COMPARATOR );
         }
 
         Command[] relCommands = EMPTY_COMMANDS;
@@ -183,7 +183,7 @@ public class TransactionRecordState implements RecordState
                 relCommands[i++] = new Command.RelationshipCommand( change.getBefore(),
                         prepared( change, relationshipStore ) );
             }
-            Arrays.sort( relCommands, COMMAND_SORTER );
+            Arrays.sort( relCommands, COMMAND_COMPARATOR );
         }
 
         Command[] propCommands = EMPTY_COMMANDS;
@@ -197,7 +197,7 @@ public class TransactionRecordState implements RecordState
                 propCommands[i++] = new Command.PropertyCommand( change.getBefore(),
                         prepared( change, propertyStore ) );
             }
-            Arrays.sort( propCommands, COMMAND_SORTER );
+            Arrays.sort( propCommands, COMMAND_COMPARATOR );
         }
 
         Command[] relGroupCommands = EMPTY_COMMANDS;
@@ -238,7 +238,7 @@ public class TransactionRecordState implements RecordState
                         prepared( change, relationshipGroupStore ) );
             }
             relGroupCommands = i < relGroupCommands.length ? Arrays.copyOf( relGroupCommands, i ) : relGroupCommands;
-            Arrays.sort( relGroupCommands, COMMAND_SORTER );
+            Arrays.sort( relGroupCommands, COMMAND_COMPARATOR );
         }
 
         addFiltered( commands, Mode.CREATE, propCommands, relCommands, relGroupCommands, nodeCommands );
