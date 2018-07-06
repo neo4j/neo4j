@@ -78,6 +78,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
  */
 public class TransactionRecordState implements RecordState
 {
+    private static final CommandComparator COMMAND_SORTER = new CommandComparator();
     private static final Command[] EMPTY_COMMANDS = new Command[0];
 
     private final NeoStores neoStores;
@@ -464,42 +465,16 @@ public class TransactionRecordState implements RecordState
         creator.createToken( name, id, recordChangeSet.getRelationshipTypeTokenChanges() );
     }
 
-    private static class CommandSorter implements Comparator<Command>
+    private static class CommandComparator implements Comparator<Command>
     {
         @Override
         public int compare( Command o1, Command o2 )
         {
             long id1 = o1.getKey();
             long id2 = o2.getKey();
-            long diff = id1 - id2;
-            if ( diff > Integer.MAX_VALUE )
-            {
-                return Integer.MAX_VALUE;
-            }
-            else if ( diff < Integer.MIN_VALUE )
-            {
-                return Integer.MIN_VALUE;
-            }
-            else
-            {
-                return (int) diff;
-            }
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            return o instanceof CommandSorter;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return 3217;
+            return Long.compare( id1, id2 );
         }
     }
-
-    private static final CommandSorter COMMAND_SORTER = new CommandSorter();
 
     private RecordProxy<NeoStoreRecord, Void> getOrLoadNeoStoreRecord()
     {

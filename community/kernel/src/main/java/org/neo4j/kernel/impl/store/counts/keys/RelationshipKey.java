@@ -104,14 +104,14 @@ public final class RelationshipKey implements CountsKey
             RelationshipKey that = (RelationshipKey) other;
             if ( this.typeId != that.typeId )
             {
-                return this.typeId - that.typeId;
+                return Integer.compare( this.typeId, that.typeId );
             }
             if ( this.startLabelId != that.startLabelId )
             {
-                return this.startLabelId - that.startLabelId;
+                return Integer.compare( this.startLabelId, that.startLabelId );
             }
-            return this.endLabelId - that.endLabelId;
+            return Integer.compare( this.endLabelId, that.endLabelId );
         }
-        return recordType().ordinal() - other.recordType().ordinal();
+        return recordType().compareTo( other.recordType() );
     }
 }

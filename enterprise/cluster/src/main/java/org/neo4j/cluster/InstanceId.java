@@ -54,7 +54,7 @@ public class InstanceId implements Externalizable, Comparable<InstanceId>
     @Override
     public int compareTo( InstanceId o )
     {
-        return serverId - o.serverId;
+        return Integer.compare( serverId, o.serverId );
     }
 
     @Override

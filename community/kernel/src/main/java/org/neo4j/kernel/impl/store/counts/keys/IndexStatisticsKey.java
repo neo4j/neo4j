@@ -41,6 +41,6 @@ public final class IndexStatisticsKey extends IndexKey
         {
             return super.compareTo( other );
         }
-        return recordType().ordinal() - other.recordType().ordinal();
+        return recordType().compareTo( other.recordType() );
     }
 }

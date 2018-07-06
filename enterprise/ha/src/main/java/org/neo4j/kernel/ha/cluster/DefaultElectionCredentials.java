@@ -55,7 +55,7 @@ public final class DefaultElectionCredentials implements ElectionCredentials, Ex
             // Smaller id means higher priority
             if ( this.currentWinner == other.currentWinner )
             {
-                return Integer.signum( other.serverId - this.serverId );
+                return Integer.compare( other.serverId, this.serverId );
             }
             else
             {
@@ -64,7 +64,7 @@ public final class DefaultElectionCredentials implements ElectionCredentials, Ex
         }
         else
         {
-            return Long.signum( this.latestTxId - other.latestTxId );
+            return Long.compare( this.latestTxId, other.latestTxId );
         }
     }
 

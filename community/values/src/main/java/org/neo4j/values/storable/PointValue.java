@@ -124,7 +124,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
     @Override
     public int compareTo( PointValue other )
     {
-        int cmpCRS = this.crs.getCode() - other.crs.getCode();
+        int cmpCRS = Integer.compare( this.crs.getCode(), other.crs.getCode() );
         if ( cmpCRS != 0 )
         {
             return cmpCRS;

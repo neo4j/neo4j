@@ -117,7 +117,7 @@ public class LockUnit implements Comparable<LockUnit>, ActiveLock
 
         // Then shared/exclusive locks are compared by resourceTypeId and then by resourceId
         return resourceType.typeId() == o.resourceType.typeId() ? Long.compare( resourceId, o.resourceId )
-                                                                : resourceType.typeId() - o.resourceType.typeId();
+                                                                : Integer.compare( resourceType.typeId(), o.resourceType.typeId() );
     }
 
     @Override

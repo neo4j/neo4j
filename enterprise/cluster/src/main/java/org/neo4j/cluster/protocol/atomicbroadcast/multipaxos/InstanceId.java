@@ -61,7 +61,7 @@ public class InstanceId
     @Override
     public int compareTo( InstanceId o )
     {
-        return (int) (id - o.getId());
+        return Long.compare( id, o.getId() );
     }
 
     @Override
