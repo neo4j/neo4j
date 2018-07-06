@@ -470,7 +470,7 @@ abstract class Read implements TxStateHolder,
         ktx.assertOpen();
     }
 
-    abstract IndexReader indexReader( IndexReference index, boolean fresh ) throws IndexNotFoundKernelException;
+    public abstract IndexReader indexReader( IndexReference index, boolean fresh ) throws IndexNotFoundKernelException;
 
     abstract LabelScanReader labelScanReader();
 

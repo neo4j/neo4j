@@ -234,7 +234,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    IndexReader indexReader( IndexReference index, boolean fresh ) throws IndexNotFoundKernelException
+    public IndexReader indexReader( IndexReference index, boolean fresh ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
         return fresh ? storageReader.getFreshIndexReader( (IndexDescriptor) index ) :

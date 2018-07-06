@@ -81,9 +81,8 @@ class IndexProxyCreator
         flipper.setFlipTarget( () ->
         {
             monitor.populationCompleteOn( descriptor );
-            OnlineIndexProxy onlineProxy = new OnlineIndexProxy( capableIndexDescriptor, onlineAccessorFromProvider( descriptor, samplingConfig ),
-                            storeView,
-                            true );
+            IndexAccessor accessor = onlineAccessorFromProvider( descriptor, samplingConfig );
+            OnlineIndexProxy onlineProxy = new OnlineIndexProxy( capableIndexDescriptor, accessor, storeView, true );
             if ( flipToTentative )
             {
                 return new TentativeConstraintIndexProxy( flipper, onlineProxy );
