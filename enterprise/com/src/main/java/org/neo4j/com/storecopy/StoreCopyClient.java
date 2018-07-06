@@ -82,7 +82,7 @@ public class StoreCopyClient
         void done();
     }
 
-    private final File storeDir;
+    private final File databaseDirectory;
     private final Config config;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
     private final Log log;
@@ -92,16 +92,16 @@ public class StoreCopyClient
     private final boolean forensics;
     private final FileMoveProvider fileMoveProvider;
 
-    public StoreCopyClient( File storeDir, Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions, LogProvider logProvider,
+    public StoreCopyClient( File databaseDirectory, Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions, LogProvider logProvider,
             FileSystemAbstraction fs, PageCache pageCache, StoreCopyClientMonitor monitor, boolean forensics )
     {
-        this( storeDir, config, kernelExtensions, logProvider, fs, pageCache, monitor, forensics, new FileMoveProvider( fs ) );
+        this( databaseDirectory, config, kernelExtensions, logProvider, fs, pageCache, monitor, forensics, new FileMoveProvider( fs ) );
     }
 
-    public StoreCopyClient( File storeDir, Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions, LogProvider logProvider,
+    public StoreCopyClient( File databaseDirectory, Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions, LogProvider logProvider,
             FileSystemAbstraction fs, PageCache pageCache, StoreCopyClientMonitor monitor, boolean forensics, FileMoveProvider fileMoveProvider )
     {
-        this.storeDir = storeDir;
+        this.databaseDirectory = databaseDirectory;
         this.config = config;
         this.kernelExtensions = kernelExtensions;
         this.log = logProvider.getLog( getClass() );
@@ -115,20 +115,20 @@ public class StoreCopyClient
     public void copyStore( StoreCopyRequester requester, CancellationRequest cancellationRequest, MoveAfterCopy moveAfterCopy ) throws Exception
     {
         // Create a temp directory (or clean if present)
-        File tempStore = new File( storeDir, StoreUtil.TEMP_COPY_DIRECTORY_NAME );
+        File tempDatabaseDirectory = new File( databaseDirectory, StoreUtil.TEMP_COPY_DIRECTORY_NAME );
         try
         {
-            cleanDirectory( tempStore );
+            cleanDirectory( tempDatabaseDirectory );
 
             // Request store files and transactions that will need recovery
             monitor.startReceivingStoreFiles();
-            ToFileStoreWriter storeWriter = new ToFileStoreWriter( tempStore, fs, monitor );
+            ToFileStoreWriter storeWriter = new ToFileStoreWriter( tempDatabaseDirectory, fs, monitor );
             try ( Response<?> response = requester.copyStore( decorateWithProgressIndicator( storeWriter ) ) )
             {
                 monitor.finishReceivingStoreFiles();
                 // Update highest archived log id
                 // Write transactions that happened during the copy to the currently active logical log
-                writeTransactionsToActiveLogFile( tempStore, response );
+                writeTransactionsToActiveLogFile( tempDatabaseDirectory, response );
             }
             finally
             {
@@ -136,31 +136,31 @@ public class StoreCopyClient
             }
 
             // This is a good place to check if the switch has been cancelled
-            checkCancellation( cancellationRequest, tempStore );
+            checkCancellation( cancellationRequest, tempDatabaseDirectory );
 
             // Run recovery, so that the transactions we just wrote into the active log will be applied.
-            recoverDatabase( tempStore );
+            recoverDatabase( tempDatabaseDirectory );
 
             // All is well, move the streamed files to the real store directory.
             // Should only be record store files.
             // Note that the stream is lazy, so the file system traversal won't happen until *after* the store files
             // have been moved. Thus we ensure that we only attempt to move them once.
-            moveFromTemporaryLocationToCorrect( tempStore, moveAfterCopy );
+            moveFromTemporaryLocationToCorrect( tempDatabaseDirectory, moveAfterCopy );
         }
         finally
         {
             // All done, delete temp directory
-            FileUtils.deleteRecursively( tempStore );
+            FileUtils.deleteRecursively( tempDatabaseDirectory );
         }
     }
 
     private void moveFromTemporaryLocationToCorrect( File tempStore, MoveAfterCopy moveAfterCopy ) throws Exception
     {
-        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache ).withConfig( config ).build();
+        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( databaseDirectory, fs, pageCache ).withConfig( config ).build();
 
         Stream<FileMoveAction> moveActionStream = fileMoveProvider.traverseForMoving( tempStore ) ;
         Function<File,File> destinationMapper =
-                file -> logFiles.isLogFile( file ) ? logFiles.logFilesDirectory() : storeDir;
+                file -> logFiles.isLogFile( file ) ? logFiles.logFilesDirectory() : databaseDirectory;
         moveAfterCopy.move( moveActionStream, tempStore, destinationMapper );
     }
 
@@ -172,13 +172,13 @@ public class StoreCopyClient
         monitor.finishRecoveringStore();
     }
 
-    private void writeTransactionsToActiveLogFile( File tempStoreDir, Response<?> response ) throws Exception
+    private void writeTransactionsToActiveLogFile( File tempDatabaseDir, Response<?> response ) throws Exception
     {
         LifeSupport life = new LifeSupport();
         try
         {
             // Start the log and appender
-            LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( tempStoreDir, fs, pageCache ).build();
+            LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( tempDatabaseDir, fs, pageCache ).build();
             life.add( logFiles );
             life.start();
 
@@ -237,7 +237,7 @@ public class StoreCopyClient
                 // Recovery will treat that as last checkpoint and will not try to recover store till new
                 // last closed transaction offset will not overcome old one. Till that happens it will be
                 // impossible for recovery process to restore the store
-                File neoStore = new File( tempStoreDir, MetaDataStore.DEFAULT_NAME );
+                File neoStore = new File( tempDatabaseDir, MetaDataStore.DEFAULT_NAME );
                 MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, LOG_HEADER_SIZE );
             }
         }

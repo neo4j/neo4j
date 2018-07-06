@@ -26,10 +26,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -85,7 +84,7 @@ public class StoreMigratorTest
             // For test code sanity
             String fromStoreVersion = StoreVersion.HIGH_LIMIT_V3_0_0.versionString();
             Result hasVersionResult = new StoreVersionCheck( pageCache ).hasVersion(
-                    new File( storeDir, NEO_STORE.fileName( STORE ) ), fromStoreVersion );
+                    new File( directory.graphDbDir(), NEO_STORE.fileName( STORE ) ), fromStoreVersion );
             assertTrue( hasVersionResult.actualVersion, hasVersionResult.outcome.isSuccessful() );
 
             // WHEN
@@ -94,7 +93,7 @@ public class StoreMigratorTest
             ProgressReporter monitor = mock( ProgressReporter.class );
             File migrationDir = new File( storeDir, "migration" );
             fs.mkdirs( migrationDir );
-            migrator.migrate( storeDir, migrationDir, monitor, fromStoreVersion,
+            migrator.migrate( directory.graphDbDir(), migrationDir, monitor, fromStoreVersion,
                     StoreVersion.HIGH_LIMIT_V3_0_6.versionString() );
 
             // THEN
@@ -109,10 +108,9 @@ public class StoreMigratorTest
         PageCache pageCache = mock( PageCache.class );
         Config config = Config.defaults();
         CountsMigrator storeMigrator = new CountsMigrator( fileSystem, pageCache, config );
-        Set<String> actualVersions = new TreeSet<>();
-        Set<String> expectedVersions = new TreeSet<>(
-                Arrays.stream( StoreVersion.values() ).map( StoreVersion::versionString )
-                        .collect( Collectors.toSet() ) );
+        Set<String> actualVersions = new HashSet<>();
+        Set<String> expectedVersions = Arrays.stream( StoreVersion.values() ).map( StoreVersion::versionString )
+                        .collect( Collectors.toSet() );
 
         assertTrue( storeMigrator.countStoreRebuildRequired( StoreVersion.STANDARD_V2_3.versionString() ) );
         actualVersions.add( StoreVersion.STANDARD_V2_3.versionString() );

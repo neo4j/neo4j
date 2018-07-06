@@ -42,7 +42,6 @@ import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 
@@ -60,7 +59,7 @@ import static org.neo4j.test.TestLabels.LABEL_TWO;
 public class AllNodesInStoreExistInLabelIndexTest
 {
     @Rule
-    public final DatabaseRule db = new EmbeddedDatabaseRule();
+    public final EmbeddedDatabaseRule db = new EmbeddedDatabaseRule();
 
     @Rule
     public final RandomRule random = new RandomRule();
@@ -89,11 +88,11 @@ public class AllNodesInStoreExistInLabelIndexTest
     @Test
     public void reportNotCleanLabelIndex() throws IOException, ConsistencyCheckIncompleteException
     {
-        File storeDir = db.getStoreDir();
+        File databaseDirectory = db.getTestDirectory().graphDbDir();
         someData();
         db.resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
-        File labelIndexFileCopy = new File( storeDir, "label_index_copy" );
-        copyFile( new File( storeDir, NativeLabelScanStore.FILE_NAME ), labelIndexFileCopy );
+        File labelIndexFileCopy = new File( databaseDirectory, "label_index_copy" );
+        copyFile( new File( databaseDirectory, NativeLabelScanStore.FILE_NAME ), labelIndexFileCopy );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -103,7 +102,7 @@ public class AllNodesInStoreExistInLabelIndexTest
 
         db.shutdownAndKeepStore();
 
-        copyFile( labelIndexFileCopy, new File( storeDir, NativeLabelScanStore.FILE_NAME ) );
+        copyFile( labelIndexFileCopy, new File( databaseDirectory, NativeLabelScanStore.FILE_NAME ) );
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
         assertFalse( "Expected consistency check to fail", result.isSuccessful() );
@@ -114,15 +113,15 @@ public class AllNodesInStoreExistInLabelIndexTest
     @Test
     public void reportNotCleanLabelIndexWithCorrectData() throws IOException, ConsistencyCheckIncompleteException
     {
-        File storeDir = db.getStoreDir();
+        File databaseDirectory = db.getTestDirectory().graphDbDir();
         someData();
         db.resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
-        File labelIndexFileCopy = new File( storeDir, "label_index_copy" );
-        copyFile( new File( storeDir, NativeLabelScanStore.FILE_NAME ), labelIndexFileCopy );
+        File labelIndexFileCopy = new File( databaseDirectory, "label_index_copy" );
+        copyFile( new File( databaseDirectory, NativeLabelScanStore.FILE_NAME ), labelIndexFileCopy );
 
         db.shutdownAndKeepStore();
 
-        copyFile( labelIndexFileCopy, new File( storeDir, NativeLabelScanStore.FILE_NAME ) );
+        copyFile( labelIndexFileCopy, new File( databaseDirectory, NativeLabelScanStore.FILE_NAME ) );
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
         assertTrue( "Expected consistency check to fail", result.isSuccessful() );
@@ -269,27 +268,27 @@ public class AllNodesInStoreExistInLabelIndexTest
     {
         db.restartDatabase( ( fs, directory ) ->
         {
-            File storeDir = db.getStoreDir();
-            fs.deleteFile( new File( storeDir, NativeLabelScanStore.FILE_NAME ) );
-            fs.copyFile( labelIndexFileCopy, new File( storeDir, NativeLabelScanStore.FILE_NAME ) );
+            File databaseDirectory = db.getTestDirectory().graphDbDir();
+            fs.deleteFile( new File( databaseDirectory, NativeLabelScanStore.FILE_NAME ) );
+            fs.copyFile( labelIndexFileCopy, new File( databaseDirectory, NativeLabelScanStore.FILE_NAME ) );
         } );
     }
 
     private File copyLabelIndexFile() throws IOException
     {
-        File storeDir = db.getStoreDir();
-        File labelIndexFileCopy = new File( storeDir, "label_index_copy" );
+        File databaseDirectory = db.getTestDirectory().graphDbDir();
+        File labelIndexFileCopy = new File( databaseDirectory, "label_index_copy" );
         db.restartDatabase( ( fs, directory ) ->
-                fs.copyFile( new File( storeDir, NativeLabelScanStore.FILE_NAME ), labelIndexFileCopy ) );
+                fs.copyFile( new File( databaseDirectory, NativeLabelScanStore.FILE_NAME ), labelIndexFileCopy ) );
         return labelIndexFileCopy;
     }
 
-    List<Pair<Long,Label[]>> someData()
+    private List<Pair<Long,Label[]>> someData()
     {
         return someData( 50 );
     }
 
-    List<Pair<Long,Label[]>> someData( int numberOfModifications )
+    private List<Pair<Long,Label[]>> someData( int numberOfModifications )
     {
         List<Pair<Long,Label[]>> existingNodes;
         existingNodes = new ArrayList<>();
@@ -301,7 +300,7 @@ public class AllNodesInStoreExistInLabelIndexTest
         return existingNodes;
     }
 
-    private List<Pair<Long,Label[]>> randomModifications( List<Pair<Long,Label[]>> existingNodes,
+    private void randomModifications( List<Pair<Long,Label[]>> existingNodes,
             int numberOfModifications )
     {
         for ( int i = 0; i < numberOfModifications; i++ )
@@ -320,7 +319,6 @@ public class AllNodesInStoreExistInLabelIndexTest
                 modifyLabelsOnExistingNode( existingNodes );
             }
         }
-        return existingNodes;
     }
 
     private void createNewNode( List<Pair<Long,Label[]>> existingNodes )
@@ -368,14 +366,14 @@ public class AllNodesInStoreExistInLabelIndexTest
         return labels.toArray( new Label[labels.size()] );
     }
 
-    ConsistencyCheckService.Result fullConsistencyCheck()
+    private ConsistencyCheckService.Result fullConsistencyCheck()
             throws ConsistencyCheckIncompleteException, IOException
     {
         try ( FileSystemAbstraction fsa = new DefaultFileSystemAbstraction() )
         {
             ConsistencyCheckService service = new ConsistencyCheckService();
             Config config = Config.defaults();
-            return service.runFullConsistencyCheck( db.getStoreDir(), config, NONE, log, fsa, true,
+            return service.runFullConsistencyCheck( db.getTestDirectory().graphDbDir(), config, NONE, log, fsa, true,
                     new ConsistencyFlags( config ) );
         }
     }

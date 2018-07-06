@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 
@@ -61,7 +60,7 @@ import static org.neo4j.test.TestLabels.LABEL_TWO;
 public class IndexConsistencyIT
 {
     @Rule
-    public final DatabaseRule db = new EmbeddedDatabaseRule();
+    public final EmbeddedDatabaseRule db = new EmbeddedDatabaseRule();
 
     @Rule
     public final RandomRule random = new RandomRule();
@@ -77,10 +76,10 @@ public class IndexConsistencyIT
     @Test
     public void reportNotCleanNativeIndex() throws IOException, ConsistencyCheckIncompleteException
     {
-        File storeDir = db.getStoreDir();
+        File databaseDirectory = db.getTestDirectory().graphDbDir();
         someData();
         resolveComponent( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
-        File indexesCopy = new File( storeDir, "indexesCopy" );
+        File indexesCopy = new File( databaseDirectory, "indexesCopy" );
         File indexSources = resolveComponent( DefaultIndexProviderMap.class ).getDefaultProvider().directoryStructure().rootDirectory();
         copyRecursively( indexSources, indexesCopy, SOURCE_COPY_FILE_FILTER );
 
@@ -232,14 +231,14 @@ public class IndexConsistencyIT
         return labels.toArray( new Label[labels.size()] );
     }
 
-    ConsistencyCheckService.Result fullConsistencyCheck()
+    private ConsistencyCheckService.Result fullConsistencyCheck()
             throws ConsistencyCheckIncompleteException, IOException
     {
         try ( FileSystemAbstraction fsa = new DefaultFileSystemAbstraction() )
         {
             ConsistencyCheckService service = new ConsistencyCheckService();
             Config config = Config.defaults();
-            return service.runFullConsistencyCheck( db.getStoreDir(), config, NONE, log, fsa, true );
+            return service.runFullConsistencyCheck( db.getTestDirectory().graphDbDir(), config, NONE, log, fsa, true );
         }
     }
 }

@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
@@ -105,14 +106,14 @@ public class DatabaseImporterTest
     @Test
     public void removesOldMessagesLog() throws Exception
     {
-        File home = testDir.directory( "home" );
+        File home = testDir.directory();
 
         File from = provideStoreDirectory();
         File oldMessagesLog = new File( from, "messages.log" );
 
         assertTrue( oldMessagesLog.createNewFile() );
 
-        File destination = new File( new File( new File( home, "data" ), "databases" ), "bar" );
+        File destination = testDir.graphDbDir();
 
         String[] arguments = {"--mode=database", "--database=bar", "--from=" + from.getAbsolutePath()};
         DatabaseImporter importer =
@@ -123,7 +124,7 @@ public class DatabaseImporterTest
         assertFalse( messagesLog.exists() );
     }
 
-    private Config getConfigWith( File homeDir, String databaseName )
+    private static Config getConfigWith( File homeDir, String databaseName )
     {
         HashMap<String,String> additionalConfig = new HashMap<>();
         additionalConfig.put( GraphDatabaseSettings.neo4j_home.name(), homeDir.toString() );
@@ -133,8 +134,8 @@ public class DatabaseImporterTest
 
     private File provideStoreDirectory()
     {
-        File storeDir = testDir.graphDbDir();
         GraphDatabaseService db = null;
+        File storeDir = testDir.directory( "home" );
         try
         {
             db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
@@ -152,7 +153,7 @@ public class DatabaseImporterTest
             }
         }
 
-        return storeDir;
+        return new File( storeDir, DataSourceManager.DEFAULT_DATABASE_NAME );
     }
 
     private Matcher<File> isExistingDatabase()

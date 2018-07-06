@@ -41,6 +41,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -69,8 +70,9 @@ public class StoreUpgradeOnStartupTest
     public String version;
 
     private FileSystemAbstraction fileSystem;
-    private File workingDirectory;
+    private File workingDatabaseDirectory;
     private StoreVersionCheck check;
+    private File workingStoreDir;
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<String> versions()
@@ -85,10 +87,11 @@ public class StoreUpgradeOnStartupTest
     {
         fileSystem = fileSystemRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        workingDirectory = testDir.directory( "working_" + version );
+        workingStoreDir = testDir.directory( "working_" + version );
+        workingDatabaseDirectory = new File( workingStoreDir, DataSourceManager.DEFAULT_DATABASE_NAME );
         check = new StoreVersionCheck( pageCache );
         File prepareDirectory = testDir.directory( "prepare_" + version );
-        prepareSampleLegacyDatabase( version, fileSystem, workingDirectory, prepareDirectory );
+        prepareSampleLegacyDatabase( version, fileSystem, workingDatabaseDirectory, prepareDirectory );
     }
 
     @Test
@@ -100,15 +103,15 @@ public class StoreUpgradeOnStartupTest
 
         // then
         assertTrue( "Some store files did not have the correct version",
-                checkNeoStoreHasDefaultFormatVersion( check, workingDirectory ) );
-        assertConsistentStore( workingDirectory );
+                checkNeoStoreHasDefaultFormatVersion( check, workingDatabaseDirectory ) );
+        assertConsistentStore( workingDatabaseDirectory );
     }
 
     @Test
     public void shouldAbortOnNonCleanlyShutdown() throws Throwable
     {
         // given
-        removeCheckPointFromTxLog( fileSystem, workingDirectory );
+        removeCheckPointFromTxLog( fileSystem, workingDatabaseDirectory );
         try
         {
             // when
@@ -127,7 +130,7 @@ public class StoreUpgradeOnStartupTest
     private GraphDatabaseService createGraphDatabaseService()
     {
         return new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( workingDirectory )
+                .newEmbeddedDatabaseBuilder( workingStoreDir )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, "true" )
                 .newGraphDatabase();
     }

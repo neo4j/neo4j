@@ -246,8 +246,8 @@ public class ConsistencyCheckToolTest
         runConsistencyCheckToolWith( fs.get(), args );
     }
 
-    private void checkLogRecordTimeZone( ConsistencyCheckService service, String[] args, int hoursShift,
-            String timeZoneSuffix ) throws ToolFailureException, IOException
+    private static void checkLogRecordTimeZone( ConsistencyCheckService service, String[] args, int hoursShift, String timeZoneSuffix )
+            throws ToolFailureException, IOException
     {
         TimeZone.setDefault( TimeZone.getTimeZone( ZoneOffset.ofHours( hoursShift ) ) );
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -257,7 +257,7 @@ public class ConsistencyCheckToolTest
         assertTrue( logLine, logLine.contains( timeZoneSuffix ) );
     }
 
-    private String readLogLine( ByteArrayOutputStream outputStream ) throws IOException
+    private static String readLogLine( ByteArrayOutputStream outputStream ) throws IOException
     {
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( outputStream.toByteArray() );
         BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( byteArrayInputStream ) );
@@ -268,7 +268,7 @@ public class ConsistencyCheckToolTest
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() )
-                .newImpermanentDatabaseBuilder( testDirectory.graphDbDir() )
+                .newImpermanentDatabaseBuilder( testDirectory.directory() )
                 .setConfig( config.getRaw()  )
                 .newGraphDatabase();
 
@@ -282,26 +282,24 @@ public class ConsistencyCheckToolTest
         fs.snapshot( db::shutdown );
     }
 
-    private void runConsistencyCheckToolWith( FileSystemAbstraction fileSystem, String... args )
+    private static void runConsistencyCheckToolWith( FileSystemAbstraction fileSystem, String... args )
             throws ToolFailureException
     {
         new ConsistencyCheckTool( mock( ConsistencyCheckService.class ), fileSystem, mock( PrintStream.class),
                 mock( PrintStream.class ) ).run( args );
     }
 
-    private void runConsistencyCheckToolWith( ConsistencyCheckService
-            consistencyCheckService, String... args ) throws ToolFailureException, IOException
+    private static void runConsistencyCheckToolWith( ConsistencyCheckService consistencyCheckService, String... args ) throws ToolFailureException, IOException
     {
         runConsistencyCheckToolWith( consistencyCheckService, mock( PrintStream.class ), args );
     }
 
-    private void runConsistencyCheckToolWith( ConsistencyCheckService
-            consistencyCheckService, PrintStream printStream, String... args ) throws ToolFailureException, IOException
+    private static void runConsistencyCheckToolWith( ConsistencyCheckService consistencyCheckService, PrintStream printStream, String... args )
+            throws ToolFailureException, IOException
     {
         try ( FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction() )
         {
-            new ConsistencyCheckTool( consistencyCheckService, fileSystemAbstraction, printStream, printStream )
-                    .run( args );
+            new ConsistencyCheckTool( consistencyCheckService, fileSystemAbstraction, printStream, printStream ).run( args );
         }
     }
 }

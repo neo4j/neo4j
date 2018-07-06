@@ -37,14 +37,14 @@ public class StoreAssertions
     {
     }
 
-    public static void assertConsistentStore( File storeDir ) throws ConsistencyCheckIncompleteException
+    public static void assertConsistentStore( File databaseDirectory ) throws ConsistencyCheckIncompleteException
     {
         Config configuration = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
         AssertableLogProvider logger = new AssertableLogProvider();
         ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
-                storeDir, configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
+                databaseDirectory, configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
 
-        assertTrue( "Consistency check for " + storeDir + " found inconsistencies:\n\n" + logger.serialize(),
+        assertTrue( "Consistency check for " + databaseDirectory + " found inconsistencies:\n\n" + logger.serialize(),
                 result.isSuccessful() );
     }
 }

@@ -27,10 +27,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -60,6 +56,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
@@ -86,7 +83,6 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.record_format;
 
-@RunWith( Parameterized.class )
 public class StoreCopyClientTest
 {
     private final TestDirectory directory = TestDirectory.testDirectory();
@@ -94,19 +90,11 @@ public class StoreCopyClientTest
     private final CleanupRule cleanup = new CleanupRule();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
-    @Parameters
-    public static StoreCopyRequestFactory[] data()
-    {
-        return new StoreCopyRequestFactory[]{LocalStoreCopyRequester::new};
-    }
-
-    @Parameter
-    public StoreCopyRequestFactory requestFactory;
-
     @Rule
     public TestRule rules = RuleChain.outerRule( directory ).around( fileSystemRule ).
                                       around( pageCacheRule ).around( cleanup );
 
+    private final StoreCopyRequestFactory requestFactory = LocalStoreCopyRequester::new;
     private FileSystemAbstraction fileSystem;
 
     @Before
@@ -136,12 +124,10 @@ public class StoreCopyClientTest
 
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         StoreCopyClient copier =
-                new StoreCopyClient( copyDir, Config.defaults(), loadKernelExtensions(), NullLogProvider.getInstance(),
-                        fileSystem,
-                        pageCache, storeCopyMonitor, false );
+                new StoreCopyClient( new File( copyDir, DataSourceManager.DEFAULT_DATABASE_NAME ), Config.defaults(), loadKernelExtensions(),
+                        NullLogProvider.getInstance(), fileSystem, pageCache, storeCopyMonitor, false );
 
-        final GraphDatabaseAPI original =
-                (GraphDatabaseAPI) startDatabase( originalDir );
+        final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalDir );
 
         try ( Transaction tx = original.beginTx() )
         {
@@ -150,7 +136,7 @@ public class StoreCopyClientTest
         }
 
         StoreCopyClient.StoreCopyRequester storeCopyRequest =
-                spy( requestFactory.create( original, originalDir, fileSystem, false ) );
+                spy( requestFactory.create( original, new File( originalDir, DataSourceManager.DEFAULT_DATABASE_NAME ), fileSystem, false ) );
 
         // when
         copier.copyStore( storeCopyRequest, cancelStoreCopy::get, MoveAfterCopy.moveReplaceExisting() );
@@ -195,7 +181,7 @@ public class StoreCopyClientTest
         long logFileSize =
                 original.getDependencyResolver().resolveDependency( LogFiles.class ).getLogFileForVersion( 0 ).length();
 
-        StoreCopyClient.StoreCopyRequester storeCopyRequest = requestFactory.create( original, originalDir,
+        StoreCopyClient.StoreCopyRequester storeCopyRequest = requestFactory.create( original, new File( originalDir, DataSourceManager.DEFAULT_DATABASE_NAME ),
                 fileSystem, true );
 
         copier.copyStore( storeCopyRequest, CancellationRequest.NEVER_CANCELLED, MoveAfterCopy.moveReplaceExisting() );
@@ -249,8 +235,8 @@ public class StoreCopyClientTest
 
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         StoreCopyClient copier = new StoreCopyClient(
-                copyDir, Config.defaults(), loadKernelExtensions(), NullLogProvider.getInstance(), fileSystem, pageCache,
-                storeCopyMonitor, false );
+                new File( copyDir, DataSourceManager.DEFAULT_DATABASE_NAME ), Config.defaults(), loadKernelExtensions(),
+                NullLogProvider.getInstance(), fileSystem, pageCache, storeCopyMonitor, false );
 
         final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalDir );
 
@@ -261,7 +247,7 @@ public class StoreCopyClientTest
         }
 
         StoreCopyClient.StoreCopyRequester storeCopyRequest =
-                spy( requestFactory.create( original, originalDir, fileSystem, false ) );
+                spy( requestFactory.create( original, new File( originalDir, DataSourceManager.DEFAULT_DATABASE_NAME ), fileSystem, false ) );
 
         // when
         copier.copyStore( storeCopyRequest, cancelStoreCopy::get, MoveAfterCopy.moveReplaceExisting() );
@@ -291,24 +277,25 @@ public class StoreCopyClientTest
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         createInitialDatabase( initialStore );
 
-        long originalTransactionOffset =
-                MetaDataStore.getRecord( pageCache, new File( initialStore, MetaDataStore.DEFAULT_NAME ),
+        File initialDatabaseDirectory = new File( initialStore, DataSourceManager.DEFAULT_DATABASE_NAME );
+        long originalTransactionOffset = MetaDataStore.getRecord( pageCache, new File( initialDatabaseDirectory, MetaDataStore.DEFAULT_NAME ),
                         MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
         GraphDatabaseService initialDatabase = startDatabase( initialStore );
 
+        File backupDatabase = new File( backupStore, DataSourceManager.DEFAULT_DATABASE_NAME );
         StoreCopyClient copier =
-                new StoreCopyClient( backupStore, Config.defaults(), loadKernelExtensions(), NullLogProvider
+                new StoreCopyClient( backupDatabase, Config.defaults(), loadKernelExtensions(), NullLogProvider
                         .getInstance(), fileSystem, pageCache, new StoreCopyClientMonitor.Adapter(), false );
         CancellationRequest falseCancellationRequest = () -> false;
         StoreCopyClient.StoreCopyRequester storeCopyRequest =
-                requestFactory.create( (GraphDatabaseAPI) initialDatabase, initialStore, fileSystem, false );
+                requestFactory.create( (GraphDatabaseAPI) initialDatabase, initialDatabaseDirectory, fileSystem, false );
 
         // WHEN
         copier.copyStore( storeCopyRequest, falseCancellationRequest, MoveAfterCopy.moveReplaceExisting() );
 
         // THEN
         long updatedTransactionOffset =
-                MetaDataStore.getRecord( pageCache, new File( backupStore, MetaDataStore.DEFAULT_NAME ),
+                MetaDataStore.getRecord( pageCache, new File( backupDatabase, MetaDataStore.DEFAULT_NAME ),
                         MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
         assertNotEquals( originalTransactionOffset, updatedTransactionOffset );
         assertEquals( LogHeader.LOG_HEADER_SIZE, updatedTransactionOffset );
@@ -361,12 +348,12 @@ public class StoreCopyClientTest
         final File originalDir = new File( directory.directory(), "original" );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         Config config = Config.defaults( record_format, recordFormatsName );
-        StoreCopyClient copier = new StoreCopyClient(
-                copyDir, config, loadKernelExtensions(), NullLogProvider.getInstance(), fileSystem, pageCache,
+        StoreCopyClient copier = new StoreCopyClient( new File( copyDir, DataSourceManager.DEFAULT_DATABASE_NAME ),
+                config, loadKernelExtensions(), NullLogProvider.getInstance(), fileSystem, pageCache,
                 new StoreCopyClientMonitor.Adapter(), false );
 
         final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalDir, recordFormatsName );
-        StoreCopyClient.StoreCopyRequester storeCopyRequest = requestFactory.create( original, originalDir,
+        StoreCopyClient.StoreCopyRequester storeCopyRequest = requestFactory.create( original, new File( originalDir, DataSourceManager.DEFAULT_DATABASE_NAME ),
                 fileSystem, false );
 
         copier.copyStore( storeCopyRequest, CancellationRequest.NEVER_CANCELLED, MoveAfterCopy.moveReplaceExisting() );

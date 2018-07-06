@@ -49,22 +49,22 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class RelationshipChainExplorerTest
 {
-    private static final int NDegreeTwoNodes = 10;
+    private static final int degreeTwoNodes = 10;
 
-    private final TestDirectory storeLocation = TestDirectory.testDirectory();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @ClassRule
     public static PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( storeLocation ).around( fileSystemRule );
+    public RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( fileSystemRule );
 
     private StoreAccess store;
 
     @Before
     public void setupStoreAccess()
     {
-        store = createStoreWithOneHighDegreeNodeAndSeveralDegreeTwoNodes( NDegreeTwoNodes );
+        store = createStoreWithOneHighDegreeNodeAndSeveralDegreeTwoNodes( degreeTwoNodes );
     }
 
     @After
@@ -86,7 +86,7 @@ public class RelationshipChainExplorerTest
                         relationshipStore.getRecord( relationshipIdInMiddleOfChain, relationshipStore.newRecord(), NORMAL ) );
 
         // then
-        assertEquals( NDegreeTwoNodes * 2, records.size() );
+        assertEquals( degreeTwoNodes * 2, records.size() );
     }
 
     @Test
@@ -104,10 +104,10 @@ public class RelationshipChainExplorerTest
 
         // then
         int recordsInaccessibleBecauseOfBrokenChain = 3;
-        assertEquals( NDegreeTwoNodes * 2 - recordsInaccessibleBecauseOfBrokenChain, records.size() );
+        assertEquals( degreeTwoNodes * 2 - recordsInaccessibleBecauseOfBrokenChain, records.size() );
     }
 
-    private void breakTheChain( RecordStore<RelationshipRecord> relationshipStore )
+    private static void breakTheChain( RecordStore<RelationshipRecord> relationshipStore )
     {
         int relationshipTowardsEndOfChain = 16;
         relationshipStore.updateRecord( new RelationshipRecord( relationshipTowardsEndOfChain, 0, 0, 0 ) );
@@ -120,7 +120,7 @@ public class RelationshipChainExplorerTest
 
     private StoreAccess createStoreWithOneHighDegreeNodeAndSeveralDegreeTwoNodes( int nDegreeTwoNodes )
     {
-        File storeDirectory = storeLocation.graphDbDir();
+        File storeDirectory = testDirectory.directory();
         GraphDatabaseService database = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( storeDirectory )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
@@ -148,7 +148,7 @@ public class RelationshipChainExplorerTest
         }
         database.shutdown();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
-        StoreAccess storeAccess = new StoreAccess( fileSystemRule.get(), pageCache, storeDirectory,
+        StoreAccess storeAccess = new StoreAccess( fileSystemRule.get(), pageCache, testDirectory.graphDbDir(),
                 Config.defaults() );
         return storeAccess.initialize();
     }

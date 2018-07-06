@@ -19,7 +19,6 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.apache.commons.lang3.StringUtils;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -101,7 +100,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     private Statistics statistics;
     private final boolean keepStatistics;
     private NeoStores neoStore;
-    private File directory;
+    private TestDirectory directory;
     private long schemaId;
     private long nodeId;
     private int labelId;
@@ -119,7 +118,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     /**
      * Record format used to generate initial database.
      */
-    private String formatName = StringUtils.EMPTY;
+    private String formatName;
 
     private GraphStoreFixture( boolean keepStatistics, String formatName )
     {
@@ -166,7 +165,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             Config config = Config.defaults();
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
             StoreFactory storeFactory = new StoreFactory(
-                    directory, config, idGeneratorFactory, pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.EMPTY );
+                    directory.graphDbDir(), config, idGeneratorFactory, pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.EMPTY );
             neoStore = storeFactory.openAllNeoStores();
             StoreAccess nativeStores;
             if ( keepStatistics )
@@ -188,7 +187,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
             Monitors monitors = new Monitors();
             LabelScanStore labelScanStore = startLabelScanStore( pageCache, indexStoreView, monitors );
-            IndexProviderMap indexes = createIndexes( pageCache, fileSystem, directory, config, logProvider, monitors);
+            IndexProviderMap indexes = createIndexes( pageCache, fileSystem, directory.graphDbDir(), config, logProvider, monitors);
             directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes );
         }
         return directStoreAccess;
@@ -197,7 +196,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     private LabelScanStore startLabelScanStore( PageCache pageCache, IndexStoreView indexStoreView, Monitors monitors )
     {
         NativeLabelScanStore labelScanStore =
-                new NativeLabelScanStore( pageCache, directory, fileSystem, new FullLabelStream( indexStoreView ), false, monitors,
+                new NativeLabelScanStore( pageCache, directory.graphDbDir(), fileSystem, new FullLabelStream( indexStoreView ), false, monitors,
                         RecoveryCleanupWorkCollector.IMMEDIATE );
         try
         {
@@ -220,9 +219,9 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         return life.add( new DefaultIndexProviderMap( extensions ) );
     }
 
-    public File directory()
+    public File databaseDirectory()
     {
-        return directory;
+        return directory.graphDbDir();
     }
 
     public Statistics getAccessStatistics()
@@ -478,7 +477,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         Applier()
         {
             database = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                    .newEmbeddedDatabaseBuilder( directory )
+                    .newEmbeddedDatabaseBuilder( directory.directory() )
                     .setConfig( "dbms.backup.enabled", "false" )
                     .newGraphDatabase();
             DependencyResolver dependencyResolver = database.getDependencyResolver();
@@ -527,7 +526,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
     private void generateInitialData()
     {
-        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory );
+        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.directory() );
         GraphDatabaseAPI graphDb = (GraphDatabaseAPI) builder
                 .setConfig( GraphDatabaseSettings.record_format, formatName )
                 // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded
@@ -568,11 +567,11 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             @Override
             public void evaluate() throws Throwable
             {
-                GraphStoreFixture.this.directory = directory.graphDbDir();
+                GraphStoreFixture.this.directory = directory;
                 try
                 {
                     generateInitialData();
-                    start( GraphStoreFixture.this.directory );
+                    start( GraphStoreFixture.this.directory.graphDbDir() );
                     try
                     {
                         base.evaluate();

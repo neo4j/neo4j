@@ -215,8 +215,8 @@ public class ConsistencyCheckServiceIntegrationTest
     public void shouldReportMissingSchemaIndex() throws Exception
     {
         // given
-        File storeDir = testDirectory.absolutePath();
-        GraphDatabaseService gds = getGraphDatabaseService( storeDir );
+        File databaseDirectory = testDirectory.graphDbDir();
+        GraphDatabaseService gds = getGraphDatabaseService( testDirectory.directory() );
 
         Label label = Label.label( "label" );
         String propKey = "propKey";
@@ -225,12 +225,12 @@ public class ConsistencyCheckServiceIntegrationTest
         gds.shutdown();
 
         // when
-        File schemaDir = findFile( "schema", storeDir );
+        File schemaDir = findFile( "schema", databaseDirectory );
         FileUtils.deleteRecursively( schemaDir );
 
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration = Config.defaults( settings() );
-        Result result = runFullConsistencyCheck( service, configuration, storeDir );
+        Result result = runFullConsistencyCheck( service, configuration, databaseDirectory );
 
         // then
         assertTrue( result.isSuccessful() );
@@ -316,7 +316,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
     private void prepareDbWithDeletedRelationshipPartOfTheChain()
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.directory() )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
                 .setConfig( "dbms.backup.enabled", "false" )
                 .newGraphDatabase();
@@ -377,7 +377,7 @@ public class ConsistencyCheckServiceIntegrationTest
     private Result runFullConsistencyCheck( ConsistencyCheckService service, Config configuration )
             throws ConsistencyCheckIncompleteException
     {
-        return runFullConsistencyCheck( service, configuration, fixture.directory() );
+        return runFullConsistencyCheck( service, configuration, fixture.databaseDirectory() );
     }
 
     private Result runFullConsistencyCheck( ConsistencyCheckService service, Config configuration, File storeDir )

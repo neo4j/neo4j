@@ -139,7 +139,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
                 "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
 
@@ -156,7 +156,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--delimiter", "TAB",
                 "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
                 "--nodes",
@@ -194,7 +194,7 @@ public class ImportToolTest
         }
 
         // WHEN
-        importTool( "--into", dbRule.getStoreDirAbsolutePath(),
+        importTool( "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--delimiter", "TAB",
                 "--array-delimiter", "|",
                 "--nodes", header.getAbsolutePath() + MULTI_FILE_DELIMITER + data.getAbsolutePath() );
@@ -241,7 +241,7 @@ public class ImportToolTest
         }
 
         // WHEN
-        importTool( "--into", dbRule.getStoreDirAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
+        importTool( "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
 
         // THEN
         int nodeCount = 0;
@@ -306,7 +306,7 @@ public class ImportToolTest
         }
 
         // WHEN
-        importTool( "--into", dbRule.getStoreDirAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
+        importTool( "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
 
         // THEN
         int nodeCount = 0;
@@ -362,7 +362,7 @@ public class ImportToolTest
         }
 
         // WHEN
-        importTool( "--into", dbRule.getStoreDirAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
+        importTool( "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
 
         // THEN
         try ( Transaction tx = dbRule.beginTx() )
@@ -397,7 +397,7 @@ public class ImportToolTest
                 new String[]{ "s:short[]", "b:byte[]", "i:int[]", "l:long[]", "f:float[]", "d:double[]" }, values );
 
         // WHEN
-        importTool( "--into", dbRule.getStoreDirAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
+        importTool( "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
 
         // THEN
         // Expected value for integer types
@@ -470,7 +470,7 @@ public class ImportToolTest
         File data = writeArrayCsv( new String[]{ "f:float[]", "d:double[]" }, values );
 
         // WHEN
-        importTool( "--into", dbRule.getStoreDirAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
+        importTool( "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
 
         // THEN
         String expected = joinStringArray( values );
@@ -522,7 +522,7 @@ public class ImportToolTest
         File data = writeArrayCsv( new String[]{ "b:boolean[]" }, values );
 
         // WHEN
-        importTool( "--into", dbRule.getStoreDirAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
+        importTool( "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
 
         // THEN
         int nodeCount = 0;
@@ -560,7 +560,7 @@ public class ImportToolTest
         try
         {
             importTool(
-                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                     "--delimiter", "TAB",
                     "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
                     "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
@@ -590,7 +590,7 @@ public class ImportToolTest
         // WHEN data file contains more columns than header file
         int extraColumns = 3;
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--bad", bad.getAbsolutePath(),
                 "--bad-tolerance", Integer.toString( nodeIds.size() * extraColumns ),
                 "--ignore-extra-columns",
@@ -616,7 +616,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes", // One group with one header file and one data file
                 nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
                 nodeData( false, config, nodeIds, lines( 0, NODE_COUNT / 2 ) ).getAbsolutePath(),
@@ -645,7 +645,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes:" + join( firstLabels, ":" ),
                 nodeData( true, config, nodeIds, lines( 0, NODE_COUNT / 2 ) ).getAbsolutePath(),
                 "--nodes:" + join( secondLabels, ":" ),
@@ -729,7 +729,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath() );
         // no relationships
 
@@ -765,7 +765,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes", nodeHeader( config, groupOne ) + MULTI_FILE_DELIMITER +
                            nodeData( false, config, groupOneNodeIds, TRUE ),
                 "--nodes", nodeHeader( config, groupTwo ) + MULTI_FILE_DELIMITER +
@@ -799,7 +799,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes", nodeHeader( config, "MyGroup" ).getAbsolutePath() + MULTI_FILE_DELIMITER +
                            nodeData( false, config, groupOneNodeIds, TRUE ).getAbsolutePath(),
                 "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
@@ -819,7 +819,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
                 // there will be no :TYPE specified in the header of the relationships below
                 "--relationships:" + type,
@@ -843,7 +843,7 @@ public class ImportToolTest
         try
         {
             importTool(
-                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                     "--nodes", nodeHeaderFile.getAbsolutePath() + MULTI_FILE_DELIMITER +
                                nodeData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
                                nodeData2.getAbsolutePath() );
@@ -868,7 +868,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--skip-duplicate-nodes",
                 "--nodes", nodeHeaderFile.getAbsolutePath() + MULTI_FILE_DELIMITER +
                            nodeData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
@@ -934,7 +934,7 @@ public class ImportToolTest
 
         // WHEN importing data where some relationships refer to missing nodes
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes", nodeData.getAbsolutePath(),
                 "--bad", bad.getAbsolutePath(),
                 "--bad-tolerance", "2",
@@ -967,7 +967,7 @@ public class ImportToolTest
 
         // WHEN importing data where some relationships refer to missing nodes
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes", nodeData.getAbsolutePath(),
                 "--bad-tolerance", "2",
                 "--skip-bad-entries-logging", "true",
@@ -999,7 +999,7 @@ public class ImportToolTest
         try
         {
             importTool(
-                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                     "--nodes", nodeData.getAbsolutePath(),
                     "--bad", bad.getAbsolutePath(),
                     "--bad-tolerance", "1",
@@ -1034,7 +1034,7 @@ public class ImportToolTest
         try
         {
             importTool(
-                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                     "--nodes", nodeData.getAbsolutePath(),
                     "--bad", bad.getAbsolutePath(),
                     "--stacktrace", // trying to find flaky test origin
@@ -1061,7 +1061,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes:My First Label:My Other Label",
                 nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
                 "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
@@ -1084,7 +1084,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--input-encoding", charset.name(),
                 "--nodes", nodeData( true, config, nodeIds, TRUE, charset ).getAbsolutePath(),
                 "--relationships", relationshipData( true, config, nodeIds, TRUE, true, charset )
@@ -1105,7 +1105,7 @@ public class ImportToolTest
         try
         {
             importTool(
-                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                     "--relationships",
                     relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
             fail( "Should have failed" );
@@ -1127,7 +1127,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
                 "--relationships", relationshipData( true, config, relationshipData.iterator(),
                         TRUE, true ).getAbsolutePath() );
@@ -1164,7 +1164,7 @@ public class ImportToolTest
         try
         {
             importTool(
-                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                     "--nodes", data.getAbsolutePath() );
             fail();
         }
@@ -1184,7 +1184,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes", data.getAbsolutePath() );
 
         // THEN
@@ -1213,7 +1213,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes", data.getAbsolutePath(),
                 "--trim-strings", "true" );
 
@@ -1277,7 +1277,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(),
                 "--skip-duplicate-nodes",
                 "--bad-tolerance", "true" );
@@ -1294,7 +1294,7 @@ public class ImportToolTest
         {
             // WHEN
             importTool(
-                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                     "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
                     "--skip-bad-relationships", "false",
                     "--relationships", relationshipData( true, config, relationshipDataLines,
@@ -1311,7 +1311,7 @@ public class ImportToolTest
         {
             if ( storeType.isRecordStore() )
             {
-                new File( dbRule.getStoreDirFile(), DEFAULT_NAME + storeType.getStoreName() ).delete();
+                new File( dbRule.getTestDirectory().graphDbDir(), DEFAULT_NAME + storeType.getStoreName() ).delete();
             }
         }
     }
@@ -1324,7 +1324,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes", data.getAbsolutePath(),
                 "--multiline-fields", "true" );
 
@@ -1349,7 +1349,7 @@ public class ImportToolTest
         File data = data( "" );
 
         // WHEN
-        importTool( "--into", dbRule.getStoreDirAbsolutePath(),
+        importTool( "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes", data.getAbsolutePath() );
 
         // THEN
@@ -1372,7 +1372,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes", data.getAbsolutePath(),
                 "--ignore-empty-strings", "true" );
 
@@ -1400,7 +1400,7 @@ public class ImportToolTest
         try
         {
             importTool(
-                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                     "--nodes", data.getAbsolutePath(),
                     "--multiline-fields", "false" );
             fail( "Should have failed" );
@@ -1427,7 +1427,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes", data.getAbsolutePath(),
                 "--quote", String.valueOf( weirdDelimiter ) );
 
@@ -1455,7 +1455,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--delimiter", "\\t",
                 "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
                 "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
@@ -1476,7 +1476,7 @@ public class ImportToolTest
         try
         {
             importTool(
-                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                     "--delimiter", "\\bogus",
                     "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
                     "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
@@ -1500,7 +1500,7 @@ public class ImportToolTest
         try
         {
             importTool(
-                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                     "--nodes", nodeDataWithMissingQuote( 2 * unbalancedStartLine, unbalancedStartLine )
                             .getAbsolutePath() );
             fail( "Should have failed" );
@@ -1526,7 +1526,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes", data.getAbsolutePath(),
                 "--quote", "\\1" );
 
@@ -1555,7 +1555,7 @@ public class ImportToolTest
         try
         {
             importTool(
-                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                     "--nodes", nodeDataWithMissingQuote( unbalancedStartLine, unbalancedStartLine ).getAbsolutePath() );
             fail( "Should have failed" );
         }
@@ -1581,7 +1581,7 @@ public class ImportToolTest
 
         // WHEN given as raw ascii
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes", data.getAbsolutePath(),
                 "--quote", weirdStringDelimiter );
 
@@ -1613,7 +1613,7 @@ public class ImportToolTest
         try
         {
             importTool(
-                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                     "--multiline-fields", "true",
                     "--nodes",
                     nodeDataWithMissingQuote( 2 * unbalancedStartLine, unbalancedStartLine ).getAbsolutePath() );
@@ -1663,7 +1663,7 @@ public class ImportToolTest
 
         // WHEN given as string
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes", data.getAbsolutePath(),
                 "--quote", weirdStringDelimiter );
 
@@ -1699,7 +1699,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--db-config", dbConfig.getAbsolutePath(),
                 "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, value -> true ).getAbsolutePath() );
 
@@ -1725,7 +1725,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--additional-config", dbConfig.getAbsolutePath(),
                 "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, value -> true ).getAbsolutePath() );
 
@@ -1753,7 +1753,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--db-config", dbConfig.getAbsolutePath(),
                 "--additional-config", additionalConfig.getAbsolutePath(),
                 "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, value -> true ).getAbsolutePath() );
@@ -1778,7 +1778,7 @@ public class ImportToolTest
         try
         {
             importTool(
-                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                     "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
                             nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns )
                                     .getAbsolutePath(),
@@ -1806,7 +1806,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes", data( lines.toArray( new String[lines.size()] ) ).getAbsolutePath(),
                 "--legacy-style-quoting", "false",
                 "--stacktrace" );
@@ -1831,7 +1831,7 @@ public class ImportToolTest
         try
         {
             importTool(
-                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                     "--nodes", data( lines.toArray( new String[lines.size()] ) ).getAbsolutePath(),
                     "--read-buffer-size", "1k"
                     );
@@ -1852,7 +1852,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(),
                 "--max-memory", "60%" );
     }
@@ -1866,7 +1866,7 @@ public class ImportToolTest
         try
         {
             // WHEN
-            importTool( "--into", dbRule.getStoreDirAbsolutePath(), "--nodes",
+            importTool( "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(), "--nodes",
                     nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(), "--max-memory", "110%" );
             fail( "Should have failed" );
         }
@@ -1885,7 +1885,7 @@ public class ImportToolTest
 
         // WHEN
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(),
                 "--max-memory", "100M" );
     }
@@ -1908,7 +1908,7 @@ public class ImportToolTest
 
         // WHEN importing data where some relationships refer to missing nodes
         importTool(
-                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--into", dbRule.getTestDirectory().graphDbDir().getAbsolutePath(),
                 "--nodes", nodeData.getAbsolutePath(),
                 "--bad", bad.getAbsolutePath(),
                 "--skip-bad-relationships", "true",
@@ -1964,7 +1964,7 @@ public class ImportToolTest
         String arguments = format(
                 "--into %s%n" +
                 "--nodes %s --relationships %s",
-                escapePath( dbRule.getStoreDirAbsolutePath() ), nodesEscapedSpaces, relationshipsEscapedSpaced );
+                escapePath( dbRule.getTestDirectory().graphDbDir().getAbsolutePath() ), nodesEscapedSpaces, relationshipsEscapedSpaced );
         writeToFile( argumentFile, arguments, false );
 
         // when
@@ -2003,7 +2003,7 @@ public class ImportToolTest
         }
     }
 
-    private void assertContains( List<String> errorLines, String string )
+    private static void assertContains( List<String> errorLines, String string )
     {
         for ( String line : errorLines )
         {
@@ -2389,12 +2389,12 @@ public class ImportToolTest
 
     private File file( String localname )
     {
-        return new File( dbRule.getStoreDir(), localname );
+        return new File( dbRule.getTestDirectory().graphDbDir(), localname );
     }
 
     private File badFile()
     {
-        return new File( dbRule.getStoreDirFile(), BAD_FILE_NAME );
+        return new File( dbRule.getTestDirectory().graphDbDir(), BAD_FILE_NAME );
     }
 
     private void writeRelationshipHeader( PrintStream writer, Configuration config,

@@ -124,9 +124,9 @@ public class MigrationTestUtils
         return Unzip.unzip( Legacy23Store.class, "upgradeTest23Db.zip", targetDir );
     }
 
-    public static boolean checkNeoStoreHasDefaultFormatVersion( StoreVersionCheck check, File workingDirectory )
+    public static boolean checkNeoStoreHasDefaultFormatVersion( StoreVersionCheck check, File databaseDirectory )
     {
-        File neostoreFile = new File( workingDirectory, MetaDataStore.DEFAULT_NAME );
+        File neostoreFile = new File( databaseDirectory, MetaDataStore.DEFAULT_NAME );
         return check.hasVersion( neostoreFile, RecordFormatSelector.defaultFormat().storeVersion() )
                 .outcome.isSuccessful();
     }
@@ -169,10 +169,10 @@ public class MigrationTestUtils
         }
     }
 
-    public static void removeCheckPointFromTxLog( FileSystemAbstraction fileSystem, File workingDirectory )
+    public static void removeCheckPointFromTxLog( FileSystemAbstraction fileSystem, File databaseDirectory )
             throws IOException
     {
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( workingDirectory, fileSystem ).build();
+        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseDirectory, fileSystem ).build();
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors() );
         LogTailScanner.LogTailInformation logTailInformation = tailScanner.getTailInformation();

@@ -149,7 +149,7 @@ public class DetectAllRelationshipInconsistenciesIT
     private StoreFactory newStoreFactory( PageCache pageCache )
     {
         FileSystemAbstraction fileSystem = fileSystemRule.get();
-        return new StoreFactory( directory.directory(), getTuningConfiguration(),
+        return new StoreFactory( directory.graphDbDir(), getTuningConfiguration(),
                 new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, NullLogProvider.getInstance(),
                 EmptyVersionContextSupplier.EMPTY );
     }
