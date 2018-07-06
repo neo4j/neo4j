@@ -19,18 +19,18 @@
  */
 package org.neo4j.gis.spatial.index.curves;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.gis.spatial.index.Envelope;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.assertThat;
 
-public class SpaceFillingCurveConfigurationTest
+class SpaceFillingCurveConfigurationTest
 {
     @Test
-    public void shouldHandleMaxDepthWithEmptySearchArea()
+    void shouldHandleMaxDepthWithEmptySearchArea()
     {
         SpaceFillingCurveConfiguration standardConfiguration = new StandardConfiguration();
         SpaceFillingCurveConfiguration partialOverlapConf = new PartialOverlapConfiguration();
@@ -45,19 +45,18 @@ public class SpaceFillingCurveConfigurationTest
     }
 
     @Test
-    public void shouldReturnMaxDepth1WithWholeSearchArea()
+    void shouldReturnMaxDepth1WithWholeSearchArea()
     {
         SpaceFillingCurveConfiguration standardConfiguration = new StandardConfiguration();
         SpaceFillingCurveConfiguration partialOverlapConf = new PartialOverlapConfiguration();
         // search area is a line, thus having a search area = 0
         Envelope range = new Envelope( -180, 180, -90, 90 );
-        Envelope search = range;
-        assertThat( partialOverlapConf.maxDepth( search, range, 2, 30 ), equalTo( 1 ) );
-        assertThat( standardConfiguration.maxDepth( search, range, 2, 30 ), equalTo( 1 ) );
+        assertThat( partialOverlapConf.maxDepth( range, range, 2, 30 ), equalTo( 1 ) );
+        assertThat( standardConfiguration.maxDepth( range, range, 2, 30 ), equalTo( 1 ) );
     }
 
     @Test
-    public void shouldReturnMaxDepth2WithQuarterOfWholeArea()
+    void shouldReturnMaxDepth2WithQuarterOfWholeArea()
     {
         SpaceFillingCurveConfiguration standardConfiguration = new StandardConfiguration();
         SpaceFillingCurveConfiguration partialOverlapConf = new PartialOverlapConfiguration();
@@ -69,7 +68,7 @@ public class SpaceFillingCurveConfigurationTest
     }
 
     @Test
-    public void shouldReturnAppropriateDepth()
+    void shouldReturnAppropriateDepth()
     {
         final int maxLevel = 30;
         for ( int i = 0; i < maxLevel; i++ )

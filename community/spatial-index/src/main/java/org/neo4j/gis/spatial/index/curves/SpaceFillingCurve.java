@@ -417,7 +417,7 @@ public abstract class SpaceFillingCurve
         return coord;
     }
 
-    private double clamp( double val, double min, double max )
+    private static double clamp( double val, double min, double max )
     {
         if ( val <= min )
         {
