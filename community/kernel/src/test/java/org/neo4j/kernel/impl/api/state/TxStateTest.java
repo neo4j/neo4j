@@ -25,7 +25,6 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -55,7 +54,6 @@ import org.neo4j.kernel.impl.util.collection.CachingOffHeapBlockAllocator;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.impl.util.collection.OffHeapCollectionsFactory;
-import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
@@ -88,8 +86,6 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 public class TxStateTest
 {
     private static final CachingOffHeapBlockAllocator BLOCK_ALLOCATOR = new CachingOffHeapBlockAllocator();
-
-    private static long usedNativeMemBefore;
 
     public final RandomRule random = new RandomRule();
 
@@ -144,18 +140,12 @@ public class TxStateTest
         );
     }
 
-    @BeforeClass
-    public static void beforeAll()
-    {
-        usedNativeMemBefore = GlobalMemoryTracker.INSTANCE.usedDirectMemory();
-    }
-
     @AfterClass
     public static void afterAll()
     {
         BLOCK_ALLOCATOR.release();
-        assertEquals( "Seems like native memory is leaking", 0, GlobalMemoryTracker.INSTANCE.usedDirectMemory() - usedNativeMemBefore );
     }
+
     @Before
     public void before()
     {

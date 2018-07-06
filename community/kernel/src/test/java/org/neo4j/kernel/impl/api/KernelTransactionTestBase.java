@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.junit.Before;
 import org.mockito.Mockito;
 
@@ -71,6 +73,7 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
+import org.neo4j.values.storable.Value;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
@@ -198,6 +201,12 @@ public class KernelTransactionTestBase
         public MutableLongDiffSetsImpl newLongDiffSets()
         {
             return OnHeapCollectionsFactory.INSTANCE.newLongDiffSets();
+        }
+
+        @Override
+        public MutableLongObjectMap<Value> newValuesMap()
+        {
+            return new LongObjectHashMap<>();
         }
 
         @Override

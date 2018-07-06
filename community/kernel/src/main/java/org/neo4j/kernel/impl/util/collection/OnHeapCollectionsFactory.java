@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.values.storable.Value;
 
 public class OnHeapCollectionsFactory implements CollectionsFactory
 {
@@ -44,6 +47,12 @@ public class OnHeapCollectionsFactory implements CollectionsFactory
     public MutableLongDiffSetsImpl newLongDiffSets()
     {
         return new MutableLongDiffSetsImpl( this );
+    }
+
+    @Override
+    public MutableLongObjectMap<Value> newValuesMap()
+    {
+        return new LongObjectHashMap<>();
     }
 
     @Override

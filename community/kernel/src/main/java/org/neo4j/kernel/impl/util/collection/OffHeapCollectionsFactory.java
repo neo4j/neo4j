@@ -19,18 +19,24 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.neo4j.collection.offheap.LinearProbeLongLongHashMap;
 import org.neo4j.collection.offheap.MemoryAllocator;
 import org.neo4j.collection.offheap.MutableLinearProbeLongHashSet;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.kernel.impl.api.state.AppendOnlyValuesContainer;
+import org.neo4j.kernel.impl.api.state.ValuesContainer;
+import org.neo4j.kernel.impl.api.state.ValuesMap;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.values.storable.Value;
 
 public class OffHeapCollectionsFactory implements CollectionsFactory
 {
@@ -38,6 +44,7 @@ public class OffHeapCollectionsFactory implements CollectionsFactory
     private final MemoryAllocator allocator;
 
     private final Collection<Resource> resources = new ArrayList<>();
+    private ValuesContainer valuesContainer;
 
     public OffHeapCollectionsFactory( OffHeapBlockAllocator blockAllocator )
     {
@@ -59,6 +66,18 @@ public class OffHeapCollectionsFactory implements CollectionsFactory
     }
 
     @Override
+    public MutableLongObjectMap<Value> newValuesMap()
+    {
+        if ( valuesContainer == null )
+        {
+            valuesContainer = new AppendOnlyValuesContainer( allocator );
+        }
+        final LinearProbeLongLongHashMap refs = new LinearProbeLongLongHashMap( allocator );
+        resources.add( refs );
+        return new ValuesMap( refs, valuesContainer );
+    }
+
+    @Override
     public MemoryTracker getMemoryTracker()
     {
         return memoryTracker;
@@ -69,5 +88,10 @@ public class OffHeapCollectionsFactory implements CollectionsFactory
     {
         resources.forEach( Resource::close );
         resources.clear();
+        if ( valuesContainer != null )
+        {
+            valuesContainer.close();
+            valuesContainer = null;
+        }
     }
 }

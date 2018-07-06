@@ -20,11 +20,10 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.eclipse.collections.api.IntIterable;
-import org.eclipse.collections.api.map.primitive.IntObjectMap;
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import java.util.Iterator;
 
@@ -35,16 +34,17 @@ import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.values.storable.Value;
 
+import static java.lang.Math.toIntExact;
 import static java.util.Collections.emptyIterator;
 import static java.util.Objects.requireNonNull;
 
 class PropertyContainerStateImpl implements PropertyContainerState
 {
-    final CollectionsFactory collectionsFactory;
+    private final CollectionsFactory collectionsFactory;
     private final long id;
 
-    private MutableIntObjectMap<Value> addedProperties;
-    private MutableIntObjectMap<Value> changedProperties;
+    private MutableLongObjectMap<Value> addedProperties;
+    private MutableLongObjectMap<Value> changedProperties;
     private MutableLongSet removedProperties;
 
     PropertyContainerStateImpl( long id, CollectionsFactory collectionsFactory )
@@ -84,7 +84,7 @@ class PropertyContainerStateImpl implements PropertyContainerState
 
         if ( changedProperties == null )
         {
-            changedProperties = new IntObjectHashMap<>();
+            changedProperties = collectionsFactory.newValuesMap();
         }
         changedProperties.put( propertyKeyId, value );
 
@@ -105,7 +105,7 @@ class PropertyContainerStateImpl implements PropertyContainerState
         }
         if ( addedProperties == null )
         {
-            addedProperties = new IntObjectHashMap<>();
+            addedProperties = collectionsFactory.newValuesMap();
         }
         addedProperties.put( propertyKeyId, value );
     }
@@ -172,9 +172,10 @@ class PropertyContainerStateImpl implements PropertyContainerState
                || (changedProperties != null && changedProperties.containsKey( propertyKey ));
     }
 
-    private Iterator<StorageProperty> toPropertyIterator( IntObjectMap<Value> propertyMap )
+    private Iterator<StorageProperty> toPropertyIterator( LongObjectMap<Value> propertyMap )
     {
         return propertyMap == null ? emptyIterator()
-                                   : propertyMap.keyValuesView().collect( e -> (StorageProperty) new PropertyKeyValue( e.getOne(), e.getTwo() ) ).iterator();
+                                   : propertyMap.keyValuesView().collect(
+                                           e -> (StorageProperty) new PropertyKeyValue( toIntExact( e.getOne() ), e.getTwo() ) ).iterator();
     }
 }

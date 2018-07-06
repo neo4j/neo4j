@@ -35,12 +35,12 @@ import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.putLong;
 import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.setMemory;
 import static org.neo4j.util.Preconditions.checkState;
 
-class OffHeapMemoryAllocator implements MemoryAllocator
+public class OffHeapMemoryAllocator implements MemoryAllocator
 {
     private final MemoryAllocationTracker tracker;
     private final OffHeapBlockAllocator blockAllocator;
 
-    OffHeapMemoryAllocator( MemoryAllocationTracker tracker, OffHeapBlockAllocator blockAllocator )
+    public OffHeapMemoryAllocator( MemoryAllocationTracker tracker, OffHeapBlockAllocator blockAllocator )
     {
         this.tracker = requireNonNull( tracker );
         this.blockAllocator = requireNonNull( blockAllocator );
