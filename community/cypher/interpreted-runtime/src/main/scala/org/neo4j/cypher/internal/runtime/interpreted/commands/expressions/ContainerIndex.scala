@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ListSupport}
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values._
-import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.Values.NO_VALUE
 
 case class ContainerIndex(expression: Expression, index: Expression) extends Expression
 with ListSupport {
@@ -31,8 +31,10 @@ with ListSupport {
 
   override def apply(ctx: ExecutionContext,
                      state: QueryState): AnyValue = expression(ctx, state) match {
-    case Values.NO_VALUE => Values.NO_VALUE
-    case value => CypherFunctions.containerIndex(value, index(ctx, state), state.query)
+    case NO_VALUE => NO_VALUE
+    case value =>
+      val idx = index(ctx, state)
+      if (idx eq NO_VALUE) NO_VALUE else CypherFunctions.containerIndex(value, idx, state.query)
   }
 
   def rewrite(f: (Expression) => Expression): Expression = f(ContainerIndex(expression.rewrite(f), index.rewrite(f)))
