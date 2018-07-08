@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
 import org.neo4j.collection.PrefetchingRawIterator;
@@ -48,10 +47,16 @@ public class ProcedureJarLoader
     private final ReflectiveProcedureCompiler compiler;
     private final Log log;
 
-    ProcedureJarLoader( ReflectiveProcedureCompiler compiler, Log log )
+    public ProcedureJarLoader( ReflectiveProcedureCompiler compiler, Log log )
     {
         this.compiler = compiler;
         this.log = log;
+    }
+
+    public Callables loadProcedures( URL jar ) throws Exception
+    {
+        return loadProcedures( jar, new URLClassLoader( new URL[]{jar}, this.getClass().getClassLoader() ),
+                new Callables() );
     }
 
     public Callables loadProceduresFromDir( File root ) throws IOException, KernelException
@@ -66,8 +71,6 @@ public class ProcedureJarLoader
         URL[] jarFiles = Stream.of( root.listFiles( ( dir, name ) -> name.endsWith( ".jar" ) ) ).map( this::toURL )
                 .toArray( URL[]::new );
 
-        validateJarFiles( jarFiles );
-
         URLClassLoader loader = new URLClassLoader( jarFiles, this.getClass().getClassLoader() );
 
         for ( URL jarFile : jarFiles )
@@ -75,22 +78,6 @@ public class ProcedureJarLoader
             loadProcedures( jarFile, loader, out );
         }
         return out;
-    }
-
-    private void validateJarFiles( URL[] jarFiles ) throws IOException
-    {
-        for ( URL jarFile : jarFiles )
-        {
-            try
-            {
-                new ZipFile( new File( jarFile.getFile() ) ).close();
-            }
-            catch ( IOException e )
-            {
-                log.error( String.format( "Plugin jar file: %s corrupted. Please reinstall.", jarFile.getFile() ) );
-                throw e;
-            }
-        }
     }
 
     private Callables loadProcedures( URL jar, ClassLoader loader, Callables target )
@@ -208,7 +195,7 @@ public class ProcedureJarLoader
             procedures.addAll( callableProcedures );
         }
 
-        void addAllFunctions( List<CallableUserFunction> callableFunctions )
+        public void addAllFunctions( List<CallableUserFunction> callableFunctions )
         {
             functions.addAll( callableFunctions );
         }
