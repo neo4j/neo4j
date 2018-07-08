@@ -64,7 +64,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("point function should work with literal map and srid") {
-    val result = executeWith(pointConfig, "RETURN point({x: 2.3, y: 4.5, srid: 4326}) as point",
+    val result = executeWith(pointConfig - Configs.Version3_1 - Configs.AllRulePlanners, "RETURN point({x: 2.3, y: 4.5, srid: 4326}) as point",
       expectedDifferentResults = Configs.Version3_1 + Configs.AllRulePlanners,
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
@@ -89,7 +89,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("point function should work with node with some invalid properties") {
-    val result = executeWith(pointConfig, "CREATE (n {latitude: 12.78, longitude: 56.7, banana: 'yes', some: 1.2, andAlso: [1,2]}) RETURN point(n) as point",
+    val result = executeWith(pointConfig - Configs.Version3_1 - Configs.AllRulePlanners, "CREATE (n {latitude: 12.78, longitude: 56.7, banana: 'yes', some: 1.2, andAlso: [1,2]}) RETURN point(n) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
