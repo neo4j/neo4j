@@ -204,7 +204,6 @@ public class BuiltInProceduresTest
     @Test
     public void shouldListCorrectBuiltinProcedures() throws Throwable
     {
-        // TODO: Add new schema procedure here (once its name is decided)
         // When/Then
         assertThat( call( "dbms.procedures" ), containsInAnyOrder(
                 record( "dbms.listConfig",

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.integrationtest;
+package org.neo4j.kernel.builtinprocs;
 
 import org.junit.Test;
 
@@ -28,6 +28,7 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
