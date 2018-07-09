@@ -117,12 +117,12 @@ case class SubstringFunction(orig: Expression, start: Expression, length: Option
       }
 
     // if start goes off the end of the string, let's be nice and handle that.
-    val startVal = noMoreThanMax(origVal.length, asInt(start(m, state)).value())
+    val startVal = noMoreThanMax(origVal.length, asPrimitiveInt(start(m, state)))
 
     // if length goes off the end of the string, let's be nice and handle that.
     val lengthVal = length match {
       case None => origVal.length - startVal
-      case Some(func) => noMoreThanMax(origVal.length - startVal, asInt(func(m, state)).value())
+      case Some(func) => noMoreThanMax(origVal.length - startVal, asPrimitiveInt(func(m, state)))
     }
 
     Values.stringValue(origVal.substring(startVal, startVal + lengthVal))
@@ -211,7 +211,7 @@ case class LeftFunction(orig: Expression, length: Expression)
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
     val origVal = asString(orig(m, state))
     val startVal = 0
-    val expectedLength = asInt(length(m, state)).value()
+    val expectedLength = asPrimitiveInt(length(m, state))
     // if length goes off the end of the string, let's be nice and handle that.
     val lengthVal = if (origVal.length < expectedLength + startVal)
       origVal.length
@@ -234,8 +234,8 @@ case class RightFunction(orig: Expression, length: Expression)
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
     val origVal = asString(orig(m, state))
     // if length goes off the end of the string, let's be nice and handle that.
-    val lengthVal = if (origVal.length < asInt(length(m, state)).value()) origVal.length
-    else asInt(length(m, state)).value()
+    val lengthVal = if (origVal.length < asPrimitiveInt(length(m, state))) origVal.length
+    else asPrimitiveInt(length(m, state))
     val startVal = origVal.length - lengthVal
     Values.stringValue(origVal.substring(startVal, startVal + lengthVal))
   }
