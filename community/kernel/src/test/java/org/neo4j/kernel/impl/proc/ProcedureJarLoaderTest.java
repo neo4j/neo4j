@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
@@ -50,8 +49,10 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
 import static java.util.stream.Collectors.toList;
+import static org.apache.commons.lang3.StringEscapeUtils.escapeJava;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asList;
@@ -86,6 +87,25 @@ public class ProcedureJarLoaderTest
 
         assertThat( asList( procedures.get( 0 ).apply( new BasicContext(), new Object[0], resourceTracker ) ),
                 contains( IsEqual.equalTo( new Object[]{1337L} )) );
+    }
+
+    @Test
+    public void shouldLoadProcedureFromJarWithSpacesInFilename() throws Throwable
+    {
+        // Given
+        URL jar = new JarBuilder().createJarFor( tmpdir.newFile( new Random().nextInt() + " some spaces in filename.jar" ),
+                ClassWithOneProcedure.class);
+
+        // When
+        List<CallableProcedure> procedures = jarloader.loadProceduresFromDir( parentDir( jar ) ).procedures();
+
+        // Then
+        List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
+        assertThat( signatures,
+                contains( procedureSignature( "org", "neo4j", "kernel", "impl", "proc", "myProcedure" ).out( "someNumber", NTInteger ).build() ) );
+
+        assertThat( asList( procedures.get( 0 ).apply( new BasicContext(), new Object[0], resourceTracker ) ),
+                contains( IsEqual.equalTo( new Object[]{1337L} ) ) );
     }
 
     @Test
@@ -134,14 +154,14 @@ public class ProcedureJarLoaderTest
         // Expect
         exception.expect( ProcedureException.class );
         exception.expectMessage( String.format("Procedures must return a Stream of records, where a record is a concrete class%n" +
-                                 "that you define, with public non-final fields defining the fields in the record.%n" +
-                                 "If you''d like your procedure to return `boolean`, you could define a record class " +
-                                 "like:%n" +
-                                 "public class Output '{'%n" +
-                                 "    public boolean out;%n" +
-                                 "'}'%n" +
-                                 "%n" +
-                                 "And then define your procedure as returning `Stream<Output>`." ));
+                "that you define, with public non-final fields defining the fields in the record.%n" +
+                "If you''d like your procedure to return `boolean`, you could define a record class " +
+                "like:%n" +
+                "public class Output '{'%n" +
+                "    public boolean out;%n" +
+                "'}'%n" +
+                "%n" +
+                "And then define your procedure as returning `Stream<Output>`." ));
 
         // When
         jarloader.loadProceduresFromDir( parentDir( jar ) );
@@ -173,7 +193,7 @@ public class ProcedureJarLoaderTest
         // Expect
         exception.expect( ProcedureException.class );
         exception.expectMessage( String.format("Procedures must return a Stream of records, where a record is a concrete class%n" +
-                                 "that you define and not a Stream<?>." ));
+                "that you define and not a Stream<?>." ));
 
         // When
         jarloader.loadProceduresFromDir( parentDir( jar ) );
@@ -188,7 +208,7 @@ public class ProcedureJarLoaderTest
         // Expect
         exception.expect( ProcedureException.class );
         exception.expectMessage( String.format("Procedures must return a Stream of records, where a record is a concrete class%n" +
-                                 "that you define and not a raw Stream." ));
+                "that you define and not a raw Stream." ));
 
         // When
         jarloader.loadProceduresFromDir( parentDir( jar ) );
@@ -203,8 +223,8 @@ public class ProcedureJarLoaderTest
         // Expect
         exception.expect( ProcedureException.class );
         exception.expectMessage( String.format("Procedures must return a Stream of records, where a record is a concrete class%n" +
-                                 "that you define and not a parameterized type such as java.util.List<org.neo4j" +
-                                 ".kernel.impl.proc.ProcedureJarLoaderTest$Output>."));
+                "that you define and not a parameterized type such as java.util.List<org.neo4j" +
+                ".kernel.impl.proc.ProcedureJarLoaderTest$Output>."));
 
         // When
         jarloader.loadProceduresFromDir( parentDir( jar ) );
@@ -216,6 +236,7 @@ public class ProcedureJarLoaderTest
         // given
         URL theJar = createJarFor( ClassWithOneProcedure.class, ClassWithAnotherProcedure.class, ClassWithNoProcedureAtAll.class );
         corruptJar( theJar );
+
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
 
         ProcedureJarLoader jarloader = new ProcedureJarLoader(
@@ -226,13 +247,56 @@ public class ProcedureJarLoaderTest
         try
         {
             jarloader.loadProceduresFromDir( parentDir( theJar ) );
-            fail("Should have logged and thrown exception.");
+            fail( "Should have logged and thrown exception." );
         }
         catch ( ZipException expected )
         {
             // then
-            logProvider.assertContainsLogCallContaining( String.format( "Plugin jar file: %s corrupted. Please reinstall.", theJar.getFile() ) );
+            logProvider.assertContainsLogCallContaining(
+                    escapeJava( String.format( "Plugin jar file: %s corrupted.", new File( theJar.toURI() ).toPath() ) ) );
         }
+    }
+
+    @Test
+    public void shouldWorkOnPathsWithSpaces() throws Exception
+    {
+        // given
+        File fileWithSpacesInName = tmpdir.newFile( new Random().nextInt() + "  some spaces in the filename" + ".jar" );
+        URL theJar = new JarBuilder().createJarFor( fileWithSpacesInName, ClassWithOneProcedure.class );
+        corruptJar( theJar );
+
+        AssertableLogProvider logProvider = new AssertableLogProvider( true );
+        ProcedureJarLoader jarloader = new ProcedureJarLoader(
+                new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry(), NullLog.getInstance(), ProcedureAllowedConfig.DEFAULT ),
+                logProvider.getLog( ProcedureJarLoader.class ) );
+
+        // when
+        try
+        {
+            jarloader.loadProceduresFromDir( parentDir( theJar ) );
+            fail( "Should have logged and thrown exception." );
+        }
+        catch ( ZipException expected )
+        {
+            // then
+            logProvider.assertContainsLogCallContaining(
+                    escapeJava( String.format( "Plugin jar file: %s corrupted.", fileWithSpacesInName.toPath() ) ) );
+        }
+    }
+
+    @Test
+    public void shouldReturnEmptySetOnNullArgument() throws Exception
+    {
+        // given
+        ProcedureJarLoader jarloader = new ProcedureJarLoader(
+                new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry(), NullLog.getInstance(), ProcedureAllowedConfig.DEFAULT ),
+                NullLog.getInstance() );
+
+        // when
+        ProcedureJarLoader.Callables callables = jarloader.loadProceduresFromDir( null );
+
+        // then
+        assertEquals( 0, callables.procedures().size() + callables.functions().size() );
     }
 
     private File parentDir( URL jar )
@@ -242,7 +306,7 @@ public class ProcedureJarLoaderTest
 
     private void corruptJar( URL jar ) throws IOException, URISyntaxException
     {
-        File jarFile = new File( jar.getFile() );
+        File jarFile = new File( jar.toURI() ).getCanonicalFile();
         long fileLength = jarFile.length();
         byte[] bytes = Files.readAllBytes( Paths.get( jar.toURI() ) );
         for ( long i = fileLength/2; i < fileLength; i++ )
