@@ -34,10 +34,10 @@ import java.util.Map;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltStateMachine;
+import org.neo4j.bolt.runtime.BoltStateMachineFactoryImpl;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
-import org.neo4j.bolt.runtime.BoltStateMachineFactoryImpl;
-import org.neo4j.bolt.v2.BoltProtocolV2;
+import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -52,7 +52,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.udc.UsageData;
 
-class SessionRule implements TestRule
+public class SessionRule implements TestRule
 {
     private GraphDatabaseAPI gdb;
     private BoltStateMachineFactoryImpl boltFactory;
@@ -114,13 +114,18 @@ class SessionRule implements TestRule
 
     BoltStateMachine newMachine( BoltChannel boltChannel )
     {
+        return newMachine( BoltProtocolV1.VERSION, boltChannel );
+    }
+
+    public BoltStateMachine newMachine( long version, BoltChannel boltChannel )
+    {
         if ( boltFactory == null )
         {
             throw new IllegalStateException( "Cannot access test environment before test is running." );
         }
-        BoltStateMachine connection = boltFactory.newStateMachine( BoltProtocolV2.VERSION, boltChannel );
-        runningMachines.add( connection );
-        return connection;
+        BoltStateMachine machine = boltFactory.newStateMachine( version, boltChannel );
+        runningMachines.add( machine );
+        return machine;
     }
 
     SessionRule withAuthEnabled( boolean authEnabled )
@@ -129,7 +134,7 @@ class SessionRule implements TestRule
         return this;
     }
 
-    URL putTmpFile( String prefix, String suffix, String contents ) throws IOException
+    public URL putTmpFile( String prefix, String suffix, String contents ) throws IOException
     {
         File tmpFile = File.createTempFile( prefix, suffix, null );
         tmpFile.deleteOnExit();
@@ -145,7 +150,7 @@ class SessionRule implements TestRule
         return gdb;
     }
 
-    long lastClosedTxId()
+    public long lastClosedTxId()
     {
         return gdb.getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
     }

@@ -24,6 +24,7 @@ import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.v1.runtime.ConnectedState;
+import org.neo4j.bolt.v3.messaging.HelloMessage;
 import org.neo4j.values.storable.Values;
 
 /**
@@ -42,9 +43,13 @@ public class ExtraMetaDataConnectedState extends ConnectedState
     @Override
     public BoltStateMachineState process( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
     {
-        BoltStateMachineState processResult = super.process( message, context );
-        context.connectionState().onMetadata( ROUTING_TABLE_KEY, Values.stringValue( ROUTING_TABLE_VALUE ) );
-        context.connectionState().onMetadata( CONNECTION_ID_KEY, Values.stringValue( context.connectionId() ) );
-        return processResult;
+        if ( message instanceof HelloMessage )
+        {
+            BoltStateMachineState processResult = super.process( message, context );
+            context.connectionState().onMetadata( ROUTING_TABLE_KEY, Values.stringValue( ROUTING_TABLE_VALUE ) );
+            context.connectionState().onMetadata( CONNECTION_ID_KEY, Values.stringValue( context.connectionId() ) );
+            return processResult;
+        }
+        return null;
     }
 }
