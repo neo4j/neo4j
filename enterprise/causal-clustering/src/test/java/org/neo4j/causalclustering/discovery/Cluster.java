@@ -58,8 +58,10 @@ import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -515,8 +517,7 @@ public class Cluster
     {
         // TODO: This should really catch all cases of transient failures. Must be able to express that in a clearer
         // manner...
-        return (e instanceof IdGenerationException) || isLockExpired( e ) || isLockOnFollower( e ) ||
-               isWriteNotOnLeader( e );
+        return (e instanceof IdGenerationException) || isLockExpired( e ) || isLockOnFollower( e ) || isWriteNotOnLeader( e ) || isUnableToReplicate( e );
 
     }
 
@@ -524,6 +525,13 @@ public class Cluster
     {
         return e instanceof WriteOperationsNotAllowedException &&
                e.getMessage().startsWith( String.format( LeaderCanWrite.NOT_LEADER_ERROR_MSG, "" ) );
+    }
+
+    private static boolean isUnableToReplicate( Throwable e )
+    {
+        return e instanceof TransientTransactionFailureException &&
+                e.getCause() instanceof org.neo4j.internal.kernel.api.exceptions.TransactionFailureException &&
+                ((org.neo4j.internal.kernel.api.exceptions.TransactionFailureException) e.getCause()).status().equals( Status.Cluster.ReplicationFailure );
     }
 
     private boolean isLockOnFollower( Throwable e )
