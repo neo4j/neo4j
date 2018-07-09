@@ -48,6 +48,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -82,12 +83,12 @@ public class RebuildFromLogsTest
     public void shouldRebuildFromLog() throws Exception, InconsistentStoreException
     {
         // given
-        File prototypePath = new File( dir.graphDbDir(), "prototype" );
+        File prototypePath = getPrototypePath();
         populatePrototype( prototypePath );
 
         // when
-        File rebuildPath = new File( dir.graphDbDir(), "rebuild" );
-        new RebuildFromLogs( fileSystemRule.get() ).rebuild( prototypePath, rebuildPath, BASE_TX_ID );
+        File rebuildPath = getRebuilPath();
+        new RebuildFromLogs( fileSystemRule.get() ).rebuild( getDatabasePath( prototypePath ), rebuildPath, BASE_TX_ID );
 
         // then
         assertEquals( getDbRepresentation( prototypePath ), getDbRepresentation( rebuildPath ) );
@@ -96,21 +97,21 @@ public class RebuildFromLogsTest
     @Test
     public void failRebuildFromLogIfStoreIsInconsistentAfterRebuild() throws InconsistentStoreException, Exception
     {
-        File prototypePath = new File( dir.graphDbDir(), "prototype" );
+        File prototypePath = getPrototypePath();
         populatePrototype( prototypePath );
 
         // when
-        File rebuildPath = new File( dir.graphDbDir(), "rebuild" );
+        File rebuildPath = getRebuilPath();
         expectedException.expect( InconsistentStoreException.class );
         RebuildFromLogs rebuildFromLogs = new TestRebuildFromLogs( fileSystemRule.get() );
-        rebuildFromLogs.rebuild( prototypePath, rebuildPath, BASE_TX_ID );
+        rebuildFromLogs.rebuild( getDatabasePath( prototypePath ), rebuildPath, BASE_TX_ID );
     }
 
     @Test
     public void shouldRebuildFromLogUpToATx() throws Exception, InconsistentStoreException
     {
         // given
-        File prototypePath = new File( dir.graphDbDir(), "prototype" );
+        File prototypePath = getPrototypePath();
         long txId = populatePrototype( prototypePath );
 
         File copy = new File( dir.graphDbDir(), "copy" );
@@ -127,11 +128,26 @@ public class RebuildFromLogsTest
         }
 
         // when
-        File rebuildPath = new File( dir.graphDbDir(), "rebuild" );
+        File rebuildPath = getRebuilPath();
         new RebuildFromLogs( fileSystemRule.get() ).rebuild( copy, rebuildPath, txId );
 
         // then
-        assertEquals( getDbRepresentation( prototypePath ), getDbRepresentation( rebuildPath ) );
+        assertEquals( getDbRepresentation( getDatabasePath( prototypePath ) ), getDbRepresentation( rebuildPath ) );
+    }
+
+    private File getRebuilPath()
+    {
+        return new File( dir.directory(), "rebuild" );
+    }
+
+    private File getPrototypePath()
+    {
+        return new File( dir.directory(), "prototype" );
+    }
+
+    private static File getDatabasePath( File file )
+    {
+        return new File( file, DataSourceManager.DEFAULT_DATABASE_NAME );
     }
 
     private long populatePrototype( File prototypePath )
@@ -153,14 +169,14 @@ public class RebuildFromLogsTest
         return txId;
     }
 
-    private DbRepresentation getDbRepresentation( File path )
+    private static DbRepresentation getDbRepresentation( File path )
     {
         return DbRepresentation.of( path );
     }
 
-    private GraphDatabaseAPI db( File rebuiltPath )
+    private static GraphDatabaseAPI db( File storeDir )
     {
-        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( rebuiltPath );
+        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
     }
 
     enum Transaction
@@ -283,7 +299,7 @@ public class RebuildFromLogsTest
 
         static Set<WorkLog> combinations()
         {
-            Set<WorkLog> combinations = Collections.newSetFromMap( new LinkedHashMap<WorkLog, Boolean>() );
+            Set<WorkLog> combinations = Collections.newSetFromMap( new LinkedHashMap<>() );
             for ( Transaction transaction : Transaction.values() )
             {
                 combinations.add( BASE.extend( transaction ) );

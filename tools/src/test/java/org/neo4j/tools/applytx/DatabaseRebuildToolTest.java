@@ -43,6 +43,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
@@ -77,10 +78,15 @@ public class DatabaseRebuildToolTest
         DatabaseRebuildTool tool = new DatabaseRebuildTool( System.in, NULL_PRINT_STREAM, NULL_PRINT_STREAM );
 
         // WHEN
-        tool.run( "--from", from.getAbsolutePath(), "--to", to.getAbsolutePath(), "apply last" );
+        tool.run( "--from", databaseDirectory( from ).getAbsolutePath(), "--to", to.getAbsolutePath(), "apply last" );
 
         // THEN
-        assertEquals( DbRepresentation.of( from ), DbRepresentation.of( to ) );
+        assertEquals( DbRepresentation.of( databaseDirectory( from ) ), DbRepresentation.of( databaseDirectory( to ) ) );
+    }
+
+    private static File databaseDirectory( File file )
+    {
+        return new File( file, DataSourceManager.DEFAULT_DATABASE_NAME );
     }
 
     @Test
@@ -97,10 +103,10 @@ public class DatabaseRebuildToolTest
                 NULL_PRINT_STREAM, NULL_PRINT_STREAM );
 
         // WHEN
-        tool.run( "--from", from.getAbsolutePath(), "--to", to.getAbsolutePath(), "-i" );
+        tool.run( "--from", databaseDirectory( from ).getAbsolutePath(), "--to", to.getAbsolutePath(), "-i" );
 
         // THEN
-        assertEquals( TransactionIdStore.BASE_TX_ID + 2, lastAppliedTx( to ) );
+        assertEquals( TransactionIdStore.BASE_TX_ID + 2, lastAppliedTx( databaseDirectory( to ) ) );
     }
 
     @Test
@@ -197,9 +203,9 @@ public class DatabaseRebuildToolTest
         return new ByteArrayInputStream( all.toString().getBytes() );
     }
 
-    private void databaseWithSomeTransactions( File dir )
+    private static void databaseWithSomeTransactions( File storeDir )
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir )
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
                 .newGraphDatabase();
         Node[] nodes = new Node[10];
@@ -236,7 +242,7 @@ public class DatabaseRebuildToolTest
         db.shutdown();
     }
 
-    private void setProperties( PropertyContainer entity, int i )
+    private static void setProperties( PropertyContainer entity, int i )
     {
         entity.setProperty( "key", "name" + i );
     }

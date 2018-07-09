@@ -259,7 +259,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         LogFiles logFiles = buildLocalDatabaseLogFiles( platformModule, fileSystem, storeDir, config );
 
         LocalDatabase localDatabase =
-                new LocalDatabase( platformModule.storeDir, storeFiles, logFiles, platformModule.dataSourceManager,
+                new LocalDatabase( storeDir, storeFiles, logFiles, platformModule.dataSourceManager,
                         databaseHealthSupplier,
                         watcherService, platformModule.availabilityGuard, logProvider );
 

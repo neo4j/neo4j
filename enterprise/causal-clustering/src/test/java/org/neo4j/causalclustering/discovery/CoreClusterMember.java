@@ -75,6 +75,7 @@ public class CoreClusterMember implements ClusterMember<CoreGraphDatabase>
     private final ThreadGroup threadGroup;
     private final Monitors monitors = new Monitors();
     private final String dbName;
+    private final File databasesDirectory;
 
     public CoreClusterMember( int serverId,
                               int discoveryPort,
@@ -141,7 +142,8 @@ public class CoreClusterMember implements ClusterMember<CoreGraphDatabase>
         File dataDir = new File( neo4jHome, "data" );
         clusterStateDir = ClusterStateDirectory.withoutInitializing( dataDir ).get();
         raftLogDir = new File( clusterStateDir, RAFT_LOG_DIRECTORY_NAME );
-        storeDir = new File( new File( dataDir, "databases" ), DataSourceManager.DEFAULT_DATABASE_NAME );
+        databasesDirectory = new File( dataDir, "databases" );
+        storeDir = new File( databasesDirectory, DataSourceManager.DEFAULT_DATABASE_NAME );
         memberConfig = Config.defaults( config );
 
         this.dbName = memberConfig.get( CausalClusteringSettings.database );
@@ -174,7 +176,7 @@ public class CoreClusterMember implements ClusterMember<CoreGraphDatabase>
     @Override
     public void start()
     {
-        database = new CoreGraphDatabase( storeDir, memberConfig,
+        database = new CoreGraphDatabase( databasesDirectory, memberConfig,
                 GraphDatabaseDependencies.newDependencies().monitors( monitors ), discoveryServiceFactory );
     }
 

@@ -231,7 +231,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 platformModule.jobScheduler, fileWatcherFileNameFilter() );
         dependencies.satisfyDependencies( watcherService );
         LogFiles logFiles = buildLocalDatabaseLogFiles( platformModule, fileSystem, storeDir );
-        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
+        LocalDatabase localDatabase = new LocalDatabase( storeDir,
                 new StoreFiles( fileSystem, platformModule.pageCache ),
                 logFiles,
                 platformModule.dataSourceManager,

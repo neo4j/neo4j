@@ -139,7 +139,7 @@ public class DatabaseRebuildTool
         return toPath;
     }
 
-    private File getFrom( Args args )
+    private static File getFrom( Args args )
     {
         String from = args.get( "from" );
         if ( from == null )
