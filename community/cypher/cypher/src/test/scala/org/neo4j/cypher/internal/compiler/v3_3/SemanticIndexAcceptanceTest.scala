@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3
 
+import java.util.concurrent.TimeUnit
+
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
@@ -30,7 +32,11 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
 
   override protected def initTest(): Unit = {
     super.initTest()
-    for(_ <- 1 to 1000) createLabeledNode("Label")
+    graph.createIndex("Label", "indexed")
+    graph.inTx {
+      graph.schema().awaitIndexesOnline(10, TimeUnit.SECONDS)
+    }
+    for (_ <- 1 to 1000) createLabeledNode("Label")
   }
 
   def changeLastChar(f: Char => Char)(in: String) =
@@ -67,21 +73,19 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
     }
 
     test(s"testing long with $operator") {
-      graph.createIndex("Label", "indexed")
+
       forAll { propertyValue: Long =>
         tester(propertyValue, (l: Long) => l - 1L, (l: Long) => l + 1)
       }
     }
 
     test(s"testing double with $operator") {
-      graph.createIndex("Label", "indexed")
       forAll { propertyValue: Double =>
         tester(propertyValue, (d: Double) => d - 0.5, (d: Double) => d + 0.5)
       }
     }
 
     test(s"testing string with $operator") {
-      graph.createIndex("Label", "indexed")
       forAll (Gen.alphaStr){ propertyValue: String =>
         tester(propertyValue, changeLastChar(c => (c - 1).toChar), changeLastChar(c => (c + 1).toChar))
       }
