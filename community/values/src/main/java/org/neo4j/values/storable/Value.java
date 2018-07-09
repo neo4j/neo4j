@@ -279,4 +279,6 @@ public abstract class Value extends AnyValue
         }
         while ( matcher.find() );
     }
+
+    public abstract String getTypeName();
 }

@@ -75,4 +75,10 @@ public class TimeArray extends TemporalArray<OffsetTime, TimeValue>
     {
         return compareToNonPrimitiveArray( (TimeArray) otherValue );
     }
+
+    @Override
+    public String getTypeName()
+    {
+        return "TimeArray";
+    }
 }

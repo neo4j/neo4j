@@ -136,6 +136,12 @@ public class FloatArray extends FloatingPointArray
     @Override
     public String toString()
     {
-        return format( "FloatArray%s", Arrays.toString( value ) );
+        return format( "%s%s", getTypeName(), Arrays.toString( value ) );
+    }
+
+    @Override
+    public String getTypeName()
+    {
+        return "FloatArray";
     }
 }

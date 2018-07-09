@@ -200,6 +200,13 @@ public class BuiltInProcedures
         }
     }
 
+    @Procedure( name = "db.propertySchema", mode = READ )
+    @Description( "Show the derived property schema of the data in tabular form." )
+    public Stream<SchemaInfoResult> propertySchema()
+    {
+        return new SchemaCalculator( tx ).calculateTabularResultStream();
+    }
+
     @Description( "Show the schema of the data." )
     @Procedure( name = "db.schema", mode = READ )
     public Stream<SchemaProcedure.GraphResult> metaGraph()

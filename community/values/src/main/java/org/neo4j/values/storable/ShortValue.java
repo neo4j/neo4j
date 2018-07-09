@@ -68,12 +68,18 @@ public final class ShortValue extends IntegralValue
     @Override
     public String toString()
     {
-        return format( "Short(%d)", value );
+        return format( "%s(%d)", getTypeName(), value );
     }
 
     @Override
     public <T> T map( ValueMapper<T> mapper )
     {
         return mapper.mapShort( this );
+    }
+
+    @Override
+    public String getTypeName()
+    {
+        return "Short";
     }
 }

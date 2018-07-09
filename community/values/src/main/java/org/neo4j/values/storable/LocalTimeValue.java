@@ -203,6 +203,12 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
     }
 
     @Override
+    public String getTypeName()
+    {
+        return "LocalTime";
+    }
+
+    @Override
     LocalTime getLocalTimePart()
     {
         return value;

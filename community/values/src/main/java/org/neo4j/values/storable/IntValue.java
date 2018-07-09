@@ -72,4 +72,10 @@ public final class IntValue extends IntegralValue
     {
         return mapper.mapInt( this );
     }
+
+    @Override
+    public String getTypeName()
+    {
+        return "Integer";
+    }
 }

@@ -64,12 +64,18 @@ public final class DoubleValue extends FloatingPointValue
     @Override
     public String toString()
     {
-        return format( "Double(%e)", value );
+        return format( "%s(%e)", getTypeName(), value );
     }
 
     @Override
     public <T> T map( ValueMapper<T> mapper )
     {
         return mapper.mapDouble( this );
+    }
+
+    @Override
+    public String getTypeName()
+    {
+        return "Double";
     }
 }

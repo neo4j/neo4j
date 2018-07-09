@@ -68,12 +68,18 @@ public final class ByteValue extends IntegralValue
     @Override
     public String toString()
     {
-        return format( "Byte(%d)", value );
+        return format( "%s(%d)", getTypeName(), value );
     }
 
     @Override
     public <T> T map( ValueMapper<T> mapper )
     {
         return mapper.mapByte( this );
+    }
+
+    @Override
+    public String getTypeName()
+    {
+        return "Byte";
     }
 }

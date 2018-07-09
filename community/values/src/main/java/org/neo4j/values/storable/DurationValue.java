@@ -580,6 +580,12 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     }
 
     @Override
+    public String getTypeName()
+    {
+        return "Duration";
+    }
+
+    @Override
     public String prettyPrint()
     {
         if ( this == ZERO )

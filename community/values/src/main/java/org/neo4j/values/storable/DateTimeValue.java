@@ -554,6 +554,12 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     }
 
     @Override
+    public String getTypeName()
+    {
+        return "DateTime";
+    }
+
+    @Override
     public <T> T map( ValueMapper<T> mapper )
     {
         return mapper.mapDateTime( this );

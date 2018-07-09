@@ -86,4 +86,10 @@ public class DurationArray extends NonPrimitiveArray<DurationValue>
     {
         return compareToNonPrimitiveArray( (DurationArray) otherValue );
     }
+
+    @Override
+    public String getTypeName()
+    {
+        return "DurationArray";
+    }
 }

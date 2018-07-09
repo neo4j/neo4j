@@ -87,4 +87,10 @@ public class PointArray extends NonPrimitiveArray<PointValue>
     {
         return compareToNonPrimitiveArray( (PointArray) otherValue );
     }
+
+    @Override
+    public String getTypeName()
+    {
+        return "PointArray";
+    }
 }

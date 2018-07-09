@@ -75,4 +75,10 @@ public class DateTimeArray extends TemporalArray<ZonedDateTime,DateTimeValue>
     {
         return compareToNonPrimitiveArray( (DateTimeArray) otherValue );
     }
+
+    @Override
+    public String getTypeName()
+    {
+        return "DateTimeArray";
+    }
 }
