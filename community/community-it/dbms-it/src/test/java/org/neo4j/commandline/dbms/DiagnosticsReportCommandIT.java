@@ -51,9 +51,9 @@ import static org.junit.Assert.assertThat;
 public class DiagnosticsReportCommandIT
 {
     @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private GraphDatabaseService database;
 
@@ -108,7 +108,7 @@ public class DiagnosticsReportCommandIT
         assertThat( files.length, is( 1 ) );
 
         Path report = files[0].toPath();
-        final URI uri = URI.create("jar:file:" + report.toUri().getPath());
+        final URI uri = URI.create( "jar:file:" + report.toUri().getRawPath() );
 
         try ( FileSystem fs = FileSystems.newFileSystem( uri, Collections.emptyMap() ) )
         {

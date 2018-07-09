@@ -207,23 +207,18 @@ public class ImportCommand implements AdminCommand
     }
 
     @Override
-    public void execute( String[] args ) throws IncorrectUsage, CommandFailed
+    public void execute( String[] userSupplierArguments ) throws IncorrectUsage, CommandFailed
     {
-        String mode;
-        Optional<Path> additionalConfigFile;
-        String database;
+        final String[] args;
+        final String mode;
+        final Optional<Path> additionalConfigFile;
+        final String database;
 
         try
         {
-            mode = allArguments.parse( args ).get( "mode" );
-            Optional<Path> fileArgument = allArguments.getOptionalPath( "f" );
-            if ( fileArgument.isPresent() )
-            {
-                // Parsing the arguments inside the -f file and reassigning the "args" parameter, because it's the one
-                // carrying the arguments to the actual importer.
-                args = parseFileArgumentList( fileArgument.get().toFile() );
-                allArguments.parse( args );
-            }
+            args = getImportToolArgs( userSupplierArguments );
+            allArguments.parse( args );
+            mode = allArguments.get( "mode" );
             database = allArguments.get( ARG_DATABASE );
             additionalConfigFile = allArguments.getOptionalPath( "additional-config" );
         }
@@ -243,8 +238,6 @@ public class ImportCommand implements AdminCommand
             Validators.CONTAINS_NO_EXISTING_DATABASE
                     .validate( config.get( GraphDatabaseSettings.database_path ) );
 
-            // The "args" parameter may have been reassigned from what came into this method.
-            // This can happen if there was a -f argument in it, where arguments inside that file gets loaded into it.
             Importer importer = importerFactory.getImporterForMode( mode, Args.parse( args ), config, outsideWorld );
             importer.doImport();
         }
@@ -256,6 +249,13 @@ public class ImportCommand implements AdminCommand
         {
             throw new UncheckedIOException( e );
         }
+    }
+
+    private static String[] getImportToolArgs( String[] userSupplierArguments ) throws IOException, IncorrectUsage
+    {
+        allArguments.parse( userSupplierArguments );
+        Optional<Path> fileArgument = allArguments.getOptionalPath( "f" );
+        return fileArgument.isPresent() ? parseFileArgumentList( fileArgument.get().toFile() ) : userSupplierArguments;
     }
 
     private static Map<String,String> loadAdditionalConfig( Optional<Path> additionalConfigFile )

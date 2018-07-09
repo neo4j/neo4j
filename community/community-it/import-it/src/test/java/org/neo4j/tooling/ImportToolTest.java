@@ -1959,12 +1959,12 @@ public class ImportToolTest
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.COMMAS;
         File argumentFile = file( "args" );
+        String nodesEscapedSpaces = escapePath( nodeData( true, config, nodeIds, TRUE ).getAbsolutePath() );
+        String relationshipsEscapedSpaced = escapePath( relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
         String arguments = format(
                 "--into %s%n" +
                 "--nodes %s --relationships %s",
-                dbRule.getStoreDirAbsolutePath(),
-                nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
-                relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
+                escapePath( dbRule.getStoreDirAbsolutePath() ), nodesEscapedSpaces, relationshipsEscapedSpaced );
         writeToFile( argumentFile, arguments, false );
 
         // when
@@ -2504,6 +2504,11 @@ public class ImportToolTest
     private IntPredicate lines( final int startingAt, final int endingAt /*excluded*/ )
     {
         return line -> line >= startingAt && line < endingAt;
+    }
+
+    private static String escapePath( String path )
+    {
+        return path.replaceAll( " ", "\\\\ " );
     }
 
     static void importTool( String... arguments ) throws IOException

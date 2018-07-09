@@ -53,9 +53,9 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.util.Converters;
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.Version;
@@ -523,7 +523,7 @@ public class ImportTool
     public static String[] parseFileArgumentList( File file ) throws IOException
     {
         List<String> arguments = new ArrayList<>();
-        readTextFile( file, line -> arguments.addAll( asList( tokenizeStringWithQuotes( line, true, true ) ) ) );
+        readTextFile( file, line -> arguments.addAll( asList( tokenizeStringWithQuotes( line, true, false ) ) ) );
         return arguments.toArray( new String[arguments.size()] );
     }
 
@@ -619,8 +619,8 @@ public class ImportTool
     {
         return args
                 .interpretOptionsWithMetadata( key, Converters.optional(),
-                        Converters.toFiles( MULTI_FILE_DELIMITER, Converters.regexFiles( true ) ), filesExist(
-                                err ),
+                        Converters.toFiles( MULTI_FILE_DELIMITER, Converters.regexFiles( true ) ),
+                        filesExist( err ),
                         Validators.atLeast( "--" + key, 1 ) );
     }
 

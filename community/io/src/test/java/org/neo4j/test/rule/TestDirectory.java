@@ -177,7 +177,7 @@ public class TestDirectory extends ExternalResource
     public String toString()
     {
         String testDirectoryName = testDirectory == null ? "<uninitialized>" : testDirectory.toString();
-        return format( "%s[%s]", getClass().getSimpleName(), testDirectoryName );
+        return format( "%s[\"%s\"]", getClass().getSimpleName(), testDirectoryName );
     }
 
     public File cleanDirectory( String name ) throws IOException
@@ -254,7 +254,7 @@ public class TestDirectory extends ExternalResource
 
     private static File testDataDirectoryOf( Class<?> owningTest )
     {
-        File testData = new File( locateTarget( owningTest ), "test-data" );
+        File testData = new File( locateTarget( owningTest ), "test data" );
         return new File( testData, shorten( owningTest.getName() ) ).getAbsoluteFile();
     }
 

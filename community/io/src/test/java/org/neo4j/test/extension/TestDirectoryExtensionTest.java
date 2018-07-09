@@ -53,7 +53,7 @@ class TestDirectoryExtensionTest
         File directory = testDirectory.directory();
         assertNotNull( directory );
         assertTrue( directory.exists() );
-        Path targetTestData = Paths.get( "target", "test-data" );
+        Path targetTestData = Paths.get( "target", "test data" );
         assertTrue( directory.getAbsolutePath().contains( targetTestData.toString() ) );
     }
 

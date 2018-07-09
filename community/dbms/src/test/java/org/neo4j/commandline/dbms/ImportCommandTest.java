@@ -206,7 +206,9 @@ public class ImportCommandTest
                 new ImportCommand( testDir.directory( "home" ).toPath(), testDir.directory( "conf" ).toPath(),
                         new RealOutsideWorld( System.out, System.err, new ByteArrayInputStream( new byte[0] ) ) );
         File nodesFile = createTextFile( "nodes.csv", ":ID", "1", "2" );
-        File argFile = createTextFile( "args.txt", "--database=foo", "--nodes=" + nodesFile.getAbsolutePath() );
+        String pathForFile = nodesFile.getAbsolutePath();
+        String pathWithEscapedSpaces = pathForFile.replaceAll( " ", "\\\\ " );
+        File argFile = createTextFile( "args.txt", "--database=foo", "--nodes=" + pathWithEscapedSpaces );
         String[] arguments = {"-f", argFile.getAbsolutePath()};
 
         // when
