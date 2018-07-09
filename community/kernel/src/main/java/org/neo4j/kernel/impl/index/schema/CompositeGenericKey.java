@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.StringJoiner;
+
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -182,5 +184,16 @@ class CompositeGenericKey extends NativeIndexKey<CompositeGenericKey>
     int numberOfStateSlots()
     {
         return states.length;
+    }
+
+    @Override
+    public String toString()
+    {
+        StringJoiner joiner = new StringJoiner( ",", getClass().getSimpleName() + "[", "]" );
+        for ( GenericKeyState state : states )
+        {
+            joiner.add( state.toString() );
+        }
+        return joiner.toString();
     }
 }

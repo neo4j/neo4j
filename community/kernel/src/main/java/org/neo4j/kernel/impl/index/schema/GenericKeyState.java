@@ -80,8 +80,9 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
                                                     Long.BYTES +    /* months */
                                                     Long.BYTES;     /* days */
     private static final int SIZE_BOOLEAN =         Byte.BYTES;     /* byte for this boolean value */
-    private static final int SIZE_NUMBER =          Byte.BYTES +    /* type of value */
-                                                    Long.BYTES;     /* raw value bits */
+    private static final int SIZE_NUMBER_TYPE =     Byte.BYTES;     /* type of value */
+    private static final int SIZE_NUMBER =          Long.BYTES;     /* raw value bits */
+    private static final int SIZE_ARRAY_LENGTH =    Integer.BYTES;
     // TODO figure out in a future-proof way
     private static final int BIGGEST_REASONABLE_ARRAY_LENGTH = PAGE_SIZE / 2 / Integer.SIZE;
 
@@ -317,39 +318,44 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         case DURATION:
             return SIZE_DURATION;
         case TEXT:
-            return Short.SIZE +    /* short field with bytesLength value */
+            return Short.BYTES +    /* short field with bytesLength value */
                     (int) long0;    /* bytesLength */
         case BOOLEAN:
             return SIZE_BOOLEAN;
         case NUMBER:
-            return SIZE_NUMBER;
+            return SIZE_NUMBER + SIZE_NUMBER_TYPE;
         case ZONED_DATE_TIME_ARRAY:
-            return arrayLength * SIZE_ZONED_DATE_TIME;
+            return arrayKeySize( SIZE_ZONED_DATE_TIME );
         case LOCAL_DATE_TIME_ARRAY:
-            return arrayLength * SIZE_LOCAL_DATE_TIME;
+            return arrayKeySize( SIZE_LOCAL_DATE_TIME );
         case DATE_ARRAY:
-            return arrayLength * SIZE_DATE;
+            return arrayKeySize( SIZE_DATE );
         case ZONED_TIME_ARRAY:
-            return arrayLength * SIZE_ZONED_TIME;
+            return arrayKeySize( SIZE_ZONED_TIME );
         case LOCAL_TIME_ARRAY:
-            return arrayLength * SIZE_LOCAL_TIME;
+            return arrayKeySize( SIZE_LOCAL_TIME );
         case DURATION_ARRAY:
-            return arrayLength * SIZE_DURATION;
+            return arrayKeySize( SIZE_DURATION );
         case TEXT_ARRAY:
             int stringArraySize = 0;
             for ( int i = 0; i < arrayLength; i++ )
             {
-                stringArraySize += Short.SIZE + /* short field with bytesLength value */
+                stringArraySize += Short.BYTES + /* short field with bytesLength value */
                         (int) long0Array[i];    /* bytesLength */
             }
-            return stringArraySize;
+            return SIZE_ARRAY_LENGTH + stringArraySize;
         case BOOLEAN_ARRAY:
-            return arrayLength * SIZE_BOOLEAN;
+            return arrayKeySize( SIZE_BOOLEAN );
         case NUMBER_ARRAY:
-            return arrayLength * SIZE_NUMBER;
+            return arrayKeySize( SIZE_NUMBER ) + SIZE_NUMBER_TYPE;
         default:
             throw new IllegalArgumentException( "Unknown type " + type );
         }
+    }
+
+    private int arrayKeySize( int elementSize )
+    {
+        return SIZE_ARRAY_LENGTH + arrayLength * elementSize;
     }
     /* </size> */
 
@@ -537,16 +543,16 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
                     o2.long0Array[i], o2.long1Array[i], o2.long2Array[i], o2.long3Array[i] ) );
         case TEXT_ARRAY:
             return compareArrays( that, ( o1, o2, i ) -> compareText(
-                    o1.byteArrayArray[i], o1.long0Array[i], o1.long2Array[i], o1.long3Array[i],
-                    o2.byteArrayArray[i], o2.long0Array[i], o2.long2Array[i], o2.long3Array[i] ) );
+                    o1.byteArrayArray[i], o1.long0Array[i], o1.long2, o1.long3,
+                    o2.byteArrayArray[i], o2.long0Array[i], o2.long2, o2.long3 ) );
         case BOOLEAN_ARRAY:
             return compareArrays( that, ( o1, o2, i ) -> compareBoolean(
                     o1.long0Array[i],
                     o2.long0Array[i] ) );
         case NUMBER_ARRAY:
             return compareArrays( that, ( o1, o2, i ) -> compareNumber(
-                    o1.long0Array[i], o1.long1Array[i],
-                    o2.long0Array[i], o2.long1Array[i] ) );
+                    o1.long0Array[i], o1.long1,
+                    o2.long0Array[i], o2.long1 ) );
         default:
             throw new IllegalArgumentException( "Unknown type " + type );
         }
@@ -558,7 +564,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         int x = 0;
         int length = min( this.arrayLength, that.arrayLength );
 
-        while ( x == 0 && i < length )
+        for ( ; x == 0 && i < length; i++ )
         {
             x = comparator.compare( this, that, i );
         }
@@ -743,7 +749,8 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
             putArray( cursor, ( c, i ) -> putBoolean( c, long0Array[i] ) );
             break;
         case NUMBER_ARRAY:
-            putArray( cursor, ( c, i ) -> putNumber( c, long0Array[i], long1 ) );
+            cursor.putByte( (byte) long1 );
+            putArray( cursor, ( c, i ) -> c.putLong( long0Array[i] ) );
             break;
         default:
             throw new IllegalArgumentException( "Unknown type " + type );
@@ -907,11 +914,11 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 
     private boolean readNumberArray( PageCursor cursor )
     {
+        long1 = cursor.getByte(); // number type, like: byte, int, short a.s.o.
         if ( !setArrayLengthWhenReading( cursor ) )
         {
             return false;
         }
-        long1 = cursor.getByte(); // number type, like: byte, int, short a.s.o.
         initializeNumberArray( arrayLength );
         ArrayType numberType = numberArrayTypeOf( (byte) long1 );
         if ( numberType == null )
@@ -1457,8 +1464,10 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     private void initializeTextArray( int size )
     {
         long0Array = ensureBigEnough( long0Array, size );
-        // long1 for bytesDereferenced is not needed because we never leak bytes from string array
         byteArrayArray = ensureBigEnough( byteArrayArray, size );
+        // long1 (bytesDereferenced) - Not needed because we never leak bytes from string array
+        // long2 (ignoreLength) - Not needed because kept on 'global' level for full array
+        // long3 (isHighest) - Not needed because kept on 'global' level for full array
     }
 
     private void initializeDurationArray( int size )
@@ -1518,6 +1527,9 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     {
         initializeTextArray( key.arrayLength );
         System.arraycopy( key.long0Array, 0, this.long0Array, 0, key.arrayLength );
+        this.long1 = FALSE;
+        this.long2 = key.long2;
+        this.long3 = key.long3;
         for ( int i = 0; i < key.arrayLength; i++ )
         {
             short targetLength = (short) key.long0Array[i];
