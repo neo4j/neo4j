@@ -344,6 +344,7 @@
           <version>2.21.0</version>
           <configuration>
             <forkCount>${forkCounts}</forkCount>
+            <trimStackTrace>false</trimStackTrace>
             <reuseForks>true</reuseForks>
             <argLine>${test.runner.jvm.settings}</argLine>
             <runOrder>random</runOrder>
