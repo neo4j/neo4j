@@ -22,7 +22,7 @@
  */
 package org.neo4j.server.rest.causalclustering;
 
-import java.util.stream.Stream;
+import java.util.Arrays;
 import javax.ws.rs.core.Response;
 
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
@@ -59,7 +59,7 @@ class CoreStatus extends BaseStatus
     public Response readonly()
     {
         Role role = db.getRole();
-        return Stream.of( Role.FOLLOWER, Role.CANDIDATE ).anyMatch( r -> r.equals( role ) ) ? positiveResponse() : negativeResponse();
+        return Arrays.asList( Role.FOLLOWER, Role.CANDIDATE ).contains( role ) ? positiveResponse() : negativeResponse();
     }
 
     @Override

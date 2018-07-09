@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.coreapi.schema;
 
 import java.util.Arrays;
-import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
@@ -128,8 +127,7 @@ public class IndexDefinitionImpl implements IndexDefinition
     @Override
     public String toString()
     {
-        return "IndexDefinition[label:" + label + ", on:" +
-               Arrays.stream( propertyKeys ).collect( Collectors.joining( "," ) ) + "]";
+        return "IndexDefinition[label:" + label + ", on:" + String.join( ",", propertyKeys ) + "]";
     }
 
     private void assertInUnterminatedTransaction()

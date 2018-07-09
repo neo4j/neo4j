@@ -355,8 +355,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         return new UpstreamDatabaseStrategySelector( defaultStrategy, loader, logProvider );
     }
 
-    private LogFiles buildLocalDatabaseLogFiles( PlatformModule platformModule, FileSystemAbstraction fileSystem,
-            File storeDir )
+    private LogFiles buildLocalDatabaseLogFiles( PlatformModule platformModule, FileSystemAbstraction fileSystem, File storeDir )
     {
         try
         {

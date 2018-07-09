@@ -24,7 +24,6 @@ package org.neo4j.causalclustering.upstream.strategies;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -54,7 +53,7 @@ public class ConnectRandomlyToServerGroupStrategy extends UpstreamDatabaseSelect
         }
         else
         {
-            String readableGroups = groups.stream().collect( Collectors.joining( ", " ) );
+            String readableGroups = String.join( ", ", groups );
             log.info( "Upstream selection strategy " + readableName + " configured with server groups " + readableGroups );
         }
     }

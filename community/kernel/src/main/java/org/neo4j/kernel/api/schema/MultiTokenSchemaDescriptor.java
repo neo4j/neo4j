@@ -33,8 +33,6 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
-import static java.util.stream.Collectors.joining;
-
 public class MultiTokenSchemaDescriptor implements SchemaDescriptor
 {
     private final int[] entityTokens;
@@ -82,9 +80,7 @@ public class MultiTokenSchemaDescriptor implements SchemaDescriptor
     @Override
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
-        return String.format( entityType + ":%s(%s)",
-                Arrays.stream( tokenNameLookup.entityTokensGetNames( entityType, entityTokens ) )
-                      .collect( joining( ", " ) ),
+        return String.format( entityType + ":%s(%s)", String.join( ", ", tokenNameLookup.entityTokensGetNames( entityType, entityTokens ) ),
                 SchemaUtil.niceProperties( tokenNameLookup, propertyIds ) );
     }
 
