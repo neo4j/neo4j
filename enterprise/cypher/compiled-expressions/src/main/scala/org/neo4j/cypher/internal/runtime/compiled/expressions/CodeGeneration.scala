@@ -84,8 +84,10 @@ object CodeGeneration {
     handle.loadClass().newInstance().asInstanceOf[CompiledExpression]
   }
 
-  private def generator =
-    if (DEBUG) generateCode(SOURCECODE, PRINT_SOURCE) else generateCode(BYTECODE)
+  private def generator = {
+    if (DEBUG) generateCode(classOf[CompiledExpression].getClassLoader, SOURCECODE, PRINT_SOURCE)
+    else generateCode(classOf[CompiledExpression].getClassLoader, BYTECODE)
+  }
 
   private def compileExpression(ir: IntermediateRepresentation, block: CodeBlock): codegen.Expression = ir match {
     //Foo.method(p1, p2,...)

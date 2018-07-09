@@ -100,7 +100,7 @@ public abstract class CodeGenerator
         }
         try
         {
-            return loader.loadClass( name );
+            return loader.findClass( name );
         }
         catch ( ClassNotFoundException e )
         {

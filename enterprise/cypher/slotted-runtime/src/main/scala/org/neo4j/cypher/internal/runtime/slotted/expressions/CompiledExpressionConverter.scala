@@ -65,8 +65,6 @@ case class CompileWrappingExpression(ce: CompiledExpression, legacy: Expression)
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue =
     ce.evaluate(ctx, state.query, state.params)
 
-
-
   override def symbolTableDependencies: Set[String] = legacy.symbolTableDependencies
 
   override def toString: String = legacy.toString
