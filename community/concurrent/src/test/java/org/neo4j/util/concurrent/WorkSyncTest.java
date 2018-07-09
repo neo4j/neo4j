@@ -24,7 +24,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -41,14 +40,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -194,46 +191,44 @@ class WorkSyncTest
     }
 
     @Test
-    void mustCombineWork()
+    void mustCombineWork() throws Exception
     {
-        assertTimeout( ofSeconds( 10 ), () ->
+        BinaryLatch startLatch = new BinaryLatch();
+        BinaryLatch blockLatch = new BinaryLatch();
+        FutureTask<Void> blocker = new FutureTask<>( new CallableWork( new AddWork( 1 )
         {
-            BinaryLatch startLatch = new BinaryLatch();
-            BinaryLatch blockLatch = new BinaryLatch();
-            FutureTask<Void> blocker = new FutureTask<>( new CallableWork( new AddWork( 1 )
+            @Override
+            public void apply( Adder adder )
             {
-                @Override
-                public void apply( Adder adder )
-                {
-                    super.apply( adder );
-                    startLatch.release();
-                    blockLatch.await();
-                }
-            } ) );
-            new Thread( blocker ).start();
-            startLatch.await();
-            Collection<FutureTask<Void>> tasks = new ArrayList<>();
-            tasks.add( blocker );
-            for ( int i = 0; i < 20; i++ )
-            {
+                super.apply( adder );
+                startLatch.release();
+                blockLatch.await();
+            }
+        } ) );
+        new Thread( blocker ).start();
+        startLatch.await();
+        Collection<FutureTask<Void>> tasks = new ArrayList<>();
+        tasks.add( blocker );
+        for ( int i = 0; i < 20; i++ )
+        {
 
-                CallableWork task = new CallableWork( new AddWork( 1 ) );
-                FutureTask<Void> futureTask = new FutureTask<>( task );
-                tasks.add( futureTask );
-                Thread thread = new Thread( futureTask );
-                thread.start();
-                //wait for the thread to reach the lock
-                while ( thread.getState() != Thread.State.TIMED_WAITING )
-                {
-                }
-            }
-            blockLatch.release();
-            for ( FutureTask<Void> task : tasks )
+            CallableWork task = new CallableWork( new AddWork( 1 ) );
+            FutureTask<Void> futureTask = new FutureTask<>( task );
+            tasks.add( futureTask );
+            Thread thread = new Thread( futureTask );
+            thread.start();
+            //noinspection StatementWithEmptyBody,LoopConditionNotUpdatedInsideLoop
+            while ( thread.getState() != Thread.State.TIMED_WAITING )
             {
-                task.get();
+                // Wait for the thread to reach the lock.
             }
-            assertThat( count.sum(), lessThan( sum.sum() ) );
-        } );
+        }
+        blockLatch.release();
+        for ( FutureTask<Void> task : tasks )
+        {
+            task.get();
+        }
+        assertThat( count.sum(), lessThan( sum.sum() ) );
     }
 
     @Test
@@ -248,46 +243,44 @@ class WorkSyncTest
     }
 
     @Test
-    void mustRecoverFromExceptions()
+    void mustRecoverFromExceptions() throws Exception
     {
-        assertTimeout( Duration.ofSeconds( 1 ), () -> {
-            final AtomicBoolean broken = new AtomicBoolean( true );
-            Adder adder = new Adder()
+        final AtomicBoolean broken = new AtomicBoolean( true );
+        Adder adder = new Adder()
+        {
+            @Override
+            public void add( int delta )
             {
-                @Override
-                public void add( int delta )
+                if ( broken.get() )
                 {
-                    if ( broken.get() )
-                    {
-                        throw new IllegalStateException( "boom!" );
-                    }
-                    super.add( delta );
+                    throw new IllegalStateException( "boom!" );
                 }
-            };
-            sync = new WorkSync<>( adder );
-
-            try
-            {
-                // Run this in a different thread to account for reentrant locks.
-                executor.submit( new CallableWork( new AddWork( 10 ) ) ).get();
-                fail( "Should have thrown" );
+                super.add( delta );
             }
-            catch ( ExecutionException exception )
-            {
-                // Outermost ExecutionException from the ExecutorService
-                assertThat( exception.getCause(), instanceOf( ExecutionException.class ) );
+        };
+        sync = new WorkSync<>( adder );
 
-                // Inner ExecutionException from the WorkSync
-                exception = (ExecutionException) exception.getCause();
-                assertThat( exception.getCause(), instanceOf( IllegalStateException.class ) );
-            }
+        try
+        {
+            // Run this in a different thread to account for reentrant locks.
+            executor.submit( new CallableWork( new AddWork( 10 ) ) ).get();
+            fail( "Should have thrown" );
+        }
+        catch ( ExecutionException exception )
+        {
+            // Outermost ExecutionException from the ExecutorService
+            assertThat( exception.getCause(), instanceOf( ExecutionException.class ) );
 
-            broken.set( false );
-            sync.apply( new AddWork( 20 ) );
+            // Inner ExecutionException from the WorkSync
+            exception = (ExecutionException) exception.getCause();
+            assertThat( exception.getCause(), instanceOf( IllegalStateException.class ) );
+        }
 
-            assertThat( sum.sum(), is( 20L ) );
-            assertThat( count.sum(), is( 1L ) );
-        } );
+        broken.set( false );
+        sync.apply( new AddWork( 20 ) );
+
+        assertThat( sum.sum(), is( 20L ) );
+        assertThat( count.sum(), is( 1L ) );
     }
 
     @Test
