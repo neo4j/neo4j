@@ -149,9 +149,9 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                                                    "OF " +
                                                    "RELATIONSHIP?)", "Show the schema of the data.", "READ"} ),
                 equalTo( new Object[]{"db.propertySchema",
-                                                "db.propertySchema() :: (type :: STRING?, nodeLabelsOrRelType :: LIST? OF STRING?, property :: STRING?, cypherType :: STRING?)",
-                                                "Show the derived property schema of the data in tabular form.",
-                                                "READ"} ),
+                        "db.propertySchema() :: (type :: STRING?, nodeLabelsOrRelType :: LIST? OF STRING?, property :: STRING?, cypherType :: STRING?)",
+                        "Show the derived property schema of the data in tabular form.",
+                        "READ"} ),
                 equalTo( new Object[]{"db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: " +
                                                               "STRING?)",
                         "List all relationship types in the database.", "READ"} ),

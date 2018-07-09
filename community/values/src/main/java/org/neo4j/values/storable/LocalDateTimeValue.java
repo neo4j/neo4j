@@ -290,7 +290,6 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
         return "LocalDateTime";
     }
 
-
     @Override
     LocalDateTime temporal()
     {
