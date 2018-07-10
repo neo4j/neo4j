@@ -106,8 +106,8 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
     // THEN
     val plan = result.executionPlanDescription()
     assertMinExpandsAndJoins(plan, Map("expands" -> numberOfPatternRelationships, "joins" -> 1))
-    // For length 12 we improved compiler times from tens of minutes down to ~3s, we think this test of 30s is stable on a wide range of computing hardware
-    duration should be <= 30000L
+    // For length 12 we improved compiler times from tens of minutes down to ~3s, we think this test of 120s is stable on a wide range of computing hardware
+    duration should be <= 120000L
   }
 
   test("very long pattern expressions should be solvable with multiple planners giving identical results using index lookups, expands and joins") {
