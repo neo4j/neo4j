@@ -113,10 +113,12 @@ class AppendOnlyValuesContainerTest
                 testInput( "BooleanArray", Values::booleanArray, new boolean[] {false, true, false}, EMPTY_BOOLEAN_ARRAY ),
 
                 testInput( "Byte", Values::byteValue, (byte) 0, (byte) 1, (byte) -1, Byte.MIN_VALUE, Byte.MAX_VALUE ),
-                testInput( "ByteArray", Values::byteArray, new byte[] {(byte) 0, (byte) 1, (byte) -1, Byte.MIN_VALUE, Byte.MAX_VALUE}, EMPTY_BYTE_ARRAY ),
+                testInput( "ByteArray", Values::byteArray,
+                        new byte[] {(byte) 0, (byte) 1, (byte) -1, Byte.MIN_VALUE, Byte.MAX_VALUE}, EMPTY_BYTE_ARRAY ),
 
                 testInput( "Short", Values::shortValue, (short) 0, (short) 1, (short) -1, Short.MIN_VALUE, Short.MAX_VALUE ),
-                testInput( "ShortArray", Values::shortArray, new short[] {(short) 0, (short) 1, (short) -1, Short.MIN_VALUE, Short.MAX_VALUE}, EMPTY_SHORT_ARRAY ),
+                testInput( "ShortArray", Values::shortArray,
+                        new short[] {(short) 0, (short) 1, (short) -1, Short.MIN_VALUE, Short.MAX_VALUE}, EMPTY_SHORT_ARRAY ),
 
                 testInput( "Char", Values::charValue, 'a', '\uFFFF', '∂', '©' ),
                 testInput( "CharArray", Values::charArray, new char[] {'a', '\uFFFF', '∂', '©'}, EMPTY_CHAR_ARRAY ),
@@ -130,12 +132,14 @@ class AppendOnlyValuesContainerTest
                 testInput( "Double", Values::doubleValue,
                         0.0, 1.0, -1.0, Double.MIN_VALUE, Double.MAX_VALUE, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY ),
                 testInput( "DoubleArray", Values::doubleArray,
-                        new double[] {0.0, 1.0, -1.0, Double.MIN_VALUE, Double.MAX_VALUE, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY}, EMPTY_DOUBLE_ARRAY ),
+                        new double[] {0.0, 1.0, -1.0, Double.MIN_VALUE, Double.MAX_VALUE, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY},
+                        EMPTY_DOUBLE_ARRAY ),
 
                 testInput( "Float", Values::floatValue,
                         0.0f, 1.0f, -1.0f, Float.MIN_VALUE, Float.MAX_VALUE, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY ),
                 testInput( "FloatArray", Values::floatArray,
-                        new float[] {0.0f, 1.0f, -1.0f, Float.MIN_VALUE, Float.MAX_VALUE, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY}, EMPTY_FLOAT_ARRAY ),
+                        new float[] {0.0f, 1.0f, -1.0f, Float.MIN_VALUE, Float.MAX_VALUE, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY},
+                        EMPTY_FLOAT_ARRAY ),
 
                 testInput( "String", Values::stringValue, "", "x", "foobar" ),
                 testInput( "StringArray", Values::stringArray, new String[] {"", "x", "foobar"}, EMPTY_STRING_ARRAY ),

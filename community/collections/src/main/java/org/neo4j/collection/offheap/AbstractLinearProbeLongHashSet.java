@@ -19,6 +19,7 @@
  */
 package org.neo4j.collection.offheap;
 
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.eclipse.collections.api.block.function.primitive.LongToObjectFunction;
 import org.eclipse.collections.api.block.function.primitive.ObjectLongToObjectFunction;
 import org.eclipse.collections.api.block.predicate.primitive.LongPredicate;
@@ -74,9 +75,9 @@ abstract class AbstractLinearProbeLongHashSet extends AbstractLongIterable imple
     @Override
     public long[] toArray()
     {
-        final int[] i = {0};
+        final MutableInt idx = new MutableInt();
         final long[] array = new long[size()];
-        each( element -> array[i[0]++] = element );
+        each( element -> array[idx.getAndIncrement()] = element );
         return array;
     }
 
@@ -242,9 +243,9 @@ abstract class AbstractLinearProbeLongHashSet extends AbstractLongIterable imple
     @Override
     public int hashCode()
     {
-        final int[] h = {0};
-        each( element -> h[0] += element ^ element >>> 32 );
-        return h[0];
+        final MutableInt h = new MutableInt();
+        each( element -> h.add( (int) (element ^ element >>> 32) ) );
+        return h.intValue();
     }
 
     @Override

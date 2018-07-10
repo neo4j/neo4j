@@ -20,6 +20,7 @@
 
 package org.neo4j.collection.offheap;
 
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.eclipse.collections.api.LazyLongIterable;
 import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.api.RichIterable;
@@ -521,9 +522,9 @@ class LinearProbeLongLongHashMap extends AbstractLongIterable implements Mutable
     @Override
     public long[] toArray()
     {
-        final int[] i = {0};
+        final MutableInt idx = new MutableInt();
         final long[] array = new long[size()];
-        each( element -> array[i[0]++] = element );
+        each( element -> array[idx.getAndIncrement()] = element );
         return array;
     }
 
