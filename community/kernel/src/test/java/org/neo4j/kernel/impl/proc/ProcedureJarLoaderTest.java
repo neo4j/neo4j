@@ -319,7 +319,7 @@ public class ProcedureJarLoaderTest
         File jarFile = new File( jar.toURI() ).getCanonicalFile();
         long fileLength = jarFile.length();
         byte[] bytes = Files.readAllBytes( Paths.get( jar.toURI() ) );
-        for ( long i = fileLength/2; i < fileLength; i++ )
+        for ( long i = fileLength / 2; i < fileLength; i++ )
         {
             bytes[(int) i] = 0;
         }
