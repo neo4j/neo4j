@@ -993,4 +993,70 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   test("should handle 3 inequalities without choking in planning") {
     executeWith(Configs.Interpreted, "MATCH (a:A) WHERE a.prop < 1 AND a.prop <=1 AND a.prop >=1 RETURN a.prop") shouldBe empty
   }
+
+  test("expand into non-dense") {
+    //Given
+    val a = createLabeledNode("Start")
+    val b = createLabeledNode("End")
+    val r = relate(a, b, "T1")
+    relate(a, b, "T2")
+
+    //When
+    val result = executeWith(Configs.All - Configs.Version2_3,
+                             "WITH $a AS a, $b AS b MATCH (a)-[r:T1]->(b) RETURN r", params = Map("a" -> a, "b"-> b))
+
+    //Then
+    result.toList should equal(List(Map("r" -> r)))
+  }
+
+  test("expand into with dense start node") {
+    //Given
+    val a = createLabeledNode("Start")
+    val b = createLabeledNode("End")
+    val r = relate(a, b, "T1")
+    relate(a, b, "T2")
+    1 to 100 foreach(_ => relate(a, createNode(), "T3"))
+
+    //When
+    val result = executeWith(Configs.All - Configs.Version2_3,
+                             "WITH $a AS a, $b AS b MATCH (a)-[r:T1]->(b) RETURN r", params = Map("a" -> a, "b"-> b))
+
+    //Then
+    result.toList should equal(List(Map("r" -> r)))
+  }
+
+  test("expand into with dense end node") {
+    //Given
+    val a = createLabeledNode("Start")
+    val b = createLabeledNode("End")
+    val r = relate(a, b, "T1")
+    relate(a, b, "T2")
+    1 to 100 foreach(_ => relate(b, createNode(), "T3"))
+
+    //When
+    val result = executeWith(Configs.All - Configs.Version2_3,
+                             "WITH $a AS a, $b AS b MATCH (a)-[r:T1]->(b) RETURN r", params = Map("a" -> a, "b"-> b))
+
+    //Then
+    result.toList should equal(List(Map("r" -> r)))
+  }
+
+  test("expand into with dense start and dense end node") {
+    //Given
+    val a = createLabeledNode("Start")
+    val b = createLabeledNode("End")
+    val r = relate(a, b, "T1")
+    relate(a, b, "T2")
+    1 to 100 foreach(_ => {
+      relate(a, createNode(), "T3")
+      relate(b, createNode(), "T3")
+    })
+
+    //When
+    val result = executeWith(Configs.All - Configs.Version2_3,
+                             "WITH $a AS a, $b AS b MATCH (a)-[r:T1]->(b) RETURN r", params = Map("a" -> a, "b"-> b))
+
+    //Then
+    result.toList should equal(List(Map("r" -> r)))
+  }
 }

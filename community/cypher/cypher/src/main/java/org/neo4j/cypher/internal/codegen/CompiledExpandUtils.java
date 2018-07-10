@@ -132,17 +132,17 @@ public abstract class CompiledExpandUtils
             }
 
             return connectingRelationshipsIterator( CompiledCursorUtils
-                    .nodeGetRelationships( read, cursors, nodeCursor, startNode, relDirection ), endNode );
+                    .nodeGetRelationships( read, cursors, nodeCursor, startNode, relDirection, relTypes ), endNode );
         }
         else if ( fromNodeIsDense )
         {
             return connectingRelationshipsIterator( CompiledCursorUtils
-                    .nodeGetRelationships( read, cursors, nodeCursor, toNode, direction.reverse() ), fromNode );
+                    .nodeGetRelationships( read, cursors, nodeCursor, toNode, direction.reverse(), relTypes ), fromNode );
         }
         else
         {   //either only toNode is dense or none of them, just go with what we got
             return connectingRelationshipsIterator( CompiledCursorUtils
-                    .nodeGetRelationships( read, cursors, nodeCursor, fromNode, direction ), toNode );
+                    .nodeGetRelationships( read, cursors, nodeCursor, fromNode, direction, relTypes ), toNode );
         }
     }
 

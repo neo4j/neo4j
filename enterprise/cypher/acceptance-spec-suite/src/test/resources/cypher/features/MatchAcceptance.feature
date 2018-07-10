@@ -373,3 +373,17 @@ Feature: MatchAcceptance
     Then the result should be:
       | n |
     And no side effects
+
+  Scenario: loops with relationship type
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (x:V)-[:R]->(x)
+      """
+    When executing query:
+      """
+      MATCH (x:V)-[:NON_EXISTENT]->(x) RETURN x
+      """
+    Then the result should be:
+      | x |
+    And no side effects
