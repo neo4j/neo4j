@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.ir.v3_5
 
-import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.frontend.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ir.v3_5.helpers.ExpressionConverters._
+import org.opencypher.v9_0.ast._
+import org.opencypher.v9_0.ast.prettifier.ExpressionStringifier
 import org.opencypher.v9_0.expressions._
 
 import scala.collection.mutable.ArrayBuffer
