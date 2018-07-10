@@ -90,7 +90,7 @@ public class ProcedureJarLoader
 
     private boolean allJarFilesAreValidZipFiles( Stream<File> jarFiles )
     {
-        return jarFiles.allMatch( ( jarFile ) ->
+        return jarFiles.allMatch( jarFile ->
         {
             try
             {
