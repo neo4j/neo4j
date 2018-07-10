@@ -39,6 +39,7 @@ import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.NumberValue;
+import org.neo4j.values.storable.PrimitiveArrayWriting;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.TimeZones;
 import org.neo4j.values.storable.Value;
@@ -878,7 +879,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         case DATE_ARRAY:
             return readArray( cursor, ArrayType.DATE, this::readDate );
         case ZONED_TIME_ARRAY:
-            return readArray( cursor, ArrayType.ZONED_DATE_TIME, this::readZonedDateTime );
+            return readArray( cursor, ArrayType.ZONED_TIME, this::readZonedTime );
         case LOCAL_TIME_ARRAY:
             return readArray( cursor, ArrayType.LOCAL_TIME, this::readLocalTime );
         case DURATION_ARRAY:
@@ -1135,22 +1136,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     @Override
     protected void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws RuntimeException
     {
-        if ( !isArray )
-        {
-            type = Type.ZONED_DATE_TIME;
-            long0 = epochSecondUTC;
-            long1 = nano;
-            long2 = -1;
-            long3 = offsetSeconds;
-        }
-        else
-        {
-            long0Array[currentArrayOffset] = epochSecondUTC;
-            long1Array[currentArrayOffset] = nano;
-            long2Array[currentArrayOffset] = -1;
-            long3Array[currentArrayOffset] = offsetSeconds;
-            currentArrayOffset++;
-        }
+        writeDateTime( epochSecondUTC, nano, (short) -1, offsetSeconds );
     }
 
     @Override
@@ -1161,20 +1147,25 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
 
     protected void writeDateTime( long epochSecondUTC, int nano, short zoneId ) throws RuntimeException
     {
+        writeDateTime( epochSecondUTC, nano, zoneId, 0 );
+    }
+
+    private void writeDateTime( long epochSecondUTC, int nano, short zoneId, int offsetSeconds )
+    {
         if ( !isArray )
         {
             type = Type.ZONED_DATE_TIME;
             long0 = epochSecondUTC;
             long1 = nano;
             long2 = zoneId;
-            long3 = 0;
+            long3 = offsetSeconds;
         }
         else
         {
             long0Array[currentArrayOffset] = epochSecondUTC;
             long1Array[currentArrayOffset] = nano;
             long2Array[currentArrayOffset] = zoneId;
-            long3Array[currentArrayOffset] = 0;
+            long3Array[currentArrayOffset] = offsetSeconds;
             currentArrayOffset++;
         }
     }
@@ -1343,6 +1334,17 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
     }
 
     /* <write.array> */
+
+    // Write byte array is a special case,
+    // instead of calling beginArray and writing the bytes one-by-one
+    // writeByteArray is called so that the bytes can be written in batches.
+    // We don't care about that though so just delegate.
+    @Override
+    public void writeByteArray( byte[] value ) throws RuntimeException
+    {
+        PrimitiveArrayWriting.writeTo( this, value );
+    }
+
     @Override
     public void beginArray( int size, ArrayType arrayType ) throws RuntimeException
     {

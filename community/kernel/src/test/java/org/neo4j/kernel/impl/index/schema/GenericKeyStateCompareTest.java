@@ -21,7 +21,13 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -49,8 +55,12 @@ class GenericKeyStateCompareTest
                 Values.of( "string1" ),
                 Values.of( 42 ),
                 Values.of( true ),
+                Values.of( new char[]{'a', 'z'} ),
                 Values.of( new String[]{"arrayString1", "arraysString2"} ),
-                Values.of( new long[]{314, 1337} ), // todo add the other number array types
+                Values.of( new byte[]{(byte) 1, (byte) 12} ),
+                Values.of( new short[]{314, 1337} ),
+                Values.of( new int[]{3140, 13370} ),
+                Values.of( new long[]{31400, 133700} ),
                 Values.of( new boolean[]{false, true} ),
                 DateValue.epochDate( 2 ),
                 LocalTimeValue.localTime( 100000 ),
@@ -78,9 +88,34 @@ class GenericKeyStateCompareTest
                 DurationValue.duration( 11, 20, 30, 40 ),
                 DurationValue.duration( 10, 21, 30, 40 ),
                 DurationValue.duration( 10, 20, 31, 40 ),
-                DurationValue.duration( 10, 20, 30, 41 ) );
+                DurationValue.duration( 10, 20, 30, 41 ),
+                Values.dateTimeArray( new ZonedDateTime[]{
+                        ZonedDateTime.of( 2018, 10, 9, 8, 7, 6, 5, ZoneId.of( "UTC" ) ),
+                        ZonedDateTime.of( 2017, 9, 8, 7, 6, 5, 4, ZoneId.of( "UTC" ) )
+                } ),
+                Values.localDateTimeArray( new LocalDateTime[]{
+                        LocalDateTime.of( 2018, 10, 9, 8, 7, 6, 5 ),
+                        LocalDateTime.of( 2018, 10, 9, 8, 7, 6, 5 )
+                } ),
+                Values.timeArray( new OffsetTime[]{
+                        OffsetTime.of( 20, 8, 7, 6, ZoneOffset.UTC ),
+                        OffsetTime.of( 20, 8, 7, 6, ZoneOffset.UTC )
+                } ),
+                Values.dateArray( new LocalDate[]{
+                        LocalDate.of( 2018, 12, 28 ),
+                        LocalDate.of( 2018, 12, 28 )
+                } ),
+                Values.localTimeArray( new LocalTime[]{
+                        LocalTime.of( 9, 28 ),
+                        LocalTime.of( 9, 28 )
+                } ),
+                Values.durationArray( new DurationValue[]{
+                        DurationValue.duration( 12, 10, 10, 10 ),
+                        DurationValue.duration( 12, 10, 10, 10 )
+                } )
 //                Values.pointValue( CoordinateReferenceSystem.Cartesian, 0, 0 ),
 //                Values.pointValue( CoordinateReferenceSystem.WGS84, 12.78, 56.7 ) // todo add when spatial is supported
+        );
         allValues.sort( Values.COMPARATOR );
 
         List<GenericKeyState> states = new ArrayList<>();

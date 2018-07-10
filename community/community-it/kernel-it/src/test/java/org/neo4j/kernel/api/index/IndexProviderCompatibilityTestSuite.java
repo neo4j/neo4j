@@ -25,7 +25,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 import java.io.File;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -111,9 +117,14 @@ public abstract class IndexProviderCompatibilityTestSuite
                             Values.of( "string1" ),
                             Values.of( 42 ),
                             Values.of( true ),
+                            Values.of( new char[]{'a', 'z'} ),
                             Values.of( new String[]{"arrayString1", "arraysString2"} ),
-                            Values.of( new long[]{314, 1337} ), // todo add the other number array types
-                            Values.of( new boolean[]{false, true} ) ),
+                            Values.of( new byte[]{(byte) 1, (byte) 12} ),
+                            Values.of( new short[]{314, 1337} ),
+                            Values.of( new int[]{3140, 13370} ),
+                            Values.of( new long[]{31400, 133700} ),
+                            Values.of( new boolean[]{false, true} )
+                    ),
                     Arrays.asList(
                             DateValue.epochDate( 2 ),
                             LocalTimeValue.localTime( 100000 ),
@@ -141,23 +152,83 @@ public abstract class IndexProviderCompatibilityTestSuite
                             DurationValue.duration( 11, 20, 30, 40 ),
                             DurationValue.duration( 10, 21, 30, 40 ),
                             DurationValue.duration( 10, 20, 31, 40 ),
-                            DurationValue.duration( 10, 20, 30, 41 ) ),
+                            DurationValue.duration( 10, 20, 30, 41 ),
+                            Values.dateTimeArray( new ZonedDateTime[]{
+                                    ZonedDateTime.of( 2018, 10, 9, 8, 7, 6, 5, ZoneId.of( "UTC" ) ),
+                                    ZonedDateTime.of( 2017, 9, 8, 7, 6, 5, 4, ZoneId.of( "UTC" ) )
+                            } ),
+                            Values.localDateTimeArray( new LocalDateTime[]{
+                                    LocalDateTime.of( 2018, 10, 9, 8, 7, 6, 5 ),
+                                    LocalDateTime.of( 2018, 10, 9, 8, 7, 6, 5 )
+                            } ),
+                            Values.timeArray( new OffsetTime[]{
+                                    OffsetTime.of( 20, 8, 7, 6, ZoneOffset.UTC ),
+                                    OffsetTime.of( 20, 8, 7, 6, ZoneOffset.UTC )
+                            } ),
+                            Values.dateArray( new LocalDate[]{
+                                    LocalDate.of( 1, 12, 28 ),
+                                    LocalDate.of( 1, 12, 28 )
+                            } ),
+                            Values.localTimeArray( new LocalTime[]{
+                                    LocalTime.of( 9, 28 ),
+                                    LocalTime.of( 9, 28 )
+                            } ),
+                            Values.durationArray( new DurationValue[]{
+                                    DurationValue.duration( 12, 10, 10, 10 ),
+                                    DurationValue.duration( 12, 10, 10, 10 )
+                            })
+                    ),
                     Arrays.asList( Values.pointValue( CoordinateReferenceSystem.Cartesian, 0, 0 ),
-                            Values.pointValue( CoordinateReferenceSystem.WGS84, 12.78, 56.7 ) ) );
+                            Values.pointValue( CoordinateReferenceSystem.WGS84, 12.78, 56.7 )
+                    ) );
 
             this.valueSet2 = allValues(
                     testSuite.supportsSpatial(),
                     testSuite.supportsTemporal(),
-                    Arrays.asList( Values.of( "string2" ), Values.of( 1337 ), Values.of( false ) ),
+                    Arrays.asList( Values.of( "string2" ), Values.of( 1337 ), Values.of( false ),
+                            Values.of( new char[]{'a', 'z'} ),
+                            Values.of( new String[]{"someString1", "someString2"} ),
+                            Values.of( new byte[]{(byte) 9, (byte) 9} ),
+                            Values.of( new short[]{99, 999} ),
+                            Values.of( new int[]{99999, 99999} ),
+                            Values.of( new long[]{999999, 999999} ),
+                            Values.of( new boolean[]{false, true} )
+                    ),
                     Arrays.asList(
                             DateValue.epochDate( 42 ),
                             LocalTimeValue.localTime( 2000 ),
                             TimeValue.time( 100L, ZoneOffset.UTC ), // Just around midnight
                             LocalDateTimeValue.localDateTime( 2018, 2, 28, 11, 5, 1, 42 ),
                             DateTimeValue.datetime( 1999, 12, 31, 23, 59, 59, 123456789, "Europe/London" ),
-                            DurationValue.duration( 4, 3, 2, 1 ) ),
-                    Arrays.asList( Values.pointValue( CoordinateReferenceSystem.Cartesian, 10, 10 ),
-                            Values.pointValue( CoordinateReferenceSystem.WGS84, 87.21, 7.65 ) ) );
+                            DurationValue.duration( 4, 3, 2, 1 ),
+                            Values.dateTimeArray( new ZonedDateTime[]{
+                                    ZonedDateTime.of( 2000, 10, 9, 8, 7, 6, 5, ZoneId.of( "UTC" ) ),
+                                    ZonedDateTime.of( 2000, 9, 8, 7, 6, 5, 4, ZoneId.of( "UTC" ) )
+                            } ),
+                            Values.localDateTimeArray( new LocalDateTime[]{
+                                    LocalDateTime.of( 2000, 10, 9, 8, 7, 6, 5 ),
+                                    LocalDateTime.of( 2000, 10, 9, 8, 7, 6, 5 )
+                            } ),
+                            Values.timeArray( new OffsetTime[]{
+                                    OffsetTime.of( 20, 8, 7, 6, ZoneOffset.UTC ),
+                                    OffsetTime.of( 20, 8, 7, 6, ZoneOffset.UTC )
+                            } ),
+                            Values.dateArray( new LocalDate[]{
+                                    LocalDate.of( 2000, 12, 28 ),
+                                    LocalDate.of( 2000, 12, 28 )
+                            } ),
+                            Values.localTimeArray( new LocalTime[]{
+                                    LocalTime.of( 20, 28 ),
+                                    LocalTime.of( 20, 28 )
+                            } ),
+                            Values.durationArray( new DurationValue[]{
+                                    DurationValue.duration( 20, 10, 10, 10 ),
+                                    DurationValue.duration( 20, 10, 10, 10 )
+                            })
+                    ),
+                    Arrays.asList( Values.pointValue( CoordinateReferenceSystem.Cartesian, 90, 90 ),
+                            Values.pointValue( CoordinateReferenceSystem.WGS84, 9.21, 9.65 )
+                    ) );
 
             pageCacheAndDependenciesRule = new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, testSuite.getClass() );
         }
