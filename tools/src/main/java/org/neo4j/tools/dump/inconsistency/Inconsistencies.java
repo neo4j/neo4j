@@ -74,6 +74,9 @@ public interface Inconsistencies
         case SCHEMA:
             schemaIndex( recordId );
             break;
+        default:
+            // Ignore unknown record types.
+            break;
         }
     }
 
