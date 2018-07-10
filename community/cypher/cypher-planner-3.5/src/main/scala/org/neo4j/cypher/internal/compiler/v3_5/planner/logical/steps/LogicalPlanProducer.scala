@@ -477,9 +477,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
     annotate(LimitPlan(inner, count, ties), solved, context)
   }
 
-  def planSort(inner: LogicalPlan, descriptions: Seq[ColumnOrder], items: Seq[ast.SortItem], context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSortItems(items))))
-    annotate(Sort(inner, descriptions), solved, context)
+  def planSort(inner: LogicalPlan, sortColumns: Seq[ColumnOrder], reportedSortItems: Seq[ast.SortItem], context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSortItems(reportedSortItems))))
+    annotate(Sort(inner, sortColumns), solved, context)
   }
 
   def planShortestPath(inner: LogicalPlan, shortestPaths: ShortestPathPattern, predicates: Seq[Expression],

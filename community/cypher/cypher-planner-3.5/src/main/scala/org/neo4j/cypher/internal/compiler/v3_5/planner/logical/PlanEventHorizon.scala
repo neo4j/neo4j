@@ -47,7 +47,7 @@ case object PlanEventHorizon
         if (queryProjection.projections.isEmpty && query.tail.isEmpty)
           context.logicalPlanProducer.planEmptyProjection(plan, context)
         else {
-          projection(sortedAndLimited, queryProjection.projections, context, solveds, cardinalities)
+          projection(sortedAndLimited, queryProjection.projections, queryProjection.projections, context, solveds, cardinalities)
         }
 
       case queryProjection: DistinctQueryProjection =>

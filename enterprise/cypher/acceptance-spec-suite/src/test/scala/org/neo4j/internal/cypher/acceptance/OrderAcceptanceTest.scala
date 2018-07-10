@@ -23,25 +23,26 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
-// TODO use executeWith instead
+// TODO find out why compiled is crying
 class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    graph.execute(
-      """
-      CREATE (:A {age: 10, name: 'A', foo: 6})
-      CREATE (:A {age: 9, name: 'B', foo: 5})
-      CREATE (:A {age: 12, name: 'C', foo: 4})
-      CREATE (:A {age: 16, name: 'D', foo: 3})
-      CREATE (:A {age: 14, name: 'E', foo: 2})
-      CREATE (:A {age: 4, name: 'F', foo: 1})
-      """)
+//    graph.execute(
+//      """
+//      CREATE (:A {age: 10, name: 'A', foo: 6})
+//      CREATE (:A {age: 9, name: 'B', foo: 5})
+//      CREATE (:A {age: 12, name: 'C', foo: 4})
+//      CREATE (:A {age: 16, name: 'D', foo: 3})
+//      CREATE (:A {age: 14, name: 'E', foo: 2})
+//      CREATE (:A {age: 4, name: 'F', foo: 1})
+//      """)
   }
 
   test("ORDER BY previously unprojected column in WITH") {
-    val result = innerExecuteDeprecated(
+    val result = executeWith(Configs.All,
       """
       MATCH (a:A)
       WITH a
@@ -60,7 +61,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   test("ORDER BY previously unprojected column in WITH and return that column") {
-    val result = innerExecuteDeprecated(
+    val result = executeWith(Configs.All,
       """
       MATCH (a:A)
       WITH a
@@ -79,7 +80,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   test("ORDER BY previously unprojected column in WITH and project and return that column") {
-    val result = innerExecuteDeprecated(
+    val result = executeWith(Configs.All,
       """
       MATCH (a:A)
       WITH a, a.age AS age
@@ -91,17 +92,93 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       .aPlan("Projection")
       .containingArgument("{a.name : a.name}")
       .onTopOf(aPlan("Sort")
+        .containingArgument("age")
         .onTopOf(aPlan("Projection")
           .containingVariables("a")
           .containingArgument("{age : a.age}")
         ))
   }
 
-  // Does not regress but has some awkward Projections we could get rid of
-  // TODO a.name is projected at very first, even though that is not necessary
-  // We need to get rid of that, too for required order
+  test("ORDER BY renamed column old name in WITH and project and return that column") {
+    val result = executeWith(Configs.All,
+      """
+      MATCH (a:A)
+      WITH a AS b, a.age AS age
+      ORDER BY a
+      RETURN b.name, age
+      """)
+
+    result.executionPlanDescription() should includeSomewhere
+      .aPlan("Projection")
+      .containingArgument("{age : a.age}")
+      .onTopOf(aPlan("Sort")
+        .containingArgument("b")
+        .onTopOf(aPlan("Projection")
+          .containingArgument("{b : a}")
+        ))
+  }
+
+  test("ORDER BY renamed column new name in WITH and project and return that column") {
+    val result = executeWith(Configs.All,
+      """
+      MATCH (a:A)
+      WITH a AS b, a.age AS age
+      ORDER BY b
+      RETURN b.name, age
+      """)
+
+    result.executionPlanDescription() should includeSomewhere
+      .aPlan("Projection")
+      .containingArgument("{age : a.age}")
+      .onTopOf(aPlan("Sort")
+        .containingArgument("b")
+        .onTopOf(aPlan("Projection")
+          .containingArgument("{b : a}")
+        ))
+  }
+
+  test("ORDER BY renamed column expression with old name in WITH and project and return that column") {
+    val result = executeWith(Configs.All,
+      """
+      MATCH (a:A)
+      WITH a AS b, a.age AS age
+      ORDER BY a.foo, a.age + 5
+      RETURN b.name, age
+      """)
+
+    result.executionPlanDescription() should includeSomewhere
+      .aPlan("Sort")
+      .onTopOf(aPlan("Projection")
+        .containingArgumentRegex("\\{ : b\\.foo,  : age \\+ \\$`  AUTOINT\\d+`\\}".r)
+        .onTopOf(aPlan("Projection")
+          .containingArgument("{b : a, age : a.age}")
+        )
+      )
+  }
+
+  test("ORDER BY renamed column expression with new name in WITH and project and return that column") {
+    val result = executeWith(Configs.All,
+      """
+      MATCH (a:A)
+      WITH a AS b, a.age AS age
+      ORDER BY b.foo, b.age + 5
+      RETURN b.name, age
+      """)
+
+    result.executionPlanDescription() should includeSomewhere
+      .aPlan("Projection")
+      .containingArgument("{age : a.age}")
+      .onTopOf(aPlan("Sort")
+        .onTopOf(aPlan("Projection")
+          .containingArgumentRegex("\\{ : b\\.foo,  : b\\.age \\+ \\$`  AUTOINT\\d+`\\}".r)
+          .onTopOf(aPlan("Projection")
+            .containingArgument("{b : a}")
+          )
+        ))
+  }
+
   test("ORDER BY previously unprojected column in RETURN") {
-    val result = innerExecuteDeprecated(
+    val result = executeWith(Configs.All,
       """
       MATCH (a:A)
       RETURN a.name
@@ -110,7 +187,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     result.executionPlanDescription() should includeSomewhere
       .aPlan("Projection")
-      .containingArgumentRegex("\\{a\\.name : anon\\[\\d\\d\\]\\}".r)
+      .containingArgument("{ : a.name}")
       .onTopOf(aPlan("Sort")
         .onTopOf(aPlan("Projection")
           .containingVariables("a")
@@ -120,7 +197,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
   // Does not regress but has some awkward Projections we could get rid of
   test("ORDER BY previously unprojected column in RETURN and return that column") {
-    val result = innerExecuteDeprecated(
+    val result = executeWith(Configs.All,
       """
       MATCH (a:A)
       RETURN a.name, a.age
@@ -139,7 +216,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
   // Does not regress but has some awkward Projections we could get rid of
   test("ORDER BY previously unprojected column in RETURN and project and return that column") {
-    val result = innerExecuteDeprecated(
+    val result = executeWith(Configs.All,
       """
       MATCH (a:A)
       RETURN a.name, a.age AS age
@@ -157,7 +234,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   test("ORDER BY previously unprojected column in RETURN *") {
-    val result = innerExecuteDeprecated(
+    val result = executeWith(Configs.All,
       """
       MATCH (a:A)
       RETURN *
@@ -173,7 +250,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   test("ORDER BY previously unprojected column in RETURN * and return that column") {
-    val result = innerExecuteDeprecated(
+    val result = executeWith(Configs.All,
       """
       MATCH (a:A)
       RETURN *, a.age
@@ -189,7 +266,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   test("ORDER BY previously unprojected column in RETURN * and project and return that column") {
-    val result = innerExecuteDeprecated(
+    val result = executeWith(Configs.All,
       """
       MATCH (a:A)
       RETURN *, a.age AS age
@@ -205,7 +282,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   test("ORDER BY previously unprojected column with expression in WITH") {
-    val result = innerExecuteDeprecated(
+    val result = executeWith(Configs.All,
       """
       MATCH (a:A)
       WITH a
@@ -224,7 +301,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   test("ORDER BY previously unprojected DISTINCT column in WITH and project and return it") {
-    val result = innerExecuteDeprecated(
+    val result = executeWith(Configs.All,
       """
       MATCH (a:A)
       WITH DISTINCT a.age AS age
@@ -242,7 +319,7 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   test("ORDER BY column that isn't referenced in WITH DISTINCT") {
-    val result = innerExecuteDeprecated(
+    val result = executeWith(Configs.All,
       """
         MATCH (a:A)
         WITH DISTINCT a.name AS name, a
@@ -262,7 +339,8 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   test("ORDER BY previously unprojected AGGREGATING column in WITH and project and return it") {
-    val result = innerExecuteDeprecated(
+    // sum is not supported in compiled
+    val result = executeWith(Configs.All - Configs.Compiled,
       """
       MATCH (a:A)
       WITH a.name AS name, sum(a.age) AS age
@@ -279,8 +357,28 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       )
   }
 
+  test("ORDER BY previously unprojected GROUPING column in WITH and project and return it") {
+    // sum is not supported in compiled
+    val result = executeWith(Configs.All - Configs.Compiled,
+      """
+      MATCH (a:A)
+      WITH a.name AS name, sum(a.age) AS age
+      ORDER BY name
+      RETURN name, age
+      """)
+
+    result.executionPlanDescription() should includeSomewhere
+      .aPlan("Sort")
+      .containingArgument("name")
+      .onTopOf(aPlan("EagerAggregation")
+        .containingVariables("age", "name") // the introduced variables
+        .containingArgument("name") // the group column
+      )
+  }
+
   test("ORDER BY column that isn't referenced in WITH GROUP BY") {
-    val result = innerExecuteDeprecated(
+    // sum is not supported in compiled
+    val result = executeWith(Configs.All - Configs.Compiled,
       """
       MATCH (a:A)
       WITH a.name AS name, a, sum(a.age) AS age

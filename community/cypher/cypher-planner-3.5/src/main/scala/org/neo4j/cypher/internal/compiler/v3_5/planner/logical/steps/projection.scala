@@ -27,7 +27,7 @@ import org.opencypher.v9_0.expressions.{Expression, Variable}
 
 object projection {
 
-  def apply(in: LogicalPlan, projs: Map[String, Expression], context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
+  def apply(in: LogicalPlan, projectionsToPlan: Map[String, Expression], projectionsToMarkSolved: Map[String, Expression], context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
 
     // if we had a previous projection it might have projected something already
     // we only want to project what's left from that previous projection
@@ -35,7 +35,7 @@ object projection {
       case solvedProjection: QueryProjection => solvedProjection.projections.keys
       case _ => Seq.empty
     }
-    val stillToSolveProjection = projs -- alreadySolvedProjections
+    val stillToSolveProjection = projectionsToPlan -- alreadySolvedProjections
 
     val (plan, projectionsMap) = PatternExpressionSolver()(in, stillToSolveProjection, context, solveds, cardinalities)
 
@@ -47,9 +47,9 @@ object projection {
     // The projections that are not covered yet
     val projectionsDiff = (projections -- projectAllCoveredIds).toMap
     if (projectionsDiff.isEmpty) {
-      context.logicalPlanProducer.planStarProjection(plan, projs, context)
+      context.logicalPlanProducer.planStarProjection(plan, projectionsToMarkSolved, context)
     } else {
-      context.logicalPlanProducer.planRegularProjection(plan, projectionsDiff, projs, context)
+      context.logicalPlanProducer.planRegularProjection(plan, projectionsDiff, projectionsToMarkSolved, context)
     }
   }
 }
