@@ -62,6 +62,7 @@ public class PageCacheWarmupCcIT extends PageCacheWarmupTestSupport
             .withSharedReadReplicaParam( CausalClusteringSettings.upstream_selection_strategy, LeaderOnlyStrategy.IDENTITY );
 
     private Cluster cluster;
+    private CoreClusterMember leader;
 
     @Before
     public void setup() throws Exception
@@ -71,7 +72,7 @@ public class PageCacheWarmupCcIT extends PageCacheWarmupTestSupport
 
     private long warmUpCluster() throws Exception
     {
-        cluster.awaitLeader(); // Make sure we have a cluster leader.
+        leader = cluster.awaitLeader(); // Make sure we have a cluster leader.
         cluster.coreTx( ( db, tx ) ->
         {
             // Create some test data to touch a bunch of pages.
@@ -83,18 +84,18 @@ public class PageCacheWarmupCcIT extends PageCacheWarmupTestSupport
         {
             // Wait for an initial profile on the leader. This profile might have raced with the 'createTestData'
             // transaction above, so it might be incomplete.
-            waitForCacheProfile( db );
+            waitForCacheProfile( leader.monitors() );
             // Now we can wait for a clean profile on the leader, and note the count for verifying later.
-            pagesInMemory.set( waitForCacheProfile( db ) );
+            pagesInMemory.set( waitForCacheProfile( leader.monitors() ) );
         } );
         for ( CoreClusterMember member : cluster.coreMembers() )
         {
-            waitForCacheProfile( member.database() );
+            waitForCacheProfile( member.monitors() );
         }
         return pagesInMemory.get();
     }
 
-    private void verifyWarmupHappensAfterStoreCopy( ClusterMember member, long pagesInMemory )
+    private static void verifyWarmupHappensAfterStoreCopy( ClusterMember member, long pagesInMemory )
     {
         AtomicLong pagesLoadedInWarmup = new AtomicLong();
         BinaryLatch warmupLatch = injectWarmupLatch( member, pagesLoadedInWarmup );
@@ -104,7 +105,7 @@ public class PageCacheWarmupCcIT extends PageCacheWarmupTestSupport
         assertThat( pagesLoadedInWarmup.get(), greaterThanOrEqualTo( pagesInMemory ) );
     }
 
-    private BinaryLatch injectWarmupLatch( ClusterMember member, AtomicLong pagesLoadedInWarmup )
+    private static BinaryLatch injectWarmupLatch( ClusterMember member, AtomicLong pagesLoadedInWarmup )
     {
         BinaryLatch warmupLatch = new BinaryLatch();
         Monitors monitors = member.monitors();

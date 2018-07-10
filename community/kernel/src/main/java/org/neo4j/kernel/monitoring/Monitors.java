@@ -51,11 +51,6 @@ import static org.apache.commons.lang3.ArrayUtils.isEmpty;
  */
 public class Monitors
 {
-    // Concurrency: Mutation of these data structures is always guarded by the monitor lock on this Monitors instance,
-    // while look-ups and reads are performed concurrently. The methodMonitorListeners lists (the map values) are
-    // read concurrently by the proxies, while changing the listener set always produce new lists that atomically
-    // replace the ones already in the methodMonitorListeners map.
-
     /** Monitor interface method -> Listeners */
     private final Map<Method,Set<MonitorListenerInvocationHandler>> methodMonitorListeners = new ConcurrentHashMap<>();
     private final MutableBag<Class<?>> monitoredInterfaces = MultiReaderHashBag.newBag();
@@ -70,6 +65,9 @@ public class Monitors
      * Create a child monitor with a given {@code parent}. Propagation works as expected where you can subscribe to
      * global monitors through the child monitor, but not the other way around. E.g. you can not subscribe to monitors
      * that are registered on the child monitor through the parent monitor.
+     * <p>
+     * Events will bubble up from the children in a way that listeners on the child monitor will be invoked before the
+     * parent ones.
      *
      * @param parent to propagate events to and from.
      */
@@ -88,10 +86,6 @@ public class Monitors
 
     public void addMonitorListener( Object monitorListener, String... tags )
     {
-        if ( parent != null )
-        {
-            parent.addMonitorListener( monitorListener, tags );
-        }
         MonitorListenerInvocationHandler monitorListenerInvocationHandler = createInvocationHandler( monitorListener, tags );
 
         List<Class<?>> listenerInterfaces = getAllInterfaces( monitorListener );
@@ -106,10 +100,6 @@ public class Monitors
 
     public void removeMonitorListener( Object monitorListener )
     {
-        if ( parent != null )
-        {
-            parent.removeMonitorListener( monitorListener );
-        }
         List<Class<?>> listenerInterfaces = getAllInterfaces( monitorListener );
         methodsStream( listenerInterfaces ).forEach( method -> cleanupMonitorListeners( monitorListener, method ) );
         listenerInterfaces.forEach( monitoredInterfaces::remove );
@@ -117,7 +107,7 @@ public class Monitors
 
     public boolean hasListeners( Class<?> monitorClass )
     {
-        return monitoredInterfaces.contains( monitorClass ) || ((parent != null) ? parent.hasListeners( monitorClass ) : false);
+        return monitoredInterfaces.contains( monitorClass ) || ((parent != null) && parent.hasListeners( monitorClass ));
     }
 
     private void cleanupMonitorListeners( Object monitorListener, Method key )
@@ -215,19 +205,23 @@ public class Monitors
         @Override
         public Object invoke( Object proxy, Method method, Object[] args )
         {
-            invokeMonitorListeners( monitor, proxy, method, args );
+            invokeMonitorListeners( monitor, tags, proxy, method, args );
+
+            // Bubble up
+            Monitors current = monitor.parent;
+            while ( current != null )
+            {
+                invokeMonitorListeners( current, tags, proxy, method, args );
+                current = current.parent;
+            }
             return null;
         }
 
-        private void invokeMonitorListeners( Monitors monitor, Object proxy, Method method, Object[] args )
+        private static void invokeMonitorListeners( Monitors monitor, String[] tags, Object proxy, Method method, Object[] args )
         {
             Set<MonitorListenerInvocationHandler> handlers = monitor.methodMonitorListeners.get( method );
             if ( handlers == null || handlers.isEmpty() )
             {
-                if ( monitor.parent != null )
-                {
-                    invokeMonitorListeners( monitor.parent, proxy, method, args );
-                }
                 return;
             }
             for ( MonitorListenerInvocationHandler monitorListenerInvocationHandler : handlers )

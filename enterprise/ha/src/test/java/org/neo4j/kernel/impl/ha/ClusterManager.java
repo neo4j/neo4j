@@ -823,8 +823,9 @@ public class ClusterManager
         private final Cluster spec;
         private final String name;
         private final Map<InstanceId,HighlyAvailableGraphDatabase> members = new ConcurrentHashMap<>();
+        private final Map<HighlyAvailableGraphDatabase,Monitors> monitorsMap = new ConcurrentHashMap<>();
         private final List<ObservedClusterMembers> arbiters = new ArrayList<>();
-        private final Set<RepairKit> pendingRepairs = Collections.synchronizedSet( new HashSet<RepairKit>() );
+        private final Set<RepairKit> pendingRepairs = Collections.synchronizedSet( new HashSet<>() );
         private final ParallelLifecycle parallelLife = new ParallelLifecycle( DEFAULT_TIMEOUT_SECONDS, SECONDS );
         private final String initialHosts;
         private final File parent;
@@ -999,6 +1000,24 @@ public class ClusterManager
         }
 
         /**
+         * Returns the global monitor for a particular {@link InstanceId}.
+         *
+         * @param database the database to get the global {@link Monitors} from.
+         * @return the global {@link Monitors}.
+         * @throws IllegalStateException if no monitor is registered, this might imply that the
+         * server is not started yet.
+         */
+        public Monitors getMonitorsByDatabase( HighlyAvailableGraphDatabase database )
+        {
+            Monitors monitors = monitorsMap.get( database );
+            if ( monitors == null )
+            {
+                throw new IllegalStateException(  "Monitors for db " + database + " not found" );
+            }
+            return monitors;
+        }
+
+        /**
          * Shuts down a member of this cluster. A {@link RepairKit} is returned
          * which is able to restore the instance (i.e. start it again). This method
          * does not return until the rest of the cluster sees the member as not available.
@@ -1130,11 +1149,12 @@ public class ClusterManager
             int haPort = PortAuthority.allocatePort();
             File storeDir = new File( parent, "server" + serverId );
             if ( storeDirInitializer != null )
-
             {
                 storeDirInitializer.initializeStoreDir( serverId.toIntegerIndex(), storeDir );
             }
-            GraphDatabaseBuilder builder = dbFactory.newEmbeddedDatabaseBuilder( storeDir.getAbsoluteFile() );
+
+            Monitors monitors = new Monitors();
+            GraphDatabaseBuilder builder = dbFactory.setMonitors( monitors ).newEmbeddedDatabaseBuilder( storeDir.getAbsoluteFile() );
             builder.setConfig( ClusterSettings.cluster_name, name );
             builder.setConfig( ClusterSettings.initial_hosts, initialHosts );
             builder.setConfig( ClusterSettings.server_id, serverId + "" );
@@ -1162,6 +1182,7 @@ public class ClusterManager
 
             HighlyAvailableGraphDatabase graphDatabase = (HighlyAvailableGraphDatabase) builder.newGraphDatabase();
             members.put( serverId, graphDatabase );
+            monitorsMap.put( graphDatabase, monitors );
             return graphDatabase;
         }
 

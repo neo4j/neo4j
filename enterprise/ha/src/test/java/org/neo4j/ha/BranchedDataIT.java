@@ -192,7 +192,7 @@ public class BranchedDataIT
         // so anyways, when thor comes back into the cluster
         cluster.info( format( "%n   ==== REPAIRING CABLES ====%n" ) );
         cluster.await( memberThinksItIsRole( thor, UNKNOWN ) );
-        BranchMonitor thorHasBranched = installBranchedDataMonitor( thor );
+        BranchMonitor thorHasBranched = installBranchedDataMonitor( cluster.getMonitorsByDatabase( thor ) );
         thorRepairKit.repair();
         cluster.await( memberThinksItIsRole( thor, SLAVE ) );
         cluster.await( memberThinksItIsRole( odin, MASTER ) );
@@ -219,10 +219,10 @@ public class BranchedDataIT
         assertTrue( hasNode( odin, "0-0" ) );
     }
 
-    private BranchMonitor installBranchedDataMonitor( HighlyAvailableGraphDatabase odin )
+    private BranchMonitor installBranchedDataMonitor( Monitors monitors )
     {
         BranchMonitor monitor = new BranchMonitor();
-        odin.getDependencyResolver().resolveDependency( Monitors.class ).addMonitorListener( monitor );
+        monitors.addMonitorListener( monitor );
         return monitor;
     }
 

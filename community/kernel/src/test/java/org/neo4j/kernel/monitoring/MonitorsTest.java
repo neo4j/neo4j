@@ -158,4 +158,28 @@ public class MonitorsTest
         monitors.removeMonitorListener( listener2 );
         assertFalse( monitors.hasListeners( MyMonitor.class ) );
     }
+
+    @Test
+    public void eventShouldBubbleUp()
+    {
+        Monitors parent = new Monitors();
+        MyMonitor parentListener = mock( MyMonitor.class );
+        parent.addMonitorListener( parentListener );
+
+        Monitors child = new Monitors( parent );
+        MyMonitor childListener = mock( MyMonitor.class );
+        child.addMonitorListener( childListener );
+
+        // Calls on monitors from parent should not reach child listeners
+        MyMonitor parentMonitor = parent.newMonitor( MyMonitor.class );
+        parentMonitor.aVoid();
+        verify( parentListener, times( 1 ) ).aVoid();
+        verifyZeroInteractions( childListener );
+
+        // Calls on monitors from child should reach both listeners
+        MyMonitor childMonitor = child.newMonitor( MyMonitor.class );
+        childMonitor.aVoid();
+        verify( parentListener, times( 2 ) ).aVoid();
+        verify( childListener, times( 1 ) ).aVoid();
+    }
 }

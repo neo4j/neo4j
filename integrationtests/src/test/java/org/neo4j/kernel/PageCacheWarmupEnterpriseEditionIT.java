@@ -64,7 +64,7 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
     public EnterpriseDatabaseRule db = new EnterpriseDatabaseRule().startLazily();
     private TestDirectory dir = db.getTestDirectory();
 
-    private void verifyEventuallyWarmsUp( long pagesInMemory, File metricsDirectory ) throws Exception
+    private static void verifyEventuallyWarmsUp( long pagesInMemory, File metricsDirectory ) throws Exception
     {
         assertEventually( "Metrics report should include page cache page faults",
                 () -> readLongValue( metricsCsv( metricsDirectory, PC_PAGE_FAULTS ) ),
@@ -81,7 +81,7 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
         db.ensureStarted();
 
         createTestData( db );
-        long pagesInMemory = waitForCacheProfile( db );
+        long pagesInMemory = waitForCacheProfile( db.getMonitors() );
 
         db.restartDatabase(
                 MetricsSettings.neoPageCacheEnabled.name(), Settings.TRUE,
@@ -104,9 +104,9 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
         db.ensureStarted();
 
         createTestData( db );
-        long pagesInMemory = waitForCacheProfile( db );
+        long pagesInMemory = waitForCacheProfile( db.getMonitors() );
 
-        BinaryLatch latch = pauseProfile( db ); // We don't want torn profile files in this test.
+        BinaryLatch latch = pauseProfile( db.getMonitors() ); // We don't want torn profile files in this test.
 
         File metricsDirectory = dir.cleanDirectory( "metrics" );
         File backupDir = dir.cleanDirectory( "backup" );
@@ -140,7 +140,7 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
         db.ensureStarted();
 
         createTestData( db );
-        waitForCacheProfile( db );
+        waitForCacheProfile( db.getMonitors() );
 
         for ( int i = 0; i < 20; i++ )
         {
@@ -157,7 +157,7 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
           .setConfig( GraphDatabaseSettings.pagecache_warmup_profiling_interval, "100ms" );
         db.ensureStarted();
         createTestData( db );
-        long pagesInMemory = waitForCacheProfile( db );
+        long pagesInMemory = waitForCacheProfile( db.getMonitors() );
 
         db.shutdownAndKeepStore();
 

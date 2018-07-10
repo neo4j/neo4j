@@ -95,7 +95,7 @@ public class DataSourceModule
         File storeDir = platformModule.storeDir;
         DiagnosticsManager diagnosticsManager = platformModule.diagnosticsManager;
         this.queryExecutor = queryExecutionEngineSupplier;
-        Monitors monitors = platformModule.monitors;
+        Monitors monitors = new Monitors( platformModule.monitors );
 
         threadToTransactionBridge = deps.satisfyDependency( new ThreadToStatementContextBridge( platformModule.availabilityGuard ) );
 

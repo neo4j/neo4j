@@ -31,7 +31,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.pagecache.PageCacheWarmerMonitor;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.util.concurrent.BinaryLatch;
 
@@ -59,21 +58,19 @@ class PageCacheWarmupTestSupport
         }
     }
 
-    static long waitForCacheProfile( GraphDatabaseAPI db )
+    static long waitForCacheProfile( Monitors monitors )
     {
         AtomicLong pageCount = new AtomicLong();
         BinaryLatch profileLatch = new BinaryLatch();
         PageCacheWarmerMonitor listener = new AwaitProfileMonitor( pageCount, profileLatch );
-        Monitors monitors = db.getDependencyResolver().resolveDependency( Monitors.class );
         monitors.addMonitorListener( listener );
         profileLatch.await();
         monitors.removeMonitorListener( listener );
         return pageCount.get();
     }
 
-    static BinaryLatch pauseProfile( GraphDatabaseAPI db )
+    static BinaryLatch pauseProfile( Monitors monitors )
     {
-        Monitors monitors = db.getDependencyResolver().resolveDependency( Monitors.class );
         return new PauseProfileMonitor( monitors );
     }
 

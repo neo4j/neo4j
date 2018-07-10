@@ -41,7 +41,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static org.hamcrest.Matchers.containsString;
@@ -134,12 +133,9 @@ public class ReadReplicaStoreCopyIT
 
     private static Semaphore addStoreCopyBlockingMonitor( ReadReplica readReplica )
     {
-        DependencyResolver dependencyResolver = readReplica.database().getDependencyResolver();
-        Monitors monitors = dependencyResolver.resolveDependency( Monitors.class );
-
         Semaphore semaphore = new Semaphore( 0 );
 
-        monitors.addMonitorListener( (FileCopyMonitor) file ->
+        readReplica.monitors().addMonitorListener( (FileCopyMonitor) file ->
         {
             try
             {

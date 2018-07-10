@@ -37,11 +37,11 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class MembershipWaiterLifecycle extends LifecycleAdapter
 {
     private final MembershipWaiter membershipWaiter;
-    private final Long joinCatchupTimeout;
+    private final long joinCatchupTimeout;
     private final RaftMachine raft;
     private final Log log;
 
-    public MembershipWaiterLifecycle( MembershipWaiter membershipWaiter, Long joinCatchupTimeout,
+    public MembershipWaiterLifecycle( MembershipWaiter membershipWaiter, long joinCatchupTimeout,
                                       RaftMachine raft, LogProvider logProvider )
     {
         this.membershipWaiter = membershipWaiter;

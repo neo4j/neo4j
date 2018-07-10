@@ -59,6 +59,7 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -70,6 +71,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     private Supplier<Statement> statementSupplier;
     private boolean startEagerly = true;
     private Map<Setting<?>, String> config;
+    private final Monitors monitors = new Monitors();
 
     /**
      * Means the database will be started on first {@link #getGraphDatabaseAPI()}}
@@ -268,6 +270,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         try
         {
             GraphDatabaseFactory factory = newFactory();
+            factory.setMonitors( monitors );
             configure( factory );
             databaseBuilder = newBuilder( factory );
             configure( databaseBuilder );
@@ -277,6 +280,14 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
             deleteResources();
             throw e;
         }
+    }
+
+    /**
+     * @return the high level monitor in the database.
+     */
+    public Monitors getMonitors()
+    {
+        return monitors;
     }
 
     protected void deleteResources()

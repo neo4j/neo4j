@@ -60,7 +60,7 @@ class LargePageListIT
         IntStream.range( pages - 2000, pages ).parallel().forEach( id -> verifyPageMetaDataIsAccessible( pageList, id ) );
     }
 
-    private void verifyPageMetaDataIsAccessible( PageList pageList, int id )
+    private static void verifyPageMetaDataIsAccessible( PageList pageList, int id )
     {
         long ref = pageList.deref( id );
         pageList.incrementUsage( ref );
