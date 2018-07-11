@@ -41,6 +41,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -58,9 +59,10 @@ import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -512,34 +514,28 @@ public class Cluster
         return awaitEx( supplier, notNull()::test, timeout, timeUnit );
     }
 
-    private static boolean isTransientFailure( Throwable e )
+    private boolean isTransientFailure( Throwable e )
     {
-        // TODO: This should really catch all cases of transient failures. Must be able to express that in a clearer
-        // manner...
-        return (e instanceof IdGenerationException) || isLockExpired( e ) || isLockOnFollower( e ) || isWriteNotOnLeader( e ) || isUnableToReplicate( e );
-
+        Predicate<Throwable> throwablePredicate =
+                e1 -> isLockExpired( e1 ) || isLockOnFollower( e1 ) || isWriteNotOnLeader( e1 ) || e1 instanceof TransientTransactionFailureException ||
+                        e1 instanceof IdGenerationException;
+        return Exceptions.contains( e, throwablePredicate );
     }
 
-    private static boolean isWriteNotOnLeader( Throwable e )
+    private boolean isWriteNotOnLeader( Throwable e )
     {
         return e instanceof WriteOperationsNotAllowedException &&
                e.getMessage().startsWith( String.format( LeaderCanWrite.NOT_LEADER_ERROR_MSG, "" ) );
     }
 
-    private static boolean isLockOnFollower( Throwable e )
+    private boolean isLockOnFollower( Throwable e )
     {
         return e instanceof AcquireLockTimeoutException &&
                (e.getMessage().equals( LeaderOnlyLockManager.LOCK_NOT_ON_LEADER_ERROR_MESSAGE ) ||
                 e.getCause() instanceof NoLeaderFoundException);
     }
 
-    private static boolean isUnableToReplicate( Throwable e )
-    {
-        return e instanceof org.neo4j.internal.kernel.api.exceptions.TransactionFailureException &&
-                ((org.neo4j.internal.kernel.api.exceptions.TransactionFailureException) e).status().equals( Status.Cluster.ReplicationFailure );
-    }
-
-    private static boolean isLockExpired( Throwable e )
+    private boolean isLockExpired( Throwable e )
     {
         return e instanceof TransactionFailureException &&
                e.getCause() instanceof org.neo4j.internal.kernel.api.exceptions.TransactionFailureException &&
