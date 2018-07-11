@@ -1357,6 +1357,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             this.populationCompletedSuccessfully = value;
         }
 
+        @Override
         public void close() throws IOException
         {
             close( populationCompletedSuccessfully );
