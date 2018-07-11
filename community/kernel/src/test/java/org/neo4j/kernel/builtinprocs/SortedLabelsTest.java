@@ -17,7 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api.helpers;
+
+package org.neo4j.kernel.builtinprocs;
 
 import org.junit.jupiter.api.Test;
 
@@ -26,41 +27,42 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class NodeDataTest
+class SortedLabelsTest
 {
     @Test
-    void testEqualityOfLabelSets()
+    void testEquals()
     {
-        long[] longsA = new long[]{1L,2L,3L};
-        long[] longsB = new long[]{3L,2L,1L};
-        long[] longsC = new long[]{1L,2L,3L,4L};
-        NodeData a = new NodeData( 1, longsA, null );
-        NodeData b = new NodeData( 1, longsB, null );
-        NodeData c = new NodeData( 1, longsC, null );
+        long[] longsA = new long[]{1L, 2L, 3L};
+        long[] longsB = new long[]{3L, 2L, 1L};
+        long[] longsC = new long[]{1L, 2L, 3L, 4L};
+        SortedLabels a = SortedLabels.from( longsA );
+        SortedLabels b = SortedLabels.from( longsB );
+        SortedLabels c = SortedLabels.from( longsC );
 
         // self
-        assertTrue(a.labelSet().equals( a.labelSet() ));
+        //noinspection EqualsWithItself
+        assertTrue( a.equals( a ) );
 
         // unordered self
-        assertTrue(a.labelSet().equals( b.labelSet() ));
-        assertTrue(b.labelSet().equals( a.labelSet() ));
+        assertTrue( a.equals( b ) );
+        assertTrue( b.equals( a ) );
 
         // other
-        assertFalse(a.labelSet().equals( c.labelSet() ));
-        assertFalse(c.labelSet().equals( a.labelSet() ));
+        assertFalse( a.equals( c ) );
+        assertFalse( c.equals( a ) );
     }
 
     @Test
     void testHashCodeOfLabelSet()
     {
-        long[] longsA = new long[]{1L,2L,3L};
-        long[] longsB = new long[]{3L,2L,1L};
-        long[] longsC = new long[]{1L,2L,3L,4L};
-        NodeData a = new NodeData( 1, longsA, null );
-        NodeData b = new NodeData( 1, longsB, null );
-        NodeData c = new NodeData( 1, longsC, null );
+        long[] longsA = new long[]{1L, 2L, 3L};
+        long[] longsB = new long[]{3L, 2L, 1L};
+        long[] longsC = new long[]{1L, 2L, 3L, 4L};
+        SortedLabels a = SortedLabels.from( longsA );
+        SortedLabels b = SortedLabels.from( longsB );
+        SortedLabels c = SortedLabels.from( longsC );
 
-        assertEquals( a.labelSet().hashCode(), b.labelSet().hashCode() );
-        assertNotEquals( a.labelSet().hashCode(), c.labelSet().hashCode() );
+        assertEquals( a.hashCode(), b.hashCode() );
+        assertNotEquals( a.hashCode(), c.hashCode() );
     }
 }

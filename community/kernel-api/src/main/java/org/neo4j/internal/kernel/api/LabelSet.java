@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import java.util.Arrays;
 import java.util.NoSuchElementException;
 
 /**
@@ -69,7 +68,7 @@ public interface LabelSet
         @Override
         public int hashCode()
         {
-            return Arrays.hashCode( EMPTY );
+            return 1;
         }
 
         @Override
@@ -77,7 +76,7 @@ public interface LabelSet
         {
             if ( obj instanceof LabelSet )
             {
-                return ((LabelSet) obj).all().length == 0;
+                return ((LabelSet) obj).numberOfLabels() == 0;
             }
             return false;
         }

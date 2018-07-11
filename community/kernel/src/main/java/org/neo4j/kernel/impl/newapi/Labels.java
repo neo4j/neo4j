@@ -31,12 +31,11 @@ public class Labels implements LabelSet
      * This really only needs to be {@code int[]}, but the underlying implementation uses {@code long[]} for some
      * reason.
      */
-    private final long[] labels;
+    protected final long[] labels;
 
-    private Labels( long[] labels )
+    protected Labels( long[] labels )
     {
         this.labels = labels;
-        Arrays.sort(labels); // needed for quick equality check, most of the time, its already sorted anyway
     }
 
     public static Labels from( long[] labels )
@@ -88,32 +87,5 @@ public class Labels implements LabelSet
     public long[] all()
     {
         return labels;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Arrays.hashCode( labels );
-    }
-
-    @Override
-    public boolean equals( Object obj )
-    {
-        if ( obj instanceof LabelSet )
-        {
-            long[] input = ((LabelSet) obj).all();
-
-            if ( labels == input )
-            {
-                return true;
-            }
-            if ( input.length != labels.length )
-            {
-                return false;
-            }
-
-            return Arrays.equals(labels, input);
-        }
-        return false;
     }
 }

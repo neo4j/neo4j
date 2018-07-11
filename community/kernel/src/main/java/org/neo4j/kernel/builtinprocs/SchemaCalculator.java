@@ -32,7 +32,6 @@ import java.util.stream.Stream;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -52,10 +51,8 @@ import static org.neo4j.kernel.builtinprocs.SchemaCalculator.ValueStatus.VALUE_G
 
 public class SchemaCalculator
 {
-    private org.neo4j.internal.kernel.api.Transaction ktx;
-
-    private Map<LabelSet,MutableIntSet> labelSetToPropertyKeysMapping;
-    private Map<Pair<LabelSet,Integer>,ValueTypeDecider> labelSetANDNodePropertyKeyIdToValueTypeMapping;
+    private Map<SortedLabels,MutableIntSet> labelSetToPropertyKeysMapping;
+    private Map<Pair<SortedLabels,Integer>,ValueTypeDecider> labelSetANDNodePropertyKeyIdToValueTypeMapping;
     private Map<Integer,String> labelIdToLabelNameMapping;
     private Map<Integer,String> propertyIdToPropertylNameMapping;
     private Map<Integer,String> relationshipTypIdToRelationshipNameMapping;
@@ -63,23 +60,30 @@ public class SchemaCalculator
     private Map<Pair<Integer,Integer>,ValueTypeDecider> relationshipTypeIdANDPropertyTypeIdToValueTypeMapping;
 
     private final MutableIntSet emptyPropertyIdSet = IntSets.mutable.empty();
-    private final String ANYVALUE = "ANY";
-    private final String INTEGRAL = "INTEGRAL";
-    private final String INTEGRAL_ARRAY = "INTEGRALARRAY";
-    private final String FLOATING_POINT = "FLOATINGPOINT";
-    private final String FLOATING_POINT_ARRAY = "FLOATINGPOINTARRAY";
-    private final String NULLABLE = "?";
-    private final String NULLABLE_ANYVALUE = ANYVALUE + NULLABLE;
-    private final String NULLABLE_INTEGRAL = INTEGRAL + NULLABLE;
-    private final String NULLABLE_INTEGRAL_ARRAY = INTEGRAL_ARRAY + NULLABLE;
-    private final String NULLABLE_FLOATING_POINT_ARRAY = FLOATING_POINT_ARRAY + NULLABLE;
-    private final String NULLABLE_FLOATING_POINT = FLOATING_POINT + NULLABLE;
-    private final String NODE = "Node";
-    private final String RELATIONSHIP = "Relationship";
+    private static final String NODE = "Node";
+    private static final String RELATIONSHIP = "Relationship";
+    private static final String NULLABLE = "?";
+
+    private final Read dataRead;
+    private final TokenRead tokenRead;
+    private final CursorFactory cursors;
 
     SchemaCalculator( Transaction ktx )
     {
-        this.ktx = ktx;
+        this.dataRead = ktx.dataRead();
+        this.tokenRead = ktx.tokenRead();
+        this.cursors = ktx.cursors();
+
+        // setup mappings
+        int labelCount = tokenRead.labelCount();
+        int relationshipTypeCount = tokenRead.relationshipTypeCount();
+        labelSetToPropertyKeysMapping = new HashMap<>( labelCount );
+        labelIdToLabelNameMapping = new HashMap<>( labelCount );
+        propertyIdToPropertylNameMapping = new HashMap<>( tokenRead.propertyKeyCount() );
+        relationshipTypIdToRelationshipNameMapping = new HashMap<>( relationshipTypeCount );
+        relationshipTypeIdToPropertyKeysMapping = new HashMap<>( relationshipTypeCount );
+        labelSetANDNodePropertyKeyIdToValueTypeMapping = new HashMap<>();
+        relationshipTypeIdANDPropertyTypeIdToValueTypeMapping = new HashMap<>();
     }
 
     public Stream<SchemaInfoResult> calculateTabularResultStream()
@@ -123,7 +127,7 @@ public class SchemaCalculator
     private List<SchemaInfoResult> produceResultsForNodes()
     {
         List<SchemaInfoResult> results = new ArrayList<>();
-        for ( LabelSet labelSet : labelSetToPropertyKeysMapping.keySet() )
+        for ( SortedLabels labelSet : labelSetToPropertyKeysMapping.keySet() )
         {
             // lookup label names and produce list of names
             List<String> labelNames = new ArrayList<>();
@@ -155,24 +159,8 @@ public class SchemaCalculator
     //TODO: If we would have this schema information in the count store (or somewhere), this could be super fast
     private void calculateSchema()
     {
-        // this one does most of the work
-        Read dataRead = ktx.dataRead();
-        TokenRead tokenRead = ktx.tokenRead();
-        CursorFactory cursors = ktx.cursors();
-
-        // setup mappings
-        int labelCount = tokenRead.labelCount();
-        int relationshipTypeCount = tokenRead.relationshipTypeCount();
-        labelSetToPropertyKeysMapping = new HashMap<>( labelCount );
-        labelIdToLabelNameMapping = new HashMap<>( labelCount );
-        propertyIdToPropertylNameMapping = new HashMap<>( tokenRead.propertyKeyCount() );
-        relationshipTypIdToRelationshipNameMapping = new HashMap<>( relationshipTypeCount );
-        relationshipTypeIdToPropertyKeysMapping = new HashMap<>( relationshipTypeCount );
-        labelSetANDNodePropertyKeyIdToValueTypeMapping = new HashMap<>();
-        relationshipTypeIdANDPropertyTypeIdToValueTypeMapping = new HashMap<>();
-
-        scanEverythingBelongingToNodes( dataRead, cursors );
-        scanEverythingBelongingToRelationships( dataRead, cursors );
+        scanEverythingBelongingToNodes( );
+        scanEverythingBelongingToRelationships( );
 
         // OTHER:
         // go through all labels
@@ -183,7 +171,7 @@ public class SchemaCalculator
         addNamesToCollection( tokenRead.relationshipTypesGetAllTokens(), relationshipTypIdToRelationshipNameMapping );
     }
 
-    private void scanEverythingBelongingToRelationships( Read dataRead, CursorFactory cursors )
+    private void scanEverythingBelongingToRelationships( )
     {
         try ( RelationshipScanCursor relationshipScanCursor = cursors.allocateRelationshipScanCursor();
                 PropertyCursor propertyCursor = cursors.allocatePropertyCursor() )
@@ -227,7 +215,7 @@ public class SchemaCalculator
         }
     }
 
-    private void scanEverythingBelongingToNodes( Read dataRead, CursorFactory cursors )
+    private void scanEverythingBelongingToNodes( )
     {
         try ( NodeCursor nodeCursor = cursors.allocateNodeCursor();
                 PropertyCursor propertyCursor = cursors.allocatePropertyCursor() )
@@ -236,7 +224,7 @@ public class SchemaCalculator
             while ( nodeCursor.next() )
             {
                 // each node
-                LabelSet labels = nodeCursor.labels();
+                SortedLabels labels = SortedLabels.from( nodeCursor.labels() );
                 nodeCursor.properties( propertyCursor );
                 MutableIntSet propertyIds = IntSets.mutable.empty();
 
@@ -244,7 +232,7 @@ public class SchemaCalculator
                 {
                     Value currentValue = propertyCursor.propertyValue();
                     int propertyKeyId = propertyCursor.propertyKey();
-                    Pair<LabelSet,Integer> key = Pair.of( labels, propertyKeyId );
+                    Pair<SortedLabels,Integer> key = Pair.of( labels, propertyKeyId );
                     updateValueTypeInMapping( currentValue, key, labelSetANDNodePropertyKeyIdToValueTypeMapping );
 
                     propertyIds.add( propertyKeyId );
@@ -259,7 +247,7 @@ public class SchemaCalculator
                     // we can and need (!) to skip this if we found the empty set
                     oldPropertyKeySet.removeAll( propertyIds );
                     oldPropertyKeySet.forEach( id -> {
-                        Pair<LabelSet,Integer> key = Pair.of( labels, id );
+                        Pair<SortedLabels,Integer> key = Pair.of( labels, id );
                         labelSetANDNodePropertyKeyIdToValueTypeMapping.get( key ).setNullable();
                     } );
                 }
@@ -359,33 +347,33 @@ public class SchemaCalculator
                 {
                     if ( isIntegral )
                     {
-                        return isNullable ? NULLABLE_INTEGRAL
-                                          : INTEGRAL;
+                        return isNullable ? ValueName.NULLABLE_INTEGRAL.asString()
+                                          : ValueName.INTEGRAL.asString();
                     }
                     else
                     {
-                        return isNullable ? NULLABLE_FLOATING_POINT
-                                          : FLOATING_POINT;
+                        return isNullable ? ValueName.NULLABLE_FLOATING_POINT.asString()
+                                          : ValueName.FLOATING_POINT.asString();
                     }
                 }
                 // NUMBER_ARRAY
                 if ( isIntegral )
                 {
-                    return isNullable ? NULLABLE_INTEGRAL_ARRAY
-                                      : INTEGRAL_ARRAY;
+                    return isNullable ? ValueName.NULLABLE_INTEGRAL_ARRAY.asString()
+                                      : ValueName.INTEGRAL_ARRAY.asString();
                 }
                 else
                 {
-                    return isNullable ? NULLABLE_FLOATING_POINT_ARRAY
-                                      : FLOATING_POINT_ARRAY;
+                    return isNullable ? ValueName.NULLABLE_FLOATING_POINT_ARRAY.asString()
+                                      : ValueName.FLOATING_POINT_ARRAY.asString();
                 }
 
             case VALUE_GROUP:
                 return isNullable ? valueGroup.name() + NULLABLE
                                   : valueGroup.name();
             case ANY:
-                return isNullable ? NULLABLE_ANYVALUE
-                                  : ANYVALUE;
+                return isNullable ? ValueName.NULLABLE_ANYVALUE.asString()
+                                  : ValueName.ANYVALUE.asString();
             default:
                 throw new IllegalStateException( "Did not recognize ValueStatus" );
             }
@@ -484,5 +472,31 @@ public class SchemaCalculator
         CONSISTENT_NUMBER_VALUE,
         VALUE_GROUP,
         ANY
+    }
+
+    enum ValueName
+    {
+        ANYVALUE( "ANY" ),
+        INTEGRAL( "INTEGRAL" ),
+        INTEGRAL_ARRAY( "INTEGRALARRAY" ),
+        FLOATING_POINT( "FLOATINGPOINT" ),
+        FLOATING_POINT_ARRAY( "FLOATINGPOINTARRAY" ),
+        NULLABLE_ANYVALUE( ANYVALUE.asString() + NULLABLE ),
+        NULLABLE_INTEGRAL( INTEGRAL.asString() + NULLABLE ),
+        NULLABLE_INTEGRAL_ARRAY( INTEGRAL_ARRAY.asString() + NULLABLE ),
+        NULLABLE_FLOATING_POINT_ARRAY( FLOATING_POINT_ARRAY.asString() + NULLABLE ),
+        NULLABLE_FLOATING_POINT( FLOATING_POINT.asString() + NULLABLE );
+
+        private final String textRepresentation;
+
+        ValueName( String textRepresentation )
+        {
+            this.textRepresentation = textRepresentation;
+        }
+
+        String asString()
+        {
+            return textRepresentation;
+        }
     }
 }
