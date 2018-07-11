@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.builtinprocs;
 
 import org.junit.Test;
 
@@ -26,7 +26,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-public class LabelsTest
+public class SortedLabelsTest
 {
     @Test
     public void testEquals()
@@ -34,9 +34,9 @@ public class LabelsTest
         long[] longsA = new long[]{1L, 2L, 3L};
         long[] longsB = new long[]{3L, 2L, 1L};
         long[] longsC = new long[]{1L, 2L, 3L, 4L};
-        Labels a = Labels.from( longsA );
-        Labels b = Labels.from( longsB );
-        Labels c = Labels.from( longsC );
+        SortedLabels a = SortedLabels.from( longsA );
+        SortedLabels b = SortedLabels.from( longsB );
+        SortedLabels c = SortedLabels.from( longsC );
 
         // self
         //noinspection EqualsWithItself
@@ -57,9 +57,9 @@ public class LabelsTest
         long[] longsA = new long[]{1L,2L,3L};
         long[] longsB = new long[]{3L,2L,1L};
         long[] longsC = new long[]{1L,2L,3L,4L};
-        Labels a = Labels.from( longsA );
-        Labels b = Labels.from( longsB );
-        Labels c = Labels.from( longsC );
+        SortedLabels a = SortedLabels.from( longsA );
+        SortedLabels b = SortedLabels.from( longsB );
+        SortedLabels c = SortedLabels.from( longsC );
 
         assertEquals( a.hashCode(), b.hashCode() );
         assertNotEquals( a.hashCode(), c.hashCode() );

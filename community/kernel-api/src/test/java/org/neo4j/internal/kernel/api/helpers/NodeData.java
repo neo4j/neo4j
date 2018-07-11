@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
-import java.util.Arrays;
 import java.util.Map;
 
 import org.neo4j.internal.kernel.api.LabelSet;
@@ -33,14 +32,9 @@ class NodeData
 
     NodeData( long id, long[] labels, Map<Integer,Value> properties )
     {
-        if ( labels == null )
-        {
-            throw new IllegalArgumentException();
-        }
 
         this.id = id;
         this.labels = labels;
-        Arrays.sort( labels );  // needed for quick equality check, most of the time, its already sorted anyway
         this.properties = properties;
     }
 
@@ -77,33 +71,6 @@ class NodeData
             public long[] all()
             {
                 return labels;
-            }
-
-            @Override
-            public int hashCode()
-            {
-                return Arrays.hashCode( labels );
-            }
-
-            @Override
-            public boolean equals( Object obj )
-            {
-                if ( obj instanceof LabelSet )
-                {
-                    long[] input = ((LabelSet) obj).all();
-
-                    if ( labels == input )
-                    {
-                        return true;
-                    }
-                    if ( input.length != labels.length )
-                    {
-                        return false;
-                    }
-
-                    return Arrays.equals( labels, input );
-                }
-                return false;
             }
         };
     }
