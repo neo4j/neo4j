@@ -151,6 +151,17 @@ class ProceduresAcceptanceTest extends ExecutionEngineFunSuite with CypherCompar
     result.toList should be(empty) // and not crash
   }
 
+  test("should call procedure with query parameters overriding default values") {
+    registerTestProcedures()
+
+    graph.execute("UNWIND [1,2,3] AS i CREATE (a:Cat)")
+
+    val result = executeWith(Configs.Procs,
+      "CALL org.neo4j.aNodeWithLabel", params = Map("label" -> "Cat"))
+
+    result.size should equal(1)
+  }
+
   private def registerTestProcedures(): Unit = {
     graph.getDependencyResolver.resolveDependency(classOf[Procedures]).registerProcedure(classOf[TestProcedure])
   }
