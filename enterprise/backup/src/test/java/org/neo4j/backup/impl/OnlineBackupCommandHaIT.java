@@ -381,7 +381,7 @@ public class OnlineBackupCommandHaIT
         assertEquals( 0, lowestTxIdInLogFiles );
     }
 
-    static void transactions1M( GraphDatabaseService db )
+    private static void transactions1M( GraphDatabaseService db )
     {
         int numberOfTransactions = 500;
         long sizeOfTransaction = (ByteUnit.mebiBytes( 1 ) / numberOfTransactions) + 1;

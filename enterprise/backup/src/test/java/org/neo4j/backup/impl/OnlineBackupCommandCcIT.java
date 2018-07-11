@@ -45,6 +45,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
+import java.util.stream.LongStream;
 
 import org.neo4j.causalclustering.ClusterHelper;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -55,7 +57,11 @@ import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
 import org.neo4j.causalclustering.helpers.CausalClusteringTestHelpers;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
@@ -71,12 +77,12 @@ import org.neo4j.util.TestHelpers;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
+import static java.util.stream.Collectors.joining;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
-import static org.neo4j.backup.impl.OnlineBackupCommandHaIT.transactions1M;
 
 @RunWith( Parameterized.class )
 public class OnlineBackupCommandCcIT
@@ -304,8 +310,8 @@ public class OnlineBackupCommandCcIT
                 "--name=" + backupName ) );
 
         // and the database contains a few more transactions
-        transactions1M( clusterLeader( cluster ).database() );
-        transactions1M( clusterLeader( cluster ).database() ); // rotation, second tx log file
+        transactions1M( cluster );
+        transactions1M( cluster ); // rotation, second tx log file
 
         // when we perform an incremental backup
         assertEquals( 0, runBackupToolFromSameJvm(
@@ -449,6 +455,23 @@ public class OnlineBackupCommandCcIT
         cluster.start();
         createSomeData( cluster );
         return cluster;
+    }
+
+    static void transactions1M( Cluster cluster ) throws Exception
+    {
+        int numberOfTransactions = 500;
+        long sizeOfTransaction = (ByteUnit.mebiBytes( 1 ) / numberOfTransactions) + 1;
+        for ( int txId = 0; txId < numberOfTransactions; txId++ )
+        {
+            cluster.coreTx( ( coreGraphDatabase, transaction ) ->
+            {
+                Node node = coreGraphDatabase.createNode();
+                String longString = LongStream.range( 0, sizeOfTransaction ).map( l -> l % 10 ).mapToObj( Long::toString ).collect( joining( "" ) );
+                node.setProperty( "name", longString );
+                coreGraphDatabase.createNode().createRelationshipTo( node, RelationshipType.withName( "KNOWS" ) );
+                transaction.success();
+            } );
+        }
     }
 
     public static DbRepresentation createSomeData( Cluster cluster )
