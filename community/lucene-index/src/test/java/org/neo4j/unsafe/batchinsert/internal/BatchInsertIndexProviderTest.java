@@ -101,6 +101,10 @@ public class BatchInsertIndexProviderTest
             assertTrue( unexpectedIndexProviderMessage( index ), schemaIndex.providerName().contains( index.providerVersion() ) );
             tx.success();
         }
+        finally
+        {
+            db.shutdown();
+        }
     }
 
     private BatchInserter newBatchInserter( Map<String,String> config ) throws Exception
