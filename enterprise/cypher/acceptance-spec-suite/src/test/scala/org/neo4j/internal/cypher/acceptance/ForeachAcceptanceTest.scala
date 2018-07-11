@@ -204,10 +204,6 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
 
   test("foreach with inner function invocation should work ") {
     // given
-    val foo = createLabeledNode("Foo")
-    val bar = createLabeledNode("Bar")
-    relate(foo, bar)
-
     val a = createNode()
     val b = createNode()
     relate(a, b)
@@ -224,7 +220,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
 
     val result = executeWith(
       expectSucceed = Configs.Interpreted - Configs.BackwardsCompatibility - Configs.AllRulePlanners,
-      query = "FOREACH (x in  [ (p:X)-->() | p ] | SET x.prop = 12 )")
+      query = "FOREACH (x in  [ (n:X)-->() | n ] | SET x.prop = 12 )")
     assertStats(result, propertiesWritten = 1)
   }
 }
