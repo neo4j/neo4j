@@ -63,7 +63,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("point function should throw on unrecognized map entry") {
-    failWithError(Configs.Cost3_2, "RETURN point({x: 2, y:3, a: 4}) as point", Seq("Unknown key 'a' for creating new point"))
+    failWithError(expectedToFail, "RETURN point({x: 2, y:3, a: 4}) as point", Seq("Unknown key 'a' for creating new point"))
   }
 
   test("point function should work with integer arguments") {
