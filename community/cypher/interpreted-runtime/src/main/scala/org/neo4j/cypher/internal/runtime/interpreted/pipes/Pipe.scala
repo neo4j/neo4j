@@ -81,4 +81,6 @@ abstract class PipeWithSource(source: Pipe) extends Pipe {
     throw new UnsupportedOperationException("This method should never be called on PipeWithSource")
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext]
+  private[pipes] def testCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+    internalCreateResults(input, state)
 }
