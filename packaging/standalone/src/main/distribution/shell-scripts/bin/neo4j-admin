@@ -69,6 +69,18 @@ detect_os() {
   fi
 }
 
+check_limits() {
+  detect_os
+  MIN_ALLOWED_OPEN_FILES=40000
+  if [ "${DIST_OS}" != "macosx" ] ; then
+    ALLOWED_OPEN_FILES="$(ulimit -n)"
+
+    if [ "${ALLOWED_OPEN_FILES}" -lt "${MIN_ALLOWED_OPEN_FILES}" ]; then
+        echo "WARNING: Max ${ALLOWED_OPEN_FILES} open files allowed, minimum of ${MIN_ALLOWED_OPEN_FILES} recommended. See the Neo4j manual."
+    fi
+  fi
+}
+
 check_java() {
   _find_java_cmd
 
@@ -102,6 +114,7 @@ resolve_path() {
 
 call_main_class() {
   setup_environment
+  check_limits
   check_java
   build_classpath
   EXTRA_JVM_ARGUMENTS="-Dfile.encoding=UTF-8"
