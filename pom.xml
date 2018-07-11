@@ -101,7 +101,7 @@
     <currentYear>2018</currentYear>
     <cypher.compatibility.23>2.3.12</cypher.compatibility.23>
     <cypher.compatibility.31>3.1.9</cypher.compatibility.31>
-    <cypher.compatibility.34>3.4.1</cypher.compatibility.34>
+    <cypher.compatibility.34>3.4.4</cypher.compatibility.34>
     <caffeine.version>2.6.2</caffeine.version>
   </properties>
 
