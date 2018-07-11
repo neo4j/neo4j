@@ -22,57 +22,58 @@
  */
 package org.neo4j.metrics.source.causalclustering;
 
-import org.neo4j.causalclustering.core.replication.ReplicatedContent;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.neo4j.causalclustering.core.replication.monitoring.ReplicationMonitor;
 
 public class ReplicationMetric implements ReplicationMonitor
 {
-    private long newReplication;
-    private long attempts;
-    private long success;
-    private long fail;
+    private final AtomicLong  newReplication = new AtomicLong(  );
+    private final AtomicLong attempts = new AtomicLong(  );
+    private final AtomicLong success = new AtomicLong(  );
+    private final AtomicLong fail = new AtomicLong(  );
 
     @Override
-    public void startReplication( ReplicatedContent command )
+    public void startReplication()
     {
-        newReplication++;
+        newReplication.getAndIncrement();
     }
 
     @Override
     public void replicationAttempt()
     {
-        attempts++;
+        attempts.getAndIncrement();
     }
 
     @Override
     public void successfulReplication()
     {
-        success++;
+        success.getAndIncrement();
     }
 
     @Override
     public void failedReplication( Throwable t )
     {
-        fail++;
+        fail.getAndIncrement();
     }
 
     public long newReplicationCount()
     {
-        return newReplication;
+        return newReplication.get();
     }
 
     public long attemptCount()
     {
-        return attempts;
+        return attempts.get();
     }
 
     public long successCount()
     {
-        return success;
+        return success.get();
     }
 
     public long failCount()
     {
-        return fail;
+        return fail.get();
     }
 }

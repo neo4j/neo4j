@@ -30,7 +30,6 @@ import org.neo4j.causalclustering.core.consensus.LeaderListener;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
-import org.neo4j.causalclustering.core.replication.monitoring.LoggingReplicationMonitor;
 import org.neo4j.causalclustering.core.replication.monitoring.ReplicationMonitor;
 import org.neo4j.causalclustering.core.replication.session.LocalSessionPool;
 import org.neo4j.causalclustering.core.replication.session.OperationContext;
@@ -76,7 +75,6 @@ public class RaftReplicator implements Replicator, LeaderListener
         this.leaderLocator = leaderLocator;
         leaderLocator.registerListener( this );
         log = logProvider.getLog( getClass() );
-        monitors.addMonitorListener( new LoggingReplicationMonitor( log ) );
         this.replicationMonitor = monitors.newMonitor( ReplicationMonitor.class );
     }
 
@@ -112,7 +110,7 @@ public class RaftReplicator implements Replicator, LeaderListener
 
     private Future<Object> replicate0( ReplicatedContent command, boolean trackResult, MemberId leader ) throws ReplicationFailureException
     {
-        replicationMonitor.startReplication( command );
+        replicationMonitor.startReplication();
         try
         {
             assertNoLeaderSwitch( leader );
@@ -124,10 +122,16 @@ public class RaftReplicator implements Replicator, LeaderListener
 
             TimeoutStrategy.Timeout progressTimeout = progressTimeoutStrategy.newTimeout();
             TimeoutStrategy.Timeout leaderTimeout = leaderTimeoutStrategy.newTimeout();
+            int attempts = 0;
             try
             {
                 do
                 {
+                    attempts++;
+                    if ( attempts > 1 )
+                    {
+                        log.warn( "Failed to replicate content. Retrying. Current attempt: %d Content: %s", attempts, command );
+                    }
                     replicationMonitor.replicationAttempt();
                     assertDatabaseAvailable();
                     try
