@@ -200,7 +200,7 @@ public class RaftReplicatorTest
         assertThat( replicatingThread.getReplicationException().getCause(), Matchers.instanceOf( AvailabilityGuard.UnavailableException.class ) );
 
         verify( replicationMonitor, times( 1 ) ).startReplication();
-        verify( replicationMonitor, times( 1 ) ).replicationAttempt();
+        verify( replicationMonitor, atLeast( 1 ) ).replicationAttempt();
         verify( replicationMonitor, never() ).successfulReplication();
         verify( replicationMonitor, times( 1 ) ).failedReplication( any() );
     }
