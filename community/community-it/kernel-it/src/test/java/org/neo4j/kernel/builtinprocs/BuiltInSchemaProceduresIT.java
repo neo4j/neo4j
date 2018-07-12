@@ -76,11 +76,11 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( new Object[]{"Node", Arrays.asList( "A", "B" ), "prop1", "STRING"} ),
-                equalTo( new Object[]{"Node", Arrays.asList( "A", "B" ), "prop2", "INTEGER"} ),
-                equalTo( new Object[]{"Node", Arrays.asList( "B" ), "prop1", "BOOLEAN"} ),
-                equalTo( new Object[]{"Node", Arrays.asList( "C" ), "prop1", "STRINGARRAY"} ),
-                equalTo( new Object[]{"Node", Arrays.asList(), null, null} )) );
+                equalTo( new Object[]{"Node", Arrays.asList( "A", "B" ), "prop1", Arrays.asList( "String" ), false} ),
+                equalTo( new Object[]{"Node", Arrays.asList( "A", "B" ), "prop2", Arrays.asList( "Integer" ), false} ),
+                equalTo( new Object[]{"Node", Arrays.asList( "B" ), "prop1", Arrays.asList( "Boolean" ), false} ),
+                equalTo( new Object[]{"Node", Arrays.asList( "C" ), "prop1", Arrays.asList( "StringArray" ), false} ),
+                equalTo( new Object[]{"Node", Arrays.asList(), null, null, true} )) );
 
         // printStream( stream );
     }
@@ -110,7 +110,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), contains(
-                equalTo( new Object[]{"Node", Arrays.asList("A"), "prop1", "STRING"} )) );
+                equalTo( new Object[]{"Node", Arrays.asList("A"), "prop1", Arrays.asList( "String" ), false} )) );
 
         // printStream( stream );
     }
@@ -145,9 +145,9 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( new Object[]{"Node", Arrays.asList(), "prop1", "STRING"} ),
-                equalTo( new Object[]{"Node", Arrays.asList(), "prop2", "NUMBER"} ),
-                equalTo( new Object[]{"Node", Arrays.asList(), "prop3", "ANY"} ) ) );
+                equalTo( new Object[]{"Node", Arrays.asList(), "prop1", Arrays.asList( "String" ), false} ),
+                equalTo( new Object[]{"Node", Arrays.asList(), "prop2", Arrays.asList( "Integer", "Float" ), false} ),
+                equalTo( new Object[]{"Node", Arrays.asList(), "prop3", Arrays.asList( "String", "Boolean" ), false} ) ) );
 
         // printStream( stream );
     }
@@ -182,11 +182,12 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                 procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertySchema" ) ).id(), new Object[0] );
 
         // Then
-        assertThat( asList( stream ), containsInAnyOrder( equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop1", "STRING"} ),
-                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop2", "INTEGER"} ),
-                equalTo( new Object[]{"Relationship", Arrays.asList( "X" ), "prop1", "BOOLEAN"} ),
-                equalTo( new Object[]{"Relationship", Arrays.asList( "Z" ), null, null} ),
-                equalTo( new Object[]{"Node", Arrays.asList(), null, null} ) ) );
+        assertThat( asList( stream ), containsInAnyOrder(
+                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop1", Arrays.asList( "String" ), false} ),
+                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop2", Arrays.asList( "Integer" ), false} ),
+                equalTo( new Object[]{"Relationship", Arrays.asList( "X" ), "prop1", Arrays.asList( "Boolean" ), false} ),
+                equalTo( new Object[]{"Relationship", Arrays.asList( "Z" ), null, null, true} ),
+                equalTo( new Object[]{"Node", Arrays.asList(), null, null, true} ) ) );
 
         // printStream( stream );
     }
@@ -216,8 +217,8 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop1", "STRING"} ),
-                equalTo( new Object[]{"Node", Arrays.asList(), null, null} ) ) );
+                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop1", Arrays.asList( "String" ), false} ),
+                equalTo( new Object[]{"Node", Arrays.asList(), null, null, true} ) ) );
 
         //printStream( stream );
     }
@@ -255,10 +256,10 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( new Object[]{"Node", Arrays.asList(), null, null} ),
-                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop1", "STRING?"} ),
-                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop2", "NUMBER?"} ),
-                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop3", "ANY?"} ) ) );
+                equalTo( new Object[]{"Node", Arrays.asList(), null, null, true} ),
+                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop1", Arrays.asList( "String" ), true} ),
+                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop2", Arrays.asList( "Integer", "Float" ), true} ),
+                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop3", Arrays.asList( "String", "Boolean" ), true} ) ) );
 
         //printStream( stream );
     }
@@ -309,113 +310,13 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( new Object[]{"Node", Arrays.asList( "A" ), "prop1", "STRING"} ),
-                equalTo( new Object[]{"Node", Arrays.asList( "A" ), "prop2", "INTEGER?"} ),
-                equalTo( new Object[]{"Node", Arrays.asList( "A" ), "prop3", "BOOLEAN?"} ),
-                equalTo( new Object[]{"Node", Arrays.asList( "B" ), "prop1", "STRING?"} ),
-                equalTo( new Object[]{"Node", Arrays.asList( "B" ), "prop2", "INTEGER?"} ) ) );
+                equalTo( new Object[]{"Node", Arrays.asList( "A" ), "prop1", Arrays.asList( "String" ), false} ),
+                equalTo( new Object[]{"Node", Arrays.asList( "A" ), "prop2", Arrays.asList( "Integer" ), true} ),
+                equalTo( new Object[]{"Node", Arrays.asList( "A" ), "prop3", Arrays.asList( "Boolean" ), true} ),
+                equalTo( new Object[]{"Node", Arrays.asList( "B" ), "prop1", Arrays.asList( "String" ), true} ),
+                equalTo( new Object[]{"Node", Arrays.asList( "B" ), "prop2", Arrays.asList( "Integer" ), true} ) ) );
 
         //printStream( stream );
-    }
-
-    @Test
-    public void testSchemaTablesValueStatusUpgradeForNumbers() throws Throwable
-    {
-        // Given (not valid cypher)
-
-        // Node1: (:A{prop1:(long), prop2: (float), prop3:(long), prop4:(long)})
-        // Node2: (:A{prop1:(int),prop2: (double), prop3:(float), prop4:(string)})
-        // Node3: (:A{prop1:(byte)})
-        // Node4: (:A{prop1:(short)})
-
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
-        long nodeId1 = transaction.dataWrite().nodeCreate();
-        long nodeId2 = transaction.dataWrite().nodeCreate();
-        long nodeId3 = transaction.dataWrite().nodeCreate();
-        long nodeId4 = transaction.dataWrite().nodeCreate();
-        int labelA = transaction.tokenWrite().labelGetOrCreateForName( "A" );
-        transaction.dataWrite().nodeAddLabel( nodeId1, labelA );
-        transaction.dataWrite().nodeAddLabel( nodeId2, labelA );
-        transaction.dataWrite().nodeAddLabel( nodeId3, labelA );
-        transaction.dataWrite().nodeAddLabel( nodeId4, labelA );
-        int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
-        int prop2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop2" );
-        int prop3 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop3" );
-        int prop4 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop4" );
-        transaction.dataWrite().nodeSetProperty( nodeId1, prop1, Values.longValue( 1 ) );
-        transaction.dataWrite().nodeSetProperty( nodeId2, prop1, Values.intValue( 1 ) );
-        transaction.dataWrite().nodeSetProperty( nodeId3, prop1, Values.byteValue( (byte) 1 ) );
-        transaction.dataWrite().nodeSetProperty( nodeId4, prop1, Values.shortValue( (short) 1 ) );
-        transaction.dataWrite().nodeSetProperty( nodeId1, prop2, Values.floatValue( 2.1f ) );
-        transaction.dataWrite().nodeSetProperty( nodeId2, prop2, Values.doubleValue( 2.1d ) );
-        transaction.dataWrite().nodeSetProperty( nodeId1, prop3, Values.longValue( 1 ) );
-        transaction.dataWrite().nodeSetProperty( nodeId2, prop3, Values.floatValue( 2.1f ) );
-        transaction.dataWrite().nodeSetProperty( nodeId1, prop4, Values.longValue( 1 ) );
-        transaction.dataWrite().nodeSetProperty( nodeId2, prop4, Values.stringValue( "Text" ) );
-        commit();
-
-        // When
-        RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertySchema" ) ).id(), new Object[0] );
-
-        // Then
-        assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( new Object[]{"Node", Arrays.asList( "A" ), "prop1", "INTEGRAL"} ),
-                equalTo( new Object[]{"Node", Arrays.asList( "A" ), "prop2", "FLOATINGPOINT?"} ),
-                equalTo( new Object[]{"Node", Arrays.asList( "A" ), "prop3", "NUMBER?"} ),
-                equalTo( new Object[]{"Node", Arrays.asList( "A" ), "prop4", "ANY?"} ) ) );
-
-        //printStream( stream );
-    }
-
-    @Test
-    public void testSchemaTablesValueStatusUpgradeForNumberArrays() throws Throwable
-    {
-        // Given (not valid cypher)
-
-        // Node1: (:A{prop1:(long array), prop2: (float array)}, prop3:(long array), prop4:(long array)})
-        // Node2: (:A{prop1:(int array),prop2: (double array), prop3:(float array), prop4:(string array)})
-        // Node3: (:A{prop1:(byte array)})
-        // Node4: (:A{prop1:(short array)})
-
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
-        long nodeId1 = transaction.dataWrite().nodeCreate();
-        long nodeId2 = transaction.dataWrite().nodeCreate();
-        long nodeId3 = transaction.dataWrite().nodeCreate();
-        long nodeId4 = transaction.dataWrite().nodeCreate();
-        int labelA = transaction.tokenWrite().labelGetOrCreateForName( "A" );
-        transaction.dataWrite().nodeAddLabel( nodeId1, labelA );
-        transaction.dataWrite().nodeAddLabel( nodeId2, labelA );
-        transaction.dataWrite().nodeAddLabel( nodeId3, labelA );
-        transaction.dataWrite().nodeAddLabel( nodeId4, labelA );
-        int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
-        int prop2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop2" );
-        int prop3 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop3" );
-        int prop4 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop4" );
-        transaction.dataWrite().nodeSetProperty( nodeId1, prop1, Values.longArray( new long[]{1L} ) );
-        transaction.dataWrite().nodeSetProperty( nodeId2, prop1, Values.intArray( new int[]{1} ) );
-        transaction.dataWrite().nodeSetProperty( nodeId3, prop1, Values.byteArray( new byte[]{(byte) 1} ) );
-        transaction.dataWrite().nodeSetProperty( nodeId4, prop1, Values.shortArray( new short[]{(short) 1} ) );
-        transaction.dataWrite().nodeSetProperty( nodeId1, prop2, Values.floatArray( new float[]{2.1f} ) );
-        transaction.dataWrite().nodeSetProperty( nodeId2, prop2, Values.doubleArray( new double[]{2.1d} ) );
-        transaction.dataWrite().nodeSetProperty( nodeId1, prop3, Values.longArray( new long[]{1L} ) );
-        transaction.dataWrite().nodeSetProperty( nodeId2, prop3, Values.floatArray( new float[]{2.1f} ) );
-        transaction.dataWrite().nodeSetProperty( nodeId1, prop4, Values.longArray( new long[]{1L} ) );
-        transaction.dataWrite().nodeSetProperty( nodeId2, prop4, Values.stringArray( "Text" ) );
-        commit();
-
-        // When
-        RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertySchema" ) ).id(), new Object[0] );
-
-        // Then
-        assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( new Object[]{"Node", Arrays.asList( "A" ), "prop1", "INTEGRALARRAY"} ),
-                equalTo( new Object[]{"Node", Arrays.asList( "A" ), "prop2", "FLOATINGPOINTARRAY?"} ),
-                equalTo( new Object[]{"Node", Arrays.asList( "A" ), "prop3", "NUMBER_ARRAY?"} ),
-                equalTo( new Object[]{"Node", Arrays.asList( "A" ), "prop4", "ANY?"} ) ) );
-
-        // printStream( stream );
     }
 
     /*
@@ -432,6 +333,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
             {
                 System.out.println( column );
             }
+            System.out.println();
         }
     }
 }

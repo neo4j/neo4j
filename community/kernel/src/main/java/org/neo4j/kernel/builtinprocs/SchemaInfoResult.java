@@ -27,24 +27,33 @@ public class SchemaInfoResult
      * Indicates whether the entry is a node or a relationship
      */
     public final String type;
+
     /**
      * A combination of labels or a relationship
      */
     public final List<String> nodeLabelsOrRelType;
+
     /**
      * A property that occurs on the given label combination / relationship type or null
      */
     public final String property;
-    /**
-     * The CypherType of the given property on the given label combination / relationship type or null
-     */
-    public final String cypherType;
 
-    public SchemaInfoResult( String type, List<String> nodeLabelsOrRelType, String property, String cypherType )
+    /**
+     * A List containing all CypherTypes of the given property on the given label combination / relationship type or null
+     */
+    public final List<String> cypherType;
+
+    /**
+     * Indicates whether the property is present on all similar nodes / relationships (= false) or not (= true)
+     */
+    public final boolean nullable;
+
+    public SchemaInfoResult( String type, List<String> nodeLabelsOrRelType, String property, List<String> cypherType, boolean nullable )
     {
         this.type = type;
         this.nodeLabelsOrRelType = nodeLabelsOrRelType;
         this.property = property;
         this.cypherType = cypherType;
+        this.nullable = nullable;
     }
 }
