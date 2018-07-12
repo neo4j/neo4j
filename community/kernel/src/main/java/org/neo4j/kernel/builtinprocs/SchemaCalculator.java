@@ -38,30 +38,21 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.Transaction;
-import org.neo4j.values.storable.IntegralArray;
-import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
-
-import static org.neo4j.kernel.builtinprocs.SchemaCalculator.ValueStatus.ANY;
-import static org.neo4j.kernel.builtinprocs.SchemaCalculator.ValueStatus.CONSISTENT_NUMBER_VALUE;
-import static org.neo4j.kernel.builtinprocs.SchemaCalculator.ValueStatus.VALUE;
-import static org.neo4j.kernel.builtinprocs.SchemaCalculator.ValueStatus.VALUE_GROUP;
 
 public class SchemaCalculator
 {
     private Map<SortedLabels,Set<Integer>> labelSetToPropertyKeysMapping;
-    private Map<Pair<SortedLabels,Integer>,ValueTypeDecider> labelSetANDNodePropertyKeyIdToValueTypeMapping;
+    private Map<Pair<SortedLabels,Integer>,ValueTypeListHelper> labelSetANDNodePropertyKeyIdToValueTypeMapping;
     private Map<Integer,String> labelIdToLabelNameMapping;
     private Map<Integer,String> propertyIdToPropertylNameMapping;
     private Map<Integer,String> relationshipTypIdToRelationshipNameMapping;
     private Map<Integer,Set<Integer>> relationshipTypeIdToPropertyKeysMapping;
-    private Map<Pair<Integer,Integer>,ValueTypeDecider> relationshipTypeIdANDPropertyTypeIdToValueTypeMapping;
+    private Map<Pair<Integer,Integer>,ValueTypeListHelper> relationshipTypeIdANDPropertyTypeIdToValueTypeMapping;
 
     private final Set<Integer> emptyPropertyIdSet = Collections.unmodifiableSet( Collections.emptySet() );
     private static final String NODE = "Node";
     private static final String RELATIONSHIP = "Relationship";
-    private static final String NULLABLE = "?";
 
     private final Read dataRead;
     private final TokenRead tokenRead;
@@ -108,15 +99,17 @@ public class SchemaCalculator
             Set<Integer> propertyIds = relationshipTypeIdToPropertyKeysMapping.get( typeId );
             if ( propertyIds.size() == 0 )
             {
-                results.add( new SchemaInfoResult( RELATIONSHIP, Collections.singletonList( name ), null, null ) );
+                results.add( new SchemaInfoResult( RELATIONSHIP, Collections.singletonList( name ), null, null, true ) );
             }
             else
             {
                 propertyIds.forEach( propId -> {
                     // lookup propId name and valueGroup
                     String propName = propertyIdToPropertylNameMapping.get( propId );
-                    ValueTypeDecider valueTypeDecider = relationshipTypeIdANDPropertyTypeIdToValueTypeMapping.get( Pair.of( typeId, propId ) );
-                    results.add( new SchemaInfoResult( RELATIONSHIP, Collections.singletonList( name ), propName, valueTypeDecider.getCypherTypeString() ) );
+                    ValueTypeListHelper valueTypeListHelper = relationshipTypeIdANDPropertyTypeIdToValueTypeMapping.get( Pair.of( typeId, propId ) );
+                    results.add(
+                            new SchemaInfoResult( RELATIONSHIP, Collections.singletonList( name ), propName, valueTypeListHelper.getCypherTypesList(),
+                            valueTypeListHelper.isNullable() ) );
                 } );
             }
         }
@@ -140,15 +133,16 @@ public class SchemaCalculator
             Set<Integer> propertyIds = labelSetToPropertyKeysMapping.get( labelSet );
             if ( propertyIds.size() == 0 )
             {
-                results.add( new SchemaInfoResult( NODE, labelNames, null, null ) );
+                results.add( new SchemaInfoResult( NODE, labelNames, null, null, true ) );
             }
             else
             {
                 propertyIds.forEach( propId -> {
                     // lookup propId name and valueGroup
                     String propName = propertyIdToPropertylNameMapping.get( propId );
-                    ValueTypeDecider valueTypeDecider = labelSetANDNodePropertyKeyIdToValueTypeMapping.get( Pair.of( labelSet, propId ) );
-                    results.add( new SchemaInfoResult( NODE, labelNames, propName, valueTypeDecider.getCypherTypeString() ) );
+                    ValueTypeListHelper valueTypeListHelper = labelSetANDNodePropertyKeyIdToValueTypeMapping.get( Pair.of( labelSet, propId ) );
+                    results.add(
+                            new SchemaInfoResult( NODE, labelNames, propName, valueTypeListHelper.getCypherTypesList(), valueTypeListHelper.isNullable() ) );
                 } );
             }
         }
@@ -258,17 +252,17 @@ public class SchemaCalculator
         }
     }
 
-    private <X, Y> void updateValueTypeInMapping( Value currentValue, Pair<X,Y> key, Map<Pair<X,Y>,ValueTypeDecider> mappingToUpdate )
+    private <X, Y> void updateValueTypeInMapping( Value currentValue, Pair<X,Y> key, Map<Pair<X,Y>,ValueTypeListHelper> mappingToUpdate )
     {
-        ValueTypeDecider decider = mappingToUpdate.get( key );
-        if ( decider == null )
+        ValueTypeListHelper helper = mappingToUpdate.get( key );
+        if ( helper == null )
         {
-            decider = new ValueTypeDecider( currentValue );
-            mappingToUpdate.put( key, decider );
+            helper = new ValueTypeListHelper( currentValue );
+            mappingToUpdate.put( key, helper );
         }
         else
         {
-            decider.compareAndPutValueType( currentValue );
+            helper.updateValueTypesWith( currentValue );
         }
     }
 
@@ -281,25 +275,15 @@ public class SchemaCalculator
         }
     }
 
-    private class ValueTypeDecider
+    private class ValueTypeListHelper
     {
-        private Value concreteValue;
-        private ValueGroup valueGroup;
-        private ValueStatus valueStatus;
+        private Set<String> seenValueTypes;
         private boolean isNullable;
-        private Boolean isIntegral;  // this is only important if we have a NumberValue or NumberArray. In those cases false means FloatingPoint
 
-        ValueTypeDecider( Value v )
+        ValueTypeListHelper( Value v )
         {
-            if ( v == null )
-            {
-                throw new IllegalArgumentException();
-            }
-            this.concreteValue = v;
-            this.valueGroup = v.valueGroup();
-            this.valueStatus = VALUE;
-
-            this.isIntegral = isIntegral( v );
+            seenValueTypes = new HashSet<>();
+            updateValueTypesWith( v );
         }
 
         private void setNullable( )
@@ -307,195 +291,23 @@ public class SchemaCalculator
             isNullable = true;
         }
 
-        /***
-         * Checks if the given value is an Integral value, a Floating Point value or none
-         * @param v the given value
-         * @return true, if v is an IntegralValue or -Array (e.g. Long), false if v is a FloatingPoint or -Array (e.g. Double)
-         * or null if v is not neither NUMBER nor NUMBER_ARRAY
-         */
-
-        private Boolean isIntegral( Value v )
+        public boolean isNullable()
         {
-            if ( v.valueGroup() == ValueGroup.NUMBER_ARRAY )
-            {
-                return v instanceof IntegralArray;
-            }
-            else if ( v.valueGroup() == ValueGroup.NUMBER )
-            {
-                return v instanceof IntegralValue;
-            }
-            return null;
+            return isNullable;
         }
 
-        /*
-        This method translates an ValueTypeDecider into the correct String
-        */
-        String getCypherTypeString()
+        List<String> getCypherTypesList()
         {
-            switch ( valueStatus )
-            {
-            case VALUE:
-                return isNullable ? concreteValue.getTypeName().toUpperCase() + NULLABLE
-                                  : concreteValue.getTypeName().toUpperCase();
-            case CONSISTENT_NUMBER_VALUE:
-                if ( isIntegral == null )
-                {
-                    throw new IllegalStateException( "isIntegral should have been set in this state" );
-                }
-                if ( valueGroup == ValueGroup.NUMBER )
-                {
-                    if ( isIntegral )
-                    {
-                        return isNullable ? ValueName.NULLABLE_INTEGRAL.asString()
-                                          : ValueName.INTEGRAL.asString();
-                    }
-                    else
-                    {
-                        return isNullable ? ValueName.NULLABLE_FLOATING_POINT.asString()
-                                          : ValueName.FLOATING_POINT.asString();
-                    }
-                }
-                // NUMBER_ARRAY
-                if ( isIntegral )
-                {
-                    return isNullable ? ValueName.NULLABLE_INTEGRAL_ARRAY.asString()
-                                      : ValueName.INTEGRAL_ARRAY.asString();
-                }
-                else
-                {
-                    return isNullable ? ValueName.NULLABLE_FLOATING_POINT_ARRAY.asString()
-                                      : ValueName.FLOATING_POINT_ARRAY.asString();
-                }
-
-            case VALUE_GROUP:
-                return isNullable ? valueGroup.name() + NULLABLE
-                                  : valueGroup.name();
-            case ANY:
-                return isNullable ? ValueName.NULLABLE_ANYVALUE.asString()
-                                  : ValueName.ANYVALUE.asString();
-            default:
-                throw new IllegalStateException( "Did not recognize ValueStatus" );
-            }
+            return new ArrayList<>( seenValueTypes );
         }
 
-        /*
-        This method is needed to handle conflicting property values and sets valueStatus accordingly to:
-         A) VALUE if current and new value match on class level
-         B) CONSISTENT_NUMBER_VALUE if current and new value are NUMBER or NUMBER_ARRAY and both are integral or both are floating point values
-         C) VALUE_GROUP if at least the ValueGroups of the current and new values match
-         D) ANY if nothing matches
-        */
-        void compareAndPutValueType( Value newValue )
+        void updateValueTypesWith( Value newValue )
         {
             if ( newValue == null )
             {
                 throw new IllegalArgumentException();
             }
-
-            switch ( valueStatus )
-            {
-            case VALUE:
-                // check if classes match -> if so, do nothing
-                if ( !concreteValue.getClass().equals( newValue.getClass() ) )
-                {
-                    // Clases don't match -> update needed
-                    if ( valueGroup.equals( newValue.valueGroup() ) )
-                    {
-                        // same valueGroup -> set that (default, can be overriden if they are Numbers and consistency checks out)
-                        valueStatus = VALUE_GROUP;
-
-                        if ( valueGroup == ValueGroup.NUMBER_ARRAY || valueGroup == ValueGroup.NUMBER )
-                        {
-                            Boolean newValueIsIntegral = isIntegral( newValue );
-                            if ( isIntegral == null || newValueIsIntegral == null )
-                            {
-                                throw new IllegalStateException(
-                                        "isIntegral should have been set in this state and method should have returned non null for new value" );
-                            }
-                            // test consistency
-                            if ( isIntegral == newValueIsIntegral )
-                            {
-                                valueStatus = CONSISTENT_NUMBER_VALUE;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // Not same valueGroup -> update to AnyValue
-                        valueStatus = ANY;
-                    }
-                }
-                break;
-
-            case CONSISTENT_NUMBER_VALUE:
-                if ( !valueGroup.equals( newValue.valueGroup() ) )
-                {
-                    // not same valueGroup -> update to AnyValue
-                    valueStatus = ANY;
-                }
-                else
-                {
-                    // same value-group
-                    // -> update to VALUE_GROUP if new value brakes consistency
-                    Boolean newValueIsIntegral = isIntegral( newValue );
-                    if ( isIntegral == null || newValueIsIntegral == null )
-                    {
-                        throw new IllegalStateException(
-                                "isIntegral should have been set in this state and method should have returned non null for new value" );
-                    }
-                    if ( ! (isIntegral == newValueIsIntegral) )
-                    {
-                        valueStatus = VALUE_GROUP;
-                    }
-                }
-                break;
-            case VALUE_GROUP:
-                if ( !valueGroup.equals( newValue.valueGroup() ) )
-                {
-                    // not same valueGroup -> update to AnyValue
-                    valueStatus = ANY;
-                }
-                break;
-            case ANY:
-                // DO nothing, cannot go higher
-                break;
-            default:
-                throw new IllegalStateException( "Did not recognize ValueStatus" );
-            }
-        }
-    }
-
-    enum ValueStatus
-    {
-        VALUE,
-        CONSISTENT_NUMBER_VALUE,
-        VALUE_GROUP,
-        ANY
-    }
-
-    enum ValueName
-    {
-        ANYVALUE( "ANY" ),
-        INTEGRAL( "INTEGRAL" ),
-        INTEGRAL_ARRAY( "INTEGRALARRAY" ),
-        FLOATING_POINT( "FLOATINGPOINT" ),
-        FLOATING_POINT_ARRAY( "FLOATINGPOINTARRAY" ),
-        NULLABLE_ANYVALUE( ANYVALUE.asString() + NULLABLE ),
-        NULLABLE_INTEGRAL( INTEGRAL.asString() + NULLABLE ),
-        NULLABLE_INTEGRAL_ARRAY( INTEGRAL_ARRAY.asString() + NULLABLE ),
-        NULLABLE_FLOATING_POINT_ARRAY( FLOATING_POINT_ARRAY.asString() + NULLABLE ),
-        NULLABLE_FLOATING_POINT( FLOATING_POINT.asString() + NULLABLE );
-
-        private final String textRepresentation;
-
-        ValueName( String textRepresentation )
-        {
-            this.textRepresentation = textRepresentation;
-        }
-
-        String asString()
-        {
-            return textRepresentation;
+            seenValueTypes.add( newValue.getTypeName() );
         }
     }
 }
