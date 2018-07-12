@@ -74,7 +74,7 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends PropertyA
             // Notify the property update visitor
             EntityUpdates.Builder updates = EntityUpdates.forEntity( node.getId() ).withTokens( labels );
 
-            if ( hasRelevantProperty(node, updates) )
+            if ( hasRelevantProperty( node, updates ) )
             {
                 propertyUpdatesVisitor.visit( updates.build() );
             }
