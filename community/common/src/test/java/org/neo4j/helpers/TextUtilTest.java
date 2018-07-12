@@ -97,4 +97,17 @@ class TextUtilTest
         // then
         assertArrayEquals( new String[] {"First", "C:\\a\\b\\c"}, tokenized );
     }
+
+    @Test
+    void preserveOnlyPathBackslashes()
+    {
+        // given
+        String untokenized = "First C:\\a\\ r\\b\\c";
+
+        // when
+        String[] tokenized = TextUtil.tokenizeStringWithQuotes( untokenized, true, true, false );
+
+        // then
+        assertArrayEquals( new String[] {"First", "C:\\a r\\b\\c"}, tokenized );
+    }
 }

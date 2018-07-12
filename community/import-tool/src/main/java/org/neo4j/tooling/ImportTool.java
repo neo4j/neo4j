@@ -523,7 +523,7 @@ public class ImportTool
     public static String[] parseFileArgumentList( File file ) throws IOException
     {
         List<String> arguments = new ArrayList<>();
-        readTextFile( file, line -> arguments.addAll( asList( tokenizeStringWithQuotes( line, true, false ) ) ) );
+        readTextFile( file, line -> arguments.addAll( asList( tokenizeStringWithQuotes( line, true, true, false ) ) ) );
         return arguments.toArray( new String[arguments.size()] );
     }
 
