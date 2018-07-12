@@ -277,7 +277,7 @@ public class DefaultBoltConnection implements BoltConnection
     {
         if ( shouldClose.compareAndSet( false, true ) )
         {
-            machine.terminate();
+            machine.markForTermination();
 
             // Enqueue an empty job for close to be handled linearly
             enqueueInternal( ignore ->

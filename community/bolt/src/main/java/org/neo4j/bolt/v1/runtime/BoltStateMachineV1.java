@@ -233,7 +233,7 @@ public class BoltStateMachineV1 implements BoltStateMachine
     }
 
     @Override
-    public void terminate()
+    public void markForTermination()
     {
         /*
          * This is a side-channel call and we should not close anything directly.

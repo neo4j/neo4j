@@ -720,7 +720,7 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void shouldNotFailWhenTerminatedAndPullAll() throws Exception
+    public void shouldNotFailWhenMarkedForTerminationAndPullAll() throws Exception
     {
         BoltStateMachineV1SPI spi = mock( BoltStateMachineV1SPI.class, RETURNS_MOCKS );
         BoltStateMachine machine = init( newMachine( spi ) );
@@ -729,7 +729,7 @@ public class BoltStateMachineTest
 
         BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
 
-        machine.terminate();
+        machine.markForTermination();
         machine.process( PullAllMessage.INSTANCE, responseHandler );
 
         verify( spi, never() ).reportError( any() );

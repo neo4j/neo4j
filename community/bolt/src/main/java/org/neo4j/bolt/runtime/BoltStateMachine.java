@@ -42,7 +42,7 @@ public interface BoltStateMachine extends AutoCloseable
 
     void handleExternalFailure( Neo4jError error, BoltResponseHandler handler ) throws BoltConnectionFatality;
 
-    void terminate();
+    void markForTermination();
 
     boolean isClosed();
 

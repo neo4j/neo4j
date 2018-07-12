@@ -237,13 +237,13 @@ public class DefaultBoltConnectionTest
     }
 
     @Test
-    public void stopShouldFirstTerminateStateMachine()
+    public void stopShouldFirstMarkStateMachineForTermination()
     {
         BoltConnection connection = newConnection();
 
         connection.stop();
 
-        verify( stateMachine ).terminate();
+        verify( stateMachine ).markForTermination();
     }
 
     @Test
@@ -255,7 +255,7 @@ public class DefaultBoltConnectionTest
 
         connection.processNextBatch();
 
-        verify( stateMachine ).terminate();
+        verify( stateMachine ).markForTermination();
         verify( stateMachine ).close();
     }
 
