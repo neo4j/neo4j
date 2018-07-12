@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.IOException;
-
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -36,7 +34,7 @@ public class SpatialIndexPopulatingUpdater extends SpatialIndexCache<IndexUpdate
     }
 
     @Override
-    public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
+    public void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
     {
         PointValue value = (PointValue) update.values()[0];
         switch ( update.updateMode() )
@@ -74,7 +72,7 @@ public class SpatialIndexPopulatingUpdater extends SpatialIndexCache<IndexUpdate
     }
 
     @Override
-    public void close() throws IOException, IndexEntryConflictException
+    public void close() throws IndexEntryConflictException
     {
         for ( IndexUpdater updater : this )
         {
@@ -94,7 +92,7 @@ public class SpatialIndexPopulatingUpdater extends SpatialIndexCache<IndexUpdate
         }
 
         @Override
-        public IndexUpdater newSpatial( CoordinateReferenceSystem crs ) throws IOException
+        public IndexUpdater newSpatial( CoordinateReferenceSystem crs )
         {
             return populator.select( crs ).newPopulatingUpdater( nodePropertyAccessor );
         }

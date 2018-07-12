@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -49,7 +48,7 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     }
 
     @Override
-    public void create() throws IOException
+    public void create()
     {
         dropAction.drop( indexId, archiveFailedIndex );
         instanceSelector.forAll( IndexPopulator::create );
@@ -63,7 +62,7 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     }
 
     @Override
-    public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
+    public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
     {
         LazyInstanceSelector<Collection<IndexEntryUpdate<?>>> batchSelector = new LazyInstanceSelector<>( slot -> new ArrayList<>() );
         for ( IndexEntryUpdate<?> update : updates )
@@ -83,8 +82,7 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     }
 
     @Override
-    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
-            throws IndexEntryConflictException, IOException
+    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
     {
         // Manual loop due do multiple exception types
         for ( IndexSlot slot : IndexSlot.values() )
@@ -102,13 +100,13 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     }
 
     @Override
-    public void close( boolean populationCompletedSuccessfully ) throws IOException
+    public void close( boolean populationCompletedSuccessfully )
     {
         instanceSelector.close( populator -> populator.close( populationCompletedSuccessfully ) );
     }
 
     @Override
-    public void markAsFailed( String failure ) throws IOException
+    public void markAsFailed( String failure )
     {
         instanceSelector.forAll( populator -> populator.markAsFailed( failure ) );
     }

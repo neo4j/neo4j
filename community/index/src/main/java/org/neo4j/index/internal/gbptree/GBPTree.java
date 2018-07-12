@@ -26,6 +26,7 @@ import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardOpenOption;
@@ -354,7 +355,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * Whether or not this tree has been closed. Accessed and changed solely in
      * {@link #close()} to be able to close tree multiple times gracefully.
      */
-    private boolean closed = true;
+    private boolean closed;
 
     /**
      * True if tree is clean, false if dirty
@@ -438,12 +439,12 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * or {@link #close()}
      * @param headerWriter writes header data if indexFile is created as a result of this call.
      * @param recoveryCleanupWorkCollector collects recovery cleanup jobs for execution after recovery.
-     * @throws IOException on page cache error
+     * @throws UncheckedIOException on page cache error
      * @throws MetadataMismatchException if meta information does not match constructor parameters or meta page is missing
      */
     public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, int tentativePageSize,
             Monitor monitor, Header.Reader headerReader, Consumer<PageCursor> headerWriter,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector ) throws IOException, MetadataMismatchException
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector ) throws MetadataMismatchException
     {
         this.indexFile = indexFile;
         this.monitor = monitor;
@@ -452,7 +453,6 @@ public class GBPTree<KEY,VALUE> implements Closeable
         setRoot( rootId, Generation.unstableGeneration( generation ) );
         this.layout = layout;
 
-        boolean success = false;
         try
         {
             this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize );
@@ -491,20 +491,31 @@ public class GBPTree<KEY,VALUE> implements Closeable
             bumpUnstableGeneration();
             forceState();
             cleaning = createCleanupJob( recoveryCleanupWorkCollector, dirtyOnStartup );
-            success = true;
         }
-        catch ( Throwable t )
+        catch ( IOException e )
         {
-            appendTreeInformation( t );
-            throw t;
+            throw exitConstructor( new UncheckedIOException( e ) );
         }
-        finally
+        catch ( Throwable e )
         {
-            if ( !success )
-            {
-                close();
-            }
+            throw exitConstructor( e );
         }
+    }
+
+    private RuntimeException exitConstructor( Throwable throwable )
+    {
+        try
+        {
+            close();
+        }
+        catch ( IOException e )
+        {
+            Exceptions.chain( new UncheckedIOException( e ), throwable );
+        }
+
+        appendTreeInformation( throwable );
+        Exceptions.throwIfUnchecked( throwable );
+        return new RuntimeException( throwable );
     }
 
     private void initializeAfterCreation( Consumer<PageCursor> headerWriter ) throws IOException
@@ -871,11 +882,18 @@ public class GBPTree<KEY,VALUE> implements Closeable
      *
      * @param ioLimiter for controlling I/O usage.
      * @param headerWriter hook for writing header data, must leave cursor at end of written header.
-     * @throws IOException on error flushing to storage.
+     * @throws UncheckedIOException on error flushing to storage.
      */
-    public void checkpoint( IOLimiter ioLimiter, Consumer<PageCursor> headerWriter ) throws IOException
+    public void checkpoint( IOLimiter ioLimiter, Consumer<PageCursor> headerWriter )
     {
-        checkpoint( ioLimiter, replace( headerWriter ) );
+        try
+        {
+            checkpoint( ioLimiter, replace( headerWriter ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     /**
@@ -883,12 +901,19 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * written in previous check point.
      *
      * @param ioLimiter for controlling I/O usage.
-     * @throws IOException on error flushing to storage.
+     * @throws UncheckedIOException on error flushing to storage.
      * @see #checkpoint(IOLimiter, Consumer)
      */
-    public void checkpoint( IOLimiter ioLimiter ) throws IOException
+    public void checkpoint( IOLimiter ioLimiter )
     {
-        checkpoint( ioLimiter, CARRY_OVER_PREVIOUS_HEADER );
+        try
+        {
+            checkpoint( ioLimiter, CARRY_OVER_PREVIOUS_HEADER );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     private void checkpoint( IOLimiter ioLimiter, Header.Writer headerWriter ) throws IOException
@@ -1151,9 +1176,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 stableGeneration( generation ), unstableGeneration( generation ) );
     }
 
-    private <E extends Throwable> E appendTreeInformation( E e )
+    private <E extends Throwable> void appendTreeInformation( E e )
     {
-        return Exceptions.withMessage( e, e.getMessage() + " | " + toString() );
+        Exceptions.withMessage( e, e.getMessage() + " | " + toString() );
     }
 
     private class SingleWriter implements Writer<KEY,VALUE>
@@ -1231,26 +1256,31 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
 
         @Override
-        public void put( KEY key, VALUE value ) throws IOException
+        public void put( KEY key, VALUE value )
         {
             merge( key, value, ValueMergers.overwrite() );
         }
 
         @Override
-        public void merge( KEY key, VALUE value, ValueMerger<KEY,VALUE> valueMerger ) throws IOException
+        public void merge( KEY key, VALUE value, ValueMerger<KEY,VALUE> valueMerger )
         {
             try
             {
                 treeLogic.insert( cursor, structurePropagation, key, value, valueMerger,
                         stableGeneration, unstableGeneration );
+
+                handleStructureChanges();
             }
-            catch ( Throwable e )
+            catch ( IOException e )
             {
                 appendTreeInformation( e );
-                throw e;
+                throw new UncheckedIOException( e );
             }
-
-            handleStructureChanges();
+            catch ( Throwable t )
+            {
+                appendTreeInformation( t );
+                throw t;
+            }
 
             checkOutOfBounds( cursor );
         }
@@ -1263,21 +1293,26 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
 
         @Override
-        public VALUE remove( KEY key ) throws IOException
+        public VALUE remove( KEY key )
         {
             VALUE result;
             try
             {
                 result = treeLogic.remove( cursor, structurePropagation, key, layout.newValue(),
                         stableGeneration, unstableGeneration );
+
+                handleStructureChanges();
+            }
+            catch ( IOException e )
+            {
+                appendTreeInformation( e );
+                throw new UncheckedIOException( e );
             }
             catch ( Throwable e )
             {
                 appendTreeInformation( e );
                 throw e;
             }
-
-            handleStructureChanges();
 
             checkOutOfBounds( cursor );
             return result;

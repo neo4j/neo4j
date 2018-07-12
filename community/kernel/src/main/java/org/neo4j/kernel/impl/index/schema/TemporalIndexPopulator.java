@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -53,7 +52,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     }
 
     @Override
-    public synchronized void create() throws IOException
+    public synchronized void create()
     {
         forAll( NativeIndexPopulator::clear, this );
 
@@ -72,7 +71,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     }
 
     @Override
-    public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
+    public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
     {
         Map<ValueGroup,List<IndexEntryUpdate<?>>> batchMap = new HashMap<>();
         for ( IndexEntryUpdate<?> update : updates )
@@ -89,7 +88,6 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
 
     @Override
     public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
-            throws IndexEntryConflictException, IOException
     {
         // No-op, uniqueness is checked for each update in add(IndexEntryUpdate)
     }
@@ -101,7 +99,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     }
 
     @Override
-    public synchronized void close( boolean populationCompletedSuccessfully ) throws IOException
+    public synchronized void close( boolean populationCompletedSuccessfully )
     {
         closeInstantiateCloseLock();
         for ( NativeIndexPopulator part : this )
@@ -174,42 +172,42 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         }
 
         @Override
-        public PartPopulator<?> newDate() throws IOException
+        public PartPopulator<?> newDate()
         {
             return create( temporalIndexFiles.date() );
         }
 
         @Override
-        public PartPopulator<?> newLocalDateTime() throws IOException
+        public PartPopulator<?> newLocalDateTime()
         {
             return create( temporalIndexFiles.localDateTime() );
         }
 
         @Override
-        public PartPopulator<?> newZonedDateTime() throws IOException
+        public PartPopulator<?> newZonedDateTime()
         {
             return create( temporalIndexFiles.zonedDateTime() );
         }
 
         @Override
-        public PartPopulator<?> newLocalTime() throws IOException
+        public PartPopulator<?> newLocalTime()
         {
             return create( temporalIndexFiles.localTime() );
         }
 
         @Override
-        public PartPopulator<?> newZonedTime() throws IOException
+        public PartPopulator<?> newZonedTime()
         {
             return create( temporalIndexFiles.zonedTime() );
         }
 
         @Override
-        public PartPopulator<?> newDuration() throws IOException
+        public PartPopulator<?> newDuration()
         {
             return create( temporalIndexFiles.duration() );
         }
 
-        private <KEY extends NativeIndexKey<KEY>> PartPopulator<KEY> create( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
+        private <KEY extends NativeIndexKey<KEY>> PartPopulator<KEY> create( TemporalIndexFiles.FileLayout<KEY> fileLayout )
         {
             PartPopulator<KEY> populator = new PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor, samplingConfig );
             populator.create();

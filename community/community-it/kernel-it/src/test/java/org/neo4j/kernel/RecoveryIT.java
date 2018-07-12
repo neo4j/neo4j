@@ -910,7 +910,7 @@ public class RecoveryIT
         }
 
         @Override
-        public void drop() throws IOException
+        public void drop()
         {
             actual.drop();
         }
@@ -927,19 +927,19 @@ public class RecoveryIT
         }
 
         @Override
-        public void force( IOLimiter ioLimiter ) throws IOException
+        public void force( IOLimiter ioLimiter )
         {
             actual.force( ioLimiter );
         }
 
         @Override
-        public void refresh() throws IOException
+        public void refresh()
         {
             actual.refresh();
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
             actual.close();
         }
@@ -957,13 +957,13 @@ public class RecoveryIT
         }
 
         @Override
-        public ResourceIterator<File> snapshotFiles() throws IOException
+        public ResourceIterator<File> snapshotFiles()
         {
             return actual.snapshotFiles();
         }
 
         @Override
-        public void verifyDeferredConstraints( NodePropertyAccessor propertyAccessor ) throws IndexEntryConflictException, IOException
+        public void verifyDeferredConstraints( NodePropertyAccessor propertyAccessor ) throws IndexEntryConflictException
         {
             actual.verifyDeferredConstraints( propertyAccessor );
         }
@@ -992,14 +992,14 @@ public class RecoveryIT
         }
 
         @Override
-        public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
+        public void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
         {
             actual.process( update );
             updatesTarget.add( update );
         }
 
         @Override
-        public void close() throws IOException, IndexEntryConflictException
+        public void close() throws IndexEntryConflictException
         {
             actual.close();
         }

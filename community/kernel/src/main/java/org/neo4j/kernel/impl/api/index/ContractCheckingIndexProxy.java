@@ -99,7 +99,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
             return new DelegatingIndexUpdater( super.newUpdater( mode ) )
             {
                 @Override
-                public void close() throws IOException, IndexEntryConflictException
+                public void close() throws IndexEntryConflictException
                 {
                     try
                     {

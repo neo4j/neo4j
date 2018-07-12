@@ -321,7 +321,7 @@ public class FusionIndexPopulatorTest
     private void verifyOtherCloseOnThrow( IndexPopulator throwingPopulator ) throws Exception
     {
         // given
-        IOException failure = new IOException( "fail" );
+        UncheckedIOException failure = new UncheckedIOException( new IOException( "fail" ) );
         doThrow( failure ).when( throwingPopulator ).close( anyBoolean() );
 
         // when
@@ -330,7 +330,7 @@ public class FusionIndexPopulatorTest
             fusionIndexPopulator.close( true );
             fail( "Should have failed" );
         }
-        catch ( IOException ignore )
+        catch ( UncheckedIOException ignore )
         {
         }
 
@@ -355,10 +355,10 @@ public class FusionIndexPopulatorTest
     public void closeMustThrowIfAllThrow() throws Exception
     {
         // given
-        List<IOException> failures = new ArrayList<>();
+        List<UncheckedIOException> failures = new ArrayList<>();
         for ( IndexPopulator alivePopulator : alivePopulators )
         {
-            IOException failure = new IOException( "FAILURE[" + alivePopulator + "]" );
+            UncheckedIOException failure = new UncheckedIOException( new IOException( "FAILURE[" + alivePopulator + "]" ) );
             failures.add( failure );
             doThrow( failure ).when( alivePopulator ).close( anyBoolean() );
         }
@@ -369,7 +369,7 @@ public class FusionIndexPopulatorTest
             fusionIndexPopulator.close( anyBoolean() );
             fail( "Should have failed" );
         }
-        catch ( IOException e )
+        catch ( UncheckedIOException e )
         {
             // then
             if ( !failures.contains( e ) )

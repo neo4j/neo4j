@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -73,7 +72,7 @@ public class DeferredConflictCheckingIndexUpdater implements IndexUpdater
     }
 
     @Override
-    public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
+    public void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
     {
         actual.process( update );
         if ( update.updateMode() != REMOVED )
@@ -83,7 +82,7 @@ public class DeferredConflictCheckingIndexUpdater implements IndexUpdater
     }
 
     @Override
-    public void close() throws IOException, IndexEntryConflictException
+    public void close() throws IndexEntryConflictException
     {
         actual.close();
         try ( IndexReader reader = readerSupplier.get() )

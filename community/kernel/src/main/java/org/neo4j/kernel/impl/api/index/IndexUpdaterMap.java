@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -83,14 +83,13 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
             {
                 updater.close();
             }
-            catch ( IOException | IndexEntryConflictException e )
+            catch ( UncheckedIOException | IndexEntryConflictException e )
             {
                 if ( null == exceptions )
                 {
                     exceptions = new HashSet<>();
                 }
-                exceptions.add( Pair.of( updaterEntry.getKey(),
-                        new UnderlyingStorageException( e ) ) );
+                exceptions.add( Pair.of( updaterEntry.getKey(), new UnderlyingStorageException( e ) ) );
             }
         }
 

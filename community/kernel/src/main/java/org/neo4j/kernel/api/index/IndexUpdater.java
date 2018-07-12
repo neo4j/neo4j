@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.io.IOException;
-
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 
 /**
@@ -33,8 +31,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
  */
 public interface IndexUpdater extends AutoCloseable
 {
-    void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException;
+    void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException;
 
     @Override
-    void close() throws IOException, IndexEntryConflictException;
+    void close() throws IndexEntryConflictException;
 }

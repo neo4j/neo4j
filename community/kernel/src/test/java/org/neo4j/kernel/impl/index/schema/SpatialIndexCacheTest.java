@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -143,15 +141,9 @@ public class SpatialIndexCacheTest
 
         private void stress()
         {
-            try
-            {
-                // select
-                cache.select( coordinateReferenceSystems[random.nextInt( coordinateReferenceSystems.length )] );
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
+            // select
+            cache.select( coordinateReferenceSystems[random.nextInt( coordinateReferenceSystems.length )] );
+
             // iterate
             for ( String s : cache )
             {

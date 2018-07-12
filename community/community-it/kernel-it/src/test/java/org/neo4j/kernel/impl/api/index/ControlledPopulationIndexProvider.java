@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -68,7 +67,7 @@ public class ControlledPopulationIndexProvider extends IndexProvider
         mockedPopulator = new IndexPopulator.Adapter()
         {
             @Override
-            public void create() throws IOException
+            public void create()
             {
                 populationCompletionLatch.startAndWaitForAllToStartAndFinish();
                 super.create();

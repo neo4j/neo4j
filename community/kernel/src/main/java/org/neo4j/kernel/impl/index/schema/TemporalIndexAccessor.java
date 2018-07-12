@@ -62,7 +62,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
     }
 
     @Override
-    public void drop() throws IOException
+    public void drop()
     {
         forAll( NativeIndexAccessor::drop, this );
     }
@@ -74,7 +74,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
     }
 
     @Override
-    public void force( IOLimiter ioLimiter ) throws IOException
+    public void force( IOLimiter ioLimiter )
     {
         for ( NativeIndexAccessor part : this )
         {
@@ -89,7 +89,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         closeInstantiateCloseLock();
         forAll( NativeIndexAccessor::close, this );

@@ -27,6 +27,7 @@ import org.junit.runners.Parameterized;
 import org.mockito.ArgumentMatchers;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -197,14 +198,14 @@ public class FusionIndexAccessorTest
     private void verifyFailOnSingleDropFailure( IndexAccessor failingAccessor, FusionIndexAccessor fusionIndexAccessor )
             throws IOException
     {
-        IOException expectedFailure = new IOException( "fail" );
+        UncheckedIOException expectedFailure = new UncheckedIOException( new IOException( "fail" ) );
         doThrow( expectedFailure ).when( failingAccessor ).drop();
         try
         {
             fusionIndexAccessor.drop();
             fail( "Should have failed" );
         }
-        catch ( IOException e )
+        catch ( UncheckedIOException e )
         {
             assertSame( expectedFailure, e );
         }
@@ -215,10 +216,10 @@ public class FusionIndexAccessorTest
     public void dropMustThrowIfAllFail() throws Exception
     {
         // given
-        List<IOException> exceptions = new ArrayList<>();
+        List<UncheckedIOException> exceptions = new ArrayList<>();
         for ( IndexAccessor indexAccessor : aliveAccessors )
         {
-            IOException exception = new IOException( indexAccessor.getClass().getSimpleName() + " fail" );
+            UncheckedIOException exception = new UncheckedIOException( new IOException( indexAccessor.getClass().getSimpleName() + " fail" ) );
             exceptions.add( exception );
             doThrow( exception ).when( indexAccessor ).drop();
         }
@@ -229,7 +230,7 @@ public class FusionIndexAccessorTest
             fusionIndexAccessor.drop();
             fail( "Should have failed" );
         }
-        catch ( IOException e )
+        catch ( UncheckedIOException e )
         {
             // then
             assertThat( exceptions, hasItem( e ) );

@@ -21,9 +21,8 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 
 import org.junit.Test;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
-
-import org.neo4j.function.ThrowingConsumer;
 
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
@@ -82,7 +81,7 @@ public class LazyInstanceSelectorTest
         selector.select( STRING );
 
         // when
-        ThrowingConsumer<String,RuntimeException> consumer = mock( ThrowingConsumer.class );
+        Consumer<String> consumer = mock( Consumer.class );
         selector.forAll( consumer );
 
         // then
@@ -103,7 +102,7 @@ public class LazyInstanceSelectorTest
         selector.select( STRING );
 
         // when
-        ThrowingConsumer<String,RuntimeException> consumer = mock( ThrowingConsumer.class );
+        Consumer<String> consumer = mock( Consumer.class );
         selector.close( consumer );
 
         // then
@@ -122,7 +121,7 @@ public class LazyInstanceSelectorTest
         selector.select( STRING );
 
         // when
-        selector.close( mock( ThrowingConsumer.class ) );
+        selector.close( mock( Consumer.class ) );
 
         // then
         try

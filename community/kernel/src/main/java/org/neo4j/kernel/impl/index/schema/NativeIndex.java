@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.function.Consumer;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -59,7 +60,6 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
     }
 
     void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter )
-            throws IOException
     {
         ensureDirectoryExist();
         GBPTree.Monitor monitor = treeMonitor();
@@ -71,21 +71,35 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         return new NativeIndexTreeMonitor();
     }
 
-    private void ensureDirectoryExist() throws IOException
+    private void ensureDirectoryExist()
     {
-        fileSystem.mkdirs( storeFile.getParentFile() );
+        try
+        {
+            fileSystem.mkdirs( storeFile.getParentFile() );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
-    void closeTree() throws IOException
+    void closeTree()
     {
         tree = closeIfPresent( tree );
     }
 
-    private <T extends Closeable> T closeIfPresent( T closeable ) throws IOException
+    private static <T extends Closeable> T closeIfPresent( T closeable )
     {
         if ( closeable != null )
         {
-            closeable.close();
+            try
+            {
+                closeable.close();
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
         }
         return null;
     }

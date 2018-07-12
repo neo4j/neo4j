@@ -59,10 +59,17 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     }
 
     @Override
-    public void drop() throws IOException
+    public void drop()
     {
         closeTree();
-        fileSystem.deleteFileOrThrow( storeFile );
+        try
+        {
+            fileSystem.deleteFileOrThrow( storeFile );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @Override
@@ -80,7 +87,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     }
 
     @Override
-    public void force( IOLimiter ioLimiter ) throws IOException
+    public void force( IOLimiter ioLimiter )
     {
         tree.checkpoint( ioLimiter );
     }
@@ -92,7 +99,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         closeTree();
     }

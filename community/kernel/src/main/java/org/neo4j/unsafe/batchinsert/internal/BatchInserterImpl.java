@@ -351,7 +351,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         return storeLocker;
     }
 
-    private Map<String, String> getDefaultParams()
+    private static Map<String, String> getDefaultParams()
     {
         Map<String, String> params = new HashMap<>();
         params.put( GraphDatabaseSettings.pagecache_memory.name(), "32m" );
@@ -619,7 +619,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
                 indexesNeedingPopulation.add( rule );
             }
         }
-        return indexesNeedingPopulation.toArray( new StoreIndexDescriptor[indexesNeedingPopulation.size()] );
+        return indexesNeedingPopulation.toArray( new StoreIndexDescriptor[0] );
     }
 
     @Override
@@ -714,7 +714,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
                 recordAccess.getPropertyRecords(), false ) != Record.NO_NEXT_PROPERTY.intValue();
     }
 
-    private void rejectAutoUpgrade( Map<String, String> params )
+    private static void rejectAutoUpgrade( Map<String,String> params )
     {
         if ( parseBoolean( params.get( GraphDatabaseSettings.allow_upgrade.name() ) ) )
         {
@@ -788,7 +788,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         return ids;
     }
 
-    private boolean arrayContains( long[] ids, int cursor, int labelId )
+    private static boolean arrayContains( long[] ids, int cursor, int labelId )
     {
         for ( int i = 0; i < cursor; i++ )
         {
@@ -1119,7 +1119,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         return idGeneratorFactory;
     }
 
-    private void dumpConfiguration( Map<String,String> config, PrintStream out )
+    private static void dumpConfiguration( Map<String,String> config, PrintStream out )
     {
         for ( Entry<String,String> entry : config.entrySet() )
         {
@@ -1327,7 +1327,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             return index;
         }
 
-        public void add( IndexEntryUpdate<?> update ) throws IndexEntryConflictException, IOException
+        public void add( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
         {
             batchedUpdates.add( update );
             if ( batchedUpdates.size() > batchSize )
@@ -1338,8 +1338,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
 
         @Override
-        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
-                throws IndexEntryConflictException, IOException
+        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
         {
             populator.add( batchedUpdates );
             populator.verifyDeferredConstraints( nodePropertyAccessor );
@@ -1352,7 +1351,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
 
         @Override
-        public void close( boolean populationCompletedSuccessfully ) throws IOException
+        public void close( boolean populationCompletedSuccessfully )
         {
             if ( !closed )
             {

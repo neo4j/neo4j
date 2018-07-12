@@ -107,18 +107,18 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         }
     }
 
-    public void clear() throws IOException
+    public void clear()
     {
         deleteFileIfPresent( fileSystem, storeFile );
     }
 
     @Override
-    public synchronized void create() throws IOException
+    public synchronized void create()
     {
         create( new NativeIndexHeaderWriter( BYTE_POPULATING ) );
     }
 
-    protected synchronized void create( Consumer<PageCursor> headerWriter ) throws IOException
+    protected synchronized void create( Consumer<PageCursor> headerWriter )
     {
         assertNotDropped();
         assertNotClosed();
@@ -144,10 +144,6 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
             closeTree();
             deleteFileIfPresent( fileSystem, storeFile );
         }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
         finally
         {
             dropped = true;
@@ -156,7 +152,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     }
 
     @Override
-    public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IOException, IndexEntryConflictException
+    public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
     {
         applyWithWorkSync( additionsWorkSync, updates );
     }
@@ -183,7 +179,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
             }
 
             @Override
-            public void close() throws IOException, IndexEntryConflictException
+            public void close() throws IndexEntryConflictException
             {
                 applyWithWorkSync( updatesWorkSync, updates );
                 closed = true;
@@ -210,7 +206,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     abstract IndexReader newReader();
 
     @Override
-    public synchronized void close( boolean populationCompletedSuccessfully ) throws IOException
+    public synchronized void close( boolean populationCompletedSuccessfully )
     {
         if ( populationCompletedSuccessfully && failureBytes != null )
         {
@@ -239,7 +235,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     }
 
     private void applyWithWorkSync( WorkSync<IndexUpdateApply<KEY,VALUE>,IndexUpdateWork<KEY,VALUE>> workSync,
-            Collection<? extends IndexEntryUpdate<?>> updates ) throws IOException, IndexEntryConflictException
+            Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
     {
         try
         {
@@ -250,13 +246,13 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
             Throwable cause = e.getCause();
             if ( cause instanceof IOException )
             {
-                throw (IOException) cause;
+                throw new UncheckedIOException( (IOException) cause );
             }
             if ( cause instanceof IndexEntryConflictException )
             {
                 throw (IndexEntryConflictException) cause;
             }
-            throw new IOException( cause );
+            throw new RuntimeException( cause );
         }
     }
 
@@ -282,7 +278,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         failureBytes = failure.getBytes( StandardCharsets.UTF_8 );
     }
 
-    private void ensureTreeInstantiated() throws IOException
+    private void ensureTreeInstantiated()
     {
         if ( tree == null )
         {
@@ -298,7 +294,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         }
     }
 
-    private void markTreeAsFailed() throws IOException
+    private void markTreeAsFailed()
     {
         if ( failureBytes == null )
         {
@@ -307,7 +303,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         tree.checkpoint( IOLimiter.UNLIMITED, new FailureHeaderWriter( failureBytes ) );
     }
 
-    void markTreeAsOnline() throws IOException
+    void markTreeAsOnline()
     {
         tree.checkpoint( IOLimiter.UNLIMITED, pc -> pc.putByte( BYTE_ONLINE ) );
     }
@@ -431,7 +427,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         }
     }
 
-    private static void deleteFileIfPresent( FileSystemAbstraction fs, File storeFile ) throws IOException
+    private static void deleteFileIfPresent( FileSystemAbstraction fs, File storeFile )
     {
         try
         {
@@ -440,6 +436,10 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         catch ( NoSuchFileException e )
         {
             // File does not exist, we don't need to delete
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
     }
 }

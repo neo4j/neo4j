@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.schema;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -54,9 +55,16 @@ public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<IndexReader
 
     @Override
     public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
-            throws IndexEntryConflictException, IOException
+            throws IndexEntryConflictException
     {
-        luceneIndex.verifyUniqueness( nodePropertyAccessor, descriptor.schema().getPropertyIds() );
+        try
+        {
+            luceneIndex.verifyUniqueness( nodePropertyAccessor, descriptor.schema().getPropertyIds() );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @Override
@@ -78,29 +86,57 @@ public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<IndexReader
         }
 
         @Override
-        protected void addIdempotent( long nodeId, Value[] values ) throws IOException
+        protected void addIdempotent( long nodeId, Value[] values )
         {
-            writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                    LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
+            try
+            {
+                writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
+                        LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
         }
 
         @Override
-        protected void add( long nodeId, Value[] values ) throws IOException
+        protected void add( long nodeId, Value[] values )
         {
-            writer.addDocument( LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
+            try
+            {
+                writer.addDocument( LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
         }
 
         @Override
-        protected void change( long nodeId, Value[] values ) throws IOException
+        protected void change( long nodeId, Value[] values )
         {
-            writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                    LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
+            try
+            {
+                writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
+                        LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
         }
 
         @Override
-        protected void remove( long nodeId ) throws IOException
+        protected void remove( long nodeId )
         {
-            writer.deleteDocuments( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );
+            try
+            {
+                writer.deleteDocuments( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
         }
     }
 }

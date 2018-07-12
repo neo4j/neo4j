@@ -89,16 +89,9 @@ class SpatialIndexCache<T> extends IndexPartsCache<CoordinateReferenceSystem,T>
      * @param crs target coordinate reference system
      * @return selected part
      */
-    T select( CoordinateReferenceSystem crs ) throws IOException
+    T select( CoordinateReferenceSystem crs )
     {
-        try
-        {
-            return uncheckedSelect( crs );
-        }
-        catch ( UncheckedIOException e )
-        {
-            throw e.getCause();
-        }
+        return uncheckedSelect( crs );
     }
 
     /**

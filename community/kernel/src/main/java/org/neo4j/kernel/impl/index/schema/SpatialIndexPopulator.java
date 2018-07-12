@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -57,7 +56,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
     }
 
     @Override
-    public synchronized void create() throws IOException
+    public synchronized void create()
     {
         forAll( NativeIndexPopulator::clear, this );
 
@@ -76,7 +75,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
     }
 
     @Override
-    public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IOException, IndexEntryConflictException
+    public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
     {
         Map<CoordinateReferenceSystem,List<IndexEntryUpdate<?>>> batchMap = new HashMap<>();
         for ( IndexEntryUpdate<?> update : updates )
@@ -94,7 +93,6 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
 
     @Override
     public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
-            throws IndexEntryConflictException, IOException
     {
         // No-op, uniqueness is checked for each update in add(IndexEntryUpdate)
     }
@@ -106,7 +104,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
     }
 
     @Override
-    public synchronized void close( boolean populationCompletedSuccessfully ) throws IOException
+    public synchronized void close( boolean populationCompletedSuccessfully )
     {
         closeInstantiateCloseLock();
         for ( NativeIndexPopulator part : this )
@@ -163,13 +161,13 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         }
 
         @Override
-        public synchronized void create() throws IOException
+        public synchronized void create()
         {
             create( settings.headerWriter( BYTE_POPULATING ) );
         }
 
         @Override
-        void markTreeAsOnline() throws IOException
+        void markTreeAsOnline()
         {
             tree.checkpoint( IOLimiter.UNLIMITED, settings.headerWriter( BYTE_ONLINE ) );
         }
@@ -198,12 +196,12 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         }
 
         @Override
-        public PartPopulator newSpatial( CoordinateReferenceSystem crs ) throws IOException
+        public PartPopulator newSpatial( CoordinateReferenceSystem crs )
         {
             return create( spatialIndexFiles.forCrs( crs ).getLayoutForNewIndex() );
         }
 
-        private PartPopulator create( SpatialIndexFiles.SpatialFileLayout fileLayout ) throws IOException
+        private PartPopulator create( SpatialIndexFiles.SpatialFileLayout fileLayout )
         {
             PartPopulator populator = new PartPopulator( pageCache, fs, fileLayout, monitor, descriptor, samplingConfig, configuration );
             populator.create();

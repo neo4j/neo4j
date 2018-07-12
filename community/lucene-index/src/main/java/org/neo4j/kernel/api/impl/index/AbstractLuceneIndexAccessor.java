@@ -23,6 +23,7 @@ import org.apache.lucene.document.Document;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.function.ToLongFunction;
 
 import org.neo4j.graphdb.ResourceIterator;
@@ -74,26 +75,47 @@ public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, IN
     }
 
     @Override
-    public void force( IOLimiter ioLimiter ) throws IOException
+    public void force( IOLimiter ioLimiter )
     {
-        // We never change status of read-only indexes.
-        if ( !luceneIndex.isReadOnly() )
+        try
         {
-            luceneIndex.markAsOnline();
+            // We never change status of read-only indexes.
+            if ( !luceneIndex.isReadOnly() )
+            {
+                luceneIndex.markAsOnline();
+            }
+            luceneIndex.maybeRefreshBlocking();
         }
-        luceneIndex.maybeRefreshBlocking();
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @Override
-    public void refresh() throws IOException
+    public void refresh()
     {
-        luceneIndex.maybeRefreshBlocking();
+        try
+        {
+            luceneIndex.maybeRefreshBlocking();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
-        luceneIndex.close();
+        try
+        {
+            luceneIndex.close();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @Override
@@ -115,13 +137,20 @@ public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, IN
     }
 
     @Override
-    public ResourceIterator<File> snapshotFiles() throws IOException
+    public ResourceIterator<File> snapshotFiles()
     {
-        return luceneIndex.snapshot();
+        try
+        {
+            return luceneIndex.snapshot();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @Override
-    public abstract void verifyDeferredConstraints( NodePropertyAccessor propertyAccessor ) throws IndexEntryConflictException, IOException;
+    public abstract void verifyDeferredConstraints( NodePropertyAccessor propertyAccessor ) throws IndexEntryConflictException;
 
     @Override
     public boolean isDirty()
@@ -143,7 +172,7 @@ public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, IN
         }
 
         @Override
-        public void process( IndexEntryUpdate<?> update ) throws IOException
+        public void process( IndexEntryUpdate<?> update )
         {
             // we do not support adding partial entries
             assert update.indexKey().schema().equals( descriptor.schema() );
@@ -173,20 +202,27 @@ public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, IN
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
             if ( hasChanges && refresh )
             {
-                luceneIndex.maybeRefreshBlocking();
+                try
+                {
+                    luceneIndex.maybeRefreshBlocking();
+                }
+                catch ( IOException e )
+                {
+                    throw new UncheckedIOException( e );
+                }
             }
         }
 
-        protected abstract void addIdempotent( long nodeId, Value[] values ) throws IOException;
+        protected abstract void addIdempotent( long nodeId, Value[] values );
 
-        protected abstract void add( long nodeId, Value[] values ) throws IOException;
+        protected abstract void add( long nodeId, Value[] values );
 
-        protected abstract void change( long nodeId, Value[] values ) throws IOException;
+        protected abstract void change( long nodeId, Value[] values );
 
-        protected abstract void remove( long nodeId ) throws IOException;
+        protected abstract void remove( long nodeId );
     }
 }

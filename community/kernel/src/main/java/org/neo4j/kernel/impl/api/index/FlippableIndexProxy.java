@@ -460,7 +460,7 @@ public class FlippableIndexProxy implements IndexProxy
         }
 
         @Override
-        public void close() throws IOException, IndexEntryConflictException
+        public void close() throws IndexEntryConflictException
         {
             try
             {

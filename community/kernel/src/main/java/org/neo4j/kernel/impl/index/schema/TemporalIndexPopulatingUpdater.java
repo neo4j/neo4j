@@ -35,7 +35,7 @@ public class TemporalIndexPopulatingUpdater extends TemporalIndexCache<IndexUpda
     }
 
     @Override
-    public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
+    public void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
     {
         switch ( update.updateMode() )
         {
@@ -71,7 +71,7 @@ public class TemporalIndexPopulatingUpdater extends TemporalIndexCache<IndexUpda
     }
 
     @Override
-    public void close() throws IOException, IndexEntryConflictException
+    public void close() throws IndexEntryConflictException
     {
         for ( IndexUpdater part : this )
         {

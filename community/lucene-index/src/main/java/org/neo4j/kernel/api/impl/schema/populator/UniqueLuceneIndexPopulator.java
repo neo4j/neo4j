@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.schema.populator;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
@@ -49,9 +50,16 @@ public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator<SchemaIndex
     }
 
     @Override
-    public void verifyDeferredConstraints( NodePropertyAccessor accessor ) throws IndexEntryConflictException, IOException
+    public void verifyDeferredConstraints( NodePropertyAccessor accessor ) throws IndexEntryConflictException
     {
-        luceneIndex.verifyUniqueness( accessor, propertyKeyIds );
+        try
+        {
+            luceneIndex.verifyUniqueness( accessor, propertyKeyIds );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @Override

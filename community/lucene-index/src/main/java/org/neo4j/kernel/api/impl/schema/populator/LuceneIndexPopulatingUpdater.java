@@ -23,9 +23,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -47,28 +47,35 @@ public abstract class LuceneIndexPopulatingUpdater implements IndexUpdater
     }
 
     @Override
-    public void process( IndexEntryUpdate<?> update ) throws IOException
+    public void process( IndexEntryUpdate<?> update )
     {
         long nodeId = update.getEntityId();
 
-        switch ( update.updateMode() )
+        try
         {
-        case ADDED:
-            added( update );
-            writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                    LuceneDocumentStructure.documentRepresentingProperties( nodeId, update.values() ) );
-            break;
-        case CHANGED:
-            changed( update );
-            writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                    LuceneDocumentStructure.documentRepresentingProperties( nodeId, update.values() ) );
-            break;
-        case REMOVED:
-            removed( update );
-            writer.deleteDocuments( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );
-            break;
-        default:
-            throw new IllegalStateException( "Unknown update mode " + Arrays.toString( update.values() ) );
+            switch ( update.updateMode() )
+            {
+            case ADDED:
+                added( update );
+                writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
+                        LuceneDocumentStructure.documentRepresentingProperties( nodeId, update.values() ) );
+                break;
+            case CHANGED:
+                changed( update );
+                writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
+                        LuceneDocumentStructure.documentRepresentingProperties( nodeId, update.values() ) );
+                break;
+            case REMOVED:
+                removed( update );
+                writer.deleteDocuments( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );
+                break;
+            default:
+                throw new IllegalStateException( "Unknown update mode " + Arrays.toString( update.values() ) );
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
     }
 

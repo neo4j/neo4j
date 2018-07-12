@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
@@ -124,12 +125,10 @@ class InstanceSelector<T>
      * Convenience method for doing something to all instances, even those that haven't already been instantiated.
      *
      * @param consumer {@link ThrowingConsumer} which performs some action on an instance.
-     * @param <E> type of exception the action may throw.
-     * @throws E exception from action.
      */
-    <E extends Exception> void forAll( ThrowingConsumer<T,E> consumer ) throws E
+    void forAll( Consumer<T> consumer )
     {
-        E exception = null;
+        RuntimeException exception = null;
         for ( IndexSlot slot : IndexSlot.values() )
         {
             exception = consumeAndChainException( select( slot ), consumer, exception );
@@ -144,10 +143,8 @@ class InstanceSelector<T>
      * Perform a final action on instantiated instances and then closes this selector, preventing further instantiation.
      *
      * @param consumer {@link ThrowingConsumer} which performs some action on an instance.
-     * @param <E> type of exception the action may throw.
-     * @throws E exception from action.
      */
-    <E extends Exception> void close( ThrowingConsumer<T,E> consumer ) throws E
+    void close( Consumer<T> consumer )
     {
         if ( !closed )
         {
@@ -172,12 +169,10 @@ class InstanceSelector<T>
      * Convenience method for doing something to already instantiated instances.
      *
      * @param consumer {@link ThrowingConsumer} which performs some action on an instance.
-     * @param <E> type of exception the action may throw.
-     * @throws E exception from action.
      */
-    private <E extends Exception> void forInstantiated( ThrowingConsumer<T,E> consumer ) throws E
+    private void forInstantiated( Consumer<T> consumer )
     {
-        E exception = null;
+        RuntimeException exception = null;
         for ( T instance : instances.values() )
         {
             if ( instance != null )
@@ -191,15 +186,15 @@ class InstanceSelector<T>
         }
     }
 
-    private <E extends Exception> E consumeAndChainException( T instance, ThrowingConsumer<T,E> consumer, E exception )
+    private RuntimeException consumeAndChainException( T instance, Consumer<T> consumer, RuntimeException exception )
     {
         try
         {
             consumer.accept( instance );
         }
-        catch ( Exception e )
+        catch ( RuntimeException e )
         {
-            exception = Exceptions.chain( exception, (E) e );
+            exception = Exceptions.chain( exception, e );
         }
         return exception;
     }

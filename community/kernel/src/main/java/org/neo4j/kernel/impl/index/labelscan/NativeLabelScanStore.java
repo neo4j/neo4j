@@ -256,7 +256,7 @@ public class NativeLabelScanStore implements LabelScanStore
         {
             index.checkpoint( limiter );
         }
-        catch ( IOException e )
+        catch ( UncheckedIOException e )
         {
             throw new UnderlyingStorageException( e );
         }

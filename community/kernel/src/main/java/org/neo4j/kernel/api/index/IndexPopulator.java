@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Collection;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -37,9 +37,9 @@ public interface IndexPopulator
     /**
      * Remove all data in the index and paves the way for populating an index.
      *
-     * @throws IOException on I/O error.
+     * @throws UncheckedIOException on I/O error.
      */
-    void create() throws IOException;
+    void create();
 
     /**
      * Closes and deletes this index.
@@ -59,10 +59,9 @@ public interface IndexPopulator
      * @throws IndexEntryConflictException if this is a uniqueness index and any of the updates are detected
      * to violate that constraint. Implementations may choose to not detect in this call, but instead do one efficient
      * pass over the index in {@link #verifyDeferredConstraints(NodePropertyAccessor)}.
-     * @throws IOException on I/O error.
+     * @throws UncheckedIOException on I/O error.
      */
-    void add( Collection<? extends IndexEntryUpdate<?>> updates )
-            throws IndexEntryConflictException, IOException;
+    void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException;
 
     /**
      * Verifies that each value in this index is unique.
@@ -72,9 +71,9 @@ public interface IndexPopulator
      * @param nodePropertyAccessor {@link NodePropertyAccessor} for accessing properties from database storage
      * in the event of conflicting values.
      * @throws IndexEntryConflictException for first detected uniqueness conflict, if any.
-     * @throws IOException on error reading from source files.
+     * @throws UncheckedIOException on error reading from source files.
      */
-    void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException, IOException;
+    void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException;
 
     /**
      * Return an updater for applying a set of changes to this index, generally this will be a set of changes from a
@@ -113,9 +112,9 @@ public interface IndexPopulator
      * be marked as {@link InternalIndexState#ONLINE}, otherwise {@code false} where index should be marked as
      * {@link InternalIndexState#FAILED} and the failure, previously handed to this populator using {@link #markAsFailed(String)}
      * should be stored and made available for later requests from {@link IndexProvider#getPopulationFailure(StoreIndexDescriptor)}.
-     * @throws IOException on I/O error.
+     * @throws UncheckedIOException on I/O error.
      */
-    void close( boolean populationCompletedSuccessfully ) throws IOException;
+    void close( boolean populationCompletedSuccessfully );
 
     /**
      * Called then a population failed. The failure string should be stored for future retrieval by
@@ -123,9 +122,9 @@ public interface IndexPopulator
      * if there was a failure during population.
      *
      * @param failure the description of the failure.
-     * @throws IOException if marking failed.
+     * @throws UncheckedIOException if marking failed.
      */
-    void markAsFailed( String failure ) throws IOException;
+    void markAsFailed( String failure );
 
     /**
      * Add the given {@link IndexEntryUpdate update} to the sampler for this index.
@@ -144,7 +143,7 @@ public interface IndexPopulator
     class Adapter implements IndexPopulator
     {
         @Override
-        public void create() throws IOException
+        public void create()
         {
         }
 
@@ -165,7 +164,7 @@ public interface IndexPopulator
         }
 
         @Override
-        public void close( boolean populationCompletedSuccessfully ) throws IOException
+        public void close( boolean populationCompletedSuccessfully )
         {
         }
 
@@ -186,8 +185,7 @@ public interface IndexPopulator
         }
 
         @Override
-        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
-                throws IndexEntryConflictException, IOException
+        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
         {
         }
     }

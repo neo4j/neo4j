@@ -654,7 +654,7 @@ abstract class Read implements TxStateHolder,
         }
     }
 
-    private void assertPredicatesMatchSchema( IndexReference index, IndexQuery.ExactPredicate[] predicates )
+    private static void assertPredicatesMatchSchema( IndexReference index, IndexQuery.ExactPredicate[] predicates )
             throws IndexNotApplicableKernelException
     {
         int[] propertyIds = index.properties();

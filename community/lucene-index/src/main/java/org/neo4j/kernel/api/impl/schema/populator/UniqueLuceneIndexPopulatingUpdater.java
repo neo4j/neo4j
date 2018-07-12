@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.schema.populator;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -75,8 +76,15 @@ public class UniqueLuceneIndexPopulatingUpdater extends LuceneIndexPopulatingUpd
     }
 
     @Override
-    public void close() throws IOException, IndexEntryConflictException
+    public void close() throws IndexEntryConflictException
     {
-        luceneIndex.verifyUniqueness( nodePropertyAccessor, propertyKeyIds, updatedValueTuples );
+        try
+        {
+            luceneIndex.verifyUniqueness( nodePropertyAccessor, propertyKeyIds, updatedValueTuples );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 }

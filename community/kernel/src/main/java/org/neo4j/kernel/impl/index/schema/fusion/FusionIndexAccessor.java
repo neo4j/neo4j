@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.ResourceIterator;
@@ -55,7 +54,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     }
 
     @Override
-    public void drop() throws IOException
+    public void drop()
     {
         instanceSelector.forAll( IndexAccessor::drop );
         dropAction.drop( descriptor.getId() );
@@ -69,19 +68,19 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     }
 
     @Override
-    public void force( IOLimiter ioLimiter ) throws IOException
+    public void force( IOLimiter ioLimiter )
     {
         instanceSelector.forAll( accessor -> accessor.force( ioLimiter ) );
     }
 
     @Override
-    public void refresh() throws IOException
+    public void refresh()
     {
         instanceSelector.forAll( IndexAccessor::refresh );
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         instanceSelector.close( IndexAccessor::close );
     }
@@ -131,14 +130,13 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     }
 
     @Override
-    public ResourceIterator<File> snapshotFiles() throws IOException
+    public ResourceIterator<File> snapshotFiles()
     {
         return concatResourceIterators( instanceSelector.transform( IndexAccessor::snapshotFiles ).iterator() );
     }
 
     @Override
-    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
-            throws IndexEntryConflictException, IOException
+    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
     {
         for ( IndexSlot slot : IndexSlot.values() )
         {

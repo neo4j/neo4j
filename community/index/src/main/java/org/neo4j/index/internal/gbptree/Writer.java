@@ -20,7 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.io.Closeable;
-import java.io.IOException;
+import java.io.UncheckedIOException;
 
 /**
  * Able to {@link #merge(Object, Object, ValueMerger)} and {@link #remove(Object)} key/value pairs
@@ -38,9 +38,9 @@ public interface Writer<KEY,VALUE> extends Closeable
      *
      * @param key key to associate with value
      * @param value value to associate with key
-     * @throws IOException on index access error.
+     * @throws UncheckedIOException on index access error.
      */
-    void put( KEY key, VALUE value ) throws IOException;
+    void put( KEY key, VALUE value );
 
     /**
      * If the {@code key} doesn't already exist in the index the {@code key} will be added and the {@code value}
@@ -52,16 +52,16 @@ public interface Writer<KEY,VALUE> extends Closeable
      * @param key key for which to merge values.
      * @param value value to merge with currently associated value for the {@code key}.
      * @param valueMerger {@link ValueMerger} to consult if key already exists.
-     * @throws IOException on index access error.
+     * @throws UncheckedIOException on index access error.
      */
-    void merge( KEY key, VALUE value, ValueMerger<KEY,VALUE> valueMerger ) throws IOException;
+    void merge( KEY key, VALUE value, ValueMerger<KEY,VALUE> valueMerger );
 
     /**
      * Removes a key, returning it's associated value, if found.
      *
      * @param key key to remove.
      * @return value which was associated with the remove key, if found, otherwise {@code null}.
-     * @throws IOException on index access error.
+     * @throws UncheckedIOException on index access error.
      */
-    VALUE remove( KEY key ) throws IOException;
+    VALUE remove( KEY key );
 }

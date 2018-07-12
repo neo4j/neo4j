@@ -64,7 +64,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
     private final OnlineIndexProxy target;
     private final Collection<IndexEntryConflictException> failures = new CopyOnWriteArrayList<>();
 
-    public TentativeConstraintIndexProxy( FlippableIndexProxy flipper, OnlineIndexProxy target )
+    TentativeConstraintIndexProxy( FlippableIndexProxy flipper, OnlineIndexProxy target )
     {
         this.flipper = flipper;
         this.target = target;
@@ -81,7 +81,6 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
                 {
                     @Override
                     public void process( IndexEntryUpdate<?> update )
-                            throws IOException
                     {
                         try
                         {
@@ -94,7 +93,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
                     }
 
                     @Override
-                    public void close() throws IOException
+                    public void close()
                     {
                         try
                         {

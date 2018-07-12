@@ -427,7 +427,7 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public void create() throws IOException
+        public void create()
         {
             delegate.create();
         }
@@ -439,14 +439,14 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
         {
             delegate.add( updates );
             latch.startAndWaitForAllToStartAndFinish();
         }
 
         @Override
-        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException, IOException
+        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
         {
             delegate.verifyDeferredConstraints( nodePropertyAccessor );
         }
@@ -458,7 +458,7 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public void close( boolean populationCompletedSuccessfully ) throws IOException
+        public void close( boolean populationCompletedSuccessfully )
         {
             delegate.close( populationCompletedSuccessfully );
             assertTrue( "Expected population to succeed :(", populationCompletedSuccessfully );
@@ -466,7 +466,7 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public void markAsFailed( String failure ) throws IOException
+        public void markAsFailed( String failure )
         {
             delegate.markAsFailed( failure );
         }

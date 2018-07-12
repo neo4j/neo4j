@@ -75,7 +75,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
     }
 
     @Override
-    public void drop() throws IOException
+    public void drop()
     {
         forAll( NativeIndexAccessor::drop, this );
     }
@@ -87,7 +87,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
     }
 
     @Override
-    public void force( IOLimiter ioLimiter ) throws IOException
+    public void force( IOLimiter ioLimiter )
     {
         for ( NativeIndexAccessor part : this )
         {
@@ -102,7 +102,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         closeInstantiateCloseLock();
         forAll( NativeIndexAccessor::close, this );
@@ -262,7 +262,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
                                      searchConfiguration );
         }
 
-        private void createEmptyIndex( SpatialIndexFiles.SpatialFileLayout fileLayout ) throws IOException
+        private void createEmptyIndex( SpatialIndexFiles.SpatialFileLayout fileLayout )
         {
             IndexPopulator populator = new SpatialIndexPopulator.PartPopulator( pageCache,
                                                                                 fs,

@@ -118,14 +118,7 @@ public class OnlineIndexProxy implements IndexProxy
     public void drop()
     {
         indexCountsRemover.remove();
-        try
-        {
-            accessor.drop();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "Failed to drop index ", e );
-        }
+        accessor.drop();
     }
 
     @Override
@@ -141,13 +134,13 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public void force( IOLimiter ioLimiter ) throws IOException
+    public void force( IOLimiter ioLimiter )
     {
         accessor.force( ioLimiter );
     }
 
     @Override
-    public void refresh() throws IOException
+    public void refresh()
     {
         accessor.refresh();
     }
@@ -201,7 +194,7 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public ResourceIterator<File> snapshotFiles() throws IOException
+    public ResourceIterator<File> snapshotFiles()
     {
         return accessor.snapshotFiles();
     }
@@ -213,8 +206,7 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
-            throws IndexEntryConflictException, IOException
+    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
     {
         accessor.verifyDeferredConstraints( nodePropertyAccessor );
     }
