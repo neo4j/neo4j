@@ -5,7 +5,7 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>parent</artifactId>
-  <version>3.5.0-SNAPSHOT</version>
+  <version>3.4.5-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Neo4j</name>
   <description>Neo4j Graph Database</description>
@@ -303,37 +303,6 @@
                 <item>
                   <!-- Ignore for now since some are already published, should be removed in 4.0 -->
                   <code>java.class.nonPublicPartOfAPI</code>
-                </item>
-                <item>
-                  <code>java.class.noLongerImplementsInterface</code>
-                  <class>org.neo4j.graphalgo.WeightedPath</class>
-                  <justification>Cleanup accidental Path exposure as a Resource.</justification>
-                </item>
-                <item>
-                  <code>java.class.removed</code>
-                  <old>interface org.neo4j.management.Cache</old>
-                  <classSimpleName>Cache</classSimpleName>
-                  <package>org.neo4j.management</package>
-                  <elementKind>interface</elementKind>
-                  <justification>The implemented class was removed in 3.0, but this interface lingered on.</justification>
-                </item>
-                <item>
-                  <code>java.method.removed</code>
-                  <classSimpleName>Neo4jManager</classSimpleName>
-                  <methodName>getCacheBeans</methodName>
-                  <package>org.neo4j.management</package>
-                  <elementKind>method</elementKind>
-                  <justification>The implemented class was removed in 3.0, but this interface lingered on.</justification>
-                </item>
-                <item>
-                  <code>java.class.removed</code>
-                  <class>org.neo4j.helpers.FailableConcurrentTransfer</class>
-                  <justification>Class is never used</justification>
-                </item>
-                <item>
-                  <code>java.field.nowFinal</code>
-                  <old>field org.neo4j.graphdb.InputPosition.empty</old>
-                  <justification>Changes to this field should not be allowed</justification>
                 </item>
               </revapi.ignore>
               <revapi.semver.ignore>
