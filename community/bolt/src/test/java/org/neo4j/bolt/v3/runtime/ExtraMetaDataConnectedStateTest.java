@@ -29,7 +29,7 @@ import org.neo4j.bolt.runtime.MutableConnectionState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.ConnectedState;
-import org.neo4j.bolt.v3.messaging.HelloMessage;
+import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.values.storable.StringValue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

@@ -21,6 +21,7 @@ package org.neo4j.bolt.v1.runtime.bookmarking;
 
 import java.util.Objects;
 
+import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
@@ -30,6 +31,7 @@ import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public class Bookmark
 {
@@ -152,6 +154,11 @@ public class Bookmark
         {
             throw new BookmarkFormatException( bookmarkString, e );
         }
+    }
+
+    public void attachTo( BoltResponseHandler state )
+    {
+        state.onMetadata( BOOKMARK_KEY, stringValue( toString() ) );
     }
 
     static class BookmarkFormatException extends KernelException

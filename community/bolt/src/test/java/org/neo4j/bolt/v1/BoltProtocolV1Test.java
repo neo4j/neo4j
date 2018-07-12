@@ -59,7 +59,7 @@ public class BoltProtocolV1Test
     }
 
     @Test
-    public void shouldInstallChannelHandlersInCorrectOrder()
+    public void shouldInstallChannelHandlersInCorrectOrder() throws Throwable
     {
         // Given
         BoltChannel boltChannel = newBoltChannel( channel );

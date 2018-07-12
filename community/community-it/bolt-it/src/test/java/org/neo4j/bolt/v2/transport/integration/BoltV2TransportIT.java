@@ -280,7 +280,6 @@ public class BoltV2TransportIT
 
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess(),
                 msgRecord( eqRecord( equalTo( longValue( 42 ) ) ) ),
                 msgSuccess() ) );
     }
@@ -294,7 +293,6 @@ public class BoltV2TransportIT
                 PullAllMessage.INSTANCE ) );
 
         assertThat( connection, util.eventuallyReceives(
-                msgSuccess(),
                 msgSuccess(),
                 msgRecord( eqRecord( equalTo( expectedValue ) ) ),
                 msgSuccess() ) );
@@ -310,7 +308,6 @@ public class BoltV2TransportIT
 
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess(),
                 msgRecord( eqRecord( equalTo( value ) ) ),
                 msgSuccess() ) );
     }
@@ -322,5 +319,6 @@ public class BoltV2TransportIT
                 .send( util.chunk( new InitMessage( USER_AGENT, emptyMap() ) ) );
 
         assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 2} ) );
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
     }
 }

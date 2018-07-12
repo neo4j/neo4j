@@ -75,7 +75,7 @@ public class TransactionStateMachine implements StatementProcessor
         {
             ensureNoPendingTerminationNotice();
 
-            state = state.beginTransaction( bookmark, ctx, spi );
+            state = state.beginTransaction( ctx, spi, bookmark );
         }
         finally
         {
@@ -86,12 +86,18 @@ public class TransactionStateMachine implements StatementProcessor
     @Override
     public StatementMetadata run( String statement, MapValue params ) throws KernelException
     {
+        return run( statement, params, null );
+    }
+
+    @Override
+    public StatementMetadata run( String statement, MapValue params, Bookmark bookmark ) throws KernelException
+    {
         before();
         try
         {
             ensureNoPendingTerminationNotice();
 
-            state = state.run( ctx, spi, statement, params );
+            state = state.run( ctx, spi, statement, params, bookmark );
 
             return ctx.currentStatementMetadata;
         }
@@ -118,7 +124,7 @@ public class TransactionStateMachine implements StatementProcessor
     }
 
     @Override
-    public void commitTransaction() throws KernelException
+    public Bookmark commitTransaction() throws KernelException
     {
         before();
         try
@@ -126,6 +132,7 @@ public class TransactionStateMachine implements StatementProcessor
             ensureNoPendingTerminationNotice();
 
             state = state.commitTransaction( ctx, spi );
+            return newestBookmark( spi );
         }
         catch ( TransactionFailureException ex )
         {
@@ -239,10 +246,16 @@ public class TransactionStateMachine implements StatementProcessor
         AUTO_COMMIT
                 {
                     @Override
-                    State beginTransaction( Bookmark bookmark, MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException
+                    State beginTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi, Bookmark bookmark ) throws KernelException
                     {
+                        waitForBookmark( ctx, spi, bookmark );
                         ctx.currentTransaction = spi.beginTransaction( ctx.loginContext );
+                        return EXPLICIT_TRANSACTION;
+                    }
 
+                    private void waitForBookmark( MutableTransactionState ctx, TransactionStateMachineSPI spi, Bookmark bookmark )
+                            throws TransactionFailureException
+                    {
                         if ( bookmark != null )
                         {
                             spi.awaitUpToDate( bookmark.txId() );
@@ -252,12 +265,19 @@ public class TransactionStateMachine implements StatementProcessor
                         {
                             ctx.currentResult = BoltResult.EMPTY;
                         }
-
-                        return EXPLICIT_TRANSACTION;
                     }
 
                     @Override
-                    State run( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params ) throws KernelException
+                    State run( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params, Bookmark bookmark )
+                            throws KernelException
+                    {
+                        statement = parseStatement( ctx, statement );
+                        waitForBookmark( ctx, spi, bookmark );
+                        execute( ctx, spi, statement, params, spi.isPeriodicCommit( statement ) );
+                        return AUTO_COMMIT;
+                    }
+
+                    private String parseStatement( MutableTransactionState ctx, String statement )
                     {
                         if ( statement.isEmpty() )
                         {
@@ -267,8 +287,7 @@ public class TransactionStateMachine implements StatementProcessor
                         {
                             ctx.lastStatement = statement;
                         }
-                        execute( ctx, spi, statement, params, spi.isPeriodicCommit( statement ) );
-                        return AUTO_COMMIT;
+                        return statement;
                     }
 
                     void execute( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params, boolean isPeriodicCommit )
@@ -336,13 +355,14 @@ public class TransactionStateMachine implements StatementProcessor
         EXPLICIT_TRANSACTION
                 {
                     @Override
-                    State beginTransaction( Bookmark bookmark, MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException
+                    State beginTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi, Bookmark bookmark ) throws KernelException
                     {
                         throw new QueryExecutionKernelException( new InvalidSemanticsException( "Nested transactions are not supported." ) );
                     }
 
                     @Override
-                    State run( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params ) throws KernelException
+                    State run( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params, Bookmark bookmark )
+                            throws KernelException
                     {
                         if ( statement.isEmpty() )
                         {
@@ -378,8 +398,7 @@ public class TransactionStateMachine implements StatementProcessor
                     State commitTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException
                     {
                         closeTransaction( ctx, true );
-                        long txId = spi.newestEncounteredTxId();
-                        Bookmark bookmark = new Bookmark( txId );
+                        Bookmark bookmark = newestBookmark( spi );
                         ctx.currentResult = new BookmarkResult( bookmark );
                         return AUTO_COMMIT;
                     }
@@ -393,9 +412,10 @@ public class TransactionStateMachine implements StatementProcessor
                     }
                 };
 
-        abstract State beginTransaction( Bookmark bookmark, MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException;
+        abstract State beginTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi, Bookmark bookmark ) throws KernelException;
 
-        abstract State run( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params ) throws KernelException;
+        abstract State run( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params, Bookmark bookmark )
+                throws KernelException;
 
         abstract void streamResult( MutableTransactionState ctx, ThrowingConsumer<BoltResult,Exception> resultConsumer ) throws Exception;
 
@@ -488,6 +508,12 @@ public class TransactionStateMachine implements StatementProcessor
             }
         }
 
+    }
+
+    private static Bookmark newestBookmark( TransactionStateMachineSPI spi )
+    {
+        long txId = spi.newestEncounteredTxId();
+        return new Bookmark( txId );
     }
 
     static class MutableTransactionState

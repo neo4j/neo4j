@@ -75,7 +75,7 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
         }
         else
         {
-            return null;
+            throw new IllegalArgumentException( "Failed to create a state machine for protocol version " + protocolVersion );
         }
     }
 

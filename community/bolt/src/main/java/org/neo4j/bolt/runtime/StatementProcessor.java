@@ -31,9 +31,11 @@ public interface StatementProcessor
 
     StatementMetadata run( String statement, MapValue params ) throws KernelException;
 
+    StatementMetadata run( String statement, MapValue params, Bookmark bookmark ) throws KernelException;
+
     void streamResult( ThrowingConsumer<BoltResult,Exception> resultConsumer ) throws Exception;
 
-    void commitTransaction() throws KernelException;
+    Bookmark commitTransaction() throws KernelException;
 
     void rollbackTransaction() throws KernelException;
 
@@ -64,13 +66,19 @@ public interface StatementProcessor
         }
 
         @Override
+        public StatementMetadata run( String statement, MapValue params, Bookmark bookmark ) throws KernelException
+        {
+            throw new UnsupportedOperationException( "Unable to run statements" );
+        }
+
+        @Override
         public void streamResult( ThrowingConsumer<BoltResult,Exception> resultConsumer ) throws Exception
         {
             throw new UnsupportedOperationException( "Unable to stream results" );
         }
 
         @Override
-        public void commitTransaction() throws KernelException
+        public Bookmark commitTransaction() throws KernelException
         {
             throw new UnsupportedOperationException( "Unable to commit a transaction" );
         }

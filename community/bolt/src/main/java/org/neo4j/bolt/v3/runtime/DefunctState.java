@@ -23,33 +23,21 @@ import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.v1.runtime.ConnectedState;
-import org.neo4j.bolt.v3.messaging.request.HelloMessage;
-import org.neo4j.values.storable.Values;
 
 /**
- * Following the socket connection and a small handshake exchange to
- * establish protocol version, the machine begins in the CONNECTED
- * state. The <em>only</em> valid transition from here is through a
- * correctly authorised HELLO into the READY state. Any other action
- * results in disconnection.
+ * This is a place holder for the states that require a failed state but the state machine shall be terminated.
  */
-public class ExtraMetaDataConnectedState extends ConnectedState
+public class DefunctState implements BoltStateMachineState
 {
-    private static final String ROUTING_TABLE_VALUE = "dbms.cluster.routing.getRoutingTable";
-    private static final String ROUTING_TABLE_KEY = "routing_table";
-    private static final String CONNECTION_ID_KEY = "connection_id";
-
     @Override
     public BoltStateMachineState process( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
     {
-        if ( message instanceof HelloMessage )
-        {
-            BoltStateMachineState processResult = super.process( message, context );
-            context.connectionState().onMetadata( ROUTING_TABLE_KEY, Values.stringValue( ROUTING_TABLE_VALUE ) );
-            context.connectionState().onMetadata( CONNECTION_ID_KEY, Values.stringValue( context.connectionId() ) );
-            return processResult;
-        }
         return null;
+    }
+
+    @Override
+    public String name()
+    {
+        return "DEFUNCT";
     }
 }

@@ -26,22 +26,25 @@ import org.neo4j.bolt.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
+import org.neo4j.bolt.messaging.ResponseMessage;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.SynchronousBoltConnection;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
+import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
 import org.neo4j.kernel.impl.logging.NullLogService;
 
 import static org.mockito.Mockito.mock;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
 
 /**
  * A helper factory to generate boltV3 component in tests
  */
 public class BoltProtocolV3ComponentFactory
 {
-    public static Neo4jPack neo4jPack()
+    public static Neo4jPack newNeo4jPack()
     {
         return new Neo4jPackV2();
     }
@@ -72,4 +75,21 @@ public class BoltProtocolV3ComponentFactory
         return rawData.getBytes();
     }
 
+    public static TransportTestUtil.MessageEncoder newMessageEncoder()
+    {
+        return new TransportTestUtil.MessageEncoder()
+        {
+            @Override
+            public byte[] encode( Neo4jPack neo4jPack, RequestMessage... messages ) throws IOException
+            {
+                return BoltProtocolV3ComponentFactory.encode( neo4jPack, messages );
+            }
+
+            @Override
+            public byte[] encode( Neo4jPack neo4jPack, ResponseMessage... messages ) throws IOException
+            {
+                return serialize( neo4jPack, messages );
+            }
+        };
+    }
 }

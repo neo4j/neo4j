@@ -37,6 +37,7 @@ import org.neo4j.udc.UsageDataKeys;
 
 public class BoltStateMachineV1SPI implements BoltStateMachineSPI
 {
+    public static final String BOLT_SERVER_VERSION_PREFIX = "Neo4j/";
     private final BoltConnectionDescriptor connectionDescriptor;
     private final UsageData usageData;
     private final ErrorReporter errorReporter;
@@ -54,7 +55,7 @@ public class BoltStateMachineV1SPI implements BoltStateMachineSPI
         this.connectionTracker = connectionTracker;
         this.authentication = authentication;
         this.transactionSpi = transactionStateMachineSPI;
-        this.version = "Neo4j/" + Version.getNeo4jVersion();
+        this.version = BOLT_SERVER_VERSION_PREFIX + Version.getNeo4jVersion();
     }
 
     @Override

@@ -43,11 +43,18 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
 
 public class TransportTestUtil
 {
-    private final Neo4jPack neo4jPack;
+    protected final Neo4jPack neo4jPack;
+    private final MessageEncoder messageEncoder;
 
     public TransportTestUtil( Neo4jPack neo4jPack )
     {
+        this( neo4jPack, new MessageEncoderV1() );
+    }
+
+    public TransportTestUtil( Neo4jPack neo4jPack, MessageEncoder messageEncoder )
+    {
         this.neo4jPack = neo4jPack;
+        this.messageEncoder = messageEncoder;
     }
 
     public Neo4jPack getNeo4jPack()
@@ -70,7 +77,7 @@ public class TransportTestUtil
         byte[][] serializedMessages = new byte[messages.length][];
         for ( int i = 0; i < messages.length; i++ )
         {
-            serializedMessages[i] = serialize( neo4jPack, messages[i] );
+            serializedMessages[i] = messageEncoder.encode( neo4jPack, messages[i] );
         }
         return chunk( chunkSize, serializedMessages );
     }
@@ -269,5 +276,25 @@ public class TransportTestUtil
                 description.appendText( "Eventually Disconnects" );
             }
         };
+    }
+
+    public interface MessageEncoder
+    {
+        byte[] encode( Neo4jPack neo4jPack, RequestMessage... messages ) throws IOException;
+        byte[] encode( Neo4jPack neo4jPack, ResponseMessage... messages ) throws IOException;
+    }
+
+    private static class MessageEncoderV1 implements MessageEncoder
+    {
+        public byte[] encode( Neo4jPack neo4jPack, RequestMessage... messages ) throws IOException
+        {
+            return serialize( neo4jPack, messages );
+        }
+
+        @Override
+        public byte[] encode( Neo4jPack neo4jPack, ResponseMessage... messages ) throws IOException
+        {
+            return serialize( neo4jPack, messages );
+        }
     }
 }

@@ -30,9 +30,10 @@ import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BoltStateMachine;
-import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.bolt.runtime.BoltStateMachineFactory;
+import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.bolt.v2.BoltProtocolV2;
+import org.neo4j.bolt.v3.BoltProtocolV3;
 import org.neo4j.kernel.impl.logging.NullLogService;
 
 import static org.junit.Assert.assertEquals;
@@ -44,12 +45,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class DefaultBoltProtocolFactoryTest
+class DefaultBoltProtocolFactoryTest
 {
     private static final String CONNECTOR = "default";
 
     @Test
-    public void shouldCreateNothingForUnknownProtocolVersion()
+    void shouldCreateNothingForUnknownProtocolVersion()
     {
         int protocolVersion = 42;
         BoltChannel channel = mock( BoltChannel.class );
@@ -64,8 +65,8 @@ public class DefaultBoltProtocolFactoryTest
     }
 
     @ParameterizedTest( name = "V{0}" )
-    @ValueSource( longs = {BoltProtocolV1.VERSION, BoltProtocolV2.VERSION} )
-    public void shouldCreateBoltProtocol( long protocolVersion )
+    @ValueSource( longs = {BoltProtocolV1.VERSION, BoltProtocolV2.VERSION, BoltProtocolV3.VERSION} )
+    void shouldCreateBoltProtocol( long protocolVersion ) throws Throwable
     {
         EmbeddedChannel channel = new EmbeddedChannel();
         BoltChannel boltChannel = BoltChannel.open( CONNECTOR, channel, NullBoltMessageLogger.getInstance() );

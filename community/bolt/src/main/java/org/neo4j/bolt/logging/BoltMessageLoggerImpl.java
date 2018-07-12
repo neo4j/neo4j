@@ -102,7 +102,7 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
     }
 
     @Override
-    public void logUserAgent( String userAgent )
+    public void logInit( String userAgent )
     {
         clientEvent( "INIT", () -> userAgent);
     }

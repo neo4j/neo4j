@@ -75,6 +75,11 @@ public class BoltMatchers
         };
     }
 
+    public static Matcher<RecordedBoltResponse> succeededWithMetadata( final String key, final String value )
+    {
+        return succeededWithMetadata( key, stringValue( value ) );
+    }
+
     public static Matcher<RecordedBoltResponse> succeededWithMetadata( final String key, final AnyValue value )
     {
         return new BaseMatcher<RecordedBoltResponse>()

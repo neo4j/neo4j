@@ -17,28 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v3.messaging;
+package org.neo4j.bolt.v3.messaging.decoder;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.packstream.PackedInputArray;
+import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.v3.messaging.BoltProtocolV3ComponentFactory.encode;
-import static org.neo4j.bolt.v3.messaging.BoltProtocolV3ComponentFactory.neo4jPack;
+import static org.neo4j.bolt.v3.messaging.BoltProtocolV3ComponentFactory.newNeo4jPack;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 class HelloMessageDecoderTest
 {
     private final BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
-    private final BoltMessageLogger messageLogger = mock( BoltMessageLogger.class );
-    private final RequestMessageDecoder decoder = new HelloMessageDecoder( responseHandler, messageLogger );
+    private final RequestMessageDecoder decoder = new HelloMessageDecoder( responseHandler );
 
     @Test
     void shouldReturnCorrectSignature()
@@ -53,13 +52,18 @@ class HelloMessageDecoderTest
     }
 
     @Test
-    void shouldDecodeAckFailure() throws Exception
+    void shouldDecodeHelloMessage() throws Exception
     {
-        Neo4jPack neo4jPack = neo4jPack();
         HelloMessage originalMessage = new HelloMessage( map( "user_agent", "My Driver", "user", "neo4j", "password", "secret" ) );
+        assertOriginalMessageEqualsToDecoded( originalMessage, decoder );
+    }
 
-        PackedInputArray innput = new PackedInputArray( encode( neo4jPack, originalMessage ) );
-        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( innput );
+    static void assertOriginalMessageEqualsToDecoded( RequestMessage originalMessage, RequestMessageDecoder decoder ) throws Exception
+    {
+        Neo4jPack neo4jPack = newNeo4jPack();
+
+        PackedInputArray input = new PackedInputArray( encode( neo4jPack, originalMessage ) );
+        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
 
         // these two steps are executed before decoding in order to select a correct decoder
         unpacker.unpackStructHeader();
@@ -68,4 +72,5 @@ class HelloMessageDecoderTest
         RequestMessage deserializedMessage = decoder.decode( unpacker );
         assertEquals( originalMessage, deserializedMessage );
     }
+
 }

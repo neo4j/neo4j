@@ -17,35 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v3.messaging;
+package org.neo4j.bolt.v3.messaging.decoder;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.bolt.v1.messaging.decoder.PrimitiveOnlyValueWriter;
-import org.neo4j.values.virtual.MapValue;
+import org.neo4j.bolt.v3.messaging.request.CommitMessage;
 
-public class HelloMessageDecoder implements RequestMessageDecoder
+import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
+
+public class CommitMessageDecoder implements RequestMessageDecoder
 {
     private final BoltResponseHandler responseHandler;
-    private final BoltMessageLogger messageLogger;
 
-    public HelloMessageDecoder( BoltResponseHandler responseHandler, BoltMessageLogger messageLogger )
+    public CommitMessageDecoder( BoltResponseHandler responseHandler )
     {
         this.responseHandler = responseHandler;
-        this.messageLogger = messageLogger;
     }
 
     @Override
     public int signature()
     {
-        return HelloMessage.SIGNATURE;
+        return CommitMessage.SIGNATURE;
     }
 
     @Override
@@ -57,13 +53,7 @@ public class HelloMessageDecoder implements RequestMessageDecoder
     @Override
     public RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException
     {
-        MapValue helloMeta = unpacker.unpackMap();
-        PrimitiveOnlyValueWriter writer = new PrimitiveOnlyValueWriter();
-        Map<String,Object> meta = new HashMap<>( helloMeta.size() );
-        helloMeta.foreach( ( key, value ) -> meta.put( key, writer.valueAsObject( value ) ) );
-        HelloMessage helloMessage = new HelloMessage( meta );
-
-        messageLogger.logUserAgent( helloMessage.userAgent() );
-        return helloMessage;
+        return COMMIT_MESSAGE;
     }
 }
+

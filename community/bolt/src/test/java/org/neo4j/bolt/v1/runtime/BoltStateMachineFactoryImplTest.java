@@ -44,9 +44,10 @@ import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.udc.UsageData;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -57,7 +58,7 @@ class BoltStateMachineFactoryImplTest
 
     @ParameterizedTest( name = "V{0}" )
     @ValueSource( longs = {BoltProtocolV1.VERSION, BoltProtocolV2.VERSION} )
-    void shouldCreateBoltStateMachines( long protocolVersion )
+    void shouldCreateBoltStateMachines( long protocolVersion ) throws Throwable
     {
         BoltStateMachineFactoryImpl factory = newBoltFactory();
 
@@ -68,7 +69,7 @@ class BoltStateMachineFactoryImplTest
     }
 
     @Test
-    void shouldCreateBoltStateMachinesV3()
+    void shouldCreateBoltStateMachinesV3() throws Throwable
     {
         BoltStateMachineFactoryImpl factory = newBoltFactory();
 
@@ -80,13 +81,12 @@ class BoltStateMachineFactoryImplTest
 
     @ParameterizedTest( name = "V{0}" )
     @ValueSource( longs = {999, -1} )
-    void shouldReturnNullIfVersionIsUnknown( long protocolVersion )
+    void shouldThrowExceptionIfVersionIsUnknown( long protocolVersion ) throws Throwable
     {
         BoltStateMachineFactoryImpl factory = newBoltFactory();
 
-        BoltStateMachine boltStateMachine = factory.newStateMachine( protocolVersion, CHANNEL );
-
-        assertNull( boltStateMachine );
+        IllegalArgumentException error = assertThrows( IllegalArgumentException.class, () -> factory.newStateMachine( protocolVersion, CHANNEL ) );
+        assertThat( error.getMessage(), startsWith( "Failed to create a state machine for protocol version" ) );
     }
 
     private static BoltStateMachineFactoryImpl newBoltFactory()

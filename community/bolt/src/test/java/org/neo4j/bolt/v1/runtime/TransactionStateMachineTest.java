@@ -72,7 +72,7 @@ class TransactionStateMachineTest
     void shouldTransitionToExplicitTransactionOnBegin() throws Exception
     {
         assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION,
-                TransactionStateMachine.State.AUTO_COMMIT.beginTransaction( null, mutableState, stateMachineSPI ) );
+                TransactionStateMachine.State.AUTO_COMMIT.beginTransaction( mutableState, stateMachineSPI, null ) );
     }
 
     @Test
@@ -93,7 +93,7 @@ class TransactionStateMachineTest
     void shouldThrowOnBeginInExplicitTransaction() throws Exception
     {
         QueryExecutionKernelException e = assertThrows( QueryExecutionKernelException.class, () ->
-                TransactionStateMachine.State.EXPLICIT_TRANSACTION.beginTransaction( null, mutableState, stateMachineSPI ) );
+                TransactionStateMachine.State.EXPLICIT_TRANSACTION.beginTransaction( mutableState, stateMachineSPI, null ) );
 
         assertEquals( "Nested transactions are not supported.", e.getMessage() );
     }

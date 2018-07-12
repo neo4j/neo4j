@@ -17,12 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v3.messaging;
+package org.neo4j.bolt.v3.messaging.request;
 
 import java.util.Map;
 import java.util.Objects;
 
 import org.neo4j.bolt.v1.messaging.request.InitMessage;
+
+import static java.util.Objects.requireNonNull;
 
 public class HelloMessage extends InitMessage
 {
@@ -33,7 +35,7 @@ public class HelloMessage extends InitMessage
     public HelloMessage( Map<String,Object> meta )
     {
         super( (String) meta.get( USER_AGENT ), meta );
-        this.meta = meta;
+        this.meta = requireNonNull( meta );
     }
 
     @Override

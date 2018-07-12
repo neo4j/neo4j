@@ -73,7 +73,7 @@ public class NullBoltMessageLogger implements BoltMessageLogger
     }
 
     @Override
-    public void logUserAgent( String userAgent )
+    public void logInit( String userAgent )
     {
     }
 

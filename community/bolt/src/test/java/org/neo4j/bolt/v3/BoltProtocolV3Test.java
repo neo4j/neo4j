@@ -37,7 +37,7 @@ import static org.mockito.Mockito.mock;
 class BoltProtocolV3Test
 {
     @Test
-    void shouldCreatePackForBoltV3()
+    void shouldCreatePackForBoltV3() throws Throwable
     {
         BoltProtocolV3 protocolV3 =
                 new BoltProtocolV3( mock( BoltChannel.class ), ( ch, st ) -> mock( BoltConnection.class ), mock( BoltStateMachineFactory.class ),
@@ -47,7 +47,7 @@ class BoltProtocolV3Test
     }
 
     @Test
-    void shouldVersionReturnBoltV3()
+    void shouldVersionReturnBoltV3() throws Throwable
     {
         BoltProtocolV3 protocolV3 =
                 new BoltProtocolV3( mock( BoltChannel.class ), ( ch, st ) -> mock( BoltConnection.class ), mock( BoltStateMachineFactory.class ),
@@ -57,7 +57,7 @@ class BoltProtocolV3Test
     }
 
     @Test
-    void shouldCreateMessageReaderForBoltV3()
+    void shouldCreateMessageReaderForBoltV3() throws Throwable
     {
         BoltProtocolV3 protocolV3 =
                 new BoltProtocolV3( mock( BoltChannel.class ), ( ch, st ) -> mock( BoltConnection.class ), mock( BoltStateMachineFactory.class ),

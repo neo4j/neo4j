@@ -24,12 +24,13 @@ import java.time.Clock;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltStateMachineSPI;
 import org.neo4j.bolt.v1.runtime.BoltStateMachineV1;
-import org.neo4j.bolt.v1.runtime.ConnectedState;
-import org.neo4j.bolt.v1.runtime.FailedState;
 import org.neo4j.bolt.v1.runtime.InterruptedState;
-import org.neo4j.bolt.v1.runtime.ReadyState;
-import org.neo4j.bolt.v1.runtime.StreamingState;
+import org.neo4j.bolt.v3.runtime.FailedState;
+import org.neo4j.bolt.v3.runtime.DefunctState;
 import org.neo4j.bolt.v3.runtime.ExtraMetaDataConnectedState;
+import org.neo4j.bolt.v3.runtime.ReadyState;
+import org.neo4j.bolt.v3.runtime.StreamingState;
+import org.neo4j.bolt.v3.runtime.TransactionReadyState;
 
 public class BoltStateMachineV3 extends BoltStateMachineV1
 {
@@ -41,15 +42,19 @@ public class BoltStateMachineV3 extends BoltStateMachineV1
     @Override
     protected States buildStates()
     {
-        ConnectedState connected = new ExtraMetaDataConnectedState();
+        ExtraMetaDataConnectedState connected = new ExtraMetaDataConnectedState();
         ReadyState ready = new ReadyState();
         StreamingState streaming = new StreamingState();
         FailedState failed = new FailedState();
         InterruptedState interrupted = new InterruptedState();
+        DefunctState defunct = new DefunctState();
+        TransactionReadyState txReady = new TransactionReadyState();
+        StreamingState txStreaming = new StreamingState();
 
         connected.setReadyState( ready );
-        connected.setFailedState( failed );
+        connected.setFailedState( defunct );
 
+        ready.setTransactionReadyState( txReady );
         ready.setStreamingState( streaming );
         ready.setInterruptedState( interrupted );
         ready.setFailedState( failed );
@@ -58,11 +63,19 @@ public class BoltStateMachineV3 extends BoltStateMachineV1
         streaming.setInterruptedState( interrupted );
         streaming.setFailedState( failed );
 
-        failed.setReadyState( ready );
+        txReady.setReadyState( ready );
+        txReady.setTransactionStreamingState( txStreaming );
+        txReady.setInterruptedState( interrupted );
+        txReady.setFailedState( failed );
+
+        txStreaming.setReadyState( txReady );
+        txStreaming.setInterruptedState( interrupted );
+        txStreaming.setFailedState( failed );
+
         failed.setInterruptedState( interrupted );
 
         interrupted.setReadyState( ready );
-        interrupted.setFailedState( failed );
+        interrupted.setFailedState( defunct );
 
         return new States( connected, failed );
     }
