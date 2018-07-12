@@ -31,17 +31,17 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.neo4j.com.storecopy.FileMoveAction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ssl.SslPolicyConfig;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
-import org.neo4j.kernel.configuration.ssl.TrustManagerFactoryProvider;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogProvider;
@@ -59,6 +59,7 @@ public class SslPolicyLoaderIT
     private static final PkiUtils PKI_UTILS = new PkiUtils();
     private static final LogProvider LOG_PROVIDER = FormattedLogProvider.withDefaultLogLevel( Level.DEBUG ).toOutputStream( System.out );
     private static final String POLICY_NAME = "fakePolicy";
+    private static final SslPolicyConfig sslPolicyConfig = new SslPolicyConfig( POLICY_NAME );
 
     @Test
     public void certificatesWithInvalidCommonNameAreRejected() throws GeneralSecurityException, IOException, OperatorCreationException, InterruptedException
@@ -73,12 +74,12 @@ public class SslPolicyLoaderIT
         trust( clientConfig, serverConfig );
 
         // and setup
-        SslPolicy serverPolicy = SslPolicyLoader.create( serverConfig, new TrustManagerFactoryProvider(), LOG_PROVIDER ).getPolicy( POLICY_NAME );
-        SslPolicy clientPolicy = SslPolicyLoader.create( clientConfig, new TrustManagerFactoryProvider(), LOG_PROVIDER ).getPolicy( POLICY_NAME );
-        SecureServer secureServer = new SecureServer( serverPolicy.nettyServerContext(), true, LOG_PROVIDER );
+        SslPolicy serverPolicy = SslPolicyLoader.create( serverConfig, LOG_PROVIDER ).getPolicy( POLICY_NAME );
+        SslPolicy clientPolicy = SslPolicyLoader.create( clientConfig, LOG_PROVIDER ).getPolicy( POLICY_NAME );
+        SecureServer secureServer = new SecureServer( serverPolicy );
         secureServer.start();
         int port = secureServer.port();
-        SecureClient secureClient = new SecureClient( clientPolicy.nettyClientContext(), true, LOG_PROVIDER );
+        SecureClient secureClient = new SecureClient( clientPolicy, LOG_PROVIDER );
 
         // when client connects to server with a non-matching hostname
         try
@@ -111,11 +112,11 @@ public class SslPolicyLoaderIT
         trust( clientConfig, serverConfig );
 
         // and setup
-        SslPolicy serverPolicy = SslPolicyLoader.create( serverConfig, new TrustManagerFactoryProvider(), LOG_PROVIDER ).getPolicy( POLICY_NAME );
-        SslPolicy clientPolicy = SslPolicyLoader.create( clientConfig, new TrustManagerFactoryProvider(), LOG_PROVIDER ).getPolicy( POLICY_NAME );
-        SecureServer secureServer = new SecureServer( serverPolicy.nettyServerContext(), true );
+        SslPolicy serverPolicy = SslPolicyLoader.create( serverConfig, LOG_PROVIDER ).getPolicy( POLICY_NAME );
+        SslPolicy clientPolicy = SslPolicyLoader.create( clientConfig, LOG_PROVIDER ).getPolicy( POLICY_NAME );
+        SecureServer secureServer = new SecureServer( serverPolicy );
         secureServer.start();
-        SecureClient secureClient = new SecureClient( clientPolicy.nettyClientContext(), true );
+        SecureClient secureClient = new SecureClient( clientPolicy, LOG_PROVIDER );
 
         // then
         clientCanCommunicateWithServer( secureClient, secureServer );
@@ -134,11 +135,11 @@ public class SslPolicyLoaderIT
         trust( clientConfig, serverConfig );
 
         // and setup
-        SslPolicy serverPolicy = SslPolicyLoader.create( serverConfig, new TrustManagerFactoryProvider(), LOG_PROVIDER ).getPolicy( POLICY_NAME );
-        SslPolicy clientPolicy = SslPolicyLoader.create( clientConfig, new TrustManagerFactoryProvider(), LOG_PROVIDER ).getPolicy( "legacy" );
-        SecureServer secureServer = new SecureServer( serverPolicy.nettyServerContext(), true );
+        SslPolicy serverPolicy = SslPolicyLoader.create( serverConfig, LOG_PROVIDER ).getPolicy( "legacy" );
+        SslPolicy clientPolicy = SslPolicyLoader.create( clientConfig, LOG_PROVIDER ).getPolicy( "legacy" );
+        SecureServer secureServer = new SecureServer( serverPolicy );
         secureServer.start();
-        SecureClient secureClient = new SecureClient( clientPolicy.nettyClientContext(), true );
+        SecureClient secureClient = new SecureClient( clientPolicy, LOG_PROVIDER );
 
         // then
         clientCanCommunicateWithServer( secureClient, secureServer );
@@ -165,7 +166,6 @@ public class SslPolicyLoaderIT
 
     private Config aConfig( String hostname ) throws GeneralSecurityException, IOException, OperatorCreationException
     {
-        SslPolicyConfig sslPolicyConfig = new SslPolicyConfig( POLICY_NAME );
         String random = UUID.randomUUID().toString();
         File baseDirectory = testDirectory.directory( "base_directory_" + random );
         File validCertificatePath = new File( baseDirectory, "certificate.crt" );
@@ -199,7 +199,8 @@ public class SslPolicyLoaderIT
         SslPolicyConfig sslPolicyConfig = new SslPolicyConfig( POLICY_NAME );
         File trustedDirectory = target.get( sslPolicyConfig.trusted_dir );
         File certificate = subject.get( sslPolicyConfig.public_certificate );
-        FileMoveAction.copyViaFileSystem( certificate, certificate.getParentFile() ).move( trustedDirectory );
+        Path trustedCertFilePath = trustedDirectory.toPath().resolve( certificate.getName() );
+        Files.copy( certificate.toPath(), trustedCertFilePath );
     }
 
     private Stream<Throwable> causes( Throwable throwable )

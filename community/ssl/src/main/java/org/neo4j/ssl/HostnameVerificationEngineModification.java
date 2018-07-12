@@ -19,49 +19,23 @@
  */
 package org.neo4j.ssl;
 
-import java.util.Arrays;
-import javax.net.ssl.SNIHostName;
+import java.util.function.Function;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
-
-public class HostnameVerificationEngineModification
+class HostnameVerificationEngineModification implements Function<SSLEngine,SSLEngine>
 {
-
-    private final Log log;
-
-    public HostnameVerificationEngineModification( LogProvider logProvider )
-    {
-        this( logProvider.getLog( HostnameVerificationEngineModification.class ) );
-    }
-
-    public HostnameVerificationEngineModification( Log log )
-    {
-        this.log = log;
-        log.info( "Created hostname verification engine" );
-    }
-
     /**
+     * Apply modifications to engine to enable hostname verification (client side only)
      *
-     * @param sslEngine
-     * @param expectedHostname
-     * @return
+     * @param sslEngine the engine used for handling TLS. Will be mutated by this method
+     * @return the updated sslEngine that allows client side hostname verification
      */
-    public SSLEngine configureHostnameVerification( SSLEngine sslEngine, String expectedHostname )
+    @Override
+    public SSLEngine apply( SSLEngine sslEngine )
     {
-        log.info( "Added hostname verification for expected hostname %s", expectedHostname );
         SSLParameters sslParameters = sslEngine.getSSLParameters();
         sslParameters.setEndpointIdentificationAlgorithm( VerificationAlgorithm.HTTPS.getValue() );
-        if ( expectedHostname == null )
-        {
-            log.warn( "Hostname verification was enabled but hostname was null" );
-        }
-        else
-        {
-            sslParameters.setServerNames( Arrays.asList( new SNIHostName( expectedHostname ) ) );
-        }
         sslEngine.setSSLParameters( sslParameters );
         return sslEngine;
     }

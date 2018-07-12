@@ -106,7 +106,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
-import org.neo4j.kernel.configuration.ssl.TrustManagerFactoryProvider;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInProcedures;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
@@ -247,7 +246,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 clusterStateDirectory, identityModule, databaseDirectory );
 
         // We need to satisfy the dependency here to keep users of it, such as BoltKernelExtension, happy.
-        dependencies.satisfyDependency( SslPolicyLoader.create( config, new TrustManagerFactoryProvider(), logProvider ) );
+        dependencies.satisfyDependency( SslPolicyLoader.create( config, logProvider ) );
 
         PipelineWrapper clientPipelineWrapper = pipelineWrapperFactory().forClient( config, dependencies, logProvider, CausalClusteringSettings.ssl_policy );
         PipelineWrapper serverPipelineWrapper = pipelineWrapperFactory().forServer( config, dependencies, logProvider, CausalClusteringSettings.ssl_policy );

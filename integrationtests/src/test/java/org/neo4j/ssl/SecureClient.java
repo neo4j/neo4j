@@ -28,6 +28,7 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -36,16 +37,20 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.util.concurrent.Future;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
 
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLException;
 
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.test.assertion.Assert.assertEventually;
+import static org.neo4j.test.assertion.Assert.assertObjectOrArrayEquals;
 
 public class SecureClient
 {
@@ -54,16 +59,12 @@ public class SecureClient
     private NioEventLoopGroup eventLoopGroup;
     private Channel channel;
     private Bucket bucket = new Bucket();
+    private SslPolicy sslPolicy;
 
-    public SecureClient( SslContext sslContext, boolean verifyHostname )
-    {
-        this( sslContext, verifyHostname, NullLogProvider.getInstance() );
-    }
-
-    public SecureClient( SslContext sslContext, boolean hostnameVerification, LogProvider logProvider )
+    public SecureClient( SslPolicy sslPolicy, LogProvider logProvider ) throws SSLException
     {
         eventLoopGroup = new NioEventLoopGroup();
-        clientInitializer = new ClientInitializer( sslContext, bucket, hostnameVerification, logProvider );
+        clientInitializer = new ClientInitializer( sslPolicy, bucket, logProvider );
         bootstrap = new Bootstrap().group( eventLoopGroup ).channel( NioSocketChannel.class ).handler( clientInitializer );
     }
 
@@ -93,22 +94,22 @@ public class SecureClient
         bucket.collectedData.release();
     }
 
-    public void assertResponse( ByteBuf expected ) throws InterruptedException
+    void assertResponse( ByteBuf expected ) throws InterruptedException
     {
-        assertEventually( channel.toString(), () -> bucket.collectedData, equalTo( expected ), 10, MINUTES );
+        assertEventually( channel.toString(), () -> bucket.collectedData, equalTo( expected ), 5, SECONDS );
     }
 
-    public Channel channel()
+    Channel channel()
     {
         return channel;
     }
 
-    public String ciphers()
+    String ciphers()
     {
         return clientInitializer.getSslEngine().getSession().getCipherSuite();
     }
 
-    public String protocol()
+    String protocol()
     {
         return clientInitializer.getSslEngine().getSession().getProtocol();
     }
@@ -136,22 +137,22 @@ public class SecureClient
 
     public static class ClientInitializer extends ChannelInitializer<SocketChannel>
     {
-        private SslContext sslContext;
+        private SslContext sslContext; // TODO
         private final Bucket bucket;
         private OnConnectSslHandlerInjectorHandler onConnectSslHandler;
         Future<Channel> channelFuture;
         private final LogProvider logProvider;
-        private final boolean verifyHostname;
+        private final SslPolicy sslPolicy;
 
-        ClientInitializer( SslContext sslContext, Bucket bucket, boolean verifyHostname, LogProvider logProvider )
+        ClientInitializer( SslPolicy sslPolicy, Bucket bucket, LogProvider logProvider ) throws SSLException
         {
-            this.sslContext = sslContext;
+            this.sslContext = sslPolicy.nettyClientContext();
             this.bucket = bucket;
             this.logProvider = logProvider;
-            this.verifyHostname = verifyHostname;
+            this.sslPolicy = sslPolicy;
         }
 
-        public SSLEngine getSslEngine()
+        SSLEngine getSslEngine()
         {
             return onConnectSslHandler.getSslHandler().engine();
         }
@@ -161,7 +162,10 @@ public class SecureClient
         {
             ChannelPipeline pipeline = channel.pipeline();
 
-            onConnectSslHandler = new OnConnectSslHandlerInjectorHandler( channel, sslContext, true, verifyHostname, logProvider );
+//            String[] tlsVersions = null;
+
+            onConnectSslHandler = (OnConnectSslHandlerInjectorHandler) sslPolicy.nettyClientHandler( channel, sslContext );
+//                    new OnConnectSslHandlerInjectorHandler( channel, sslContext, true, verifyHostname, tlsVersions, logProvider );
             channelFuture = onConnectSslHandler.handshakeFuture();
 
             pipeline.addLast( onConnectSslHandler );

@@ -37,17 +37,12 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 
 import java.net.InetSocketAddress;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Stream;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLException;
 
-import org.neo4j.logging.FormattedLogProvider;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-import static java.lang.Enum.valueOf;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class SecureServer
@@ -57,19 +52,10 @@ public class SecureServer
     private SslContext sslContext;
     private Channel channel;
     private NioEventLoopGroup eventLoopGroup;
-    private final LogProvider logProvider;
-    private final boolean verifyHostname;
 
-    public SecureServer( SslContext sslContext, boolean verifyHostname )
+    public SecureServer( SslPolicy sslPolicy ) throws SSLException
     {
-        this( sslContext, verifyHostname, NullLogProvider.getInstance() );
-    }
-
-    public SecureServer( SslContext sslContext, boolean verifyHostname, LogProvider logProvider )
-    {
-        this.sslContext = sslContext;
-        this.logProvider = logProvider;
-        this.verifyHostname = verifyHostname;
+        this.sslContext = sslPolicy.nettyServerContext();
     }
 
     public void start()
@@ -87,9 +73,11 @@ public class SecureServer
                     {
                         ChannelPipeline pipeline = ch.pipeline();
 
-                        OnConnectSslHandlerInjectorHandler sslHandler =
-                                new OnConnectSslHandlerInjectorHandler( ch, sslContext, false, verifyHostname, logProvider );
+                        SSLEngine sslEngine = sslContext.newEngine( ch.alloc() );
+                        sslEngine.setNeedClientAuth( true );
+                        SslHandler sslHandler = new SslHandler( sslEngine );
                         pipeline.addLast( sslHandler );
+                        //sslHandler.handshakeFuture().addListener( f -> f.cause().printStackTrace() ); // for debugging
 
                         pipeline.addLast( new Responder() );
                     }

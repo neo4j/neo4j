@@ -32,13 +32,14 @@ import org.junit.runners.Parameterized.Parameter;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Optional;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ssl.SslPolicyConfig;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.ssl.SecureClient;
 import org.neo4j.ssl.SslContextFactory;
@@ -51,7 +52,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.ssl.SslContextFactory.SslParameters.protocols;
-import static org.neo4j.ssl.SslContextFactory.makeSslContext;
+import static org.neo4j.ssl.SslContextFactory.makeSslPolicy;
 import static org.neo4j.ssl.SslResourceBuilder.selfSignedKeyId;
 
 @RunWith( Parameterized.class )
@@ -59,6 +60,8 @@ public class BoltTlsIT
 {
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    private final LogProvider logProvider = NullLogProvider.getInstance();
+
     private SslPolicyConfig sslPolicy = new SslPolicyConfig( "bolt" );
 
     private GraphDatabaseAPI db;
@@ -152,7 +155,7 @@ public class BoltTlsIT
         Config config = db.getDependencyResolver().resolveDependency( Config.class );
         int boltPort = config.get( bolt.advertised_address ).getPort();
         SslContextFactory.SslParameters params = protocols( setup.clientTlsVersions ).ciphers();
-        SecureClient client = new SecureClient( makeSslContext( sslResource, false, params ), false );
+        SecureClient client = new SecureClient( makeSslPolicy( sslResource, params ), logProvider );
 
         // when
         client.connect( boltPort );
@@ -162,7 +165,6 @@ public class BoltTlsIT
 
         if ( setup.shouldSucceed )
         {
-            Optional.ofNullable( client.sslHandshakeFuture().cause() ).ifPresent( t -> t.printStackTrace( System.err ) );
             assertNull( client.sslHandshakeFuture().cause() );
         }
         else

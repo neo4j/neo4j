@@ -31,6 +31,8 @@ import org.junit.Test;
 import java.util.concurrent.ExecutionException;
 import javax.net.ssl.SSLException;
 
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -38,13 +40,14 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.ssl.SslContextFactory.makeSslContext;
+import static org.neo4j.ssl.SslContextFactory.makeSslPolicy;
 import static org.neo4j.ssl.SslResourceBuilder.caSignedKeyId;
 import static org.neo4j.ssl.SslResourceBuilder.selfSignedKeyId;
 
 public class SslTrustTest
 {
     private static final int UNRELATED_ID = 5; // SslContextFactory requires us to trust something
+    private static final LogProvider LOG_PROVIDER = NullLogProvider.getInstance();
 
     private static final byte[] REQUEST = {1, 2, 3, 4};
 
@@ -82,10 +85,10 @@ public class SslTrustTest
         SslResource sslServerResource = selfSignedKeyId( 0 ).trustKeyId( 1 ).install( testDir.directory( "server" ) );
         SslResource sslClientResource = selfSignedKeyId( 1 ).trustKeyId( 0 ).install( testDir.directory( "client" ) );
 
-        server = new SecureServer( makeSslContext( sslServerResource, true ), false );
+        server = new SecureServer( SslContextFactory.makeSslPolicy( sslServerResource ) );
 
         server.start();
-        client = new SecureClient( makeSslContext( sslClientResource, false ), false );
+        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource ), LOG_PROVIDER );
         client.connect( server.port() );
 
         // when
@@ -105,10 +108,10 @@ public class SslTrustTest
         SslResource sslServerResource = caSignedKeyId( 0 ).trustSignedByCA().install( testDir.directory( "server" ) );
         SslResource sslClientResource = caSignedKeyId( 1 ).trustSignedByCA().install( testDir.directory( "client" ) );
 
-        server = new SecureServer( makeSslContext( sslServerResource, true ), false );
+        server = new SecureServer( SslContextFactory.makeSslPolicy( sslServerResource ) );
 
         server.start();
-        client = new SecureClient( makeSslContext( sslClientResource, false ), false );
+        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource ), LOG_PROVIDER );
         client.connect( server.port() );
 
         // when
@@ -128,10 +131,10 @@ public class SslTrustTest
         SslResource sslClientResource = selfSignedKeyId( 1 ).trustKeyId( 0 ).install( testDir.directory( "client" ) );
         SslResource sslServerResource = selfSignedKeyId( 0 ).trustKeyId( UNRELATED_ID ).install( testDir.directory( "server" ) );
 
-        server = new SecureServer( makeSslContext( sslServerResource, true ), false );
+        server = new SecureServer( SslContextFactory.makeSslPolicy( sslServerResource ) );
 
         server.start();
-        client = new SecureClient( makeSslContext( sslClientResource, false ), false );
+        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource ), LOG_PROVIDER );
         client.connect( server.port() );
 
         try
@@ -153,10 +156,10 @@ public class SslTrustTest
         SslResource sslClientResource = selfSignedKeyId( 0 ).trustKeyId( UNRELATED_ID ).install( testDir.directory( "client" ) );
         SslResource sslServerResource = selfSignedKeyId( 1 ).trustKeyId( 0 ).install( testDir.directory( "server" ) );
 
-        server = new SecureServer( makeSslContext( sslServerResource, true ), false );
+        server = new SecureServer( SslContextFactory.makeSslPolicy( sslServerResource ) );
 
         server.start();
-        client = new SecureClient( makeSslContext( sslClientResource, false ), false );
+        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource ), LOG_PROVIDER );
         client.connect( server.port() );
 
         try
@@ -177,10 +180,10 @@ public class SslTrustTest
         SslResource sslServerResource = caSignedKeyId( 0 ).trustSignedByCA().install( testDir.directory( "server" ) );
         SslResource sslClientResource = caSignedKeyId( 1 ).trustSignedByCA().revoke( 0 ).install( testDir.directory( "client" ) );
 
-        server = new SecureServer( makeSslContext( sslServerResource, true ), false );
+        server = new SecureServer( SslContextFactory.makeSslPolicy( sslServerResource ) );
 
         server.start();
-        client = new SecureClient( makeSslContext( sslClientResource, false ), false );
+        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource ), LOG_PROVIDER );
         client.connect( server.port() );
 
         try
@@ -201,10 +204,10 @@ public class SslTrustTest
         SslResource sslServerResource = caSignedKeyId( 0 ).trustSignedByCA().revoke( 1 ).install( testDir.directory( "server" ) );
         SslResource sslClientResource = caSignedKeyId( 1 ).trustSignedByCA().install( testDir.directory( "client" ) );
 
-        server = new SecureServer( makeSslContext( sslServerResource, true ), false );
+        server = new SecureServer( SslContextFactory.makeSslPolicy( sslServerResource ) );
 
         server.start();
-        client = new SecureClient( makeSslContext( sslClientResource, false ), false );
+        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource ), LOG_PROVIDER );
         client.connect( server.port() );
 
         try

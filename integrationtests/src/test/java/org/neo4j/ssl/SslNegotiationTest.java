@@ -28,6 +28,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ssl.SslContextFactory.SslParameters;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -38,7 +40,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.ssl.SslContextFactory.SslParameters.protocols;
-import static org.neo4j.ssl.SslContextFactory.makeSslContext;
 import static org.neo4j.ssl.SslResourceBuilder.selfSignedKeyId;
 
 @RunWith( Parameterized.class )
@@ -64,6 +65,8 @@ public class SslNegotiationTest
 
     @Parameterized.Parameter
     public TestSetup setup;
+
+    private static final LogProvider LOG_PROVIDER = NullLogProvider.getInstance();
 
     private SecureServer server;
     private SecureClient client;
@@ -175,10 +178,10 @@ public class SslNegotiationTest
         SslResource sslServerResource = selfSignedKeyId( 0 ).trustKeyId( 1 ).install( testDir.directory( "server" ) );
         SslResource sslClientResource = selfSignedKeyId( 1 ).trustKeyId( 0 ).install( testDir.directory( "client" ) );
 
-        server = new SecureServer( makeSslContext( sslServerResource, true, setup.serverParams ), false );
+        server = new SecureServer( SslContextFactory.makeSslPolicy( sslServerResource, setup.serverParams ) );
 
         server.start();
-        client = new SecureClient( makeSslContext( sslClientResource, false, setup.clientParams ), false );
+        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource, setup.clientParams ), LOG_PROVIDER );
         client.connect( server.port() );
 
         assertTrue( client.sslHandshakeFuture().await( 1, MINUTES ) );

@@ -28,11 +28,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.security.GeneralSecurityException;
+import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.CRLException;
+import java.security.cert.CertStore;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.security.cert.CollectionCertStoreParameters;
+import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.X509CRL;
+import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.neo4j.kernel.configuration.Config;
@@ -70,15 +76,13 @@ public class SslPolicyLoader
     private final PkiUtils pkiUtils = new PkiUtils();
     private final Config config;
     private final SslProvider sslProvider;
-    private final TrustManagerFactoryProvider trustManagerFactoryProvider;
     private final LogProvider logProvider;
 
     private SslPolicy legacyPolicy;
 
-    private SslPolicyLoader( Config config, TrustManagerFactoryProvider trustManagerFactoryProvider, LogProvider logProvider )
+    private SslPolicyLoader( Config config, LogProvider logProvider )
     {
         this.config = config;
-        this.trustManagerFactoryProvider = trustManagerFactoryProvider;
         this.sslProvider = config.get( SslSystemSettings.netty_ssl_provider );
         this.logProvider = logProvider;
     }
@@ -89,9 +93,9 @@ public class SslPolicyLoader
      * @param config The configuration for the SSL policies.
      * @return A factory populated with SSL policies.
      */
-    public static SslPolicyLoader create( Config config, TrustManagerFactoryProvider trustManagerFactoryProvider, LogProvider logProvider )
+    public static SslPolicyLoader create( Config config, LogProvider logProvider )
     {
-        SslPolicyLoader policyFactory = new SslPolicyLoader( config, trustManagerFactoryProvider, logProvider );
+        SslPolicyLoader policyFactory = new SslPolicyLoader( config, logProvider );
         policyFactory.load( config, logProvider.getLog( SslPolicyLoader.class ) );
         return policyFactory;
     }
@@ -159,7 +163,7 @@ public class SslPolicyLoader
         X509Certificate[] keyCertChain = loadCertificateChain( certificateFile );
 
         return new SslPolicy( privateKey, keyCertChain, TLS_VERSION_DEFAULTS, CIPHER_SUITES_DEFAULTS,
-                ClientAuth.NONE, InsecureTrustManagerFactory.INSTANCE, sslProvider, false, logProvider );
+                ClientAuth.NONE, InsecureTrustManagerFactory.INSTANCE, sslProvider, false );
     }
 
     private void load( Config config, Log log )
@@ -205,15 +209,24 @@ public class SslPolicyLoader
             ClientAuth clientAuth = config.get( policyConfig.client_auth );
             boolean trustAll = config.get( policyConfig.trust_all );
             boolean verifyHostname = config.get( policyConfig.verify_hostname );
+            TrustManagerFactory trustManagerFactory;
+
             Collection<X509CRL> crls = getCRLs( revokedCertificatesDir );
 
-            TrustManagerFactory trustManagerFactory = trustManagerFactoryProvider.get( trustAll, trustedCertificatesDir, crls, clientAuth );
+            try
+            {
+                trustManagerFactory = createTrustManagerFactory( trustAll, trustedCertificatesDir, crls, clientAuth );
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( "Failed to create trust manager based on: " + trustedCertificatesDir, e );
+            }
 
             List<String> tlsVersions = config.get( policyConfig.tls_versions );
             List<String> ciphers = config.get( policyConfig.ciphers );
 
             SslPolicy sslPolicy =
-                    new SslPolicy( privateKey, keyCertChain, tlsVersions, ciphers, clientAuth, trustManagerFactory, sslProvider, verifyHostname, logProvider );
+                    new SslPolicy( privateKey, keyCertChain, tlsVersions, ciphers, clientAuth, trustManagerFactory, sslProvider, verifyHostname );
             log.info( format( "Loaded SSL policy '%s' = %s", policyName, sslPolicy ) );
             policies.put( policyName, sslPolicy );
         }
@@ -308,5 +321,68 @@ public class SslPolicyLoader
             throw new RuntimeException( "Failed to load private key: " + privateKeyFile +
                                         (privateKeyPassword == null ? "" : " (using configured password)"), e );
         }
+    }
+
+    private TrustManagerFactory createTrustManagerFactory( boolean trustAll, File trustedCertificatesDir,
+            Collection<X509CRL> crls, ClientAuth clientAuth ) throws Exception
+    {
+        if ( trustAll )
+        {
+            return InsecureTrustManagerFactory.INSTANCE;
+        }
+
+        KeyStore trustStore = KeyStore.getInstance( KeyStore.getDefaultType() );
+        trustStore.load( null, null );
+
+        File[] trustedCertFiles = trustedCertificatesDir.listFiles();
+
+        if ( trustedCertFiles == null )
+        {
+            throw new RuntimeException( format( "Could not find or list files in trusted directory: %s", trustedCertificatesDir ) );
+        }
+        else if ( clientAuth == ClientAuth.REQUIRE && trustedCertFiles.length == 0 )
+        {
+            throw new RuntimeException( format( "Client auth is required but no trust anchors found in: %s", trustedCertificatesDir ) );
+        }
+
+        int i = 0;
+        for ( File trustedCertFile : trustedCertFiles )
+        {
+            CertificateFactory certificateFactory = CertificateFactory.getInstance( "X.509" );
+            try ( InputStream input = Files.newInputStream( trustedCertFile.toPath() ) )
+            {
+                while ( input.available() > 0 )
+                {
+                    try
+                    {
+                        X509Certificate cert = (X509Certificate) certificateFactory.generateCertificate( input );
+                        trustStore.setCertificateEntry( Integer.toString( i++ ), cert );
+                    }
+                    catch ( Exception e )
+                    {
+                        throw new CertificateException( "Error loading certificate file: " + trustedCertFile, e );
+                    }
+                }
+            }
+        }
+
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
+
+        if ( !crls.isEmpty() )
+        {
+            PKIXBuilderParameters pkixParamsBuilder = new PKIXBuilderParameters( trustStore, new X509CertSelector() );
+            pkixParamsBuilder.setRevocationEnabled( true );
+
+            pkixParamsBuilder.addCertStore( CertStore.getInstance( "Collection",
+                    new CollectionCertStoreParameters( crls ) ) );
+
+            trustManagerFactory.init( new CertPathTrustManagerParameters( pkixParamsBuilder ) );
+        }
+        else
+        {
+            trustManagerFactory.init( trustStore );
+        }
+
+        return trustManagerFactory;
     }
 }

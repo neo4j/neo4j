@@ -20,7 +20,7 @@
 package org.neo4j.ssl;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelOutboundHandler;
 import io.netty.handler.ssl.SslContext;
@@ -54,11 +54,10 @@ public class SslPolicy<T extends ChannelInboundHandler & ChannelOutboundHandler>
     private final TrustManagerFactory trustManagerFactory;
     private final SslProvider sslProvider;
 
-    private final LogProvider logProvider;
     private final boolean verifyHostname;
 
     public SslPolicy( PrivateKey privateKey, X509Certificate[] keyCertChain, List<String> tlsVersions, List<String> ciphers, ClientAuth clientAuth,
-            TrustManagerFactory trustManagerFactory, SslProvider sslProvider, boolean verifyHostname, LogProvider logProvider )
+            TrustManagerFactory trustManagerFactory, SslProvider sslProvider, boolean verifyHostname )
     {
         this.privateKey = privateKey;
         this.keyCertChain = keyCertChain;
@@ -68,7 +67,6 @@ public class SslPolicy<T extends ChannelInboundHandler & ChannelOutboundHandler>
         this.trustManagerFactory = trustManagerFactory;
         this.sslProvider = sslProvider;
         this.verifyHostname = verifyHostname;
-        this.logProvider = logProvider;
     }
 
     public SslContext nettyServerContext() throws SSLException
@@ -128,7 +126,8 @@ public class SslPolicy<T extends ChannelInboundHandler & ChannelOutboundHandler>
 
     public T nettyClientHandler( Channel channel, SslContext sslContext ) throws SSLException
     {
-        OnConnectSslHandlerInjectorHandler clientSslHandler = new OnConnectSslHandlerInjectorHandler( channel, sslContext, true, verifyHostname, logProvider );
+        OnConnectSslHandlerInjectorHandler clientSslHandler =
+                new OnConnectSslHandlerInjectorHandler( channel, sslContext, true, verifyHostname, tlsVersions );
         return (T) clientSslHandler;
     }
 

@@ -35,7 +35,6 @@ import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
-import org.neo4j.kernel.configuration.ssl.TrustManagerFactoryProvider;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -101,7 +100,7 @@ public class CommunityEditionModule extends EditionModule
         GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 
         dependencies.satisfyDependency(
-                SslPolicyLoader.create( config, new TrustManagerFactoryProvider(), logging.getInternalLogProvider() ) ); // for bolt and web server
+                SslPolicyLoader.create( config, logging.getInternalLogProvider() ) ); // for bolt and web server
 
         lockManager = dependencies.satisfyDependency( createLockManager( config, platformModule.clock, logging ) );
         statementLocksFactory = createStatementLocksFactory( lockManager, config, logging );

@@ -54,8 +54,8 @@ import static java.util.Arrays.asList;
 public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientation, BUILDER extends NettyPipelineBuilder<O, BUILDER>>
 {
     static final String MESSAGE_GATE_NAME = "message_gate";
-    public static final String ERROR_HANDLER_TAIL = "error_handler_tail";
-    public static final String ERROR_HANDLER_HEAD = "error_handler_head";
+    static final String ERROR_HANDLER_TAIL = "error_handler_tail";
+    static final String ERROR_HANDLER_HEAD = "error_handler_head";
 
     private final ChannelPipeline pipeline;
     private final Log log;

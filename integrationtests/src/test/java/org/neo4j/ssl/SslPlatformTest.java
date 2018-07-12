@@ -29,6 +29,8 @@ import org.apache.commons.lang3.SystemUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -37,13 +39,14 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.junit.Assume.assumeThat;
 import static org.junit.Assume.assumeTrue;
-import static org.neo4j.ssl.SslContextFactory.makeSslContext;
+import static org.neo4j.ssl.SslContextFactory.makeSslPolicy;
 import static org.neo4j.ssl.SslResourceBuilder.selfSignedKeyId;
 
 @SuppressWarnings( "FieldCanBeLocal" )
 public class SslPlatformTest
 {
     private static final byte[] REQUEST = {1, 2, 3, 4};
+    private static final LogProvider LOG_PROVIDER = NullLogProvider.getInstance();
 
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
@@ -67,10 +70,10 @@ public class SslPlatformTest
         SslResource sslServerResource = selfSignedKeyId( 0 ).trustKeyId( 1 ).install( testDir.directory( "server" ) );
         SslResource sslClientResource = selfSignedKeyId( 1 ).trustKeyId( 0 ).install( testDir.directory( "client" ) );
 
-        server = new SecureServer( makeSslContext( sslServerResource, true, SslProvider.OPENSSL.name() ), false );
+        server = new SecureServer( SslContextFactory.makeSslPolicy( sslServerResource, SslProvider.OPENSSL.name() ) );
 
         server.start();
-        client = new SecureClient( makeSslContext( sslClientResource, false, SslProvider.OPENSSL.name() ), false );
+        client = new SecureClient( SslContextFactory.makeSslPolicy( sslClientResource, SslProvider.OPENSSL.name() ), LOG_PROVIDER );
         client.connect( server.port() );
 
         // when

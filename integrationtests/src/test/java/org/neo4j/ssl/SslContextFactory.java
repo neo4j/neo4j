@@ -22,7 +22,6 @@
  */
 package org.neo4j.ssl;
 
-import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslProvider;
 
 import java.io.File;
@@ -35,7 +34,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ssl.SslPolicyConfig;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.configuration.ssl.SslSystemSettings;
-import org.neo4j.kernel.configuration.ssl.TrustManagerFactoryProvider;
 import org.neo4j.logging.NullLogProvider;
 
 public class SslContextFactory
@@ -83,22 +81,22 @@ public class SslContextFactory
         }
     }
 
-    public static SslContext makeSslContext( SslResource sslResource, boolean forServer, SslParameters params ) throws CertificateException, IOException
+    public static SslPolicy makeSslPolicy( SslResource sslResource, SslParameters params ) throws CertificateException, IOException
     {
-        return makeSslContext( sslResource, forServer, SslProvider.JDK.name(), params.protocols, params.ciphers );
+        return makeSslPolicy( sslResource, SslProvider.JDK.name(), params.protocols, params.ciphers );
     }
 
-    public static SslContext makeSslContext( SslResource sslResource, boolean forServer, String sslProvider ) throws CertificateException, IOException
+    public static SslPolicy makeSslPolicy( SslResource sslResource, String sslProvider ) throws CertificateException, IOException
     {
-        return makeSslContext( sslResource, forServer, sslProvider, null, null );
+        return makeSslPolicy( sslResource, sslProvider, null, null );
     }
 
-    public static SslContext makeSslContext( SslResource sslResource, boolean forServer ) throws CertificateException, IOException
+    public static SslPolicy makeSslPolicy( SslResource sslResource ) throws CertificateException, IOException
     {
-        return makeSslContext( sslResource, forServer, SslProvider.JDK.name(), null, null );
+        return makeSslPolicy( sslResource, SslProvider.JDK.name(), null, null );
     }
 
-    public static SslContext makeSslContext( SslResource sslResource, boolean forServer, String sslProvider, String protocols, String ciphers )
+    public static SslPolicy makeSslPolicy( SslResource sslResource, String sslProvider, String protocols, String ciphers )
             throws CertificateException, IOException
     {
         Map<String,String> config = new HashMap<>();
@@ -127,9 +125,9 @@ public class SslContextFactory
         }
 
         SslPolicyLoader sslPolicyFactory =
-                SslPolicyLoader.create( Config.fromSettings( config ).build(), new TrustManagerFactoryProvider(), NullLogProvider.getInstance() );
+                SslPolicyLoader.create( Config.fromSettings( config ).build(), NullLogProvider.getInstance() );
 
         SslPolicy sslPolicy = sslPolicyFactory.getPolicy( "default" );
-        return forServer ? sslPolicy.nettyServerContext() : sslPolicy.nettyClientContext();
+        return sslPolicy;
     }
 }

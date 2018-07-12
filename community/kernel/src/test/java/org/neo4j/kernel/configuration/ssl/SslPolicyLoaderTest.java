@@ -80,7 +80,7 @@ public class SslPolicyLoaderTest
         Config config = Config.defaults( params );
 
         // when
-        SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create( config, new TrustManagerFactoryProvider(), NullLogProvider.getInstance() );
+        SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create( config, NullLogProvider.getInstance() );
 
         // then
         SslPolicy sslPolicy = sslPolicyLoader.getPolicy( "default" );
@@ -120,7 +120,7 @@ public class SslPolicyLoaderTest
         // when
         try
         {
-            SslPolicyLoader.create( config, new TrustManagerFactoryProvider(), NullLogProvider.getInstance() );
+            SslPolicyLoader.create( config, NullLogProvider.getInstance() );
             fail();
         }
         catch ( Exception e )
@@ -141,7 +141,7 @@ public class SslPolicyLoaderTest
         params.put( policyConfig.base_directory.name(), "certificates/default" );
         Config config = Config.defaults( params );
 
-        SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create( config, new TrustManagerFactoryProvider(), NullLogProvider.getInstance() );
+        SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create( config, NullLogProvider.getInstance() );
 
         // when
         try
@@ -159,7 +159,7 @@ public class SslPolicyLoaderTest
     public void shouldReturnNullPolicyIfNullRequested()
     {
         // given
-        SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create( Config.defaults(), new TrustManagerFactoryProvider(), NullLogProvider.getInstance() );
+        SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create( Config.defaults(), NullLogProvider.getInstance() );
 
         // when
         SslPolicy sslPolicy = sslPolicyLoader.getPolicy( null );
@@ -183,7 +183,7 @@ public class SslPolicyLoaderTest
         try
         {
             // when
-            SslPolicyLoader.create( config, new TrustManagerFactoryProvider(), NullLogProvider.getInstance() );
+            SslPolicyLoader.create( config, NullLogProvider.getInstance() );
             fail();
         }
         catch ( IllegalArgumentException e )

@@ -31,52 +31,50 @@ import io.netty.util.concurrent.GenericFutureListener;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import javax.net.ssl.SSLEngine;
 
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.util.VisibleForTesting;
 
 public class OnConnectSslHandlerInjectorHandler extends ChannelDuplexHandler
 {
     private final ChannelPipeline pipeline;
     private final SslContext sslContext;
     private SslHandler sslHandler;
-    private final Log log;
-    private final HostnameVerificationEngineModification hostnameVerificationEngineModification;
-    private final boolean isClient;
-    private final boolean verifyHostname;
+    private final Collection<Function<SSLEngine,SSLEngine>> engineModifications;
 
-    public OnConnectSslHandlerInjectorHandler( Channel channel, SslContext sslContext, boolean isClient, boolean verifyHostname, LogProvider logProvider )
+    OnConnectSslHandlerInjectorHandler( Channel channel, SslContext sslContext, boolean isClient, boolean verifyHostname, String[] tlsVersions )
     {
         this.pipeline = channel.pipeline();
         this.sslContext = sslContext;
-        String rnd = UUID.randomUUID().toString();
-        this.log = logProvider.getLog( OnConnectSslHandlerInjectorHandler.class.getName() + "-" + rnd );
-        this.hostnameVerificationEngineModification = new HostnameVerificationEngineModification( logProvider );
-        this.isClient = isClient;
-        this.verifyHostname = verifyHostname;
+
+        this.engineModifications = new ArrayList<>();
+        engineModifications.add( new EssentialEngineModifications( tlsVersions, isClient ) );
+        if ( verifyHostname )
+        {
+            engineModifications.add( new HostnameVerificationEngineModification() );
+        }
     }
 
     /**
      * Main event that is triggered for connections and swapping out SslHandler for this handler. channelActive and handlerAdded handlers are
      * secondary boundary cases to this.
      *
-     * @param ctx
-     * @param remoteAddress
-     * @param localAddress
-     * @param promise
-     * @throws Exception
+     * @param ctx Context of the existing channel
+     * @param remoteAddress the address used for initating a connection to a remote host (has type InetSocketAddress)
+     * @param localAddress the local address that will be used for receiving responses from the remote host
+     * @param promise the Channel promise to notify once the operation completes
+     * @throws Exception when there is an error of any sort
      */
     @Override
     public void connect( ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise ) throws Exception
     {
-        log.debug( "connect" );
         if ( sslHandler != null )
         {
             throw new IllegalStateException( "Connection initiated, but handler already exists" );
@@ -87,36 +85,26 @@ public class OnConnectSslHandlerInjectorHandler extends ChannelDuplexHandler
     }
 
     @Override
-    public void channelActive( ChannelHandlerContext ctx ) throws Exception
+    public void handlerAdded( ChannelHandlerContext ctx ) throws Exception
     {
-        log.debug( "channelActive" );
-        if ( sslHandler != null )
+        // Sometimes the connect event will have happened before adding, the channel will be active then
+        if ( ctx.channel().isActive() )
         {
-            throw new IllegalStateException( "Connection initiated, but handler already exists" );
+            sslHandler = createSslHandler( ctx, (InetSocketAddress) ctx.channel().remoteAddress() );
+            replaceSelfWith( sslHandler );
+            sslHandler.handlerAdded( ctx );
         }
-        sslHandler = createSslHandler( ctx );
-        replaceSelfWith( sslHandler );
-        sslHandler.channelActive( ctx );
     }
 
     @Override
-    public void handlerAdded( ChannelHandlerContext ctx ) throws Exception
+    public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise ) throws Exception
     {
-        if ( ctx.channel().isActive() )
-        {
-            if ( sslHandler != null )
-            {
-                throw new IllegalStateException(
-                        "handlerAdded called on injector handler. Channel is active but handler is defined - the handler should have been replaced by now. " );
-            }
-            sslHandler = createSslHandler( ctx );
-            replaceSelfWith( sslHandler );
-            sslHandler.handlerAdded( ctx ); //we dont need to trigger active since the sslHandler checks if the provided ctx channel is active
-        }
+        throw new RuntimeException( Thread.currentThread().getName() + " - This handler does not write" );
     }
 
     /**
      * Replaces this entry of handler in the netty pipeline with the provided SslHandler and maintains the handler name
+     *
      * @param sslHandler configured netty handler that enables TLS
      */
     private void replaceSelfWith( SslHandler sslHandler )
@@ -131,26 +119,25 @@ public class OnConnectSslHandlerInjectorHandler extends ChannelDuplexHandler
         pipeline.replace( this, myName, sslHandler );
     }
 
-    private SslHandler createSslHandler( ChannelHandlerContext ctx )
-    {
-        InetSocketAddress inetSocketAddress = (InetSocketAddress) ctx.channel().remoteAddress();
-        return createSslHandler( ctx, inetSocketAddress );
-    }
-
     private SslHandler createSslHandler( ChannelHandlerContext ctx, InetSocketAddress inetSocketAddress )
     {
-        log.debug( "Creating new sslHandler for address %s:%d", inetSocketAddress.getHostName(), inetSocketAddress.getPort() );
         SSLEngine sslEngine = sslContext.newEngine( ctx.alloc(), inetSocketAddress.getHostName(), inetSocketAddress.getPort() );
-        if ( verifyHostname )
+        for ( Function<SSLEngine,SSLEngine> mod : engineModifications )
         {
-            sslEngine = hostnameVerificationEngineModification.configureHostnameVerification( sslEngine, inetSocketAddress.getHostName() );
+            sslEngine = mod.apply( sslEngine );
         }
-        sslEngine.setUseClientMode( isClient );
-
-        // Dont need to set tls versions since that is set up from the context
+        // Don't need to set tls versions since that is set up from the context
         return new SslHandler( sslEngine );
     }
 
+    /**
+     * Pretends to be a future, but instead delegates all methods to the actual future in SslHandler. Fails if sslHandler hasn't been initialised.
+     * Don't use this method, instead favour a ChannelInboundHandler#userEventTriggered(ChannelHandlerContext ctx, SslHandshakeCompletionEvent evt)
+     * TODO fix tests that use this method
+     *
+     * @return a Future type, that represents the state of the TLS handshake when the SslHandler has been initialised
+     */
+    @VisibleForTesting
     Future<Channel> handshakeFuture()
     {
         return new Future<Channel>()
@@ -294,6 +281,10 @@ public class OnConnectSslHandlerInjectorHandler extends ChannelDuplexHandler
 
     public SslHandler getSslHandler()
     {
-        return Optional.ofNullable( sslHandler ).orElseThrow( () -> new RuntimeException( "Ssl handler has not been initialised" ) );
+        if ( sslHandler == null )
+        {
+            throw new RuntimeException( "Ssl handler has not been initialised" );
+        }
+        return sslHandler;
     }
 }
