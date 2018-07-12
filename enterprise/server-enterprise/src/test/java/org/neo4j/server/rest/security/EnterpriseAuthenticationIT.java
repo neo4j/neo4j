@@ -28,7 +28,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.ws.rs.core.HttpHeaders;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
@@ -60,7 +59,7 @@ public class EnterpriseAuthenticationIT extends AuthenticationIT
         String path = "db/data/transaction/commit";
         HTTP.RawPayload payload = HTTP.RawPayload.quotedJson(
                 "{'statements':[{'statement':'CALL dbms.security.listRoles()'}]}" );
-        HTTP.Response response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, basicAuthHeader( "neo4j", "secret" ) )
+        HTTP.Response response = HTTP.withBasicAuth( "neo4j", "secret" )
                 .request( method, server.baseUri().resolve( path ).toString(), payload );
 
         // Then

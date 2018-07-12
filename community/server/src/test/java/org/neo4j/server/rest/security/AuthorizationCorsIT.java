@@ -166,12 +166,11 @@ public class AuthorizationCorsIT extends CommunityServerTestBase
         return requestBuilder.POST( txCommitURL(), statements );
     }
 
-    private HTTP.Builder requestWithHeaders( String username, String password )
+    private static HTTP.Builder requestWithHeaders( String username, String password )
     {
-        return HTTP.withHeaders(
+        return HTTP.withBasicAuth( username, password ).withHeaders(
                 HttpHeaders.ACCEPT, "application/json; charset=UTF-8",
-                HttpHeaders.CONTENT_TYPE, "application/json",
-                HttpHeaders.AUTHORIZATION, basicAuthHeader( username, password )
+                HttpHeaders.CONTENT_TYPE, "application/json"
         );
     }
 

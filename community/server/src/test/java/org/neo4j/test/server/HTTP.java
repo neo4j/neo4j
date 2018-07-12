@@ -68,11 +68,15 @@ public class HTTP
     {
     }
 
-    public static Builder withBasicAuth( String username, String password )
+    public static String basicAuthHeader( String username, String password )
     {
         String usernamePassword = username + ':' + password;
-        String headerValue = "Basic " + Base64.getEncoder().encodeToString( usernamePassword.getBytes() );
-        return withHeaders( AUTHORIZATION, headerValue );
+        return "Basic " + Base64.getEncoder().encodeToString( usernamePassword.getBytes() );
+    }
+
+    public static Builder withBasicAuth( String username, String password )
+    {
+        return withHeaders( AUTHORIZATION, basicAuthHeader( username, password ) );
     }
 
     public static Builder withHeaders( String... kvPairs )

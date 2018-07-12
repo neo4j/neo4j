@@ -79,7 +79,7 @@ public class AuthenticationIT extends CommunityServerTestBase
         // Document
         RESTRequestGenerator.ResponseEntity response = gen.get()
                 .expectedStatus( 200 )
-                .withHeader( HttpHeaders.AUTHORIZATION, basicAuthHeader( "neo4j", "secret" ) )
+                .withHeader( HttpHeaders.AUTHORIZATION, HTTP.basicAuthHeader( "neo4j", "secret" ) )
                 .get( userURL( "neo4j" ) );
 
         // Then
@@ -101,7 +101,7 @@ public class AuthenticationIT extends CommunityServerTestBase
         // Document
         RESTRequestGenerator.ResponseEntity response = gen.get()
                 .expectedStatus( 401 )
-                .withHeader( HttpHeaders.AUTHORIZATION, basicAuthHeader( "neo4j", "incorrect" ) )
+                .withHeader( HttpHeaders.AUTHORIZATION, HTTP.basicAuthHeader( "neo4j", "incorrect" ) )
                 .expectedHeader( "WWW-Authenticate", "Basic realm=\"Neo4j\"" )
                 .post( dataURL() );
 
@@ -127,7 +127,7 @@ public class AuthenticationIT extends CommunityServerTestBase
         // Document
         RESTRequestGenerator.ResponseEntity response = gen.get()
                 .expectedStatus( 403 )
-                .withHeader( HttpHeaders.AUTHORIZATION, basicAuthHeader( "neo4j", "neo4j" ) )
+                .withHeader( HttpHeaders.AUTHORIZATION, HTTP.basicAuthHeader( "neo4j", "neo4j" ) )
                 .get( dataURL() );
 
         // Then
@@ -209,7 +209,7 @@ public class AuthenticationIT extends CommunityServerTestBase
         while ( System.currentTimeMillis() < timeout )
         {
             // Done in a loop because we're racing with the clock to get enough failed requests into 5 seconds
-            response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, basicAuthHeader( "neo4j", "incorrect" ) ).POST(
+            response = HTTP.withBasicAuth( "neo4j", "incorrect" ).POST(
                     server.baseUri().resolve( "authentication" ).toString(),
                     HTTP.RawPayload.quotedJson( "{'username':'neo4j', 'password':'something that is wrong'}" )
             );
@@ -236,18 +236,18 @@ public class AuthenticationIT extends CommunityServerTestBase
 
         // When
         HTTP.Response response =
-                HTTP.withHeaders( HttpHeaders.AUTHORIZATION, basicAuthHeader( "neo4j", "neo4j" ) ).POST(
+                HTTP.withBasicAuth( "neo4j", "neo4j" ).POST(
                         server.baseUri().resolve( "authentication" ).toString(),
                         HTTP.RawPayload.quotedJson( "{'username':'neo4j', 'password':'neo4j'}" )
                 );
 
         // When & then
-        assertEquals( 403, HTTP.withHeaders( HttpHeaders.AUTHORIZATION, basicAuthHeader( "neo4j", "neo4j" ) )
+        assertEquals( 403, HTTP.withBasicAuth( "neo4j", "neo4j" )
                 .POST( server.baseUri().resolve( "db/data/node" ).toString(),
                         RawPayload.quotedJson( "{'name':'jake'}" ) ).status() );
-        assertEquals( 403, HTTP.withHeaders( HttpHeaders.AUTHORIZATION, basicAuthHeader( "neo4j", "neo4j" ) )
+        assertEquals( 403, HTTP.withBasicAuth( "neo4j", "neo4j" )
                 .GET( server.baseUri().resolve( "db/data/node/1234" ).toString() ).status() );
-        assertEquals( 403, HTTP.withHeaders( HttpHeaders.AUTHORIZATION, basicAuthHeader( "neo4j", "neo4j" ) )
+        assertEquals( 403, HTTP.withBasicAuth( "neo4j", "neo4j" )
                 .POST( server.baseUri().resolve( "db/data/transaction/commit" ).toString(),
                         RawPayload.quotedJson( "{'statements':[{'statement':'MATCH (n) RETURN n'}]}" ) ).status() );
     }
@@ -275,7 +275,7 @@ public class AuthenticationIT extends CommunityServerTestBase
         assertThat(response.get("errors").get(0).get( "message" ).asText(), equalTo("Invalid authentication header."));
 
         // When invalid credential
-        response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, basicAuthHeader( "neo4j", "incorrect" ) )
+        response = HTTP.withBasicAuth( "neo4j", "incorrect" )
                 .request( method, server.baseUri().resolve( path ).toString(), payload );
         assertThat(response.status(), equalTo(401));
         assertThat(response.get("errors").get(0).get("code").asText(), equalTo("Neo.ClientError.Security.Unauthorized"));
@@ -283,7 +283,7 @@ public class AuthenticationIT extends CommunityServerTestBase
         assertThat(response.header(HttpHeaders.WWW_AUTHENTICATE ), equalTo("Basic realm=\"Neo4j\""));
 
         // When authorized
-        response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, basicAuthHeader( "neo4j", "secret" ) )
+        response = HTTP.withBasicAuth( "neo4j", "secret" )
                 .request( method, server.baseUri().resolve( path ).toString(), payload );
         assertThat(response.status(), equalTo(expectedAuthorizedStatus));
     }
@@ -292,7 +292,7 @@ public class AuthenticationIT extends CommunityServerTestBase
     {
         startServer( true );
         // Set the password
-        HTTP.Response post = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, basicAuthHeader( "neo4j", "neo4j" ) ).POST(
+        HTTP.Response post = HTTP.withBasicAuth( "neo4j", "neo4j" ).POST(
                 server.baseUri().resolve( "/user/neo4j/password" ).toString(),
                 RawPayload.quotedJson( "{'password':'secret'}" )
         );
