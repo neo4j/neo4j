@@ -22,11 +22,14 @@ package org.neo4j.test.extension;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
+import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
+import org.opentest4j.AssertionFailedError;
 
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.test.rule.RandomRule;
 
-public class RandomExtension extends StatefullFieldExtension<RandomRule> implements AfterEachCallback
+import static java.lang.String.format;
+
+public class RandomExtension extends StatefullFieldExtension<RandomRule> implements AfterEachCallback, TestExecutionExceptionHandler
 {
     private static final String RANDOM = "random";
     private static final Namespace RANDOM_NAMESPACE = Namespace.create( RANDOM );
@@ -61,8 +64,13 @@ public class RandomExtension extends StatefullFieldExtension<RandomRule> impleme
     @Override
     public void afterEach( ExtensionContext context )
     {
-        long seed = getStoredValue( context ).seed();
-        context.getExecutionException().ifPresent( t -> Exceptions.withMessage( t, t.getMessage() + ": random seed used:" + seed + "L" ) );
         removeStoredValue( context );
+    }
+
+    @Override
+    public void handleTestExecutionException( ExtensionContext context, Throwable t )
+    {
+        final long seed = getStoredValue( context ).seed();
+        throw new AssertionFailedError( format( "%s [ random seed used: %dL ]", t.getMessage(), seed ), t );
     }
 }
