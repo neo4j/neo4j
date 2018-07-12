@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.query.clientconnection;
 
 import java.net.InetSocketAddress;
 
+import org.neo4j.helpers.SocketAddress;
+
 /**
  * @see ClientConnectionInfo Parent class for documentation and tests.
  */
@@ -59,17 +61,14 @@ public class HttpConnectionInfo extends ClientConnectionInfo
     @Override
     public String clientAddress()
     {
-        return String.format( "%s:%s", clientAddress.getHostString(), clientAddress.getPort() );
+        return SocketAddress.format( clientAddress );
     }
 
     @Override
     public String requestURI()
     {
-        return serverAddress == null ? requestPath : String.format(
-                "%s://%s:%d%s",
-                protocol,
-                serverAddress.getHostString(),
-                serverAddress.getPort(),
-                requestPath );
+        return serverAddress == null
+               ? requestPath
+               : protocol + "://" + SocketAddress.format( serverAddress ) + requestPath;
     }
 }
