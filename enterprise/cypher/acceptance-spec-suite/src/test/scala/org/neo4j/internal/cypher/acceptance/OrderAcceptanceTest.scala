@@ -25,20 +25,19 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher._
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
-// TODO find out why compiled is crying
 class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-//    graph.execute(
-//      """
-//      CREATE (:A {age: 10, name: 'A', foo: 6})
-//      CREATE (:A {age: 9, name: 'B', foo: 5})
-//      CREATE (:A {age: 12, name: 'C', foo: 4})
-//      CREATE (:A {age: 16, name: 'D', foo: 3})
-//      CREATE (:A {age: 14, name: 'E', foo: 2})
-//      CREATE (:A {age: 4, name: 'F', foo: 1})
-//      """)
+    graph.execute(
+      """
+      CREATE (:A {age: 10, name: 'A', foo: 6})
+      CREATE (:A {age: 9, name: 'B', foo: 5})
+      CREATE (:A {age: 12, name: 'C', foo: 4})
+      CREATE (:A {age: 16, name: 'D', foo: 3})
+      CREATE (:A {age: 14, name: 'E', foo: 2})
+      CREATE (:A {age: 4, name: 'F', foo: 1})
+      """)
   }
 
   test("ORDER BY previously unprojected column in WITH") {
@@ -100,7 +99,8 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   test("ORDER BY renamed column old name in WITH and project and return that column") {
-    val result = executeWith(Configs.All,
+    // 3.1 and older is buggy here
+    val result = executeWith(Configs.All - Configs.Before3_3AndRule,
       """
       MATCH (a:A)
       WITH a AS b, a.age AS age
@@ -119,7 +119,8 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   test("ORDER BY renamed column new name in WITH and project and return that column") {
-    val result = executeWith(Configs.All,
+    // 3.1 and older is buggy here
+    val result = executeWith(Configs.All - Configs.Before3_3AndRule,
       """
       MATCH (a:A)
       WITH a AS b, a.age AS age
@@ -394,6 +395,11 @@ class OrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
           .containingVariables("age", "name") // the introduced variables
           .containingArgument("name, a") // the group columns
         ))
+  }
+
+  test("Should fail when accessing undefinded variable after WITH ORDER BY") {
+    failWithError(Configs.AbsolutelyAll, "MATCH (a) WITH a.name AS n ORDER BY a.foo RETURN a.x",
+                            errorType = Seq("SyntaxException"))
   }
 
 }
