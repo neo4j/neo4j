@@ -32,7 +32,6 @@ import org.neo4j.bolt.v3.BoltProtocolV3;
 import org.neo4j.bolt.v3.BoltStateMachineV3;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -45,19 +44,17 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
     private final AvailabilityGuard availabilityGuard;
     private final LogService logging;
     private final Authentication authentication;
-    private final BoltConnectionTracker connectionTracker;
     private final Config config;
     private final Clock clock;
 
     public BoltStateMachineFactoryImpl( GraphDatabaseAPI db, UsageData usageData, AvailabilityGuard availabilityGuard,
-            Authentication authentication, BoltConnectionTracker connectionTracker, Clock clock, Config config, LogService logging )
+            Authentication authentication, Clock clock, Config config, LogService logging )
     {
         this.db = db;
         this.usageData = usageData;
         this.availabilityGuard = availabilityGuard;
         this.logging = logging;
         this.authentication = authentication;
-        this.connectionTracker = connectionTracker;
         this.config = config;
         this.clock = clock;
     }
@@ -82,7 +79,7 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
     private BoltStateMachine newStateMachineV1( BoltChannel boltChannel )
     {
         TransactionStateMachineSPI transactionSPI = createTxSpi( clock );
-        BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( boltChannel, usageData, logging, authentication, connectionTracker, transactionSPI );
+        BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( boltChannel, usageData, logging, authentication, transactionSPI );
         return new BoltStateMachineV1( boltSPI, boltChannel, clock );
     }
 

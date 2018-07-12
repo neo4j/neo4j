@@ -178,7 +178,7 @@ public class GraphDatabaseFacadeFactory
         edition.setupSecurityModule( platform, procedures );
 
         platform.life.add( platform.globalKernelExtensions );
-        platform.life.add( createBoltServer( platform ) );
+        platform.life.add( createBoltServer( platform, edition ) );
         platform.life.add( new VmPauseMonitorComponent( config, platform.logging.getInternalLog( VmPauseMonitorComponent.class ), platform.jobScheduler ) );
         platform.life.add( new PublishPageCacheTracerMetricsAfterStart( platform.tracers.pageCursorTracerSupplier ) );
         DatabaseAvailability databaseAvailability = new DatabaseAvailability( platform.availabilityGuard, platform.transactionMonitor,
@@ -353,10 +353,10 @@ public class GraphDatabaseFacadeFactory
         return procedures;
     }
 
-    private static BoltServer createBoltServer( PlatformModule platform )
+    private static BoltServer createBoltServer( PlatformModule platform, EditionModule edition )
     {
         return new BoltServer( platform.graphDatabaseFacade, platform.fileSystem, platform.jobScheduler, platform.availabilityGuard,
-                platform.connectorPortRegister, platform.usageData, platform.config, platform.clock, platform.monitors, platform.logging,
-                platform.dependencies );
+                platform.connectorPortRegister, edition.connectionTracker, platform.usageData, platform.config, platform.clock, platform.monitors,
+                platform.logging, platform.dependencies );
     }
 }

@@ -515,21 +515,6 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void shouldCallOnTerminateWhenClosing()
-    {
-        // Given
-        BoltStateMachineV1SPI spi = mock( BoltStateMachineV1SPI.class, RETURNS_MOCKS );
-        BoltChannel boltChannel = mock( BoltChannel.class );
-        final BoltStateMachine machine = new BoltStateMachineV1( spi, boltChannel, Clock.systemUTC() );
-
-        // When
-        machine.close();
-
-        // Then
-        verify( spi ).onTerminate( machine );
-    }
-
-    @Test
     public void shouldCloseBoltChannelWhenClosed()
     {
         BoltStateMachineV1SPI spi = mock( BoltStateMachineV1SPI.class );

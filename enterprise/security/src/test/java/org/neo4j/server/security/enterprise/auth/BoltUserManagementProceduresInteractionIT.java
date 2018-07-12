@@ -33,7 +33,6 @@ public class BoltUserManagementProceduresInteractionIT extends AuthProceduresInt
     {
         super();
         IS_EMBEDDED = false;
-        IS_BOLT = true;
     }
 
     @Override

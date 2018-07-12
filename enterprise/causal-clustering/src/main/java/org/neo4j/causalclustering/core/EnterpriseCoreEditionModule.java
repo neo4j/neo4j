@@ -103,7 +103,7 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
+import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
@@ -113,12 +113,12 @@ import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
-import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.net.DefaultNetworkConnectionTracker;
 import org.neo4j.kernel.impl.pagecache.PageCacheWarmer;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -438,7 +438,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
 
-        dependencies.satisfyDependency( createSessionTracker() );
+        connectionTracker = dependencies.satisfyDependency( createConnectionTracker() );
     }
 
     public boolean isLeader()
@@ -478,9 +478,9 @@ public class EnterpriseCoreEditionModule extends EditionModule
     }
 
     @Override
-    protected BoltConnectionTracker createSessionTracker()
+    protected NetworkConnectionTracker createConnectionTracker()
     {
-        return new StandardBoltConnectionTracker();
+        return new DefaultNetworkConnectionTracker();
     }
 
     @Override

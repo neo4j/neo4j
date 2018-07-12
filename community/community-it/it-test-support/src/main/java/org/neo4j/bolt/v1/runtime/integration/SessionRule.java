@@ -42,7 +42,6 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.configuration.Config;
@@ -78,7 +77,6 @@ public class SessionRule implements TestRule
                                         new UsageData( null ),
                                         resolver.resolveDependency( AvailabilityGuard.class ),
                                         authentication,
-                                        BoltConnectionTracker.NOOP,
                                         Clock.systemUTC(),
                                         Config.defaults(),
                                         NullLogService.getInstance()

@@ -48,7 +48,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
+import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.configuration.BoltConnector;
@@ -76,6 +76,7 @@ public class BoltServer extends LifecycleAdapter
     private final JobScheduler jobScheduler;
     private final AvailabilityGuard availabilityGuard;
     private final ConnectorPortRegister connectorPortRegister;
+    private final NetworkConnectionTracker connectionTracker;
     private final UsageData usageData;
     private final Config config;
     private final Clock clock;
@@ -88,14 +89,15 @@ public class BoltServer extends LifecycleAdapter
     private final LifeSupport life = new LifeSupport();
 
     public BoltServer( GraphDatabaseAPI db, FileSystemAbstraction fs, JobScheduler jobScheduler, AvailabilityGuard availabilityGuard,
-            ConnectorPortRegister connectorPortRegister, UsageData usageData, Config config, Clock clock, Monitors monitors,
-            LogService logService, DependencyResolver dependencyResolver )
+            ConnectorPortRegister connectorPortRegister, NetworkConnectionTracker connectionTracker, UsageData usageData, Config config,
+            Clock clock, Monitors monitors, LogService logService, DependencyResolver dependencyResolver )
     {
         this.db = db;
         this.fs = fs;
         this.jobScheduler = jobScheduler;
         this.availabilityGuard = availabilityGuard;
         this.connectorPortRegister = connectorPortRegister;
+        this.connectionTracker = connectionTracker;
         this.usageData = usageData;
         this.config = config;
         this.clock = clock;
@@ -198,7 +200,7 @@ public class BoltServer extends LifecycleAdapter
 
         ListenSocketAddress listenAddress = config.get( connector.listen_address );
         return new SocketTransport( connector.key(), listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(), boltLogging,
-                throttleGroup, boltProtocolFactory );
+                throttleGroup, boltProtocolFactory, connectionTracker );
     }
 
     private static SslContext createSslContext( SslPolicyLoader sslPolicyFactory, Config config )
@@ -233,7 +235,6 @@ public class BoltServer extends LifecycleAdapter
 
     private BoltStateMachineFactory createBoltFactory( Authentication authentication, Clock clock )
     {
-        BoltConnectionTracker connectionTracker = dependencyResolver.resolveDependency( BoltConnectionTracker.class );
-        return new BoltStateMachineFactoryImpl( db, usageData, availabilityGuard, authentication, connectionTracker, clock, config, logService );
+        return new BoltStateMachineFactoryImpl( db, usageData, availabilityGuard, authentication, clock, config, logService );
     }
 }

@@ -46,8 +46,7 @@ import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISS
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
 import static org.neo4j.server.security.enterprise.auth.InternalFlatFileRealm.IS_SUSPENDED;
-import static org.neo4j.server.security.enterprise.auth.ProcedureInteractionTestBase.ClassWithProcedures
-        .exceptionsInProcedure;
+import static org.neo4j.server.security.enterprise.auth.ProcedureInteractionTestBase.ClassWithProcedures.exceptionsInProcedure;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ARCHITECT;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.EDITOR;
@@ -342,7 +341,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
         TransportConnection conn = startBoltSession( "writeSubject", "abc" );
 
         Map<String,Long> boltConnections = countBoltConnectionsByUsername();
-        assertThat( boltConnections.get( "writeSubject" ), equalTo( IS_BOLT ? 2L : 1L ) );
+        assertThat( boltConnections.get( "writeSubject" ), equalTo( IS_EMBEDDED ? 1L : 2L ) );
 
         assertEmpty( adminSubject, "CALL dbms.security.deleteUser( 'writeSubject' )" );
 
@@ -402,7 +401,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
         TransportConnection conn = startBoltSession( "writeSubject", "abc" );
 
         Map<String,Long> boltConnections = countBoltConnectionsByUsername();
-        assertThat( boltConnections.get( "writeSubject" ), equalTo( IS_BOLT ? 2L : 1L ) );
+        assertThat( boltConnections.get( "writeSubject" ), equalTo( IS_EMBEDDED ? 1L : 2L ) );
 
         assertEmpty( adminSubject, "CALL dbms.security.suspendUser( 'writeSubject' )" );
 

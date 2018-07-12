@@ -17,13 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.bolt;
+package org.neo4j.kernel.api.net;
 
-public interface ManagedBoltStateMachine
+import java.net.SocketAddress;
+
+public interface TrackedNetworkConnection
 {
-    String owner();
+    String id();
 
-    void terminate();
+    long connectTime();
 
-    boolean willTerminate();
+    String connector();
+
+    SocketAddress serverAddress();
+
+    SocketAddress clientAddress();
+
+    String user();
+
+    void updateUser( String user );
+
+    void close();
 }

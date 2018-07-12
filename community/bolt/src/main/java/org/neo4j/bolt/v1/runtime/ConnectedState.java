@@ -31,7 +31,6 @@ import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.api.security.AuthToken.PRINCIPAL;
 import static org.neo4j.util.Preconditions.checkState;
 
 /**
@@ -77,14 +76,14 @@ public class ConnectedState implements BoltStateMachineState
     {
         String userAgent = message.userAgent();
         Map<String,Object> authToken = message.authToken();
-        Object principal = authToken.get( PRINCIPAL );
-        String owner = String.valueOf( principal );
 
         try
         {
             AuthenticationResult authResult = context.boltSpi().authenticate( authToken );
+            String username = authResult.getLoginContext().subject().username();
+            context.authenticationCompleted( username );
 
-            StatementProcessor statementProcessor = newStatementProcessor( owner, userAgent, authResult, context );
+            StatementProcessor statementProcessor = newStatementProcessor( username, userAgent, authResult, context );
             context.connectionState().setStatementProcessor( statementProcessor );
 
             if ( authResult.credentialsExpired() )
@@ -92,14 +91,7 @@ public class ConnectedState implements BoltStateMachineState
                 context.connectionState().onMetadata( "credentials_expired", Values.TRUE );
             }
             context.connectionState().onMetadata( "server", Values.stringValue( context.boltSpi().version() ) );
-
             context.boltSpi().udcRegisterClient( userAgent );
-
-            if ( principal != null )
-            {
-                context.connectionState().setOwner( owner );
-                context.registerMachine( owner );
-            }
 
             return readyState;
         }
@@ -110,10 +102,10 @@ public class ConnectedState implements BoltStateMachineState
         }
     }
 
-    private static StatementProcessor newStatementProcessor( String owner, String userAgent, AuthenticationResult authResult, StateMachineContext context )
+    private static StatementProcessor newStatementProcessor( String username, String userAgent, AuthenticationResult authResult, StateMachineContext context )
     {
         TransactionStateMachine statementProcessor = new TransactionStateMachine( context.boltSpi().transactionSpi(), authResult, context.clock() );
-        statementProcessor.setQuerySource( new BoltQuerySource( owner, userAgent, context.boltSpi().connectionDescriptor() ) );
+        statementProcessor.setQuerySource( new BoltQuerySource( username, userAgent, context.boltSpi().connectionDescriptor() ) );
         return statementProcessor;
     }
 

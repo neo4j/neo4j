@@ -31,19 +31,21 @@ import java.util.List;
 import java.util.UUID;
 
 import org.neo4j.helpers.ListenSocketAddress;
+import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.web.HttpConnectorFactory;
 import org.neo4j.server.web.JettyThreadCalculator;
 import org.neo4j.ssl.SslPolicy;
 
-
 public class SslSocketConnectorFactory extends HttpConnectorFactory
 {
+    private static final String NAME = "https";
+
     private final Customizer requestCustomizer;
 
-    public SslSocketConnectorFactory( Config config )
+    public SslSocketConnectorFactory( NetworkConnectionTracker connectionTracker, Config config )
     {
-        super( config );
+        super( NAME, connectionTracker, config );
         requestCustomizer = new HttpsRequestCustomizer( config );
     }
 
@@ -59,7 +61,7 @@ public class SslSocketConnectorFactory extends HttpConnectorFactory
             JettyThreadCalculator jettyThreadCalculator )
     {
         SslConnectionFactory sslConnectionFactory = createSslConnectionFactory( sslPolicy );
-        return super.createConnector( server, address, jettyThreadCalculator, sslConnectionFactory, createHttpConnectionFactory() );
+        return createConnector( server, address, jettyThreadCalculator, sslConnectionFactory, createHttpConnectionFactory() );
     }
 
     private SslConnectionFactory createSslConnectionFactory( SslPolicy sslPolicy )

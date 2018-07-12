@@ -21,44 +21,41 @@ package org.neo4j.bolt;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import org.neo4j.bolt.logging.BoltMessageLogger;
 
-import static org.junit.Assert.assertNotNull;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith( MockitoJUnitRunner.class )
-public class BoltChannelTest
+class BoltChannelTest
 {
-    private final String connector = "default";
-    @Mock
-    private Channel channel;
-    @Mock
-    private BoltMessageLogger messageLogger;
+    private final Channel channel = mock( Channel.class );
+    private final BoltMessageLogger messageLogger = mock( BoltMessageLogger.class );
 
     @Test
-    public void shouldLogWhenOpened()
+    void shouldLogWhenOpened()
     {
-        BoltChannel boltChannel = BoltChannel.open( connector, channel, messageLogger );
+        BoltChannel boltChannel = new BoltChannel( "bolt-1", "bolt", channel, messageLogger );
         assertNotNull( boltChannel );
 
         verify( messageLogger ).serverEvent( "OPEN" );
     }
 
     @Test
-    public void shouldLogWhenClosed()
+    void shouldLogWhenClosed()
     {
         Channel channel = channelMock( true );
-        BoltChannel boltChannel = BoltChannel.open( connector, channel, messageLogger );
+        BoltChannel boltChannel = new BoltChannel( "bolt-1", "bolt", channel, messageLogger );
         assertNotNull( boltChannel );
 
         boltChannel.close();
@@ -69,10 +66,10 @@ public class BoltChannelTest
     }
 
     @Test
-    public void shouldCloseUnderlyingChannelWhenItIsOpen()
+    void shouldCloseUnderlyingChannelWhenItIsOpen()
     {
         Channel channel = channelMock( true );
-        BoltChannel boltChannel = BoltChannel.open( connector, channel, messageLogger );
+        BoltChannel boltChannel = new BoltChannel( "bolt-1", "bolt", channel, messageLogger );
 
         boltChannel.close();
 
@@ -80,14 +77,48 @@ public class BoltChannelTest
     }
 
     @Test
-    public void shouldNotCloseUnderlyingChannelWhenItIsClosed()
+    void shouldNotCloseUnderlyingChannelWhenItIsClosed()
     {
         Channel channel = channelMock( false );
-        BoltChannel boltChannel = BoltChannel.open( connector, channel, messageLogger );
+        BoltChannel boltChannel = new BoltChannel( "bolt-1", "bolt", channel, messageLogger );
 
         boltChannel.close();
 
         verify( channel, never() ).close();
+    }
+
+    @Test
+    void shouldHaveId()
+    {
+        BoltChannel boltChannel = new BoltChannel( "bolt-42", "bolt", channel, messageLogger );
+
+        assertEquals( "bolt-42", boltChannel.id() );
+    }
+
+    @Test
+    void shouldHaveConnector()
+    {
+        BoltChannel boltChannel = new BoltChannel( "bolt-1", "my-bolt", channel, messageLogger );
+
+        assertEquals( "my-bolt", boltChannel.connector() );
+    }
+
+    @Test
+    void shouldHaveConnectTime()
+    {
+        BoltChannel boltChannel = new BoltChannel( "bolt-1", "my-bolt", channel, messageLogger );
+
+        assertThat( boltChannel.connectTime(), greaterThan( 0L ) );
+    }
+
+    @Test
+    void shouldHaveUser()
+    {
+        BoltChannel boltChannel = new BoltChannel( "bolt-1", "my-bolt", channel, messageLogger );
+
+        assertNull( boltChannel.user() );
+        boltChannel.updateUser( "hello" );
+        assertEquals( "hello", boltChannel.user() );
     }
 
     private static Channel channelMock( boolean open )

@@ -73,7 +73,7 @@ public class BoltStateMachineV1 implements BoltStateMachine
         this.boltChannel = boltChannel;
         this.spi = spi;
         this.connectionState = new MutableConnectionState();
-        this.context = new BoltStateMachineV1Context( this, spi, connectionState, clock );
+        this.context = new BoltStateMachineV1Context( this, boltChannel, spi, connectionState, clock );
 
         States states = buildStates();
         this.state = states.initial;
@@ -156,12 +156,6 @@ public class BoltStateMachineV1 implements BoltStateMachine
         state = failedState;
     }
 
-    /** A session id that is unique for this database instance */
-    public String key()
-    {
-        return id;
-    }
-
     /**
      * When this is invoked, the machine will make attempts
      * at interrupting any currently running action,
@@ -226,7 +220,6 @@ public class BoltStateMachineV1 implements BoltStateMachine
         }
         finally
         {
-            spi.onTerminate( this );
             connectionState.markClosed();
             // However a new transaction may have been created so we must always to reset
             resetStatementProcessor();
@@ -240,12 +233,6 @@ public class BoltStateMachineV1 implements BoltStateMachine
     }
 
     @Override
-    public String owner()
-    {
-        return connectionState.getOwner();
-    }
-
-    @Override
     public void terminate()
     {
         /*
@@ -255,13 +242,6 @@ public class BoltStateMachineV1 implements BoltStateMachine
          */
         connectionState.markTerminated();
         statementProcessor().markCurrentTransactionForTermination();
-        spi.onTerminate( this );
-    }
-
-    @Override
-    public boolean willTerminate()
-    {
-        return connectionState.isTerminated();
     }
 
     @Override

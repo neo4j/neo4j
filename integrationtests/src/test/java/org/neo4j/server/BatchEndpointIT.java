@@ -56,7 +56,7 @@ public class BatchEndpointIT
     {
         // Given
         String body = "[" +
-                "{'method': 'POST', 'to': '/node', 'body': {'age': 1}, 'id': 1} ]";
+                      "{'method': 'POST', 'to': '/node', 'body': {'age': 1}, 'id': 1} ]";
 
         // When
         Response response = withBaseUri( neo4j.httpURI() )

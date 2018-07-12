@@ -24,13 +24,14 @@ package org.neo4j.server.security.enterprise.auth;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
-import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
-import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.net.NetworkConnectionTracker;
+import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -86,17 +87,16 @@ public class AuthProceduresBase
 
     protected void terminateConnectionsForValidUser( String username )
     {
-        getBoltConnectionTracker().getActiveConnections( username ).forEach( ManagedBoltStateMachine::terminate );
+        NetworkConnectionTracker connectionTracker = graph.getDependencyResolver().resolveDependency( NetworkConnectionTracker.class );
+        connectionTracker.activeConnections()
+                .stream()
+                .filter( connection -> Objects.equals( username, connection.user() ) )
+                .forEach( TrackedNetworkConnection::close );
     }
 
     private Set<KernelTransactionHandle> getActiveTransactions()
     {
         return graph.getDependencyResolver().resolveDependency( KernelTransactions.class ).activeTransactions();
-    }
-
-    private BoltConnectionTracker getBoltConnectionTracker()
-    {
-        return graph.getDependencyResolver().resolveDependency( BoltConnectionTracker.class );
     }
 
     private KernelTransaction getCurrentTx()

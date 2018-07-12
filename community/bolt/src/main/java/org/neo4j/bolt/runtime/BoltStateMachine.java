@@ -21,9 +21,8 @@ package org.neo4j.bolt.runtime;
 
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 
-public interface BoltStateMachine extends ManagedBoltStateMachine, AutoCloseable
+public interface BoltStateMachine extends AutoCloseable
 {
     void process( RequestMessage message, BoltResponseHandler handler ) throws BoltConnectionFatality;
 
@@ -42,6 +41,8 @@ public interface BoltStateMachine extends ManagedBoltStateMachine, AutoCloseable
     void handleFailure( Throwable cause, boolean fatal ) throws BoltConnectionFatality;
 
     void handleExternalFailure( Neo4jError error, BoltResponseHandler handler ) throws BoltConnectionFatality;
+
+    void terminate();
 
     boolean isClosed();
 

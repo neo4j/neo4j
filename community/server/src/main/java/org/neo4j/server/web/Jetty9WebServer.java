@@ -61,6 +61,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.PortBindException;
+import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -106,11 +107,11 @@ public class Jetty9WebServer implements WebServer
     private final HttpConnectorFactory connectorFactory;
     private final Log log;
 
-    public Jetty9WebServer( LogProvider logProvider, Config config )
+    public Jetty9WebServer( LogProvider logProvider, Config config, NetworkConnectionTracker connectionTracker )
     {
         this.log = logProvider.getLog( getClass() );
-        sslSocketFactory = new SslSocketConnectorFactory( config );
-        connectorFactory = new HttpConnectorFactory( config );
+        sslSocketFactory = new SslSocketConnectorFactory( connectionTracker, config );
+        connectorFactory = new HttpConnectorFactory( connectionTracker, config );
     }
 
     @Override
@@ -551,5 +552,4 @@ public class Jetty9WebServer implements WebServer
             return pathSpec;
         }
     }
-
 }

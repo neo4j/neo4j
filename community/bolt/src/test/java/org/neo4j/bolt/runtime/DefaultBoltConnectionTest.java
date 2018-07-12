@@ -60,7 +60,6 @@ import static org.mockito.Mockito.when;
 
 public class DefaultBoltConnectionTest
 {
-    private final String connector = "default";
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private final LogService logService = new SimpleLogService( logProvider );
     private final BoltConnectionLifetimeListener connectionListener = mock( BoltConnectionLifetimeListener.class );
@@ -77,9 +76,8 @@ public class DefaultBoltConnectionTest
     @Before
     public void setup()
     {
-        boltChannel = BoltChannel.open( connector, channel, messageLogger );
+        boltChannel = new BoltChannel( "bolt-1", "bolt", channel, messageLogger );
         stateMachine = mock( BoltStateMachine.class );
-        when( stateMachine.owner() ).thenReturn( "neo4j" );
         when( stateMachine.shouldStickOnThread() ).thenReturn( false );
         when( stateMachine.hasOpenStatement() ).thenReturn( false );
     }

@@ -26,12 +26,11 @@ import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-
 import org.neo4j.graphdb.factory.module.CommunityEditionModule;
 import org.neo4j.graphdb.factory.module.EditionModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
+import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.configuration.Config;
@@ -47,6 +46,7 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.net.DefaultNetworkConnectionTracker;
 import org.neo4j.kernel.impl.pagecache.PageCacheWarmer;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
@@ -71,7 +71,6 @@ public class EnterpriseEditionModule extends CommunityEditionModule
         super( platformModule );
         platformModule.dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
-        platformModule.dependencies.satisfyDependency( createSessionTracker() );
     }
 
     @Override
@@ -102,9 +101,9 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     }
 
     @Override
-    protected BoltConnectionTracker createSessionTracker()
+    protected NetworkConnectionTracker createConnectionTracker()
     {
-        return new StandardBoltConnectionTracker();
+        return new DefaultNetworkConnectionTracker();
     }
 
     @Override

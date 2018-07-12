@@ -38,6 +38,7 @@ import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -122,6 +123,7 @@ class ConnectedStateTest
 
         AuthenticationResult authResult = mock( AuthenticationResult.class );
         when( authResult.credentialsExpired() ).thenReturn( true );
+        when( authResult.getLoginContext() ).thenReturn( LoginContext.AUTH_DISABLED );
         when( boltSpi.authenticate( AUTH_TOKEN ) ).thenReturn( authResult );
 
         BoltStateMachineState newState = state.process( INIT_MESSAGE, context );
@@ -139,6 +141,7 @@ class ConnectedStateTest
 
         AuthenticationResult authResult = mock( AuthenticationResult.class );
         when( authResult.credentialsExpired() ).thenReturn( true );
+        when( authResult.getLoginContext() ).thenReturn( LoginContext.AUTH_DISABLED );
         when( boltSpi.authenticate( AUTH_TOKEN ) ).thenReturn( authResult );
 
         BoltStateMachineState newState = state.process( INIT_MESSAGE, context );
@@ -154,16 +157,6 @@ class ConnectedStateTest
 
         assertEquals( readyState, newState );
         verify( boltSpi ).udcRegisterClient( eq( USER_AGENT ) );
-    }
-
-    @Test
-    void shouldInitalizeAndRegisterOwnerOnInitMessage() throws Exception
-    {
-        BoltStateMachineState newState = state.process( INIT_MESSAGE, context );
-
-        assertEquals( readyState, newState );
-        assertEquals( "neo4j", connectionState.getOwner() );
-        verify( context ).registerMachine( "neo4j" );
     }
 
     @Test

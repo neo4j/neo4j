@@ -28,7 +28,6 @@ import org.neo4j.values.AnyValue;
  */
 public class MutableConnectionState implements BoltResponseHandler
 {
-    private String owner;
     private Neo4jError pendingError;
     private boolean pendingIgnore;
     private volatile boolean terminated;
@@ -102,16 +101,6 @@ public class MutableConnectionState implements BoltResponseHandler
         {
             responseHandler.onFinish();
         }
-    }
-
-    public String getOwner()
-    {
-        return owner;
-    }
-
-    public void setOwner( String owner )
-    {
-        this.owner = owner;
     }
 
     public Neo4jError getPendingError()

@@ -39,7 +39,6 @@ public class BoltConfiguredProceduresIT extends ConfiguredProceduresTestBase<Bol
     {
         super();
         IS_EMBEDDED = false;
-        IS_BOLT = true;
     }
 
     @Override

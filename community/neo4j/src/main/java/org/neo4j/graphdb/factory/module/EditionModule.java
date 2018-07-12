@@ -30,7 +30,7 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.RestartableFileSystemWatcher;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
+import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
@@ -60,7 +60,6 @@ import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionEventListener;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileSystemWatcherService;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.udc.UsageData;
@@ -114,6 +113,8 @@ public abstract class EditionModule
     public AuthManager authManager;
 
     public UserManagerSupplier userManagerSupplier;
+
+    public NetworkConnectionTracker connectionTracker;
 
     protected FileSystemWatcherService createFileSystemWatcherService( FileSystemAbstraction fileSystem, File storeDir,
             LogService logging, JobScheduler jobScheduler, Predicate<String> fileNameFilter )
@@ -220,9 +221,9 @@ public abstract class EditionModule
         throw new IllegalArgumentException( errorMessage );
     }
 
-    protected BoltConnectionTracker createSessionTracker()
+    protected NetworkConnectionTracker createConnectionTracker()
     {
-        return BoltConnectionTracker.NOOP;
+        return NetworkConnectionTracker.NO_OP;
     }
 
     protected void createIdComponents( PlatformModule platformModule, Dependencies dependencies, IdGeneratorFactory

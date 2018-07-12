@@ -134,9 +134,9 @@ public class CommunityEditionModule extends EditionModule
 
         ioLimiter = IOLimiter.UNLIMITED;
 
-        publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
+        connectionTracker = dependencies.satisfyDependency( createConnectionTracker() );
 
-        dependencies.satisfyDependency( createSessionTracker() );
+        publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
     }
 
     protected Predicate<String> fileWatcherFileNameFilter()

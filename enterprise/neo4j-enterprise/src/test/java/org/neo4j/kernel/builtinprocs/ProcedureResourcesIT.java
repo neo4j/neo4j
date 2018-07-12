@@ -252,6 +252,12 @@ public class ProcedureResourcesIT
         case "dbms.killQueries":
             proc.withParam( "['query-1234']" );
             break;
+        case "dbms.killConnection":
+            proc.withParam( "'bolt-1234'" );
+            break;
+        case "dbms.killConnections":
+            proc.withParam( "['bolt-1234']" );
+            break;
         case "dbms.setTXMetaData":
             proc.withParam( "{realUser:'MyMan'}" );
             break;

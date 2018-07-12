@@ -33,7 +33,6 @@ public class BoltBuiltInProceduresInteractionIT extends BuiltInProceduresInterac
     {
         super();
         IS_EMBEDDED = false;
-        IS_BOLT = true;
     }
 
     @Override

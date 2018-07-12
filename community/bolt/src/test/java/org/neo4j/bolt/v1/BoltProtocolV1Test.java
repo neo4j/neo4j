@@ -81,6 +81,6 @@ public class BoltProtocolV1Test
 
     private static BoltChannel newBoltChannel( Channel rawChannel )
     {
-        return BoltChannel.open( "bolt", rawChannel, NullBoltMessageLogger.getInstance() );
+        return new BoltChannel( "bolt-1", "bolt", rawChannel, NullBoltMessageLogger.getInstance() );
     }
 }

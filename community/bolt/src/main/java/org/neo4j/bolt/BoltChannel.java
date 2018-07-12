@@ -24,25 +24,25 @@ import io.netty.channel.Channel;
 import java.net.SocketAddress;
 
 import org.neo4j.bolt.logging.BoltMessageLogger;
+import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 
 /**
  * A channel through which Bolt messaging can occur.
  */
-public class BoltChannel implements AutoCloseable, BoltConnectionDescriptor
+public class BoltChannel implements AutoCloseable, TrackedNetworkConnection, BoltConnectionDescriptor
 {
+    private final String id;
+    private final long connectTime;
     private final String connector;
     private final Channel rawChannel;
     private final BoltMessageLogger messageLogger;
 
-    public static BoltChannel open( String connector, Channel rawChannel,
-                                    BoltMessageLogger messageLogger )
-    {
-        return new BoltChannel( connector, rawChannel, messageLogger );
-    }
+    private volatile String user;
 
-    private BoltChannel( String connector, Channel rawChannel,
-                         BoltMessageLogger messageLogger )
+    public BoltChannel( String id, String connector, Channel rawChannel, BoltMessageLogger messageLogger )
     {
+        this.id = id;
+        this.connectTime = System.currentTimeMillis();
         this.connector = connector;
         this.rawChannel = rawChannel;
         this.messageLogger = messageLogger;
@@ -60,6 +60,48 @@ public class BoltChannel implements AutoCloseable, BoltConnectionDescriptor
     }
 
     @Override
+    public String id()
+    {
+        return id;
+    }
+
+    @Override
+    public long connectTime()
+    {
+        return connectTime;
+    }
+
+    @Override
+    public String connector()
+    {
+        return connector;
+    }
+
+    @Override
+    public SocketAddress serverAddress()
+    {
+        return rawChannel.localAddress();
+    }
+
+    @Override
+    public SocketAddress clientAddress()
+    {
+        return rawChannel.remoteAddress();
+    }
+
+    @Override
+    public String user()
+    {
+        return user;
+    }
+
+    @Override
+    public void updateUser( String user )
+    {
+        this.user = user;
+    }
+
+    @Override
     public void close()
     {
         Channel rawChannel = rawChannel();
@@ -71,27 +113,14 @@ public class BoltChannel implements AutoCloseable, BoltConnectionDescriptor
     }
 
     @Override
-    public String id()
+    public String toString()
     {
-        return rawChannel().id().asLongText();
+        return "BoltChannel{" +
+               "id='" + id + '\'' +
+               ", connectTime=" + connectTime +
+               ", connector='" + connector + '\'' +
+               ", rawChannel=" + rawChannel +
+               ", user='" + user + '\'' +
+               '}';
     }
-
-    @Override
-    public String connector()
-    {
-        return connector;
-    }
-
-    @Override
-    public SocketAddress clientAddress()
-    {
-        return rawChannel.remoteAddress();
-    }
-
-    @Override
-    public SocketAddress serverAddress()
-    {
-        return rawChannel.localAddress();
-    }
-
 }

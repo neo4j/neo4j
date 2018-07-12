@@ -41,6 +41,11 @@ public class BoltMessageLogging extends LifecycleAdapter
         this.boltMessageLog = boltMessageLog;
     }
 
+    public static BoltMessageLogging noop()
+    {
+        return new BoltMessageLogging( null );
+    }
+
     public static BoltMessageLogging create( FileSystemAbstraction fs, JobScheduler scheduler, Config config, Log log )
     {
         return new BoltMessageLogging( createBoltMessageLog( fs, scheduler, config, log ) );

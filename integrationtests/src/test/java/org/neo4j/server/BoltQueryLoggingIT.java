@@ -43,9 +43,9 @@ import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
 
 public class BoltQueryLoggingIT
@@ -122,12 +122,12 @@ public class BoltQueryLoggingIT
         assertThat( lines, hasSize( 5 ) );
         for ( String line : lines )
         {
-            assertTrue( line.contains( "INFO" ) );
-            assertTrue( line.contains( "ms: bolt-session\tbolt\tneo4j\tMyClient/1.0" ) );
-            assertTrue( line.contains( "client/127.0.0.1:" ) );
-            assertTrue( line.contains( "client/127.0.0.1:" ) );
-            assertTrue( line.contains( "server/127.0.0.1:" + neo4j.boltURI().getPort() ) );
-            assertTrue( line.contains( " - RETURN 1 AS num - {}" ) );
+            assertThat( line, containsString( "INFO" ) );
+            assertThat( line, containsString( "bolt-session" ) );
+            assertThat( line, containsString( "MyClient/1.0" ) );
+            assertThat( line, containsString( "client/127.0.0.1:" ) );
+            assertThat( line, containsString( "server/127.0.0.1:" + neo4j.boltURI().getPort() ) );
+            assertThat( line, containsString( " - RETURN 1 AS num - {}" ) );
         }
 
         // *** CLEAN UP ***

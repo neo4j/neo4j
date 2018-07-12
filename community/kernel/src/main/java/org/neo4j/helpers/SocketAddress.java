@@ -23,7 +23,6 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Objects;
 
-import static java.lang.String.format;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 /**
@@ -77,13 +76,13 @@ public class SocketAddress
 
     public boolean isIPv6()
     {
-        return hostname.contains( ":" );
+        return isIPv6( hostname );
     }
 
     @Override
     public String toString()
     {
-        return format( isIPv6() ? "[%s]:%s" : "%s:%s", hostname, port );
+        return format( hostname, port );
     }
 
     @Override
@@ -105,5 +104,25 @@ public class SocketAddress
     public int hashCode()
     {
         return Objects.hash( hostname, port );
+    }
+
+    public static String format( java.net.SocketAddress address )
+    {
+        if ( address instanceof InetSocketAddress )
+        {
+            InetSocketAddress inetSocketAddress = (InetSocketAddress) address;
+            return format( inetSocketAddress.getHostString(), inetSocketAddress.getPort() );
+        }
+        return address.toString();
+    }
+
+    public static String format( String hostname, int port )
+    {
+        return String.format( isIPv6( hostname ) ? "[%s]:%s" : "%s:%s", hostname, port );
+    }
+
+    private static boolean isIPv6( String hostname )
+    {
+        return hostname.contains( ":" );
     }
 }

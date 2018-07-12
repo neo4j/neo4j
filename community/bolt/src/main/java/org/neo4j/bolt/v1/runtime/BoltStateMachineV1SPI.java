@@ -22,14 +22,12 @@ package org.neo4j.bolt.v1.runtime;
 import java.util.Map;
 
 import org.neo4j.bolt.BoltConnectionDescriptor;
-import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
-import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.udc.UsageData;
@@ -41,18 +39,16 @@ public class BoltStateMachineV1SPI implements BoltStateMachineSPI
     private final BoltConnectionDescriptor connectionDescriptor;
     private final UsageData usageData;
     private final ErrorReporter errorReporter;
-    private final BoltConnectionTracker connectionTracker;
     private final Authentication authentication;
     private final String version;
     private final TransactionStateMachineSPI transactionSpi;
 
-    public BoltStateMachineV1SPI( BoltConnectionDescriptor connectionDescriptor, UsageData usageData, LogService logging, Authentication authentication,
-            BoltConnectionTracker connectionTracker, TransactionStateMachineSPI transactionStateMachineSPI )
+    BoltStateMachineV1SPI( BoltConnectionDescriptor connectionDescriptor, UsageData usageData, LogService logging,
+            Authentication authentication, TransactionStateMachineSPI transactionStateMachineSPI )
     {
         this.connectionDescriptor = connectionDescriptor;
         this.usageData = usageData;
         this.errorReporter = new ErrorReporter( logging );
-        this.connectionTracker = connectionTracker;
         this.authentication = authentication;
         this.transactionSpi = transactionStateMachineSPI;
         this.version = BOLT_SERVER_VERSION_PREFIX + Version.getNeo4jVersion();
@@ -65,21 +61,9 @@ public class BoltStateMachineV1SPI implements BoltStateMachineSPI
     }
 
     @Override
-    public void register( BoltStateMachine machine, String owner )
-    {
-        connectionTracker.onRegister( machine, owner );
-    }
-
-    @Override
     public TransactionStateMachineSPI transactionSpi()
     {
         return transactionSpi;
-    }
-
-    @Override
-    public void onTerminate( BoltStateMachine machine )
-    {
-        connectionTracker.onTerminate( machine );
     }
 
     @Override

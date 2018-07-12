@@ -21,6 +21,7 @@ package org.neo4j.bolt.v1.messaging;
 
 import java.time.Clock;
 
+import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.BoltStateMachineSPI;
@@ -30,22 +31,25 @@ import org.neo4j.bolt.runtime.StateMachineContext;
 public class BoltStateMachineV1Context implements StateMachineContext
 {
     private final BoltStateMachine machine;
+    private final BoltChannel boltChannel;
     private final BoltStateMachineSPI spi;
     private final MutableConnectionState connectionState;
     private final Clock clock;
 
-    public BoltStateMachineV1Context( BoltStateMachine machine, BoltStateMachineSPI spi, MutableConnectionState connectionState, Clock clock )
+    public BoltStateMachineV1Context( BoltStateMachine machine, BoltChannel boltChannel, BoltStateMachineSPI spi,
+            MutableConnectionState connectionState, Clock clock )
     {
         this.machine = machine;
+        this.boltChannel = boltChannel;
         this.spi = spi;
         this.connectionState = connectionState;
         this.clock = clock;
     }
 
     @Override
-    public void registerMachine( String owner )
+    public void authenticationCompleted( String user )
     {
-        spi.register( machine, owner );
+        boltChannel.updateUser( user );
     }
 
     @Override

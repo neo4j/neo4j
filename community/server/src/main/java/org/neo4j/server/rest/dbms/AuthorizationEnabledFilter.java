@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.web.JettyHttpConnection;
 import org.neo4j.server.web.XForwardUtil;
 
 import static java.lang.String.format;
@@ -108,6 +109,8 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
         try
         {
             LoginContext securityContext = authenticate( username, password );
+            JettyHttpConnection.updateUserForCurrentConnection( username );
+
             switch ( securityContext.subject().getAuthenticationResult() )
             {
             case PASSWORD_CHANGE_REQUIRED:

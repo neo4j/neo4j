@@ -28,6 +28,7 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.CommunityEditionModule;
+import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -92,7 +93,8 @@ public class CommunityNeoServer extends AbstractNeoServer
     @Override
     protected WebServer createWebServer()
     {
-        return new Jetty9WebServer( logProvider, getConfig() );
+        NetworkConnectionTracker connectionTracker = getDependencyResolver().resolveDependency( NetworkConnectionTracker.class );
+        return new Jetty9WebServer( logProvider, getConfig(), connectionTracker );
     }
 
     @Override

@@ -29,11 +29,7 @@ public interface BoltStateMachineSPI
 {
     BoltConnectionDescriptor connectionDescriptor();
 
-    void register( BoltStateMachine machine, String owner );
-
     TransactionStateMachineSPI transactionSpi();
-
-    void onTerminate( BoltStateMachine machine );
 
     void reportError( Neo4jError err );
 

@@ -39,7 +39,6 @@ public class BoltAuthScenariosInteractionIT extends AuthScenariosInteractionTest
     {
         super();
         IS_EMBEDDED = false;
-        IS_BOLT = true;
     }
 
     @Override

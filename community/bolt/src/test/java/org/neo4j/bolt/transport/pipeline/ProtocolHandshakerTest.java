@@ -48,7 +48,6 @@ import static org.neo4j.bolt.testing.BoltTestUtil.assertByteBufEquals;
 
 public class ProtocolHandshakerTest
 {
-    private final String connector = "default";
     private final Channel channel = mock( Channel.class );
     private final LogProvider logProvider = NullLogProvider.getInstance();
     private final BoltMessageLogger messageLogger = NullBoltMessageLogger.getInstance();
@@ -59,7 +58,7 @@ public class ProtocolHandshakerTest
     @Test
     public void shouldChooseFirstAvailableProtocol()
     {
-        try ( BoltChannel boltChannel = BoltChannel.open( connector, channel, messageLogger ) )
+        try ( BoltChannel boltChannel = newBoltChannel() )
         {
             // Given
             BoltProtocol protocol = newBoltProtocol( 1 );
@@ -90,7 +89,7 @@ public class ProtocolHandshakerTest
     @Test
     public void shouldHandleFragmentedMessage()
     {
-        try ( BoltChannel boltChannel = BoltChannel.open( connector, channel, messageLogger ) )
+        try ( BoltChannel boltChannel = newBoltChannel() )
         {
             // Given
             BoltProtocol protocol = newBoltProtocol( 1 );
@@ -125,7 +124,7 @@ public class ProtocolHandshakerTest
     @Test
     public void shouldHandleHandshakeFollowedImmediatelyByMessage()
     {
-        try ( BoltChannel boltChannel = BoltChannel.open( connector, channel, messageLogger ) )
+        try ( BoltChannel boltChannel = newBoltChannel() )
         {
             // Given
             BoltProtocol protocol = newBoltProtocol( 1 );
@@ -160,7 +159,7 @@ public class ProtocolHandshakerTest
     @Test
     public void shouldHandleMaxVersionNumber()
     {
-        try ( BoltChannel boltChannel = BoltChannel.open( connector, channel, messageLogger ) )
+        try ( BoltChannel boltChannel = newBoltChannel() )
         {
             long maxVersionNumber = 4_294_967_295L;
 
@@ -193,7 +192,7 @@ public class ProtocolHandshakerTest
     @Test
     public void shouldFallbackToNoProtocolIfNoMatch()
     {
-        try ( BoltChannel boltChannel = BoltChannel.open( connector, channel, messageLogger ) )
+        try ( BoltChannel boltChannel = newBoltChannel() )
         {
             // Given
             BoltProtocol protocol = newBoltProtocol( 1 );
@@ -221,7 +220,7 @@ public class ProtocolHandshakerTest
     @Test
     public void shouldRejectIfWrongPreamble()
     {
-        try ( BoltChannel boltChannel = BoltChannel.open( connector, channel, messageLogger ) )
+        try ( BoltChannel boltChannel = newBoltChannel() )
         {
             // Given
             BoltProtocol protocol = newBoltProtocol( 1 );
@@ -247,7 +246,7 @@ public class ProtocolHandshakerTest
     @Test
     public void shouldRejectIfInsecureWhenEncryptionRequired()
     {
-        try ( BoltChannel boltChannel = BoltChannel.open( connector, channel, messageLogger ) )
+        try ( BoltChannel boltChannel = newBoltChannel() )
         {
             // Given
             BoltProtocol protocol = newBoltProtocol( 1 );
@@ -268,6 +267,11 @@ public class ProtocolHandshakerTest
             assertFalse( channel.isActive() );
             verify( protocol, never() ).install();
         }
+    }
+
+    private BoltChannel newBoltChannel()
+    {
+        return new BoltChannel( "bolt-1", "bolt", channel, messageLogger );
     }
 
     private static BoltProtocol newBoltProtocol( long version )

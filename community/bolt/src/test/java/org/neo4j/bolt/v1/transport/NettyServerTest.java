@@ -19,8 +19,8 @@
  */
 package org.neo4j.bolt.v1.transport;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.socket.SocketChannel;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -70,12 +70,12 @@ public class NettyServerTest
         return new NettyServer.ProtocolInitializer()
         {
             @Override
-            public ChannelInitializer<SocketChannel> channelInitializer()
+            public ChannelInitializer<Channel> channelInitializer()
             {
-                return new ChannelInitializer<SocketChannel>()
+                return new ChannelInitializer<Channel>()
                 {
                     @Override
-                    public void initChannel( SocketChannel ch )
+                    public void initChannel( Channel ch )
                     {
                     }
                 };

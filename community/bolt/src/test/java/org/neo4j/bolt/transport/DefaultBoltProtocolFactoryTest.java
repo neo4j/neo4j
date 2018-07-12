@@ -47,8 +47,6 @@ import static org.mockito.Mockito.when;
 
 class DefaultBoltProtocolFactoryTest
 {
-    private static final String CONNECTOR = "default";
-
     @Test
     void shouldCreateNothingForUnknownProtocolVersion()
     {
@@ -69,7 +67,7 @@ class DefaultBoltProtocolFactoryTest
     void shouldCreateBoltProtocol( long protocolVersion ) throws Throwable
     {
         EmbeddedChannel channel = new EmbeddedChannel();
-        BoltChannel boltChannel = BoltChannel.open( CONNECTOR, channel, NullBoltMessageLogger.getInstance() );
+        BoltChannel boltChannel = new BoltChannel( "bolt-1", "bolt", channel, NullBoltMessageLogger.getInstance() );
 
         BoltStateMachineFactory stateMachineFactory = mock( BoltStateMachineFactory.class );
         BoltStateMachine stateMachine = mock( BoltStateMachine.class );

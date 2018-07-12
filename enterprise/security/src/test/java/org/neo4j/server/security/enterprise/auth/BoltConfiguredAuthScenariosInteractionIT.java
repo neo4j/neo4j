@@ -32,7 +32,6 @@ public class BoltConfiguredAuthScenariosInteractionIT extends ConfiguredAuthScen
     {
         super();
         IS_EMBEDDED = false;
-        IS_BOLT = true;
     }
 
     @Override

@@ -60,9 +60,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
-import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.api.net.NetworkConnectionTracker;
+import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
@@ -83,6 +83,9 @@ import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.counting;
+import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -119,7 +122,6 @@ public abstract class ProcedureInteractionTestBase<S>
     String SCHEMA_OPS_NOT_ALLOWED = "Schema operations are not allowed";
 
     protected boolean IS_EMBEDDED = true;
-    boolean IS_BOLT;
 
     String pwdReqErrMsg( String errMsg )
     {
@@ -602,15 +604,11 @@ public abstract class ProcedureInteractionTestBase<S>
 
     Map<String,Long> countBoltConnectionsByUsername()
     {
-        BoltConnectionTracker boltConnectionTracker = EnterpriseBuiltInDbmsProcedures.getBoltConnectionTracker(
-                neo.getLocalGraph().getDependencyResolver() );
-        return EnterpriseBuiltInDbmsProcedures.countConnectionsByUsername(
-                boltConnectionTracker
-                        .getActiveConnections()
-                        .stream()
-                        .filter( session -> !session.willTerminate() )
-                        .map( ManagedBoltStateMachine::owner )
-        ).collect( Collectors.toMap( r -> r.username, r -> r.connectionCount ) );
+        NetworkConnectionTracker connectionTracker = neo.getLocalGraph().getDependencyResolver().resolveDependency( NetworkConnectionTracker.class );
+        return connectionTracker.activeConnections()
+                .stream()
+                .map( TrackedNetworkConnection::user )
+                .collect( groupingBy( identity(), counting() ) );
     }
 
     @SuppressWarnings( "unchecked" )

@@ -19,10 +19,13 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
+import io.netty.channel.Channel;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
 
+import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.BoltStateMachineSPI;
@@ -33,18 +36,6 @@ import static org.mockito.Mockito.verify;
 
 class BoltStateMachineV1ContextTest
 {
-    @Test
-    void shouldRegisterWithOwner()
-    {
-        BoltStateMachine machine = mock( BoltStateMachine.class );
-        BoltStateMachineSPI boltSpi = mock( BoltStateMachineSPI.class );
-        BoltStateMachineV1Context context = newContext( machine, boltSpi );
-
-        context.registerMachine( "Thor Odinson" );
-
-        verify( boltSpi ).register( machine, "Thor Odinson" );
-    }
-
     @Test
     void shouldHandleFailure() throws BoltConnectionFatality
     {
@@ -70,6 +61,7 @@ class BoltStateMachineV1ContextTest
 
     private static BoltStateMachineV1Context newContext( BoltStateMachine machine, BoltStateMachineSPI boltSPI )
     {
-        return new BoltStateMachineV1Context( machine, boltSPI, new MutableConnectionState(), Clock.systemUTC() );
+        BoltChannel boltChannel = new BoltChannel( "bolt-1", "bolt", mock( Channel.class ), NullBoltMessageLogger.getInstance() );
+        return new BoltStateMachineV1Context( machine, boltChannel, boltSPI, new MutableConnectionState(), Clock.systemUTC() );
     }
 }

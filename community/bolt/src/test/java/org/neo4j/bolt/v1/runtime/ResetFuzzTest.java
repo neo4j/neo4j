@@ -203,21 +203,9 @@ public class ResetFuzzTest
         }
 
         @Override
-        public void register( BoltStateMachine machine, String owner )
-        {
-            // do nothing
-        }
-
-        @Override
         public TransactionStateMachineSPI transactionSpi()
         {
             return null;
-        }
-
-        @Override
-        public void onTerminate( BoltStateMachine machine )
-        {
-            // do nothing
         }
 
         @Override

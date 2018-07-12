@@ -24,20 +24,29 @@ import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
+import com.sun.jersey.client.urlconnection.HTTPSProperties;
 import org.codehaus.jackson.JsonNode;
 
 import java.net.URI;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
 import javax.ws.rs.core.MediaType;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
+import static com.sun.jersey.api.client.config.ClientConfig.PROPERTY_FOLLOW_REDIRECTS;
+import static com.sun.jersey.client.urlconnection.HTTPSProperties.PROPERTY_HTTPS_PROPERTIES;
 import static java.util.Collections.unmodifiableMap;
+import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
@@ -53,16 +62,17 @@ public class HTTP
 {
 
     private static final Builder BUILDER = new Builder().withHeaders( "Accept", "application/json" );
-    private static final Client CLIENT;
-    static
-    {
-        DefaultClientConfig defaultClientConfig = new DefaultClientConfig();
-        defaultClientConfig.getProperties().put( ClientConfig.PROPERTY_FOLLOW_REDIRECTS, Boolean.FALSE );
-        CLIENT = Client.create( defaultClientConfig );
-    }
+    private static final Client CLIENT = createClient();
 
     private HTTP()
     {
+    }
+
+    public static Builder withBasicAuth( String username, String password )
+    {
+        String usernamePassword = username + ':' + password;
+        String headerValue = "Basic " + Base64.getEncoder().encodeToString( usernamePassword.getBytes() );
+        return withHeaders( AUTHORIZATION, headerValue );
     }
 
     public static Builder withHeaders( String... kvPairs )
@@ -98,6 +108,30 @@ public class HTTP
     public static Response request( String method, String uri, Object payload )
     {
         return BUILDER.request( method, uri, payload );
+    }
+
+    /**
+     * Create a Jersey HTTP client that is able to talk HTTPS and trusts all certificates.
+     *
+     * @return new client.
+     */
+    private static Client createClient()
+    {
+        try
+        {
+            HostnameVerifier hostnameVerifier = HttpsURLConnection.getDefaultHostnameVerifier();
+            ClientConfig config = new DefaultClientConfig();
+            SSLContext ctx = SSLContext.getInstance( "TLS" );
+            ctx.init( null, new TrustManager[]{new InsecureTrustManager()}, null );
+            Map<String,Object> properties = config.getProperties();
+            properties.put( PROPERTY_HTTPS_PROPERTIES, new HTTPSProperties( hostnameVerifier, ctx ) );
+            properties.put( PROPERTY_FOLLOW_REDIRECTS, false );
+            return Client.create( config );
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     public static class Builder

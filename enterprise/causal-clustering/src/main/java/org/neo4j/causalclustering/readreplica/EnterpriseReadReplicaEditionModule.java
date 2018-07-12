@@ -92,7 +92,7 @@ import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
+import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
@@ -108,7 +108,6 @@ import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
-import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
@@ -117,6 +116,7 @@ import org.neo4j.kernel.impl.factory.ReadOnly;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.net.DefaultNetworkConnectionTracker;
 import org.neo4j.kernel.impl.pagecache.PageCacheWarmer;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -208,6 +208,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
         commitProcessFactory = readOnly();
+
+        connectionTracker = dependencies.satisfyDependency( createConnectionTracker() );
 
         logProvider = platformModule.logging.getInternalLogProvider();
         LogProvider userLogProvider = platformModule.logging.getUserLogProvider();
@@ -340,8 +342,6 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         servicesToStopOnStoreCopy.add( catchupServer );
         backupCatchupServer.ifPresent( servicesToStopOnStoreCopy::add );
 
-        dependencies.satisfyDependency( createSessionTracker() );
-
         life.add( catchupServer ); // must start last and stop first, since it handles external requests
         backupCatchupServer.ifPresent( life::add );
     }
@@ -397,9 +397,9 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
     }
 
     @Override
-    protected BoltConnectionTracker createSessionTracker()
+    protected NetworkConnectionTracker createConnectionTracker()
     {
-        return new StandardBoltConnectionTracker();
+        return new DefaultNetworkConnectionTracker();
     }
 
     @Override

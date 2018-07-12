@@ -71,7 +71,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
+import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
@@ -145,7 +145,6 @@ import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
-import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.CanWrite;
@@ -156,6 +155,7 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.net.DefaultNetworkConnectionTracker;
 import org.neo4j.kernel.impl.pagecache.PageCacheWarmer;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -543,6 +543,8 @@ public class HighlyAvailableEditionModule
 
         coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
 
+        connectionTracker = dependencies.satisfyDependency( createConnectionTracker() );
+
         registerRecovery( platformModule.databaseInfo, dependencies, logging );
 
         UsageData usageData = dependencies.resolveDependency( UsageData.class );
@@ -552,8 +554,6 @@ public class HighlyAvailableEditionModule
         // Ordering of lifecycles is important. Clustering infrastructure should start before paxos components
         life.add( clusteringLife );
         life.add( paxosLife );
-
-        dependencies.satisfyDependency( createSessionTracker() );
     }
 
     @Override
@@ -916,9 +916,9 @@ public class HighlyAvailableEditionModule
     }
 
     @Override
-    protected BoltConnectionTracker createSessionTracker()
+    protected NetworkConnectionTracker createConnectionTracker()
     {
-        return new StandardBoltConnectionTracker();
+        return new DefaultNetworkConnectionTracker();
     }
 
     @Override
