@@ -111,10 +111,8 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
           )
         )
 
-      if (executionPlan.isFailure && requestedRuntime != CypherRuntimeOption.default) {
+      if (executionPlan.isFailure && requestedRuntime != CypherRuntimeOption.default)
         context.notificationLogger.log(RuntimeUnsupportedNotification)
-        executionPlan.failed.get.printStackTrace()
-      }
     }
 
     executionPlan.recover({

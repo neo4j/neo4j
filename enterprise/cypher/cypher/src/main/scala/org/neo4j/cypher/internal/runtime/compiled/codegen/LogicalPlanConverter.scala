@@ -634,10 +634,11 @@ object LogicalPlanConverter {
     override def consume(context: CodeGenContext, child: CodeGenPlan, cardinalities: Cardinalities) = {
       val opName = context.registerOperator(logicalPlan)
 
+
       val (variablesToKeep: Map[String, Variable],
       sortItems: Seq[SortItem],
       tupleVariables: Map[String, Variable],
-      sortTableName: String) = prepareSortTableInfo(context, sort.sortItems)
+      sortTableName: String) = prepareSortTableInfo(context, sort.availableSymbols, sort.sortItems)
 
       val estimatedCardinality = cardinalities.get(sort.id).amount
 
@@ -666,7 +667,7 @@ object LogicalPlanConverter {
       val (variablesToKeep: Map[String, Variable],
       sortItems: Seq[SortItem],
       tupleVariables: Map[String, Variable],
-      sortTableName: String) = prepareSortTableInfo(context, top.sortItems)
+      sortTableName: String) = prepareSortTableInfo(context, top.availableSymbols, top.sortItems)
 
       val countExpression = createExpression(top.limit)(context)
 
@@ -686,10 +687,9 @@ object LogicalPlanConverter {
   }
 
   // Helper shared by sortAsCodeGenPlan and topAsCodeGenPlan
-  private def prepareSortTableInfo(context: CodeGenContext, inputSortItems: Seq[ColumnOrder]):
+  private def prepareSortTableInfo(context: CodeGenContext, available: Set[String], inputSortItems: Seq[ColumnOrder]):
   (Map[String, Variable], Seq[SortItem], Map[String, Variable], String) = {
-
-    val variablesToKeep = context.getProjectedVariables // TODO: Intersect/replace with usedVariables(innerBlock)
+    val variablesToKeep = available.map(a => a -> context.getVariable(a)).toMap
 
     val sortItems = inputSortItems.map {
       case plans.Ascending(name) => spi.SortItem(name, spi.Ascending)
