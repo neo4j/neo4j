@@ -24,6 +24,8 @@ package org.neo4j.cypher.internal.runtime.compiled.expressions;
 
 import org.opencypher.v9_0.util.CypherTypeException;
 
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.Value;
@@ -49,5 +51,14 @@ public final class CompiledHelpers
                     null );
         }
         return (Value) value;
+    }
+
+    public static AnyValue loadVariable( ExecutionContext ctx, String name )
+    {
+        if ( !ctx.contains( name ) )
+        {
+            throw new NotFoundException( String.format( "Unknown variable `%s`." ) );
+        }
+        return ctx.apply( name );
     }
 }

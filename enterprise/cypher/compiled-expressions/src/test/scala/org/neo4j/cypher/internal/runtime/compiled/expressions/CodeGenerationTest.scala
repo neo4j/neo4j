@@ -1166,6 +1166,14 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, EMPTY_MAP) should equal(list(Values.TRUE, intValue(5), NO_VALUE, Values.FALSE))
   }
 
+  test("handle variables") {
+    val variable = varFor("key")
+    val compiled = compile(variable)
+    when(ctx.contains("key")).thenReturn(true)
+    when(ctx.apply("key")).thenReturn(stringValue("hello"))
+    compiled.evaluate(ctx, db, EMPTY_MAP) should equal(stringValue("hello"))
+  }
+
   private def compile(e: Expression) =
     CodeGeneration.compile(new IntermediateCodeGeneration(SlotConfiguration.empty).compile(e).map(_.ir).getOrElse(fail()))
 

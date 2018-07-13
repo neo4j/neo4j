@@ -103,6 +103,11 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         Some(IntermediateExpression(
           invokeStatic(method[VirtualValues, ListValue, Array[AnyValue]]("list"), arrayOf(in.map(_.ir):_*)), nullable = false))
       }
+    case Variable(name) =>
+      Some(IntermediateExpression(
+        invokeStatic(method[CompiledHelpers, AnyValue, ExecutionContext, String]("loadVariable"), load("context"),
+                     constant(name)), nullable = true))
+
     //boolean operators
     case Or(lhs, rhs) =>
       for {l <- compile(lhs)
