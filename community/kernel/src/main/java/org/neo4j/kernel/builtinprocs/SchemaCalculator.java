@@ -47,11 +47,13 @@ public class SchemaCalculator
 {
     private Map<SortedLabels,MutableIntSet> labelSetToPropertyKeysMapping;
     private Map<Pair<SortedLabels,Integer>,ValueTypeListHelper> labelSetANDNodePropertyKeyIdToValueTypeMapping;
+    private Set<SortedLabels> nullableLabelSets; // used for label combinations without properties -> all properties are viewed as nullable
     private Map<Integer,String> labelIdToLabelNameMapping;
     private Map<Integer,String> propertyIdToPropertylNameMapping;
     private Map<Integer,String> relationshipTypIdToRelationshipNameMapping;
     private Map<Integer,MutableIntSet> relationshipTypeIdToPropertyKeysMapping;
     private Map<Pair<Integer,Integer>,ValueTypeListHelper> relationshipTypeIdANDPropertyTypeIdToValueTypeMapping;
+    private Set<Integer> nullableRelationshipTypes; // used for types without properties -> all properties are viewed as nullable
 
     private final MutableIntSet emptyPropertyIdSet = IntSets.mutable.empty();
     private static final String NODE = "Node";
@@ -77,6 +79,8 @@ public class SchemaCalculator
         relationshipTypeIdToPropertyKeysMapping = new HashMap<>( relationshipTypeCount );
         labelSetANDNodePropertyKeyIdToValueTypeMapping = new HashMap<>();
         relationshipTypeIdANDPropertyTypeIdToValueTypeMapping = new HashMap<>();
+        nullableLabelSets = new HashSet<>(  );
+        nullableRelationshipTypes = new HashSet<>(  );
     }
 
     public Stream<SchemaInfoResult> calculateTabularResultStream()
@@ -110,9 +114,16 @@ public class SchemaCalculator
                     // lookup propId name and valueGroup
                     String propName = propertyIdToPropertylNameMapping.get( propId );
                     ValueTypeListHelper valueTypeListHelper = relationshipTypeIdANDPropertyTypeIdToValueTypeMapping.get( Pair.of( typeId, propId ) );
-                    results.add(
-                            new SchemaInfoResult( RELATIONSHIP, Collections.singletonList( name ), propName, valueTypeListHelper.getCypherTypesList(),
-                            valueTypeListHelper.isNullable() ) );
+                    if ( nullableRelationshipTypes.contains( typeId ) )
+                    {
+                        results.add( new SchemaInfoResult( RELATIONSHIP, Collections.singletonList( name ), propName, valueTypeListHelper.getCypherTypesList(),
+                                true ) );
+                    }
+                    else
+                    {
+                        results.add( new SchemaInfoResult( RELATIONSHIP, Collections.singletonList( name ), propName, valueTypeListHelper.getCypherTypesList(),
+                                valueTypeListHelper.isNullable() ) );
+                    }
                 } );
             }
         }
@@ -144,8 +155,15 @@ public class SchemaCalculator
                     // lookup propId name and valueGroup
                     String propName = propertyIdToPropertylNameMapping.get( propId );
                     ValueTypeListHelper valueTypeListHelper = labelSetANDNodePropertyKeyIdToValueTypeMapping.get( Pair.of( labelSet, propId ) );
-                    results.add(
-                            new SchemaInfoResult( NODE, labelNames, propName, valueTypeListHelper.getCypherTypesList(), valueTypeListHelper.isNullable() ) );
+                    if ( nullableLabelSets.contains( labelSet ) )
+                    {
+                        results.add( new SchemaInfoResult( NODE, labelNames, propName, valueTypeListHelper.getCypherTypesList(), true ) );
+                    }
+                    else
+                    {
+                        results.add( new SchemaInfoResult( NODE, labelNames, propName, valueTypeListHelper.getCypherTypesList(),
+                                valueTypeListHelper.isNullable() ) );
+                    }
                 } );
             }
         }
@@ -194,7 +212,15 @@ public class SchemaCalculator
                 MutableIntSet oldPropertyKeySet = relationshipTypeIdToPropertyKeysMapping.getOrDefault( typeId, emptyPropertyIdSet );
 
                 // find out which old properties we did not visited and mark them as nullable
-                if ( !(oldPropertyKeySet == emptyPropertyIdSet) )
+                if ( oldPropertyKeySet == emptyPropertyIdSet )
+                {
+                    if ( propertyIds.size() == 0 )
+                    {
+                        // Even if we find property key on other rels with this type, set all of them nullable
+                        nullableRelationshipTypes.add( typeId );
+                    }
+                }
+                else
                 {
                     // we can and need to skip this if we found the empty set
                     oldPropertyKeySet.removeAll( propertyIds );
@@ -238,7 +264,15 @@ public class SchemaCalculator
                 MutableIntSet oldPropertyKeySet = labelSetToPropertyKeysMapping.getOrDefault( labels, emptyPropertyIdSet );
 
                 // find out which old properties we did not visited and mark them as nullable
-                if ( !(oldPropertyKeySet == emptyPropertyIdSet) )
+                if ( oldPropertyKeySet == emptyPropertyIdSet )
+                {
+                    if ( propertyIds.size() == 0 )
+                    {
+                        // Even if we find property key on other nodes with those labels, set all of them nullable
+                        nullableLabelSets.add( labels );
+                    }
+                }
+                else
                 {
                     // we can and need (!) to skip this if we found the empty set
                     oldPropertyKeySet.removeAll( propertyIds );

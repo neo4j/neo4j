@@ -125,9 +125,9 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
         // Node3: ()
 
         Transaction transaction = newTransaction( AnonymousContext.writeToken() );
-        transaction.dataWrite().nodeCreate();  // Node3
         long nodeId1 = transaction.dataWrite().nodeCreate();
         long nodeId2 = transaction.dataWrite().nodeCreate();
+        transaction.dataWrite().nodeCreate();  // Node3
         int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
         int prop2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop2" );
         int prop3 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop3" );
@@ -145,9 +145,47 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( new Object[]{"Node", Arrays.asList(), "prop1", Arrays.asList( "String" ), false} ),
-                equalTo( new Object[]{"Node", Arrays.asList(), "prop2", Arrays.asList( "Integer", "Float" ), false} ),
-                equalTo( new Object[]{"Node", Arrays.asList(), "prop3", Arrays.asList( "String", "Boolean" ), false} ) ) );
+                equalTo( new Object[]{"Node", Arrays.asList(), "prop1", Arrays.asList( "String" ), true} ),
+                equalTo( new Object[]{"Node", Arrays.asList(), "prop2", Arrays.asList( "Integer", "Float" ), true} ),
+                equalTo( new Object[]{"Node", Arrays.asList(), "prop3", Arrays.asList( "String", "Boolean" ), true} ) ) );
+
+        // printStream( stream );
+    }
+
+    @Test
+    public void testSchemaTableWithSimilarNodesShouldNotDependOnOrderOfCreation() throws Throwable
+    {
+        // This is basically the same as the test before but the empty node is created first
+        // Given
+
+        // Node1: ()
+        // Node2: ({prop1:"Test", prop2: 12, prop3: true})
+        // Node3: ({prop1:"Test", prop2: 1.5, prop3: "Test"})
+
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        transaction.dataWrite().nodeCreate();  // Node1
+        long nodeId2 = transaction.dataWrite().nodeCreate();
+        long nodeId3 = transaction.dataWrite().nodeCreate();
+        int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
+        int prop2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop2" );
+        int prop3 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop3" );
+        transaction.dataWrite().nodeSetProperty( nodeId2, prop1, Values.stringValue("Test") );
+        transaction.dataWrite().nodeSetProperty( nodeId3, prop1, Values.stringValue("Test") );
+        transaction.dataWrite().nodeSetProperty( nodeId2, prop2, Values.intValue( 12 ) );
+        transaction.dataWrite().nodeSetProperty( nodeId3, prop2, Values.floatValue( 1.5f ) );
+        transaction.dataWrite().nodeSetProperty( nodeId2, prop3, Values.booleanValue( true ) );
+        transaction.dataWrite().nodeSetProperty( nodeId3, prop3, Values.stringValue("Test") );
+        commit();
+
+        // When
+        RawIterator<Object[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertySchema" ) ).id(), new Object[0] );
+
+        // Then
+        assertThat( asList( stream ), containsInAnyOrder(
+                equalTo( new Object[]{"Node", Arrays.asList(), "prop1", Arrays.asList( "String" ), true} ),
+                equalTo( new Object[]{"Node", Arrays.asList(), "prop2", Arrays.asList( "Integer", "Float" ), true} ),
+                equalTo( new Object[]{"Node", Arrays.asList(), "prop3", Arrays.asList( "String", "Boolean" ), true} ) ) );
 
         // printStream( stream );
     }
@@ -248,6 +286,48 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
         transaction.dataWrite().relationshipSetProperty( relId2, prop2, Values.floatValue( 1.5f ) );
         transaction.dataWrite().relationshipSetProperty( relId1, prop3, Values.booleanValue( true ) );
         transaction.dataWrite().relationshipSetProperty( relId2, prop3, Values.stringValue("Test") );
+        commit();
+
+        // When
+        RawIterator<Object[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertySchema" ) ).id(), new Object[0] );
+
+        // Then
+        assertThat( asList( stream ), containsInAnyOrder(
+                equalTo( new Object[]{"Node", Arrays.asList(), null, null, true} ),
+                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop1", Arrays.asList( "String" ), true} ),
+                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop2", Arrays.asList( "Integer", "Float" ), true} ),
+                equalTo( new Object[]{"Relationship", Arrays.asList( "R" ), "prop3", Arrays.asList( "String", "Boolean" ), true} ) ) );
+
+        //printStream( stream );
+    }
+
+    @Test
+    public void testSchemaTableWithSimilarRelationshipsShouldNotDependOnOrderOfCreation() throws Throwable
+    {
+        // This is basically the same as the test before but the empty rel is created first
+        // Given
+
+        // Node1: ()
+        // Rel1: (node1)-[:R]->(node1)
+        // Rel2: (node1)-[:R{prop1:"Test", prop2: 12, prop3: true}]->(node1)
+        // Rel3: (node1)-[:R{prop1:"Test", prop2: 1.5, prop3: "Test"}]->(node1)
+
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        long nodeId1 = transaction.dataWrite().nodeCreate();
+        int typeId = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+        transaction.dataWrite().relationshipCreate( nodeId1, typeId, nodeId1 ); // Rel1
+        long relId2 = transaction.dataWrite().relationshipCreate( nodeId1, typeId, nodeId1 );
+        long relId3 = transaction.dataWrite().relationshipCreate( nodeId1, typeId, nodeId1 );
+        int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
+        int prop2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop2" );
+        int prop3 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop3" );
+        transaction.dataWrite().relationshipSetProperty( relId2, prop1, Values.stringValue("Test") );
+        transaction.dataWrite().relationshipSetProperty( relId3, prop1, Values.stringValue("Test") );
+        transaction.dataWrite().relationshipSetProperty( relId2, prop2, Values.intValue( 12 ) );
+        transaction.dataWrite().relationshipSetProperty( relId3, prop2, Values.floatValue( 1.5f ) );
+        transaction.dataWrite().relationshipSetProperty( relId2, prop3, Values.booleanValue( true ) );
+        transaction.dataWrite().relationshipSetProperty( relId3, prop3, Values.stringValue("Test") );
         commit();
 
         // When
