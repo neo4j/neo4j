@@ -31,6 +31,7 @@ import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
@@ -46,7 +47,7 @@ public class EnterpriseSecurityContextDescriptionTest
 {
     @Rule
     public MultiRealmAuthManagerRule authManagerRule = new MultiRealmAuthManagerRule( new InMemoryUserRepository(),
-            new RateLimitedAuthenticationStrategy( Clock.systemUTC(), 3 ) );
+            new RateLimitedAuthenticationStrategy( Clock.systemUTC(), Config.defaults() ) );
 
     private EnterpriseUserManager manager;
     private Function<String, Integer> token = s -> -1;

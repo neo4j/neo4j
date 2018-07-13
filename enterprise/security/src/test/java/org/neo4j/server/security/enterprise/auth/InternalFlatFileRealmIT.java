@@ -81,7 +81,7 @@ public class InternalFlatFileRealmIT
         final UserRepository defaultAdminRepository = EnterpriseSecurityModule.getDefaultAdminRepository( Config
                 .defaults(), logProvider, fs );
         final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
-        AuthenticationStrategy authenticationStrategy = new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 );
+        AuthenticationStrategy authenticationStrategy = new RateLimitedAuthenticationStrategy( Clocks.systemClock(), Config.defaults() );
 
         realm = new InternalFlatFileRealm( userRepository, roleRepository, passwordPolicy, authenticationStrategy,
                         true, true, jobScheduler, initialUserRepository, defaultAdminRepository );

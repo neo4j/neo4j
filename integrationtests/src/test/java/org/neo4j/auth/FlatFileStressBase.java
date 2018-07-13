@@ -87,7 +87,7 @@ abstract class FlatFileStressBase
                 userRepository,
                 roleRepository,
                 new BasicPasswordPolicy(),
-                new RateLimitedAuthenticationStrategy( Clock.systemUTC(), 3 ),
+                new RateLimitedAuthenticationStrategy( Clock.systemUTC(), Config.defaults() ),
                 jobScheduler,
                 CommunitySecurityModule.getInitialUserRepository( config, logProvider, getFileSystem() ),
                 EnterpriseSecurityModule.getDefaultAdminRepository( config, logProvider, getFileSystem() )

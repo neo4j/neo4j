@@ -20,17 +20,22 @@
 package org.neo4j.server.security.auth;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.security.User;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_lock_time;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_max_failed_attempts;
 
 public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
 {
-    private static final int FAILED_AUTH_COOLDOWN_PERIOD = 5_000;
     private final Clock clock;
+    private final long lockDurationMs;
     private final int maxFailedAttempts;
 
     private class AuthenticationMetadata
@@ -42,7 +47,7 @@ public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
         {
             return maxFailedAttempts <= 0 || // amount of attempts is not limited
                    failedAuthAttempts.get() < maxFailedAttempts || // less failed attempts than configured
-                   clock.millis() >= (lastFailedAttemptTime + FAILED_AUTH_COOLDOWN_PERIOD); // cool down period expired
+                   clock.millis() >= lastFailedAttemptTime + lockDurationMs; // auth lock duration expired
         }
 
         public void authSuccess()
@@ -62,9 +67,15 @@ public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
      */
     private final ConcurrentMap<String, AuthenticationMetadata> authenticationData = new ConcurrentHashMap<>();
 
-    public RateLimitedAuthenticationStrategy( Clock clock, int maxFailedAttempts )
+    public RateLimitedAuthenticationStrategy( Clock clock, Config config )
+    {
+        this( clock, config.get( auth_lock_time ), config.get( auth_max_failed_attempts ) );
+    }
+
+    RateLimitedAuthenticationStrategy( Clock clock, Duration lockDuration, int maxFailedAttempts )
     {
         this.clock = clock;
+        this.lockDurationMs = lockDuration.toMillis();
         this.maxFailedAttempts = maxFailedAttempts;
     }
 

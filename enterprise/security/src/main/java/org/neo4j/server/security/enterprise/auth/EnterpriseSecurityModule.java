@@ -37,7 +37,6 @@ import java.util.stream.Collectors;
 
 import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -213,8 +212,7 @@ public class EnterpriseSecurityModule extends SecurityModule
 
     private static AuthenticationStrategy createAuthenticationStrategy( Config config )
     {
-        int maxFailedAttempts = config.get( GraphDatabaseSettings.auth_max_failed_attempts );
-        return new RateLimitedAuthenticationStrategy( Clocks.systemClock(), maxFailedAttempts );
+        return new RateLimitedAuthenticationStrategy( Clocks.systemClock(), config );
     }
 
     private static CacheManager createCacheManager( Config config )
