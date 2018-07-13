@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.v3_5.logical.plans.{CoerceToPredicate, NestedPl
 import org.neo4j.cypher.operations.{CypherBoolean, CypherFunctions, CypherMath}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
-import org.neo4j.values.virtual.{ListValue, MapValue, NodeValue, RelationshipValue}
+import org.neo4j.values.virtual._
 import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util.InternalException
@@ -96,7 +96,13 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
     case _: Null => Some(IntermediateExpression(noValue, nullable = true))
     case _: True => Some(IntermediateExpression(truthValue, nullable = false))
     case _: False => Some(IntermediateExpression(falseValue, nullable = false))
-
+    case ListLiteral(args) =>
+      val in = args.flatMap(compile)
+      if (in.size < args.size) None
+      else {
+        Some(IntermediateExpression(
+          invokeStatic(method[VirtualValues, ListValue, Array[AnyValue]]("list"), arrayOf(in.map(_.ir):_*)), nullable = false))
+      }
     //boolean operators
     case Or(lhs, rhs) =>
       for {l <- compile(lhs)

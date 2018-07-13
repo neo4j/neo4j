@@ -438,7 +438,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val path = VirtualValues.path(nodes, rels)
 
     compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
-    compiled.evaluate(ctx, db, map(Array("a"), Array(path))) should equal(VirtualValues.list(nodes:_*))
+    compiled.evaluate(ctx, db, map(Array("a"), Array(path))) should equal(list(nodes:_*))
   }
 
   test("relationships function") {
@@ -452,7 +452,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val path = VirtualValues.path(nodes, rels)
 
     compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(NO_VALUE)
-    compiled.evaluate(ctx, db, map(Array("a"), Array(path))) should equal(VirtualValues.list(rels:_*))
+    compiled.evaluate(ctx, db, map(Array("a"), Array(path))) should equal(list(rels:_*))
   }
 
   test("id on node") {
@@ -1158,12 +1158,19 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     an [InvalidArgumentException] should be thrownBy compiled.evaluate(ctx, db, map(Array("a", "b"), Array(listValue, longValue(Int.MaxValue + 1L))))
   }
 
+  test("handle list literals") {
+    val literal = literalList(t, literalInt(5), noValue, f)
+
+    val compiled = compile(literal)
+
+    compiled.evaluate(ctx, db, EMPTY_MAP) should equal(list(Values.TRUE, intValue(5), NO_VALUE, Values.FALSE))
+  }
+
   private def compile(e: Expression) =
     CodeGeneration.compile(new IntermediateCodeGeneration(SlotConfiguration.empty).compile(e).map(_.ir).getOrElse(fail()))
 
   private def function(name: String, es: Expression*) =
     FunctionInvocation(FunctionName(name)(pos), distinct = false, es.toIndexedSeq)(pos)
-
 
   private def function(name: String) =
     FunctionInvocation(Namespace()(pos), FunctionName(name)(pos), distinct = false, IndexedSeq.empty)(pos)
@@ -1203,5 +1210,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   private def containerIndex(container: Expression, index: Expression) = ContainerIndex(container, index)(pos)
 
  private def literalString(s: String) = expressions.StringLiteral(s)(pos)
+
+// private def literalList(elems: Expression*) = ListLiteral(elems)(pos)
 
 }
