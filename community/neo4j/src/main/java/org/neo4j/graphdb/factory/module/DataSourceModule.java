@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -92,7 +93,7 @@ public class DataSourceModule
 
         tokenHolders = editionModule.tokenHoldersSupplier.get();
 
-        File databaseDirectory = new File( platformModule.storeDir, DataSourceManager.DEFAULT_DATABASE_NAME );
+        File databaseDirectory = new File( platformModule.storeDir, config.get( GraphDatabaseSettings.active_database ) );
         DiagnosticsManager diagnosticsManager = platformModule.diagnosticsManager;
         this.queryExecutor = queryExecutionEngineSupplier;
         Monitors monitors = new Monitors( platformModule.monitors );
