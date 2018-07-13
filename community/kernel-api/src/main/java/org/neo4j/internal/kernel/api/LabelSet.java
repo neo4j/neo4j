@@ -64,21 +64,5 @@ public interface LabelSet
         {
             return EMPTY;
         }
-
-        @Override
-        public int hashCode()
-        {
-            return 1;
-        }
-
-        @Override
-        public boolean equals( Object obj )
-        {
-            if ( obj instanceof LabelSet )
-            {
-                return ((LabelSet) obj).numberOfLabels() == 0;
-            }
-            return false;
-        }
     };
 }

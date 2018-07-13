@@ -41,19 +41,19 @@ public class SchemaInfoResult
     /**
      * A List containing all CypherTypes of the given property on the given label combination / relationship type or null
      */
-    public final List<String> cypherType;
+    public final List<String> cypherTypes;
 
     /**
      * Indicates whether the property is present on all similar nodes / relationships (= false) or not (= true)
      */
     public final boolean nullable;
 
-    public SchemaInfoResult( String type, List<String> nodeLabelsOrRelType, String property, List<String> cypherType, boolean nullable )
+    public SchemaInfoResult( String type, List<String> nodeLabelsOrRelType, String property, List<String> cypherTypes, boolean nullable )
     {
         this.type = type;
         this.nodeLabelsOrRelType = nodeLabelsOrRelType;
         this.property = property;
-        this.cypherType = cypherType;
+        this.cypherTypes = cypherTypes;
         this.nullable = nullable;
     }
 }
