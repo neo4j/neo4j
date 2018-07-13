@@ -31,9 +31,9 @@ public class Labels implements LabelSet
      * This really only needs to be {@code int[]}, but the underlying implementation uses {@code long[]} for some
      * reason.
      */
-    protected final long[] labels;
+    private final long[] labels;
 
-    protected Labels( long[] labels )
+    private Labels( long[] labels )
     {
         this.labels = labels;
     }

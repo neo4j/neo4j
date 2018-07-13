@@ -22,13 +22,14 @@ package org.neo4j.kernel.builtinprocs;
 import java.util.Arrays;
 
 import org.neo4j.internal.kernel.api.LabelSet;
-import org.neo4j.kernel.impl.newapi.Labels;
 
-public class SortedLabels extends Labels
+public class SortedLabels
 {
+    private long[] labels;
+
     private SortedLabels( long[] labels )
     {
-        super( labels );
+        this.labels = labels;
     }
 
     public static SortedLabels from( long[] labels )
@@ -42,6 +43,11 @@ public class SortedLabels extends Labels
         return from( labelSet.all() );
     }
 
+    private long[] all()
+    {
+        return labels;
+    }
+
     @Override
     public int hashCode()
     {
@@ -51,11 +57,21 @@ public class SortedLabels extends Labels
     @Override
     public boolean equals( Object obj )
     {
-        if ( obj instanceof LabelSet )
+        if ( obj instanceof SortedLabels )
         {
-            long[] input = ((LabelSet) obj).all();
+            long[] input = ((SortedLabels) obj).all();
             return Arrays.equals( labels, input );
         }
         return false;
+    }
+
+    public int numberOfLabels()
+    {
+        return labels.length;
+    }
+
+    public Integer label( int offset )
+    {
+        return (int) labels[offset];
     }
 }
