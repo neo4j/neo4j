@@ -17,24 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.kernel.impl.util.collection;
 
-package org.neo4j.collection.offheap;
-
-import java.nio.ByteBuffer;
-
-public interface Memory
+@FunctionalInterface
+public interface MemoryAllocator
 {
-    long readLong( long offset );
-
-    void writeLong( long offset, long value );
-
-    void clear();
-
-    long size();
-
-    void free();
-
-    Memory copy();
-
-    ByteBuffer asByteBuffer();
+    Memory allocate( long size );
 }

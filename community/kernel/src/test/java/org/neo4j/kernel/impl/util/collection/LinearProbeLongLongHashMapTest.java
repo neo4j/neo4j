@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.collection.offheap;
+package org.neo4j.kernel.impl.util.collection;
 
 import org.eclipse.collections.api.block.function.primitive.LongFunction;
 import org.eclipse.collections.api.block.function.primitive.LongFunction0;
@@ -43,6 +43,7 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.function.Executable;
+import org.mockito.Mockito;
 
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
@@ -67,8 +68,8 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.collection.offheap.LinearProbeLongLongHashMap.DEFAULT_CAPACITY;
-import static org.neo4j.collection.offheap.LinearProbeLongLongHashMap.REMOVALS_FACTOR;
+import static org.neo4j.kernel.impl.util.collection.LinearProbeLongLongHashMap.DEFAULT_CAPACITY;
+import static org.neo4j.kernel.impl.util.collection.LinearProbeLongLongHashMap.REMOVALS_FACTOR;
 
 class LinearProbeLongLongHashMapTest
 {
@@ -490,7 +491,7 @@ class LinearProbeLongLongHashMapTest
     @Test
     void grow()
     {
-        map = spy( map );
+        map = Mockito.spy( map );
 
         for ( int i = 0; i < DEFAULT_CAPACITY; i++ )
         {
@@ -502,7 +503,7 @@ class LinearProbeLongLongHashMapTest
     @Test
     void rehashWhenTooManyRemovals()
     {
-        map = spy( map );
+        map = Mockito.spy( map );
 
         final int numOfElements = DEFAULT_CAPACITY / 2;
         final int removalsToTriggerRehashing = (int) (DEFAULT_CAPACITY * REMOVALS_FACTOR);

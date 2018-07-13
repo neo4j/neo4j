@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.collection.offheap;
+package org.neo4j.kernel.impl.util.collection;
 
 import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
 import org.eclipse.collections.api.iterator.LongIterator;
@@ -34,6 +34,7 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.function.Executable;
+import org.mockito.Mockito;
 
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
@@ -57,12 +58,11 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.collection.offheap.MutableLinearProbeLongHashSet.DEFAULT_CAPACITY;
-import static org.neo4j.collection.offheap.MutableLinearProbeLongHashSet.REMOVALS_RATIO;
+import static org.neo4j.kernel.impl.util.collection.MutableLinearProbeLongHashSet.DEFAULT_CAPACITY;
+import static org.neo4j.kernel.impl.util.collection.MutableLinearProbeLongHashSet.REMOVALS_RATIO;
 
 class MutableLinearProbeLongHashSetTest
 {
@@ -79,7 +79,7 @@ class MutableLinearProbeLongHashSetTest
     @Test
     void addRemoveContains()
     {
-        set = spy( set );
+        set = Mockito.spy( set );
 
         assertFalse( set.contains( 0 ) );
         assertTrue( set.add( 0 ) );
@@ -155,7 +155,7 @@ class MutableLinearProbeLongHashSetTest
     @Test
     void grow()
     {
-        set = spy( set );
+        set = Mockito.spy( set );
 
         for ( int i = 0; i < DEFAULT_CAPACITY; i++ )
         {
@@ -167,7 +167,7 @@ class MutableLinearProbeLongHashSetTest
     @Test
     void rehashWhenTooManyRemovals()
     {
-        set = spy( set );
+        set = Mockito.spy( set );
 
         final int numOfElements = DEFAULT_CAPACITY / 2;
         final int removalsToTriggerRehashing = DEFAULT_CAPACITY / REMOVALS_RATIO;

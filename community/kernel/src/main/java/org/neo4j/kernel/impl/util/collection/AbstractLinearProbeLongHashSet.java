@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.collection.offheap;
+package org.neo4j.kernel.impl.util.collection;
 
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.eclipse.collections.api.block.function.primitive.LongToObjectFunction;

@@ -25,9 +25,6 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.neo4j.collection.offheap.LinearProbeLongLongHashMap;
-import org.neo4j.collection.offheap.MemoryAllocator;
-import org.neo4j.collection.offheap.MutableLinearProbeLongHashSet;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.impl.api.state.AppendOnlyValuesContainer;
 import org.neo4j.kernel.impl.api.state.ValuesContainer;

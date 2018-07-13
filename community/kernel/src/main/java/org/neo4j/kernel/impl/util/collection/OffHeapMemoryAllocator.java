@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.util.collection;
 
 import java.nio.ByteBuffer;
 
-import org.neo4j.collection.offheap.Memory;
-import org.neo4j.collection.offheap.MemoryAllocator;
 import org.neo4j.kernel.impl.util.collection.OffHeapBlockAllocator.MemoryBlock;
 import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;

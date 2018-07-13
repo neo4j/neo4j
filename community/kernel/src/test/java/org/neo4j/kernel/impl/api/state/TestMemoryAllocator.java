@@ -23,8 +23,8 @@ package org.neo4j.kernel.impl.api.state;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import org.neo4j.collection.offheap.Memory;
-import org.neo4j.collection.offheap.MemoryAllocator;
+import org.neo4j.kernel.impl.util.collection.Memory;
+import org.neo4j.kernel.impl.util.collection.MemoryAllocator;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryAllocationTracker;
 

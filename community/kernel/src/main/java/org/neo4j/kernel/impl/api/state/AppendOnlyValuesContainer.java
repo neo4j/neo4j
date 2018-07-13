@@ -34,10 +34,10 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nonnull;
 
-import org.neo4j.collection.offheap.Memory;
-import org.neo4j.collection.offheap.MemoryAllocator;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.kernel.impl.util.collection.Memory;
+import org.neo4j.kernel.impl.util.collection.MemoryAllocator;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.ArrayValue;
