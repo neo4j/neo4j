@@ -253,7 +253,7 @@ case class Method(owner: Class[_], output: Class[_], name: String, params: Class
 
 case class IntermediateExpression(ir: IntermediateRepresentation, nullable: Boolean, fields: Seq[Field])
 
-case class Field(typ: Class[_], name: String)
+case class Field(typ: Class[_], name: String, initializer: Option[IntermediateRepresentation] = None)
 
 /**
   * Defines a simple dsl to facilitate constructing intermediate representation
@@ -261,6 +261,8 @@ case class Field(typ: Class[_], name: String)
 object IntermediateRepresentation {
 
   def field[TYPE](name: String)(implicit typ: ClassTag[TYPE]) = Field(typ.runtimeClass, name)
+  def field[TYPE](name: String, initializer: IntermediateRepresentation)(implicit typ: ClassTag[TYPE]) =
+    Field(typ.runtimeClass, name, Some(initializer))
 
   def method[OWNER, OUT](name: String)(implicit owner: ClassTag[OWNER], out: ClassTag[OUT]) =
     Method(owner.runtimeClass, out.runtimeClass, name)

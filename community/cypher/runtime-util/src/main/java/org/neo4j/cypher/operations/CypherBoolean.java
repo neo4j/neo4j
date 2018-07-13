@@ -20,8 +20,10 @@
 package org.neo4j.cypher.operations;
 
 import org.opencypher.v9_0.util.CypherTypeException;
+import org.opencypher.v9_0.util.InvalidSemanticsException;
 
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
@@ -93,8 +95,15 @@ public final class CypherBoolean
         String regexString = CypherFunctions.asString( rhs );
         if ( lhs instanceof TextValue )
         {
-            boolean matches = Pattern.compile( regexString ).matcher( ((TextValue) lhs).stringValue() ).matches();
-            return matches ? Values.TRUE : Values.FALSE;
+            try
+            {
+                boolean matches = Pattern.compile( regexString ).matcher( ((TextValue) lhs).stringValue() ).matches();
+                return matches ? Values.TRUE : Values.FALSE;
+            }
+            catch ( PatternSyntaxException e )
+            {
+                throw new InvalidSemanticsException( "Invalid Regex: " + e.getMessage() );
+            }
         }
         else
         {

@@ -26,12 +26,12 @@ import java.util.function.Consumer
 
 import org.neo4j.codegen
 import org.neo4j.codegen.CodeGenerator.generateCode
-import org.neo4j.codegen.Expression.{constant, getStatic, invoke, newArray}
+import org.neo4j.codegen.Expression.{constant, getStatic, invoke, invokeSuper, newArray}
 import org.neo4j.codegen.FieldReference.{field, staticField}
 import org.neo4j.codegen.MethodDeclaration.method
 import org.neo4j.codegen.MethodReference.methodReference
 import org.neo4j.codegen.Parameter.param
-import org.neo4j.codegen.TypeReference.typeReference
+import org.neo4j.codegen.TypeReference.{OBJECT, typeReference}
 import org.neo4j.codegen._
 import org.neo4j.codegen.bytecode.ByteCode.BYTECODE
 import org.neo4j.codegen.source.SourceCode.{PRINT_SOURCE, SOURCECODE}
@@ -62,8 +62,19 @@ object CodeGeneration {
   private def className(): String = "Expression" + System.nanoTime()
 
   def compile(expression: IntermediateExpression): CompiledExpression = {
-    val handle = using(generator.generateClass(PACKAGE_NAME, className(), INTERFACE)) { clazz =>
-      expression.fields.foreach(f => clazz.field(f.typ, f.name))
+    val handle = using(generator.generateClass(PACKAGE_NAME, className(), INTERFACE)) { clazz: ClassGenerator =>
+
+      using(clazz.generateConstructor()) { block =>
+        block.expression(invokeSuper(OBJECT))
+        expression.fields.foreach { f =>
+          val reference = clazz.field(f.typ, f.name)
+          //if fields has initializer set them in the constructor
+          val initializer = f.initializer.map(ir => compileExpression(ir, block))
+          initializer.foreach { value =>
+            block.put(block.self(), reference, value)
+          }
+        }
+      }
       using(clazz.generate(COMPUTE_METHOD)) { block =>
         block.returns(compileExpression(expression.ir, block))
       }

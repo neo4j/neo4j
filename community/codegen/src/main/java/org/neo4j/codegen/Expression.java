@@ -19,6 +19,7 @@
  */
 package org.neo4j.codegen;
 
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 
 import org.neo4j.values.AnyValue;
@@ -674,6 +675,25 @@ public abstract class Expression extends ExpressionTemplate
             public void accept( ExpressionVisitor visitor )
             {
                 visitor.invoke( method, parameters );
+            }
+        };
+    }
+
+    public static Expression invokeSuper( TypeReference parent, final Expression... parameters )
+    {
+        TypeReference[] parameterTypes = new TypeReference[parameters.length];
+        for ( int i = 0; i < parameters.length; i++ )
+        {
+            parameterTypes[i] = parameters[i].type();
+        }
+
+        return new Expression( OBJECT )
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.invoke( Expression.SUPER,
+                        new MethodReference( parent, "<init>", VOID, Modifier.PUBLIC, parameterTypes ), parameters);
             }
         };
     }

@@ -45,8 +45,8 @@ import org.neo4j.values.virtual.{NodeValue, RelationshipValue, VirtualValues}
 import org.opencypher.v9_0.ast.AstConstructionTestSupport
 import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.util._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.util.{CypherTypeException, InvalidArgumentException, ParameterWrongTypeException, symbols}
 
 class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -1056,6 +1056,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("helo") , stringValue("hell.*")))) should equal(Values.FALSE)
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(Values.NO_VALUE, stringValue("hell.*")))) should equal(Values.NO_VALUE)
     a [CypherTypeException] should be thrownBy compiled.evaluate(ctx, db, map(Array("a", "b"), Array(longValue(42), longValue(42))))
+    an [InvalidSemanticsException] should be thrownBy compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("hello"), stringValue("["))))
   }
 
   test("CoerceToPredicate") {

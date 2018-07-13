@@ -225,7 +225,7 @@ public abstract class ExpressionTemplate
     }
 
     //TODO I am not crazy about the way type parameters are sent here
-    static ExpressionTemplate invokeSuperConstructor( final ExpressionTemplate[] parameters,
+    public static ExpressionTemplate invokeSuperConstructor( final ExpressionTemplate[] parameters,
             final TypeReference[] parameterTypes )
     {
         assert parameters.length == parameterTypes.length;

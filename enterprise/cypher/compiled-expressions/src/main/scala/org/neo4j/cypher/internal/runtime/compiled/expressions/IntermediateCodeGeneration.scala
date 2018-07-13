@@ -22,6 +22,8 @@
  */
 package org.neo4j.cypher.internal.runtime.compiled.expressions
 
+import java.util.regex
+
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast._
 import org.neo4j.cypher.internal.compiler.v3_5.helpers.PredicateHelper.isPredicate
@@ -198,13 +200,13 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
     case RegexMatch(lhs, rhs) => rhs match {
       case expressions.StringLiteral(name) =>
         for ( e <- compile(lhs)) yield {
-          val f = field[java.util.regex.Pattern](nextVariableName())
+          val f = field[regex.Pattern](nextVariableName())
           IntermediateExpression(noValueCheck(e)(
             block(
-              condition(isNull(loadField(f)))(setField(f,
-                                                       invokeStatic(method[java.util.regex.Pattern, java.util.regex.Pattern, String]("compile"),
-                                                                                              constant(name)))),
-              invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("regex"), e.ir, loadField(f)))),
+              //if (f == null) { f = Pattern.compile(...) }
+              condition(isNull(loadField(f)))(
+                setField(f,invokeStatic(method[regex.Pattern, regex.Pattern, String]("compile"), constant(name)))),
+              invokeStatic(method[CypherBoolean, Value, AnyValue, regex.Pattern]("regex"), e.ir, loadField(f)))),
                                  nullable = true, Seq(f))
         }
 
@@ -212,9 +214,8 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         for {l <- compile(lhs)
              r <- compile(rhs)
         } yield IntermediateExpression(
-          noValueCheck(l, r)(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("regex"), l.ir, r.ir)),
+          noValueCheck(r)(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("regex"), l.ir, r.ir)),
           nullable = true, l.fields ++ r.fields)
-
     }
 
     //data access

@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
-import org.neo4j.cypher.InvalidSemanticsException
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, Literal}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.{CastSupport, ExecutionContext, IsList, IsMap}
-import org.opencypher.v9_0.util.{CypherTypeException, NonEmptyList}
+import org.neo4j.cypher.operations.CypherBoolean
 import org.neo4j.values.storable.{BooleanValue, TextValue, Value, Values}
-import org.neo4j.values.virtual.{VirtualRelationshipValue, VirtualNodeValue}
+import org.neo4j.values.virtual.{VirtualNodeValue, VirtualRelationshipValue}
+import org.opencypher.v9_0.util.{CypherTypeException, NonEmptyList}
 
 import scala.util.{Failure, Success, Try}
 
@@ -234,16 +234,10 @@ case class RegularExpression(lhsExpr: Expression, regexExpr: Expression)
     val rValue = regexExpr(m, state)
     (lValue, rValue) match {
       case (lhs, rhs) if rhs == Values.NO_VALUE || lhs == Values.NO_VALUE => None
-      case (lhs, rhs) =>
-        val rhsAsRegexString = converter(CastSupport.castOrFail[TextValue](rhs))
-        if (!lhs.isInstanceOf[TextValue])
-          None
-        else
-          try {
-            Some(rhsAsRegexString.stringValue().r.pattern.matcher(lhs.asInstanceOf[TextValue].stringValue()).matches())
-          } catch {
-            case e: java.util.regex.PatternSyntaxException => throw new InvalidSemanticsException("Invalid Regex: " + e.getMessage)
-          }
+      case (lhs, rhs) => CypherBoolean.regex(lhs, rhs) match {
+        case b: BooleanValue => Some(b.booleanValue())
+        case _ => None
+      }
     }
   }
 
