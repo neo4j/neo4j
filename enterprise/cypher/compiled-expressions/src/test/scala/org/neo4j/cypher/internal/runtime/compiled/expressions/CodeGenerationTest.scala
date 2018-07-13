@@ -1040,6 +1040,24 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(notEquals(noValue, noValue)).evaluate(ctx, db, EMPTY_MAP) should equal(Values.NO_VALUE)
   }
 
+  test("regex match on literal pattern") {
+    val compiled= compile(regex(parameter("a"), literalString("hell.*")))
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(stringValue("hello")))) should equal(Values.TRUE)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(stringValue("helo")))) should equal(Values.FALSE)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(Values.NO_VALUE))) should equal(Values.NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(longValue(42)))) should equal(Values.NO_VALUE)
+  }
+
+  test("regex match on general expression") {
+    val compiled= compile(regex(parameter("a"), parameter("b")))
+
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("hello"), stringValue("hell.*")))) should equal(Values.TRUE)
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("helo") , stringValue("hell.*")))) should equal(Values.FALSE)
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(Values.NO_VALUE, stringValue("hell.*")))) should equal(Values.NO_VALUE)
+    a [CypherTypeException] should be thrownBy compiled.evaluate(ctx, db, map(Array("a", "b"), Array(longValue(42), longValue(42))))
+  }
+
   test("CoerceToPredicate") {
     val coerced = CoerceToPredicate(parameter("a"))
 
@@ -1175,7 +1193,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   }
 
   private def compile(e: Expression) =
-    CodeGeneration.compile(new IntermediateCodeGeneration(SlotConfiguration.empty).compile(e).map(_.ir).getOrElse(fail()))
+    CodeGeneration.compile(new IntermediateCodeGeneration(SlotConfiguration.empty).compile(e).getOrElse(fail()))
 
   private def function(name: String, es: Expression*) =
     FunctionInvocation(FunctionName(name)(pos), distinct = false, es.toIndexedSeq)(pos)
@@ -1219,6 +1237,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
  private def literalString(s: String) = expressions.StringLiteral(s)(pos)
 
-// private def literalList(elems: Expression*) = ListLiteral(elems)(pos)
+  private def regex(lhs: Expression, rhs: Expression) = RegexMatch(lhs, rhs)(pos)
+
 
 }

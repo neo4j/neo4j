@@ -149,7 +149,7 @@ class CodeGenerationDbAccessTest extends CypherFunSuite with AstConstructionTest
   }
 
   private def compile(e: Expression) =
-    CodeGeneration.compile(new IntermediateCodeGeneration(SlotConfiguration.empty).compile(e).map(_.ir).getOrElse(fail()))
+    CodeGeneration.compile(new IntermediateCodeGeneration(SlotConfiguration.empty).compile(e).getOrElse(fail()))
 
   private val node = 11
   private val nodeValue = mock[NodeValue]

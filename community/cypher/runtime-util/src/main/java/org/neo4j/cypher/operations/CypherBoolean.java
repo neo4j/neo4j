@@ -21,6 +21,8 @@ package org.neo4j.cypher.operations;
 
 import org.opencypher.v9_0.util.CypherTypeException;
 
+import java.util.regex.Pattern;
+
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.ValueMapper;
@@ -84,6 +86,33 @@ public final class CypherBoolean
             return NO_VALUE;
         }
         return compare ? Values.FALSE : Values.TRUE;
+    }
+
+    public static Value regex( AnyValue lhs, AnyValue rhs )
+    {
+        String regexString = CypherFunctions.asString( rhs );
+        if ( lhs instanceof TextValue )
+        {
+            boolean matches = Pattern.compile( regexString ).matcher( ((TextValue) lhs).stringValue() ).matches();
+            return matches ? Values.TRUE : Values.FALSE;
+        }
+        else
+        {
+            return NO_VALUE;
+        }
+    }
+
+    public static Value regex( AnyValue text, Pattern pattern )
+    {
+        if ( text instanceof TextValue )
+        {
+            boolean matches = pattern.matcher( ((TextValue) text).stringValue() ).matches();
+            return matches ? Values.TRUE : Values.FALSE;
+        }
+        else
+        {
+            return NO_VALUE;
+        }
     }
 
     public static Value coerceToBoolean( AnyValue value )

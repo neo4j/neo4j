@@ -23,7 +23,6 @@
 package org.neo4j.cypher.internal.runtime.compiled.expressions
 
 import org.neo4j.codegen.MethodReference
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.NullCheck
 import org.neo4j.values.storable._
 
 import scala.reflect.ClassTag
@@ -59,6 +58,21 @@ case class Invoke(target: IntermediateRepresentation, method: Method, params: Se
   * @param variable the name of the variable
   */
 case class Load(variable: String) extends IntermediateRepresentation
+
+/**
+  * Load a field
+  *
+  * @param field the field to load
+  */
+case class LoadField(field: Field) extends IntermediateRepresentation
+
+/**
+  * Set a field to a value
+  *
+  * @param field the field to set
+  * @param value the value to set
+  */
+case class SetField(field: Field, value: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
   * Loads constant IntegralValue
@@ -121,6 +135,12 @@ case class Eq(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) 
   * @param rhs the right-hand side to check
   */
 case class NotEq(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
+
+/**
+  *
+  */
+case class IsNull(test: IntermediateRepresentation) extends IntermediateRepresentation
+
 
 /**
   * A block is a sequence of operations where the block evaluates to the last expression
@@ -231,13 +251,16 @@ case class Method(owner: Class[_], output: Class[_], name: String, params: Class
   def asReference: MethodReference = MethodReference.methodReference(owner, output, name, params: _*)
 }
 
-case class IntermediateExpression(ir: IntermediateRepresentation, nullable: Boolean)
+case class IntermediateExpression(ir: IntermediateRepresentation, nullable: Boolean, fields: Seq[Field])
 
+case class Field(typ: Class[_], name: String)
 
 /**
   * Defines a simple dsl to facilitate constructing intermediate representation
   */
 object IntermediateRepresentation {
+
+  def field[TYPE](name: String)(implicit typ: ClassTag[TYPE]) = Field(typ.runtimeClass, name)
 
   def method[OWNER, OUT](name: String)(implicit owner: ClassTag[OWNER], out: ClassTag[OUT]) =
     Method(owner.runtimeClass, out.runtimeClass, name)
@@ -263,6 +286,10 @@ object IntermediateRepresentation {
     Invoke(owner, method, params)
 
   def load(variable: String): IntermediateRepresentation = Load(variable)
+
+  def loadField(field: Field): IntermediateRepresentation = LoadField(field)
+
+  def setField(field: Field, value: IntermediateRepresentation): IntermediateRepresentation = SetField(field, value)
 
   def getStatic[OWNER, OUT](name: String)(implicit owner: ClassTag[OWNER], out: ClassTag[OUT]) =
     GetStatic(owner.runtimeClass, out.runtimeClass, name)
@@ -315,4 +342,5 @@ object IntermediateRepresentation {
     }
   }
 
+  def isNull(test: IntermediateRepresentation): IntermediateRepresentation = IsNull(test)
 }

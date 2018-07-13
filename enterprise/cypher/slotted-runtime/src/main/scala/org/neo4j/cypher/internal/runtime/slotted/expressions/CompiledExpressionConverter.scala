@@ -43,7 +43,7 @@ class CompiledExpressionConverter(log: Log, slots: SlotConfiguration) extends Ex
     case f: FunctionInvocation if f.function.isInstanceOf[AggregatingFunction] => None
 
     case e => try {
-      new IntermediateCodeGeneration(slots).compile(e).map(i => CompileWrappingExpression(CodeGeneration.compile(i.ir),
+      new IntermediateCodeGeneration(slots).compile(e).map(i => CompileWrappingExpression(CodeGeneration.compile(i),
                                                                                 inner.toCommandExpression(expression)))
     } catch {
       case t: Throwable =>

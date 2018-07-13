@@ -27,7 +27,7 @@ import java.util.function.Consumer
 import org.neo4j.codegen
 import org.neo4j.codegen.CodeGenerator.generateCode
 import org.neo4j.codegen.Expression.{constant, getStatic, invoke, newArray}
-import org.neo4j.codegen.FieldReference.staticField
+import org.neo4j.codegen.FieldReference.{field, staticField}
 import org.neo4j.codegen.MethodDeclaration.method
 import org.neo4j.codegen.MethodReference.methodReference
 import org.neo4j.codegen.Parameter.param
@@ -61,10 +61,11 @@ object CodeGeneration {
 
   private def className(): String = "Expression" + System.nanoTime()
 
-  def compile(ir: IntermediateRepresentation): CompiledExpression = {
-    val handle = using(generator) { clazz =>
+  def compile(expression: IntermediateExpression): CompiledExpression = {
+    val handle = using(generator.generateClass(PACKAGE_NAME, className(), INTERFACE)) { clazz =>
+      expression.fields.foreach(f => clazz.field(f.typ, f.name))
       using(clazz.generate(COMPUTE_METHOD)) { block =>
-        block.returns(compileExpression(ir, block))
+        block.returns(compileExpression(expression.ir, block))
       }
       clazz.handle()
     }
@@ -73,8 +74,7 @@ object CodeGeneration {
   }
 
   private def generator =
-    if (DEBUG) generateCode(SOURCECODE, PRINT_SOURCE).generateClass(PACKAGE_NAME, className(), INTERFACE)
-    else generateCode(BYTECODE).generateClass(PACKAGE_NAME, className(), INTERFACE)
+    if (DEBUG) generateCode(SOURCECODE, PRINT_SOURCE) else generateCode(BYTECODE)
 
   private def compileExpression(ir: IntermediateRepresentation, block: CodeBlock): codegen.Expression = ir match {
     //Foo.method(p1, p2,...)
@@ -85,6 +85,12 @@ object CodeGeneration {
       invoke(compileExpression(target, block), method.asReference, params.map(p => compileExpression(p, block)): _*)
     //loads local variable by name
     case Load(variable) => block.load(variable)
+    //loads field
+    case LoadField(f) => Expression.get(block.self(), field(block.owner(), typeReference(f.typ), f.name))
+    //sets a field
+    case SetField(f, v) =>
+      block.put(block.self(), field(block.owner(), typeReference(f.typ), f.name), compileExpression(v, block))
+      Expression.EMPTY
     //Values.longValue(value)
     case Integer(value) =>
       invoke(methodReference(VALUES, LONG,
@@ -119,6 +125,9 @@ object CodeGeneration {
     //lhs != rhs
     case NotEq(lhs, rhs) =>
       Expression.notEqual(compileExpression(lhs, block), compileExpression(rhs, block))
+
+    //test == null
+    case IsNull(test) => Expression.isNull(compileExpression(test, block))
 
     //run multiple ops in a block, the value of the block is the last expression
     case Block(ops) =>

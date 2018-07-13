@@ -1029,7 +1029,7 @@ public final class CypherFunctions
         return container.get( asString( index ) );
     }
 
-    private static String asString( AnyValue value )
+    static String asString( AnyValue value )
     {
         if ( !(value instanceof TextValue) )
         {
