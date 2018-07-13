@@ -53,7 +53,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
 
     val query = "return case when true then (:A)-->() else 42 end as p"
     val result = executeWith(Configs.Interpreted - Configs.Version2_3 - Configs.AllRulePlanners, query,
-      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot useOperators("Expand(All)")))
+      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("Expand(All)")))
 
     result.toList.head("p").asInstanceOf[Seq[_]] should have size 2
   }
