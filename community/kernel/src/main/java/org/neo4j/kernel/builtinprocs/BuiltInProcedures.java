@@ -25,11 +25,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongFunction;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.DependencyResolver;
@@ -40,6 +38,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.internal.kernel.api.IndexReference;
@@ -621,14 +620,14 @@ public class BuiltInProcedures
         return Stream.of( new BooleanResult( Boolean.TRUE ) );
     }
 
-    private Map<String,String> indexProviderDescriptorMap( IndexReference indexReference )
+    private static Map<String,String> indexProviderDescriptorMap( IndexReference indexReference )
     {
         return MapUtil.stringMap(
                 "key", indexReference.providerKey(),
                 "version", indexReference.providerVersion() );
     }
 
-    private List<String> propertyNames( TokenNameLookup tokens, IndexReference index )
+    private static List<String> propertyNames( TokenNameLookup tokens, IndexReference index )
     {
         int[] propertyIds = index.properties();
         List<String> propertyNames = new ArrayList<>( propertyIds.length );
@@ -639,7 +638,7 @@ public class BuiltInProcedures
         return propertyNames;
     }
 
-    private <T> Stream<T> toStream( NodeExplicitIndexCursor cursor, LongFunction<T> mapper )
+    private static <T> Stream<T> toStream( NodeExplicitIndexCursor cursor, LongFunction<T> mapper )
     {
         PrefetchingResourceIterator<T> it = new PrefetchingResourceIterator<T>()
         {
@@ -663,13 +662,10 @@ public class BuiltInProcedures
                 cursor.close();
             }
         };
-
-        Stream<T> stream =
-                StreamSupport.stream( Spliterators.spliteratorUnknownSize( it, Spliterator.ORDERED ), false );
-        return stream.onClose( cursor::close );
+        return Iterators.stream( it, Spliterator.ORDERED );
     }
 
-    private <T> Stream<T> toStream( RelationshipExplicitIndexCursor cursor, LongFunction<T> mapper )
+    private static <T> Stream<T> toStream( RelationshipExplicitIndexCursor cursor, LongFunction<T> mapper )
     {
         PrefetchingResourceIterator<T> it = new PrefetchingResourceIterator<T>()
         {
@@ -693,13 +689,10 @@ public class BuiltInProcedures
                 cursor.close();
             }
         };
-
-        Stream<T> stream =
-                StreamSupport.stream( Spliterators.spliteratorUnknownSize( it, Spliterator.ORDERED ), false );
-        return stream.onClose( cursor::close );
+        return Iterators.stream( it, Spliterator.ORDERED );
     }
 
-    private <T> Stream<T> toStream( PrimitiveLongResourceIterator iterator, LongFunction<T> mapper )
+    private static <T> Stream<T> toStream( PrimitiveLongResourceIterator iterator, LongFunction<T> mapper )
     {
         Iterator<T> it = new Iterator<T>()
         {
@@ -716,15 +709,7 @@ public class BuiltInProcedures
             }
         };
 
-        Stream<T> stream =
-                StreamSupport.stream( Spliterators.spliteratorUnknownSize( it, Spliterator.ORDERED ), false );
-        return stream.onClose( () ->
-        {
-            if ( iterator != null )
-            {
-                iterator.close();
-            }
-        } );
+        return Iterators.stream( it, Spliterator.ORDERED );
     }
 
     private Stream<WeightedNodeResult> toWeightedNodeResultStream( NodeExplicitIndexCursor cursor )
@@ -753,9 +738,7 @@ public class BuiltInProcedures
             }
         };
 
-        Stream<WeightedNodeResult> stream =
-                StreamSupport.stream( Spliterators.spliteratorUnknownSize( it, Spliterator.ORDERED ), false );
-        return stream.onClose( cursor::close );
+        return Iterators.stream( it, Spliterator.ORDERED );
     }
 
     private Stream<WeightedRelationshipResult> toWeightedRelationshipResultStream(
@@ -784,10 +767,7 @@ public class BuiltInProcedures
                 }
             }
         };
-
-        Stream<WeightedRelationshipResult> stream =
-                StreamSupport.stream( Spliterators.spliteratorUnknownSize( it, Spliterator.ORDERED ), false );
-        return stream.onClose( cursor::close );
+        return Iterators.stream( it, Spliterator.ORDERED );
     }
 
     private IndexProcedures indexProcedures()

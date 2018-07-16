@@ -330,7 +330,7 @@ public class EnterpriseBuiltInDbmsProcedures
         }
     }
 
-    private Function<KernelTransactionHandle,List<QuerySnapshot>> getTransactionQueries()
+    private static Function<KernelTransactionHandle,List<QuerySnapshot>> getTransactionQueries()
     {
         return transactionHandle -> transactionHandle.executingQueries()
                                               .map( ExecutingQuery::snapshot )
@@ -422,12 +422,12 @@ public class EnterpriseBuiltInDbmsProcedures
             .flatMap( tx -> selector.apply( tx ).map( data -> Pair.of( tx, data ) ) );
     }
 
-    private Stream<ExecutingQuery> executingQueriesWithIds( Set<Long> ids, KernelTransactionHandle txHandle )
+    private static Stream<ExecutingQuery> executingQueriesWithIds( Set<Long> ids, KernelTransactionHandle txHandle )
     {
         return txHandle.executingQueries().filter( q -> ids.contains( q.internalQueryId() ) );
     }
 
-    private Stream<ExecutingQuery> executingQueriesWithId( long id, KernelTransactionHandle txHandle )
+    private static Stream<ExecutingQuery> executingQueriesWithId( long id, KernelTransactionHandle txHandle )
     {
         return txHandle.executingQueries().filter( q -> q.internalQueryId() == id );
     }

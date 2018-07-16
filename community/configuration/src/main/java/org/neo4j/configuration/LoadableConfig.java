@@ -24,10 +24,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.SettingGroup;
+import org.neo4j.helpers.collection.Iterators;
 
 /**
  * Every class which contains settings should implement this interface to allow the configuration to find the
@@ -99,19 +99,6 @@ public interface LoadableConfig
      */
     static List<LoadableConfig> allConfigClasses()
     {
-        return StreamSupport.stream( ServiceLoader.load( LoadableConfig.class ).spliterator(), false )
-                .collect( Collectors.toList() );
-    }
-
-    /**
-     * Collects and returns settings of all known implementors.
-     * @return all ConfigOptions known at runtime.
-     */
-    static List<ConfigOptions> loadAllAvailableConfigOptions()
-    {
-        return StreamSupport.stream( ServiceLoader.load( LoadableConfig.class ).spliterator(), false )
-                .map( LoadableConfig::getConfigOptions )
-                .flatMap( List::stream )
-                .collect( Collectors.toList() );
+        return Iterators.stream( ServiceLoader.load( LoadableConfig.class ).iterator() ).collect( Collectors.toList() );
     }
 }
