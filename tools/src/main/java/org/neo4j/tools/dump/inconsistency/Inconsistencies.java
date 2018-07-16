@@ -22,6 +22,8 @@
  */
 package org.neo4j.tools.dump.inconsistency;
 
+import org.neo4j.consistency.RecordType;
+
 /**
  * Container for ids of entities that are considered to be inconsistent.
  */
@@ -46,4 +48,42 @@ public interface Inconsistencies
     boolean containsRelationshipGroupId( long id );
 
     boolean containsSchemaIndexId( long id );
+
+    default void reportInconsistency( RecordType recordType, long recordId )
+    {
+        if ( recordType == null )
+        {
+            // Skip records of unknown type.
+            return;
+        }
+
+        switch ( recordType )
+        {
+        case NODE:
+            node( recordId );
+            break;
+        case RELATIONSHIP:
+            relationship( recordId );
+            break;
+        case PROPERTY:
+            property( recordId );
+            break;
+        case RELATIONSHIP_GROUP:
+            relationshipGroup( recordId );
+            break;
+        case SCHEMA:
+            schemaIndex( recordId );
+            break;
+        default:
+            // Ignore unknown record types.
+            break;
+        }
+    }
+
+    default void reportInconsistency( RecordType recordType, long recordId,
+                                      RecordType inconsistentWithRecordType, long inconsistentWithRecordId )
+    {
+        reportInconsistency( recordType, recordId );
+        reportInconsistency( inconsistentWithRecordType, inconsistentWithRecordId );
+    }
 }
