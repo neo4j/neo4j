@@ -227,15 +227,6 @@ trait QueryContext extends TokenContext with DbAccess {
 
   override def relationshipHasProperty(relationship: Long, property: Int): Boolean =
     relationshipOps.hasProperty(relationship, property)
-
-  override def nodeGetOutgoingDegree(node: Long, relationship: String): Int =
-    nodeGetOutgoingDegree(node, transactionalContext.tokenRead.relationshipType(relationship))
-
-  override def nodeGetIncomingDegree(node: Long, relationship: String): Int =
-    nodeGetIncomingDegree(node, transactionalContext.tokenRead.relationshipType(relationship))
-
-  override def nodeGetTotalDegree(node: Long, relationship: String): Int =
-    nodeGetTotalDegree(node, transactionalContext.tokenRead.relationshipType(relationship))
 }
 
 trait Operations[T] {

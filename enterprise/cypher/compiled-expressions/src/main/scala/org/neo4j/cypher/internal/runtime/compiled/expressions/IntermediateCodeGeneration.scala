@@ -321,11 +321,15 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
               nullable = false, Seq.empty))
 
         case Some(t) =>
+          val f = field[Int](nextVariableName(), constant(-1))
           Some(
             IntermediateExpression(
-              invokeStatic(method[Values, IntValue, Int]("intValue"),
-                           invoke(DB_ACCESS, method[DbAccess, Int, Long, String](methodName),
-                                  getLongAt(offset), constant(t))), nullable = false, Seq.empty))
+              block(
+                condition(equal(loadField(f), constant(-1)))(
+                  setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("getRelTypeId"), constant(t)))),
+                invokeStatic(method[Values, IntValue, Int]("intValue"),
+                           invoke(DB_ACCESS, method[DbAccess, Int, Long, Int](methodName),
+                                  getLongAt(offset), loadField(f)))), nullable = false, Seq(f)))
       }
 
     //slotted operations

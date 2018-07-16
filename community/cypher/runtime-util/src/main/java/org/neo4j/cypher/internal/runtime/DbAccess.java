@@ -44,25 +44,21 @@ public interface DbAccess
 
     Value relationshipProperty( long node, int property );
 
+    int getRelTypeId( String name );
+
     int[] relationshipPropertyIds( long node );
 
     boolean relationshipHasProperty( long node, int property );
 
     int nodeGetOutgoingDegree( long node );
 
-    int nodeGetOutgoingDegree( long node, String relationship );
-
     int nodeGetOutgoingDegree( long node, int relationship );
 
     int nodeGetIncomingDegree( long node );
 
-    int nodeGetIncomingDegree( long node, String relationship );
-
     int nodeGetIncomingDegree( long node, int relationship );
 
     int nodeGetTotalDegree( long node );
-
-    int nodeGetTotalDegree( long node, String relationship );
 
     int nodeGetTotalDegree( long node, int relationship );
 

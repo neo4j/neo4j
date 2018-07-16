@@ -156,6 +156,7 @@ class CodeGenerationDbAccessTest extends CypherFunSuite with AstConstructionTest
   private val relationshipValue = mock[RelationshipValue]
   private val relationship = 12
   private val relType = "R"
+  private val relTypeId = 56
   private val property = 1337
   private val nonExistingProperty = 1338
   private val nodeOffset = 42
@@ -178,10 +179,11 @@ class CodeGenerationDbAccessTest extends CypherFunSuite with AstConstructionTest
   when(dbAccess.nodeGetOutgoingDegree(node)).thenReturn(3)
   when(dbAccess.nodeGetIncomingDegree(node)).thenReturn(2)
   when(dbAccess.nodeGetTotalDegree(node)).thenReturn(5)
-  when(dbAccess.nodeGetOutgoingDegree(node, relType)).thenReturn(2)
-  when(dbAccess.nodeGetIncomingDegree(node, relType)).thenReturn(1)
-  when(dbAccess.nodeGetTotalDegree(node, relType)).thenReturn(3)
+  when(dbAccess.nodeGetOutgoingDegree(node, relTypeId)).thenReturn(2)
+  when(dbAccess.nodeGetIncomingDegree(node, relTypeId)).thenReturn(1)
+  when(dbAccess.nodeGetTotalDegree(node, relTypeId)).thenReturn(3)
   when(dbAccess.nodeById(node)).thenReturn(nodeValue)
   when(dbAccess.relationshipById(relationship)).thenReturn(relationshipValue)
+  when(dbAccess.getRelTypeId(relType)).thenReturn(relTypeId)
 
 }
