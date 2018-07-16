@@ -236,9 +236,13 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
                   getLongAt(offset), constant(token)), nullable = true, Seq.empty))
 
     case NodePropertyLate(offset, key, _) =>
+      val f = field[Int](nextVariableName(), constant(-1))
       Some(IntermediateExpression(
-        invoke(DB_ACCESS, method[DbAccess, Value, Long, String]("nodeProperty"),
-                  getLongAt(offset), constant(key)), nullable = true, Seq.empty))
+        block(
+          condition(equal(loadField(f), constant(-1)))(
+            setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("getPropertyKeyId"), constant(key)))),
+          invoke(DB_ACCESS, method[DbAccess, Value, Long, Int]("nodeProperty"),
+                 getLongAt(offset), loadField(f))), nullable = true, Seq(f)))
 
     case NodePropertyExists(offset, token, _) =>
       Some(
@@ -248,10 +252,14 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
                  getLongAt(offset), constant(token)), truthValue, falseValue), nullable = false, Seq.empty))
 
     case NodePropertyExistsLate(offset, key, _) =>
+      val f = field[Int](nextVariableName(), constant(-1))
       Some(IntermediateExpression(
+        block(
+          condition(equal(loadField(f), constant(-1)))(
+            setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("getPropertyKeyId"), constant(key)))),
         ternary(
-        invoke(DB_ACCESS, method[DbAccess, Boolean, Long, String]("nodeHasProperty"),
-               getLongAt(offset), constant(key)), truthValue, falseValue), nullable = false, Seq.empty))
+        invoke(DB_ACCESS, method[DbAccess, Boolean, Long, Int]("nodeHasProperty"),
+               getLongAt(offset), loadField(f)), truthValue, falseValue)), nullable = false, Seq(f)))
 
     case RelationshipProperty(offset, token, _) =>
       Some(IntermediateExpression(
@@ -259,9 +267,13 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
                   getLongAt(offset), constant(token)), nullable = true, Seq.empty))
 
     case RelationshipPropertyLate(offset, key, _) =>
+      val f = field[Int](nextVariableName(), constant(-1))
       Some(IntermediateExpression(
-        invoke(DB_ACCESS, method[DbAccess, Value, Long, String]("relationshipProperty"),
-                  getLongAt(offset), constant(key)), nullable = true, Seq.empty))
+        block(
+          condition(equal(loadField(f), constant(-1)))(
+            setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("getPropertyKeyId"), constant(key)))),
+        invoke(DB_ACCESS, method[DbAccess, Value, Long, Int]("relationshipProperty"),
+                  getLongAt(offset), loadField(f))), nullable = true, Seq(f)))
 
     case RelationshipPropertyExists(offset, token, _) =>
       Some(IntermediateExpression(
@@ -273,12 +285,16 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       )
 
     case RelationshipPropertyExistsLate(offset, key, _) =>
+      val f = field[Int](nextVariableName(), constant(-1))
       Some(IntermediateExpression(
+        block(
+          condition(equal(loadField(f), constant(-1)))(
+            setField(f, invoke(DB_ACCESS, method[DbAccess, Int, String]("getPropertyKeyId"), constant(key)))),
         ternary(
-        invoke(DB_ACCESS, method[DbAccess, Boolean, Long, String]("relationshipHasProperty"),
-               getLongAt(offset), constant(key)),
+        invoke(DB_ACCESS, method[DbAccess, Boolean, Long, Int]("relationshipHasProperty"),
+               getLongAt(offset), loadField(f)),
         truthValue,
-        falseValue), nullable = false, Seq.empty))
+        falseValue)), nullable = false, Seq(f)))
 
     case NodeFromSlot(offset, name) =>
       Some(IntermediateExpression(

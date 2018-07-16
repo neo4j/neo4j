@@ -36,23 +36,17 @@ public interface DbAccess
 
     Value nodeProperty( long node, int property );
 
-    Value nodeProperty( long node, String propertyKey );
-
     int[] nodePropertyIds( long node );
+
+    int getPropertyKeyId( String name );
 
     boolean nodeHasProperty( long node, int property );
 
-    boolean nodeHasProperty( long node, String propertyKey );
-
     Value relationshipProperty( long node, int property );
-
-    Value relationshipProperty( long node, String propertyKey );
 
     int[] relationshipPropertyIds( long node );
 
     boolean relationshipHasProperty( long node, int property );
-
-    boolean relationshipHasProperty( long node, String propertyKey );
 
     int nodeGetOutgoingDegree( long node );
 
