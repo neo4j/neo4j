@@ -22,6 +22,7 @@ package org.neo4j.bolt.runtime;
 import io.netty.channel.Channel;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -220,12 +221,19 @@ public class DefaultBoltConnection implements BoltConnection
         catch ( BoltProtocolBreachFatality ex )
         {
             shouldClose.set( true );
-            log.error( String.format( "Protocol breach detected in bolt session '%s'.", id() ), ex );
+            log.error(String.format("Protocol breach detected in bolt session '%s'.", id()), ex);
         }
         catch ( InterruptedException ex )
         {
             shouldClose.set( true );
-            log.info( "Bolt session '%s' is interrupted probably due to server shutdown.", id() );
+            log.info("Bolt session '%s' is interrupted probably due to server shutdown.", id());
+        }
+        catch ( BoltConnectionFatality ex )
+        {
+            shouldClose.set( true );
+            InetSocketAddress remoteSocketAddress = (InetSocketAddress) remoteAddress();
+            String remoteIPAddress = remoteSocketAddress.getAddress().getHostAddress();
+            userLog.error( String.format( "The bolt connection has been fatally misused. Client IP: '%s'.", remoteIPAddress), ex );
         }
         catch ( Throwable t )
         {
