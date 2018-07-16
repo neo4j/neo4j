@@ -607,7 +607,8 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
             return 0;
         }
 
-        return unsignedByteArrayCompare( this_byteArray, (int) this_long0, that_byteArray, (int) that_long0, booleanOf( this_long2 ) | booleanOf( that_long2 ) );
+        return unsignedByteArrayCompare( this_byteArray, (int) this_long0, that_byteArray, (int) that_long0,
+                booleanOf( this_long2 ) | booleanOf( that_long2 ) );
     }
 
     private static int compareZonedDateTime(
@@ -952,9 +953,10 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
             return ArrayType.FLOAT;
         case RawBits.DOUBLE:
             return ArrayType.DOUBLE;
+        default:
+            // bad read, hopefully
+            return null;
         }
-        // bad read, hopefully
-        return null;
     }
 
     private boolean readTextArray( PageCursor cursor, int maxSize )
@@ -1260,7 +1262,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         }
         else
         {
-            long0Array[currentArrayOffset] = Float.floatToIntBits( value );;
+            long0Array[currentArrayOffset] = Float.floatToIntBits( value );
             currentArrayOffset++;
         }
     }
@@ -1381,6 +1383,7 @@ class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException>
         case NUMBER_ARRAY:
             initializeNumberArray( size );
             break;
+        default:
         }
     }
 

@@ -119,7 +119,8 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
         startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, predicates, false );
     }
 
-    private void startSeekForExact( SpatialIndexKey treeKeyFrom, SpatialIndexKey treeKeyTo, IndexProgressor.NodeValueClient client, Value value, IndexQuery... predicates )
+    private void startSeekForExact( SpatialIndexKey treeKeyFrom, SpatialIndexKey treeKeyTo, IndexProgressor.NodeValueClient client, Value value,
+            IndexQuery... predicates )
     {
         treeKeyFrom.from( value );
         treeKeyTo.from( value );

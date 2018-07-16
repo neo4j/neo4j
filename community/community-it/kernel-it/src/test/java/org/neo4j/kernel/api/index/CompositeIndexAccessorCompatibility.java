@@ -247,7 +247,8 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         assertThat( query( exact( 0, epochDate( 303 ) ), range( 1, epochDate( 555 ), false, epochDate( 222 ), true ) ), equalTo( EMPTY_LIST ) );
         assertThat( query( exact( 0, epochDate( 303 ) ), range( 1, null, false, epochDate( 333 ), false ) ), equalTo( asList( 1L, 2L ) ) );
         assertThat( query( exact( 0, epochDate( 303 ) ), range( 1, null, true, epochDate( 333 ), true ) ), equalTo( asList( 1L, 2L, 3L ) ) );
-        // can't create range(null, null): assertThat( query( exact( 0, epochDate( 303 ) ), range( 1, (DateValue) null, true, null, true ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+        // can't create range(null, null):
+        // assertThat( query( exact( 0, epochDate( 303 ) ), range( 1, (DateValue) null, true, null, true ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
         assertThat( query( exact( 0, epochDate( 303 ) ), range( 1, epochDate( 111 ), false, epochDate( 222 ), true ) ), equalTo( singletonList( 2L ) ) );
         assertThat( query( exact( 0, epochDate( 303 ) ), range( 1, epochDate( 111 ), false, epochDate( 333 ), false ) ), equalTo( singletonList( 2L ) ) );
         assertThat( query( exact( 0, epochDate( 101 ) ), range( 1, epochDate( 222 ), true, epochDate( 444 ), false ) ), equalTo( asList( 7L, 8L ) ) );
