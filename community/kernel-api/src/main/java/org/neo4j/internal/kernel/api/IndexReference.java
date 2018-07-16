@@ -35,6 +35,8 @@ import static java.lang.String.format;
  */
 public interface IndexReference extends IndexCapability
 {
+    String UNNAMED_INDEX = "Unnamed index";
+
     /**
      * Returns true if this index only allows one value per key.
      */
@@ -60,6 +62,9 @@ public interface IndexReference extends IndexCapability
      */
     String providerVersion();
 
+    /**
+     * The unique name for this index - either automatically generated or user supplied - or the {@link #UNNAMED_INDEX} constant.
+     */
     String name();
 
     /**
@@ -135,7 +140,7 @@ public interface IndexReference extends IndexCapability
         @Override
         public String name()
         {
-            return null;
+            return UNNAMED_INDEX;
         }
     };
 }

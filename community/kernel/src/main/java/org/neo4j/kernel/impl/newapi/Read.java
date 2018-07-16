@@ -641,7 +641,7 @@ abstract class Read implements TxStateHolder,
         ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), schema.keyType(), lockingIds );
     }
 
-    void sharedOptimisticLock( ResourceType resource, long resourceId )
+    void acquireSharedLock( ResourceType resource, long resourceId )
     {
         ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), resource, resourceId );
     }

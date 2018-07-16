@@ -144,11 +144,6 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
         return true;
     }
 
-    public File getIndexFolder()
-    {
-        return indexStorage.getIndexFolder();
-    }
-
     /**
      * Verify state of the index.
      * If index is already open and in use method assume that index is valid since lucene already operating with it,

@@ -968,7 +968,7 @@ public class ForsetiClient implements Locks.Client
     {
         waitingForLock = lock;
         clearAndCopyWaitList( lock );
-        waitStrategies[type.typeId()].apply( tries, exclusive );
+        waitStrategies[type.typeId()].apply( tries );
 
         int b = lock.detectDeadlock( id() );
         if ( b != -1 && deadlockResolutionStrategy.shouldAbort( this, clientById.apply( b ) ) )

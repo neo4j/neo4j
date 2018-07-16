@@ -64,11 +64,11 @@ public interface SchemaRead
     IndexReference indexReferenceUnchecked( int label, int... properties );
 
     /**
-     * Acquire an index reference of the given {@code label} and {@code properties}. This method does not assert
+     * Acquire an index reference of the given {@link SchemaDescriptor}. This method does not assert
      * that the created reference points to a valid online index.
      *
-     * @param schema {@link SchemaDescriptor} for the index
-     * @return a IndexReference for the given label and properties
+     * @param schema {@link SchemaDescriptor} for the index.
+     * @return a IndexReference for the given schema.
      */
     IndexReference indexReferenceUnchecked( SchemaDescriptor schema );
 

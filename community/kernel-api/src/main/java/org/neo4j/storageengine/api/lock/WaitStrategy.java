@@ -26,5 +26,5 @@ public interface WaitStrategy<EXCEPTION extends Exception>
      * Throws Exception to force users of this interface to handle any possible failure, since this is used in
      * potentially very sensitive code.
      */
-    void apply( long iteration, boolean exclusive ) throws EXCEPTION;
+    void apply( long iteration ) throws EXCEPTION;
 }

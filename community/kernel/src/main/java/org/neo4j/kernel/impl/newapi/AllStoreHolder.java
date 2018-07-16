@@ -408,7 +408,7 @@ public class AllStoreHolder extends Read
     @Override
     public Iterator<IndexReference> indexesGetForLabel( int labelId )
     {
-        sharedOptimisticLock( ResourceTypes.LABEL, labelId );
+        acquireSharedLock( ResourceTypes.LABEL, labelId );
         ktx.assertOpen();
 
         Iterator<? extends IndexDescriptor> iterator = storageReader.indexesGetForLabel( labelId );
@@ -691,7 +691,7 @@ public class AllStoreHolder extends Read
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId )
     {
-        sharedOptimisticLock( ResourceTypes.LABEL, labelId );
+        acquireSharedLock( ResourceTypes.LABEL, labelId );
         ktx.assertOpen();
         Iterator<ConstraintDescriptor> constraints = storageReader.constraintsGetForLabel( labelId );
         if ( ktx.hasTxStateWithChanges() )
@@ -721,7 +721,7 @@ public class AllStoreHolder extends Read
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId )
     {
-        sharedOptimisticLock( ResourceTypes.RELATIONSHIP_TYPE, typeId );
+        acquireSharedLock( ResourceTypes.RELATIONSHIP_TYPE, typeId );
         ktx.assertOpen();
         Iterator<ConstraintDescriptor> constraints = storageReader.constraintsGetForRelationshipType( typeId );
         if ( ktx.hasTxStateWithChanges() )
