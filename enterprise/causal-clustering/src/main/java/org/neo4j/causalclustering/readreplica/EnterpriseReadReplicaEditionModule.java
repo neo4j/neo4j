@@ -417,8 +417,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         return new TopologyServiceMultiRetryStrategy( refreshPeriodMillis / pollingFrequencyWithinRefreshWindow, numberOfRetries, logProvider );
     }
 
-    private LogFiles buildLocalDatabaseLogFiles( PlatformModule platformModule, FileSystemAbstraction fileSystem,
-            File storeDir, Config config )
+    private static LogFiles buildLocalDatabaseLogFiles( PlatformModule platformModule, FileSystemAbstraction fileSystem, File storeDir, Config config )
     {
         try
         {

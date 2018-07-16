@@ -110,8 +110,8 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class ReadReplicaReplicationIT
 {
-    protected static final int NR_CORE_MEMBERS = 3;
-    protected static final int NR_READ_REPLICAS = 1;
+    private static final int NR_CORE_MEMBERS = 3;
+    private static final int NR_READ_REPLICAS = 1;
 
     @Rule
     public final ClusterRule clusterRule = new ClusterRule().withNumberOfCoreMembers( NR_CORE_MEMBERS )
@@ -185,13 +185,9 @@ public class ReadReplicaReplicationIT
         AtomicBoolean labelScanStoreCorrectlyPlaced = new AtomicBoolean( false );
         Monitors monitors = new Monitors();
         ReadReplica rr = cluster.addReadReplicaWithIdAndMonitors( 0, monitors );
-        Path readReplicateStoreDir = rr.databaseDirectory().toPath().toAbsolutePath();
-
         monitors.addMonitorListener( (FileCopyMonitor) file ->
         {
-            Path relativPath = readReplicateStoreDir.relativize( file.toPath().toAbsolutePath() );
-            relativPath = relativPath.subpath( 1, relativPath.getNameCount() );
-            if ( labelScanStoreFiles.contains( relativPath ) )
+            if ( labelScanStoreFiles.contains( file.toPath().getFileName() ) )
             {
                 labelScanStoreCorrectlyPlaced.set( true );
             }

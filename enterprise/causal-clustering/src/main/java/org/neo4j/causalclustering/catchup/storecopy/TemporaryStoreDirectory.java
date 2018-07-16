@@ -29,26 +29,34 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 
 public class TemporaryStoreDirectory implements AutoCloseable
 {
     private static final String TEMP_COPY_DIRECTORY_NAME = "temp-copy";
 
     private final File tempStoreDir;
+    private final File tempDatabaseDirectory;
     private final StoreFiles storeFiles;
     private LogFiles tempLogFiles;
 
     public TemporaryStoreDirectory( FileSystemAbstraction fs, PageCache pageCache, File parent ) throws IOException
     {
         this.tempStoreDir = new File( parent, TEMP_COPY_DIRECTORY_NAME );
+        this.tempDatabaseDirectory = new File( tempStoreDir, DataSourceManager.DEFAULT_DATABASE_NAME );
         storeFiles = new StoreFiles( fs, pageCache, ( directory, name ) -> true );
-        tempLogFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( tempStoreDir, fs ).build();
+        tempLogFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( tempDatabaseDirectory, fs ).build();
         storeFiles.delete( tempStoreDir, tempLogFiles );
     }
 
     public File storeDir()
     {
         return tempStoreDir;
+    }
+
+    public File databaseDirectory()
+    {
+        return tempDatabaseDirectory;
     }
 
     @Override

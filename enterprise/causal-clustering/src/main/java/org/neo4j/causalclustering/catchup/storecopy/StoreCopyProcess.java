@@ -56,10 +56,10 @@ public class StoreCopyProcess
     {
         try ( TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( fs, pageCache, localDatabase.storeDir() ) )
         {
-            remoteStore.copy( addressProvider, expectedStoreId, tempStore.storeDir(),
+            remoteStore.copy( addressProvider, expectedStoreId, tempStore.databaseDirectory(),
                     false );
             copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );
-            localDatabase.replaceWith( tempStore.storeDir() );
+            localDatabase.replaceWith( tempStore.databaseDirectory() );
         }
         log.info( "Replaced store with one downloaded from %s", addressProvider );
     }

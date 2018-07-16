@@ -70,7 +70,7 @@ import org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols;
 import org.neo4j.causalclustering.protocol.ProtocolInstaller;
 import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.stream.Streams;
@@ -87,15 +87,14 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 @RunWith( Parameterized.class )
 public class NettyInstalledProtocolsIT
 {
+    private static final int TIMEOUT_SECONDS = 10;
     private Parameters parameters;
+    private AssertableLogProvider logProvider;
 
     public NettyInstalledProtocolsIT( Parameters parameters )
     {
         this.parameters = parameters;
     }
-
-    private static final int TIMEOUT_SECONDS = 10;
-    private static final LogProvider logProvider = FormattedLogProvider.toOutputStream( System.out );
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<Parameters> data()
@@ -149,6 +148,7 @@ public class NettyInstalledProtocolsIT
     @Before
     public void setUp()
     {
+        logProvider = new AssertableLogProvider( true );
         ApplicationProtocolRepository applicationProtocolRepository =
                 new ApplicationProtocolRepository( Protocol.ApplicationProtocols.values(), parameters.applicationSupportedProtocol );
         ModifierProtocolRepository modifierProtocolRepository =
@@ -158,11 +158,11 @@ public class NettyInstalledProtocolsIT
         NettyPipelineBuilderFactory clientPipelineBuilderFactory = new NettyPipelineBuilderFactory( VoidPipelineWrapperFactory.VOID_WRAPPER );
 
         server = new Server( serverPipelineBuilderFactory );
-        server.start( applicationProtocolRepository, modifierProtocolRepository );
+        server.start( applicationProtocolRepository, modifierProtocolRepository, logProvider );
 
         Config config = Config.builder().withSetting( CausalClusteringSettings.handshake_timeout, TIMEOUT_SECONDS + "s" ).build();
 
-        client = new Client( applicationProtocolRepository, modifierProtocolRepository, clientPipelineBuilderFactory, config );
+        client = new Client( applicationProtocolRepository, modifierProtocolRepository, clientPipelineBuilderFactory, config, logProvider );
 
         client.connect( server.port() );
     }
@@ -172,6 +172,7 @@ public class NettyInstalledProtocolsIT
     {
         client.disconnect();
         server.stop();
+        logProvider.clear();
     }
 
     private static class Parameters
@@ -216,7 +217,8 @@ public class NettyInstalledProtocolsIT
             this.pipelineBuilderFactory = pipelineBuilderFactory;
         }
 
-        void start( final ApplicationProtocolRepository applicationProtocolRepository, final ModifierProtocolRepository modifierProtocolRepository )
+        void start( final ApplicationProtocolRepository applicationProtocolRepository, final ModifierProtocolRepository modifierProtocolRepository,
+                LogProvider logProvider )
         {
             RaftProtocolServerInstallerV2.Factory raftFactoryV2 =
                     new RaftProtocolServerInstallerV2.Factory( nettyHandler, pipelineBuilderFactory, logProvider );
@@ -262,7 +264,7 @@ public class NettyInstalledProtocolsIT
         private HandshakeClientInitializer handshakeClientInitializer;
 
         Client( ApplicationProtocolRepository applicationProtocolRepository, ModifierProtocolRepository modifierProtocolRepository,
-                NettyPipelineBuilderFactory pipelineBuilderFactory, Config config )
+                NettyPipelineBuilderFactory pipelineBuilderFactory, Config config, LogProvider logProvider )
         {
             RaftProtocolClientInstallerV2.Factory raftFactoryV2 = new RaftProtocolClientInstallerV2.Factory( pipelineBuilderFactory, logProvider );
             RaftProtocolClientInstallerV1.Factory raftFactoryV1 =

@@ -53,7 +53,7 @@ public class SampleData
         }
     }
 
-    public static void createData( GraphDatabaseService db, int size )
+    static void createData( GraphDatabaseService db, int size )
     {
         for ( int i = 0; i < size; i++ )
         {
@@ -70,7 +70,7 @@ public class SampleData
         }
     }
 
-    public static void createSchema( GraphDatabaseService db )
+    static void createSchema( GraphDatabaseService db )
     {
         db.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
     }
