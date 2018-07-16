@@ -28,22 +28,25 @@ import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestFactory;
-import org.junit.jupiter.api.function.Executable;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 
+import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryAllocationTracker;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.rule.RandomRule;
 
-import static java.util.Arrays.asList;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.shuffle;
 import static org.eclipse.collections.impl.list.mutable.primitive.LongArrayList.newListWith;
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -53,33 +56,41 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.kernel.impl.util.collection.MutableLinearProbeLongHashSet.DEFAULT_CAPACITY;
 import static org.neo4j.kernel.impl.util.collection.MutableLinearProbeLongHashSet.REMOVALS_RATIO;
 
+@ExtendWith( RandomExtension.class )
 class MutableLinearProbeLongHashSetTest
 {
-    private final TestMemoryAllocator allocator = new TestMemoryAllocator();
-    private MutableLinearProbeLongHashSet set = newSet();
+    @Inject
+    private RandomRule rnd;
+
+    private final CachingOffHeapBlockAllocator blockAllocator = new CachingOffHeapBlockAllocator();
+    private final MemoryAllocationTracker memoryTracker = new LocalMemoryTracker();
+    private final MemoryAllocator memoryAllocator = new OffHeapMemoryAllocator( memoryTracker, blockAllocator );
+
+    private MutableLinearProbeLongHashSet set = new MutableLinearProbeLongHashSet( memoryAllocator );
 
     @AfterEach
-    void tearDown()
+    void afterEach()
     {
         set.close();
-        assertEquals( 0, allocator.tracker.usedDirectMemory(), "Leaking memory" );
+        assertEquals( 0, memoryTracker.usedDirectMemory(), "Leaking memory" );
+        blockAllocator.release();
     }
 
     @Test
     void addRemoveContains()
     {
-        set = Mockito.spy( set );
+        set = spy( set );
 
         assertFalse( set.contains( 0 ) );
         assertTrue( set.add( 0 ) );
@@ -155,7 +166,7 @@ class MutableLinearProbeLongHashSetTest
     @Test
     void grow()
     {
-        set = Mockito.spy( set );
+        set = spy( set );
 
         for ( int i = 0; i < DEFAULT_CAPACITY; i++ )
         {
@@ -167,7 +178,7 @@ class MutableLinearProbeLongHashSetTest
     @Test
     void rehashWhenTooManyRemovals()
     {
-        set = Mockito.spy( set );
+        set = spy( set );
 
         final int numOfElements = DEFAULT_CAPACITY / 2;
         final int removalsToTriggerRehashing = DEFAULT_CAPACITY / REMOVALS_RATIO;
@@ -209,28 +220,29 @@ class MutableLinearProbeLongHashSetTest
     @Test
     void allocateFreeMemory()
     {
-        final MemoryAllocationTracker tracker = mock( MemoryAllocationTracker.class );
-        final MutableLinearProbeLongHashSet set2 = new MutableLinearProbeLongHashSet( new TestMemoryAllocator( tracker ) );
+        final MemoryAllocationTracker memoryTrackerSpy = spy( new LocalMemoryTracker() );
+        final MutableLinearProbeLongHashSet set2 = new MutableLinearProbeLongHashSet( new OffHeapMemoryAllocator( memoryTrackerSpy, blockAllocator ) );
 
-        verify( tracker ).allocated( anyLong() );
+        verify( memoryTrackerSpy ).allocated( anyLong() );
 
         for ( int i = 0; i < DEFAULT_CAPACITY; i++ )
         {
             set2.add( 100 + i );
         }
-        verify( tracker ).deallocated( anyLong() );
-        verify( tracker, times( 2 ) ).allocated( anyLong() );
+        verify( memoryTrackerSpy ).deallocated( anyLong() );
+        verify( memoryTrackerSpy, times( 2 ) ).allocated( anyLong() );
 
         set2.close();
-        verify( tracker, times( 2 ) ).deallocated( anyLong() );
+        verify( memoryTrackerSpy, times( 2 ) ).deallocated( anyLong() );
     }
 
     @Test
     void freeFrozenMemory()
     {
-        final MemoryAllocationTracker tracker = mock( MemoryAllocationTracker.class );
-        final MutableLinearProbeLongHashSet set2 = new MutableLinearProbeLongHashSet( new TestMemoryAllocator( tracker ) );
-        verify( tracker ).allocated( anyLong() );
+        final MemoryAllocationTracker memoryTrackerSpy = spy( new LocalMemoryTracker() );
+        final MutableLinearProbeLongHashSet set2 = new MutableLinearProbeLongHashSet( new OffHeapMemoryAllocator( memoryTrackerSpy, blockAllocator ) );
+
+        verify( memoryTrackerSpy ).allocated( anyLong() );
 
         set2.addAll( 100, 200, 300 );
         set2.freeze();
@@ -238,7 +250,7 @@ class MutableLinearProbeLongHashSetTest
         set2.freeze();
         set2.clear();
         set2.close();
-        verify( tracker, times( 3 ) ).deallocated( anyLong() );
+        verify( memoryTrackerSpy, times( 3 ) ).deallocated( anyLong() );
     }
 
     @Test
@@ -285,24 +297,6 @@ class MutableLinearProbeLongHashSetTest
         assertThrows( NoSuchElementException.class, iterator::next );
     }
 
-    @TestFactory
-    Collection<DynamicTest> failFastIterator()
-    {
-        return asList(
-                testIteratorFails( "add duplicate to bitmap", s -> s.add( 1 ), 1, 2, 3 ),
-                testIteratorFails( "add unique to bitmap", s -> s.add( 4 ), 1, 2, 3 ),
-                testIteratorFails( "add duplicate to memory", s -> s.add( 100 ), 100, 200, 300 ),
-                testIteratorFails( "add unique to memory", s -> s.add( 400 ), 100, 200, 300 ),
-                testIteratorFails( "remove duplicate to bitmap", s -> s.remove( 1 ), 1, 2, 3 ),
-                testIteratorFails( "remove unique to bitmap", s -> s.remove( 4 ), 1, 2, 3 ),
-                testIteratorFails( "remove duplicate to memory", s -> s.remove( 100 ), 100, 200, 300 ),
-                testIteratorFails( "remove unique to memory", s -> s.remove( 400 ), 100, 200, 300 ),
-                testIteratorFails( "removeAll empty source", s -> s.removeAll(), 100, 200, 300 ),
-                testIteratorFails( "addAll empty source", s -> s.addAll(), 100, 200, 300 ),
-                testIteratorFails( "close", MutableLinearProbeLongHashSet::close, 1, 2, 3 )
-        );
-    }
-
     @Test
     void freeze()
     {
@@ -323,7 +317,8 @@ class MutableLinearProbeLongHashSetTest
     void testEquals()
     {
         set.addAll( 1, 2, 3, 100, 200, 300 );
-        final MutableLinearProbeLongHashSet set2 = newSet( 300, 200, 100, 3, 2, 1 );
+        final MutableLinearProbeLongHashSet set2 = new MutableLinearProbeLongHashSet( memoryAllocator );
+        set2.addAll( 300, 200, 100, 3, 2, 1 );
         final LongHashSet set3 = newSetWith( 300, 200, 100, 3, 2, 1 );
         assertEquals( set, set2 );
         assertEquals( set, set3 );
@@ -389,109 +384,269 @@ class MutableLinearProbeLongHashSetTest
         assertFalse( set.anySatisfy( x -> x < 0 ) );
     }
 
-    @TestFactory
-    Collection<DynamicTest> collisions()
+    @Test
+    void randomizedTest()
     {
-        final ImmutableLongList collisions = generateCollisions( 5 );
-        final long a = collisions.get( 0 );
-        final long b = collisions.get( 1 );
-        final long c = collisions.get( 2 );
-        final long d = collisions.get( 3 );
-        final long e = collisions.get( 4 );
+        final int count = 10000 + rnd.nextInt( 1000 );
 
-        return asList(
-                dynamicTest( "add all", withNewSet( set ->
+        final MutableLongSet uniqueValues = new LongHashSet();
+        while ( uniqueValues.size() < count )
+        {
+            uniqueValues.add( rnd.nextLong() );
+        }
+
+        final long[] values = uniqueValues.toArray();
+
+        for ( long v : values )
+        {
+            assertTrue( set.add( v ) );
+        }
+        shuffle( values );
+        for ( long v : values )
+        {
+            assertTrue( set.contains( v ) );
+            assertFalse( set.add( v ) );
+        }
+        assertTrue( set.containsAll( values ) );
+
+        final long[] toRemove = uniqueValues.select( v -> rnd.nextInt( 100 ) < 75 ).toArray();
+        shuffle( toRemove );
+
+        for ( long v : toRemove )
+        {
+            assertTrue( set.remove( v ) );
+            assertFalse( set.contains( v ) );
+        }
+
+        assertEquals( count - toRemove.length, set.size() );
+    }
+
+    @Nested
+    class Collisions
+    {
+        private final ImmutableLongList collisions = generateCollisions( 5 );
+        private final long a = collisions.get( 0 );
+        private final long b = collisions.get( 1 );
+        private final long c = collisions.get( 2 );
+        private final long d = collisions.get( 3 );
+        private final long e = collisions.get( 4 );
+
+        private ImmutableLongList generateCollisions( int n )
+        {
+            final long seed = rnd.nextLong();
+            final MutableLongList elements;
+            try ( MutableLinearProbeLongHashSet s = new MutableLinearProbeLongHashSet( memoryAllocator ) )
+            {
+                long v = s.hashAndMask( seed );
+                while ( s.hashAndMask( v ) != 0 || v == 0 || v == 1 )
                 {
-                    set.addAll( collisions );
-                    assertEquals( collisions, set.toList() );
-                } ) ),
-                dynamicTest( "add all reversed", withNewSet( set ->
+                    ++v;
+                }
+
+                final int h = s.hashAndMask( v );
+                elements = LongLists.mutable.with( v );
+
+                while ( elements.size() < n )
                 {
-                    set.addAll( collisions.toReversed() );
-                    assertEquals( collisions.toReversed(), set.toList() );
-                } ) ),
-                dynamicTest( "add all, remove last", withNewSet( set ->
-                {
-                    set.addAll( collisions );
-                    set.remove( e );
-                    assertEquals( newListWith( a, b, c, d ), set.toList() );
-                } ) ),
-                dynamicTest( "add all, remove first", withNewSet( set ->
-                {
-                    set.addAll( collisions );
-                    set.remove( a );
-                    assertEquals( newListWith( b, c, d, e ), set.toList() );
-                } ) ),
-                dynamicTest( "add all, remove middle", withNewSet( set ->
-                {
-                    set.addAll( collisions );
-                    set.removeAll( b, d );
-                    assertEquals( newListWith( a, c, e ), set.toList() );
-                } ) ),
-                dynamicTest( "add all, remove middle 2", withNewSet( set ->
-                {
-                    set.addAll( collisions );
-                    set.removeAll( a, c, e );
-                    assertEquals( newListWith( b, d ), set.toList() );
-                } ) ),
-                dynamicTest( "add reuses removed head", withNewSet( set ->
-                {
-                    set.addAll( a, b, c );
+                    ++v;
+                    if ( s.hashAndMask( v ) == h )
+                    {
+                        elements.add( v );
+                    }
+                }
+            }
+            return elements.toImmutable();
+        }
 
-                    set.remove( a );
-                    assertEquals( newListWith( b, c ), set.toList() );
+        @Test
+        void addAll()
+        {
+            set.addAll( collisions );
+            assertEquals( collisions, set.toList() );
+        }
 
-                    set.add( d );
-                    assertEquals( newListWith( d, b, c ), set.toList() );
-                } ) ),
-                dynamicTest( "add reuses removed tail", withNewSet( set ->
-                {
-                    set.addAll( a, b, c );
+        @Test
+        void addAllReversed()
+        {
+            set.addAll( collisions.toReversed() );
+            assertEquals( collisions.toReversed(), set.toList() );
+        }
 
-                    set.remove( c );
-                    assertEquals( newListWith( a, b ), set.toList() );
+        @Test
+        void addAllRemoveLast()
 
-                    set.add( d );
-                    assertEquals( newListWith( a, b, d ), set.toList() );
-                } ) ),
-                dynamicTest( "add reuses removed middle", withNewSet( set ->
-                {
-                    set.addAll( a, b, c );
+        {
+            set.addAll( collisions );
+            set.remove( e );
+            assertEquals( newListWith( a, b, c, d ), set.toList() );
+        }
 
-                    set.remove( b );
-                    assertEquals( newListWith( a, c ), set.toList() );
+        @Test
+        void addAllRemoveFirst()
 
-                    set.add( d );
-                    assertEquals( newListWith( a, d, c ), set.toList() );
-                } ) ),
-                dynamicTest( "add reuses removed middle 2", withNewSet( set ->
-                {
-                    set.addAll( a, b, c, d, e );
+        {
+            set.addAll( collisions );
+            set.remove( a );
+            assertEquals( newListWith( b, c, d, e ), set.toList() );
+        }
 
-                    set.removeAll( b, c );
-                    assertEquals( newListWith( a, d, e ), set.toList() );
+        @Test
+        void addAllRemoveMiddle()
 
-                    set.addAll( c, b );
-                    assertEquals( newListWith( a, c, b, d, e ), set.toList() );
-                } ) ),
-                dynamicTest( "rehashing compacts sparse sentinels", withNewSet( set ->
-                {
-                    set.addAll( a, b, c, d, e );
+        {
+            set.addAll( collisions );
+            set.removeAll( b, d );
+            assertEquals( newListWith( a, c, e ), set.toList() );
+        }
 
-                    set.removeAll( b, d, e );
-                    assertEquals( newListWith( a, c ), set.toList() );
+        @Test
+        void addAllRemoveMiddle2()
+        {
+            set.addAll( collisions );
+            set.removeAll( a, c, e );
+            assertEquals( newListWith( b, d ), set.toList() );
+        }
 
-                    set.addAll( b, d, e );
-                    assertEquals( newListWith( a, b, c, d, e ), set.toList() );
+        @Test
+        void addReusesRemovedHead()
+        {
+            set.addAll( a, b, c );
 
-                    set.removeAll( b, d, e );
-                    assertEquals( newListWith( a, c ), set.toList() );
+            set.remove( a );
+            assertEquals( newListWith( b, c ), set.toList() );
 
-                    set.rehashWithoutGrow();
-                    set.addAll( e, d, b );
-                    assertEquals( newListWith( a, c, e, d, b ), set.toList() );
-                } ) )
-        );
+            set.add( d );
+            assertEquals( newListWith( d, b, c ), set.toList() );
+        }
+
+        @Test
+        void addReusesRemovedTail()
+        {
+            set.addAll( a, b, c );
+
+            set.remove( c );
+            assertEquals( newListWith( a, b ), set.toList() );
+
+            set.add( d );
+            assertEquals( newListWith( a, b, d ), set.toList() );
+        }
+
+        @Test
+        void addReusesRemovedMiddle()
+
+        {
+            set.addAll( a, b, c );
+
+            set.remove( b );
+            assertEquals( newListWith( a, c ), set.toList() );
+
+            set.add( d );
+            assertEquals( newListWith( a, d, c ), set.toList() );
+        }
+
+        @Test
+        void addReusesRemovedMiddle2()
+        {
+            set.addAll( a, b, c, d, e );
+
+            set.removeAll( b, c );
+            assertEquals( newListWith( a, d, e ), set.toList() );
+
+            set.addAll( c, b );
+            assertEquals( newListWith( a, c, b, d, e ), set.toList() );
+        }
+
+        @Test
+        void rehashingCompactsSparseSentinels()
+        {
+            set.addAll( a, b, c, d, e );
+
+            set.removeAll( b, d, e );
+            assertEquals( newListWith( a, c ), set.toList() );
+
+            set.addAll( b, d, e );
+            assertEquals( newListWith( a, b, c, d, e ), set.toList() );
+
+            set.removeAll( b, d, e );
+            assertEquals( newListWith( a, c ), set.toList() );
+
+            set.rehashWithoutGrow();
+            set.addAll( e, d, b );
+            assertEquals( newListWith( a, c, e, d, b ), set.toList() );
+        }
+    }
+
+    @Nested
+    class IterationConcurrentModification
+    {
+        @Test
+        void add()
+        {
+            testIteratorFails( s -> s.add( 0 ), 0, 1, 2, 3 );
+            testIteratorFails( s -> s.add( 1 ), 0, 1, 2, 3 );
+            testIteratorFails( s -> s.add( 0 ), 1, 2, 3 );
+            testIteratorFails( s -> s.add( 1 ), 0, 2, 3 );
+            testIteratorFails( s -> s.add( 2 ), 0, 1, 2, 3 );
+            testIteratorFails( s -> s.add( 4 ), 0, 1, 2, 3 );
+        }
+
+        @Test
+        void remove()
+        {
+            testIteratorFails( s -> s.remove( 0 ), 0, 1, 2, 3 );
+            testIteratorFails( s -> s.remove( 1 ), 0, 1, 2, 3 );
+            testIteratorFails( s -> s.remove( 2 ), 0, 1, 2, 3 );
+            testIteratorFails( s -> s.remove( 4 ), 0, 1, 2, 3 );
+            testIteratorFails( s -> s.removeAll( LongSets.immutable.empty() ), 0, 1, 2, 3 );
+            testIteratorFails( s -> s.removeAll( EMPTY_LONG_ARRAY ), 0, 1, 2, 3 );
+        }
+
+        @Test
+        void addAll()
+        {
+            testIteratorFails( s -> s.addAll( 0, 2 ), 0, 1, 2, 3 );
+            testIteratorFails( s -> s.addAll( 4, 5 ), 0, 1, 2, 3 );
+            testIteratorFails( s -> s.addAll( LongSets.immutable.of( 0, 2 ) ), 0, 1, 2, 3 );
+            testIteratorFails( s -> s.addAll( LongSets.immutable.of( 4, 5 ) ), 0, 1, 2, 3 );
+            testIteratorFails( s -> s.addAll( LongSets.immutable.empty() ), 0, 1, 2, 3 );
+            testIteratorFails( s -> s.addAll( EMPTY_LONG_ARRAY ), 0, 1, 2, 3 );
+        }
+
+        @Test
+        void removeAll()
+        {
+            testIteratorFails( s -> s.removeAll( 0, 2 ), 0, 1, 2, 3 );
+            testIteratorFails( s -> s.removeAll( 4, 5 ), 0, 1, 2, 3 );
+            testIteratorFails( s -> s.removeAll( LongSets.immutable.of( 0, 2 ) ), 0, 1, 2, 3 );
+            testIteratorFails( s -> s.removeAll( LongSets.immutable.of( 4, 5 ) ), 0, 1, 2, 3 );
+            testIteratorFails( s -> s.removeAll( LongSets.immutable.empty() ), 0, 1, 2, 3 );
+            testIteratorFails( s -> s.removeAll( EMPTY_LONG_ARRAY ), 0, 1, 2, 3 );
+        }
+
+        @Test
+        void clear()
+        {
+            testIteratorFails( MutableLinearProbeLongHashSet::clear, 1, 2, 3 );
+        }
+
+        @Test
+        void close()
+        {
+            testIteratorFails( MutableLinearProbeLongHashSet::close, 1, 2, 3 );
+        }
+
+        private void testIteratorFails( Consumer<MutableLinearProbeLongHashSet> mutator, long... initialValues )
+        {
+            set.addAll( initialValues );
+
+            final MutableLongIterator iterator = set.longIterator();
+            assertTrue( iterator.hasNext() );
+            assertDoesNotThrow( iterator::next );
+
+            mutator.accept( set );
+            assertThrows( ConcurrentModificationException.class, iterator::hasNext );
+            assertThrows( ConcurrentModificationException.class, iterator::next );
+        }
     }
 
     private static LongSet drain( LongIterator iter )
@@ -501,61 +656,6 @@ class MutableLinearProbeLongHashSetTest
         {
             result.add( iter.next() );
         }
-        return result;
-    }
-
-    private DynamicTest testIteratorFails( String name, Consumer<MutableLinearProbeLongHashSet> mutator, long... initialValues )
-    {
-        return dynamicTest( name, withNewSet( s ->
-        {
-            s.addAll( initialValues );
-
-            final MutableLongIterator iterator = s.longIterator();
-            assertTrue( iterator.hasNext() );
-            assertDoesNotThrow( iterator::next );
-
-            mutator.accept( s );
-            assertThrows( ConcurrentModificationException.class, iterator::hasNext );
-            assertThrows( ConcurrentModificationException.class, iterator::next );
-        } ) );
-    }
-
-    private Executable withNewSet( Consumer<MutableLinearProbeLongHashSet> test )
-    {
-        return () ->
-        {
-            try ( MutableLinearProbeLongHashSet set = newSet() )
-            {
-                    test.accept( set );
-            }
-        };
-    }
-
-    private ImmutableLongList generateCollisions( int n )
-    {
-        long v = 1984;
-        final MutableLongList elements;
-        try ( MutableLinearProbeLongHashSet s = newSet() )
-        {
-            final int h = s.hashAndMask( v );
-            elements = LongLists.mutable.with( v );
-
-            while ( elements.size() < n )
-            {
-                ++v;
-                if ( s.hashAndMask( v ) == h )
-                {
-                    elements.add( v );
-                }
-            }
-        }
-        return elements.toImmutable();
-    }
-
-    private MutableLinearProbeLongHashSet newSet( long... elements )
-    {
-        MutableLinearProbeLongHashSet result = new MutableLinearProbeLongHashSet( allocator );
-        result.addAll( elements );
         return result;
     }
 }

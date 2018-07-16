@@ -292,7 +292,7 @@ class AppendOnlyValuesContainerTest
             }
         }
 
-        toRemove.shuffleThis();
+        toRemove.shuffleThis(rnd.random() );
         for ( final ObjectLongPair<Value> valueRefPair : toRemove )
         {
             final Value removed = container.remove( valueRefPair.getTwo() );

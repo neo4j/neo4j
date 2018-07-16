@@ -39,19 +39,23 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestFactory;
-import org.junit.jupiter.api.function.Executable;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.function.Consumer;
 
-import static java.util.Arrays.asList;
+import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.memory.MemoryAllocationTracker;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.rule.RandomRule;
+
 import static org.eclipse.collections.impl.list.mutable.primitive.LongArrayList.newListWith;
+import static org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap.newWithKeysValues;
 import static org.eclipse.collections.impl.tuple.primitive.PrimitiveTuples.pair;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -59,7 +63,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -71,21 +74,29 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.kernel.impl.util.collection.LinearProbeLongLongHashMap.DEFAULT_CAPACITY;
 import static org.neo4j.kernel.impl.util.collection.LinearProbeLongLongHashMap.REMOVALS_FACTOR;
 
+@ExtendWith( RandomExtension.class )
 class LinearProbeLongLongHashMapTest
 {
-    private final TestMemoryAllocator allocator = new TestMemoryAllocator();
+    @Inject
+    private RandomRule rnd;
+
+    private final CachingOffHeapBlockAllocator blockAllocator = new CachingOffHeapBlockAllocator();
+    private final MemoryAllocationTracker memoryTracker = new LocalMemoryTracker();
+    private final MemoryAllocator memoryAllocator = new OffHeapMemoryAllocator( memoryTracker, blockAllocator );
+
     private LinearProbeLongLongHashMap map = newMap();
 
     private LinearProbeLongLongHashMap newMap()
     {
-        return new LinearProbeLongLongHashMap( allocator );
+        return new LinearProbeLongLongHashMap( memoryAllocator );
     }
 
     @AfterEach
     void tearDown()
     {
         map.close();
-        assertEquals( 0, allocator.tracker.usedDirectMemory(), "Leaking memory" );
+        assertEquals( 0, memoryTracker.usedDirectMemory(), "Leaking memory" );
+        blockAllocator.release();
     }
 
     @Test
@@ -113,7 +124,7 @@ class LinearProbeLongLongHashMapTest
     @Test
     void putAll()
     {
-        map.putAll( LongLongHashMap.newWithKeysValues( 0, 10, 1, 11, 2, 12 ) );
+        map.putAll( newWithKeysValues( 0, 10, 1, 11, 2, 12 ) );
         assertEquals( 3, map.size() );
         assertEquals( 10, map.get( 0 ) );
         assertEquals( 11, map.get( 1 ) );
@@ -128,7 +139,7 @@ class LinearProbeLongLongHashMapTest
         assertEquals( -1, map.getIfAbsent( 2, -1 ) );
         assertEquals( -1, map.getIfAbsent( 3, -1 ) );
 
-        map.putAll( LongLongHashMap.newWithKeysValues( 0, 10, 1, 11, 2, 12 ) );
+        map.putAll( newWithKeysValues( 0, 10, 1, 11, 2, 12 ) );
 
         assertEquals( 10, map.getIfAbsent( 0, -1 ) );
         assertEquals( 11, map.getIfAbsent( 1, -1 ) );
@@ -224,7 +235,7 @@ class LinearProbeLongLongHashMapTest
         assertThrows( IllegalStateException.class, () -> map.getOrThrow( 1 ) );
         assertThrows( IllegalStateException.class, () -> map.getOrThrow( 2 ) );
 
-        map.putAll( LongLongHashMap.newWithKeysValues( 0, 10, 1, 11, 2, 12 ) );
+        map.putAll( newWithKeysValues( 0, 10, 1, 11, 2, 12 ) );
 
         assertEquals( 10, map.getOrThrow( 0 ) );
         assertEquals( 11, map.getOrThrow( 1 ) );
@@ -234,13 +245,13 @@ class LinearProbeLongLongHashMapTest
     @Test
     void putOverwrite()
     {
-        map.putAll( LongLongHashMap.newWithKeysValues( 0, 10, 1, 11, 2, 12 ) );
+        map.putAll( newWithKeysValues( 0, 10, 1, 11, 2, 12 ) );
 
         assertEquals( 10, map.get( 0 ) );
         assertEquals( 11, map.get( 1 ) );
         assertEquals( 12, map.get( 2 ) );
 
-        map.putAll( LongLongHashMap.newWithKeysValues( 0, 20, 1, 21, 2, 22 ) );
+        map.putAll( newWithKeysValues( 0, 20, 1, 21, 2, 22 ) );
 
         assertEquals( 20, map.get( 0 ) );
         assertEquals( 21, map.get( 1 ) );
@@ -366,7 +377,7 @@ class LinearProbeLongLongHashMapTest
     void forEachKey()
     {
         final LongProcedure consumer = mock( LongProcedure.class );
-        map.putAll( LongLongHashMap.newWithKeysValues( 0, 10, 1, 11, 2, 12 ) );
+        map.putAll( newWithKeysValues( 0, 10, 1, 11, 2, 12 ) );
 
         map.forEachKey( consumer );
 
@@ -380,7 +391,7 @@ class LinearProbeLongLongHashMapTest
     void forEachValue()
     {
         final LongProcedure consumer = mock( LongProcedure.class );
-        map.putAll( LongLongHashMap.newWithKeysValues( 0, 10, 1, 11, 2, 12 ) );
+        map.putAll( newWithKeysValues( 0, 10, 1, 11, 2, 12 ) );
 
         map.forEachValue( consumer );
 
@@ -394,7 +405,7 @@ class LinearProbeLongLongHashMapTest
     void forEachKeyValue()
     {
         final LongLongProcedure consumer = mock( LongLongProcedure.class );
-        map.putAll( LongLongHashMap.newWithKeysValues( 0, 10, 1, 11, 2, 12 ) );
+        map.putAll( newWithKeysValues( 0, 10, 1, 11, 2, 12 ) );
 
         map.forEachKeyValue( consumer );
 
@@ -410,7 +421,7 @@ class LinearProbeLongLongHashMapTest
         map.clear();
         assertEquals( 0, map.size() );
 
-        map.putAll( LongLongHashMap.newWithKeysValues( 0, 10, 1, 11, 2, 12 ) );
+        map.putAll( newWithKeysValues( 0, 10, 1, 11, 2, 12 ) );
         assertEquals( 3, map.size() );
 
         map.clear();
@@ -458,7 +469,7 @@ class LinearProbeLongLongHashMapTest
     @Test
     void keysIteratorFailsWhenMapIsClosed()
     {
-        map.putAll( LongLongHashMap.newWithKeysValues( 0, 10, 1, 11, 2, 12 ) );
+        map.putAll( newWithKeysValues( 0, 10, 1, 11, 2, 12 ) );
 
         final MutableLongIterator iter = map.longIterator();
 
@@ -471,27 +482,10 @@ class LinearProbeLongLongHashMapTest
         assertThrows( ConcurrentModificationException.class, iter::next );
     }
 
-    @TestFactory
-    Collection<DynamicTest> failFastIterator()
-    {
-        return asList(
-                testIteratorsFail( "put sentinel", m -> m.put( 0, 42 ), pair( 1L, 10L ) ),
-                testIteratorsFail( "put", m -> m.put( 4, 40 ), pair( 1L, 10L ) ),
-                testIteratorsFail( "put all; emtpy source", m -> m.putAll( LongLongMaps.immutable.empty() ), pair( 1L, 10L ) ),
-                testIteratorsFail( "overwrite sentinel", m -> m.put( 0, 0 ), pair( 0L, 1L ) ),
-                testIteratorsFail( "overwrite", m -> m.put( 4, 40 ), pair( 4L, 40L ) ),
-                testIteratorsFail( "remove sentinel", m -> m.remove( 1 ), pair( 1L, 10L ) ),
-                testIteratorsFail( "remove", m -> m.remove( 4 ), pair( 4L, 40L ) ),
-                testIteratorsFail( "remove nonexisting", m -> m.remove( 13 ), pair( 4L, 40L ) ),
-                testIteratorsFail( "getIfAbsentPut", m -> m.getIfAbsentPut( 10, 100 ), pair( 4L, 40L ) ),
-                testIteratorsFail( "close", LinearProbeLongLongHashMap::close, pair( 1L, 10L ) )
-        );
-    }
-
     @Test
     void grow()
     {
-        map = Mockito.spy( map );
+        map = spy( map );
 
         for ( int i = 0; i < DEFAULT_CAPACITY; i++ )
         {
@@ -503,7 +497,7 @@ class LinearProbeLongLongHashMapTest
     @Test
     void rehashWhenTooManyRemovals()
     {
-        map = Mockito.spy( map );
+        map = spy( map );
 
         final int numOfElements = DEFAULT_CAPACITY / 2;
         final int removalsToTriggerRehashing = (int) (DEFAULT_CAPACITY * REMOVALS_FACTOR);
@@ -527,122 +521,324 @@ class LinearProbeLongLongHashMapTest
         verify( map, never() ).growAndRehash();
     }
 
-    @TestFactory
-    Collection<DynamicTest> collisions()
+    @Test
+    void randomizedTest()
     {
-        final ImmutableLongList collisions = generateKeyCollisions( 5 );
-        final long a = collisions.get( 0 );
-        final long b = collisions.get( 1 );
-        final long c = collisions.get( 2 );
-        final long d = collisions.get( 3 );
-        final long e = collisions.get( 4 );
+        final int count = 10000 + rnd.nextInt( 1000 );
 
-        return asList(
-                dynamicTest( "add all", withNewMap( m ->
-                {
-                    putAll( m, collisions.toArray() );
-                    assertEquals( collisions, m.toSortedList() );
-                } ) ),
-                dynamicTest( "add all reversed", withNewMap( m ->
-                {
-                    putAll( m, collisions.toReversed().toArray() );
-                    assertEquals( collisions.toReversed(), m.toList() );
-                } ) ),
-                dynamicTest( "add all, remove last", withNewMap( m ->
-                {
-                    putAll( m, collisions.toArray() );
-                    m.remove( e );
-                    assertEquals( newListWith( a, b, c, d ), m.toList() );
-                } ) ),
-                dynamicTest( "add all, remove first", withNewMap( m ->
-                {
-                    putAll( m, collisions.toArray() );
-                    m.remove( a );
-                    assertEquals( newListWith( b, c, d, e ), m.toList() );
-                } ) ),
-                dynamicTest( "add all, remove middle", withNewMap( m ->
-                {
-                    putAll( m, collisions.toArray() );
-                    m.remove( b );
-                    m.remove( d );
-                    assertEquals( newListWith( a, c, e ), m.toList() );
-                } ) ),
-                dynamicTest( "add all, remove middle 2", withNewMap( m ->
-                {
-                    putAll( m, collisions.toArray() );
-                    m.remove( a );
-                    m.remove( c );
-                    m.remove( e );
-                    assertEquals( newListWith( b, d ), m.toList() );
-                } ) ),
-                dynamicTest( "add reuses removed head", withNewMap( m ->
-                {
-                    putAll( m, a, b, c );
+        final MutableLongLongMap m = new LongLongHashMap();
+        while ( m.size() < count )
+        {
+            m.put( rnd.nextLong(), rnd.nextLong() );
+        }
 
-                    m.remove( a );
-                    assertEquals( newListWith( b, c ), m.toList() );
+        m.forEachKeyValue( ( k, v ) ->
+        {
+            assertFalse( map.containsKey( k ) );
+            map.put( k, v );
+            assertTrue( map.containsKey( k ) );
+            assertEquals( v, map.get( k ) );
+            assertEquals( v, map.getOrThrow( k ) );
+            assertEquals( v, map.getIfAbsent( k, v * 2 ) );
+            assertEquals( v, map.getIfAbsentPut( k, v * 2 ) );
+            assertEquals( v, map.getIfAbsentPut( k, () -> v * 2 ) );
+        } );
 
-                    m.put( d, 42 );
-                    assertEquals( newListWith( d, b, c ), m.toList() );
-                } ) ),
-                dynamicTest( "add reuses removed tail", withNewMap( m ->
-                {
-                    putAll( m, a, b, c );
+        assertEquals( m.size(), map.size() );
+        assertTrue( m.keySet().allSatisfy( map::containsKey ) );
 
-                    m.remove( c );
-                    assertEquals( newListWith( a, b ), m.toList() );
+        final List<LongLongPair> toRemove = m.keyValuesView().select( p -> rnd.nextInt( 100 ) < 75 ).toList().shuffleThis( rnd.random() );
 
-                    m.put( d, 42 );
-                    assertEquals( newListWith( a, b, d ), m.toList() );
-                } ) ),
-                dynamicTest( "add reuses removed middle", withNewMap( m ->
-                {
-                    putAll( m, a, b, c );
+        toRemove.forEach( p ->
+        {
+            final long k = p.getOne();
+            final long v = p.getTwo();
 
-                    m.remove( b );
-                    assertEquals( newListWith( a, c ), m.toList() );
+            map.updateValue( k, v + 1, x -> -x );
+            assertEquals( -v, map.get( k ) );
 
-                    m.put( d, 42 );
-                    assertEquals( newListWith( a, d, c ), m.toList() );
-                } ) ),
-                dynamicTest( "add reuses removed middle 2", withNewMap( m ->
-                {
-                    putAll( m, a, b, c, d, e );
+            map.remove( k );
+            assertEquals( v * 2, map.removeKeyIfAbsent( k, v * 2 ) );
+            assertEquals( v * 2, map.getIfAbsent( k, v * 2 ) );
+            assertFalse( map.containsKey( k ) );
+            assertThrows( IllegalStateException.class, () -> map.getOrThrow( k ) );
 
-                    m.remove( b );
-                    m.remove( c );
-                    assertEquals( newListWith( a, d, e ), m.toList() );
+            map.updateValue( k, v + 42, x -> -x );
+            assertEquals( -v - 42, map.get( k ) );
+        } );
 
-                    m.putAll( toMap( c, b ) );
-                    assertEquals( newListWith( a, c, b, d, e ), m.toList() );
-                } ) ),
-                dynamicTest( "rehashing compacts sparse sentinels", withNewMap( m ->
-                {
-                    putAll( m, a, b, c, d, e );
+        toRemove.forEach( p -> map.removeKey( p.getOne() ) );
 
-                    m.remove( b );
-                    m.remove( d );
-                    m.remove( e );
-                    assertEquals( newListWith( a, c ), m.toList() );
-
-                    putAll( m, b, d, e );
-                    assertEquals( newListWith( a, b, c, d, e ), m.toList() );
-
-                    m.remove( b );
-                    m.remove( d );
-                    m.remove( e );
-                    assertEquals( newListWith( a, c ), m.toList() );
-
-                    m.rehashWithoutGrow();
-                    putAll( m, e, d, b );
-                    assertEquals( newListWith( a, c, e, d, b ), m.toList() );
-                } ) )
-        );
+        assertEquals( count - toRemove.size(), map.size() );
     }
 
-    private static void putAll( LinearProbeLongLongHashMap m, long... keys )
+    @Nested
+    class Collisions
     {
-        for ( long key: keys )
+        private final ImmutableLongList collisions = generateKeyCollisions( 5 );
+        private final long a = collisions.get( 0 );
+        private final long b = collisions.get( 1 );
+        private final long c = collisions.get( 2 );
+        private final long d = collisions.get( 3 );
+        private final long e = collisions.get( 4 );
+
+        private ImmutableLongList generateKeyCollisions( int n )
+        {
+            final long seed = rnd.nextLong();
+            final MutableLongList elements;
+            try ( LinearProbeLongLongHashMap s = new LinearProbeLongLongHashMap( memoryAllocator ) )
+            {
+                long v = s.hashAndMask( seed );
+                while ( s.hashAndMask( v ) != 0 || v == 0 || v == 1 )
+                {
+                    ++v;
+                }
+
+                final int h = s.hashAndMask( v );
+                elements = LongLists.mutable.with( v );
+
+                while ( elements.size() < n )
+                {
+                    ++v;
+                    if ( s.hashAndMask( v ) == h )
+                    {
+                        elements.add( v );
+                    }
+                }
+            }
+            return elements.toImmutable();
+        }
+
+        @Test
+        void addAll()
+        {
+            fill( map, collisions.toArray() );
+            assertEquals( collisions, map.toSortedList() );
+        }
+
+        @Test
+        void addAllReversed()
+        {
+            fill( map, collisions.toReversed().toArray() );
+            assertEquals( collisions.toReversed(), map.toList() );
+        }
+
+        @Test
+        void addAllRemoveLast()
+        {
+            fill( map, collisions.toArray() );
+            map.remove( e );
+            assertEquals( newListWith( a, b, c, d ), map.toList() );
+        }
+
+        @Test
+        void addAllRemoveFirst()
+        {
+            fill( map, collisions.toArray() );
+            map.remove( a );
+            assertEquals( newListWith( b, c, d, e ), map.toList() );
+        }
+
+        @Test
+        void addAllRemoveMiddle()
+        {
+            fill( map, collisions.toArray() );
+            map.remove( b );
+            map.remove( d );
+            assertEquals( newListWith( a, c, e ), map.toList() );
+        }
+
+        @Test
+        void addAllRemoveMiddle2()
+        {
+            fill( map, collisions.toArray() );
+            map.remove( a );
+            map.remove( c );
+            map.remove( e );
+            assertEquals( newListWith( b, d ), map.toList() );
+        }
+
+        @Test
+        void addReusesRemovedHead()
+        {
+            fill( map, a, b, c );
+
+            map.remove( a );
+            assertEquals( newListWith( b, c ), map.toList() );
+
+            map.put( d, 42 );
+            assertEquals( newListWith( d, b, c ), map.toList() );
+        }
+
+        @Test
+        void addReusesRemovedTail()
+        {
+            fill( map, a, b, c );
+
+            map.remove( c );
+            assertEquals( newListWith( a, b ), map.toList() );
+
+            map.put( d, 42 );
+            assertEquals( newListWith( a, b, d ), map.toList() );
+        }
+
+        @Test
+        void addReusesRemovedMiddle()
+        {
+            fill( map, a, b, c );
+
+            map.remove( b );
+            assertEquals( newListWith( a, c ), map.toList() );
+
+            map.put( d, 42 );
+            assertEquals( newListWith( a, d, c ), map.toList() );
+        }
+
+        @Test
+        void addReusesRemovedMiddle2()
+        {
+            fill( map, a, b, c, d, e );
+
+            map.remove( b );
+            map.remove( c );
+            assertEquals( newListWith( a, d, e ), map.toList() );
+
+            map.put( c, 1 );
+            map.put( b, 2 );
+            assertEquals( newListWith( a, c, b, d, e ), map.toList() );
+        }
+
+        @Test
+        void rehashingCompactsSparseSentinels()
+        {
+            fill( map, a, b, c, d, e );
+
+            map.remove( b );
+            map.remove( d );
+            map.remove( e );
+            assertEquals( newListWith( a, c ), map.toList() );
+
+            fill( map, b, d, e );
+            assertEquals( newListWith( a, b, c, d, e ), map.toList() );
+
+            map.remove( b );
+            map.remove( d );
+            map.remove( e );
+            assertEquals( newListWith( a, c ), map.toList() );
+
+            map.rehashWithoutGrow();
+            fill( map, e, d, b );
+            assertEquals( newListWith( a, c, e, d, b ), map.toList() );
+        }
+    }
+
+    @Nested
+    class IterationConcurrentModification
+    {
+        @Test
+        void put()
+        {
+            testIteratorsFail( m -> m.put( 0, 0 ), pair( 0L, 10L ), pair( 1L, 11L ), pair( 2L, 12L ), pair( 3L, 13L ) );
+            testIteratorsFail( m -> m.put( 1, 1 ), pair( 0L, 10L ), pair( 1L, 11L ), pair( 2L, 12L ), pair( 3L, 13L ) );
+            testIteratorsFail( m -> m.put( 0, 0 ), pair( 1L, 11L ), pair( 2L, 12L ), pair( 3L, 13L ) );
+            testIteratorsFail( m -> m.put( 1, 1 ), pair( 0L, 10L ), pair( 2L, 12L ), pair( 3L, 13L ) );
+            testIteratorsFail( m -> m.put( 2, 2 ), pair( 0L, 10L ), pair( 1L, 11L ), pair( 2L, 12L ), pair( 3L, 13L ) );
+            testIteratorsFail( m -> m.put( 4, 14 ), pair( 0L, 10L ), pair( 1L, 11L ), pair( 2L, 12L ), pair( 3L, 13L ) );
+        }
+
+        @Test
+        void getIfAbsentPut_put()
+        {
+            testIteratorsFail( m -> m.getIfAbsentPut( 0, 0 ), pair( 1L, 11L ), pair( 2L, 12L ), pair( 3L, 13L ) );
+            testIteratorsFail( m -> m.getIfAbsentPut( 1, 1 ), pair( 0L, 10L ), pair( 2L, 12L ), pair( 3L, 13L ) );
+            testIteratorsFail( m -> m.getIfAbsentPut( 4, 4 ), pair( 0L, 10L ), pair( 1L, 11L ), pair( 2L, 12L ), pair( 3L, 13L ) );
+        }
+
+        @Test
+        void getIfAbsentPut_onlyGetNoPut()
+        {
+            fill( map, 0L, 1L, 2L, 3L );
+
+            final MutableLongIterator keyIter = map.longIterator();
+            final Iterator<LongLongPair> keyValueIter = map.keyValuesView().iterator();
+
+            map.getIfAbsentPut( 0, 0 );
+            map.getIfAbsentPut( 1, 1 );
+            map.getIfAbsentPut( 2, 2 );
+
+            assertDoesNotThrow( keyIter::hasNext );
+            assertDoesNotThrow( keyIter::next );
+            assertDoesNotThrow( keyValueIter::hasNext );
+            assertDoesNotThrow( keyValueIter::next );
+        }
+
+        @Test
+        void remove()
+        {
+            testIteratorsFail( m -> m.remove( 0 ), pair( 0L, 10L ), pair( 1L, 11L ), pair( 2L, 12L ), pair( 3L, 13L ) );
+            testIteratorsFail( m -> m.remove( 1 ), pair( 0L, 10L ), pair( 1L, 11L ), pair( 2L, 12L ), pair( 3L, 13L ) );
+            testIteratorsFail( m -> m.remove( 0 ), pair( 1L, 11L ), pair( 2L, 12L ), pair( 3L, 13L ) );
+            testIteratorsFail( m -> m.remove( 1 ), pair( 0L, 10L ), pair( 2L, 12L ), pair( 3L, 13L ) );
+            testIteratorsFail( m -> m.remove( 2 ), pair( 0L, 10L ), pair( 1L, 11L ), pair( 2L, 12L ), pair( 3L, 13L ) );
+            testIteratorsFail( m -> m.remove( 4 ), pair( 0L, 10L ), pair( 1L, 11L ), pair( 2L, 12L ), pair( 3L, 13L ) );
+        }
+
+        @Test
+        void putAll()
+        {
+            testIteratorsFail( m -> m.putAll( newWithKeysValues( 0, 0 ) ),
+                    pair( 0L, 10L ), pair( 1L, 11L ), pair( 2L, 12L ), pair( 3L, 13L ) );
+            testIteratorsFail( m -> m.putAll( newWithKeysValues( 4, 4 ) ),
+                    pair( 0L, 10L ), pair( 1L, 11L ), pair( 2L, 12L ), pair( 3L, 13L ) );
+            testIteratorsFail( m -> m.putAll( LongLongMaps.immutable.empty() ),
+                    pair( 0L, 10L ), pair( 1L, 11L ), pair( 2L, 12L ), pair( 3L, 13L ) );
+        }
+
+        @Test
+        void updateValue()
+        {
+            testIteratorsFail( m -> m.updateValue( 0, 0, x -> x * 2 ),
+                    pair( 0L, 10L ), pair( 1L, 11L ), pair( 2L, 12L ), pair( 3L, 13L ) );
+            testIteratorsFail( m -> m.updateValue( 2, 2, x -> x * 2 ),
+                    pair( 0L, 10L ), pair( 1L, 11L ), pair( 2L, 12L ), pair( 3L, 13L ) );
+            testIteratorsFail( m -> m.updateValue( 4, 4, x -> x * 2 ),
+                    pair( 0L, 10L ), pair( 1L, 11L ), pair( 2L, 12L ), pair( 3L, 13L ) );
+        }
+
+        @Test
+        void close()
+        {
+            testIteratorsFail( LinearProbeLongLongHashMap::close, pair( 0L, 10L ), pair( 2L, 12L ) );
+        }
+
+        private void testIteratorsFail( Consumer<LinearProbeLongLongHashMap> mutator, LongLongPair... initialValues )
+        {
+            map.clear();
+            for ( LongLongPair pair : initialValues )
+            {
+                map.putPair( pair );
+            }
+
+            final MutableLongIterator keysIterator = map.longIterator();
+            final Iterator<LongLongPair> keyValueIterator = map.keyValuesView().iterator();
+
+            assertTrue( keysIterator.hasNext() );
+            assertDoesNotThrow( keysIterator::next );
+            assertTrue( keyValueIterator.hasNext() );
+            assertDoesNotThrow( keyValueIterator::next );
+
+            mutator.accept( map );
+
+            assertThrows( ConcurrentModificationException.class, keysIterator::hasNext );
+            assertThrows( ConcurrentModificationException.class, keysIterator::next );
+            assertThrows( ConcurrentModificationException.class, keyValueIterator::hasNext );
+            assertThrows( ConcurrentModificationException.class, keyValueIterator::next );
+        }
+    }
+
+    private static void fill( MutableLongLongMap m, long... keys )
+    {
+        for ( long key : keys )
         {
             m.put( key, System.nanoTime() );
         }
@@ -651,68 +847,7 @@ class LinearProbeLongLongHashMapTest
     private static LongLongMap toMap( long... keys )
     {
         final MutableLongLongMap m = new LongLongHashMap();
-        for ( long key: keys )
-        {
-            m.put( key, System.nanoTime() );
-        }
+        fill( m, keys );
         return m;
-    }
-
-    private DynamicTest testIteratorsFail( String name, Consumer<LinearProbeLongLongHashMap> mutator, LongLongPair... initialValues )
-    {
-        return dynamicTest( name, withNewMap( m ->
-        {
-            for ( LongLongPair pair: initialValues )
-            {
-                m.putPair( pair );
-            }
-
-            final MutableLongIterator keysIterator = m.longIterator();
-            final Iterator<LongLongPair> keyValueIterator = m.keyValuesView().iterator();
-
-            assertTrue( keysIterator.hasNext() );
-            assertDoesNotThrow( keysIterator::next );
-            assertTrue( keyValueIterator.hasNext() );
-            assertDoesNotThrow( keyValueIterator::next );
-
-            mutator.accept( m );
-
-            assertThrows( ConcurrentModificationException.class, keysIterator::hasNext );
-            assertThrows( ConcurrentModificationException.class, keysIterator::next );
-            assertThrows( ConcurrentModificationException.class, keyValueIterator::hasNext );
-            assertThrows( ConcurrentModificationException.class, keyValueIterator::next );
-        } ) );
-    }
-
-    private Executable withNewMap( Consumer<LinearProbeLongLongHashMap> test )
-    {
-        return () ->
-        {
-            try ( LinearProbeLongLongHashMap m = newMap() )
-            {
-                test.accept( m );
-            }
-        };
-    }
-
-    private ImmutableLongList generateKeyCollisions( int n )
-    {
-        long v = 1984;
-        final MutableLongList elements;
-        try ( LinearProbeLongLongHashMap m = newMap() )
-        {
-            final int h = m.hashAndMask( v );
-            elements = LongLists.mutable.with( v );
-
-            while ( elements.size() < n )
-            {
-                ++v;
-                if ( m.hashAndMask( v ) == h )
-                {
-                    elements.add( v );
-                }
-            }
-        }
-        return elements.toImmutable();
     }
 }
