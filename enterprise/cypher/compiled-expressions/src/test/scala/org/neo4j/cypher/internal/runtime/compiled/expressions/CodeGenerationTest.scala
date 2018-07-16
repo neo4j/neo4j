@@ -1078,6 +1078,15 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     an [InvalidSemanticsException] should be thrownBy compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("hello"), stringValue("["))))
   }
 
+  test("startsWith") {
+    val compiled= compile(startsWith(parameter("a"), parameter("b")))
+
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("hello"), stringValue("hell")))) should equal(Values.TRUE)
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("hello"), stringValue("hi")))) should equal(Values.FALSE)
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("hello"), NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(NO_VALUE, stringValue("hi")))) should equal(NO_VALUE)
+  }
+
   test("CoerceToPredicate") {
     val coerced = CoerceToPredicate(parameter("a"))
 
@@ -1261,5 +1270,5 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   private def regex(lhs: Expression, rhs: Expression) = RegexMatch(lhs, rhs)(pos)
 
-
+  private def startsWith(lhs: Expression, rhs: Expression) = StartsWith(lhs, rhs)(pos)
 }

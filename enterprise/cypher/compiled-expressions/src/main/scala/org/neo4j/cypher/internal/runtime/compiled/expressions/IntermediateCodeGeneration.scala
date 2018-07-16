@@ -218,6 +218,14 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           nullable = true, l.fields ++ r.fields)
     }
 
+    case StartsWith(lhs, rhs) =>
+      for {l <- compile(lhs)
+            r <- compile(rhs)} yield {
+        IntermediateExpression(
+          invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("startsWith"), l.ir, r.ir),
+          nullable = true, l.fields ++ r.fields)
+      }
+
     //data access
     case ContainerIndex(container, index) =>
       for {c <- compile(container)
