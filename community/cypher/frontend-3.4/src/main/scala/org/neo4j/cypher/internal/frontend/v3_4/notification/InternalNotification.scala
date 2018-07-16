@@ -71,4 +71,6 @@ case object DeprecatedPlannerNotification extends InternalNotification
 
 case class ExperimentalFeatureNotification(msg: String) extends InternalNotification
 
-case class SuboptimalIndexForWildcardQueryNotification(label: String, propertyKeys: Seq[String]) extends InternalNotification
+case class SuboptimalIndexForContainsQueryNotification(label: String, propertyKeys: Seq[String]) extends InternalNotification
+
+case class SuboptimalIndexForEndsWithQueryNotification(label: String, propertyKeys: Seq[String]) extends InternalNotification

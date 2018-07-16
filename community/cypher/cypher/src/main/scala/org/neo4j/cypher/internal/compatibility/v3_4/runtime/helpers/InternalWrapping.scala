@@ -77,8 +77,10 @@ object InternalWrapping {
       NotificationCode.PROCEDURE_WARNING.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.procedureWarning(name, warning))
     case ExperimentalFeatureNotification(msg) =>
       NotificationCode.EXPERIMENTAL_FEATURE.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.message("MORSEL", msg))
-    case SuboptimalIndexForWildcardQueryNotification(label, properties) =>
-      NotificationCode.SUBOPTIMAL_INDEX_FOR_WILDCARD_QUERY.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.suboptimalIndex(label, properties: _*))
+    case SuboptimalIndexForContainsQueryNotification(label, properties) =>
+      NotificationCode.SUBOPTIMAL_INDEX_FOR_CONSTAINS_QUERY.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.suboptimalIndex(label, properties: _*))
+    case SuboptimalIndexForEndsWithQueryNotification(label, properties) =>
+      NotificationCode.SUBOPTIMAL_INDEX_FOR_ENDS_WITH_QUERY.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.suboptimalIndex(label, properties: _*))
   }
 
   private implicit class ConvertibleCompilerInputPosition(pos: InputPosition) {

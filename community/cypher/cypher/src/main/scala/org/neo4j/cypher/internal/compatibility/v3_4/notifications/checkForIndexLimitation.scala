@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.notifications
 
-import org.neo4j.cypher.internal.frontend.v3_4.notification.{InternalNotification, SuboptimalIndexForWildcardQueryNotification}
+import org.neo4j.cypher.internal.frontend.v3_4.notification.{InternalNotification, SuboptimalIndexForContainsQueryNotification, SuboptimalIndexForEndsWithQueryNotification}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{IndexLimitation, PlanContext, SlowContains}
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId}
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken}
@@ -34,13 +34,13 @@ case class checkForIndexLimitation(planContext: PlanContext) extends Notificatio
       case NodeIndexContainsScan(_, label, property, _, _) =>
         acc =>
           val notifications = getLimitations(label, property).collect {
-            case SlowContains => SuboptimalIndexForWildcardQueryNotification(label.name, Seq(property.name))
+            case SlowContains => SuboptimalIndexForContainsQueryNotification(label.name, Seq(property.name))
           }
           (acc ++ notifications, None)
       case NodeIndexEndsWithScan(_, label, property, _, _) =>
         acc =>
           val notifications = getLimitations(label, property).collect {
-            case SlowContains => SuboptimalIndexForWildcardQueryNotification(label.name, Seq(property.name))
+            case SlowContains => SuboptimalIndexForEndsWithQueryNotification(label.name, Seq(property.name))
           }
           (acc ++ notifications, None)
     }
