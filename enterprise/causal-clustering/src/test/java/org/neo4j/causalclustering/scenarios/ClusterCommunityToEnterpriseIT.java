@@ -91,9 +91,9 @@ public class ClusterCommunityToEnterpriseIT
         DbRepresentation before = DbRepresentation.of( storeDir, config );
 
         // when
-        fsa.copyRecursively( storeDir, cluster.getCoreMemberById( 0 ).storeDir() );
-        fsa.copyRecursively( storeDir, cluster.getCoreMemberById( 1 ).storeDir() );
-        fsa.copyRecursively( storeDir, cluster.getCoreMemberById( 2 ).storeDir() );
+        fsa.copyRecursively( storeDir, cluster.getCoreMemberById( 0 ).databaseDirectory() );
+        fsa.copyRecursively( storeDir, cluster.getCoreMemberById( 1 ).databaseDirectory() );
+        fsa.copyRecursively( storeDir, cluster.getCoreMemberById( 2 ).databaseDirectory() );
         cluster.start();
 
         // then

@@ -163,6 +163,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
         PageCache pageCache = platformModule.pageCache;
         File storeDir = platformModule.storeDir;
+        final File databaseDirectory = new File( storeDir, config.get( GraphDatabaseSettings.active_database ) );
+
         LifeSupport life = platformModule.life;
 
         eligibleForIdReuse = IdReuseEligibility.ALWAYS;
@@ -256,10 +258,10 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
         StoreFiles storeFiles = new StoreFiles( fileSystem, pageCache );
-        LogFiles logFiles = buildLocalDatabaseLogFiles( platformModule, fileSystem, storeDir, config );
+        LogFiles logFiles = buildLocalDatabaseLogFiles( platformModule, fileSystem, databaseDirectory, config );
 
         LocalDatabase localDatabase =
-                new LocalDatabase( storeDir, storeFiles, logFiles, platformModule.dataSourceManager,
+                new LocalDatabase( databaseDirectory, storeFiles, logFiles, platformModule.dataSourceManager,
                         databaseHealthSupplier,
                         watcherService, platformModule.availabilityGuard, logProvider );
 

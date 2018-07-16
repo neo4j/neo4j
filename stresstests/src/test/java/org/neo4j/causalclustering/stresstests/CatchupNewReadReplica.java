@@ -86,7 +86,7 @@ class CatchupNewReadReplica extends Workload
                 cluster.removeReadReplicaWithMemberId( newMemberId );
                 if ( ex == null && deleteStore )
                 {
-                    fs.deleteRecursively( readReplica.storeDir() );
+                    fs.deleteRecursively( readReplica.databaseDirectory() );
                 }
                 deleteStore = !deleteStore;
             }
@@ -107,7 +107,7 @@ class CatchupNewReadReplica extends Workload
         }
     }
 
-    private Throwable exception( Throwable outer, Throwable inner )
+    private static Throwable exception( Throwable outer, Throwable inner )
     {
         if ( outer == null )
         {
@@ -123,7 +123,7 @@ class CatchupNewReadReplica extends Workload
         return outer;
     }
 
-    private Supplier<Throwable> startAndRegisterExceptionMonitor( ReadReplica readReplica )
+    private static Supplier<Throwable> startAndRegisterExceptionMonitor( ReadReplica readReplica )
     {
         readReplica.start();
 
@@ -167,7 +167,7 @@ class CatchupNewReadReplica extends Workload
         }
     }
 
-    private long errorValueOrThrow( boolean fail, Throwable error )
+    private static long errorValueOrThrow( boolean fail, Throwable error )
     {
         if ( fail )
         {

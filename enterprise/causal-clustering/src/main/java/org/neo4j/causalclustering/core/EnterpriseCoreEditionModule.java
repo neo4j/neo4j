@@ -206,12 +206,13 @@ public class EnterpriseCoreEditionModule extends EditionModule
         final LogService logging = platformModule.logging;
         final FileSystemAbstraction fileSystem = platformModule.fileSystem;
         final File storeDir = platformModule.storeDir;
+        final File databaseDirectory = new File( storeDir, config.get( GraphDatabaseSettings.active_database ) );
         final LifeSupport life = platformModule.life;
 
         CoreMonitor.register( logging.getInternalLogProvider(), logging.getUserLogProvider(), platformModule.monitors );
 
         final File dataDir = config.get( GraphDatabaseSettings.data_directory );
-        final ClusterStateDirectory clusterStateDirectory = new ClusterStateDirectory( dataDir, storeDir, false );
+        final ClusterStateDirectory clusterStateDirectory = new ClusterStateDirectory( dataDir, databaseDirectory, false );
         try
         {
             clusterStateDirectory.initialize( fileSystem );
@@ -230,8 +231,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         watcherService = createFileSystemWatcherService( fileSystem, storeDir, logging,
                 platformModule.jobScheduler, fileWatcherFileNameFilter() );
         dependencies.satisfyDependencies( watcherService );
-        LogFiles logFiles = buildLocalDatabaseLogFiles( platformModule, fileSystem, storeDir );
-        LocalDatabase localDatabase = new LocalDatabase( storeDir,
+        LogFiles logFiles = buildLocalDatabaseLogFiles( platformModule, fileSystem, databaseDirectory );
+        LocalDatabase localDatabase = new LocalDatabase( databaseDirectory,
                 new StoreFiles( fileSystem, platformModule.pageCache ),
                 logFiles,
                 platformModule.dataSourceManager,
@@ -243,7 +244,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         IdentityModule identityModule = new IdentityModule( platformModule, clusterStateDirectory.get() );
 
         ClusteringModule clusteringModule = getClusteringModule( platformModule, discoveryServiceFactory,
-                clusterStateDirectory, identityModule, dependencies );
+                clusterStateDirectory, identityModule, databaseDirectory );
 
         // We need to satisfy the dependency here to keep users of it, such as BoltKernelExtension, happy.
         dependencies.satisfyDependency( SslPolicyLoader.create( config, logProvider ) );
@@ -355,11 +356,11 @@ public class EnterpriseCoreEditionModule extends EditionModule
         return new UpstreamDatabaseStrategySelector( defaultStrategy, loader, logProvider );
     }
 
-    private LogFiles buildLocalDatabaseLogFiles( PlatformModule platformModule, FileSystemAbstraction fileSystem, File storeDir )
+    private LogFiles buildLocalDatabaseLogFiles( PlatformModule platformModule, FileSystemAbstraction fileSystem, File databaseDirectory )
     {
         try
         {
-            return LogFilesBuilder.activeFilesBuilder( storeDir, fileSystem, platformModule.pageCache ).withConfig( config ).build();
+            return LogFilesBuilder.activeFilesBuilder( databaseDirectory, fileSystem, platformModule.pageCache ).withConfig( config ).build();
         }
         catch ( IOException e )
         {
@@ -367,13 +368,11 @@ public class EnterpriseCoreEditionModule extends EditionModule
         }
     }
 
-    protected ClusteringModule getClusteringModule( PlatformModule platformModule,
-                                                  DiscoveryServiceFactory discoveryServiceFactory,
-                                                  ClusterStateDirectory clusterStateDirectory,
-                                                  IdentityModule identityModule, Dependencies dependencies )
+    protected ClusteringModule getClusteringModule( PlatformModule platformModule, DiscoveryServiceFactory discoveryServiceFactory,
+            ClusterStateDirectory clusterStateDirectory, IdentityModule identityModule, File databaseDirectory )
     {
         return new ClusteringModule( discoveryServiceFactory, identityModule.myself(),
-                platformModule, clusterStateDirectory.get() );
+                platformModule, clusterStateDirectory.get(), databaseDirectory );
     }
 
     protected DuplexPipelineWrapperFactory pipelineWrapperFactory()
@@ -400,7 +399,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         );
     }
 
-    private MessageLogger<MemberId> createMessageLogger( Config config, LifeSupport life, MemberId myself )
+    private static MessageLogger<MemberId> createMessageLogger( Config config, LifeSupport life, MemberId myself )
     {
         final MessageLogger<MemberId> messageLogger;
         if ( config.get( CausalClusteringSettings.raft_messages_log_enable ) )
@@ -461,19 +460,19 @@ public class EnterpriseCoreEditionModule extends EditionModule
         }
     }
 
-    private SchemaWriteGuard createSchemaWriteGuard()
+    private static SchemaWriteGuard createSchemaWriteGuard()
     {
         return SchemaWriteGuard.ALLOW_ALL_WRITES;
     }
 
-    private KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
-            Config config, GraphDatabaseAPI graphAPI, LifeSupport life )
+    private static KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config, GraphDatabaseAPI graphAPI,
+            LifeSupport life )
     {
         KernelData kernelData = new KernelData( fileSystem, pageCache, storeDir, config, graphAPI );
         return life.add( kernelData );
     }
 
-    private TransactionHeaderInformationFactory createHeaderInformationFactory()
+    private static TransactionHeaderInformationFactory createHeaderInformationFactory()
     {
         return () -> new TransactionHeaderInformation( -1, -1, new byte[0] );
     }

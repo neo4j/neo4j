@@ -181,7 +181,7 @@ public class LucenePartitionedIndexStressTesting
         }
     }
 
-    private File prepareStoreDir() throws IOException
+    private static File prepareStoreDir() throws IOException
     {
         Path storeDirPath = Paths.get( WORK_DIRECTORY ).resolve( Paths.get( "storeDir" ) );
         File storeDirectory = storeDirPath.toFile();

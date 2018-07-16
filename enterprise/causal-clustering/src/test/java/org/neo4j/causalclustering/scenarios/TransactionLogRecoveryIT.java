@@ -82,7 +82,7 @@ public class TransactionLogRecoveryIT
         CoreClusterMember lastWrites = createEmptyNodes( cluster, 10 );
 
         // and writing a partial tx
-        writePartialTx( core.storeDir() );
+        writePartialTx( core.databaseDirectory() );
 
         // then: we should still be able to start
         core.start();
@@ -105,7 +105,7 @@ public class TransactionLogRecoveryIT
         CoreClusterMember lastWrites = createEmptyNodes( cluster, 10 );
 
         // and writing a partial tx
-        writePartialTx( core.storeDir() );
+        writePartialTx( core.databaseDirectory() );
 
         // and deleting the cluster state, making sure a snapshot is required during startup
         // effectively a seeding scenario -- representing the use of the unbind command on a crashed store
@@ -133,7 +133,7 @@ public class TransactionLogRecoveryIT
         dataMatchesEventually( lastWrites, cluster.coreMembers() );
 
         // and writing a partial tx
-        writePartialTx( readReplica.storeDir() );
+        writePartialTx( readReplica.databaseDirectory() );
 
         // then: we should still be able to start
         readReplica.start();

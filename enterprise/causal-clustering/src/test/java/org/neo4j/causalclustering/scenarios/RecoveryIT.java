@@ -60,17 +60,17 @@ public class RecoveryIT
 
         fireSomeLoadAtTheCluster( cluster );
 
-        Set<File> storeDirs = cluster.coreMembers().stream().map( CoreClusterMember::storeDir ).collect( toSet() );
+        Set<File> storeDirs = cluster.coreMembers().stream().map( CoreClusterMember::databaseDirectory ).collect( toSet() );
 
         assertEventually( "All cores have the same data",
-                () -> cluster.coreMembers().stream().map( this::dbRepresentation ).collect( toSet() ).size(),
+                () -> cluster.coreMembers().stream().map( RecoveryIT::dbRepresentation ).collect( toSet() ).size(),
                 equalTo( 1 ), 10, TimeUnit.SECONDS );
 
         // when
         cluster.shutdown();
 
         // then
-        storeDirs.forEach( this::assertConsistent );
+        storeDirs.forEach( RecoveryIT::assertConsistent );
     }
 
     @Test
@@ -82,7 +82,7 @@ public class RecoveryIT
 
         fireSomeLoadAtTheCluster( cluster );
 
-        Set<File> storeDirs = cluster.coreMembers().stream().map( CoreClusterMember::storeDir ).collect( toSet() );
+        Set<File> storeDirs = cluster.coreMembers().stream().map( CoreClusterMember::databaseDirectory ).collect( toSet() );
 
         // when
         for ( int i = 0; i < clusterSize; i++ )
@@ -94,20 +94,20 @@ public class RecoveryIT
 
         // then
         assertEventually( "All cores have the same data",
-                () -> cluster.coreMembers().stream().map( this::dbRepresentation ).collect( toSet() ).size(),
+                () -> cluster.coreMembers().stream().map( RecoveryIT::dbRepresentation ).collect( toSet() ).size(),
                 equalTo( 1 ), 10, TimeUnit.SECONDS );
 
         cluster.shutdown();
 
-        storeDirs.forEach( this::assertConsistent );
+        storeDirs.forEach( RecoveryIT::assertConsistent );
     }
 
-    private DbRepresentation dbRepresentation( CoreClusterMember member )
+    private static DbRepresentation dbRepresentation( CoreClusterMember member )
     {
         return  DbRepresentation.of( member.database() );
     }
 
-    private void assertConsistent( File storeDir )
+    private static void assertConsistent( File storeDir )
     {
         ConsistencyCheckService.Result result;
         try
@@ -123,7 +123,7 @@ public class RecoveryIT
         assertTrue( result.isSuccessful() );
     }
 
-    private void fireSomeLoadAtTheCluster( Cluster cluster ) throws Exception
+    private static void fireSomeLoadAtTheCluster( Cluster cluster ) throws Exception
     {
         for ( int i = 0; i < cluster.numberOfCoreMembersReportedByTopology(); i++ )
         {

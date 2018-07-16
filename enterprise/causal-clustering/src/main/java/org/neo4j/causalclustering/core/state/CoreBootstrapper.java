@@ -92,15 +92,15 @@ public class CoreBootstrapper
     private static final long FIRST_INDEX = 0L;
     private static final long FIRST_TERM = 0L;
 
-    private final File storeDir;
+    private final File databaseDirectory;
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
     private final Config config;
     private final LogProvider logProvider;
 
-    CoreBootstrapper( File storeDir, PageCache pageCache, FileSystemAbstraction fs, Config config, LogProvider logProvider )
+    CoreBootstrapper( File databaseDirectory, PageCache pageCache, FileSystemAbstraction fs, Config config, LogProvider logProvider )
     {
-        this.storeDir = storeDir;
+        this.databaseDirectory = databaseDirectory;
         this.pageCache = pageCache;
         this.fs = fs;
         this.config = config;
@@ -109,14 +109,14 @@ public class CoreBootstrapper
 
     public CoreSnapshot bootstrap( Set<MemberId> members ) throws IOException
     {
-        StoreFactory factory = new StoreFactory( storeDir, config,
+        StoreFactory factory = new StoreFactory( databaseDirectory, config,
                 new DefaultIdGeneratorFactory( fs ), pageCache, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
 
         NeoStores neoStores = factory.openAllNeoStores( true );
         neoStores.close();
 
         CoreSnapshot coreSnapshot = new CoreSnapshot( FIRST_INDEX, FIRST_TERM );
-        coreSnapshot.add( CoreStateType.ID_ALLOCATION, deriveIdAllocationState( storeDir ) );
+        coreSnapshot.add( CoreStateType.ID_ALLOCATION, deriveIdAllocationState( databaseDirectory ) );
         coreSnapshot.add( CoreStateType.LOCK_TOKEN, new ReplicatedLockTokenState() );
         coreSnapshot.add( CoreStateType.RAFT_CORE_STATE,
                 new RaftCoreState( new MembershipEntry( FIRST_INDEX, members ) ) );
@@ -127,8 +127,8 @@ public class CoreBootstrapper
 
     private void appendNullTransactionLogEntryToSetRaftIndexToMinusOne() throws IOException
     {
-        ReadOnlyTransactionIdStore readOnlyTransactionIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDir );
-        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache )
+        ReadOnlyTransactionIdStore readOnlyTransactionIdStore = new ReadOnlyTransactionIdStore( pageCache, databaseDirectory );
+        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( databaseDirectory, fs, pageCache )
                 .withConfig( config )
                 .withLastCommittedTransactionIdSupplier( () -> readOnlyTransactionIdStore.getLastClosedTransactionId() - 1 )
                 .build();
@@ -149,7 +149,7 @@ public class CoreBootstrapper
             channel.prepareForFlush().flush();
         }
 
-        File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        File neoStoreFile = new File( databaseDirectory, MetaDataStore.DEFAULT_NAME );
         MetaDataStore.setRecord( pageCache, neoStoreFile, LAST_TRANSACTION_ID, dummyTransactionId );
     }
 
@@ -177,7 +177,7 @@ public class CoreBootstrapper
         return new IdAllocationState( highIds, FIRST_INDEX );
     }
 
-    private long getHighId( File coreDir, DefaultIdGeneratorFactory factory, IdType idType, String store )
+    private static long getHighId( File coreDir, DefaultIdGeneratorFactory factory, IdType idType, String store )
     {
         IdGenerator idGenerator = factory.open( new File( coreDir, idFile( store ) ), idType, () -> -1L, Long.MAX_VALUE );
         long highId = idGenerator.getHighId();

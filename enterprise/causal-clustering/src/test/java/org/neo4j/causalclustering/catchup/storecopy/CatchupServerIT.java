@@ -50,7 +50,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
@@ -96,8 +95,8 @@ public class CatchupServerIT
     @Before
     public void startDb() throws Throwable
     {
-        temporaryDirectory = testDirectory.directory();
-        graphDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fsa ).newEmbeddedDatabase( testDirectory.graphDbDir() );
+        temporaryDirectory = testDirectory.directory( "temp" );
+        graphDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fsa ).newEmbeddedDatabase( testDirectory.directory() );
         createLegacyIndex();
         createPropertyIndex();
         addData( graphDb );
@@ -257,14 +256,14 @@ public class CatchupServerIT
 
     private File databaseFileToClientFile( File file ) throws IOException
     {
-        String relativePathToDatabaseDir = relativePath( new File( temporaryDirectory, DataSourceManager.DEFAULT_DATABASE_NAME ), file );
+        String relativePathToDatabaseDir = relativePath( testDirectory.graphDbDir(), file );
         return new File( temporaryDirectory, relativePathToDatabaseDir );
     }
 
     private File clientFileToDatabaseFile( File file ) throws IOException
     {
         String relativePathToDatabaseDir = relativePath( temporaryDirectory, file );
-        return new File( new File( temporaryDirectory, "graph-db" ), relativePathToDatabaseDir );
+        return new File( testDirectory.graphDbDir(), relativePathToDatabaseDir );
     }
 
     private void fileContentEquals( File fileA, File fileB ) throws IOException
@@ -282,12 +281,12 @@ public class CatchupServerIT
         assertThat( givenFile, containsInAnyOrder( expectedStoreFiles.toArray( new String[givenFile.size()] ) ) );
     }
 
-    private LongSet getExpectedIndexIds( NeoStoreDataSource neoStoreDataSource )
+    private static LongSet getExpectedIndexIds( NeoStoreDataSource neoStoreDataSource )
     {
         return neoStoreDataSource.getNeoStoreFileListing().getNeoStoreFileIndexListing().getIndexIds();
     }
 
-    private List<File> listServerExpectedNonReplayableFiles( NeoStoreDataSource neoStoreDataSource ) throws IOException
+    private static List<File> listServerExpectedNonReplayableFiles( NeoStoreDataSource neoStoreDataSource ) throws IOException
     {
         try ( Stream<StoreFileMetadata> countStoreStream = neoStoreDataSource.getNeoStoreFileListing().builder().excludeAll()
                 .includeNeoStoreFiles().build().stream();
@@ -313,7 +312,7 @@ public class CatchupServerIT
         return storeFileMetadata -> StoreType.typeOf( storeFileMetadata.file().getName() ).filter( f -> f == StoreType.COUNTS ).isPresent();
     }
 
-    private void addData( GraphDatabaseAPI graphDb )
+    private static void addData( GraphDatabaseAPI graphDb )
     {
         try ( Transaction tx = graphDb.beginTx() )
         {

@@ -749,7 +749,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         return getNodesByLabelAndPropertyWithoutIndex( statement, labelId, queries );
     }
 
-    private IndexReference findMatchingIndex( KernelTransaction transaction, int labelId, int[] propertyIds )
+    private static IndexReference findMatchingIndex( KernelTransaction transaction, int labelId, int[] propertyIds )
     {
         IndexReference index = transaction.schemaRead().index( labelId, propertyIds );
         if ( index != IndexReference.NO_INDEX )
@@ -780,7 +780,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         }
     }
 
-    private IndexQuery[] getReorderedIndexQueries( int[] indexPropertyIds, IndexQuery[] queries )
+    private static IndexQuery[] getReorderedIndexQueries( int[] indexPropertyIds, IndexQuery[] queries )
     {
         IndexQuery[] orderedQueries = new IndexQuery[queries.length];
         for ( int i = 0; i < indexPropertyIds.length; i++ )
@@ -798,7 +798,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         return orderedQueries;
     }
 
-    private boolean hasSamePropertyIds( int[] original, int[] workingCopy, int[] propertyIds )
+    private static boolean hasSamePropertyIds( int[] original, int[] workingCopy, int[] propertyIds )
     {
         if ( original.length == propertyIds.length )
         {
@@ -809,7 +809,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         return false;
     }
 
-    private int[] getPropertyIds( IndexQuery[] queries )
+    private static int[] getPropertyIds( IndexQuery[] queries )
     {
         int[] propertyIds = new int[queries.length];
         for ( int i = 0; i < queries.length; i++ )
@@ -819,7 +819,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         return propertyIds;
     }
 
-    private boolean isInvalidQuery( int labelId, IndexQuery[] queries )
+    private static boolean isInvalidQuery( int labelId, IndexQuery[] queries )
     {
         boolean invalidQuery = labelId == TokenRead.NO_TOKEN;
         for ( IndexQuery query : queries )
@@ -830,7 +830,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         return invalidQuery;
     }
 
-    private void assertNoDuplicates( int[] propertyIds, TokenRead tokenRead )
+    private static void assertNoDuplicates( int[] propertyIds, TokenRead tokenRead )
     {
         int prev = propertyIds[0];
         for ( int i = 1; i < propertyIds.length; i++ )
@@ -1085,7 +1085,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         assertTransactionOpen( statementContext.getKernelTransactionBoundToThisThread( true ) );
     }
 
-    private void assertTransactionOpen( KernelTransaction transaction )
+    private static void assertTransactionOpen( KernelTransaction transaction )
     {
         if ( transaction.isTerminated() )
         {

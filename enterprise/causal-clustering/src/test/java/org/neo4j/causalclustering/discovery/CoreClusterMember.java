@@ -62,7 +62,7 @@ public class CoreClusterMember implements ClusterMember<CoreGraphDatabase>
 {
     private final File neo4jHome;
     protected final DiscoveryServiceFactory discoveryServiceFactory;
-    protected final File storeDir;
+    private final File defaultDatabaseDirectory;
     private final File clusterStateDir;
     private final File raftLogDir;
     private final Map<String,String> config = stringMap();
@@ -143,13 +143,13 @@ public class CoreClusterMember implements ClusterMember<CoreGraphDatabase>
         clusterStateDir = ClusterStateDirectory.withoutInitializing( dataDir ).get();
         raftLogDir = new File( clusterStateDir, RAFT_LOG_DIRECTORY_NAME );
         databasesDirectory = new File( dataDir, "databases" );
-        storeDir = new File( databasesDirectory, DataSourceManager.DEFAULT_DATABASE_NAME );
+        defaultDatabaseDirectory = new File( databasesDirectory, DataSourceManager.DEFAULT_DATABASE_NAME );
         memberConfig = Config.defaults( config );
 
         this.dbName = memberConfig.get( CausalClusteringSettings.database );
 
         //noinspection ResultOfMethodCallIgnored
-        storeDir.mkdirs();
+        defaultDatabaseDirectory.mkdirs();
         threadGroup = new ThreadGroup( toString() );
     }
 
@@ -209,9 +209,14 @@ public class CoreClusterMember implements ClusterMember<CoreGraphDatabase>
     }
 
     @Override
-    public File storeDir()
+    public File databaseDirectory()
     {
-        return storeDir;
+        return defaultDatabaseDirectory;
+    }
+
+    public File databasesDirectory()
+    {
+        return databasesDirectory;
     }
 
     public RaftLogPruner raftLogPruner()

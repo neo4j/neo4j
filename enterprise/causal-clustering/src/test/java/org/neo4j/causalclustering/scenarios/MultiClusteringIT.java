@@ -54,7 +54,6 @@ import org.neo4j.test.causalclustering.ClusterRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.causalclustering.TestStoreId.getStoreIds;
@@ -175,7 +174,7 @@ public class MultiClusteringIT
         }
 
         List<File> storeDirs = cluster.coreMembers().stream()
-                .map( CoreClusterMember::storeDir )
+                .map( CoreClusterMember::databaseDirectory )
                 .collect( Collectors.toList() );
 
         cluster.shutdown();
@@ -222,7 +221,7 @@ public class MultiClusteringIT
 
         List<File> storeDirs = cluster.coreMembers().stream()
                 .filter( m -> dbName.equals( m.dbName() ) )
-                .map( CoreClusterMember::storeDir )
+                .map( CoreClusterMember::databaseDirectory )
                 .collect( Collectors.toList() );
 
         cluster.shutdown();
@@ -237,7 +236,7 @@ public class MultiClusteringIT
     {
         CoreClusterMember member = cluster.coreMembers().stream().findFirst().orElseThrow( IllegalArgumentException::new );
 
-        cluster.shutdownCoreMember( member );
+        Cluster.shutdownCoreMember( member );
 
         //given
         member.updateConfig( CausalClusteringSettings.database, "new_name" );
@@ -245,7 +244,7 @@ public class MultiClusteringIT
         try
         {
             //when
-            cluster.startCoreMember( member );
+            Cluster.startCoreMember( member );
             fail( "Cluster member should fail to restart after database name change." );
         }
         catch ( ExecutionException e )

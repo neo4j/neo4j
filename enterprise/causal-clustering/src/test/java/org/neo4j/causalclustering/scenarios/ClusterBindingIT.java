@@ -148,7 +148,7 @@ public class ClusterBindingIT
             tx.success();
         } );
 
-        File storeDir = cluster.getCoreMemberById( 0 ).storeDir();
+        File storeDir = cluster.getCoreMemberById( 0 ).databaseDirectory();
 
         cluster.removeCoreMemberWithServerId( 0 );
         changeStoreId( storeDir );
@@ -264,9 +264,9 @@ public class ClusterBindingIT
         assertAllStoresHaveTheSameStoreId( coreStoreDirs, fs );
     }
 
-    private List<File> storeDirs( Collection<CoreClusterMember> dbs )
+    private static List<File> storeDirs( Collection<CoreClusterMember> dbs )
     {
-        return dbs.stream().map( CoreClusterMember::storeDir ).collect( Collectors.toList() );
+        return dbs.stream().map( CoreClusterMember::databaseDirectory ).collect( Collectors.toList() );
     }
 
     private void changeClusterId( CoreClusterMember coreMember ) throws IOException

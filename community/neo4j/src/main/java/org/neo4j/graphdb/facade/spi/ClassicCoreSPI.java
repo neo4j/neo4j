@@ -131,8 +131,7 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     @Override
     public File storeDir()
     {
-        //TODO: change to particular data base store dir
-        return platform.storeDir;
+        return dataSource.neoStoreDataSource.getDatabaseDirectory();
     }
 
     @Override

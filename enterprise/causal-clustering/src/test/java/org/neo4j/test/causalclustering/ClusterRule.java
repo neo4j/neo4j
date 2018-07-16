@@ -31,8 +31,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
@@ -56,7 +56,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  */
 public class ClusterRule extends ExternalResource
 {
-    private final TestDirectory testDirectory;
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
     private File clusterDirectory;
     private Cluster cluster;
 
@@ -75,7 +75,6 @@ public class ClusterRule extends ExternalResource
 
     public ClusterRule()
     {
-        this.testDirectory = TestDirectory.testDirectory();
     }
 
     @Override

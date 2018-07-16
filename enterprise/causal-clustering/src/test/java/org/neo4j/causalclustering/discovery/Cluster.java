@@ -238,7 +238,7 @@ public class Cluster
         }
     }
 
-    private void shutdownCoreMembers( Collection<CoreClusterMember> members, ErrorHandler errorHandler )
+    private static void shutdownCoreMembers( Collection<CoreClusterMember> members, ErrorHandler errorHandler )
     {
         shutdownMembers( members, errorHandler );
     }
@@ -248,12 +248,12 @@ public class Cluster
         shutdownCoreMembers( coreMembers() );
     }
 
-    public void shutdownCoreMember( CoreClusterMember member )
+    public static void shutdownCoreMember( CoreClusterMember member )
     {
         shutdownCoreMembers( Collections.singleton( member ) );
     }
 
-    public void shutdownCoreMembers( Collection<CoreClusterMember> members )
+    public static void shutdownCoreMembers( Collection<CoreClusterMember> members )
     {
         try ( ErrorHandler errorHandler = new ErrorHandler( "Error when trying to shutdown core members" ) )
         {
@@ -262,7 +262,7 @@ public class Cluster
     }
 
     @SuppressWarnings( "unchecked" )
-    private void shutdownMembers( Collection<? extends ClusterMember> clusterMembers, ErrorHandler errorHandler )
+    private static void shutdownMembers( Collection<? extends ClusterMember> clusterMembers, ErrorHandler errorHandler )
     {
         try
         {
@@ -278,8 +278,8 @@ public class Cluster
         }
     }
 
-    private <X extends GraphDatabaseAPI, T extends ClusterMember<X>, R> List<Future<R>> invokeAll(
-            String threadName, Collection<T> members, Function<T,R> call )
+    private static <X extends GraphDatabaseAPI, T extends ClusterMember<X>, R> List<Future<R>> invokeAll( String threadName, Collection<T> members,
+            Function<T,R> call )
     {
         List<Future<R>> list = new ArrayList<>( members.size() );
         int threadNumber = 0;
@@ -514,7 +514,7 @@ public class Cluster
         return awaitEx( supplier, notNull()::test, timeout, timeUnit );
     }
 
-    private boolean isTransientFailure( Throwable e )
+    private static boolean isTransientFailure( Throwable e )
     {
         Predicate<Throwable> throwablePredicate =
                 e1 -> isLockExpired( e1 ) || isLockOnFollower( e1 ) || isWriteNotOnLeader( e1 ) || e1 instanceof TransientTransactionFailureException ||
@@ -522,20 +522,20 @@ public class Cluster
         return Exceptions.contains( e, throwablePredicate );
     }
 
-    private boolean isWriteNotOnLeader( Throwable e )
+    private static boolean isWriteNotOnLeader( Throwable e )
     {
         return e instanceof WriteOperationsNotAllowedException &&
                e.getMessage().startsWith( String.format( LeaderCanWrite.NOT_LEADER_ERROR_MSG, "" ) );
     }
 
-    private boolean isLockOnFollower( Throwable e )
+    private static boolean isLockOnFollower( Throwable e )
     {
         return e instanceof AcquireLockTimeoutException &&
                (e.getMessage().equals( LeaderOnlyLockManager.LOCK_NOT_ON_LEADER_ERROR_MESSAGE ) ||
                 e.getCause() instanceof NoLeaderFoundException);
     }
 
-    private boolean isLockExpired( Throwable e )
+    private static boolean isLockExpired( Throwable e )
     {
         return e instanceof TransactionFailureException &&
                e.getCause() instanceof org.neo4j.internal.kernel.api.exceptions.TransactionFailureException &&
@@ -640,12 +640,12 @@ public class Cluster
         startCoreMembers( coreMembers.values() );
     }
 
-    public void startCoreMember( CoreClusterMember member ) throws InterruptedException, ExecutionException
+    public static void startCoreMember( CoreClusterMember member ) throws InterruptedException, ExecutionException
     {
         startCoreMembers( Collections.singleton( member ) );
     }
 
-    public void startCoreMembers( Collection<CoreClusterMember> members ) throws InterruptedException, ExecutionException
+    public static void startCoreMembers( Collection<CoreClusterMember> members ) throws InterruptedException, ExecutionException
     {
         List<Future<CoreGraphDatabase>> futures = invokeAll( "cluster-starter", members, cm ->
         {

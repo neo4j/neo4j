@@ -185,7 +185,7 @@ public class ReadReplicaReplicationIT
         AtomicBoolean labelScanStoreCorrectlyPlaced = new AtomicBoolean( false );
         Monitors monitors = new Monitors();
         ReadReplica rr = cluster.addReadReplicaWithIdAndMonitors( 0, monitors );
-        Path readReplicateStoreDir = rr.storeDir().toPath().toAbsolutePath();
+        Path readReplicateStoreDir = rr.databaseDirectory().toPath().toAbsolutePath();
 
         monitors.addMonitorListener( (FileCopyMonitor) file ->
         {
@@ -229,7 +229,7 @@ public class ReadReplicaReplicationIT
         assertTrue( labelScanStoreCorrectlyPlaced.get() );
     }
 
-    private void gatherLabelScanStoreFiles( GraphDatabaseAPI db, Set<Path> labelScanStoreFiles )
+    private static void gatherLabelScanStoreFiles( GraphDatabaseAPI db, Set<Path> labelScanStoreFiles )
     {
         Path dbStoreDirectory = db.getStoreDir().toPath().toAbsolutePath();
         LabelScanStore labelScanStore = db.getDependencyResolver().resolveDependency( LabelScanStore.class );
@@ -459,7 +459,7 @@ public class ReadReplicaReplicationIT
         transactionIdTracker( readReplicaGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, ofSeconds( 15 ) );
     }
 
-    private TransactionIdTracker transactionIdTracker( GraphDatabaseAPI database )
+    private static TransactionIdTracker transactionIdTracker( GraphDatabaseAPI database )
     {
         Supplier<TransactionIdStore> transactionIdStore =
                 database.getDependencyResolver().provideDependency( TransactionIdStore.class );
@@ -468,13 +468,12 @@ public class ReadReplicaReplicationIT
         return new TransactionIdTracker( transactionIdStore, availabilityGuard );
     }
 
-    private LogFiles physicalLogFiles( ClusterMember clusterMember )
+    private static LogFiles physicalLogFiles( ClusterMember clusterMember )
     {
         return clusterMember.database().getDependencyResolver().resolveDependency( LogFiles.class );
     }
 
-    private boolean readReplicasUpToDateAsTheLeader( CoreClusterMember leader,
-            Collection<ReadReplica> readReplicas )
+    private static boolean readReplicasUpToDateAsTheLeader( CoreClusterMember leader, Collection<ReadReplica> readReplicas )
     {
         long leaderTxId = lastClosedTransactionId( true, leader.database() );
         return readReplicas.stream().map( ReadReplica::database )
@@ -482,14 +481,14 @@ public class ReadReplicaReplicationIT
                 .reduce( true, ( acc, txId ) -> acc && txId == leaderTxId, Boolean::logicalAnd );
     }
 
-    private void changeStoreId( ReadReplica replica ) throws IOException
+    private static void changeStoreId( ReadReplica replica ) throws IOException
     {
-        File neoStoreFile = new File( replica.storeDir(), MetaDataStore.DEFAULT_NAME );
+        File neoStoreFile = new File( replica.databaseDirectory(), MetaDataStore.DEFAULT_NAME );
         PageCache pageCache = replica.database().getDependencyResolver().resolveDependency( PageCache.class );
         MetaDataStore.setRecord( pageCache, neoStoreFile, TIME, System.currentTimeMillis() );
     }
 
-    private long lastClosedTransactionId( boolean fail, GraphDatabaseFacade db )
+    private static long lastClosedTransactionId( boolean fail, GraphDatabaseFacade db )
     {
         try
         {
@@ -584,7 +583,7 @@ public class ReadReplicaReplicationIT
         }
     }
 
-    private long versionBy( File raftLogDir, BinaryOperator<Long> operator ) throws IOException
+    private static long versionBy( File raftLogDir, BinaryOperator<Long> operator ) throws IOException
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {

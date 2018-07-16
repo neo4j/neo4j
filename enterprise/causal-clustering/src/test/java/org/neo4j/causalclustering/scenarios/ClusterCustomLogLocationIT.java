@@ -72,10 +72,10 @@ public class ClusterCustomLogLocationIT
             LogFiles logFiles = dependencyResolver.resolveDependency( LogFiles.class );
             assertEquals( logFiles.logFilesDirectory().getName(), "core-tx-logs-" + coreClusterMember.serverId() );
             assertTrue( logFiles.hasAnyEntries( 0 ) );
-            File[] coreLogDirectories = coreClusterMember.storeDir().listFiles( file -> file.getName().startsWith( "core" ) );
+            File[] coreLogDirectories = coreClusterMember.databaseDirectory().listFiles( file -> file.getName().startsWith( "core" ) );
             assertThat( coreLogDirectories, Matchers.arrayWithSize( 1 ) );
 
-            logFileInStoreDirectoryDoesNotExist( coreClusterMember.storeDir(), dependencyResolver );
+            logFileInStoreDirectoryDoesNotExist( coreClusterMember.databaseDirectory(), dependencyResolver );
         }
 
         Collection<ReadReplica> readReplicas = cluster.readReplicas();
@@ -86,14 +86,14 @@ public class ClusterCustomLogLocationIT
             LogFiles logFiles = dependencyResolver.resolveDependency( LogFiles.class );
             assertEquals( logFiles.logFilesDirectory().getName(), "replica-tx-logs-" + readReplica.serverId() );
             assertTrue( logFiles.hasAnyEntries( 0 ) );
-            File[] replicaLogDirectories = readReplica.storeDir().listFiles( file -> file.getName().startsWith( "replica" ) );
+            File[] replicaLogDirectories = readReplica.databaseDirectory().listFiles( file -> file.getName().startsWith( "replica" ) );
             assertThat( replicaLogDirectories, Matchers.arrayWithSize( 1 ) );
 
-            logFileInStoreDirectoryDoesNotExist( readReplica.storeDir(), dependencyResolver );
+            logFileInStoreDirectoryDoesNotExist( readReplica.databaseDirectory(), dependencyResolver );
         }
     }
 
-    private void logFileInStoreDirectoryDoesNotExist( File storeDir, DependencyResolver dependencyResolver ) throws IOException
+    private static void logFileInStoreDirectoryDoesNotExist( File storeDir, DependencyResolver dependencyResolver ) throws IOException
     {
         FileSystemAbstraction fileSystem = dependencyResolver.resolveDependency( FileSystemAbstraction.class );
         LogFiles storeLogFiles = logFilesBasedOnlyBuilder( storeDir, fileSystem ).build();

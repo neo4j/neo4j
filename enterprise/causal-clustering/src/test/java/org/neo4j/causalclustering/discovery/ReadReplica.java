@@ -55,13 +55,14 @@ public class ReadReplica implements ClusterMember<ReadReplicaGraphDatabase>
 {
     protected final DiscoveryServiceFactory discoveryServiceFactory;
     private final File neo4jHome;
-    protected final File storeDir;
+    protected final File defaultDatabaseDirectory;
     private final int serverId;
     private final String boltAdvertisedSocketAddress;
     private final Config memberConfig;
     protected ReadReplicaGraphDatabase database;
     protected Monitors monitors;
     private final ThreadGroup threadGroup;
+    protected final File databasesDirectory;
 
     public ReadReplica( File parentDir, int serverId, int boltPort, int httpPort, int txPort, int backupPort,
                         DiscoveryServiceFactory discoveryServiceFactory,
@@ -108,10 +109,12 @@ public class ReadReplica implements ClusterMember<ReadReplicaGraphDatabase>
         memberConfig = Config.defaults( config );
 
         this.discoveryServiceFactory = discoveryServiceFactory;
-        storeDir = new File( new File( new File( neo4jHome, "data" ), "databases" ), DataSourceManager.DEFAULT_DATABASE_NAME );
+        File dataDirectory = new File( neo4jHome, "data" );
+        databasesDirectory = new File( dataDirectory, "databases" );
+        defaultDatabaseDirectory = new File( databasesDirectory, DataSourceManager.DEFAULT_DATABASE_NAME );
 
         //noinspection ResultOfMethodCallIgnored
-        storeDir.mkdirs();
+        defaultDatabaseDirectory.mkdirs();
 
         this.monitors = monitors;
         threadGroup = new ThreadGroup( toString() );
@@ -130,9 +133,8 @@ public class ReadReplica implements ClusterMember<ReadReplicaGraphDatabase>
     @Override
     public void start()
     {
-        database = new ReadReplicaGraphDatabase( storeDir, memberConfig,
-                GraphDatabaseDependencies.newDependencies().monitors( monitors ), discoveryServiceFactory,
-                memberId() );
+        database = new ReadReplicaGraphDatabase( databasesDirectory, memberConfig, GraphDatabaseDependencies.newDependencies().monitors( monitors ),
+                discoveryServiceFactory, memberId() );
     }
 
     @Override
@@ -193,9 +195,9 @@ public class ReadReplica implements ClusterMember<ReadReplicaGraphDatabase>
     }
 
     @Override
-    public File storeDir()
+    public File databaseDirectory()
     {
-        return storeDir;
+        return defaultDatabaseDirectory;
     }
 
     public String toString()

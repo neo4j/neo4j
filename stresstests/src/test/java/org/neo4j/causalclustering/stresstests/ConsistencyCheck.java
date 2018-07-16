@@ -49,7 +49,7 @@ public class ConsistencyCheck extends Validation
 
         for ( ClusterMember member : members )
         {
-            String storeDir = member.storeDir().getAbsolutePath();
+            String storeDir = member.databaseDirectory().getAbsolutePath();
             ConsistencyCheckService.Result result = runConsistencyCheckTool( new String[]{storeDir}, System.out, System.err );
             if ( !result.isSuccessful() )
             {
