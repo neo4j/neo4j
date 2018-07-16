@@ -71,7 +71,7 @@ public class LargeDynamicKeysIT
                     String string;
                     do
                     {
-                        string = random.nextAlphaNumericString( 3_000, 4_000 );
+                        string = random.nextAlphaNumericString( 3_000, 4_043 );
                     }
                     while ( !generatedStrings.add( string ) );
                     RawBytes key = new RawBytes();
