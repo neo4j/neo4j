@@ -99,5 +99,5 @@ class CodeGenContext(val semanticTable: SemanticTable,
 }
 
 object CodeGenContext {
-  def sanitizedName(name: String) = name.replace(" ", "_")
+  def sanitizedName(name: String) = name.replace(" ", "_").replace("@", "__at__")
 }

@@ -93,10 +93,10 @@ object UnknownRuntime extends CypherRuntime[RuntimeContext] {
 class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CONTEXT]],
                                                  requestedRuntime: CypherRuntimeOption) extends CypherRuntime[CONTEXT] {
 
-  private val PublicCannotCompile =
+  private def publicCannotCompile(originalException: Exception) =
     {
       val message = s"This version of Neo4j does not support requested runtime: ${requestedRuntime.name}"
-      val invalidArgument = new InvalidArgumentException(message)
+      val invalidArgument = new InvalidArgumentException(message, originalException)
       new org.neo4j.graphdb.QueryExecutionException(message, invalidArgument, invalidArgument.status.code().serialize())
     }
 
@@ -116,7 +116,7 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
     }
 
     executionPlan.recover({
-      case e: CantCompileQueryException => throw PublicCannotCompile
+      case e: CantCompileQueryException => throw publicCannotCompile(e)
     }).get
   }
 }
