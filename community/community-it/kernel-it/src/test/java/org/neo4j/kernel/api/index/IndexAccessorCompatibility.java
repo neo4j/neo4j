@@ -93,7 +93,6 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         {
             for ( IndexEntryUpdate<?> update : updates )
             {
-                System.out.println( update );
                 updater.process( update );
             }
         }

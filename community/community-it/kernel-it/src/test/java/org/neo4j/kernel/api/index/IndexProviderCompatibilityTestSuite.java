@@ -123,7 +123,7 @@ public abstract class IndexProviderCompatibilityTestSuite
                             Values.of( new short[]{314, 1337} ),
                             Values.of( new int[]{3140, 13370} ),
                             Values.of( new long[]{31400, 133700} ),
-                            Values.of( new boolean[]{false, true} )
+                            Values.of( new boolean[]{true, true} )
                     ),
                     Arrays.asList(
                             DateValue.epochDate( 2 ),
@@ -186,13 +186,13 @@ public abstract class IndexProviderCompatibilityTestSuite
                     testSuite.supportsSpatial(),
                     testSuite.supportsTemporal(),
                     Arrays.asList( Values.of( "string2" ), Values.of( 1337 ), Values.of( false ),
-                            Values.of( new char[]{'a', 'z'} ),
+                            Values.of( new char[]{'b', 'c'} ),
                             Values.of( new String[]{"someString1", "someString2"} ),
                             Values.of( new byte[]{(byte) 9, (byte) 9} ),
                             Values.of( new short[]{99, 999} ),
                             Values.of( new int[]{99999, 99999} ),
                             Values.of( new long[]{999999, 999999} ),
-                            Values.of( new boolean[]{false, true} )
+                            Values.of( new boolean[]{false, false} )
                     ),
                     Arrays.asList(
                             DateValue.epochDate( 42 ),
@@ -202,28 +202,28 @@ public abstract class IndexProviderCompatibilityTestSuite
                             DateTimeValue.datetime( 1999, 12, 31, 23, 59, 59, 123456789, "Europe/London" ),
                             DurationValue.duration( 4, 3, 2, 1 ),
                             Values.dateTimeArray( new ZonedDateTime[]{
-                                    ZonedDateTime.of( 2000, 10, 9, 8, 7, 6, 5, ZoneId.of( "UTC" ) ),
-                                    ZonedDateTime.of( 2000, 9, 8, 7, 6, 5, 4, ZoneId.of( "UTC" ) )
+                                    ZonedDateTime.of( 999, 10, 9, 8, 7, 6, 5, ZoneId.of( "UTC" ) ),
+                                    ZonedDateTime.of( 999, 9, 8, 7, 6, 5, 4, ZoneId.of( "UTC" ) )
                             } ),
                             Values.localDateTimeArray( new LocalDateTime[]{
-                                    LocalDateTime.of( 2000, 10, 9, 8, 7, 6, 5 ),
-                                    LocalDateTime.of( 2000, 10, 9, 8, 7, 6, 5 )
+                                    LocalDateTime.of( 999, 10, 9, 8, 7, 6, 5 ),
+                                    LocalDateTime.of( 999, 10, 9, 8, 7, 6, 5 )
                             } ),
                             Values.timeArray( new OffsetTime[]{
-                                    OffsetTime.of( 20, 8, 7, 6, ZoneOffset.UTC ),
-                                    OffsetTime.of( 20, 8, 7, 6, ZoneOffset.UTC )
+                                    OffsetTime.of( 19, 8, 7, 6, ZoneOffset.UTC ),
+                                    OffsetTime.of( 19, 8, 7, 6, ZoneOffset.UTC )
                             } ),
                             Values.dateArray( new LocalDate[]{
-                                    LocalDate.of( 2000, 12, 28 ),
-                                    LocalDate.of( 2000, 12, 28 )
+                                    LocalDate.of( 999, 12, 28 ),
+                                    LocalDate.of( 999, 12, 28 )
                             } ),
                             Values.localTimeArray( new LocalTime[]{
-                                    LocalTime.of( 20, 28 ),
-                                    LocalTime.of( 20, 28 )
+                                    LocalTime.of( 19, 28 ),
+                                    LocalTime.of( 19, 28 )
                             } ),
                             Values.durationArray( new DurationValue[]{
-                                    DurationValue.duration( 20, 10, 10, 10 ),
-                                    DurationValue.duration( 20, 10, 10, 10 )
+                                    DurationValue.duration( 99, 10, 10, 10 ),
+                                    DurationValue.duration( 99, 10, 10, 10 )
                             })
                     ),
                     Arrays.asList( Values.pointValue( CoordinateReferenceSystem.Cartesian, 90, 90 ),
