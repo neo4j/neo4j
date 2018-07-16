@@ -58,7 +58,7 @@ public class BatchInsertIndexProviderTest
 {
     private final GraphDatabaseSettings.SchemaIndex schemaIndex;
     private DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    private TestDirectory storeDir = TestDirectory.testDirectory( getClass() );
+    private TestDirectory storeDir = TestDirectory.testDirectory();
     private PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Rule
@@ -86,7 +86,7 @@ public class BatchInsertIndexProviderTest
         BatchInserter inserter = newBatchInserter( config );
         inserter.createDeferredSchemaIndex( TestLabels.LABEL_ONE ).on( "key" ).create();
         inserter.shutdown();
-        GraphDatabaseService db = graphDatabaseService( inserter.getStoreDir(), config );
+        GraphDatabaseService db = graphDatabaseService( storeDir.directory(), config );
         try ( Transaction tx = db.beginTx() )
         {
             DependencyResolver dependencyResolver = ((GraphDatabaseAPI) db).getDependencyResolver();
@@ -109,14 +109,14 @@ public class BatchInsertIndexProviderTest
 
     private BatchInserter newBatchInserter( Map<String,String> config ) throws Exception
     {
-        return BatchInserters.inserter( storeDir.absolutePath(), fileSystemRule.get(), config );
+        return BatchInserters.inserter( storeDir.graphDbDir(), fileSystemRule.get(), config );
     }
 
-    private GraphDatabaseService graphDatabaseService( String storeDir, Map<String, String> config )
+    private GraphDatabaseService graphDatabaseService( File storeDir, Map<String, String> config )
     {
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fileSystemRule.get() );
-        GraphDatabaseService db = factory.newImpermanentDatabaseBuilder( new File( storeDir ) )
+        GraphDatabaseService db = factory.newImpermanentDatabaseBuilder( storeDir )
                 // Shouldn't be necessary to set dense node threshold since it's a stick config
                 .setConfig( config )
                 .newGraphDatabase();
@@ -130,7 +130,7 @@ public class BatchInsertIndexProviderTest
         return db;
     }
 
-    private String unexpectedIndexProviderMessage( IndexReference index )
+    private static String unexpectedIndexProviderMessage( IndexReference index )
     {
         return "Unexpected provider: key=" + index.providerKey() + ", version=" + index.providerVersion();
     }
