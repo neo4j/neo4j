@@ -58,7 +58,6 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -387,7 +386,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     {
         FileSystemAbstraction fs = resolveDependency( FileSystemAbstraction.class );
         database.shutdown();
-        action.run( fs, new File( storeDir, DataSourceManager.DEFAULT_DATABASE_NAME ) );
+        action.run( fs, storeDir );
         database = null;
         applyConfigChanges( configChanges );
         return getGraphDatabaseAPI();
