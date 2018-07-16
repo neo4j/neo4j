@@ -245,9 +245,4 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
     {
         return supplier -> descriptor.equals( supplier.schema() );
     }
-
-    interface Supplier
-    {
-        SchemaDescriptor schema();
-    }
 }

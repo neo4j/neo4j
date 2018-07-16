@@ -55,4 +55,3 @@ public abstract class SchemaKernelException extends KernelException
         return String.format( formatString, descriptor.userDescription( tokenNameLookup ) );
     }
 }
-
