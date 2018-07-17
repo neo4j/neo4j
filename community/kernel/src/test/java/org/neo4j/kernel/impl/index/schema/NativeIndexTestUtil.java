@@ -135,8 +135,10 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexSingleValueKey<
     private RawCursor<Hit<KEY,VALUE>, IOException> scan( GBPTree<KEY,VALUE> tree ) throws IOException
     {
         KEY lowest = layout.newKey();
+        lowest.initialize( Long.MIN_VALUE );
         lowest.initValueAsLowest( ValueGroup.UNKNOWN );
         KEY highest = layout.newKey();
+        highest.initialize( Long.MAX_VALUE );
         highest.initValueAsHighest( ValueGroup.UNKNOWN );
         return tree.seek( lowest, highest );
     }
