@@ -32,13 +32,14 @@ import org.neo4j.cypher.internal.runtime.compiled.expressions.IntermediateRepres
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NestedPipeExpression
 import org.neo4j.cypher.internal.v3_5.logical.plans.{CoerceToPredicate, NestedPlanExpression}
-import org.neo4j.cypher.operations.{CypherBoolean, CypherFunctions, CypherMath}
+import org.neo4j.cypher.operations.{CypherBoolean, CypherCoercions, CypherFunctions, CypherMath}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual._
 import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.util.InternalException
+import org.opencypher.v9_0.util.symbols.{CTAny, CTBoolean, CTDate, CTDateTime, CTDuration, CTFloat, CTGeometry, CTInteger, CTLocalDateTime, CTLocalTime, CTMap, CTNode, CTNumber, CTPath, CTPoint, CTRelationship, CTString, CTTime, ListType}
+import org.opencypher.v9_0.util.{CypherTypeException, InternalException}
 
 /**
   * Produces IntermediateRepresentation from a Cypher Expression
@@ -224,6 +225,102 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         IntermediateExpression(
           invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("startsWith"), l.ir, r.ir),
           nullable = true, l.fields ++ r.fields)
+      }
+
+    case EndsWith(lhs, rhs) =>
+      for {l <- compile(lhs)
+           r <- compile(rhs)} yield {
+        IntermediateExpression(
+          invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("endsWith"), l.ir, r.ir),
+          nullable = true, l.fields ++ r.fields)
+      }
+
+    // misc
+    case CoerceTo(expr, typ) =>
+      for (e <- compile(expr)) yield {
+        typ match {
+          case CTAny => e
+          case CTString =>
+            IntermediateExpression(
+              invokeStatic(method[CypherCoercions, TextValue, AnyValue]("asTextValue"), e.ir),
+              nullable = false, e.fields)
+          case CTNode =>
+            IntermediateExpression(
+              invokeStatic(method[CypherCoercions, NodeValue, AnyValue]("asNodeValue"), e.ir),
+              nullable = false, e.fields)
+          case CTRelationship =>
+            IntermediateExpression(
+              invokeStatic(method[CypherCoercions, RelationshipValue, AnyValue]("asRelationshipValue"), e.ir),
+              nullable = false, e.fields)
+          case CTPath =>
+            IntermediateExpression(
+              invokeStatic(method[CypherCoercions, PathValue, AnyValue]("asPathValue"), e.ir),
+              nullable = false, e.fields)
+          case CTInteger =>
+            IntermediateExpression(
+              invokeStatic(method[CypherCoercions, IntegralValue, AnyValue]("asIntegralValue"), e.ir),
+              nullable = false, e.fields)
+          case CTFloat =>
+            IntermediateExpression(
+              invokeStatic(method[CypherCoercions, FloatingPointValue, AnyValue]("asFloatingPointValue"), e.ir),
+              nullable = false, e.fields)
+          case CTMap =>
+            IntermediateExpression(
+              invokeStatic(method[CypherCoercions, MapValue, AnyValue, DbAccess]("asMapValue"), e.ir, DB_ACCESS),
+              nullable = false, e.fields)
+
+          case t: ListType if t.innerType == CTNode || t.innerType == CTRelationship =>
+            IntermediateExpression(
+              invokeStatic(method[CypherCoercions, ListValue, AnyValue]("asListValueFailOnPaths"), e.ir),
+              nullable = false, e.fields)
+
+          case _: ListType  =>
+            IntermediateExpression(
+              invokeStatic(method[CypherCoercions, ListValue, AnyValue]("asListValueSupportPaths"), e.ir),
+              nullable = false, e.fields)
+
+          case CTBoolean =>
+            IntermediateExpression(
+              invokeStatic(method[CypherCoercions, BooleanValue, AnyValue]("asBooleanValue"), e.ir),
+              nullable = false, e.fields)
+          case CTNumber =>
+            IntermediateExpression(
+              invokeStatic(method[CypherCoercions, NumberValue, AnyValue]("asNumberValue"), e.ir),
+              nullable = false, e.fields)
+          case CTPoint =>
+            IntermediateExpression(
+              invokeStatic(method[CypherCoercions, PointValue, AnyValue]("asPointValue"), e.ir),
+              nullable = false, e.fields)
+          case CTGeometry =>
+            IntermediateExpression(
+              invokeStatic(method[CypherCoercions, PointValue, AnyValue]("asPointValue"), e.ir),
+              nullable = false, e.fields)
+          case CTDate =>
+            IntermediateExpression(
+              invokeStatic(method[CypherCoercions, DateValue, AnyValue]("asDateValue"), e.ir),
+              nullable = false, e.fields)
+          case CTLocalTime =>
+            IntermediateExpression(
+              invokeStatic(method[CypherCoercions, LocalTimeValue, AnyValue]("asLocalTimeValue"), e.ir),
+              nullable = false, e.fields)
+          case CTTime =>
+            IntermediateExpression(
+              invokeStatic(method[CypherCoercions, TimeValue, AnyValue]("asTimeValue"), e.ir),
+              nullable = false, e.fields)
+          case CTLocalDateTime =>
+            IntermediateExpression(
+              invokeStatic(method[CypherCoercions, LocalDateTimeValue, AnyValue]("asLocalDateTimeValue"), e.ir),
+              nullable = false, e.fields)
+          case CTDateTime =>
+            IntermediateExpression(
+              invokeStatic(method[CypherCoercions, DateTimeValue, AnyValue]("asDateTimeValue"), e.ir),
+              nullable = false, e.fields)
+          case CTDuration =>
+            IntermediateExpression(
+              invokeStatic(method[CypherCoercions, DurationValue, AnyValue]("asDurationValue"), e.ir),
+              nullable = false, e.fields)
+          case _ =>  throw new CypherTypeException(s"Can't coerce to $typ")
+        }
       }
 
     //data access

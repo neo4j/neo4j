@@ -23,7 +23,7 @@
 package org.neo4j.cypher.internal.runtime.compiled.expressions
 
 import java.lang.Math.PI
-import java.time.Duration
+import java.time.{Clock, Duration}
 import java.util.concurrent.ThreadLocalRandom
 
 import org.mockito.ArgumentMatchers.any
@@ -39,13 +39,14 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.CoordinateReferenceSystem.{Cartesian, WGS84}
 import org.neo4j.values.storable.LocalTimeValue.localTime
 import org.neo4j.values.storable.Values._
-import org.neo4j.values.storable.{DoubleValue, PointValue, Values}
+import org.neo4j.values.storable._
 import org.neo4j.values.virtual.VirtualValues._
-import org.neo4j.values.virtual.{NodeValue, RelationshipValue, VirtualValues}
+import org.neo4j.values.virtual.{MapValue, NodeValue, RelationshipValue, VirtualValues}
 import org.opencypher.v9_0.ast.AstConstructionTestSupport
 import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.util._
+import org.opencypher.v9_0.util.symbols.{CypherType, ListType}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -1087,6 +1088,15 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(NO_VALUE, stringValue("hi")))) should equal(NO_VALUE)
   }
 
+  test("endsWith") {
+    val compiled= compile(startsWith(parameter("a"), parameter("b")))
+
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("hello"), stringValue("ello")))) should equal(Values.TRUE)
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("hello"), stringValue("hi")))) should equal(Values.FALSE)
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("hello"), NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(NO_VALUE, stringValue("hi")))) should equal(NO_VALUE)
+  }
+
   test("CoerceToPredicate") {
     val coerced = CoerceToPredicate(parameter("a"))
 
@@ -1223,6 +1233,87 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, EMPTY_MAP) should equal(stringValue("hello"))
   }
 
+  test("coerceTo tests") {
+    //numbers
+    coerce(longValue(42), symbols.CTAny) should equal(longValue(42))
+    coerce(longValue(42), symbols.CTInteger) should equal(longValue(42))
+    coerce(longValue(42), symbols.CTFloat) should equal(doubleValue(42))
+    coerce(longValue(42), symbols.CTNumber) should equal(longValue(42))
+    coerce(doubleValue(2.1), symbols.CTAny) should equal(doubleValue(2.1))
+    coerce(doubleValue(2.1), symbols.CTInteger) should equal(longValue(2))
+    coerce(doubleValue(2.1), symbols.CTFloat) should equal(doubleValue(2.1))
+    coerce(doubleValue(2.1), symbols.CTNumber) should equal(doubleValue(2.1))
+    //misc
+    coerce(Values.TRUE, symbols.CTBoolean) should equal(Values.TRUE)
+    coerce(Values.FALSE, symbols.CTBoolean) should equal(Values.FALSE)
+    coerce(stringValue("hello"), symbols.CTString) should equal(stringValue("hello"))
+    coerce(pointValue(Cartesian, 0.0, 0.0), symbols.CTPoint) should equal(pointValue(Cartesian, 0.0, 0.0))
+    coerce(pointValue(Cartesian, 0.0, 0.0), symbols.CTGeometry) should equal(pointValue(Cartesian, 0.0, 0.0))
+
+    //date and time
+    case class Generator(generator: Clock => AnyValue, ct: CypherType)
+    val generators: List[Generator] =
+      List(Generator(DateValue.now, symbols.CTDate),
+           Generator(TimeValue.now, symbols.CTTime),
+           Generator(LocalTimeValue.now, symbols.CTLocalTime),
+           Generator(DateTimeValue.now, symbols.CTDateTime),
+           Generator(LocalDateTimeValue.now, symbols.CTLocalDateTime))
+
+    generators.foreach{ generator =>
+      val now = generator.generator(Clock.systemUTC())
+      coerce(now, generator.ct) should equal(now)
+    }
+    coerce(durationValue(Duration.ofHours(3)), symbols.CTDuration) should equal(durationValue(Duration.ofHours(3)))
+
+    //nodes, rels, path
+    coerce(node(42), symbols.CTNode) should equal(node(42))
+    coerce(relationship(42), symbols.CTRelationship) should equal(relationship(42))
+    coerce(path(5), symbols.CTPath) should equal(path(5))
+
+    //maps
+    val mapValue = map(Array("prop"), Array(longValue(1337)))
+    when(db.nodeAsMap(42)).thenReturn(mapValue)
+    when(db.relationshipAsMap(42)).thenReturn(mapValue)
+    coerce(mapValue, symbols.CTMap) should equal(mapValue)
+    coerce(node(42, mapValue), symbols.CTMap) should equal(mapValue)
+    coerce(relationship(42, mapValue), symbols.CTMap) should equal(mapValue)
+
+    //list
+    coerce(list(longValue(42), longValue(43)), ListType(symbols.CTAny)) should equal(list(longValue(42), longValue(43)))
+    coerce(path(7), ListType(symbols.CTAny)) should equal(path(7).asList())
+    coerce(list(node(42), node(43)), ListType(symbols.CTNode)) should equal(list(node(42), node(43)))
+    coerce(list(relationship(42), relationship(43)), ListType(symbols.CTNode)) should equal(list(relationship(42), relationship(43)))
+    a [CypherTypeException] should be thrownBy coerce(path(11), ListType(symbols.CTNode))
+    a [CypherTypeException] should be thrownBy coerce(path(11), ListType(symbols.CTRelationship))
+  }
+
+  test("coerceTo unhappy path") {
+    val toTest = Map(longValue(42) -> symbols.CTNumber, stringValue("hello") -> symbols.CTString,
+                     Values.TRUE -> symbols.CTBoolean, node(42) -> symbols.CTNode,
+                     relationship(1337) -> symbols.CTRelationship, path(13) -> symbols.CTPath,
+                     pointValue(Cartesian, 1.0, 3.6) -> symbols.CTPoint,
+                     DateTimeValue.now(Clock.systemUTC()) -> symbols.CTDateTime,
+                     LocalDateTimeValue.now(Clock.systemUTC()) -> symbols.CTLocalDateTime,
+                     TimeValue.now(Clock.systemUTC()) -> symbols.CTTime,
+                     LocalTimeValue.now(Clock.systemUTC()) -> symbols.CTLocalTime,
+                     DateValue.now(Clock.systemUTC()) -> symbols.CTDate,
+                     durationValue(Duration.ofHours(3)) -> symbols.CTDuration)
+
+    for {value <- toTest.keys
+          typ <- toTest.values} {
+      if (toTest(value) == typ) coerce(value, typ) should equal(value)
+      else a [CypherTypeException] should be thrownBy coerce(value, typ)
+    }
+  }
+
+  private def path(size: Int) =
+    VirtualValues.path((0 to size).map(i => node(i)).toArray, (0 until size).map(i => relationship(i)).toArray)
+
+  private def node(id: Int, props: MapValue = EMPTY_MAP) = nodeValue(id, EMPTY_TEXT_ARRAY, EMPTY_MAP)
+
+  private def relationship(id: Int, props: MapValue = EMPTY_MAP) =
+    relationshipValue(id, node(id-1), node(id + 1), stringValue("R"), EMPTY_MAP)
+
   private def compile(e: Expression) =
     CodeGeneration.compile(new IntermediateCodeGeneration(SlotConfiguration.empty).compile(e).getOrElse(fail()))
 
@@ -1271,4 +1362,10 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   private def regex(lhs: Expression, rhs: Expression) = RegexMatch(lhs, rhs)(pos)
 
   private def startsWith(lhs: Expression, rhs: Expression) = StartsWith(lhs, rhs)(pos)
+
+  private def coerceTo(expression: Expression, typ: CypherType) = CoerceTo(expression, typ)
+
+  private def coerce(value: AnyValue, ct: CypherType) =
+    compile(coerceTo(parameter("a"), ct)).evaluate(ctx,db, map(Array("a"), Array(value) ))
+
 }
