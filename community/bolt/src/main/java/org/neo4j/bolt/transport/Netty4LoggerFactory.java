@@ -26,6 +26,8 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.logging.internal.LogMessageUtil.slf4jToStringFormatPlaceholders;
+
 /**
  * This class replaces Nettys regular logging system, injecting our own.
  */
@@ -85,19 +87,19 @@ public class Netty4LoggerFactory extends InternalLoggerFactory
             @Override
             public void debug( String s, Object o )
             {
-                log.debug( asNeoTemplate(s), o );
+                log.debug( slf4jToStringFormatPlaceholders( s ), o );
             }
 
             @Override
             public void debug( String s, Object o, Object o1 )
             {
-                log.debug( asNeoTemplate(s), o, o1 );
+                log.debug( slf4jToStringFormatPlaceholders( s ), o, o1 );
             }
 
             @Override
             public void debug( String s, Object... objects )
             {
-                log.debug( asNeoTemplate(s), objects );
+                log.debug( slf4jToStringFormatPlaceholders( s ), objects );
             }
 
             @Override
@@ -115,19 +117,19 @@ public class Netty4LoggerFactory extends InternalLoggerFactory
             @Override
             public void info( String s, Object o )
             {
-                log.info( asNeoTemplate(s), o );
+                log.info( slf4jToStringFormatPlaceholders( s ), o );
             }
 
             @Override
             public void info( String s, Object o, Object o1 )
             {
-                log.info( asNeoTemplate(s), o, o1 );
+                log.info( slf4jToStringFormatPlaceholders( s ), o, o1 );
             }
 
             @Override
             public void info( String s, Object... objects )
             {
-                log.info( asNeoTemplate(s), objects );
+                log.info( slf4jToStringFormatPlaceholders( s ), objects );
             }
 
             @Override
@@ -145,19 +147,19 @@ public class Netty4LoggerFactory extends InternalLoggerFactory
             @Override
             public void warn( String s, Object o )
             {
-                log.warn( asNeoTemplate(s), o );
+                log.warn( slf4jToStringFormatPlaceholders( s ), o );
             }
 
             @Override
             public void warn( String s, Object... objects )
             {
-                log.warn( asNeoTemplate(s), objects );
+                log.warn( slf4jToStringFormatPlaceholders( s ), objects );
             }
 
             @Override
             public void warn( String s, Object o, Object o1 )
             {
-                log.warn( asNeoTemplate(s), o, o1 );
+                log.warn( slf4jToStringFormatPlaceholders( s ), o, o1 );
             }
 
             @Override
@@ -175,19 +177,19 @@ public class Netty4LoggerFactory extends InternalLoggerFactory
             @Override
             public void error( String s, Object o )
             {
-                log.error( asNeoTemplate(s), o );
+                log.error( slf4jToStringFormatPlaceholders( s ), o );
             }
 
             @Override
             public void error( String s, Object o, Object o1 )
             {
-                log.error( asNeoTemplate(s), o, o1 );
+                log.error( slf4jToStringFormatPlaceholders( s ), o, o1 );
             }
 
             @Override
             public void error( String s, Object... objects )
             {
-                log.error( asNeoTemplate(s), objects );
+                log.error( slf4jToStringFormatPlaceholders( s ), objects );
             }
 
             @Override
@@ -225,15 +227,6 @@ public class Netty4LoggerFactory extends InternalLoggerFactory
             {
 
             }
-
-            private String asNeoTemplate( String nettyLogTemplate )
-            {
-                // Netty uses MessageFormat as placeholders, we use String.format()
-                // Sidenote: MessageFormat is the right tool for this job, it handles
-                // pluralization, i18n etc., we should change at some point.
-                return nettyLogTemplate.replaceAll( "\\{}", "%s" );
-            }
-
         };
     }
 }
