@@ -19,95 +19,71 @@
  */
 package org.neo4j.commandline.admin;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 
 import org.neo4j.commandline.arguments.Arguments;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class HelpCommandTest
+class HelpCommandTest
 {
     @Mock
     private Consumer<String> out;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         MockitoAnnotations.initMocks( this );
     }
 
     @Test
-    @SuppressWarnings( "unchecked" )
-    public void printsUnknownCommandWhenUnknownCommandIsProvided()
+    void printsUnknownCommandWhenUnknownCommandIsProvided()
     {
         CommandLocator commandLocator = mock( CommandLocator.class );
-        when( commandLocator.getAllProviders() ).thenReturn( Collections.EMPTY_LIST );
+        when( commandLocator.getAllProviders() ).thenReturn( Collections.emptyList() );
         when( commandLocator.findProvider( "foobar" ) ).thenThrow( new NoSuchElementException( "foobar" ) );
 
         HelpCommand helpCommand = new HelpCommand( mock( Usage.class ), out, commandLocator );
 
-        try
-        {
-            helpCommand.execute( "foobar" );
-            fail();
-        }
-        catch ( IncorrectUsage e )
-        {
-            assertThat( e.getMessage(), containsString( "Unknown command: foobar" ) );
-        }
+        IncorrectUsage incorrectUsage = assertThrows( IncorrectUsage.class, () -> helpCommand.execute( "foobar" ) );
+        assertThat( incorrectUsage.getMessage(), containsString( "Unknown command: foobar" ) );
     }
 
     @Test
-    public void printsAvailableCommandsWhenUnknownCommandIsProvided()
+    void printsAvailableCommandsWhenUnknownCommandIsProvided()
     {
         CommandLocator commandLocator = mock( CommandLocator.class );
-        ArrayList<AdminCommand.Provider> mockCommands = new ArrayList<AdminCommand.Provider>()
-        {{
-            add( mockCommand( "foo" ) );
-            add( mockCommand( "bar" ) );
-            add( mockCommand( "baz" ) );
-        }};
+        List<AdminCommand.Provider> mockCommands = asList( mockCommand( "foo" ), mockCommand( "bar" ), mockCommand( "baz" ) );
         when( commandLocator.getAllProviders() ).thenReturn( mockCommands );
         when( commandLocator.findProvider( "foobar" ) ).thenThrow( new NoSuchElementException( "foobar" ) );
 
         HelpCommand helpCommand = new HelpCommand( mock( Usage.class ), out, commandLocator );
 
-        try
-        {
-            helpCommand.execute( "foobar" );
-            fail();
-        }
-        catch ( IncorrectUsage e )
-        {
-            assertThat( e.getMessage(), containsString( "Available commands are: foo bar baz" ) );
-        }
+        IncorrectUsage incorrectUsage = assertThrows( IncorrectUsage.class, () -> helpCommand.execute( "foobar" ) );
+        assertThat( incorrectUsage.getMessage(), containsString( "Available commands are: foo bar baz" ) );
     }
 
     @Test
-    public void testAdminUsage() throws Exception
+    void testAdminUsage() throws Exception
     {
         CommandLocator commandLocator = mock( CommandLocator.class );
-        ArrayList<AdminCommand.Provider> mockCommands = new ArrayList<AdminCommand.Provider>()
-        {{
-            add( mockCommand( "foo" ) );
-            add( mockCommand( "bar" ) );
-            add( mockCommand( "baz" ) );
-        }};
+        List<AdminCommand.Provider> mockCommands = asList( mockCommand( "foo" ), mockCommand( "bar" ), mockCommand( "baz" ) );
         when( commandLocator.getAllProviders() ).thenReturn( mockCommands );
 
         try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
@@ -147,7 +123,7 @@ public class HelpCommandTest
     }
 
     @Test
-    public void showsArgumentsAndDescriptionForSpecifiedCommand() throws Exception
+    void showsArgumentsAndDescriptionForSpecifiedCommand() throws Exception
     {
         CommandLocator commandLocator = mock( CommandLocator.class );
         AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
@@ -183,7 +159,7 @@ public class HelpCommandTest
         }
     }
 
-    private AdminCommand.Provider mockCommand( String name )
+    private static AdminCommand.Provider mockCommand( String name )
     {
         AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
         when( commandProvider.name() ).thenReturn( name );

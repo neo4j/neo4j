@@ -19,8 +19,8 @@
  */
 package org.neo4j.commandline.admin;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -35,19 +35,19 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class UsageTest
+class UsageTest
 {
     @Mock
     private Consumer<String> out;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         MockitoAnnotations.initMocks( this );
     }
 
     @Test
-    public void shouldPrintUsageForACommand()
+    void shouldPrintUsageForACommand()
     {
         // given
         AdminCommand.Provider commandProvider = mockCommand( "bam", "A summary", AdminCommandSection.general() );
@@ -72,7 +72,7 @@ public class UsageTest
     }
 
     @Test
-    public void shouldPrintUsageWithConfiguration()
+    void shouldPrintUsageWithConfiguration()
     {
         AdminCommand.Provider[] commands =
                 new AdminCommand.Provider[]{mockCommand( "bam", "A summary", AdminCommandSection.general() )};
@@ -103,7 +103,7 @@ public class UsageTest
     }
 
     @Test
-    public void commandsUnderSameAdminCommandSectionPrintableSectionShouldAppearTogether()
+    void commandsUnderSameAdminCommandSectionPrintableSectionShouldAppearTogether()
     {
         AdminCommand.Provider[] commands = new AdminCommand.Provider[]{
                 mockCommand( "first-command", "first-command", AdminCommandSection.general() ),
@@ -147,7 +147,7 @@ public class UsageTest
         }
     }
 
-    private AdminCommand.Provider mockCommand( String name, String summary, AdminCommandSection section )
+    private static AdminCommand.Provider mockCommand( String name, String summary, AdminCommandSection section )
     {
         AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
         when( commandProvider.name() ).thenReturn( name );

@@ -50,7 +50,7 @@ public class HelpCommand implements AdminCommand
             }
             catch ( NoSuchElementException e )
             {
-                StringBuilder validCommands = new StringBuilder( "" );
+                StringBuilder validCommands = new StringBuilder();
                 locator.getAllProviders()
                         .forEach( commandProvider -> validCommands.append( commandProvider.name() ).append( " " ) );
 

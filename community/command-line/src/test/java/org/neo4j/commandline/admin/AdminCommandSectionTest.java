@@ -19,8 +19,8 @@
  */
 package org.neo4j.commandline.admin;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -31,26 +31,25 @@ import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class AdminCommandSectionTest
+class AdminCommandSectionTest
 {
     @Mock
     private Consumer<String> out;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         MockitoAnnotations.initMocks( this );
     }
 
     @Test
-    public void shouldPrintUsageForAllCommandsAlphabetically()
+    void shouldPrintUsageForAllCommandsAlphabetically()
     {
         AdminCommandSection generalSection = AdminCommandSection.general();
 
@@ -72,14 +71,14 @@ public class AdminCommandSectionTest
     }
 
     @Test
-    public void equalsUsingReflection()
+    void equalsUsingReflection()
     {
-        assertTrue( AdminCommandSection.general().equals( new TestGeneralSection() ) );
-        assertFalse( AdminCommandSection.general().equals( new TestAnotherGeneralSection() ) );
+        assertEquals( AdminCommandSection.general(), new TestGeneralSection() );
+        assertNotEquals( AdminCommandSection.general(), new TestAnotherGeneralSection() );
     }
 
     @Test
-    public void hashCodeUsingReflection()
+    void hashCodeUsingReflection()
     {
         TestGeneralSection testGeneralSection = new TestGeneralSection();
         TestAnotherGeneralSection testAnotherGeneralSection = new TestAnotherGeneralSection();
@@ -96,7 +95,6 @@ public class AdminCommandSectionTest
 
     private static class TestGeneralSection extends AdminCommandSection
     {
-
         @Override
         @Nonnull
         public String printable()
@@ -107,7 +105,6 @@ public class AdminCommandSectionTest
 
     private static class TestAnotherGeneralSection extends AdminCommandSection
     {
-
         @Override
         @Nonnull
         public String printable()
@@ -116,7 +113,7 @@ public class AdminCommandSectionTest
         }
     }
 
-    private AdminCommand.Provider mockCommand( String name, String summary )
+    private static AdminCommand.Provider mockCommand( String name, String summary )
     {
         AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
         when( commandProvider.name() ).thenReturn( name );

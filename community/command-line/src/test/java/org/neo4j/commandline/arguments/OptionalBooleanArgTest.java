@@ -19,17 +19,16 @@
  */
 package org.neo4j.commandline.arguments;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.helpers.Args;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class OptionalBooleanArgTest
+class OptionalBooleanArgTest
 {
-
     @Test
-    public void parsesValues1()
+    void parsesValues1()
     {
         OptionalBooleanArg arg = new OptionalBooleanArg( "foo", false, "" );
 
@@ -40,7 +39,7 @@ public class OptionalBooleanArgTest
     }
 
     @Test
-    public void parsesValues2()
+    void parsesValues2()
     {
         OptionalBooleanArg arg = new OptionalBooleanArg( "foo", true, "" );
 
@@ -51,7 +50,7 @@ public class OptionalBooleanArgTest
     }
 
     @Test
-    public void usageTest()
+    void usageTest()
     {
         OptionalBooleanArg arg = new OptionalBooleanArg( "foo", true, "" );
 
