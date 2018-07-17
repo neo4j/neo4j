@@ -110,7 +110,7 @@ public class SslResourceBuilder
         return this;
     }
 
-    public SslResourceBuilder revoke( int keyId )
+    SslResourceBuilder revoke( int keyId )
     {
         revoked.add( keyId );
         return this;
@@ -160,7 +160,7 @@ public class SslResourceBuilder
         return SslResourceBuilder.class.getResource( SERVERS_BASE_PATH + String.valueOf( keyId ) + "/" + filename );
     }
 
-    private URL resource( String filename )
+    private static URL resource( String filename )
     {
         return SslResourceBuilder.class.getResource( CA_BASE_PATH + filename );
     }

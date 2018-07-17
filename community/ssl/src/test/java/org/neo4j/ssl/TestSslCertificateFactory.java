@@ -20,9 +20,8 @@
 package org.neo4j.ssl;
 
 import io.netty.handler.ssl.util.SelfSignedCertificate;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -31,27 +30,33 @@ import java.security.PrivateKey;
 import java.security.cert.Certificate;
 
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.nio.file.StandardOpenOption.WRITE;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TestSslCertificateFactory
+@ExtendWith( TestDirectoryExtension.class )
+class TestSslCertificateFactory
 {
-    @Rule
-    public TemporaryFolder tmpDir = new TemporaryFolder();
+
+    @Inject
+    private TestDirectory testDirectory;
 
     @Test
-    public void shouldCreateASelfSignedCertificate() throws Exception
+    void shouldCreateASelfSignedCertificate() throws Exception
     {
         // Given
         PkiUtils sslFactory = new PkiUtils();
-        File cPath = new File( tmpDir.getRoot(), "certificate" );
-        File pkPath = new File( tmpDir.getRoot(), "key" );
+        File cPath = new File( testDirectory.directory(), "certificate" );
+        File pkPath = new File( testDirectory.directory(), "key" );
 
         // When
         sslFactory.createSelfSignedCertificate( cPath, pkPath, "myhost" );
@@ -67,7 +72,7 @@ public class TestSslCertificateFactory
     }
 
     @Test
-    public void shouldLoadPEMCertificates() throws Throwable
+    void shouldLoadPEMCertificates() throws Throwable
     {
         // Given
         SelfSignedCertificate cert = new SelfSignedCertificate( "example.com" );
@@ -83,7 +88,7 @@ public class TestSslCertificateFactory
     }
 
     @Test
-    public void shouldLoadPEMPrivateKey() throws Throwable
+    void shouldLoadPEMPrivateKey() throws Throwable
     {
         // Given
         SelfSignedCertificate cert = new SelfSignedCertificate( "example.com" );
@@ -103,13 +108,14 @@ public class TestSslCertificateFactory
      * the certificate data.
      */
     @Test
-    public void shouldLoadBinaryCertificates() throws Throwable
+    void shouldLoadBinaryCertificates() throws Throwable
     {
         // Given
         SelfSignedCertificate cert = new SelfSignedCertificate( "example.com" );
         PkiUtils certs = new PkiUtils();
 
-        File cPath = tmpDir.newFile( "certificate" );
+        File cPath = testDirectory.file( "certificate" );
+        assertTrue( cPath.createNewFile() );
         byte[] raw = certs.loadCertificates(cert.certificate())[0].getEncoded();
 
         try ( FileChannel ch = FileChannel.open( cPath.toPath(), WRITE ) )
@@ -129,13 +135,14 @@ public class TestSslCertificateFactory
      * the private key data
      */
     @Test
-    public void shouldLoadBinaryPrivateKey() throws Throwable
+    void shouldLoadBinaryPrivateKey() throws Throwable
     {
         // Given
         SelfSignedCertificate cert = new SelfSignedCertificate( "example.com" );
         PkiUtils certs = new PkiUtils();
 
-        File keyFile = tmpDir.newFile( "certificate" );
+        File keyFile = testDirectory.file( "certificate" );
+        assertTrue( keyFile.createNewFile() );
         byte[] raw = certs.loadPrivateKey( cert.privateKey() ).getEncoded();
 
         try ( FileChannel ch = FileChannel.open( keyFile.toPath(), WRITE ) )

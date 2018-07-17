@@ -36,22 +36,22 @@ public class SslResource
         this.revokedDirectory = revokedDirectory;
     }
 
-    public File privateKey()
+    File privateKey()
     {
         return privateKey;
     }
 
-    public File publicCertificate()
+    File publicCertificate()
     {
         return publicCertificate;
     }
 
-    public File trustedDirectory()
+    File trustedDirectory()
     {
         return trustedDirectory;
     }
 
-    public File revokedDirectory()
+    File revokedDirectory()
     {
         return revokedDirectory;
     }
