@@ -89,6 +89,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
   }
 
   test("should add sort and pre-projection") {
+    // [WITH n, m] WITH n AS n, m AS m, 5 AS notSortColumn ORDER BY m ASCENDING
     val mSortVar = Variable("m")(pos)
     val mSortItem = ast.AscSortItem(mSortVar)(pos)
     val (query, context, startPlan, solveds, cardinalities) = queryGraphWithRegularProjection(
@@ -112,10 +113,11 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
   }
 
   test("should add sort and pre-projection for expressions") {
+    // [WITH n] WITH n AS n, 5 AS notSortColumn ORDER BY n + 5 ASCENDING
     val sortExpression = Add(sortVariable, SignedDecimalIntegerLiteral("5")(pos))(pos)
     val sortItem = ast.AscSortItem(sortExpression)(pos)
     val (query, context, startPlan, solveds, cardinalities) = queryGraphWithRegularProjection(
-      // The requirement to sort by m + 5
+      // The requirement to sort by n + 5
       sortItems = Seq(sortItem),
       projectionsMap = Map(
         // an already solved projection
@@ -133,6 +135,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
   }
 
   test("should add sort and two step pre-projection for expressions") {
+    // [WITH n] WITH n + 10 AS m, 5 AS notSortColumn ORDER BY m + 5 ASCENDING
     val mVar = Variable("m")(pos)
     val mExpr = Add(sortVariable, SignedDecimalIntegerLiteral("10")(pos))(pos)
     val sortExpression = Add(mVar, SignedDecimalIntegerLiteral("5")(pos))(pos)
@@ -158,6 +161,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
   }
 
   test("should add sort without pre-projection for DistinctQueryProjection") {
+    // [WITH DISTINCT n, m] WITH n AS n, m AS m, 5 AS notSortColumn ORDER BY m
     val mSortVar = Variable("m")(pos)
     val mSortItem = ast.AscSortItem(mSortVar)(pos)
 
@@ -188,6 +192,8 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
   }
 
   test("should add sort without pre-projection for AggregatingQueryProjection") {
+    // [WITH n, m, o] // o is an aggregating expression
+    // WITH n AS n, m AS m, 5 AS notSortColumn ORDER BY m
     val mSortVar = Variable("m")(pos)
     val mSortItem = ast.AscSortItem(mSortVar)(pos)
     val oSortVar = Variable("o")(pos)
@@ -223,6 +229,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
   }
 
   test("should add sort without pre-projection if things are already projected in previous horizon") {
+    // [WITH n, m] WITH n AS n, 5 AS notSortColumn ORDER BY m
     val mSortVar = Variable("m")(pos)
     val mSortItem = ast.AscSortItem(mSortVar)(pos)
     val (query, context, startPlan, solveds, cardinalities) = queryGraphWithRegularProjection(
@@ -244,6 +251,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
   }
 
   test("should add sort without pre-projection if things are already projected in same horizon") {
+    // [WITH n, m] WITH n AS n, m AS m, 5 AS notSortColumn ORDER BY m
     val sortExpression = Add(sortVariable, UnsignedDecimalIntegerLiteral("5")(pos))(pos)
     // given a plan that solves "n"
     val (query, context, startPlan, solveds, cardinalities) = queryGraphWithRegularProjection(

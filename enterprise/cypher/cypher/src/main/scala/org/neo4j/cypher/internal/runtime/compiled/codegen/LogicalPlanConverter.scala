@@ -634,7 +634,6 @@ object LogicalPlanConverter {
     override def consume(context: CodeGenContext, child: CodeGenPlan, cardinalities: Cardinalities) = {
       val opName = context.registerOperator(logicalPlan)
 
-
       val (variablesToKeep: Map[String, Variable],
       sortItems: Seq[SortItem],
       tupleVariables: Map[String, Variable],

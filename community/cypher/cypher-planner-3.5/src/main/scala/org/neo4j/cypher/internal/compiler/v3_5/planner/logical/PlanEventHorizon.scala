@@ -44,9 +44,9 @@ case object PlanEventHorizon
 
       case queryProjection: RegularQueryProjection =>
         val sortedAndLimited = sortSkipAndLimit(selectedPlan, query, context, solveds, cardinalities)
-        if (queryProjection.projections.isEmpty && query.tail.isEmpty)
+        if (queryProjection.projections.isEmpty && query.tail.isEmpty) {
           context.logicalPlanProducer.planEmptyProjection(plan, context)
-        else {
+        } else {
           projection(sortedAndLimited, queryProjection.projections, queryProjection.projections, context, solveds, cardinalities)
         }
 

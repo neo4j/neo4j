@@ -37,10 +37,10 @@ object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
           addLimit(limit, addSkip(skip, plan, context), context)
 
         case (sortItems, skip, limit) =>
-          /* Find:
-           * projectItemsForAliasedSortItems: WITH a.foo AS x ORDER BY x => (x -> a.foo)
-           * aliasedSortItems: WITH a.foo AS x ORDER BY x => x
-           * unaliasedSortItems: WITH a, a.foo AS x ORDER BY a.bar => a.bar
+          /* Collect one map and two seq while examining the sort items:
+           * projectItemsForAliasedSortItems: WITH a, a.foo AS x ORDER BY x, a.bar => (x -> a.foo)
+           * aliasedSortItems: WITH a, a.foo AS x ORDER BY x, a.bar => x
+           * unaliasedSortItems: WITH a, a.foo AS x ORDER BY x, a.bar => a.bar
            */
           val (projectItemsForAliases, aliasedSortItems, unaliasedSortItems) =
             sortItems.foldLeft((Map.empty[String, Expression], Seq.empty[SortItem], Seq.empty[SortItem])) {
@@ -51,13 +51,14 @@ object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
                       // Aliased
                       case Some((projectItem, fromRegularProjection)) =>
                         if (fromRegularProjection) {
-                          // Possibly the expression has not been projected yet. Let's take care of it
+                          // Possibly the expression has not been projected yet.
+                          // We add it to the map and pass it to projection. This class will make sure not to project anything
+                          // twice if it was part of a previous RegularProjection
                           (_projectItems + projectItem, _aliasedSortItems :+ sortItem, _unaliasedSortItems)
                         } else {
                           // AggregatingQueryProjection or DistinctQueryProjection definitely took care of projecting that variable already. Cool!
                           (_projectItems, _aliasedSortItems :+ sortItem, _unaliasedSortItems)
                         }
-                      // Semantic analysis should have caught this
                       case None =>
                         // If the variable we're sorting by is not part of the current projections list,
                         // it must have been part of the previous horizon. Thus, it will already be projected.
