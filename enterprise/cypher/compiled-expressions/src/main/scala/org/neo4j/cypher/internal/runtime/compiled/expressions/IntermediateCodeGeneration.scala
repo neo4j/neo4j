@@ -235,6 +235,14 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           nullable = true, l.fields ++ r.fields)
       }
 
+    case Contains(lhs, rhs) =>
+      for {l <- compile(lhs)
+           r <- compile(rhs)} yield {
+        IntermediateExpression(
+          invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("contains"), l.ir, r.ir),
+          nullable = true, l.fields ++ r.fields)
+      }
+
     // misc
     case CoerceTo(expr, typ) =>
       for (e <- compile(expr)) yield {

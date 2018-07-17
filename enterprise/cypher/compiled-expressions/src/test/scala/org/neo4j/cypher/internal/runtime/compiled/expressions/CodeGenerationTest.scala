@@ -1089,9 +1089,18 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   }
 
   test("endsWith") {
-    val compiled= compile(startsWith(parameter("a"), parameter("b")))
+    val compiled= compile(endsWith(parameter("a"), parameter("b")))
 
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("hello"), stringValue("ello")))) should equal(Values.TRUE)
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("hello"), stringValue("hi")))) should equal(Values.FALSE)
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("hello"), NO_VALUE))) should equal(NO_VALUE)
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(NO_VALUE, stringValue("hi")))) should equal(NO_VALUE)
+  }
+
+  test("contains") {
+    val compiled= compile(contains(parameter("a"), parameter("b")))
+
+    compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("hello"), stringValue("ell")))) should equal(Values.TRUE)
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("hello"), stringValue("hi")))) should equal(Values.FALSE)
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("hello"), NO_VALUE))) should equal(NO_VALUE)
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(NO_VALUE, stringValue("hi")))) should equal(NO_VALUE)
@@ -1362,6 +1371,10 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
   private def regex(lhs: Expression, rhs: Expression) = RegexMatch(lhs, rhs)(pos)
 
   private def startsWith(lhs: Expression, rhs: Expression) = StartsWith(lhs, rhs)(pos)
+
+  private def endsWith(lhs: Expression, rhs: Expression) = EndsWith(lhs, rhs)(pos)
+
+  private def contains(lhs: Expression, rhs: Expression) = Contains(lhs, rhs)(pos)
 
   private def coerceTo(expression: Expression, typ: CypherType) = CoerceTo(expression, typ)
 

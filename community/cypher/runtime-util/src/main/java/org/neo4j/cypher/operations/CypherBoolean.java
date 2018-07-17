@@ -148,6 +148,18 @@ public final class CypherBoolean
         }
     }
 
+    public static Value contains( AnyValue lhs, AnyValue rhs )
+    {
+        if ( lhs instanceof TextValue && rhs instanceof TextValue )
+        {
+            return ((TextValue) lhs).stringValue().contains( ((TextValue) rhs).stringValue() ) ? Values.TRUE : Values.FALSE;
+        }
+        else
+        {
+            return NO_VALUE;
+        }
+    }
+
     public static Value coerceToBoolean( AnyValue value )
     {
         return value.map( BOOLEAN_MAPPER );
