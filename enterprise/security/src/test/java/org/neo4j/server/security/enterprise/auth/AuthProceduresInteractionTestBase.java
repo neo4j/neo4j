@@ -596,7 +596,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     public void shouldCreateRole() throws Exception
     {
         assertEmpty( adminSubject, "CALL dbms.security.createRole('new_role')" );
-        userManager.getRole( "new_role" );
+        userManager.assertRoleExists( "new_role" );
     }
 
     @Test

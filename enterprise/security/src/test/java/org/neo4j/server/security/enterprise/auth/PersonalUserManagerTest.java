@@ -184,14 +184,14 @@ public class PersonalUserManagerTest
         }
 
         @Override
-        public RoleRecord newRole( String roleName, String... usernames ) throws IOException, InvalidArgumentsException
+        public void newRole( String roleName, String... usernames ) throws IOException, InvalidArgumentsException
         {
             if ( failNextCall )
             {
                 failNextCall = false;
                 throw new IOException( "newRoleException" );
             }
-            return delegate.newRole( roleName, usernames );
+            delegate.newRole( roleName, usernames );
         }
 
         @Override
@@ -206,20 +206,14 @@ public class PersonalUserManagerTest
         }
 
         @Override
-        public RoleRecord getRole( String roleName ) throws InvalidArgumentsException
+        public void assertRoleExists( String roleName ) throws InvalidArgumentsException
         {
             if ( failNextCall )
             {
                 failNextCall = false;
                 throw new InvalidArgumentsException( "getRoleException" );
             }
-            return delegate.getRole( roleName );
-        }
-
-        @Override
-        public RoleRecord silentlyGetRole( String roleName )
-        {
-            return delegate.silentlyGetRole( roleName );
+            delegate.assertRoleExists( roleName );
         }
 
         @Override

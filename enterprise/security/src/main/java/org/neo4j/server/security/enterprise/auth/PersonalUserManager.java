@@ -146,15 +146,14 @@ class PersonalUserManager implements EnterpriseUserManager
     }
 
     @Override
-    public RoleRecord newRole( String roleName, String... usernames )
+    public void newRole( String roleName, String... usernames )
             throws IOException, InvalidArgumentsException, AuthorizationViolationException
     {
         try
         {
             assertUserManager();
-            RoleRecord newRole = userManager.newRole( roleName, usernames );
+            userManager.newRole( roleName, usernames );
             securityLog.info( subject, "created role `%s`", roleName );
-            return newRole;
         }
         catch ( AuthorizationViolationException | IOException | InvalidArgumentsException e )
         {
@@ -233,15 +232,9 @@ class PersonalUserManager implements EnterpriseUserManager
     }
 
     @Override
-    public RoleRecord getRole( String roleName ) throws InvalidArgumentsException
+    public void assertRoleExists( String roleName ) throws InvalidArgumentsException
     {
-        return userManager.getRole( roleName );
-    }
-
-    @Override
-    public RoleRecord silentlyGetRole( String roleName )
-    {
-        return userManager.silentlyGetRole( roleName );
+        userManager.assertRoleExists( roleName );
     }
 
     @Override

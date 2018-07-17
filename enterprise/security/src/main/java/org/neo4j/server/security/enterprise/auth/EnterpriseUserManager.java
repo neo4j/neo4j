@@ -37,13 +37,11 @@ public interface EnterpriseUserManager extends UserManager
 
     void activateUser( String username, boolean requirePasswordChange ) throws IOException, InvalidArgumentsException;
 
-    RoleRecord newRole( String roleName, String... usernames ) throws IOException, InvalidArgumentsException;
+    void newRole( String roleName, String... usernames ) throws IOException, InvalidArgumentsException;
 
     boolean deleteRole( String roleName ) throws IOException, InvalidArgumentsException;
 
-    RoleRecord getRole( String roleName ) throws InvalidArgumentsException;
-
-    RoleRecord silentlyGetRole( String roleName );
+    void assertRoleExists( String roleName ) throws InvalidArgumentsException;
 
     /**
      * Assign a role to a user. The role and the user have to exist.
@@ -88,9 +86,8 @@ public interface EnterpriseUserManager extends UserManager
         }
 
         @Override
-        public RoleRecord newRole( String roleName, String... usernames )
+        public void newRole( String roleName, String... usernames )
         {
-            return null;
         }
 
         @Override
@@ -100,15 +97,8 @@ public interface EnterpriseUserManager extends UserManager
         }
 
         @Override
-        public RoleRecord getRole( String roleName )
+        public void assertRoleExists( String roleName )
         {
-            return null;
-        }
-
-        @Override
-        public RoleRecord silentlyGetRole( String roleName )
-        {
-            return null;
         }
 
         @Override

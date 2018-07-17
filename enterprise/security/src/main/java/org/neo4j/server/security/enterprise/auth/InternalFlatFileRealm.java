@@ -467,7 +467,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     }
 
     @Override
-    public RoleRecord newRole( String roleName, String... usernames ) throws IOException, InvalidArgumentsException
+    public void newRole( String roleName, String... usernames ) throws IOException, InvalidArgumentsException
     {
         roleRepository.assertValidRoleName( roleName );
         for ( String username : usernames )
@@ -486,8 +486,6 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
             }
             roleRepository.create( role );
         }
-
-        return role;
     }
 
     @Override
@@ -506,14 +504,13 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
             else
             {
                 // We should not get here, but if we do the assert will fail and give a nice error msg
-                getRole( roleName );
+                assertRoleExists( roleName );
             }
         }
         return result;
     }
 
-    @Override
-    public RoleRecord getRole( String roleName ) throws InvalidArgumentsException
+    private RoleRecord getRole( String roleName ) throws InvalidArgumentsException
     {
         RoleRecord role = roleRepository.getRoleByName( roleName );
         if ( role == null )
@@ -524,7 +521,12 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     }
 
     @Override
-    public RoleRecord silentlyGetRole( String roleName )
+    public void assertRoleExists( String roleName ) throws InvalidArgumentsException
+    {
+        getRole( roleName );
+    }
+
+    private RoleRecord silentlyGetRole( String roleName )
     {
         return roleRepository.getRoleByName( roleName );
     }
