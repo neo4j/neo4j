@@ -66,7 +66,8 @@ public class DiagnosticsReportCommand implements AdminCommand
     private static final OptionalNamedArg destinationArgument =
             new OptionalCanonicalPath( "to", System.getProperty( "java.io.tmpdir" ), "reports" + File.separator,
                     "Destination directory for reports" );
-    private static final String PID_KEY = "pid";
+    public static final String PID_KEY = "pid";
+    private static final long NO_PID = 0;
     private static final Arguments arguments = new Arguments()
             .withArgument( new OptionalListArgument() )
             .withArgument( destinationArgument )
@@ -148,7 +149,7 @@ public class DiagnosticsReportCommand implements AdminCommand
                 throw new CommandFailed( "Unable to parse --" + PID_KEY, e );
             }
         }
-        return 0;
+        return NO_PID;
     }
 
     private String getDefaultFilename() throws UnknownHostException
@@ -262,7 +263,7 @@ public class DiagnosticsReportCommand implements AdminCommand
     private void registerJMXSources( DiagnosticsReporter reporter )
     {
         Optional<JmxDump> jmxDump;
-        if ( pid == 0 )
+        if ( pid == NO_PID )
         {
             jmxDump = jmxDumper.getJMXDump();
         }

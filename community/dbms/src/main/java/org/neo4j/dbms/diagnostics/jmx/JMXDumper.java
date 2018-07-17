@@ -31,6 +31,8 @@ import java.util.Optional;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 
+import static org.neo4j.commandline.dbms.DiagnosticsReportCommand.PID_KEY;
+
 /**
  * Facilitates JMX Dump for current running Neo4j instance.
  */
@@ -63,7 +65,7 @@ public class JMXDumper
         else
         {
             out.println( "No running instance of neo4j was found. Online reports will be omitted." );
-            out.println( "If neo4j is running but not detected, you can supply the process id of the running instance with --pid" );
+            out.println( "If neo4j is running but not detected, you can supply the process id of the running instance with --" + PID_KEY );
             return Optional.empty();
         }
     }
