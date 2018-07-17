@@ -58,7 +58,11 @@ object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
                           (_projectItems, _aliasedSortItems :+ sortItem, _unaliasedSortItems)
                         }
                       // Semantic analysis should have caught this
-                      case None => throw new InternalException("Found unknown variable in sort items: " + name)
+                      case None =>
+                        // If the variable we're sorting by is not part of the current projections list,
+                        // it must have been part of the previous horizon. Thus, it will already be projected.
+                        // If the variable is unknown, semantic analysis should have caught it and we would not get here
+                        (_projectItems, _aliasedSortItems :+ sortItem, _unaliasedSortItems)
                     }
                   // Unaliased
                   case _ =>

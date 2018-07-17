@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.ast
 import org.opencypher.v9_0.ast.{AscSortItem, SortItem}
 import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.util.InternalException
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -158,27 +157,6 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     solveds.get(result.id).horizon should equal(RegularQueryProjection(Map(mVar.name -> mExpr), QueryShuffle(sortItems = Seq(sortItem))))
   }
 
-  test("should fail if sort by unknown variable") {
-    val mSortVar = Variable("m")(pos)
-    val mSortItem = ast.AscSortItem(mSortVar)(pos)
-    val (query, context, startPlan, solveds, cardinalities) = queryGraphWithRegularProjection(
-      // The requirement to sort by m
-      sortItems = Seq(mSortItem),
-      projectionsMap = Map(
-        // an already solved projection
-        sortVariable.name -> sortVariable,
-        // and a projection that sort will not take care of
-        "notSortColumn" -> UnsignedDecimalIntegerLiteral("5")(pos)))
-
-    // when
-    val exception = intercept[InternalException] {
-      sortSkipAndLimit(startPlan, query, context, solveds, cardinalities)
-    }
-
-    // then
-    exception.getMessage should equal("Found unknown variable in sort items: m")
-  }
-
   test("should add sort without pre-projection for DistinctQueryProjection") {
     val mSortVar = Variable("m")(pos)
     val mSortItem = ast.AscSortItem(mSortVar)(pos)
@@ -244,7 +222,28 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     solveds.get(result.id).horizon should equal(AggregatingQueryProjection(Map(mSortVar.name -> mSortVar), Map(oSortVar.name -> oSortVar), QueryShuffle(sortItems = sortItems)))
   }
 
-  test("should add sort without pre-projection if things are already projected") {
+  test("should add sort without pre-projection if things are already projected in previous horizon") {
+    val mSortVar = Variable("m")(pos)
+    val mSortItem = ast.AscSortItem(mSortVar)(pos)
+    val (query, context, startPlan, solveds, cardinalities) = queryGraphWithRegularProjection(
+      // The requirement to sort by m
+      sortItems = Seq(mSortItem),
+      projectionsMap = Map(
+        // an already solved projection
+        sortVariable.name -> sortVariable,
+        // and a projection that sort will not take care of
+        "notSortColumn" -> UnsignedDecimalIntegerLiteral("5")(pos)))
+
+    // when
+    val result = sortSkipAndLimit(startPlan, query, context, solveds, cardinalities)
+
+    // then
+    result should equal(Sort(startPlan, Seq(Ascending("m"))))
+
+    solveds.get(result.id).horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(sortItems = Seq(mSortItem))))
+  }
+
+  test("should add sort without pre-projection if things are already projected in same horizon") {
     val sortExpression = Add(sortVariable, UnsignedDecimalIntegerLiteral("5")(pos))(pos)
     // given a plan that solves "n"
     val (query, context, startPlan, solveds, cardinalities) = queryGraphWithRegularProjection(
