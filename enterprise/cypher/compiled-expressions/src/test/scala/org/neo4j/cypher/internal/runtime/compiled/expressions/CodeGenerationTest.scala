@@ -1106,6 +1106,20 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(NO_VALUE, stringValue("hi")))) should equal(NO_VALUE)
   }
 
+  test("isNull") {
+    val compiled= compile(isNull(parameter("a")))
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(stringValue("hello")))) should equal(Values.FALSE)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(Values.TRUE)
+  }
+
+  test("isNotNull") {
+    val compiled= compile(isNotNull(parameter("a")))
+
+    compiled.evaluate(ctx, db, map(Array("a"), Array(stringValue("hello")))) should equal(Values.TRUE)
+    compiled.evaluate(ctx, db, map(Array("a"), Array(NO_VALUE))) should equal(Values.FALSE)
+  }
+
   test("CoerceToPredicate") {
     val coerced = CoerceToPredicate(parameter("a"))
 
@@ -1380,5 +1394,9 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   private def coerce(value: AnyValue, ct: CypherType) =
     compile(coerceTo(parameter("a"), ct)).evaluate(ctx,db, map(Array("a"), Array(value) ))
+
+  private def isNull(expression: Expression) = expressions.IsNull(expression)(pos)
+
+  private def isNotNull(expression: Expression) = expressions.IsNotNull(expression)(pos)
 
 }

@@ -243,6 +243,18 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           nullable = true, l.fields ++ r.fields)
       }
 
+    case expressions.IsNull(test) =>
+      for (e <- compile(test)) yield {
+        IntermediateExpression(
+          ternary(equal(e.ir, noValue), truthValue, falseValue), nullable = false, e.fields)
+      }
+
+    case expressions.IsNotNull(test) =>
+      for (e <- compile(test)) yield {
+        IntermediateExpression(
+          ternary(notEqual(e.ir, noValue), truthValue, falseValue), nullable = false, e.fields)
+      }
+
     // misc
     case CoerceTo(expr, typ) =>
       for (e <- compile(expr)) yield {
