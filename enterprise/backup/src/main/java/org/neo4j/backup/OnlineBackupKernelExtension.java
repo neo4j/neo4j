@@ -92,7 +92,7 @@ public class OnlineBackupKernelExtension extends LifecycleAdapter
             DependencyResolver dependencyResolver = graphDatabaseAPI.getDependencyResolver();
             TransactionIdStore transactionIdStore = dependencyResolver.resolveDependency( TransactionIdStore.class );
             StoreCopyServer copier = new StoreCopyServer( neoStoreDataSource, dependencyResolver.resolveDependency( CheckPointer.class ),
-                    fileSystemAbstraction, graphDatabaseAPI.getStoreDir(),
+                    fileSystemAbstraction, graphDatabaseAPI.databaseDirectory(),
                     monitors.newMonitor( StoreCopyServer.Monitor.class ) );
             LogicalTransactionStore logicalTransactionStore = dependencyResolver.resolveDependency( LogicalTransactionStore.class );
             LogFileInformation logFileInformation = dependencyResolver.resolveDependency( LogFileInformation.class );

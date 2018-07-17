@@ -53,7 +53,10 @@ public interface GraphDatabaseAPI extends GraphDatabaseService
      */
     URL validateURLAccess( URL url ) throws URLAccessValidationError;
 
-    File getStoreDir();
+    /**
+     * @return underlying database directory
+     */
+    File databaseDirectory();
 
     /**
      * Begin internal transaction with specified type and access mode

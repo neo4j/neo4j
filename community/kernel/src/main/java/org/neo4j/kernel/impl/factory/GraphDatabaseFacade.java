@@ -157,7 +157,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
         StoreId storeId();
 
-        File storeDir();
+        File databaseDirectory();
 
         /** Eg. Neo4j Enterprise HA, Neo4j Community Standalone.. */
         String name();
@@ -916,15 +916,15 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     }
 
     @Override
-    public File getStoreDir()
+    public File databaseDirectory()
     {
-        return spi.storeDir();
+        return spi.databaseDirectory();
     }
 
     @Override
     public String toString()
     {
-        return spi.name() + " [" + getStoreDir() + "]";
+        return spi.name() + " [" + databaseDirectory() + "]";
     }
 
     @Override

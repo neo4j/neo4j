@@ -146,7 +146,7 @@ public class RecoveryTest
     public void recoveryForRelationshipCommandsOnly() throws Throwable
     {
         // shutdown db here
-        File storeDir = db.getStoreDirFile();
+        File databaseDir = db.databaseDirectory();
         shutdownDB();
 
         try ( Transaction tx = db.beginTx() )
@@ -163,8 +163,8 @@ public class RecoveryTest
         db.shutdown();
 
         Config config = Config.defaults();
-        IndexConfigStore indexStore = new IndexConfigStore( storeDir, fileSystemRule.get() );
-        LuceneDataSource ds = new LuceneDataSource( storeDir, config, indexStore, fileSystemRule.get(), OperationalMode.single );
+        IndexConfigStore indexStore = new IndexConfigStore( databaseDir, fileSystemRule.get() );
+        LuceneDataSource ds = new LuceneDataSource( databaseDir, config, indexStore, fileSystemRule.get(), OperationalMode.single );
         ds.start();
         ds.stop();
     }

@@ -320,9 +320,9 @@ public class SchemaIndexHaIT
     {
         ClusterManager.RepairKit slaveDown = cluster.shutdown( slave );
 
-        File storeDir = slave.getStoreDir();
-        deleteRecursively( storeDir );
-        storeDir.mkdir();
+        File databaseDir = slave.databaseDirectory();
+        deleteRecursively( databaseDir );
+        databaseDir.mkdir();
         return slaveDown;
     }
 

@@ -63,7 +63,7 @@ public class NativeLabelScanStoreStartupIT
         labelScanStore.shutdown();
         workCollector.shutdown();
 
-        deleteLabelScanStoreFiles( dbRule.getStoreDir() );
+        deleteLabelScanStoreFiles( dbRule.databaseDirectory() );
 
         workCollector.init();
         labelScanStore.init();
@@ -86,7 +86,7 @@ public class NativeLabelScanStoreStartupIT
         labelScanStore.shutdown();
         workCollector.shutdown();
 
-        corruptLabelScanStoreFiles( dbRule.getStoreDir() );
+        corruptLabelScanStoreFiles( dbRule.databaseDirectory() );
 
         workCollector.init();
         labelScanStore.init();

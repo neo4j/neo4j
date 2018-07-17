@@ -64,7 +64,7 @@ public class FusionIndexIT
     @Before
     public void setup()
     {
-        databaseDirectory = db.getStoreDir();
+        databaseDirectory = db.databaseDirectory();
         fs = db.getDependencyResolver().resolveDependency( FileSystemAbstraction.class );
     }
 

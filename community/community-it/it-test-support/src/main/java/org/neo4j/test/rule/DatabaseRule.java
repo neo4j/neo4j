@@ -67,7 +67,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
 {
     private GraphDatabaseBuilder databaseBuilder;
     private GraphDatabaseAPI database;
-    private File storeDir;
+    private File databaseDir;
     private Supplier<Statement> statementSupplier;
     private boolean startEagerly = true;
     private Map<Setting<?>, String> config;
@@ -342,7 +342,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         {
             applyConfigChanges( additionalConfig );
             database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
-            storeDir = database.getStoreDir();
+            databaseDir = database.databaseDirectory();
             statementSupplier = resolveDependency( ThreadToStatementContextBridge.class );
         }
     }
@@ -386,7 +386,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     {
         FileSystemAbstraction fs = resolveDependency( FileSystemAbstraction.class );
         database.shutdown();
-        action.run( fs, storeDir );
+        action.run( fs, databaseDir );
         database = null;
         applyConfigChanges( configChanges );
         return getGraphDatabaseAPI();
@@ -459,19 +459,14 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     }
 
     @Override
-    public File getStoreDir()
+    public File databaseDirectory()
     {
-        return database.getStoreDir();
+        return database.databaseDirectory();
     }
 
-    public String getStoreDirAbsolutePath()
+    public String getDatabaseDirAbsolutePath()
     {
-        return getStoreDir().getAbsolutePath();
-    }
-
-    public File getStoreDirFile()
-    {
-        return getStoreDir();
+        return databaseDirectory().getAbsolutePath();
     }
 
     @Override

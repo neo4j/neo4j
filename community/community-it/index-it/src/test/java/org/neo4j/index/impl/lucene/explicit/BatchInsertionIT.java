@@ -30,7 +30,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.validation.ReservedIdException;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
@@ -53,7 +52,7 @@ public class BatchInsertionIT
     public void shouldIndexNodesWithMultipleLabels() throws Exception
     {
         // Given
-        File path = new File( dbRule.getStoreDirAbsolutePath(), DataSourceManager.DEFAULT_DATABASE_NAME );
+        File path = dbRule.databaseDirectory();
         BatchInserter inserter = BatchInserters.inserter( path, fileSystemRule.get() );
 
         inserter.createNode( map( "name", "Bob" ), label( "User" ), label( "Admin" ) );
@@ -75,14 +74,13 @@ public class BatchInsertionIT
         {
             db.shutdown();
         }
-
     }
 
     @Test
     public void shouldNotIndexNodesWithWrongLabel() throws Exception
     {
         // Given
-        File file = new File( dbRule.getStoreDirAbsolutePath() );
+        File file = new File( dbRule.getDatabaseDirAbsolutePath() );
         BatchInserter inserter = BatchInserters.inserter( file, fileSystemRule.get() );
 
         inserter.createNode( map("name", "Bob"), label( "User" ), label("Admin"));
@@ -108,7 +106,7 @@ public class BatchInsertionIT
     @Test
     public void shouldBeAbleToMakeRepeatedCallsToSetNodeProperty() throws Exception
     {
-        File file = dbRule.getStoreDirFile();
+        File file = dbRule.databaseDirectory();
         BatchInserter inserter = BatchInserters.inserter( file, fileSystemRule.get() );
         long nodeId = inserter.createNode( Collections.emptyMap() );
 
@@ -134,7 +132,7 @@ public class BatchInsertionIT
     @Test
     public void shouldBeAbleToMakeRepeatedCallsToSetNodePropertyWithMultiplePropertiesPerBlock() throws Exception
     {
-        File file = new File( dbRule.getStoreDirAbsolutePath(), DataSourceManager.DEFAULT_DATABASE_NAME );
+        File file = dbRule.databaseDirectory();
         BatchInserter inserter = BatchInserters.inserter( file, fileSystemRule.get() );
         long nodeId = inserter.createNode( Collections.emptyMap() );
 
@@ -164,7 +162,7 @@ public class BatchInsertionIT
     public void makeSureCantCreateNodeWithMagicNumber() throws IOException
     {
         // given
-        File path = new File( dbRule.getStoreDirAbsolutePath() );
+        File path = dbRule.databaseDirectory();
         BatchInserter inserter = BatchInserters.inserter( path, fileSystemRule.get() );
 
         try

@@ -227,7 +227,7 @@ public class CatchupServerIT
     {
         // given a file exists on the server
         addData( graphDb );
-        File expectedExistingFile = new File( graphDb.getStoreDir(), EXISTING_FILE_NAME );
+        File expectedExistingFile = new File( graphDb.databaseDirectory(), EXISTING_FILE_NAME );
 
         // and
         SimpleCatchupClient simpleCatchupClient = new SimpleCatchupClient( graphDb, fsa, catchupClient, catchupServer, temporaryDirectory, LOG_PROVIDER );

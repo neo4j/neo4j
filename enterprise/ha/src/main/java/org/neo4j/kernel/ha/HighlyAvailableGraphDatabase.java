@@ -78,9 +78,4 @@ public class HighlyAvailableGraphDatabase extends GraphDatabaseFacade
     {
         return HighAvailabilityModeSwitcher.MASTER.equalsIgnoreCase( role() );
     }
-
-    public File getStoreDirectory()
-    {
-        return getStoreDir();
-    }
 }

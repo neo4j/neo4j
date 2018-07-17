@@ -65,7 +65,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     private final TokenHolders tokenHolders;
     private final IdGeneratorFactory idGeneratorFactory;
     private final NeoStoreDataSource neoStoreDataSource;
-    private final File storeDir;
+    private final File databaseDirectory;
     private final ResponsePacker responsePacker;
     private final Monitors monitors;
 
@@ -91,7 +91,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
         this.transactionCommitProcess = transactionCommitProcess;
         this.checkPointer = checkPointer;
         this.neoStoreDataSource = neoStoreDataSource;
-        this.storeDir = graphDb.getStoreDir();
+        this.databaseDirectory = graphDb.databaseDirectory();
         this.txChecksumLookup = new TransactionChecksumLookup( transactionIdStore, logicalTransactionStore );
         this.responsePacker = new ResponsePacker( logicalTransactionStore, transactionIdStore, graphDb::storeId );
         this.monitors = monitors;
@@ -155,7 +155,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     @Override
     public RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer )
     {
-        StoreCopyServer streamer = new StoreCopyServer( neoStoreDataSource, checkPointer, fileSystem, storeDir,
+        StoreCopyServer streamer = new StoreCopyServer( neoStoreDataSource, checkPointer, fileSystem, databaseDirectory,
                 monitors.newMonitor( StoreCopyServer.Monitor.class, StoreCopyServer.class.getName() ) );
         return streamer.flushStoresAndStreamStoreFiles( STORE_COPY_CHECKPOINT_TRIGGER, writer, false );
     }

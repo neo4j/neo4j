@@ -888,7 +888,7 @@ public class ClusterManager
             {
                 if ( consistencyCheck )
                 {
-                    consistencyCheck( db.getStoreDirectory() );
+                    consistencyCheck( db.databaseDirectory() );
                 }
             }
         }
@@ -1356,7 +1356,7 @@ public class ClusterManager
         public File getStoreDir( HighlyAvailableGraphDatabase member )
         {
             assertMember( member );
-            return member.getStoreDirectory();
+            return member.databaseDirectory();
         }
 
         public void sync( HighlyAvailableGraphDatabase... except )

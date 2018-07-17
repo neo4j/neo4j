@@ -119,16 +119,16 @@ public class StoreCopyServer
     private final NeoStoreDataSource dataSource;
     private final CheckPointer checkPointer;
     private final FileSystemAbstraction fileSystem;
-    private final File storeDirectory;
+    private final File databaseDirectory;
     private final Monitor monitor;
 
     public StoreCopyServer( NeoStoreDataSource dataSource, CheckPointer checkPointer, FileSystemAbstraction fileSystem,
-            File storeDirectory, Monitor monitor )
+            File databaseDirectory, Monitor monitor )
     {
         this.dataSource = dataSource;
         this.checkPointer = checkPointer;
         this.fileSystem = fileSystem;
-        this.storeDirectory = getMostCanonicalFile( storeDirectory );
+        this.databaseDirectory = getMostCanonicalFile( databaseDirectory );
         this.monitor = monitor;
     }
 
@@ -199,7 +199,7 @@ public class StoreCopyServer
             ReadableByteChannel fileChannel, long fileSize, String storeCopyIdentifier, boolean isLogFile ) throws IOException
     {
         monitor.startStreamingStoreFile( file, storeCopyIdentifier );
-        String path = isLogFile ? file.getName() : relativePath( storeDirectory, file );
+        String path = isLogFile ? file.getName() : relativePath( databaseDirectory, file );
         writer.write( path, fileChannel, temporaryBuffer, fileSize > 0, recordSize );
         monitor.finishStreamingStoreFile( file, storeCopyIdentifier );
     }

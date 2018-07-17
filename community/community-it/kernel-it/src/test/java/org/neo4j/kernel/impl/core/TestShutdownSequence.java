@@ -92,7 +92,7 @@ public class TestShutdownSequence
         GraphDatabaseAPI databaseAPI = (GraphDatabaseAPI) this.graphDb;
         FileSystemAbstraction fileSystemAbstraction = getDatabaseFileSystem( databaseAPI );
         graphDb.shutdown();
-        fileSystemAbstraction.deleteRecursively( databaseAPI.getStoreDir() );
+        fileSystemAbstraction.deleteRecursively( databaseAPI.databaseDirectory() );
         graphDb.shutdown();
     }
 
@@ -128,7 +128,7 @@ public class TestShutdownSequence
         graphDb.shutdown();
     }
 
-    private FileSystemAbstraction getDatabaseFileSystem( GraphDatabaseAPI databaseAPI )
+    private static FileSystemAbstraction getDatabaseFileSystem( GraphDatabaseAPI databaseAPI )
     {
         return databaseAPI.getDependencyResolver().resolveDependency( FileSystemAbstraction.class );
     }

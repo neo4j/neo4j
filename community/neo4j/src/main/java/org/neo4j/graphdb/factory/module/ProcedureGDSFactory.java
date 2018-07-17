@@ -65,9 +65,7 @@ public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDataba
         }
         GraphDatabaseFacade facade = new GraphDatabaseFacade();
         facade.init(
-            new ProcedureGDBFacadeSPI(
-                platform,
-                dataSource,
+            new ProcedureGDBFacadeSPI( dataSource,
                 dataSource.neoStoreDataSource.getDependencyResolver(),
                 availability,
                 urlValidator,

@@ -115,7 +115,7 @@ public class ImportToolNumericalFailureTest
         try
         {
             // WHEN
-            importTool( "--into", dbRule.getStoreDirAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
+            importTool( "--into", dbRule.getDatabaseDirAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
             // THEN
             fail( "Expected import to fail" );
         }
@@ -132,6 +132,6 @@ public class ImportToolNumericalFailureTest
 
     private File file( String localname )
     {
-        return new File( dbRule.getStoreDir(), localname );
+        return new File( dbRule.databaseDirectory(), localname );
     }
 }

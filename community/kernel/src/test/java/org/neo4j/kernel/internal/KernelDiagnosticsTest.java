@@ -46,10 +46,6 @@ public class KernelDiagnosticsTest
     @Test
     public void shouldCountFileSizeRecursively()
     {
-        // Mock a file structure:
-        //   storeDir/indexDir/indexFile (1 kB)
-        //   storeDir/neostore (3 kB)
-
         File indexFile = Mockito.mock( File.class );
         Mockito.when( indexFile.isDirectory() ).thenReturn( false );
         Mockito.when( indexFile.getName() ).thenReturn( "indexFile" );

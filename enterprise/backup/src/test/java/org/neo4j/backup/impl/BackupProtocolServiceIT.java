@@ -147,7 +147,7 @@ public class BackupProtocolServiceIT
     private final Monitors monitors = new Monitors();
     private final IOLimiter limiter = IOLimiter.UNLIMITED;
     private FileSystemAbstraction fileSystem;
-    private Path storeDir;
+    private Path databaseDirectory;
     private Path backupDatabaseDir;
     private Path backupStoreDir;
     private int backupPort = -1;
@@ -170,7 +170,7 @@ public class BackupProtocolServiceIT
     {
         fileSystem = fileSystemRule.get();
         backupPort = PortAuthority.allocatePort();
-        storeDir = dbRule.getStoreDirFile().getParentFile().toPath();
+        databaseDirectory = dbRule.databaseDirectory().getParentFile().toPath();
         backupStoreDir = target.directory( "backupStore" ).toPath();
         backupDatabaseDir = backupStoreDir.resolve( DataSourceManager.DEFAULT_DATABASE_NAME );
         Files.createDirectories( backupDatabaseDir );
@@ -232,7 +232,8 @@ public class BackupProtocolServiceIT
             }
         };
 
-        backupService( logProvider ).doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDatabaseDir, ConsistencyCheck.NONE, Config.defaults(), BackupClient.BIG_READ_TIMEOUT, false );
+        backupService( logProvider ).doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDatabaseDir, ConsistencyCheck.NONE, Config.defaults(),
+                BackupClient.BIG_READ_TIMEOUT, false );
 
         verify( log ).info( "Previous backup not found, a new full backup will be performed." );
     }
@@ -277,7 +278,8 @@ public class BackupProtocolServiceIT
             }
         };
 
-        backupService( logProvider ).doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDatabaseDir, ConsistencyCheck.NONE, Config.defaults(), BackupClient.BIG_READ_TIMEOUT, false );
+        backupService( logProvider ).doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDatabaseDir, ConsistencyCheck.NONE, Config.defaults(),
+                BackupClient.BIG_READ_TIMEOUT, false );
 
         verify( log ).info( "Previous backup found, trying incremental backup." );
         verify( log ).info( "Existing backup is too far out of date, a new full backup will be performed." );
@@ -894,11 +896,9 @@ public class BackupProtocolServiceIT
         Dependencies dependencies = new Dependencies( resolver );
         dependencies.satisfyDependencies( defaultConfig, monitors, NullLogProvider.getInstance() );
 
-        OnlineBackupKernelExtension backup = (OnlineBackupKernelExtension)
-                new OnlineBackupExtensionFactory().newInstance(
-                        new SimpleKernelContext( storeDir.toFile(), DatabaseInfo.UNKNOWN, dependencies ),
-                        DependenciesProxy.dependencies( dependencies, OnlineBackupExtensionFactory.Dependencies.class )
-                );
+        OnlineBackupKernelExtension backup = (OnlineBackupKernelExtension) new OnlineBackupExtensionFactory().newInstance(
+                new SimpleKernelContext( databaseDirectory.toFile(), DatabaseInfo.UNKNOWN, dependencies ),
+                DependenciesProxy.dependencies( dependencies, OnlineBackupExtensionFactory.Dependencies.class ) );
         backup.start();
 
         // when
@@ -914,8 +914,8 @@ public class BackupProtocolServiceIT
             barrier.release();
         } );
 
-        BackupOutcome backupOutcome = backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseDir, ConsistencyCheck.FULL, withOnlineBackupDisabled,
-                BackupClient.BIG_READ_TIMEOUT, false );
+        BackupOutcome backupOutcome = backupProtocolService.doFullBackup( BACKUP_HOST, backupPort, backupDatabaseDir, ConsistencyCheck.FULL,
+                withOnlineBackupDisabled, BackupClient.BIG_READ_TIMEOUT, false );
 
         backup.stop();
         executor.shutdown();
@@ -923,7 +923,7 @@ public class BackupProtocolServiceIT
 
         // then
         checkPreviousCommittedTxIdFromLog( 0, expectedLastTxId );
-        Path neoStore = db.getStoreDir().toPath().resolve( MetaDataStore.DEFAULT_NAME );
+        Path neoStore = db.databaseDirectory().toPath().resolve( MetaDataStore.DEFAULT_NAME );
         PageCache pageCache = resolver.resolveDependency( PageCache.class );
         long txIdFromOrigin = MetaDataStore.getRecord( pageCache, neoStore.toFile(), Position.LAST_TRANSACTION_ID );
         checkLastCommittedTxIdInLogAndNeoStore( expectedLastTxId + 1, txIdFromOrigin );
@@ -967,7 +967,7 @@ public class BackupProtocolServiceIT
 
         OnlineBackupKernelExtension backup = (OnlineBackupKernelExtension)
                 new OnlineBackupExtensionFactory().newInstance(
-                        new SimpleKernelContext( storeDir.toFile(), DatabaseInfo.UNKNOWN, dependencies ),
+                        new SimpleKernelContext( databaseDirectory.toFile(), DatabaseInfo.UNKNOWN, dependencies ),
                         DependenciesProxy.dependencies( dependencies, OnlineBackupExtensionFactory.Dependencies.class )
                 );
         try
@@ -1146,7 +1146,8 @@ public class BackupProtocolServiceIT
     private void doIncrementalBackupOrFallbackToFull()
     {
         BackupProtocolService backupProtocolService = backupService();
-        backupProtocolService.doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDatabaseDir, ConsistencyCheck.NONE, Config.defaults(), BackupClient.BIG_READ_TIMEOUT, false );
+        backupProtocolService.doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDatabaseDir, ConsistencyCheck.NONE, Config.defaults(),
+                BackupClient.BIG_READ_TIMEOUT, false );
     }
 
     private static Node findNodeByLabel( GraphDatabaseAPI graphDatabase, Label label )
@@ -1166,7 +1167,7 @@ public class BackupProtocolServiceIT
     private DbRepresentation getDbRepresentation()
     {
         Config config = Config.defaults( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
-        return DbRepresentation.of( storeDir.toFile(), config );
+        return DbRepresentation.of( databaseDirectory.toFile(), config );
     }
 
     private static final class StoreSnoopingMonitor extends StoreCopyServer.Monitor.Adapter

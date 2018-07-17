@@ -168,14 +168,14 @@ public class DatabaseRebuildTool
     {
         private final GraphDatabaseAPI db;
         private final StoreAccess access;
-        private final File storeDir;
+        private final File databaseDirectory;
 
         Store( GraphDatabaseBuilder dbBuilder )
         {
             this.db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
             this.access = new StoreAccess( db.getDependencyResolver()
                     .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores() ).initialize();
-            this.storeDir = db.getStoreDir();
+            this.databaseDirectory = db.databaseDirectory();
         }
 
         public void shutdown()
@@ -203,11 +203,11 @@ public class DatabaseRebuildTool
             @Override
             public void run( Args action, PrintStream out ) throws Exception
             {
-                File storeDir = store.get().storeDir;
+                File databaseDirectory = store.get().databaseDirectory;
                 store.get().shutdown();
                 try
                 {
-                    Result result = new ConsistencyCheckService().runFullConsistencyCheck( storeDir,
+                    Result result = new ConsistencyCheckService().runFullConsistencyCheck( databaseDirectory,
                             Config.defaults(), ProgressMonitorFactory.textual( out ),
                             FormattedLogProvider.toOutputStream( System.out ), false );
                     out.println( result.isSuccessful() ? "consistent" : "INCONSISTENT" );

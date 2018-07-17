@@ -51,15 +51,15 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     }
 
     @Override
-    public File getStoreDir()
+    public File databaseDirectory()
     {
         return testDirectory.graphDbDir();
     }
 
     @Override
-    public String getStoreDirAbsolutePath()
+    public String getDatabaseDirAbsolutePath()
     {
-        return testDirectory.directory().getAbsolutePath();
+        return databaseDirectory().getAbsolutePath();
     }
 
     @Override

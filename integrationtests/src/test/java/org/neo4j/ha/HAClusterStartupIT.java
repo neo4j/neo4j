@@ -246,12 +246,12 @@ public class HAClusterStartupIT
 
     private static void deleteAllFilesOn( HighlyAvailableGraphDatabase instance ) throws IOException
     {
-        FileUtils.deleteRecursively( instance.getStoreDirectory() );
+        FileUtils.deleteRecursively( instance.databaseDirectory() );
     }
 
     private static void deleteAllLogsOn( HighlyAvailableGraphDatabase instance ) throws IOException
     {
-        deleteAllLogsOn( instance.getStoreDirectory() );
+        deleteAllLogsOn( instance.databaseDirectory() );
     }
 
     private static void deleteAllLogsOn( File storeDirectory ) throws IOException
@@ -286,7 +286,7 @@ public class HAClusterStartupIT
     {
         for ( HighlyAvailableGraphDatabase slave : cluster.getAllMembers() )
         {
-            assertConsistentStore( slave.getStoreDirectory() );
+            assertConsistentStore( slave.databaseDirectory() );
         }
     }
 }

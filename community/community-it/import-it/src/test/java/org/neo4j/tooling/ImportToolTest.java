@@ -1927,11 +1927,11 @@ public class ImportToolTest
 
         // WHEN data file contains more columns than header file
         int extraColumns = 3;
-        String storeDir = dbRule.getStoreDirAbsolutePath();
+        String databaseDir = dbRule.getDatabaseDirAbsolutePath();
         try
         {
             importTool(
-                    "--into", storeDir,
+                    "--into", databaseDir,
                     "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
                             nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns ).getAbsolutePath() );
             fail( "Should have thrown exception" );
@@ -1943,7 +1943,7 @@ public class ImportToolTest
             {
                 if ( storeType.isRecordStore() )
                 {
-                    assertTrue( new File( storeDir, MetaDataStore.DEFAULT_NAME + storeType.getStoreName() ).exists() );
+                    assertTrue( new File( databaseDir, MetaDataStore.DEFAULT_NAME + storeType.getStoreName() ).exists() );
                 }
             }
 
@@ -1984,7 +1984,7 @@ public class ImportToolTest
         String arguments = format(
                 "--into %s%n" +
                 "--nodes %s --relationships %s",
-                dbRule.getStoreDirAbsolutePath(),
+                dbRule.getDatabaseDirAbsolutePath(),
                 nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
                 relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
         writeToFile( argumentFile, arguments, false );
@@ -1992,7 +1992,7 @@ public class ImportToolTest
         try
         {
             // when
-            importTool( "-f", argumentFile.getAbsolutePath(), "--into", dbRule.getStoreDirAbsolutePath() );
+            importTool( "-f", argumentFile.getAbsolutePath(), "--into", dbRule.getDatabaseDirAbsolutePath() );
             fail( "Should have failed" );
         }
         catch ( IllegalArgumentException e )

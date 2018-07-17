@@ -290,10 +290,10 @@ public class ClusterIT
             cluster.sync();
 
             HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-            File storeDir = slave.getStoreDir();
+            File databaseDir = slave.databaseDirectory();
             ClusterManager.RepairKit slaveRepairKit = cluster.shutdown( slave );
 
-            clearLastTransactionCommitTimestampField( storeDir );
+            clearLastTransactionCommitTimestampField( databaseDir );
 
             HighlyAvailableGraphDatabase repairedSlave = slaveRepairKit.repair();
             cluster.await( allSeesAllAsAvailable() );
@@ -324,11 +324,11 @@ public class ClusterIT
             cluster.sync();
 
             HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-            File storeDir = slave.getStoreDir();
+            File databaseDir = slave.databaseDirectory();
             ClusterManager.RepairKit slaveRepairKit = cluster.shutdown( slave );
 
-            clearLastTransactionCommitTimestampField( storeDir );
-            deleteLogs( storeDir );
+            clearLastTransactionCommitTimestampField( databaseDir );
+            deleteLogs( databaseDir );
 
             HighlyAvailableGraphDatabase repairedSlave = slaveRepairKit.repair();
             cluster.await( allSeesAllAsAvailable() );
@@ -341,7 +341,7 @@ public class ClusterIT
         }
     }
 
-    private void createClusterWithNode( ClusterManager clusterManager ) throws Throwable
+    private static void createClusterWithNode( ClusterManager clusterManager ) throws Throwable
     {
         try
         {
@@ -399,12 +399,12 @@ public class ClusterIT
         }
     }
 
-    private static void clearLastTransactionCommitTimestampField( File storeDir ) throws IOException
+    private static void clearLastTransactionCommitTimestampField( File databaseDirectory ) throws IOException
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               PageCache pageCache = createPageCache( fileSystem ) )
         {
-            File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+            File neoStore = new File( databaseDirectory, MetaDataStore.DEFAULT_NAME );
             MetaDataStore.setRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP,
                     MetaDataStore.BASE_TX_COMMIT_TIMESTAMP );
         }

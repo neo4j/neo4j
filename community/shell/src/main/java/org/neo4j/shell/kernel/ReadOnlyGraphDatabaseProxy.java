@@ -1062,9 +1062,9 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
-    public File getStoreDir()
+    public File databaseDirectory()
     {
-        return actual.getStoreDir();
+        return actual.databaseDirectory();
     }
 
     @Override

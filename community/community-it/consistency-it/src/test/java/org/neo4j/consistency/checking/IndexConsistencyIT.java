@@ -102,10 +102,10 @@ public class IndexConsistencyIT
     @Test
     public void reportNotCleanNativeIndexWithCorrectData() throws IOException, ConsistencyCheckIncompleteException
     {
-        File storeDir = db.getStoreDir();
+        File databaseDir = db.databaseDirectory();
         someData();
         resolveComponent( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
-        File indexesCopy = new File( storeDir, "indexesCopy" );
+        File indexesCopy = new File( databaseDir, "indexesCopy" );
         File indexSources = resolveComponent( DefaultIndexProviderMap.class ).getDefaultProvider().directoryStructure().rootDirectory();
         copyRecursively( indexSources, indexesCopy, SOURCE_COPY_FILE_FILTER );
 

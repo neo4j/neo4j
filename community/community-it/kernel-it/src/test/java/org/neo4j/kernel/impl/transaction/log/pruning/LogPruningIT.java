@@ -55,7 +55,7 @@ public class LogPruningIT
         Config config = getInstanceFromDb( Config.class );
         FileSystemAbstraction fs = getInstanceFromDb( FileSystemAbstraction.class );
 
-        LogFiles logFiles = LogFilesBuilder.builder( db.getStoreDir(), fs )
+        LogFiles logFiles = LogFilesBuilder.builder( db.databaseDirectory(), fs )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withLastCommittedTransactionIdSupplier( () -> 1 )
                 .withTransactionIdStore( new SimpleTransactionIdStore() ).build();

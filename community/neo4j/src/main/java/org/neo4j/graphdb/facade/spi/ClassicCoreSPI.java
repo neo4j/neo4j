@@ -129,7 +129,7 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public File storeDir()
+    public File databaseDirectory()
     {
         return dataSource.neoStoreDataSource.getDatabaseDirectory();
     }

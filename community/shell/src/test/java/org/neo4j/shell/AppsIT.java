@@ -1340,7 +1340,7 @@ public class AppsIT extends AbstractShellIT
         long txIdBeforeQuery = lastClosedTxId();
 
         // When
-        startClient.start( new String[]{"-path", db.getStoreDir().getAbsolutePath(), "-c", query}, ctrlCHandler );
+        startClient.start( new String[]{"-path", db.databaseDirectory().getAbsolutePath(), "-c", query}, ctrlCHandler );
 
         // then
         long txId = lastClosedTxId();

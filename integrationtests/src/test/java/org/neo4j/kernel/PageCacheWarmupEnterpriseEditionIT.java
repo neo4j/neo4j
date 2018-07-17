@@ -174,13 +174,13 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
                     }
                 },
                 true );
-        File storeDir = db.getStoreDir();
+        File databaseDir = db.databaseDirectory();
         File data = dir.cleanDirectory( "data" );
         File databases = new File( data, "databases" );
         File graphdb = new File( databases, DataSourceManager.DEFAULT_DATABASE_NAME );
         assertTrue( graphdb.mkdirs() );
-        FileUtils.copyRecursively( storeDir, graphdb );
-        FileUtils.deleteRecursively( storeDir );
+        FileUtils.copyRecursively( databaseDir, graphdb );
+        FileUtils.deleteRecursively( databaseDir );
         Path homePath = data.toPath().getParent();
         File dumpDir = dir.cleanDirectory( "dump-dir" );
         adminTool.execute( homePath, homePath, "dump", "--database=" + DataSourceManager.DEFAULT_DATABASE_NAME, "--to=" + dumpDir );
@@ -188,7 +188,7 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
         FileUtils.deleteRecursively( graphdb );
         File dumpFile = new File( dumpDir, "graph.db.dump" );
         adminTool.execute( homePath, homePath, "load", "--database=" + DataSourceManager.DEFAULT_DATABASE_NAME, "--from=" + dumpFile );
-        FileUtils.copyRecursively( graphdb, storeDir );
+        FileUtils.copyRecursively( graphdb, databaseDir );
         FileUtils.deleteRecursively( graphdb );
 
         File metricsDirectory = dir.cleanDirectory( "metrics" );

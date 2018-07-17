@@ -524,7 +524,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
         {
             GraphDatabaseAPI db = (GraphDatabaseAPI) gdb;
             gdb.shutdown();
-            FileUtils.deleteDirectory( db.getStoreDir() );
+            FileUtils.deleteDirectory( db.databaseDirectory() );
         }
     }
 

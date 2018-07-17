@@ -28,7 +28,6 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.factory.module.DataSourceModule;
-import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -46,18 +45,17 @@ import org.neo4j.values.virtual.MapValue;
 
 public class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
 {
-    private final File storeDir;
+    private final File databaseDirectory;
     private final DataSourceModule sourceModule;
     private final DependencyResolver resolver;
     private final CoreAPIAvailabilityGuard availability;
     private final ThrowingFunction<URL,URL,URLAccessValidationError> urlValidator;
     private final SecurityContext securityContext;
 
-    public ProcedureGDBFacadeSPI( PlatformModule platform, DataSourceModule sourceModule, DependencyResolver resolver,
-            CoreAPIAvailabilityGuard availability, ThrowingFunction<URL,URL,URLAccessValidationError> urlValidator,
-            SecurityContext securityContext )
+    public ProcedureGDBFacadeSPI( DataSourceModule sourceModule, DependencyResolver resolver, CoreAPIAvailabilityGuard availability,
+            ThrowingFunction<URL,URL,URLAccessValidationError> urlValidator, SecurityContext securityContext )
     {
-        this.storeDir = platform.storeDir;
+        this.databaseDirectory = sourceModule.neoStoreDataSource.getDatabaseDirectory();
         this.sourceModule = sourceModule;
         this.resolver = resolver;
         this.availability = availability;
@@ -84,9 +82,9 @@ public class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public File storeDir()
+    public File databaseDirectory()
     {
-        return storeDir;
+        return databaseDirectory;
     }
 
     @Override

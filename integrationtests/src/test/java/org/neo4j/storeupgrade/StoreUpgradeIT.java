@@ -265,8 +265,8 @@ public class StoreUpgradeIT
                 clusterManager.safeShutdown();
             }
 
-            assertConsistentStore( master.getStoreDir() );
-            assertConsistentStore( slave.getStoreDir() );
+            assertConsistentStore( master.databaseDirectory() );
+            assertConsistentStore( slave.databaseDirectory() );
         }
     }
 

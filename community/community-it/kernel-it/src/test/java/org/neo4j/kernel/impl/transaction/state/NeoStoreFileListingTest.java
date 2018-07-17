@@ -238,7 +238,7 @@ public class NeoStoreFileListingTest
         graphDatabase.shutdown();
     }
 
-    private void filesInStoreDirAre( File storeDir, String[] filenames, String[] dirs )
+    private static void filesInStoreDirAre( File storeDir, String[] filenames, String[] dirs )
     {
         ArrayList<File> files = new ArrayList<>();
         mockFiles( filenames, files, false );
@@ -246,7 +246,7 @@ public class NeoStoreFileListingTest
         when( storeDir.listFiles() ).thenReturn( files.toArray( new File[files.size()] ) );
     }
 
-    private ResourceIterator<File> scanStoreFilesAre( LabelScanStore labelScanStore, String[] fileNames )
+    private static ResourceIterator<File> scanStoreFilesAre( LabelScanStore labelScanStore, String[] fileNames )
     {
         ArrayList<File> files = new ArrayList<>();
         mockFiles( fileNames, files, false );
@@ -255,7 +255,7 @@ public class NeoStoreFileListingTest
         return snapshot;
     }
 
-    private ResourceIterator<File> indexFilesAre( IndexingService indexingService, String[] fileNames )
+    private static ResourceIterator<File> indexFilesAre( IndexingService indexingService, String[] fileNames )
             throws IOException
     {
         ArrayList<File> files = new ArrayList<>();
@@ -267,15 +267,15 @@ public class NeoStoreFileListingTest
 
     private void createIndexDbFile() throws IOException
     {
-        File storeDir = db.getStoreDir();
-        final File indexFile = new File( storeDir, "index.db" );
+        File databaseDir = db.databaseDirectory();
+        final File indexFile = new File( databaseDir, "index.db" );
         if ( !indexFile.exists() )
         {
             assertTrue( indexFile.createNewFile() );
         }
     }
 
-    private void mockFiles( String[] filenames, ArrayList<File> files, boolean isDirectories )
+    private static void mockFiles( String[] filenames, ArrayList<File> files, boolean isDirectories )
     {
         for ( String filename : filenames )
         {
@@ -295,7 +295,7 @@ public class NeoStoreFileListingTest
     private static class MarkerFileProvider implements NeoStoreFileListing.StoreFileProvider
     {
         @Override
-        public Resource addFilesTo( Collection<StoreFileMetadata> fileMetadataCollection ) throws IOException
+        public Resource addFilesTo( Collection<StoreFileMetadata> fileMetadataCollection )
         {
             fileMetadataCollection.add( new StoreFileMetadata( new File( "marker" ), 0 ) );
             return Resource.EMPTY;

@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Args;
@@ -52,12 +53,13 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.fail;
-import static org.neo4j.ha.upgrade.RollingUpgradeIT.type1;
-import static org.neo4j.ha.upgrade.RollingUpgradeIT.type2;
 import static org.neo4j.ha.upgrade.Utils.execJava;
 
 public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDatabase
 {
+    private RelationshipType type1 = RelationshipType.withName( "type1" );
+    private RelationshipType type2 = RelationshipType.withName( "type2" );
+
     // This has to be adapted to the way HA GDB is started in the specific old version it's used for.
     public static void main( String[] args ) throws Exception
     {

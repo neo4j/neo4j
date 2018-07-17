@@ -164,8 +164,8 @@ public class JUnitRuleTestIT
 
     private String contentOf( String file ) throws IOException
     {
-        Path storeDir = ((GraphDatabaseAPI) neo4j.getGraphDatabaseService()).getStoreDir().toPath();
-        Path testDir = storeDir.getParent().getParent();
+        Path databaseDirectory = ((GraphDatabaseAPI) neo4j.getGraphDatabaseService()).databaseDirectory().toPath();
+        Path testDir = databaseDirectory.getParent().getParent();
         return new String( Files.readAllBytes( testDir.resolve( file ) ), UTF_8 );
     }
 
