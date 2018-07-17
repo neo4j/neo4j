@@ -56,7 +56,7 @@ public class HalfCreatedConstraintIT
     @Test
     public void uniqueIndexWithoutOwningConstraintIsIgnoredDuringCheck() throws ConsistencyCheckTool.ToolFailureException, IOException
     {
-        File storeDir = testDirectory.graphDbDir();
+        File storeDir = testDirectory.directory();
         Label marker = Label.label( "MARKER" );
         String property = "property";
 
@@ -72,12 +72,12 @@ public class HalfCreatedConstraintIT
             database.shutdown();
         }
 
-        ConsistencyCheckService.Result checkResult =
-                ConsistencyCheckTool.runConsistencyCheckTool( new String[]{storeDir.getAbsolutePath()}, emptyPrintStream(), emptyPrintStream() );
+        ConsistencyCheckService.Result checkResult = ConsistencyCheckTool.runConsistencyCheckTool( new String[]{testDirectory.graphDbDir().getAbsolutePath()},
+                emptyPrintStream(), emptyPrintStream() );
         assertTrue( String.join( System.lineSeparator(), Files.readAllLines( checkResult.reportFile().toPath() ) ), checkResult.isSuccessful() );
     }
 
-    private void waitForIndexPopulationFailure( GraphDatabaseService database )
+    private static void waitForIndexPopulationFailure( GraphDatabaseService database )
     {
         try ( Transaction ignored = database.beginTx() )
         {
@@ -90,7 +90,7 @@ public class HalfCreatedConstraintIT
         }
     }
 
-    private void addIndex( GraphDatabaseService database )
+    private static void addIndex( GraphDatabaseService database )
     {
         try ( Transaction transaction = database.beginTx() )
         {
@@ -103,7 +103,7 @@ public class HalfCreatedConstraintIT
         }
     }
 
-    private void createNodes( Label marker, String property, GraphDatabaseService database )
+    private static void createNodes( Label marker, String property, GraphDatabaseService database )
     {
         try ( Transaction transaction = database.beginTx() )
         {

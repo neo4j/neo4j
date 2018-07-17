@@ -45,18 +45,16 @@ import static org.junit.Assert.assertTrue;
 
 public class CompositeConstraintIT
 {
-
     @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
     public void compositeNodeKeyConstraintUpdate() throws Exception
     {
-        File storeDir = testDirectory.graphDbDir();
         GraphDatabaseService database = new EnterpriseGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( storeDir )
+                .newEmbeddedDatabaseBuilder( testDirectory.directory() )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newGraphDatabase();
 
@@ -72,8 +70,7 @@ public class CompositeConstraintIT
 
         try ( Transaction transaction = database.beginTx() )
         {
-            String query =
-                    format( "CREATE CONSTRAINT ON (n:%s) ASSERT (n.%s,n.%s) IS NODE KEY", label.name(), "a", "b" );
+            String query = format( "CREATE CONSTRAINT ON (n:%s) ASSERT (n.%s,n.%s) IS NODE KEY", label.name(), "a", "b" );
             database.execute( query );
             transaction.success();
         }
@@ -89,15 +86,14 @@ public class CompositeConstraintIT
         }
         database.shutdown();
 
-        ConsistencyCheckService.Result consistencyCheckResult = checkDbConsistency( storeDir );
+        ConsistencyCheckService.Result consistencyCheckResult = checkDbConsistency( testDirectory.graphDbDir() );
         assertTrue( "Database is consistent", consistencyCheckResult.isSuccessful() );
     }
 
-    private static ConsistencyCheckService.Result checkDbConsistency( File storeDir )
+    private static ConsistencyCheckService.Result checkDbConsistency( File databaseDirectory )
             throws ConsistencyCheckTool.ToolFailureException
     {
-        return ConsistencyCheckTool.runConsistencyCheckTool( new String[]{storeDir.getAbsolutePath()},
-                System.out, System.err );
+        return ConsistencyCheckTool.runConsistencyCheckTool( new String[]{databaseDirectory.getAbsolutePath()}, System.out, System.err );
     }
 
     private static void awaitIndex( GraphDatabaseService database )

@@ -75,7 +75,7 @@ public class StoreFilesTest
 
     protected void createRules()
     {
-        testDirectory = TestDirectory.testDirectory( StoreFilesTest.class );
+        testDirectory = TestDirectory.testDirectory();
         EphemeralFileSystemRule ephemeralFileSystemRule = new EphemeralFileSystemRule();
         fileSystemRule = ephemeralFileSystemRule;
         pageCacheRule = new PageCacheRule();

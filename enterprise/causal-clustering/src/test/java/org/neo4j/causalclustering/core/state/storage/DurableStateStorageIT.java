@@ -33,7 +33,6 @@ import java.nio.ByteBuffer;
 import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.adversaries.MethodGuardedAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
-import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.SelectiveFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -54,7 +53,7 @@ import static org.junit.Assert.fail;
 public class DurableStateStorageIT
 {
 
-    private final TestDirectory testDir = TestDirectory.testDirectory( getClass() );
+    private final TestDirectory testDir = TestDirectory.testDirectory();
     private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
 
     @Rule

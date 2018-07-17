@@ -43,6 +43,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.restore.RestoreDatabaseCommand;
 import org.neo4j.test.causalclustering.ClusterRule;
 
@@ -86,8 +87,9 @@ public class ConvertNonCausalClusteringStoreIT
         {
             for ( CoreClusterMember core : cluster.coreMembers() )
             {
-                new RestoreDatabaseCommand( fileSystem, classicNeo4jStore, core.config(), core.settingValue(
-                        GraphDatabaseSettings.active_database.name() ), true ).execute();
+                //TODO: looks strange
+                new RestoreDatabaseCommand( fileSystem, new File( classicNeo4jStore, DataSourceManager.DEFAULT_DATABASE_NAME ), core.config(),
+                        core.settingValue( GraphDatabaseSettings.active_database.name() ), true ).execute();
             }
         }
 

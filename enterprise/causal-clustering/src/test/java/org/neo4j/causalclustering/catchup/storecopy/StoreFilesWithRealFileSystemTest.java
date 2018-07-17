@@ -33,7 +33,7 @@ public class StoreFilesWithRealFileSystemTest extends StoreFilesTest
     @Override
     protected void createRules()
     {
-        testDirectory = TestDirectory.testDirectory( StoreFilesWithRealFileSystemTest.class );
+        testDirectory = TestDirectory.testDirectory();
         DefaultFileSystemRule defaultFileSystemRule = new DefaultFileSystemRule();
         fileSystemRule = defaultFileSystemRule;
         pageCacheRule = new PageCacheRule( );

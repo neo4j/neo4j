@@ -58,7 +58,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class TransactionLogFileRotateAndReadRaceIT
 {
-    private final TestDirectory directory = TestDirectory.testDirectory( getClass() );
+    private final TestDirectory directory = TestDirectory.testDirectory();
     private final LifeRule life = new LifeRule( true );
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final OtherThreadRule<Void> t2 = new OtherThreadRule<>( getClass().getName() + "-T2" );

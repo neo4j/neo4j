@@ -41,7 +41,7 @@ public class CausalClusterInProcessRunnerIT
     @Test
     public void shouldBootAndShutdownCluster() throws Exception
     {
-        Path clusterPath = testDirectory.absolutePath().toPath();
+        Path clusterPath = testDirectory.directory().toPath().toAbsolutePath();
         CausalClusterInProcessBuilder.PortPickingStrategy portPickingStrategy = new CausalClusterInProcessBuilder.PortPickingStrategy()
         {
             Map<Integer, Integer> cache = new HashMap<>();

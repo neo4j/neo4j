@@ -59,11 +59,11 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 public class BackupToolIT
 {
     @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory( getClass());
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
-    public ExpectedException expected = ExpectedException.none();
+    public final ExpectedException expected = ExpectedException.none();
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule().startLazily();
+    public final EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule().startLazily();
 
     private DefaultFileSystemAbstraction fs;
     private PageCache pageCache;

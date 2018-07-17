@@ -111,7 +111,7 @@ public class ExplicitIndexesUpgradeIT
         startDatabase( false );
     }
 
-    private void checkDbAccessible( GraphDatabaseService db )
+    private static void checkDbAccessible( GraphDatabaseService db )
     {
         try ( Transaction transaction = db.beginTx() )
         {
@@ -123,14 +123,14 @@ public class ExplicitIndexesUpgradeIT
     private GraphDatabaseService startDatabase( boolean allowUpgrade )
     {
         GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDir.graphDbDir() );
+        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDir.directory() );
         builder.setConfig( GraphDatabaseSettings.allow_upgrade, Boolean.toString( allowUpgrade ) );
         builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
         builder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
         return builder.newGraphDatabase();
     }
 
-    private void checkIndexData( GraphDatabaseService db )
+    private static void checkIndexData( GraphDatabaseService db )
     {
         IntFunction<String> keyFactory = basicKeyFactory();
         Factory<Node> readNodes = readNodes( db );
@@ -150,32 +150,32 @@ public class ExplicitIndexesUpgradeIT
         Unzip.unzip( getClass(), store, testDir.graphDbDir() );
     }
 
-    private IntFunction<Object> intValues()
+    private static IntFunction<Object> intValues()
     {
         return ValueContext::numeric;
     }
 
-    private IntFunction<Object> longValues()
+    private static IntFunction<Object> longValues()
     {
         return value -> ValueContext.numeric( (long) value );
     }
 
-    private IntFunction<Object> floatValues()
+    private static IntFunction<Object> floatValues()
     {
         return value -> ValueContext.numeric( (float) value );
     }
 
-    private IntFunction<Object> doubleValues()
+    private static IntFunction<Object> doubleValues()
     {
         return value -> ValueContext.numeric( (double) value );
     }
 
-    private IntFunction<Object> stringValues()
+    private static IntFunction<Object> stringValues()
     {
         return value -> "value balue " + value;
     }
 
-    private Factory<Node> readNodes( final GraphDatabaseService db )
+    private static Factory<Node> readNodes( final GraphDatabaseService db )
     {
         return new Factory<Node>()
         {
@@ -189,7 +189,7 @@ public class ExplicitIndexesUpgradeIT
         };
     }
 
-    private Factory<Relationship> readRelationships( final GraphDatabaseService db )
+    private static Factory<Relationship> readRelationships( final GraphDatabaseService db )
     {
         return new Factory<Relationship>()
         {
@@ -203,7 +203,7 @@ public class ExplicitIndexesUpgradeIT
         };
     }
 
-    private Index<Node> nodeIndex( GraphDatabaseService db, String name, Map<String,String> config )
+    private static Index<Node> nodeIndex( GraphDatabaseService db, String name, Map<String,String> config )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -213,7 +213,7 @@ public class ExplicitIndexesUpgradeIT
         }
     }
 
-    private RelationshipIndex relationshipIndex( GraphDatabaseService db, String name, Map<String,String> config )
+    private static RelationshipIndex relationshipIndex( GraphDatabaseService db, String name, Map<String,String> config )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -223,8 +223,8 @@ public class ExplicitIndexesUpgradeIT
         }
     }
 
-    private <ENTITY extends PropertyContainer> void readIndex( GraphDatabaseService db, Index<ENTITY> index,
-            Factory<ENTITY> entityFactory, IntFunction<String> keyFactory, IntFunction<Object> valueFactory )
+    private static <ENTITY extends PropertyContainer> void readIndex( GraphDatabaseService db, Index<ENTITY> index, Factory<ENTITY> entityFactory,
+            IntFunction<String> keyFactory, IntFunction<Object> valueFactory )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -239,7 +239,7 @@ public class ExplicitIndexesUpgradeIT
         }
     }
 
-    private IntFunction<String> basicKeyFactory()
+    private static IntFunction<String> basicKeyFactory()
     {
         return value -> "key-" + (value % 3);
     }

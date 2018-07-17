@@ -67,32 +67,32 @@ import org.neo4j.server.web.WebServer;
 
 import static org.neo4j.server.configuration.ServerSettings.jmx_module_enabled;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
-import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communityDiscoverableURIs;
 
 public class OpenEnterpriseNeoServer extends CommunityNeoServer
 {
 
+    // TODO:
     private static final GraphFactory HA_FACTORY = ( config, dependencies ) ->
     {
-        File storeDir = config.get( GraphDatabaseSettings.database_path );
+        File storeDir = config.get( GraphDatabaseSettings.database_path ).getParentFile();
         return new HighlyAvailableGraphDatabase( storeDir, config, dependencies );
     };
 
     private static final GraphFactory ENTERPRISE_FACTORY = ( config, dependencies ) ->
     {
-        File storeDir = config.get( GraphDatabaseSettings.database_path );
+        File storeDir = config.get( GraphDatabaseSettings.database_path ).getParentFile();
         return new EnterpriseGraphDatabase( storeDir, config, dependencies );
     };
 
     private static final GraphFactory CORE_FACTORY = ( config, dependencies ) ->
     {
-        File storeDir = config.get( GraphDatabaseSettings.database_path );
+        File storeDir = config.get( GraphDatabaseSettings.database_path ).getParentFile();
         return new CoreGraphDatabase( storeDir, config, dependencies );
     };
 
     private static final GraphFactory READ_REPLICA_FACTORY = ( config, dependencies ) ->
     {
-        File storeDir = config.get( GraphDatabaseSettings.database_path );
+        File storeDir = config.get( GraphDatabaseSettings.database_path ).getParentFile();
         return new ReadReplicaGraphDatabase( storeDir, config, dependencies );
     };
 

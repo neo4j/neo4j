@@ -49,7 +49,7 @@ import static org.neo4j.test.DoubleLatch.awaitLatch;
 public class DynamicIndexStoreViewIT
 {
     private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory( getClass() );
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( suppressOutput );

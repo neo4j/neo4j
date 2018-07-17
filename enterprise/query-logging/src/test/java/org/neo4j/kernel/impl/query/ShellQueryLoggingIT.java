@@ -22,19 +22,19 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.HashMap;
-import java.util.List;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.runners.model.Statement;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.List;
 
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
@@ -63,7 +63,7 @@ import static org.neo4j.kernel.impl.query.QueryLoggerIT.readAllLines;
 public class ShellQueryLoggingIT
 {
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final TestDirectory dir = TestDirectory.testDirectory( getClass() );
+    private final TestDirectory dir = TestDirectory.testDirectory();
     private final DatabaseRule db = new ImpermanentDatabaseRule()
     {
         @Override

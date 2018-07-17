@@ -90,7 +90,7 @@ public abstract class LockingCompatibilityTestSuite
         public OtherThreadRule<Void> threadC = new OtherThreadRule<>();
 
         @Rule
-        public TestDirectory testDir = TestDirectory.testDirectory( getClass() );
+        public TestDirectory testDir = TestDirectory.testDirectory();
 
         protected final LockingCompatibilityTestSuite suite;
 

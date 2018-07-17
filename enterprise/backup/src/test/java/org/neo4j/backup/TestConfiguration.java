@@ -42,7 +42,7 @@ import static org.junit.Assert.fail;
 public class TestConfiguration
 {
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
-    public TestDirectory dir = TestDirectory.testDirectory( TestConfiguration.class );
+    public TestDirectory dir = TestDirectory.testDirectory();
     @Rule
     public RuleChain rules = RuleChain.outerRule( dir ).around( suppressOutput );
 

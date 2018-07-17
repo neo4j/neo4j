@@ -46,7 +46,7 @@ public abstract class KernelExtensionFactoryContractTest
     private final String key;
 
     @Rule
-    public TestDirectory target = TestDirectory.testDirectory( getClass() );
+    public final TestDirectory target = TestDirectory.testDirectory();
 
     public KernelExtensionFactoryContractTest( String key, Class<? extends KernelExtensionFactory<?>> extClass )
     {

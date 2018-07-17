@@ -102,7 +102,7 @@ public class CsvInputTest
     @Rule
     public final RandomRule random = new RandomRule();
     @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory( getClass() );
+    public final TestDirectory directory = TestDirectory.testDirectory();
     private final Extractors extractors = new Extractors( ',' );
     @Parameter
     public Boolean allowMultilineFields;

@@ -40,7 +40,7 @@ import static org.junit.Assume.assumeTrue;
 public class SelfSignedCertificatesIT
 {
     @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory( getClass() );
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
     public void createSelfSignedCertificateWithCorrectPermissions() throws Exception

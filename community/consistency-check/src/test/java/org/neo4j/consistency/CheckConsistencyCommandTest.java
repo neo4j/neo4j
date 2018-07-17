@@ -57,10 +57,10 @@ import static org.mockito.Mockito.when;
 public class CheckConsistencyCommandTest
 {
     @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory( getClass() );
+    public final TestDirectory testDir = TestDirectory.testDirectory();
 
     @Rule
-    public ExpectedException expect = ExpectedException.none();
+    public final ExpectedException expect = ExpectedException.none();
 
     @Test
     public void runsConsistencyChecker() throws Exception

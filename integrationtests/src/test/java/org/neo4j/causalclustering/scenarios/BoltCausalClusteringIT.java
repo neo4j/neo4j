@@ -122,7 +122,7 @@ public class BoltCausalClusteringIT
         assertEquals( 1, count );
     }
 
-    private int executeWriteAndReadThroughBolt( CoreClusterMember core ) throws TimeoutException
+    private static int executeWriteAndReadThroughBolt( CoreClusterMember core ) throws TimeoutException
     {
         try ( Driver driver = GraphDatabase.driver( core.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) ) )
         {
@@ -747,7 +747,7 @@ public class BoltCausalClusteringIT
         assertEquals( numberOfRequests, happyCount );
     }
 
-    private void executeReadQuery( Session session )
+    private static void executeReadQuery( Session session )
     {
         try ( Transaction tx = session.beginTransaction() )
         {
@@ -756,7 +756,7 @@ public class BoltCausalClusteringIT
         }
     }
 
-    private <T> T inExpirableSession( Driver driver, Function<Driver,Session> acquirer, Function<Session,T> op )
+    private static <T> T inExpirableSession( Driver driver, Function<Driver,Session> acquirer, Function<Session,T> op )
             throws TimeoutException
     {
         long endTime = System.currentTimeMillis() + DEFAULT_TIMEOUT_MS;
