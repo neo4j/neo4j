@@ -42,7 +42,7 @@ import org.neo4j.values.storable.ValueCategory;
  */
 public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGenericKey,NativeIndexValue>
 {
-    public static final String KEY = "all-native"; // TODO should be native, but can't because number index is called that.
+    public static final String KEY = "native-gbptree";
     public static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( KEY, "1.0" );
 
     // TODO implement
