@@ -81,7 +81,7 @@ public class Util
     public static void checkLock( Path databaseDirectory ) throws CommandFailed
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              StoreLocker storeLocker = new GlobalStoreLocker( fileSystem, databaseDirectory.toFile() ) )
+              StoreLocker storeLocker = new GlobalStoreLocker( fileSystem, databaseDirectory.getParent().toFile() ) )
         {
             storeLocker.checkLock();
         }

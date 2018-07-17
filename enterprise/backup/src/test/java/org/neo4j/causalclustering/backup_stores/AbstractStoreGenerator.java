@@ -52,7 +52,7 @@ public abstract class AbstractStoreGenerator implements BackupStore
         return getClass().getSimpleName();
     }
 
-    private String backupName()
+    private static String backupName()
     {
         return "backup-" + UUID.randomUUID().toString().substring( 5 );
     }

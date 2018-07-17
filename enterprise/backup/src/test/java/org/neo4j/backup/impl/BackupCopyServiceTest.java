@@ -33,7 +33,6 @@ import java.util.stream.Stream;
 
 import org.neo4j.com.storecopy.FileMoveAction;
 import org.neo4j.com.storecopy.FileMoveProvider;
-import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.TestDirectory;
@@ -58,7 +57,7 @@ public class BackupCopyServiceTest
         PageCache pageCache = mock( PageCache.class );
         fileMoveProvider = mock( FileMoveProvider.class );
         FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
-        subject = new BackupCopyService( fs, pageCache, fileMoveProvider );
+        subject = new BackupCopyService( fs, fileMoveProvider );
     }
 
     @Test

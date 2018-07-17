@@ -25,6 +25,7 @@ package org.neo4j.backup.impl;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.OptionalHostnamePort;
@@ -78,7 +79,6 @@ class BackupStrategyWrapper
             OnlineBackupContext onlineBackupContext )
     {
         Path backupLocation = onlineBackupContext.getResolvedLocationFromName();
-        Path userSpecifiedBackupLocation = onlineBackupContext.getResolvedLocationFromName();
         OptionalHostnamePort userSpecifiedAddress = onlineBackupContext.getRequiredArguments().getAddress();
         log.debug( "User specified address is %s:%s", userSpecifiedAddress.getHostname().toString(), userSpecifiedAddress.getPort().toString() );
         Config config = onlineBackupContext.getConfig();
@@ -88,7 +88,7 @@ class BackupStrategyWrapper
         {
             log.info( "Previous backup found, trying incremental backup." );
             Fallible<BackupStageOutcome> state =
-                    backupStrategy.performIncrementalBackup( userSpecifiedBackupLocation, config, userSpecifiedAddress );
+                    backupStrategy.performIncrementalBackup( backupLocation, config, userSpecifiedAddress );
             boolean fullBackupWontWork = BackupStageOutcome.WRONG_PROTOCOL.equals( state.getState() );
             boolean incrementalWasSuccessful = BackupStageOutcome.SUCCESS.equals( state.getState() );
 
@@ -146,12 +146,13 @@ class BackupStrategyWrapper
         Fallible<BackupStageOutcome> state = backupStrategy.performFullBackup( temporaryFullBackupLocation, config, address );
 
         // NOTE temporaryFullBackupLocation can be equal to desired
-        boolean aBackupAlreadyExisted = userSpecifiedBackupLocation.equals( temporaryFullBackupLocation );
+        boolean aBackupAlreadyExisted = !userSpecifiedBackupLocation.equals( temporaryFullBackupLocation );
 
         if ( BackupStageOutcome.SUCCESS.equals( state.getState() ) )
         {
-            backupRecoveryService.recoverWithDatabase( temporaryFullBackupLocation, pageCache, config );
-            if ( !aBackupAlreadyExisted )
+            config.augment( GraphDatabaseSettings.active_database, temporaryFullBackupLocation.getFileName().toString() ); // TODO: Refactor
+            backupRecoveryService.recoverWithDatabase( temporaryFullBackupLocation.getParent(), pageCache, config ); // TODO: getParent()
+            if ( aBackupAlreadyExisted )
             {
                 try
                 {

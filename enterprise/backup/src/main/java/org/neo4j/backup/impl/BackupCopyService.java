@@ -48,18 +48,15 @@ class BackupCopyService
     private static final int MAX_OLD_BACKUPS = 1000;
 
     private final FileSystemAbstraction fs;
-    private final PageCache pageCache;
     private final FileMoveProvider fileMoveProvider;
 
-    BackupCopyService( FileSystemAbstraction fs, PageCache pageCache,
-                       FileMoveProvider fileMoveProvider )
+    BackupCopyService( FileSystemAbstraction fs, FileMoveProvider fileMoveProvider )
     {
         this.fs = fs;
-        this.pageCache = pageCache;
         this.fileMoveProvider = fileMoveProvider;
     }
 
-    public void moveBackupLocation( Path oldLocation, Path newLocation ) throws IOException
+    void moveBackupLocation( Path oldLocation, Path newLocation ) throws IOException
     {
         try
         {
@@ -77,7 +74,7 @@ class BackupCopyService
         }
     }
 
-    public void clearIdFiles( Path backupLocation ) throws IOException
+    void clearIdFiles( Path backupLocation ) throws IOException
     {
         IOException exception = null;
         File targetDirectory = backupLocation.toFile();

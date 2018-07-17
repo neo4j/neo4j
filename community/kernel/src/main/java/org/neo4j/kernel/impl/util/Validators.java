@@ -102,13 +102,13 @@ public class Validators
         }
     };
 
-    public static final Validator<File> CONTAINS_EXISTING_DATABASE = value ->
+    public static final Validator<File> CONTAINS_EXISTING_DATABASE = dbDir ->
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            if ( !isExistingDatabase( fileSystem, value ) )
+            if ( !isExistingDatabase( fileSystem, dbDir ) )
             {
-                throw new IllegalArgumentException( "Directory '" + value + "' does not contain a database" );
+                throw new IllegalArgumentException( "Directory '" + dbDir + "' does not contain a database" );
             }
         }
         catch ( IOException e )
@@ -117,9 +117,9 @@ public class Validators
         }
     };
 
-    private static boolean isExistingDatabase( FileSystemAbstraction fileSystem, File value )
+    private static boolean isExistingDatabase( FileSystemAbstraction fileSystem, File dbDir )
     {
-        return fileSystem.fileExists( new File( value, StoreFileType.STORE.augment( MetaDataStore.DEFAULT_NAME ) ) );
+        return fileSystem.fileExists( new File( dbDir, StoreFileType.STORE.augment( MetaDataStore.DEFAULT_NAME ) ) );
     }
 
     public static Validator<String> inList( String[] validStrings )

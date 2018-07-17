@@ -43,28 +43,6 @@ import static org.neo4j.kernel.configuration.Settings.listenAddress;
 
 public class TestHelpers
 {
-    public static Exception executionIsExpectedToFail( Runnable runnable )
-    {
-        return executionIsExpectedToFail( runnable, RuntimeException.class );
-    }
-
-    public static <E extends Exception> E executionIsExpectedToFail( Runnable runnable, Class<E> exceptionClass )
-    {
-        try
-        {
-            runnable.run();
-        }
-        catch ( Exception e )
-        {
-            if ( !exceptionClass.isInstance( e ) )
-            {
-                throw new AssertionError( format( "Exception %s is not of type %s", e.getClass().getName(), exceptionClass.getName() ), e );
-            }
-            return (E) e;
-        }
-        throw new AssertionError( "The code expected to fail hasn't failed" );
-    }
-
     public static int runBackupToolFromOtherJvmToGetExitCode( File neo4jHome, String... args ) throws Exception
     {
         return runBackupToolFromOtherJvmToGetExitCode( neo4jHome, System.out, System.err, true, args );
@@ -78,7 +56,7 @@ public class TestHelpers
         allArgs.add( "backup" );
         allArgs.addAll( Arrays.asList( args ) );
 
-        ProcessBuilder processBuilder = new ProcessBuilder().command( allArgs.toArray( new String[allArgs.size()]));
+        ProcessBuilder processBuilder = new ProcessBuilder().command( allArgs.toArray( new String[0] ));
         processBuilder.environment().put( "NEO4J_HOME", neo4jHome.getAbsolutePath() );
         if ( debug )
         {
@@ -89,24 +67,5 @@ public class TestHelpers
                 new ProcessStreamHandler( process, false, "", StreamConsumer.IGNORE_FAILURES, outPrintStream, errPrintStream );
         return processStreamHandler.waitForResult();
     }
-
-    public static String backupAddressCc( GraphDatabaseAPI graphDatabase )
-    {
-        ListenSocketAddress hostnamePort = graphDatabase.getDependencyResolver().resolveDependency( Config.class ).get(
-                listenAddress( "dbms.backup.address", 6000 ) );
-
-        return hostnamePort.toString();
-    }
-
-    public static String backupAddressHa( GraphDatabaseAPI graphDatabase )
-    {
-        HostnamePort hostnamePort = graphDatabase
-                .getDependencyResolver()
-                .resolveDependency( Config.class )
-                .get( OnlineBackupSettings.online_backup_server );
-
-        return hostnamePort.toString();
-    }
-
 }
 

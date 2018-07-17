@@ -87,7 +87,9 @@ public class BackupCoreIT
             DbRepresentation afterChange = DbRepresentation.of( createSomeData( cluster ) );
 
             // Verify that old data is back
-            DbRepresentation backupRepresentation = DbRepresentation.of( new File( backupsDir, "" + db.serverId() ), getConfig() );
+            Config config = getConfig();
+            config.augment( GraphDatabaseSettings.active_database, "" + db.serverId() );
+            DbRepresentation backupRepresentation = DbRepresentation.of( backupsDir, config );
             assertEquals( beforeChange, backupRepresentation );
             assertNotEquals( backupRepresentation, afterChange );
         }
@@ -103,7 +105,7 @@ public class BackupCoreIT
         } ).database();
     }
 
-    static String backupAddress( Cluster cluster )
+    private static String backupAddress( Cluster cluster )
     {
         return cluster.getMemberWithRole( Role.LEADER ).settingValue( "causal_clustering.transaction_listen_address" );
     }
@@ -116,7 +118,7 @@ public class BackupCoreIT
         args.add( "--backup-dir=" + backupsDir );
         args.add( "--protocol=catchup" );
         args.add( "--name=" + name );
-        return args.toArray( new String[args.size()] );
+        return args.toArray( new String[0] );
     }
 
     static Config getConfig()

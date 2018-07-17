@@ -32,6 +32,8 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -70,15 +72,6 @@ public class BackupReadReplicaIT
         cluster = clusterRule.startCluster();
     }
 
-    private boolean readReplicasUpToDateAsTheLeader( CoreGraphDatabase leader, ReadReplicaGraphDatabase readReplica )
-    {
-        long leaderTxId = leader.getDependencyResolver().resolveDependency( TransactionIdStore.class )
-                .getLastClosedTransactionId();
-        long lastClosedTxId = readReplica.getDependencyResolver().resolveDependency( TransactionIdStore.class )
-                .getLastClosedTransactionId();
-        return lastClosedTxId == leaderTxId;
-    }
-
     @Test
     public void makeSureBackupCanBePerformed() throws Throwable
     {
@@ -99,9 +92,19 @@ public class BackupReadReplicaIT
         DbRepresentation afterChange = DbRepresentation.of( createSomeData( cluster ) );
 
         // Verify that backed up database can be started and compare representation
-        DbRepresentation backupRepresentation =
-                DbRepresentation.of( new File( backupPath, "readreplica" ), getConfig() );
+        Config config = getConfig();
+        config.augment( GraphDatabaseSettings.active_database, "readreplica" );
+        DbRepresentation backupRepresentation = DbRepresentation.of( backupPath, config );
         assertEquals( beforeChange, backupRepresentation );
         assertNotEquals( backupRepresentation, afterChange );
+    }
+
+    private static boolean readReplicasUpToDateAsTheLeader( CoreGraphDatabase leader, ReadReplicaGraphDatabase readReplica )
+    {
+        long leaderTxId = leader.getDependencyResolver().resolveDependency( TransactionIdStore.class )
+                .getLastClosedTransactionId();
+        long lastClosedTxId = readReplica.getDependencyResolver().resolveDependency( TransactionIdStore.class )
+                .getLastClosedTransactionId();
+        return lastClosedTxId == leaderTxId;
     }
 }

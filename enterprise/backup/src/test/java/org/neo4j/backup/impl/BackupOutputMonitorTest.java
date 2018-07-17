@@ -39,13 +39,13 @@ import static org.neo4j.backup.impl.OnlineBackupCommandCcIT.wrapWithNormalOutput
 
 public class BackupOutputMonitorTest
 {
-    Monitors monitors = new Monitors();
-    OutsideWorld outsideWorld;
-    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-    PrintStream outputStream = wrapWithNormalOutput( System.out, new PrintStream( byteArrayOutputStream ) );
+    private Monitors monitors = new Monitors();
+    private OutsideWorld outsideWorld;
+    private ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+    private PrintStream outputStream = wrapWithNormalOutput( System.out, new PrintStream( byteArrayOutputStream ) );
 
-    ByteArrayOutputStream byteArrayErrorStream = new ByteArrayOutputStream();
-    PrintStream errorStream = wrapWithNormalOutput( System.err, new PrintStream( byteArrayErrorStream ) );
+    private ByteArrayOutputStream byteArrayErrorStream = new ByteArrayOutputStream();
+    private PrintStream errorStream = wrapWithNormalOutput( System.err, new PrintStream( byteArrayErrorStream ) );
 
     @Before
     public void setup()

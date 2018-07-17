@@ -41,6 +41,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -51,25 +52,24 @@ import static org.junit.Assert.assertEquals;
 
 public class IncrementalBackupIT
 {
-    public TestName testName = new TestName();
+    private TestName testName = new TestName();
     public TestDirectory testDirectory = TestDirectory.testDirectory();
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
     public RuleChain rules = RuleChain.outerRule( testName ).around( testDirectory ).around( suppressOutput );
 
     private File serverPath;
-    private File backupPath;
+    private File backupDatabasePath;
     private ServerInterface server;
     private GraphDatabaseService db;
+    private File backupStorePath;
 
     @Before
     public void before() throws Exception
     {
-        File base = testDirectory.cleanDirectory( testName.getMethodName() );
-        serverPath = new File( base, "server" );
-        backupPath = new File( base, "backup" );
-        serverPath.mkdirs();
-        backupPath.mkdirs();
+        serverPath = testDirectory.directory( "server" );
+        backupStorePath = testDirectory.directory( "backupStore" );
+        backupDatabasePath = new File( backupStorePath, DataSourceManager.DEFAULT_DATABASE_NAME );
     }
 
     @After
@@ -96,14 +96,14 @@ public class IncrementalBackupIT
 
         OnlineBackup backup = OnlineBackup.from( "127.0.0.1", port );
 
-        backup.full( backupPath.getPath() );
+        backup.full( backupDatabasePath.getPath() );
 
         assertEquals( initialDataSetRepresentation, getBackupDbRepresentation() );
         shutdownServer( server );
 
         DbRepresentation furtherRepresentation = addMoreData2( serverPath );
         server = startServer( serverPath, "127.0.0.1:" + port );
-        backup.incremental( backupPath.getPath() );
+        backup.incremental( backupDatabasePath.getPath() );
         assertEquals( furtherRepresentation, getBackupDbRepresentation() );
         shutdownServer( server );
     }
@@ -136,14 +136,14 @@ public class IncrementalBackupIT
 
         OnlineBackup backup = OnlineBackup.from( "127.0.0.1", port);
 
-        backup.full( backupPath.getPath() );
+        backup.full( backupDatabasePath.getPath() );
 
         assertEquals( initialDataSetRepresentation, getBackupDbRepresentation() );
         shutdownServer( server );
 
         DbRepresentation furtherRepresentation = createTransactionWithWeirdRelationshipGroupRecord( serverPath );
         server = startServer( serverPath, "127.0.0.1:" + port );
-        backup.incremental( backupPath.getPath() );
+        backup.incremental( backupDatabasePath.getPath() );
         assertEquals( furtherRepresentation, getBackupDbRepresentation() );
         shutdownServer( server );
     }
@@ -220,23 +220,23 @@ public class IncrementalBackupIT
         return result;
     }
 
-    private GraphDatabaseService startGraphDatabase( File path )
+    private static GraphDatabaseService startGraphDatabase( File storeDir )
     {
         return new TestGraphDatabaseFactory().
-                newEmbeddedDatabaseBuilder( path ).
+                newEmbeddedDatabaseBuilder( storeDir ).
                 setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).
                 setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).
                 newGraphDatabase();
     }
 
-    private ServerInterface startServer( File path, String serverAddress )
+    private static ServerInterface startServer( File storeDir, String serverAddress )
     {
-        ServerInterface server = new EmbeddedServer( path, serverAddress );
+        ServerInterface server = new EmbeddedServer( storeDir, serverAddress );
         server.awaitStarted();
         return server;
     }
 
-    private void shutdownServer( ServerInterface server ) throws Exception
+    private static void shutdownServer( ServerInterface server ) throws Exception
     {
         server.shutdown();
         Thread.sleep( 1000 );
@@ -244,6 +244,6 @@ public class IncrementalBackupIT
 
     private DbRepresentation getBackupDbRepresentation()
     {
-        return DbRepresentation.of( backupPath, Config.defaults( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ) );
+        return DbRepresentation.of( backupStorePath, Config.defaults( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ) );
     }
 }

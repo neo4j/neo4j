@@ -30,7 +30,7 @@ import org.neo4j.causalclustering.discovery.Cluster;
 public class NoStore implements BackupStore
 {
     @Override
-    public Optional<File> generate( File backupDir, Cluster backupCluster ) throws Exception
+    public Optional<File> generate( File backupDir, Cluster backupCluster )
     {
         return Optional.empty();
     }

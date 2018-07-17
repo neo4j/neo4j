@@ -68,7 +68,7 @@ class BackupStrategyCoordinatorFactory
             BackupDelegator backupDelegator, PageCache pageCache )
     {
         FileSystemAbstraction fs = outsideWorld.fileSystem();
-        BackupCopyService copyService = new BackupCopyService( fs, pageCache, new FileMoveProvider( fs ) );
+        BackupCopyService copyService = new BackupCopyService( fs, new FileMoveProvider( fs ) );
         ProgressMonitorFactory progressMonitorFactory = ProgressMonitorFactory.textual( outsideWorld.errorStream() );
         BackupRecoveryService recoveryService = new BackupRecoveryService();
         long timeout = onlineBackupContext.getRequiredArguments().getTimeout();

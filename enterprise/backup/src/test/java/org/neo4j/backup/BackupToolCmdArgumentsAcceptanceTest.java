@@ -149,17 +149,14 @@ public class BackupToolCmdArgumentsAcceptanceTest
             for ( String flag : verifyFlagValues )
             {
                 List<String> args = join( options, flag );
-                List<List<String>> argsPermutations = permutations( args );
-                for ( List<String> permutation : argsPermutations )
+
+                StringBuilder sb = new StringBuilder();
+                for ( String arg : args )
                 {
-                    StringBuilder sb = new StringBuilder();
-                    for ( String arg : permutation )
-                    {
-                        sb.append( sb.length() > 0 ? " " : "" ).append( arg );
-                    }
-                    String argsJoinedAsString = sb.toString();
-                    result.add( new Object[]{argsJoinedAsString, verifyStore} );
+                    sb.append( sb.length() > 0 ? " " : "" ).append( arg );
                 }
+                String argsJoinedAsString = sb.toString();
+                result.add( new Object[]{argsJoinedAsString, verifyStore} );
             }
         }
 
@@ -172,7 +169,7 @@ public class BackupToolCmdArgumentsAcceptanceTest
         List<List<String>> result = new ArrayList<>();
 
         Deque<String> stack = new ArrayDeque<>();
-        Map.Entry<String,String>[] entries = optionsMap.entrySet().toArray( new Map.Entry[optionsMap.size()] );
+        Map.Entry<String,String>[] entries = optionsMap.entrySet().toArray( new Map.Entry[0] );
         gatherAllOptionCombinations( entries, 0, stack, result );
 
         return result;
@@ -209,43 +206,10 @@ public class BackupToolCmdArgumentsAcceptanceTest
                                        "--" + key + " " + value );
     }
 
-    private static List<List<String>> permutations( List<String> list )
-    {
-        List<List<String>> result = new ArrayList<>();
-        permutations( result, new ArrayList<>(), list );
-        return result;
-    }
-
-    private static void permutations( List<List<String>> result, List<String> prefix, List<String> list )
-    {
-        if ( list.isEmpty() )
-        {
-            result.add( prefix );
-        }
-        else
-        {
-            for ( int i = 0; i < list.size(); i++ )
-            {
-                permutations(
-                        result,
-                        join( prefix, list.get( i ) ),
-                        join( list.subList( 0, i ), list.subList( i + 1, list.size() ) ) );
-            }
-        }
-    }
-
     private static List<String> join( List<String> list, String element )
     {
         List<String> result = new ArrayList<>( list );
         result.add( element );
-        return result;
-    }
-
-    private static List<String> join( List<String> list1, List<String> list2 )
-    {
-        List<String> result = new ArrayList<>( list1.size() + list2.size() );
-        result.addAll( list1 );
-        result.addAll( list2 );
         return result;
     }
 }

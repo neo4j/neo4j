@@ -210,11 +210,13 @@ public class BackupProtocolService
                 throw new RuntimeException( targetDirectory + " doesn't contain a database" );
             }
 
-            Map<String,String> temporaryDbConfig = getTemporaryDbConfig();
+            Path storeDir = targetDirectory.getParent();
+
+            Map<String,String> temporaryDbConfig = getTemporaryDbConfig( storeDir, targetDirectory.getFileName().toString() );
             config.augment( temporaryDbConfig );
 
             Map<String,String> configParams = config.getRaw();
-            GraphDatabaseAPI targetDb = startTemporaryDb( targetDirectory, pageCache, configParams );
+            GraphDatabaseAPI targetDb = startTemporaryDb( storeDir, pageCache, configParams );
             long backupStartTime = System.currentTimeMillis();
             long lastCommittedTx;
             try
@@ -255,13 +257,15 @@ public class BackupProtocolService
         return consistent;
     }
 
-    private Map<String,String> getTemporaryDbConfig()
+    private static Map<String,String> getTemporaryDbConfig( Path storeDir, String databaseName )
     {
         Map<String,String> tempDbConfig = new HashMap<>();
         tempDbConfig.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
         // In case someone deleted the logical log from a full backup
         tempDbConfig.put( GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
         tempDbConfig.put( GraphDatabaseSettings.pagecache_warmup_enabled.name(), Settings.FALSE );
+        tempDbConfig.put( GraphDatabaseSettings.active_database.name(), databaseName );
+        tempDbConfig.put( GraphDatabaseSettings.database_path.name(), storeDir.toString() );
         return tempDbConfig;
     }
 
@@ -328,19 +332,19 @@ public class BackupProtocolService
         return new BackupOutcome( lastCommittedTransaction, true );
     }
 
-    private RequestContext slaveContextOf( GraphDatabaseAPI graphDb )
+    private static RequestContext slaveContextOf( GraphDatabaseAPI graphDb )
     {
         TransactionIdStore transactionIdStore = graphDb.getDependencyResolver().resolveDependency(
                 TransactionIdStore.class );
         return anonymous( transactionIdStore.getLastCommittedTransactionId() );
     }
 
-    private boolean directoryContainsDb( Path targetDirectory )
+    private static boolean directoryContainsDb( Path targetDirectory )
     {
         return Files.isRegularFile( targetDirectory.resolve( MetaDataStore.DEFAULT_NAME ) );
     }
 
-    private boolean directoryIsEmpty( Path dir ) throws IOException
+    private static boolean directoryIsEmpty( Path dir ) throws IOException
     {
         return Files.notExists( dir ) || Files.isDirectory( dir ) && FileUtils.countFilesInDirectoryPath( dir ) == 0;
     }

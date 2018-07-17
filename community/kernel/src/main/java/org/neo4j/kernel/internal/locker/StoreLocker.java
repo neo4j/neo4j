@@ -110,7 +110,7 @@ public class StoreLocker implements Closeable
         return storeLockException( message, null );
     }
 
-    private StoreLockException storeLockException( String message, Exception e )
+    private static StoreLockException storeLockException( String message, Exception e )
     {
         String help = "Please ensure no other process is using this database, and that the directory is writable " +
                 "(required even for read-only access)";

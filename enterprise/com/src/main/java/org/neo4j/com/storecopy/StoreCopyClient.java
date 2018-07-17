@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -115,10 +116,11 @@ public class StoreCopyClient
     public void copyStore( StoreCopyRequester requester, CancellationRequest cancellationRequest, MoveAfterCopy moveAfterCopy ) throws Exception
     {
         // Create a temp directory (or clean if present)
-        File tempDatabaseDirectory = new File( databaseDirectory, StoreUtil.TEMP_COPY_DIRECTORY_NAME );
+        File tempStoreDirectory = new File( databaseDirectory, StoreUtil.TEMP_COPY_DIRECTORY_NAME );
+        File tempDatabaseDirectory = new File( tempStoreDirectory, DataSourceManager.DEFAULT_DATABASE_NAME );
         try
         {
-            cleanDirectory( tempDatabaseDirectory );
+            cleanDirectory( tempStoreDirectory );
 
             // Request store files and transactions that will need recovery
             monitor.startReceivingStoreFiles();
@@ -139,7 +141,7 @@ public class StoreCopyClient
             checkCancellation( cancellationRequest, tempDatabaseDirectory );
 
             // Run recovery, so that the transactions we just wrote into the active log will be applied.
-            recoverDatabase( tempDatabaseDirectory );
+            recoverDatabase( tempStoreDirectory );
 
             // All is well, move the streamed files to the real store directory.
             // Should only be record store files.
@@ -150,7 +152,7 @@ public class StoreCopyClient
         finally
         {
             // All done, delete temp directory
-            FileUtils.deleteRecursively( tempDatabaseDirectory );
+            FileUtils.deleteRecursively( tempStoreDirectory );
         }
     }
 
@@ -249,12 +251,14 @@ public class StoreCopyClient
 
     private GraphDatabaseService newTempDatabase( File tempStore )
     {
+        File storeDir = tempStore.getParentFile();
         ExternallyManagedPageCache.GraphDatabaseFactoryWithPageCacheFactory factory =
                 ExternallyManagedPageCache.graphDatabaseFactoryWithPageCache( pageCache );
         return factory
                 .setKernelExtensions( kernelExtensions )
                 .setUserLogProvider( NullLogProvider.getInstance() )
-                .newEmbeddedDatabaseBuilder( tempStore.getAbsoluteFile() )
+                .newEmbeddedDatabaseBuilder( storeDir.getAbsoluteFile() )
+                .setConfig( GraphDatabaseSettings.active_database, tempStore.getName() )
                 .setConfig( "dbms.backup.enabled", Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.pagecache_warmup_enabled, Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.logs_directory, tempStore.getAbsolutePath() )
@@ -290,7 +294,7 @@ public class StoreCopyClient
         };
     }
 
-    private void cleanDirectory( File directory ) throws IOException
+    private static void cleanDirectory( File directory ) throws IOException
     {
         if ( !directory.mkdir() )
         {
