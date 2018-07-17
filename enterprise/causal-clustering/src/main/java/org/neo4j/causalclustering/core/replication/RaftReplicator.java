@@ -130,7 +130,7 @@ public class RaftReplicator implements Replicator, LeaderListener
                     attempts++;
                     if ( attempts > 1 )
                     {
-                        log.warn( "Failed to replicate content. Retrying. Current attempt: %d Content: %s", attempts, command );
+                        log.info( "Retrying replication. Current attempt: %d Content: %s", attempts, command );
                     }
                     replicationMonitor.replicationAttempt();
                     assertDatabaseAvailable();
