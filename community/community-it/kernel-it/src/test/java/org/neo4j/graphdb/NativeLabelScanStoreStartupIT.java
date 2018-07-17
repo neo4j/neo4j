@@ -35,7 +35,6 @@ import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -64,7 +63,7 @@ public class NativeLabelScanStoreStartupIT
         labelScanStore.shutdown();
         workCollector.shutdown();
 
-        deleteLabelScanStoreFiles( new File( dbRule.getStoreDirFile(), DataSourceManager.DEFAULT_DATABASE_NAME ) );
+        deleteLabelScanStoreFiles( dbRule.getStoreDir() );
 
         workCollector.init();
         labelScanStore.init();
@@ -87,7 +86,7 @@ public class NativeLabelScanStoreStartupIT
         labelScanStore.shutdown();
         workCollector.shutdown();
 
-        corruptLabelScanStoreFiles( new File( dbRule.getStoreDirFile(), DataSourceManager.DEFAULT_DATABASE_NAME ) );
+        corruptLabelScanStoreFiles( dbRule.getStoreDir() );
 
         workCollector.init();
         labelScanStore.init();
@@ -151,12 +150,12 @@ public class NativeLabelScanStoreStartupIT
         scrambleFile( storeFile( storeDirectory ) );
     }
 
-    private void deleteLabelScanStoreFiles( File storeDirectory )
+    private static void deleteLabelScanStoreFiles( File storeDirectory )
     {
         assertTrue( storeFile( storeDirectory ).delete() );
     }
 
-    private void checkLabelScanStoreAccessible( LabelScanStore labelScanStore ) throws IOException
+    private static void checkLabelScanStoreAccessible( LabelScanStore labelScanStore ) throws IOException
     {
         int labelId = 1;
         try ( LabelScanWriter labelScanWriter = labelScanStore.newWriter() )

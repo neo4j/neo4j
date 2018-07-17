@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.Transaction;
@@ -35,7 +34,6 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
@@ -57,7 +55,7 @@ public class LogPruningIT
         Config config = getInstanceFromDb( Config.class );
         FileSystemAbstraction fs = getInstanceFromDb( FileSystemAbstraction.class );
 
-        LogFiles logFiles = LogFilesBuilder.builder( new File( db.getStoreDir(), DataSourceManager.DEFAULT_DATABASE_NAME ), fs )
+        LogFiles logFiles = LogFilesBuilder.builder( db.getStoreDir(), fs )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withLastCommittedTransactionIdSupplier( () -> 1 )
                 .withTransactionIdStore( new SimpleTransactionIdStore() ).build();

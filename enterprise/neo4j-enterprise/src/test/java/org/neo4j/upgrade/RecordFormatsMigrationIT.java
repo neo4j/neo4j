@@ -71,27 +71,27 @@ public class RecordFormatsMigrationIT
     @Test
     public void migrateLatestStandardToLatestHighLimit()
     {
-        executeAndStopDb( startStandardFormatDb(), this::createNode );
+        executeAndStopDb( startStandardFormatDb(), RecordFormatsMigrationIT::createNode );
         assertLatestStandardStore();
 
-        executeAndStopDb( startHighLimitFormatDb(), this::assertNodeExists );
+        executeAndStopDb( startHighLimitFormatDb(), RecordFormatsMigrationIT::assertNodeExists );
         assertLatestHighLimitStore();
     }
 
     @Test
     public void migrateHighLimitV3_0ToLatestHighLimit()
     {
-        executeAndStopDb( startDb( HighLimitV3_0_0.NAME ), this::createNode );
+        executeAndStopDb( startDb( HighLimitV3_0_0.NAME ), RecordFormatsMigrationIT::createNode );
         assertStoreFormat( HighLimitV3_0_0.RECORD_FORMATS );
 
-        executeAndStopDb( startHighLimitFormatDb(), this::assertNodeExists );
+        executeAndStopDb( startHighLimitFormatDb(), RecordFormatsMigrationIT::assertNodeExists );
         assertLatestHighLimitStore();
     }
 
     @Test
     public void migrateHighLimitToStandard()
     {
-        executeAndStopDb( startHighLimitFormatDb(), this::createNode );
+        executeAndStopDb( startHighLimitFormatDb(), RecordFormatsMigrationIT::createNode );
         assertLatestHighLimitStore();
 
         try
@@ -106,7 +106,7 @@ public class RecordFormatsMigrationIT
         assertLatestHighLimitStore();
     }
 
-    private void createNode( GraphDatabaseService db )
+    private static void createNode( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -116,7 +116,7 @@ public class RecordFormatsMigrationIT
         }
     }
 
-    private void assertNodeExists( GraphDatabaseService db )
+    private static void assertNodeExists( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -137,7 +137,7 @@ public class RecordFormatsMigrationIT
 
     private GraphDatabaseService startDb( String recordFormatName )
     {
-        return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
+        return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.directory() )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.record_format, recordFormatName )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )

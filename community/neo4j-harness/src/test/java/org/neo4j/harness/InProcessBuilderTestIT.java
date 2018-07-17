@@ -19,7 +19,6 @@
  */
 package org.neo4j.harness;
 
-import org.apache.commons.io.FileUtils;
 import org.codehaus.jackson.JsonNode;
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,8 +26,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -189,55 +186,48 @@ public class InProcessBuilderTestIT
     {
         // When
         // create graph db with one node upfront
-        Path dir = Files.createTempDirectory( getClass().getSimpleName() + "_shouldRunBuilderOnExistingStorageDir" );
-        File storeDir = Config.defaults( GraphDatabaseSettings.data_directory, dir.toString() )
-                .get( GraphDatabaseSettings.database_path );
+        File existingStoreDir = testDir.directory( "existingStore" );
+        File storeDir = Config.defaults( GraphDatabaseSettings.data_directory, existingStoreDir.toPath().toString() )
+                .get( GraphDatabaseSettings.database_path ).getParentFile();
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         try
         {
-            GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
-            try
-            {
-                db.execute( "create ()" );
-            }
-            finally
-            {
-                db.shutdown();
-            }
+            db.execute( "create ()" );
+        }
+        finally
+        {
+            db.shutdown();
+        }
 
-            try ( ServerControls server = getTestServerBuilder( testDir.directory() ).copyFrom( dir.toFile() )
-                    .newServer() )
+        try ( ServerControls server = getTestServerBuilder( testDir.directory() ).copyFrom( existingStoreDir )
+                .newServer() )
+        {
+            // Then
+            try ( Transaction tx = server.graph().beginTx() )
             {
-                // Then
-                try ( Transaction tx = server.graph().beginTx() )
-                {
-                    ResourceIterable<Node> allNodes = Iterables.asResourceIterable( server.graph().getAllNodes() );
+                ResourceIterable<Node> allNodes = Iterables.asResourceIterable( server.graph().getAllNodes() );
 
-                    assertTrue( Iterables.count( allNodes ) > 0 );
+                assertTrue( Iterables.count( allNodes ) > 0 );
 
-                    // When: create another node
-                    server.graph().createNode();
-                    tx.success();
-                }
+                // When: create another node
+                server.graph().createNode();
+                tx.success();
             }
+        }
 
-            // Then: we still only have one node since the server is supposed to work on a copy
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
-            try
+        // Then: we still only have one node since the server is supposed to work on a copy
+        db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        try
+        {
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    assertEquals( 1, Iterables.count( db.getAllNodes() ) );
-                    tx.success();
-                }
-            }
-            finally
-            {
-                db.shutdown();
+                assertEquals( 1, Iterables.count( db.getAllNodes() ) );
+                tx.success();
             }
         }
         finally
         {
-            FileUtils.forceDelete( dir.toFile() );
+            db.shutdown();
         }
     }
 
@@ -245,7 +235,7 @@ public class InProcessBuilderTestIT
     public void shouldOpenBoltPort() throws Throwable
     {
         // given
-        try ( ServerControls controls = getTestServerBuilder( testDir.graphDbDir() ).newServer() )
+        try ( ServerControls controls = getTestServerBuilder( testDir.directory() ).newServer() )
         {
             URI uri = controls.boltURI();
 
@@ -263,7 +253,7 @@ public class InProcessBuilderTestIT
         File notADirectory = File.createTempFile( "prefix", "suffix" );
         assertFalse( notADirectory.isDirectory() );
 
-        try ( ServerControls ignored = getTestServerBuilder( testDir.graphDbDir() )
+        try ( ServerControls ignored = getTestServerBuilder( testDir.directory() )
                 .copyFrom( notADirectory ).newServer() )
         {
             fail( "server should not start" );

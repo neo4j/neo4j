@@ -108,7 +108,7 @@ public class BatchInsertionIT
     @Test
     public void shouldBeAbleToMakeRepeatedCallsToSetNodeProperty() throws Exception
     {
-        File file = new File( dbRule.getStoreDirFile(), DataSourceManager.DEFAULT_DATABASE_NAME );
+        File file = dbRule.getStoreDirFile();
         BatchInserter inserter = BatchInserters.inserter( file, fileSystemRule.get() );
         long nodeId = inserter.createNode( Collections.emptyMap() );
 

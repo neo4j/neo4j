@@ -81,7 +81,7 @@ public class BatchInsertEnterpriseIT
     public void shouldInsertDifferentTypesOfThings() throws Exception
     {
         // GIVEN
-        BatchInserter inserter = BatchInserters.inserter( directory.directory(), fileSystemRule.get(),
+        BatchInserter inserter = BatchInserters.inserter( directory.graphDbDir(), fileSystemRule.get(),
                 stringMap( GraphDatabaseSettings.log_queries.name(), "true",
                         GraphDatabaseSettings.record_format.name(), recordFormat,
                         GraphDatabaseSettings.log_queries_filename.name(),
@@ -142,7 +142,7 @@ public class BatchInsertEnterpriseIT
             db.shutdown();
         }
 
-        BatchInserter inserter = BatchInserters.inserter( storeDir, fileSystemRule.get() );
+        BatchInserter inserter = BatchInserters.inserter( directory.graphDbDir(), fileSystemRule.get() );
         try
         {
             long start = inserter.createNode( someProperties( 5 ), Labels.One );

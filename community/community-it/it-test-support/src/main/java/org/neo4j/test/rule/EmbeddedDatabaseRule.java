@@ -53,7 +53,7 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     @Override
     public File getStoreDir()
     {
-        return testDirectory.directory();
+        return testDirectory.graphDbDir();
     }
 
     @Override
