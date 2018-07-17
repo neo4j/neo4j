@@ -88,19 +88,16 @@ public class StoreMigration
         FormattedLogProvider userLogProvider = FormattedLogProvider.toOutputStream( System.out );
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            new StoreMigration().run( fileSystem, storeDir, getMigrationConfig( storeDir ), userLogProvider );
+            new StoreMigration().run( fileSystem, storeDir, getMigrationConfig(), userLogProvider );
         }
     }
 
-    private static Config getMigrationConfig( File storeDir )
+    private static Config getMigrationConfig()
     {
-        Config config = Config.defaults( GraphDatabaseSettings.allow_upgrade, Settings.TRUE );
-        config.augment( GraphDatabaseSettings.neo4j_home, storeDir.getAbsolutePath() );
-        return config;
+        return Config.defaults( GraphDatabaseSettings.allow_upgrade, Settings.TRUE );
     }
 
-    public void run( final FileSystemAbstraction fs, final File storeDirectory, Config config,
-            LogProvider userLogProvider ) throws IOException
+    public static void run( final FileSystemAbstraction fs, final File storeDirectory, Config config, LogProvider userLogProvider ) throws IOException
     {
         StoreLogService logService = StoreLogService.withUserLogProvider( userLogProvider )
                 .withInternalLog( config.get( store_internal_log_path ) ).build( fs );
@@ -159,7 +156,7 @@ public class StoreMigration
         }
     }
 
-    private void appendCheckpoint( LogFiles logFiles, LogTailScanner tailScanner ) throws IOException
+    private static void appendCheckpoint( LogFiles logFiles, LogTailScanner tailScanner ) throws IOException
     {
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {

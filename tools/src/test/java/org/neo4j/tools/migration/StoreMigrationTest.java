@@ -42,7 +42,7 @@ public class StoreMigrationTest
     @Rule
     public final SuppressOutput mute = SuppressOutput.suppressAll();
     @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
+    public final TestDirectory testDir = TestDirectory.testDirectory();
 
     @Before
     public void setUp() throws IOException
@@ -57,7 +57,7 @@ public class StoreMigrationTest
 
         // after migration we can open store and do something
         GraphDatabaseService database = new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( testDir.graphDbDir() )
+                .newEmbeddedDatabaseBuilder( testDir.directory() )
                 .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory( "logs" ).getAbsolutePath() )
                 .newGraphDatabase();
         try ( Transaction transaction = database.beginTx() )
