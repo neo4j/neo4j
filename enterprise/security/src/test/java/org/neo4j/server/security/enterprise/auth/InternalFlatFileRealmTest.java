@@ -45,6 +45,7 @@ import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
@@ -57,7 +58,6 @@ import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
-import org.neo4j.time.Clocks;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
@@ -89,7 +89,7 @@ public class InternalFlatFileRealmTest
                         new InMemoryUserRepository(),
                         new InMemoryRoleRepository(),
                         new BasicPasswordPolicy(),
-                        new RateLimitedAuthenticationStrategy( Clock.systemUTC(), 3 ),
+                        newRateLimitedAuthStrategy(),
                         mock( JobScheduler.class ),
                         new InMemoryUserRepository(),
                         new InMemoryUserRepository()
@@ -263,7 +263,7 @@ public class InternalFlatFileRealmTest
                 userRepository,
                 roleRepository,
                 new BasicPasswordPolicy(),
-                new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 ),
+                newRateLimitedAuthStrategy(),
                 new InternalFlatFileRealmIT.TestJobScheduler(),
                 initialUserRepository,
                 adminUserRepository
@@ -306,7 +306,7 @@ public class InternalFlatFileRealmTest
                 userRepository,
                 roleRepository,
                 new BasicPasswordPolicy(),
-                new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 ),
+                newRateLimitedAuthStrategy(),
                 new InternalFlatFileRealmIT.TestJobScheduler(),
                 initialUserRepository,
                 adminUserRepository
@@ -327,7 +327,7 @@ public class InternalFlatFileRealmTest
         final UserRepository initialUserRepository = mock( UserRepository.class );
         final UserRepository defaultAdminRepository = mock( UserRepository.class );
         final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
-        AuthenticationStrategy authenticationStrategy = new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 );
+        AuthenticationStrategy authenticationStrategy = newRateLimitedAuthStrategy();
         InternalFlatFileRealmIT.TestJobScheduler jobScheduler = new InternalFlatFileRealmIT.TestJobScheduler();
         InternalFlatFileRealm realm =
                 new InternalFlatFileRealm(
@@ -354,6 +354,11 @@ public class InternalFlatFileRealmTest
 
         verify( userRepository, times( nSetUsers ) ).setUsers( any() );
         verify( roleRepository, times( nSetRoles ) ).setRoles( any() );
+    }
+
+    private static AuthenticationStrategy newRateLimitedAuthStrategy()
+    {
+        return new RateLimitedAuthenticationStrategy( Clock.systemUTC(), Config.defaults() );
     }
 
     private class TestRealm extends InternalFlatFileRealm

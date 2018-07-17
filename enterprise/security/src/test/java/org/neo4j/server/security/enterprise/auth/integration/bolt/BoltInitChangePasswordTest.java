@@ -31,6 +31,7 @@ import java.util.Map;
 
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.enterprise.auth.MultiRealmAuthManagerRule;
@@ -43,7 +44,7 @@ public class BoltInitChangePasswordTest
 {
     @Rule
     public MultiRealmAuthManagerRule authManagerRule = new MultiRealmAuthManagerRule( new InMemoryUserRepository(),
-            new RateLimitedAuthenticationStrategy( Clock.systemUTC(), 3 ) );
+            new RateLimitedAuthenticationStrategy( Clock.systemUTC(), Config.defaults() ) );
     private BasicAuthentication authentication;
 
     @Before

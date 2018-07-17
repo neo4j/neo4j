@@ -847,9 +847,19 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<File> auth_store =
             pathSetting( "unsupported.dbms.security.auth_store.location", NO_DEFAULT );
 
-    @Internal
+    @Description( "The maximum number of unsuccessful authentication attempts before imposing a user lock for the configured amount of time." +
+                  "The locked out user will not be able to log in until the lock period expires, even if correct credentials are provided. " +
+                  "Setting this configuration option to values less than 3 is not recommended because it might make it easier for an attacker " +
+                  "to brute force the password." )
     public static final Setting<Integer> auth_max_failed_attempts =
-            buildSetting( "unsupported.dbms.security.auth_max_failed_attempts", INTEGER, "3" ).constraint( min( 0 ) ).build();
+            buildSetting( "dbms.security.auth_max_failed_attempts", INTEGER, "3" ).constraint( min( 0 ) ).build();
+
+    @Description( "The amount of time user account should be locked after a configured number of unsuccessful authentication attempts. " +
+                  "The locked out user will not be able to log in until the lock period expires, even if correct credentials are provided. " +
+                  "Setting this configuration option to a low value is not recommended because it might make it easier for an attacker to " +
+                  "brute force the password." )
+    public static final Setting<Duration> auth_lock_time =
+            buildSetting( "dbms.security.auth_lock_time", DURATION, "5s" ).constraint( min( Duration.ofSeconds( 0 ) ) ).build();
 
     @Description( "A list of procedures and user defined functions (comma separated) that are allowed full access to " +
             "the database. The list may contain both fully-qualified procedure names, and partial names with the " +

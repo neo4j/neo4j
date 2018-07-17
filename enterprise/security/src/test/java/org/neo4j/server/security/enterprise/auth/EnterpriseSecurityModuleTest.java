@@ -230,6 +230,7 @@ public class EnterpriseSecurityModuleTest
         when( config.get( SecuritySettings.auth_cache_use_ttl ) ).thenReturn( true );
         when( config.get( SecuritySettings.security_log_successful_authentication ) ).thenReturn( false );
         when( config.get( GraphDatabaseSettings.auth_max_failed_attempts ) ).thenReturn( 3 );
+        when( config.get( GraphDatabaseSettings.auth_lock_time ) ).thenReturn( Duration.ofSeconds( 5 ) );
     }
 
     private void nativeAuth( boolean authn, boolean authr )

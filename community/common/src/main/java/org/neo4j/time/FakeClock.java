@@ -20,6 +20,7 @@
 package org.neo4j.time;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -69,6 +70,11 @@ public class FakeClock extends SystemNanoClock
     public long millis()
     {
         return TimeUnit.NANOSECONDS.toMillis( nanoTime );
+    }
+
+    public FakeClock forward( Duration delta )
+    {
+        return forward( delta.toNanos(), TimeUnit.NANOSECONDS );
     }
 
     public FakeClock forward( long delta, TimeUnit unit )
