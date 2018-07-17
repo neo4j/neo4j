@@ -23,6 +23,7 @@ import org.hamcrest.Matcher;
 import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -129,7 +130,7 @@ class FusionIndexTestHelp
         {
             values.addAll( Arrays.asList( group ) );
         }
-        return values.toArray( new Value[values.size()] );
+        return values.toArray( new Value[0] );
     }
 
     static EnumMap<IndexSlot,Value[]> valuesByGroup()
@@ -195,7 +196,7 @@ class FusionIndexTestHelp
     static void verifyOtherIsClosedOnSingleThrow( AutoCloseable failingCloseable, AutoCloseable fusionCloseable, AutoCloseable... successfulCloseables )
             throws Exception
     {
-        IOException failure = new IOException( "fail" );
+        UncheckedIOException failure = new UncheckedIOException( new IOException( "fail" ) );
         doThrow( failure ).when( failingCloseable ).close();
 
         // when
@@ -204,7 +205,7 @@ class FusionIndexTestHelp
             fusionCloseable.close();
             fail( "Should have failed" );
         }
-        catch ( IOException ignore )
+        catch ( UncheckedIOException ignore )
         {
         }
 
@@ -218,14 +219,14 @@ class FusionIndexTestHelp
     static void verifyFusionCloseThrowOnSingleCloseThrow( AutoCloseable failingCloseable, AutoCloseable fusionCloseable )
             throws Exception
     {
-        IOException expectedFailure = new IOException( "fail" );
+        UncheckedIOException expectedFailure = new UncheckedIOException( new IOException( "fail" ) );
         doThrow( expectedFailure ).when( failingCloseable ).close();
         try
         {
             fusionCloseable.close();
             fail( "Should have failed" );
         }
-        catch ( IOException e )
+        catch ( UncheckedIOException e )
         {
             assertSame( expectedFailure, e );
         }
@@ -234,10 +235,10 @@ class FusionIndexTestHelp
     static void verifyFusionCloseThrowIfAllThrow( AutoCloseable fusionCloseable, AutoCloseable... autoCloseables ) throws Exception
     {
         // given
-        IOException[] failures = new IOException[autoCloseables.length];
+        UncheckedIOException[] failures = new UncheckedIOException[autoCloseables.length];
         for ( int i = 0; i < autoCloseables.length; i++ )
         {
-            failures[i] = new IOException( "unknown" );
+            failures[i] = new UncheckedIOException( new IOException( "unknown" ) );
             doThrow( failures[i] ).when( autoCloseables[i] ).close();
         }
 
@@ -247,11 +248,11 @@ class FusionIndexTestHelp
             fusionCloseable.close();
             fail( "Should have failed" );
         }
-        catch ( IOException e )
+        catch ( UncheckedIOException e )
         {
             // then
-            List<Matcher<? super IOException>> matchers = new ArrayList<>();
-            for ( IOException failure : failures )
+            List<Matcher<? super UncheckedIOException>> matchers = new ArrayList<>();
+            for ( UncheckedIOException failure : failures )
             {
                 matchers.add( sameInstance( failure ) );
             }

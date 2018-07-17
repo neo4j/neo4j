@@ -44,7 +44,6 @@ import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
@@ -247,19 +246,11 @@ public class NativeLabelScanStore implements LabelScanStore
      * and non-clean shutdown will be applied again on next startup.
      *
      * @param limiter {@link IOLimiter}.
-     * @throws UnderlyingStorageException on failure writing changes to {@link PageCache}.
      */
     @Override
-    public void force( IOLimiter limiter ) throws UnderlyingStorageException
+    public void force( IOLimiter limiter )
     {
-        try
-        {
-            index.checkpoint( limiter );
-        }
-        catch ( UncheckedIOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
+        index.checkpoint( limiter );
     }
 
     @Override

@@ -94,7 +94,38 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor,
                     descriptor.schema().getPropertyIds() );
             cursor.initialize( descriptor, multiProgressor, predicates );
-            instanceSelector.forAll( reader -> reader.query( multiProgressor, indexOrder, predicates ) );
+            try
+            {
+                instanceSelector.forAll( reader ->
+                {
+                    try
+                    {
+                        reader.query( multiProgressor, indexOrder, predicates );
+                    }
+                    catch ( IndexNotApplicableKernelException e )
+                    {
+                        throw new InnerException( e );
+                    }
+                } );
+            }
+            catch ( InnerException e )
+            {
+                throw e.getCause();
+            }
+        }
+    }
+
+    private static final class InnerException extends RuntimeException
+    {
+        private InnerException( IndexNotApplicableKernelException e )
+        {
+            super( e );
+        }
+
+        @Override
+        public synchronized IndexNotApplicableKernelException getCause()
+        {
+            return (IndexNotApplicableKernelException) super.getCause();
         }
     }
 

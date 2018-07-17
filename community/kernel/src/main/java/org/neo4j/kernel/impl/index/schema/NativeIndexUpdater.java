@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-
 import org.neo4j.index.internal.gbptree.Writer;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -66,14 +64,7 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIn
     public void close()
     {
         closed = true;
-        try
-        {
-            writer.close();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
+        IOUtils.closeAllUnchecked( writer );
     }
 
     private void assertOpen()

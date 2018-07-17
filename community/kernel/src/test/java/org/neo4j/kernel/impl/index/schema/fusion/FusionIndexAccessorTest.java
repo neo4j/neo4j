@@ -155,7 +155,7 @@ public class FusionIndexAccessorTest
     /* drop */
 
     @Test
-    public void dropMustDropAll() throws Exception
+    public void dropMustDropAll()
     {
         // when
         // ... all drop successful
@@ -170,7 +170,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void dropMustThrowIfDropAnyFail() throws Exception
+    public void dropMustThrowIfDropAnyFail()
     {
         for ( IndexAccessor accessor : aliveAccessors )
         {
@@ -195,8 +195,7 @@ public class FusionIndexAccessorTest
         }
     }
 
-    private void verifyFailOnSingleDropFailure( IndexAccessor failingAccessor, FusionIndexAccessor fusionIndexAccessor )
-            throws IOException
+    private static void verifyFailOnSingleDropFailure( IndexAccessor failingAccessor, FusionIndexAccessor fusionIndexAccessor )
     {
         UncheckedIOException expectedFailure = new UncheckedIOException( new IOException( "fail" ) );
         doThrow( expectedFailure ).when( failingAccessor ).drop();
@@ -213,7 +212,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void dropMustThrowIfAllFail() throws Exception
+    public void dropMustThrowIfAllFail()
     {
         // given
         List<UncheckedIOException> exceptions = new ArrayList<>();
@@ -240,7 +239,7 @@ public class FusionIndexAccessorTest
     /* close */
 
     @Test
-    public void closeMustCloseAll() throws Exception
+    public void closeMustCloseAll()
     {
         // when
         // ... all close successful
@@ -256,6 +255,7 @@ public class FusionIndexAccessorTest
     @Test
     public void closeMustThrowIfOneThrow() throws Exception
     {
+        //noinspection ForLoopReplaceableByForEach - aliveAccessors is updated in initiateMocks()
         for ( int i = 0; i < aliveAccessors.length; i++ )
         {
             IndexAccessor accessor = aliveAccessors[i];
@@ -267,6 +267,7 @@ public class FusionIndexAccessorTest
     @Test
     public void closeMustCloseOthersIfOneThrow() throws Exception
     {
+        //noinspection ForLoopReplaceableByForEach - aliveAccessors is updated in initiateMocks()
         for ( int i = 0; i < aliveAccessors.length; i++ )
         {
             IndexAccessor accessor = aliveAccessors[i];
@@ -509,7 +510,7 @@ public class FusionIndexAccessorTest
         }
     }
 
-    static void assertResultContainsAll( Set<Long> result, List<Long> expectedEntries )
+    private static void assertResultContainsAll( Set<Long> result, List<Long> expectedEntries )
     {
         for ( long expectedEntry : expectedEntries )
         {
@@ -524,24 +525,23 @@ public class FusionIndexAccessorTest
         return allEntriesReader;
     }
 
-    static BoundedIterable<Long> mockedAllEntriesReader( List<Long> entries )
+    private static BoundedIterable<Long> mockedAllEntriesReader( List<Long> entries )
     {
         return mockedAllEntriesReader( true, entries );
     }
 
-    private static BoundedIterable<Long> mockSingleAllEntriesReaderWithUnknownMaxCount( IndexAccessor targetAccessor, List<Long> entries )
+    private static void mockSingleAllEntriesReaderWithUnknownMaxCount( IndexAccessor targetAccessor, List<Long> entries )
     {
         BoundedIterable<Long> allEntriesReader = mockedAllEntriesReaderUnknownMaxCount( entries );
         when( targetAccessor.newAllEntriesReader() ).thenReturn( allEntriesReader );
-        return allEntriesReader;
     }
 
-    static BoundedIterable<Long> mockedAllEntriesReaderUnknownMaxCount( List<Long> entries )
+    private static BoundedIterable<Long> mockedAllEntriesReaderUnknownMaxCount( List<Long> entries )
     {
         return mockedAllEntriesReader( false, entries );
     }
 
-    static BoundedIterable<Long> mockedAllEntriesReader( boolean knownMaxCount, List<Long> entries )
+    private static BoundedIterable<Long> mockedAllEntriesReader( boolean knownMaxCount, List<Long> entries )
     {
         BoundedIterable<Long> mockedAllEntriesReader = mock( BoundedIterable.class );
         when( mockedAllEntriesReader.maxCount() ).thenReturn( knownMaxCount ? entries.size() : BoundedIterable.UNKNOWN_MAX_COUNT );

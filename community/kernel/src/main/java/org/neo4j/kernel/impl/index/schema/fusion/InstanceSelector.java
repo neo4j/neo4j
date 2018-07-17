@@ -124,7 +124,7 @@ class InstanceSelector<T>
     /**
      * Convenience method for doing something to all instances, even those that haven't already been instantiated.
      *
-     * @param consumer {@link ThrowingConsumer} which performs some action on an instance.
+     * @param consumer {@link Consumer} which performs some action on an instance.
      */
     void forAll( Consumer<T> consumer )
     {
@@ -142,7 +142,7 @@ class InstanceSelector<T>
     /**
      * Perform a final action on instantiated instances and then closes this selector, preventing further instantiation.
      *
-     * @param consumer {@link ThrowingConsumer} which performs some action on an instance.
+     * @param consumer {@link Consumer} which performs some action on an instance.
      */
     void close( Consumer<T> consumer )
     {

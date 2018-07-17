@@ -355,7 +355,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * Whether or not this tree has been closed. Accessed and changed solely in
      * {@link #close()} to be able to close tree multiple times gracefully.
      */
-    private boolean closed;
+    @SuppressWarnings( "UnusedAssignment" )
+    private boolean closed = true;
 
     /**
      * True if tree is clean, false if dirty
@@ -510,7 +511,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
         catch ( IOException e )
         {
-            Exceptions.chain( new UncheckedIOException( e ), throwable );
+            throwable = Exceptions.chain( new UncheckedIOException( e ), throwable );
         }
 
         appendTreeInformation( throwable );

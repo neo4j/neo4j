@@ -39,6 +39,17 @@ public class IndexEntryConflictException extends Exception
     private final long addedNodeId;
     private final long existingNodeId;
 
+    /**
+     * Make IOUtils happy
+     */
+    public IndexEntryConflictException( String message, Throwable cause )
+    {
+        super( message, cause );
+        propertyValues = null;
+        addedNodeId = -1;
+        existingNodeId = -1;
+    }
+
     public IndexEntryConflictException( long existingNodeId, long addedNodeId, Value... propertyValue )
     {
         this( existingNodeId, addedNodeId, ValueTuple.of( propertyValue ) );

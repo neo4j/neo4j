@@ -160,7 +160,7 @@ public class FusionIndexPopulatorTest
         for ( IndexPopulator alivePopulator : alivePopulators )
         {
             // given
-            IOException failure = new IOException( "fail" );
+            UncheckedIOException failure = new UncheckedIOException( new IOException( "fail" ) );
             doThrow( failure ).when( alivePopulator ).create();
 
             verifyCallFail( failure, () ->
@@ -305,7 +305,7 @@ public class FusionIndexPopulatorTest
         for ( IndexSlot aliveSlot : fusionVersion.aliveSlots() )
         {
             // given
-            IOException failure = new IOException( "fail" );
+            UncheckedIOException failure = new UncheckedIOException( new IOException( "fail" ) );
             doThrow( failure ).when( populators.get( aliveSlot ) ).close( anyBoolean() );
 
             verifyCallFail( failure, () ->
@@ -400,7 +400,7 @@ public class FusionIndexPopulatorTest
         for ( IndexPopulator alivePopulator : alivePopulators )
         {
             // given
-            IOException failure = new IOException( "fail" );
+            UncheckedIOException failure = new UncheckedIOException( new IOException( "fail" ) );
             doThrow( failure ).when( alivePopulator ).markAsFailed( anyString() );
 
             // then
