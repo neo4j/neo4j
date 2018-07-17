@@ -68,6 +68,7 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.both;
@@ -78,23 +79,22 @@ import static org.junit.Assert.fail;
 
 public class StoreCopyClientIT
 {
-    private FileSystemAbstraction fsa = new DefaultFileSystemAbstraction();
-    private final AssertableLogProvider assertableLogProvider = new AssertableLogProvider( true );
-    private final LogProvider logProvider =
-            new DuplicatingLogProvider( assertableLogProvider, FormattedLogProvider.withDefaultLogLevel( Level.DEBUG ).toOutputStream( System.out ) );
-    private final TerminationCondition defaultTerminationCondition = TerminationCondition.CONTINUE_INDEFINITELY;
-
+    private final FileSystemAbstraction fsa = new DefaultFileSystemAbstraction();
     @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory( fsa );
+    public final TestDirectory testDirectory = TestDirectory.testDirectory( fsa );
+    @Rule
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
+    private final AssertableLogProvider assertableLogProvider = new AssertableLogProvider( true );
+    private final TerminationCondition defaultTerminationCondition = TerminationCondition.CONTINUE_INDEFINITELY;
+    private final FakeFile fileA = new FakeFile( "fileA", "This is file a content" );
+    private final FakeFile fileB = new FakeFile( "another-file-b", "Totally different content 123" );
+    private final FakeFile indexFileA = new FakeFile( "lucene", "Lucene 123" );
+    private final File targetLocation = new File( "copyTargetLocation" );
+    private LogProvider logProvider;
     private StoreCopyClient subject;
-    private FakeFile fileA = new FakeFile( "fileA", "This is file a content" );
-    private FakeFile fileB = new FakeFile( "another-file-b", "Totally different content 123" );
-
-    private FakeFile indexFileA = new FakeFile( "lucene", "Lucene 123" );
     private Server catchupServer;
     private TestCatchupServerHandler serverHandler;
-    private File targetLocation = new File( "copyTargetLocation" );
 
     private static void writeContents( FileSystemAbstraction fileSystemAbstraction, File file, String contents )
     {
@@ -112,6 +112,7 @@ public class StoreCopyClientIT
     @Before
     public void setup() throws Throwable
     {
+        logProvider = new DuplicatingLogProvider( assertableLogProvider, FormattedLogProvider.withDefaultLogLevel( Level.DEBUG ).toOutputStream( System.out ) );
         serverHandler = new TestCatchupServerHandler( logProvider, testDirectory, fsa );
         serverHandler.addFile( fileA );
         serverHandler.addFile( fileB );
@@ -392,7 +393,7 @@ public class StoreCopyClientIT
         return stringBuilder.toString();
     }
 
-    private String clientFileContents( InMemoryStoreStreamProvider storeFileStreamsProvider, String filename )
+    private static String clientFileContents( InMemoryStoreStreamProvider storeFileStreamsProvider, String filename )
     {
         return storeFileStreamsProvider.fileStreams().get( filename ).toString();
     }

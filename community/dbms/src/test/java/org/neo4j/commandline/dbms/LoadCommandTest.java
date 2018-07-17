@@ -198,7 +198,7 @@ class LoadCommandTest
         Files.createDirectories( databaseDirectory );
 
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              StoreLocker locker = new StoreLocker( fileSystem, databaseDirectory.toFile() ) )
+              StoreLocker locker = new StoreLocker( fileSystem, databaseDirectory.getParent().toFile() ) )
         {
             locker.checkLock();
             CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo.db", "--force" ) );

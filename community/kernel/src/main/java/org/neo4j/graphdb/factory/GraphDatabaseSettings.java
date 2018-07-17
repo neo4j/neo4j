@@ -114,8 +114,8 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Internal
     public static final Setting<File> database_path = derivedSetting( "unsupported.dbms.directories.database",
-            data_directory,
-            data -> new File( data, "databases" ),
+            data_directory, active_database,
+            ( data, current ) -> new File( new File( data, "databases" ), current ),
             PATH );
 
     @Title( "Read only database" )
