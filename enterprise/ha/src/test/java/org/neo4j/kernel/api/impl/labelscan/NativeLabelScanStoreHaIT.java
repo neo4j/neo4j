@@ -27,6 +27,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -67,10 +69,10 @@ public class NativeLabelScanStoreHaIT
         TestHighlyAvailableGraphDatabaseFactory factory = new TestHighlyAvailableGraphDatabaseFactory();
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( monitor );
-        factory.setMonitors( monitors );
         factory.removeKernelExtensions( extension -> extension.getClass().getName().contains( "LabelScan" ) );
         ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "root" ) )
                 .withDbFactory( factory )
+                .withMonitors( monitors )
                 .withStoreDirInitializer( ( serverId, storeDir ) ->
                 {
                     if ( serverId == 1 )
@@ -111,9 +113,8 @@ public class NativeLabelScanStoreHaIT
         // This check is here o check so that the extension provided by this test is selected.
         // It can be higher than 3 (number of cluster members) since some members may restart
         // some services to switch role.
-        assertTrue( "Expected initial calls to init to be at least one per cluster member (>= 3), " +
-                        "but was " + monitor.callsTo_init,
-                monitor.callsTo_init >= 3 );
+        assertTrue( "Expected initial calls to init to be at least one per cluster member (>= 3), but was " + monitor.initCalls.get(),
+                monitor.initCalls.get() >= 3 );
 
         // GIVEN
         // An HA cluster where the master started with initial data consisting
@@ -123,7 +124,7 @@ public class NativeLabelScanStoreHaIT
 
         // THEN
         assertEquals( "Expected none to build their label scan store index.",
-                0, monitor.timesRebuiltWithData );
+                0, monitor.timesRebuiltWithData.get() );
         for ( GraphDatabaseService db : cluster.getAllMembers() )
         {
             assertEquals( 2, numberOfNodesHavingLabel( db, Labels.First ) );
@@ -131,7 +132,7 @@ public class NativeLabelScanStoreHaIT
         }
     }
 
-    private long numberOfNodesHavingLabel( GraphDatabaseService db, Label label )
+    private static long numberOfNodesHavingLabel( GraphDatabaseService db, Label label )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -141,7 +142,7 @@ public class NativeLabelScanStoreHaIT
         }
     }
 
-    private void createSomeLabeledNodes( GraphDatabaseService db, Label[]... labelArrays )
+    private static void createSomeLabeledNodes( GraphDatabaseService db, Label[]... labelArrays )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -155,13 +156,13 @@ public class NativeLabelScanStoreHaIT
 
     private static class TestMonitor extends LabelScanStore.Monitor.Adaptor
     {
-        private volatile int callsTo_init;
-        private volatile int timesRebuiltWithData;
+        private final AtomicInteger initCalls = new AtomicInteger();
+        private final AtomicInteger timesRebuiltWithData = new AtomicInteger();
 
         @Override
         public void init()
         {
-            callsTo_init++;
+            initCalls.incrementAndGet();
         }
 
         @Override
@@ -189,7 +190,7 @@ public class NativeLabelScanStoreHaIT
             // i.e. after the db has been copied from the master.
             if ( roughNodeCount > 0 )
             {
-                timesRebuiltWithData++;
+                timesRebuiltWithData.incrementAndGet();
             }
         }
     }

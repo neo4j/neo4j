@@ -166,6 +166,7 @@ public class ClusterManager
     private final int firstInstanceId;
     private LifeSupport life;
     private boolean boltEnabled;
+    private final Monitors commonMonitors;
 
     private ClusterManager( Builder builder )
     {
@@ -180,9 +181,10 @@ public class ClusterManager
         this.consistencyCheck = builder.consistencyCheck;
         this.firstInstanceId = builder.firstInstanceId;
         this.boltEnabled = builder.boltEnabled;
+        this.commonMonitors = builder.monitors;
     }
 
-    private Map<String,IntFunction<String>> withDefaults( Map<String,IntFunction<String>> commonConfig )
+    private static Map<String,IntFunction<String>> withDefaults( Map<String,IntFunction<String>> commonConfig )
     {
         Map<String,IntFunction<String>> result = new HashMap<>();
         for ( Map.Entry<String,String> conf : CONFIG_FOR_SINGLE_JVM_CLUSTER.entrySet() )
@@ -680,6 +682,7 @@ public class ClusterManager
         private Supplier<Cluster> supplier = clusterOfSize( 3 );
         private final Map<String,IntFunction<String>> commonConfig = new HashMap<>();
         private HighlyAvailableGraphDatabaseFactory factory = new HighlyAvailableGraphDatabaseFactory();
+        private Monitors monitors;
         private StoreDirInitializer initializer;
         private Listener<GraphDatabaseService> initialDatasetCreator;
         private List<Predicate<ManagedCluster>> availabilityChecks = Collections.emptyList();
@@ -727,6 +730,12 @@ public class ClusterManager
         public Builder withDbFactory( HighlyAvailableGraphDatabaseFactory dbFactory )
         {
             this.factory = dbFactory;
+            return this;
+        }
+
+        public Builder withMonitors( Monitors monitors )
+        {
+            this.monitors = monitors;
             return this;
         }
 
@@ -1153,7 +1162,7 @@ public class ClusterManager
                 storeDirInitializer.initializeStoreDir( serverId.toIntegerIndex(), storeDir );
             }
 
-            Monitors monitors = new Monitors();
+            Monitors monitors = getDatabaseMonitors();
             GraphDatabaseBuilder builder = dbFactory.setMonitors( monitors ).newEmbeddedDatabaseBuilder( storeDir.getAbsoluteFile() );
             builder.setConfig( ClusterSettings.cluster_name, name );
             builder.setConfig( ClusterSettings.initial_hosts, initialHosts );
@@ -1184,6 +1193,11 @@ public class ClusterManager
             members.put( serverId, graphDatabase );
             monitorsMap.put( graphDatabase, monitors );
             return graphDatabase;
+        }
+
+        private Monitors getDatabaseMonitors()
+        {
+            return commonMonitors != null ? commonMonitors : new Monitors();
         }
 
         private URI clusterUri( Cluster.Member member ) throws URISyntaxException

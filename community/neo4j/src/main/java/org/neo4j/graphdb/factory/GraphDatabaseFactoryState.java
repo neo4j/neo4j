@@ -68,7 +68,6 @@ public class GraphDatabaseFactoryState
         kernelExtensions = new CopyOnWriteArrayList<>( previous.kernelExtensions );
         urlAccessRules = new ConcurrentHashMap<>( previous.urlAccessRules );
         monitors = previous.monitors;
-        monitors = previous.monitors;
         userLogProvider = previous.userLogProvider;
     }
 
