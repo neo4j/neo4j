@@ -58,8 +58,6 @@ public final class IndexMap implements Cloneable
     private final MutableIntObjectMap<Set<SchemaDescriptor>> descriptorsByReltype;
     private final MutableIntObjectMap<Set<SchemaDescriptor>> nodeDescriptorsByProperty;
     private final MutableIntObjectMap<Set<SchemaDescriptor>> relationshipDescriptorsByProperty;
-    private final Set<SchemaDescriptor> descriptorsForAllLabels;
-    private final Set<SchemaDescriptor> descriptorsForAllReltypes;
 
     public IndexMap()
     {
@@ -83,8 +81,6 @@ public final class IndexMap implements Cloneable
         this.descriptorsByReltype = new IntObjectHashMap<>();
         this.nodeDescriptorsByProperty = new IntObjectHashMap<>();
         this.relationshipDescriptorsByProperty = new IntObjectHashMap<>();
-        this.descriptorsForAllLabels = new HashSet<>();
-        this.descriptorsForAllReltypes = new HashSet<>();
         for ( SchemaDescriptor schema : indexesByDescriptor.keySet() )
         {
             addDescriptorToLookups( schema );
@@ -128,19 +124,11 @@ public final class IndexMap implements Cloneable
         indexesByDescriptor.remove( schema );
         if ( schema.entityType() == EntityType.NODE )
         {
-            if ( SchemaDescriptor.isAnyEntityTokenSchema( schema ) )
-            {
-                descriptorsForAllLabels.remove( schema );
-            }
             removeFromLookup( schema.getEntityTokenIds(), schema, descriptorsByLabel );
             removeFromLookup( schema.getPropertyIds(), schema, nodeDescriptorsByProperty );
         }
         else if ( schema.entityType() == EntityType.RELATIONSHIP )
         {
-            if ( SchemaDescriptor.isAnyEntityTokenSchema( schema ) )
-            {
-                descriptorsForAllReltypes.remove( schema );
-            }
             removeFromLookup( schema.getEntityTokenIds(), schema, descriptorsByReltype );
             removeFromLookup( schema.getPropertyIds(), schema, relationshipDescriptorsByProperty );
         }
@@ -174,11 +162,9 @@ public final class IndexMap implements Cloneable
         switch ( entityType )
         {
         case NODE:
-            return getRelatedDescriptors( changedEntityTokens, unchangedEntityTokens, properties, descriptorsByLabel, descriptorsForAllLabels,
-                    nodeDescriptorsByProperty );
+            return getRelatedDescriptors( changedEntityTokens, unchangedEntityTokens, properties, descriptorsByLabel, nodeDescriptorsByProperty );
         case RELATIONSHIP:
-            return getRelatedDescriptors( changedEntityTokens, unchangedEntityTokens, properties, descriptorsByReltype, descriptorsForAllReltypes,
-                    relationshipDescriptorsByProperty );
+            return getRelatedDescriptors( changedEntityTokens, unchangedEntityTokens, properties, descriptorsByReltype, relationshipDescriptorsByProperty );
         default:
             throw new IllegalArgumentException( "The given EntityType cannot be indexed: " + entityType );
         }
@@ -218,10 +204,6 @@ public final class IndexMap implements Cloneable
     {
         if ( schema.entityType() == EntityType.NODE )
         {
-            if ( SchemaDescriptor.isAnyEntityTokenSchema( schema ) )
-            {
-                descriptorsForAllLabels.add( schema );
-            }
             for ( int entityTokenId : schema.getEntityTokenIds() )
             {
                 addToLookup( entityTokenId, schema, descriptorsByLabel );
@@ -233,10 +215,6 @@ public final class IndexMap implements Cloneable
         }
         else if ( schema.entityType() == EntityType.RELATIONSHIP )
         {
-            if ( SchemaDescriptor.isAnyEntityTokenSchema( schema ) )
-            {
-                descriptorsForAllReltypes.add( schema );
-            }
             for ( int entityTokenId : schema.getEntityTokenIds() )
             {
                 addToLookup( entityTokenId, schema, descriptorsByReltype );
@@ -296,29 +274,21 @@ public final class IndexMap implements Cloneable
      * @param unchangedEntityTokens set of entity token ids that are unchanged
      * @param properties set of properties that have changed
      * @param descriptorsByEntityToken map from entity token id to descriptors
-     * @param descriptorsForAllEntityTokens set of descriptors for all entity tokens
      * @param descriptorsByProperty map from property ids to descriptors
      * @return set of SchemaDescriptors describing the potentially affected indexes
      */
     private Set<SchemaDescriptor> getRelatedDescriptors( long[] changedEntityTokens, long[] unchangedEntityTokens, IntSet properties,
-            IntObjectMap<Set<SchemaDescriptor>> descriptorsByEntityToken, Set<SchemaDescriptor> descriptorsForAllEntityTokens,
-            IntObjectMap<Set<SchemaDescriptor>> descriptorsByProperty )
+            IntObjectMap<Set<SchemaDescriptor>> descriptorsByEntityToken, IntObjectMap<Set<SchemaDescriptor>> descriptorsByProperty )
     {
         // Grab all indexes relevant to a changed property.
         Set<SchemaDescriptor> indexesByProperties = extractIndexesByProperties( properties, descriptorsByProperty );
 
         // Make sure that that index really is relevant by intersecting it with indexes relevant for unchanged entity tokens.
         Set<SchemaDescriptor> indexesByUnchangedEntityTokens = extractIndexesByEntityTokens( unchangedEntityTokens, descriptorsByEntityToken );
-        indexesByUnchangedEntityTokens.addAll( descriptorsForAllEntityTokens );
         indexesByProperties.retainAll( indexesByUnchangedEntityTokens );
 
         // Add the indexes relevant for the changed entity tokens.
         Set<SchemaDescriptor> descriptors = extractIndexesByEntityTokens( changedEntityTokens, descriptorsByEntityToken );
-        // If we changed any entity token, we need to look at all any token indexes.
-        if ( changedEntityTokens.length > 0 )
-        {
-            descriptors.addAll( descriptorsForAllEntityTokens );
-        }
         descriptors.addAll( indexesByProperties );
         return descriptors;
     }

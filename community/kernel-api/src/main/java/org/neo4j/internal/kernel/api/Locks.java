@@ -55,24 +55,4 @@ public interface Locks
     void releaseSharedExplicitIndexLock( long... ids );
 
     void releaseSharedLabelLock( long... ids );
-
-    /**
-     * Shared lock for creating tokens of the given type.
-     */
-    void acquireSharedTokenCreateLock( int tokenType );
-
-    /**
-     * Exclusive lock for preventing the creation of new tokens of the given type.
-     */
-    void acquireExclusiveTokenCreateLock( int tokenType );
-
-    /**
-     * Shared lock for the given special singleton resource.
-     */
-    void acquireSharedSpecialSingletonLock( int singleton );
-
-    /**
-     * Exclusive lock for the given special singleton resource.
-     */
-    void acquireExclusiveSpecialSingletonLock( int singleton );
 }

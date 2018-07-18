@@ -58,8 +58,6 @@ import org.neo4j.util.FeatureToggles;
 
 import static java.lang.String.format;
 import static org.eclipse.collections.impl.utility.ArrayIterate.contains;
-import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.ANY_ENTITY_TOKEN;
-import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.isAnyEntityTokenSchema;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
@@ -333,10 +331,6 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     private int[] entityTokenIds()
     {
-        if ( populations.stream().anyMatch( indexPopulation -> isAnyEntityTokenSchema( indexPopulation.schema() ) ) )
-        {
-            return ANY_ENTITY_TOKEN;
-        }
         return populations.stream().flatMapToInt( population -> Arrays.stream( population.schema().getEntityTokenIds() ) ).toArray();
     }
 

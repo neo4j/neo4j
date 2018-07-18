@@ -41,13 +41,7 @@ public enum ResourceTypes implements ResourceType
     INDEX_ENTRY( 4, LockWaitStrategies.INCREMENTAL_BACKOFF ),
     EXPLICIT_INDEX( 5, LockWaitStrategies.INCREMENTAL_BACKOFF ),
     LABEL( 6, LockWaitStrategies.INCREMENTAL_BACKOFF ),
-    RELATIONSHIP_TYPE( 7, LockWaitStrategies.INCREMENTAL_BACKOFF ),
-    // TOKEN_CREATE uses NO_WAIT because it's used in inner implicit transactions,
-    // and thus might deadlock with its outer transaction.
-    TOKEN_CREATE( 8, LockWaitStrategies.NO_WAIT ),
-    // SPECIAL_SINGLETON resources have nothing in particular in common with each other. Each individual one serves a
-    // specific purpose of coordination. They are all constants, and defined in here with the `SINGLETON_*` prefix.
-    SPECIAL_SINGLETON( 9, LockWaitStrategies.INCREMENTAL_BACKOFF );
+    RELATIONSHIP_TYPE( 7, LockWaitStrategies.INCREMENTAL_BACKOFF );
 
     private static final boolean useStrongHashing =
             FeatureToggles.flag( ResourceTypes.class, "useStrongHashing", false );
@@ -55,24 +49,6 @@ public enum ResourceTypes implements ResourceType
     private static final MutableIntObjectMap<ResourceType> idToType = new IntObjectHashMap<>();
     private static final HashFunction indexEntryHash_2_2_0 = HashFunction.xorShift32();
     private static final HashFunction indexEntryHash_4_x = HashFunction.incrementalXXH64();
-
-    /**
-     * The TOKEN_CREATE_* resource constants are used to coordinate the creation of new tokens, with locks
-     * taken by "any-token" indexes for either relationships or nodes, when they are created or dropped.
-     * These indexes need to lock all tokens of a particular type. To do this, they need to ensure that no new tokens
-     * of the given type are created concurrently with their critical section.
-     * Token creates take a shared lock on this resource, because token creation is internally synchronised and can be
-     * allowed to happen in parallel. Meanwhile, dropping or creating "any token" indexes will take exclusive locks on
-     * this resource to prevent new tokens from being allocated.
-     */
-    public static final int TOKEN_CREATE_LABEL = 1;
-    public static final int TOKEN_CREATE_REL_TYPE = 2;
-    public static final int TOKEN_CREATE_PROP_KEY = 3;
-    /**
-     * Nodes can be created without any labels, but would still be indexed by "any-token" node indexes. To coordinate
-     * schema locking between these two cases, we use this special singleton lock.
-     */
-    public static final int SINGLETON_UNLABELLED_NODE = 1;
 
     static
     {

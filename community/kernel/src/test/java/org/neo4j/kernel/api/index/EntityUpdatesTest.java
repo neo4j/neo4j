@@ -68,8 +68,6 @@ public class EntityUpdatesTest
     private static final List<LabelSchemaDescriptor> indexes = Arrays.asList( index1, index2, index3, index123 );
     private static final MultiTokenSchemaDescriptor nonSchemaIndex =
             SchemaDescriptorFactory.multiToken( new int[]{labelId1, labelId2}, EntityType.NODE, propertyKeyId1, propertyKeyId2, propertyKeyId3 );
-    private static final MultiTokenSchemaDescriptor anyEntityTokenIndex =
-            SchemaDescriptorFactory.multiToken( SchemaDescriptor.ANY_ENTITY_TOKEN, EntityType.NODE, propertyKeyId1, propertyKeyId2 );
 
     private static final StorageProperty property1 = new PropertyKeyValue( propertyKeyId1, Values.of( "Neo" ) );
     private static final StorageProperty property2 = new PropertyKeyValue( propertyKeyId2, Values.of( 100L ) );
@@ -525,70 +523,6 @@ public class EntityUpdatesTest
         assertThat(
                 updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE ),
                 containsInAnyOrder( IndexEntryUpdate.remove( nodeId, nonSchemaIndex, values123 ) )
-        );
-    }
-
-    @Test
-    public void shouldGenerateUpdateAnyEntityTokenIndexWithoutLabels()
-    {
-        // When
-        EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId ).withTokens( empty ).withTokensAfter( empty )
-                        .added( property1.propertyKeyId(), property1.value() )
-                        .build();
-
-        // Then
-        assertThat(
-                updates.forIndexKeys( singleton( anyEntityTokenIndex ), propertyLoader(), EntityType.NODE ),
-                containsInAnyOrder( IndexEntryUpdate.add( nodeId, anyEntityTokenIndex, property1.value(), null )
-                ) );
-    }
-
-    @Test
-    public void shouldGenerateUpdateAnyEntityTokenIndexWithLabel()
-    {
-        // When
-        EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId ).withTokens( label ).withTokensAfter( label )
-                        .added( property1.propertyKeyId(), property1.value() )
-                        .build();
-
-        // Then
-        assertThat(
-                updates.forIndexKeys( singleton( anyEntityTokenIndex ), propertyLoader(), EntityType.NODE ),
-                containsInAnyOrder( IndexEntryUpdate.add( nodeId, anyEntityTokenIndex, property1.value(), null )
-                ) );
-    }
-
-    @Test
-    public void shouldGenerateUpdateAnyEntityTokenIndexWithLabelRemove()
-    {
-        // When
-        EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId ).withTokens( label ).withTokensAfter( empty )
-                        .added( property1.propertyKeyId(), property1.value() )
-                        .build();
-
-        // Then
-        assertThat(
-                updates.forIndexKeys( singleton( anyEntityTokenIndex ), propertyLoader(), EntityType.NODE ),
-                containsInAnyOrder( IndexEntryUpdate.add( nodeId, anyEntityTokenIndex, property1.value(), null )
-                ) );
-    }
-
-    @Test
-    public void shouldNotGenerateUpdateAnyEntityTokenIndexWithIrrelevantProperty()
-    {
-        // When
-        EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId ).withTokens( label ).withTokensAfter( label )
-                        .added( property3.propertyKeyId(), property3.value() )
-                        .build();
-
-        // Then
-        assertThat(
-                updates.forIndexKeys( singleton( anyEntityTokenIndex ), propertyLoader(), EntityType.NODE ),
-                emptyIterable()
         );
     }
 

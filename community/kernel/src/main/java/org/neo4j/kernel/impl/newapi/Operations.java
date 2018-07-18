@@ -35,7 +35,6 @@ import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Locks;
-import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.Read;
@@ -86,7 +85,6 @@ import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexEntityType;
-import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageReader;
@@ -168,7 +166,6 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     public long nodeCreate()
     {
         ktx.assertOpen();
-        allStoreHolder.acquireSharedSpecialSingletonLock( ResourceTypes.SINGLETON_UNLABELLED_NODE );
         long nodeId = statement.reserveNode();
         ktx.txState().nodeDoCreate( nodeId );
         return nodeId;
@@ -1197,56 +1194,6 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     {
         long[] lockingIds = schemaTokenLockingIds( schema );
         ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), schema.keyType(), lockingIds );
-
-        if ( SchemaDescriptor.isAnyEntityTokenSchema( schema ) )
-        {
-            exclusiveAnyEntityTokenSchema( schema );
-        }
-    }
-
-    private void exclusiveAnyEntityTokenSchema( SchemaDescriptor schema )
-    {
-        boolean forNodes = schema.entityType() == EntityType.NODE;
-        // After we get the exclusive token lock, no new tokens can be created. This allows us to grab a lock on all
-        // the existing tokens, and be sure that we won't miss any updates.
-        if ( forNodes )
-        {
-            allStoreHolder.acquireExclusiveTokenCreateLock( ResourceTypes.TOKEN_CREATE_LABEL );
-            // We also need to coordinate with the creation of unlabelled nodes,
-            // since they are indexable by "any token" indexes.
-            allStoreHolder.acquireExclusiveSpecialSingletonLock( ResourceTypes.SINGLETON_UNLABELLED_NODE );
-        }
-        else
-        {
-            // We don't need the unlabelled node lock when the schema is for relationships.
-            // But we do need to prevent any new relationship type tokens from being allocated.
-            allStoreHolder.acquireExclusiveTokenCreateLock( ResourceTypes.TOKEN_CREATE_REL_TYPE );
-        }
-
-        ResourceType resourceType;
-        long[] tokens;
-        Iterator<NamedToken> itr;
-        if ( forNodes )
-        {
-            resourceType = ResourceTypes.LABEL;
-            tokens = new long[token.labelCount()];
-            itr = token.labelsGetAllTokens();
-        }
-        else
-        {
-            resourceType = ResourceTypes.RELATIONSHIP_TYPE;
-            tokens = new long[token.relationshipTypeCount()];
-            itr = token.relationshipTypesGetAllTokens();
-        }
-
-        int i = 0;
-        while ( itr.hasNext() )
-        {
-            tokens[i] = itr.next().id();
-        }
-
-        LockTracer lockTracer = ktx.lockTracer();
-        ktx.statementLocks().optimistic().acquireExclusive( lockTracer, resourceType, tokens );
     }
 
     private void lockRelationshipNodes( long startNodeId, long endNodeId )

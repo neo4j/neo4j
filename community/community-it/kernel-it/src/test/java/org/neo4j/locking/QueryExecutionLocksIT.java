@@ -497,34 +497,6 @@ public class QueryExecutionLocksIT
             record( false, false, ResourceTypes.LABEL, ids );
             delegate.releaseSharedLabelLock( ids );
         }
-
-        @Override
-        public void acquireSharedTokenCreateLock( int tokenType )
-        {
-            record( false, true, ResourceTypes.TOKEN_CREATE, tokenType );
-            delegate.acquireSharedTokenCreateLock( tokenType );
-        }
-
-        @Override
-        public void acquireExclusiveTokenCreateLock( int tokenType )
-        {
-            record( true, true, ResourceTypes.TOKEN_CREATE, tokenType );
-            delegate.acquireExclusiveTokenCreateLock( tokenType );
-        }
-
-        @Override
-        public void acquireSharedSpecialSingletonLock( int singleton )
-        {
-            record( false, true, ResourceTypes.SPECIAL_SINGLETON, singleton );
-            delegate.acquireSharedSpecialSingletonLock( singleton );
-        }
-
-        @Override
-        public void acquireExclusiveSpecialSingletonLock( int singleton )
-        {
-            record( true, true, ResourceTypes.SPECIAL_SINGLETON, singleton );
-            delegate.acquireSharedSpecialSingletonLock( singleton );
-        }
     }
 
     private static class LockOperationListener implements EventListener

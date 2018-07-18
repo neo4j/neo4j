@@ -45,7 +45,6 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
-import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.ANY_ENTITY_TOKEN;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public abstract class PropertyAwareEntityStoreScan<RECORD extends PrimitiveRecord, FAILURE extends Exception> implements StoreScan<FAILURE>
@@ -72,10 +71,6 @@ public abstract class PropertyAwareEntityStoreScan<RECORD extends PrimitiveRecor
 
     static boolean containsAnyEntityToken( int[] entityTokenFilter, long... entityTokens )
     {
-        if ( Arrays.equals( entityTokenFilter, ANY_ENTITY_TOKEN ) )
-        {
-            return true;
-        }
         for ( long candidate : entityTokens )
         {
             if ( ArrayUtils.contains( entityTokenFilter, Math.toIntExact( candidate ) ) )

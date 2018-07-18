@@ -34,7 +34,6 @@ import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
 import static java.util.stream.Collectors.joining;
-import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.isAnyEntityTokenSchema;
 
 public class MultiTokenSchemaDescriptor implements SchemaDescriptor
 {
@@ -52,10 +51,6 @@ public class MultiTokenSchemaDescriptor implements SchemaDescriptor
     @Override
     public boolean isAffected( long[] entityTokenIds )
     {
-        if ( isAnyEntityTokenSchema( this ) )
-        {
-            return true;
-        }
         for ( int id : entityTokens )
         {
             if ( ArrayUtils.contains( entityTokenIds, id ) )

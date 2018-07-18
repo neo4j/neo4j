@@ -107,13 +107,6 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
         }
     };
 
-    int[] ANY_ENTITY_TOKEN = new int[0];
-
-    static boolean isAnyEntityTokenSchema( SchemaDescriptor schema )
-    {
-        return Arrays.equals(schema.getEntityTokenIds(), ANY_ENTITY_TOKEN );
-    }
-
     static long[] schemaTokenLockingIds( SchemaDescriptor schema )
     {
         // TODO make getEntityTokenIds produce a long array directly, and avoid this extra copying.
