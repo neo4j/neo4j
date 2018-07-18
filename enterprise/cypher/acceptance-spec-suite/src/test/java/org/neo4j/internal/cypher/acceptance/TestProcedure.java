@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.Evaluators;
@@ -63,6 +64,26 @@ public class TestProcedure
                         .uniqueness( Uniqueness.NODE_GLOBAL );
 
         return td.traverse( start ).stream().map( PathResult::new );
+    }
+
+    @Procedure( "org.neo4j.aNodeWithLabel" )
+    @Description( "org.neo4j.aNodeWithLabel" )
+    public Stream<NodeResult> aNodeWithLabel( @Name( value = "label", defaultValue = "Dog" ) String label )
+    {
+        try ( Result result = db.execute( "MATCH (n:" + label + ") RETURN n LIMIT 1" ) )
+        {
+            return result.stream().map( row -> new NodeResult( (Node) row.get( "n" ) ) );
+        }
+    }
+
+    public static class NodeResult
+    {
+        public Node node;
+
+        NodeResult( Node node )
+        {
+            this.node = node;
+        }
     }
 
     public static class PathResult
