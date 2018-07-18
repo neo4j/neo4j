@@ -151,7 +151,7 @@ class BackupStrategyWrapper
         if ( BackupStageOutcome.SUCCESS.equals( state.getState() ) )
         {
             config.augment( GraphDatabaseSettings.active_database, temporaryFullBackupLocation.getFileName().toString() ); // TODO: Refactor
-            backupRecoveryService.recoverWithDatabase( temporaryFullBackupLocation.getParent(), pageCache, config ); // TODO: getParent()
+            backupRecoveryService.recoverWithDatabase( temporaryFullBackupLocation, pageCache, config );
             if ( aBackupAlreadyExisted )
             {
                 try
@@ -175,7 +175,7 @@ class BackupStrategyWrapper
         backupCopyService.moveBackupLocation( temporaryFullBackupLocation, userSpecifiedBackupLocation );
     }
 
-    private Fallible<BackupStrategyOutcome> describeOutcome( Fallible<BackupStageOutcome> strategyStageOutcome )
+    private static Fallible<BackupStrategyOutcome> describeOutcome( Fallible<BackupStageOutcome> strategyStageOutcome )
     {
         BackupStageOutcome stageOutcome = strategyStageOutcome.getState();
         if ( stageOutcome == BackupStageOutcome.SUCCESS )

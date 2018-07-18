@@ -53,36 +53,37 @@ import static org.mockito.Mockito.when;
 public class BackupStrategyWrapperTest
 {
     @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
-    private BackupStrategy backupStrategyImplementation = mock( BackupStrategy.class );
-    private OutsideWorld outsideWorld = mock( OutsideWorld.class );
-    private BackupCopyService backupCopyService = mock( BackupCopyService.class );
+    private final BackupStrategy backupStrategyImplementation = mock( BackupStrategy.class );
+    private final OutsideWorld outsideWorld = mock( OutsideWorld.class );
+    private final BackupCopyService backupCopyService = mock( BackupCopyService.class );
 
     private BackupStrategyWrapper subject;
 
     private OnlineBackupContext onlineBackupContext;
 
-    private FileSystemAbstraction fileSystemAbstraction = mock( FileSystemAbstraction.class );
+    private final FileSystemAbstraction fileSystemAbstraction = mock( FileSystemAbstraction.class );
     private Path desiredBackupLocation;
     private Path reportDir;
-    private Path availableFreshBackupLocation = mock( Path.class, "Path<availableFreshBackupLocation>" );
-    private Path availableOldBackupLocation = mock( Path.class, "Path<availableOldBackupLocation>" );
+    private Path availableFreshBackupLocation;
     private OnlineBackupRequiredArguments requiredArguments;
     private Config config = mock( Config.class );
-    private OptionalHostnamePort userProvidedAddress = new OptionalHostnamePort( (String) null, null, null );
-    private Fallible<BackupStageOutcome> SUCCESS = new Fallible<>( BackupStageOutcome.SUCCESS, null );
-    private Fallible<BackupStageOutcome> FAILURE = new Fallible<>( BackupStageOutcome.FAILURE, null );
-    private PageCache pageCache = mock( PageCache.class );
-    private BackupRecoveryService backupRecoveryService = mock( BackupRecoveryService.class );
-    private LogProvider logProvider = mock( LogProvider.class );
-    private Log log = mock( Log.class );
+    private final OptionalHostnamePort userProvidedAddress = new OptionalHostnamePort( (String) null, null, null );
+    private final Fallible<BackupStageOutcome> SUCCESS = new Fallible<>( BackupStageOutcome.SUCCESS, null );
+    private final Fallible<BackupStageOutcome> FAILURE = new Fallible<>( BackupStageOutcome.FAILURE, null );
+    private final PageCache pageCache = mock( PageCache.class );
+    private final BackupRecoveryService backupRecoveryService = mock( BackupRecoveryService.class );
+    private final LogProvider logProvider = mock( LogProvider.class );
+    private final Log log = mock( Log.class );
 
     @Before
     public void setup()
     {
         desiredBackupLocation = testDirectory.directory( "desiredBackupLocation" ).toPath();
         reportDir = testDirectory.directory( "reportDir" ).toPath();
+        availableFreshBackupLocation = testDirectory.directory( "availableFreshBackupLocation" ).toPath();
+        Path availableOldBackupLocation = testDirectory.directory( "availableOldBackupLocation" ).toPath();
 
         when( outsideWorld.fileSystem() ).thenReturn( fileSystemAbstraction );
         when( backupCopyService.findAnAvailableLocationForNewFullBackup( any() ) ).thenReturn( availableFreshBackupLocation );

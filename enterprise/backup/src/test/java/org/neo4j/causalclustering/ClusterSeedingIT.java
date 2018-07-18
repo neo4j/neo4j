@@ -42,6 +42,8 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.SuppressOutput;
@@ -134,7 +136,9 @@ public class ClusterSeedingIT
         // then
         if ( backup.isPresent() )
         {
-            dataMatchesEventually( DbRepresentation.of( backup.get() ), cluster.coreMembers() );
+            //TODO:
+            Config config = Config.defaults( GraphDatabaseSettings.active_database, backup.get().getName() );
+            dataMatchesEventually( DbRepresentation.of( backup.get().getParentFile(), config ), cluster.coreMembers() );
         }
         assertEquals( shouldStoreCopy, fileCopyDetector.hasDetectedAnyFileCopied() );
     }

@@ -83,7 +83,7 @@ public class CoreStateDownloaderTest
     public void commonMocking()
     {
         when( localDatabase.storeId() ).thenReturn( storeId );
-        when( localDatabase.storeDir() ).thenReturn( storeDir );
+        when( localDatabase.databaseDirectort() ).thenReturn( storeDir );
         when( topologyService.findCatchupAddress( remoteMember ) ).thenReturn( Optional.of( remoteAddress ) );
     }
 

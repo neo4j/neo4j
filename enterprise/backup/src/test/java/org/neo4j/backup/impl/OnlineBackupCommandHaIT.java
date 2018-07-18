@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -82,13 +83,9 @@ import static org.neo4j.util.TestHelpers.runBackupToolFromOtherJvmToGetExitCode;
 @RunWith( Parameterized.class )
 public class OnlineBackupCommandHaIT
 {
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
-
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
+    private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     private final EmbeddedDatabaseRule db = new EmbeddedDatabaseRule().startLazily();
-
-    @Rule
-    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( suppressOutput ).around( testDirectory ).around( db );
@@ -251,18 +248,10 @@ public class OnlineBackupCommandHaIT
         int backupPort = PortAuthority.allocatePort();
         startDb( backupPort );
 
-        // and
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        PrintStream outputStream = wrapWithNormalOutput( System.out, new PrintStream( byteArrayOutputStream ) );
-
-        // and
-        ByteArrayOutputStream byteArrayErrorStream = new ByteArrayOutputStream();
-        PrintStream errorStream = wrapWithNormalOutput( System.err, new PrintStream( byteArrayErrorStream ) );
-
         // when
         assertEquals(
                 0,
-                runBackupTool( backupDir, outputStream, errorStream,
+                runBackupTool( backupDir, System.out, System.err,
                         "--from", "127.0.0.1:" + backupPort,
                         "--protocol=common",
                         "--cc-report-dir=" + backupDir,
@@ -270,9 +259,9 @@ public class OnlineBackupCommandHaIT
                         "--name=" + backupName ) );
 
         // then
-        String output = byteArrayOutputStream.toString();
+        String output = suppressOutput.getOutputVoice().toString();
         String legacyImplementationDetail = "temp-copy";
-        String location = Paths.get( backupDir.toString(), backupName, legacyImplementationDetail ).toString();
+        String location = Paths.get( backupDir.toString(), backupName, legacyImplementationDetail, DataSourceManager.DEFAULT_DATABASE_NAME ).toString();
         assertTrue( output.contains( "Start receiving store files" ) );
         assertTrue( output.contains( "Finish receiving store files" ) );
         String tested = Paths.get( location, "neostore.nodestore.db.labels" ).toString();
@@ -289,7 +278,7 @@ public class OnlineBackupCommandHaIT
     }
 
     @Test
-    public void backupRenamesWork() throws Exception
+    public void backupRenamesWork()
     {
         // given a prexisting backup from a different store
         String backupName = "preexistingBackup_" + recordFormat;
@@ -422,7 +411,7 @@ public class OnlineBackupCommandHaIT
         }
     }
 
-    private void repeatedlyPopulateDatabase( GraphDatabaseService db, AtomicBoolean continueFlagReference )
+    private static void repeatedlyPopulateDatabase( GraphDatabaseService db, AtomicBoolean continueFlagReference )
     {
         while ( continueFlagReference.get() )
         {
@@ -437,7 +426,7 @@ public class OnlineBackupCommandHaIT
         }
     }
 
-    private void createIndexes( GraphDatabaseService db )
+    private static void createIndexes( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -497,7 +486,7 @@ public class OnlineBackupCommandHaIT
     private DbRepresentation getBackupDbRepresentation( String name )
     {
         Config config = Config.defaults( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
-
-        return DbRepresentation.of( new File( backupDir, name ), config );
+        config.augment( GraphDatabaseSettings.active_database, name );
+        return DbRepresentation.of( backupDir, config );
     }
 }

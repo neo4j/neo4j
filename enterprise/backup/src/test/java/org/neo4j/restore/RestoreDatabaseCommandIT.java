@@ -61,16 +61,13 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.emptyArray;
-import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class RestoreDatabaseCommandIT
 {
@@ -95,8 +92,8 @@ public class RestoreDatabaseCommandIT
         fromStorePath = directory.directory( "from" );
         fromDatabasePath = new File( fromStorePath, DataSourceManager.DEFAULT_DATABASE_NAME );
         fromLogicalLogsPath = fromDatabasePath.getAbsolutePath();
-        toStorePath = toConfig.get( GraphDatabaseSettings.database_path );
-        toLogicalLogsPath = new File( toStorePath, databaseName ).getAbsolutePath();
+        toStorePath = toConfig.get( GraphDatabaseSettings.database_path ).getParentFile();
+        toLogicalLogsPath = toStorePath.getAbsolutePath();
     }
 
     @Test
@@ -241,17 +238,17 @@ public class RestoreDatabaseCommandIT
         FileSystemAbstraction fileSystem = Mockito.spy( fileSystemRule.get() );
         File storeDir = directory.directory();
         String testDatabase = "testDatabase";
-        File dbDir = new File( storeDir, testDatabase );
-        File relativeLogDirectory = new File( dbDir, "relativeDirectory" );
+        File databaseDirectory = new File( storeDir, testDatabase );
+        File relativeLogDirectory = new File( databaseDirectory, "relativeDirectory" );
 
-        Config config = Config.defaults( GraphDatabaseSettings.database_path, storeDir.getAbsolutePath() );
+        Config config = Config.defaults( GraphDatabaseSettings.database_path, databaseDirectory.getAbsolutePath() );
         config.augment( GraphDatabaseSettings.logical_logs_location, relativeLogDirectory.getAbsolutePath() );
 
         createDbAt( fromStorePath, fromLogicalLogsPath, 10 );
 
         new RestoreDatabaseCommand( fileSystem, fromDatabasePath, config, testDatabase, true ).execute();
 
-        verify( fileSystem ).deleteRecursively( eq( dbDir ) );
+        verify( fileSystem ).deleteRecursively( eq( databaseDirectory ) );
         verify( fileSystem, never() ).deleteRecursively( eq( relativeLogDirectory ) );
     }
 

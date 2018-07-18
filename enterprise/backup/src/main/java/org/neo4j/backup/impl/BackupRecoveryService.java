@@ -35,12 +35,13 @@ import static org.neo4j.backup.impl.BackupProtocolService.startTemporaryDb;
 
 class BackupRecoveryService
 {
-    public void recoverWithDatabase( Path targetDirectory, PageCache pageCache, Config config )
+    void recoverWithDatabase( Path databaseDirectory, PageCache pageCache, Config config )
     {
         Map<String,String> configParams = config.getRaw();
-        configParams.put( GraphDatabaseSettings.logical_logs_location.name(), targetDirectory.toString() );
+        configParams.put( GraphDatabaseSettings.logical_logs_location.name(), databaseDirectory.toString() );
         configParams.put( GraphDatabaseSettings.pagecache_warmup_enabled.name(), Settings.FALSE );
-        GraphDatabaseAPI targetDb = startTemporaryDb( targetDirectory, pageCache, configParams );
+        //TODO:
+        GraphDatabaseAPI targetDb = startTemporaryDb( databaseDirectory.getParent(), pageCache, configParams );
         targetDb.shutdown();
     }
 }

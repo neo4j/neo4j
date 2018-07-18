@@ -88,7 +88,7 @@ public class ReadReplicaStartupProcessTest
 
         FileSystemAbstraction fileSystemAbstraction = mock( FileSystemAbstraction.class );
         when( fileSystemAbstraction.streamFilesRecursive( any( File.class ) ) ).thenAnswer( f -> Stream.empty() );
-        when( localDatabase.storeDir() ).thenReturn( storeDir );
+        when( localDatabase.databaseDirectort() ).thenReturn( storeDir );
         when( localDatabase.storeId() ).thenReturn( localStoreId );
         when( topologyService.allCoreServers() ).thenReturn( clusterTopology );
         when( clusterTopology.members() ).thenReturn( members );

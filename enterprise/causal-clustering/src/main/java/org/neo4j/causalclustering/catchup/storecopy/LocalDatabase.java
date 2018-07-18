@@ -57,7 +57,7 @@ public class LocalDatabase implements Lifecycle
     private static final AvailabilityRequirement NOT_COPYING_STORE =
             availabilityRequirement( "Database is stopped to copy store from another cluster member" );
 
-    private final File storeDir;
+    private final File databaseDirectory;
 
     private final StoreFiles storeFiles;
     private final DataSourceManager dataSourceManager;
@@ -73,7 +73,7 @@ public class LocalDatabase implements Lifecycle
     private volatile TransactionCommitProcess localCommit;
     private LogFiles logFiles;
 
-    public LocalDatabase( File storeDir,
+    public LocalDatabase( File databaseDirectory,
             StoreFiles storeFiles,
             LogFiles logFiles,
             DataSourceManager dataSourceManager,
@@ -82,7 +82,7 @@ public class LocalDatabase implements Lifecycle
             AvailabilityGuard availabilityGuard,
             LogProvider logProvider )
     {
-        this.storeDir = storeDir;
+        this.databaseDirectory = databaseDirectory;
         this.storeFiles = storeFiles;
         this.logFiles = logFiles;
         this.dataSourceManager = dataSourceManager;
@@ -161,7 +161,7 @@ public class LocalDatabase implements Lifecycle
     {
         try
         {
-            return storeFiles.readStoreId( storeDir );
+            return storeFiles.readStoreId( databaseDirectory );
         }
         catch ( IOException e )
         {
@@ -191,7 +191,7 @@ public class LocalDatabase implements Lifecycle
 
     public void delete() throws IOException
     {
-        storeFiles.delete( storeDir, logFiles );
+        storeFiles.delete( databaseDirectory, logFiles );
     }
 
     public boolean isEmpty() throws IOException
@@ -200,20 +200,20 @@ public class LocalDatabase implements Lifecycle
                 .map( StoreType::getStoreFile )
                 .filter( Objects::nonNull )
                 .map( StoreFile::storeFileName )
-                .map( name -> new File( storeDir, name ) )
+                .map( name -> new File( databaseDirectory, name ) )
                 .collect( Collectors.toList() );
-        return storeFiles.isEmpty( storeDir, filesToLookFor );
+        return storeFiles.isEmpty( databaseDirectory, filesToLookFor );
     }
 
-    public File storeDir()
+    public File databaseDirectort()
     {
-        return storeDir;
+        return databaseDirectory;
     }
 
     void replaceWith( File sourceDir ) throws IOException
     {
-        storeFiles.delete( storeDir, logFiles );
-        storeFiles.moveTo( sourceDir, storeDir, logFiles );
+        storeFiles.delete( databaseDirectory, logFiles );
+        storeFiles.moveTo( sourceDir, databaseDirectory, logFiles );
     }
 
     public NeoStoreDataSource dataSource()

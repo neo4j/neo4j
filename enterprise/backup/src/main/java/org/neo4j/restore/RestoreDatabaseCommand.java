@@ -54,7 +54,7 @@ public class RestoreDatabaseCommand
         this.fromDatabasePath = fromDatabasePath;
         this.forceOverwrite = forceOverwrite;
         this.toDatabaseName = toDatabaseName;
-        this.toDatabaseDir = new File( config.get( database_path ), toDatabaseName ).getAbsoluteFile();
+        this.toDatabaseDir = config.get( database_path ).getAbsoluteFile();
         this.transactionLogsDirectory = config.get( GraphDatabaseSettings.logical_logs_location ).getAbsoluteFile();
     }
 
