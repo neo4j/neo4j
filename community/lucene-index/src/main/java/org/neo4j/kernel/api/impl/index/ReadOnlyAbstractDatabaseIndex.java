@@ -34,13 +34,12 @@ import org.neo4j.storageengine.api.schema.IndexReader;
  * allow read only operations only on top of it.
  * @param <INDEX> - particular index implementation
  */
-public abstract class ReadOnlyAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, READER extends IndexReader> implements DatabaseIndex<READER>
+public abstract class ReadOnlyAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, READER extends IndexReader>
+        extends AbstractDatabaseIndex<INDEX, READER>
 {
-    protected INDEX luceneIndex;
-
     public ReadOnlyAbstractDatabaseIndex( INDEX luceneIndex )
     {
-        this.luceneIndex = luceneIndex;
+        super( luceneIndex );
     }
 
     /**
@@ -56,45 +55,9 @@ public abstract class ReadOnlyAbstractDatabaseIndex<INDEX extends AbstractLucene
      * {@inheritDoc}
      */
     @Override
-    public void open() throws IOException
-    {
-        luceneIndex.open();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isOpen()
-    {
-        return luceneIndex.isOpen();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public boolean isReadOnly()
     {
         return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean exists() throws IOException
-    {
-        return luceneIndex.exists();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isValid()
-    {
-        return luceneIndex.isValid();
     }
 
     /**
@@ -128,15 +91,6 @@ public abstract class ReadOnlyAbstractDatabaseIndex<INDEX extends AbstractLucene
      * {@inheritDoc}
      */
     @Override
-    public LuceneAllDocumentsReader allDocumentsReader()
-    {
-        return luceneIndex.allDocumentsReader();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public ResourceIterator<File> snapshot() throws IOException
     {
         return luceneIndex.snapshot();
@@ -151,40 +105,10 @@ public abstract class ReadOnlyAbstractDatabaseIndex<INDEX extends AbstractLucene
         //nothing to refresh in read only mode
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<AbstractIndexPartition> getPartitions()
-    {
-        return luceneIndex.getPartitions();
-    }
-
     @Override
     public LuceneIndexWriter getIndexWriter()
     {
         throw new UnsupportedOperationException( "Can't get index writer for read only lucene index." );
-    }
-
-    @Override
-    public READER getIndexReader() throws IOException
-    {
-        return luceneIndex.getIndexReader();
-    }
-
-    @Override
-    public IndexDescriptor getDescriptor()
-    {
-        return luceneIndex.getDescriptor();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isOnline() throws IOException
-    {
-        return luceneIndex.isOnline();
     }
 
     /**
@@ -194,14 +118,5 @@ public abstract class ReadOnlyAbstractDatabaseIndex<INDEX extends AbstractLucene
     public void markAsOnline()
     {
         throw new UnsupportedOperationException( "Can't mark read only index." );
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void markAsFailed( String failure ) throws IOException
-    {
-        luceneIndex.markAsFailed( failure );
     }
 }

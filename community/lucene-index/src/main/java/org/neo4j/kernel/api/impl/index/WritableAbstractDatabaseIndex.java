@@ -35,16 +35,14 @@ import org.neo4j.storageengine.api.schema.IndexReader;
  * allow read only operations only on top of it.
  * @param <INDEX> - particular index implementation
  */
-public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, READER extends IndexReader> implements DatabaseIndex<READER>
+public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, READER extends IndexReader> extends AbstractDatabaseIndex<INDEX, READER>
 {
     // lock used to guard commits and close of lucene indexes from separate threads
-    protected final ReentrantLock commitCloseLock = new ReentrantLock();
-
-    protected INDEX luceneIndex;
+    private final ReentrantLock commitCloseLock = new ReentrantLock();
 
     public WritableAbstractDatabaseIndex( INDEX luceneIndex )
     {
-        this.luceneIndex = luceneIndex;
+        super( luceneIndex );
     }
 
     /**
@@ -60,45 +58,9 @@ public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<REA
      * {@inheritDoc}
      */
     @Override
-    public void open() throws IOException
-    {
-        luceneIndex.open();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isOpen()
-    {
-        return luceneIndex.isOpen();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public boolean isReadOnly()
     {
         return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean exists() throws IOException
-    {
-        return luceneIndex.exists();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isValid()
-    {
-        return luceneIndex.isValid();
     }
 
     /**
@@ -156,15 +118,6 @@ public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<REA
      * {@inheritDoc}
      */
     @Override
-    public LuceneAllDocumentsReader allDocumentsReader()
-    {
-        return luceneIndex.allDocumentsReader();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public ResourceIterator<File> snapshot() throws IOException
     {
         commitCloseLock.lock();
@@ -202,15 +155,6 @@ public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<REA
      * {@inheritDoc}
      */
     @Override
-    public List<AbstractIndexPartition> getPartitions()
-    {
-        return luceneIndex.getPartitions();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void markAsOnline() throws IOException
     {
         commitCloseLock.lock();
@@ -228,36 +172,6 @@ public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<REA
     public LuceneIndexWriter getIndexWriter()
     {
         return luceneIndex.getIndexWriter( this );
-    }
-
-    @Override
-    public READER getIndexReader() throws IOException
-    {
-        return luceneIndex.getIndexReader();
-    }
-
-    @Override
-    public IndexDescriptor getDescriptor()
-    {
-        return luceneIndex.getDescriptor();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isOnline() throws IOException
-    {
-        return luceneIndex.isOnline();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void markAsFailed( String failure ) throws IOException
-    {
-        luceneIndex.markAsFailed( failure );
     }
 
     public boolean hasSinglePartition( List<AbstractIndexPartition> partitions )
