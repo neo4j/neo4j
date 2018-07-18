@@ -21,7 +21,9 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.StringCacheMonitor
 import org.neo4j.graphdb.Label
+import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.scalatest.prop.TableDrivenPropertyChecks
 
@@ -92,15 +94,15 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       log += s"cacheFlushDetected"
     }
 
-    override def cacheHit(key: String): Unit = {
+    override def cacheHit(key: Pair[String, MapValue]): Unit = {
       log += s"cacheHit: $key"
     }
 
-    override def cacheMiss(key: String): Unit = {
+    override def cacheMiss(key: Pair[String, MapValue]): Unit = {
       log += s"cacheMiss: $key"
     }
 
-    override def cacheDiscard(key: String, ignored: String, secondsSinceReplan: Int): Unit = {
+    override def cacheDiscard(key: Pair[String, MapValue], ignored: String, secondsSinceReplan: Int): Unit = {
       log += s"cacheDiscard: $key"
     }
   }

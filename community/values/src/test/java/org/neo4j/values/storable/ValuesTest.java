@@ -21,7 +21,12 @@ package org.neo4j.values.storable;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.values.storable.Values.booleanArray;
 import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.byteArray;
@@ -94,5 +99,63 @@ class ValuesTest
         assertThrows(IllegalArgumentException.class, () -> Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 1, 2 ) );
         assertThrows(IllegalArgumentException.class, () -> Values.pointValue( CoordinateReferenceSystem.WGS84, 1, 2, 3 ) );
         assertThrows(IllegalArgumentException.class, () -> Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 1, 2 ) );
+    }
+
+    @Test
+    void mapsShouldBeEqualOnValueTypes()
+    {
+        MapValueBuilder builder = new MapValueBuilder();
+        builder.add( "prop1", stringValue( "value" ) );
+        builder.add( "prop2", intValue( 1 ) );
+        builder.add( "prop3", longValue( 1L ) );
+        builder.add( "prop4", booleanArray( new boolean[]{true} ) );
+        builder.add( "prop5", stringArray( "hi" ) );
+
+        MapValue map = builder.build();
+
+        assertTrue( Values.mapsEqualsOnValueTypes( map, map ) );
+    }
+
+    @Test
+    void mapsShouldNotBeEqualOnValueTypes()
+    {
+        MapValueBuilder builder = new MapValueBuilder();
+        builder.add( "prop1", stringValue( "value" ) );
+        builder.add( "prop2", intValue( 1 ) );
+        builder.add( "prop3", longValue( 1L ) );
+        builder.add( "prop4", booleanArray( new boolean[]{true} ) );
+        builder.add( "prop5", stringArray( "hi" ) );
+        MapValue map1 = builder.build();
+
+        builder = new MapValueBuilder();
+        MapValue map2 = builder.build();
+
+        assertFalse( Values.mapsEqualsOnValueTypes( map1, map2 ) );
+        assertFalse( Values.mapsEqualsOnValueTypes( map2, map1 ) );
+
+        // Compare with almost the same maps
+        // -> not all keys
+        builder = new MapValueBuilder();
+        builder.add( "prop1", stringValue( "value" ) );
+        builder.add( "prop2", intValue( 1 ) );
+        builder.add( "prop4", booleanArray( new boolean[]{true} ) );
+        builder.add( "prop3", longValue( 1L ) );
+        MapValue map3 = builder.build();
+
+        assertFalse( Values.mapsEqualsOnValueTypes( map1, map3 ) );
+        assertFalse( Values.mapsEqualsOnValueTypes( map3, map1 ) );
+
+        // -> some different value types
+        builder = new MapValueBuilder();
+        builder.add( "prop1", stringValue( "value" ) );
+        builder.add( "prop2", longValue( 1L ) );
+        builder.add( "prop4", booleanArray( new boolean[]{true} ) );
+        builder.add( "prop3", intValue( 1 ) );
+        builder.add( "prop5", stringArray( "hi" ) );
+        MapValue map4 = builder.build();
+
+        assertFalse( Values.mapsEqualsOnValueTypes( map1, map4 ) );
+        assertFalse( Values.mapsEqualsOnValueTypes( map4, map1 ) );
+
     }
 }

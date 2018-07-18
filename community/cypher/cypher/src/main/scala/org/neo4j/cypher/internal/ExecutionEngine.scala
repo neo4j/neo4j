@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compatibility.{CypherCacheMonitor, LFUCache}
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
-import org.neo4j.cypher.internal.runtime.interpreted.{LastCommittedTxIdProvider, ValueConversion}
+import org.neo4j.cypher.internal.compatibility.CypherCacheMonitor
+import org.neo4j.cypher.internal.runtime.interpreted.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.CompilationTracer.QueryCompilationEvent
-import org.neo4j.cypher.{ParameterNotFoundException, SyntaxException, exceptionHandler}
+import org.neo4j.cypher.{ParameterNotFoundException, exceptionHandler}
 import org.neo4j.graphdb.Result
+import org.neo4j.helpers.collection.Pair
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.query.{QueryExecution, ResultBuffer, TransactionalContext}
@@ -35,7 +35,7 @@ import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.logging.LogProvider
 import org.neo4j.values.virtual.MapValue
 
-trait StringCacheMonitor extends CypherCacheMonitor[String]
+trait StringCacheMonitor extends CypherCacheMonitor[Pair[String, MapValue]]
 
 /**
   * This class constructs and initializes both the cypher compilers and runtimes, which are very expensive
@@ -44,7 +44,7 @@ trait StringCacheMonitor extends CypherCacheMonitor[String]
 class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                       val kernelMonitors: Monitors,
                       val tracer: CompilationTracer,
-                      val cacheTracer: CacheTracer[String],
+                      val cacheTracer: CacheTracer[Pair[String, MapValue]],
                       val config: CypherConfiguration,
                       val compatibilityFactory: CompilerFactory,
                       val logProvider: LogProvider,
@@ -63,7 +63,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   // Log on stale query discard from query cache
   private val log = logProvider.getLog( getClass )
   kernelMonitors.addMonitorListener( new StringCacheMonitor {
-    override def cacheDiscard(ignored: String, query: String, secondsSinceReplan: Int) {
+    override def cacheDiscard(ignored: Pair[String, MapValue], query: String, secondsSinceReplan: Int) {
       log.info(s"Discarded stale query from the query cache after ${secondsSinceReplan} seconds: $query")
     }
   })
@@ -73,8 +73,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                                              config.statsDivergenceCalculator,
                                              lastCommittedTxIdProvider,
                                              planReusabilitiy)
-  private val queryCache: QueryCache[String, ExecutableQuery] =
-    new QueryCache(config.queryCacheSize, planStalenessCaller, cacheTracer)
+  private val queryCache: QueryCache[String,Pair[String, MapValue], ExecutableQuery] =
+    new QueryCache[String, Pair[String, MapValue], ExecutableQuery](config.queryCacheSize, planStalenessCaller, cacheTracer)
 
   private val masterCompiler: MasterCompiler =
     new MasterCompiler(queryService, kernelMonitors, config, logProvider, new CompilerLibrary(compatibilityFactory))
@@ -91,7 +91,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
     try {
       val preParsedQuery = preParser.preParseQuery(query, profile)
-      val executableQuery = getOrCompile(context, preParsedQuery, queryTracer)
+      val executableQuery = getOrCompile(context, preParsedQuery, queryTracer, params)
       if (preParsedQuery.executionMode.name != "explain") {
         checkParameters(executableQuery.paramNames, params, executableQuery.extractedParams)
       }
@@ -116,9 +116,10 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   private def getOrCompile(context: TransactionalContext,
                            preParsedQuery: PreParsedQuery,
-                           tracer: QueryCompilationEvent
+                           tracer: QueryCompilationEvent,
+                           params: MapValue
                           ): ExecutableQuery = {
-    val cacheKey = preParsedQuery.statementWithVersionAndPlanner
+    val cacheKey = Pair.of(preParsedQuery.statementWithVersionAndPlanner, params)
 
     // create transaction and query context
     val tc = context.getOrBeginNewIfClosed()

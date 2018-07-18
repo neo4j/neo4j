@@ -26,8 +26,10 @@ import org.neo4j.cypher.internal.compatibility.v3_5.{WrappedMonitors => WrappedM
 import org.neo4j.cypher.internal.compiler.v3_5._
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
+import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
+import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.frontend.phases._
 
 /**
@@ -47,7 +49,7 @@ abstract class BasePlanner[STATEMENT <: AnyRef, PARSED_STATE <: AnyRef](
   protected val logger: InfoLogger = new StringInfoLogger(log)
   protected val monitors: Monitors = WrappedMonitorsv3_5(kernelMonitors)
 
-  protected val cacheTracer: CacheTracer[STATEMENT] = monitors.newMonitor[CacheTracer[STATEMENT]]("cypher3.5")
+  protected val cacheTracer: CacheTracer[Pair[STATEMENT, MapValue]] = monitors.newMonitor[CacheTracer[Pair[STATEMENT, MapValue]]]("cypher3.5")
 
   override def parserCacheSize: Int = config.queryCacheSize
 

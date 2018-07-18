@@ -32,13 +32,13 @@ import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.time.temporal.TemporalUnit;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.values.TernaryComparator;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
@@ -749,5 +749,24 @@ public final class Values
         default: throw new IllegalStateException(
                 format( "The maxValue for valueGroup %s is not defined yet", valueGroup ) );
         }
+    }
+
+    public static boolean mapsEqualsOnValueTypes( MapValue one, MapValue other )
+    {
+        if ( other.size() != one.size() )
+        {
+            return false;
+        }
+
+        for ( String key : one.keySet() )
+        {
+            AnyValue oneValue = one.get( key );
+            AnyValue otherValue = other.get( key );
+            if ( !(oneValue.getClass() == otherValue.getClass()) )
+            {
+                return false;
+            }
+        }
+        return true;
     }
 }

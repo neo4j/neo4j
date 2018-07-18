@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.util.{v3_4 => utilV3_4}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, Parameter}
 import org.neo4j.cypher.{CypherPlannerOption, CypherUpdateStrategy, CypherVersion}
 import org.neo4j.graphdb.Notification
+import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
@@ -205,9 +206,10 @@ case class Cypher34Planner(configv3_5: CypherPlannerConfiguration,
         CacheableLogicalPlan(logicalPlanStatev3_5, reusabilityState)
       }
 
+      val params = ValueConversion.asValues(preparedQuery.extractedParams())
       val cacheableLogicalPlan =
         if (preParsedQuery.debugOptions.isEmpty)
-          planCache.computeIfAbsentOrStale(syntacticQuery.statement(),
+          planCache.computeIfAbsentOrStale(Pair.of(syntacticQuery.statement(), params),
                                            transactionalContext,
                                            createPlan,
                                            syntacticQuery.queryText).executableQuery
@@ -220,7 +222,7 @@ case class Cypher34Planner(configv3_5: CypherPlannerConfiguration,
       LogicalPlanResult(
         cacheableLogicalPlan.logicalPlanState,
         queryParamNames,
-        ValueConversion.asValues(preparedQuery.extractedParams()),
+        params,
         cacheableLogicalPlan.reusability,
         contextv3_5)
     }

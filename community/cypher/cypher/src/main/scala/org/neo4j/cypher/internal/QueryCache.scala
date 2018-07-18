@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal
 
 import com.github.benmanes.caffeine.cache.{Cache, Caffeine}
+import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.values.virtual.MapValue
 
 /**
   * The result of one cache lookup.
@@ -56,7 +58,7 @@ trait CacheTracer[QUERY_KEY] {
   * @param stalenessCaller Decided whether CachedExecutionPlans are stale
   * @param tracer Traces cache activity
   */
-class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: AnyRef](val maximumSize: Int,
+class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, MapValue], EXECUTABLE_QUERY <: AnyRef](val maximumSize: Int,
                                                                   val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY],
                                                                   val tracer: CacheTracer[QUERY_KEY]) {
 
