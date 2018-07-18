@@ -79,32 +79,32 @@ Feature: DurationBetweenAcceptance
       RETURN d
       """
     Then the result should be, in order:
-      | d |
-      | 'P30Y8M13D' |
+      | d                         |
+      | 'P30Y8M13D'               |
       | 'P31Y9M10DT21H45M22.142S' |
       | 'P30Y9M10DT21H40M32.142S' |
-      | 'PT16H30M' |
-      | 'PT16H30M' |
-      | 'PT-14H-30M' |
-      | 'PT7H15M22.142S' |
-      | 'PT7H10M32.142S' |
-      | 'PT2H' |
-      | 'PT2H' |
-      | 'PT-14H-30M' |
-      | 'PT7H15M22.142S' |
-      | 'PT6H10M32.142S' |
-      | 'PT2H' |
-      | 'PT1H' |
-      | 'P-27DT-21H-40M-32.142S' |
-      | 'P1YT4M50S' |
-      | 'PT0S' |
-      | 'PT-5H-10M-32.142S' |
-      | 'PT-5H-10M-32.142S' |
-      | 'P11M2DT2H19M23.857S' |
-      | 'P2YT4M45.999S' |
-      | 'P1YT59M55.999S' |
-      | 'PT-5H-10M-36.143S' |
-      | 'PT-4H-10M-36.143S' |
+      | 'PT16H30M'                |
+      | 'PT16H30M'                |
+      | 'PT-14H-30M'              |
+      | 'PT7H15M22.142S'          |
+      | 'PT7H10M32.142S'          |
+      | 'PT2H'                    |
+      | 'PT2H'                    |
+      | 'PT-14H-30M'              |
+      | 'PT7H15M22.142S'          |
+      | 'PT6H10M32.142S'          |
+      | 'PT2H'                    |
+      | 'PT1H'                    |
+      | 'P-27DT-21H-40M-32.142S'  |
+      | 'P1YT4M50S'               |
+      | 'PT0S'                    |
+      | 'PT-5H-10M-32.142S'       |
+      | 'PT-5H-10M-32.142S'       |
+      | 'P11M2DT2H19M23.857S'     |
+      | 'P2YT4M45.999S'           |
+      | 'P1YT59M55.999S'          |
+      | 'PT-5H-10M-36.143S'       |
+      | 'PT-4H-10M-36.143S'       |
     And no side effects
 
   Scenario: Should compute duration between two temporals in months
@@ -198,7 +198,7 @@ Feature: DurationBetweenAcceptance
       RETURN d
       """
     Then the result should be, in order:
-      | d |
+      | d         |
       | 'P11213D' |
       | 'P11606D' |
       | 'P11240D' |
@@ -259,32 +259,32 @@ Feature: DurationBetweenAcceptance
       RETURN d
       """
     Then the result should be, in order:
-      | d |
-      | 'PT269112H' |
+      | d                     |
+      | 'PT269112H'           |
       | 'PT278565H45M22.142S' |
       | 'PT269781H40M32.142S' |
-      | 'PT16H30M' |
-      | 'PT16H30M' |
-      | 'PT-14H-30M' |
-      | 'PT7H15M22.142S' |
-      | 'PT7H10M32.142S' |
-      | 'PT2H' |
-      | 'PT2H' |
-      | 'PT-14H-30M' |
-      | 'PT7H15M22.142S' |
-      | 'PT6H10M32.142S' |
-      | 'PT2H' |
-      | 'PT1H' |
+      | 'PT16H30M'            |
+      | 'PT16H30M'            |
+      | 'PT-14H-30M'          |
+      | 'PT7H15M22.142S'      |
+      | 'PT7H10M32.142S'      |
+      | 'PT2H'                |
+      | 'PT2H'                |
+      | 'PT-14H-30M'          |
+      | 'PT7H15M22.142S'      |
+      | 'PT6H10M32.142S'      |
+      | 'PT2H'                |
+      | 'PT1H'                |
       | 'PT-669H-40M-32.142S' |
-      | 'PT8784H4M50S' |
-      | 'PT0S' |
-      | 'PT-5H-10M-32.142S' |
-      | 'PT-5H-10M-32.142S' |
-      | 'PT8090H19M23.857S' |
-      | 'PT17544H4M45.999S' |
-      | 'PT8760H59M55.999S' |
-      | 'PT-5H-10M-36.143S' |
-      | 'PT-4H-10M-36.143S' |
+      | 'PT8784H4M50S'        |
+      | 'PT0S'                |
+      | 'PT-5H-10M-32.142S'   |
+      | 'PT-5H-10M-32.142S'   |
+      | 'PT8090H19M23.857S'   |
+      | 'PT17544H4M45.999S'   |
+      | 'PT8760H59M55.999S'   |
+      | 'PT-5H-10M-36.143S'   |
+      | 'PT-4H-10M-36.143S'   |
     And no side effects
 
   Scenario: Should compute duration between if they differ only by a fraction of a second and the first comes after the second.
@@ -294,7 +294,7 @@ Feature: DurationBetweenAcceptance
       RETURN duration.inSeconds(localdatetime("2014-07-21T21:40:36.143"), localdatetime("2014-07-21T21:40:36.142")) as d
       """
     Then the result should be, in order:
-      | d |
+      | d           |
       | 'PT-0.001S' |
     And no side effects
 
@@ -340,17 +340,17 @@ Feature: DurationBetweenAcceptance
     RETURN d
     """
     Then the result should be, in order:
-      | d      |
-      | 'PT5H' |
-      | 'PT5H' |
-      | 'PT5H' |
-      | 'PT5H' |
-      | 'PT5H' |
-      | 'PT5H' |
-      | 'PT5H' |
-      | 'PT5H' |
-      | 'PT5H' |
-      | 'PT5H' |
+      | d       |
+      | 'PT5H'  |
+      | 'PT5H'  |
+      | 'PT5H'  |
+      | 'PT5H'  |
+      | 'PT5H'  |
+      | 'PT5H'  |
+      | 'PT5H'  |
+      | 'PT5H'  |
+      | 'PT5H'  |
+      | 'PT5H'  |
       | 'PT25H' |
     And no side effects
 
@@ -364,8 +364,8 @@ Feature: DurationBetweenAcceptance
     RETURN d
     """
     Then the result should be, in order:
-      | d      |
-      | 'P1999999998Y11M30D' |
+      | d                         |
+      | 'P1999999998Y11M30D'      |
       | 'PT17531639991215H59M59S' |
     And no side effects
 
@@ -416,10 +416,26 @@ Feature: DurationBetweenAcceptance
     RETURN d
     """
     Then the result should be, in order:
-      | d             |
-      | 'PT0S'        |
-      | 'PT0S'        |
-      | 'PT0S'        |
-      | 'PT0S'        |
-      | 'PT0S'        |
+      | d      |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
+      | 'PT0S' |
     And no side effects
+
+  Scenario Outline: Should propagate null
+    Given any graph
+    When executing query:
+    """
+    RETURN <func>(null, null) AS t
+    """
+    Then the result should be:
+      | t    |
+      | null |
+    Examples:
+      | func               |
+      | duration.between   |
+      | duration.inMonths  |
+      | duration.inDays    |
+      | duration.inSeconds |
