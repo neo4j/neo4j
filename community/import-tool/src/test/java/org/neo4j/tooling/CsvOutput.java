@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -35,6 +34,7 @@ import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
+import org.neo4j.unsafe.impl.batchimport.input.RandomEntityDataGenerator;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Deserialization;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
@@ -69,50 +69,8 @@ public class CsvOutput implements BatchImporter
     @Override
     public void doImport( Input input ) throws IOException
     {
-        Deserializer deserializer = ( entity, deserialization, header ) ->
-        {
-            deserialization.clear();
-            for ( Header.Entry entry : header.entries() )
-            {
-                switch ( entry.type() )
-                {
-                case ID:
-                    deserialization.handle( entry, entity.hasLongId ? entity.longId : entity.objectId );
-                    break;
-                case PROPERTY:
-                    deserialization.handle( entry, property( entity.properties, entry.name() ) );
-                    break;
-                case LABEL:
-                    deserialization.handle( entry, entity.labels() );
-                    break;
-                case TYPE:
-                    deserialization.handle( entry, entity.hasIntType ? entity.intType : entity.stringType );
-                    break;
-                case START_ID:
-                    deserialization.handle( entry, entity.hasLongStartId ? entity.longStartId : entity.objectStartId );
-                    break;
-                case END_ID:
-                    deserialization.handle( entry, entity.hasLongEndId ? entity.longEndId : entity.objectEndId );
-                    break;
-                default: // ignore other types
-                }
-            }
-            return deserialization.materialize();
-        };
-        consume( "nodes", input.nodes().iterator(), nodeHeader, deserializer );
-        consume( "relationships", input.relationships().iterator(), relationshipHeader, deserializer );
-    }
-
-    private static Object property( List<Object> properties, String key )
-    {
-        for ( int i = 0; i < properties.size(); i += 2 )
-        {
-            if ( properties.get( i ).equals( key ) )
-            {
-                return properties.get( i + 1 );
-            }
-        }
-        return null;
+        consume( "nodes", input.nodes().iterator(), nodeHeader, RandomEntityDataGenerator::convert );
+        consume( "relationships", input.relationships().iterator(), relationshipHeader, RandomEntityDataGenerator::convert );
     }
 
     private void consume( String name, InputIterator entities, Header header, Deserializer deserializer ) throws IOException

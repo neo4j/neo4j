@@ -19,15 +19,14 @@
  */
 package org.neo4j.tooling;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
 import org.neo4j.unsafe.impl.batchimport.ImportLogic;
 
-import static org.junit.Assert.assertTrue;
-
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 
@@ -35,7 +34,7 @@ import static org.neo4j.io.ByteUnit.gibiBytes;
  * Why test a silly thing like this? This implementation contains some printf calls that needs to get arguments correct
  * or will otherwise throw exception. It's surprisingly easy to get those wrong.
  */
-public class PrintingImportLogicMonitorTest
+class PrintingImportLogicMonitorTest
 {
     private final ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
     private final PrintStream out = new PrintStream( outBuffer );
@@ -44,7 +43,7 @@ public class PrintingImportLogicMonitorTest
     private final ImportLogic.Monitor monitor = new PrintingImportLogicMonitor( out, err );
 
     @Test
-    public void mayExceedNodeIdCapacity()
+    void mayExceedNodeIdCapacity()
     {
         // given
         long capacity = 10_000_000;
@@ -62,7 +61,7 @@ public class PrintingImportLogicMonitorTest
     }
 
     @Test
-    public void mayExceedRelationshipIdCapacity()
+    void mayExceedRelationshipIdCapacity()
     {
         // given
         long capacity = 10_000_000;
@@ -80,7 +79,7 @@ public class PrintingImportLogicMonitorTest
     }
 
     @Test
-    public void insufficientHeapSize()
+    void insufficientHeapSize()
     {
         // given
         long optimalHeapSize = gibiBytes( 2 );
@@ -98,7 +97,7 @@ public class PrintingImportLogicMonitorTest
     }
 
     @Test
-    public void abundantHeapSize()
+    void abundantHeapSize()
     {
         // given
         long optimalHeapSize = gibiBytes( 2 );
@@ -116,7 +115,7 @@ public class PrintingImportLogicMonitorTest
     }
 
     @Test
-    public void insufficientAvailableMemory()
+    void insufficientAvailableMemory()
     {
         // given
         long estimatedCacheSize = gibiBytes( 2 );

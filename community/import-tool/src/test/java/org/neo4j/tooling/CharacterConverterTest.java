@@ -19,17 +19,17 @@
  */
 package org.neo4j.tooling;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class CharacterConverterTest
+class CharacterConverterTest
 {
     private final CharacterConverter converter = new CharacterConverter();
 
     @Test
-    public void shouldConvertCharacter()
+    void shouldConvertCharacter()
     {
         // GIVEN
         String candidates = "abcdefghijklmnopqrstuvwxyzåäö\"'^`\\"; // to name a few
@@ -43,7 +43,7 @@ public class CharacterConverterTest
     }
 
     @Test
-    public void shouldConvertRawAscii()
+    void shouldConvertRawAscii()
     {
         for ( char expected = 0; expected < Character.MAX_VALUE; expected++ )
         {
@@ -52,7 +52,7 @@ public class CharacterConverterTest
     }
 
     @Test
-    public void shouldConvertEscaped_t_AsTab()
+    void shouldConvertEscaped_t_AsTab()
     {
         // GIVEN
         char expected = '\t';
@@ -62,7 +62,7 @@ public class CharacterConverterTest
     }
 
     @Test
-    public void shouldConvert_t_AsTab()
+    void shouldConvert_t_AsTab()
     {
         // GIVEN
         char expected = '\t';
@@ -72,7 +72,7 @@ public class CharacterConverterTest
     }
 
     @Test
-    public void shouldConvertSpelledOut_TAB_AsTab()
+    void shouldConvertSpelledOut_TAB_AsTab()
     {
         // GIVEN
         char expected = '\t';
@@ -82,31 +82,15 @@ public class CharacterConverterTest
     }
 
     @Test
-    public void shouldNotAcceptRandomEscapedStrings()
+    void shouldNotAcceptRandomEscapedStrings()
     {
-        try
-        {
-            converter.apply( "\\bogus" );
-            fail( "Should fail" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // Good
-        }
+        assertThrows( IllegalArgumentException.class, () -> converter.apply( "\\bogus" ) );
     }
 
     @Test
-    public void shouldNotAcceptStrings()
+    void shouldNotAcceptStrings()
     {
-        try
-        {
-            converter.apply( "bogus" );
-            fail( "Should fail" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // Good
-        }
+        assertThrows( IllegalArgumentException.class, () -> converter.apply( "bogus" ) );
     }
 
     private void assertCorrectConversion( char expected, String material )
