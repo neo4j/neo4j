@@ -19,12 +19,11 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.JRE;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -43,30 +42,32 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.RealOutsideWorld;
 import org.neo4j.diagnostics.DiagnosticsOfflineReportProvider;
 import org.neo4j.diagnostics.DiagnosticsReportSource;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.commandline.dbms.DiagnosticsReportCommand.DEFAULT_CLASSIFIERS;
 import static org.neo4j.commandline.dbms.DiagnosticsReportCommand.describeClassifier;
 
+@ExtendWith( {TestDirectoryExtension.class, DefaultFileSystemExtension.class, SuppressOutputExtension.class} )
 public class DiagnosticsReportCommandTest
 {
-    @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public ExpectedException expected = ExpectedException.none();
-    @Rule
-    public DefaultFileSystemRule fsRule = new DefaultFileSystemRule();
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private DefaultFileSystemAbstraction fs;
 
     private Path homeDir;
     private Path configDir;
@@ -93,8 +94,8 @@ public class DiagnosticsReportCommandTest
         }
     }
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    void setUp() throws Exception
     {
         homeDir = testDirectory.directory( "home-dir" ).toPath();
         configDir = testDirectory.directory( "config-dir" ).toPath();
@@ -107,47 +108,42 @@ public class DiagnosticsReportCommandTest
         originalUserDir = System.setProperty( "user.dir", testDirectory.absolutePath().getAbsolutePath() );
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         // Restore directory
         System.setProperty( "user.dir", originalUserDir );
     }
 
     @Test
-    public void exitIfConfigFileIsMissing() throws IOException, CommandFailed, IncorrectUsage
+    void exitIfConfigFileIsMissing() throws IOException
     {
         Files.delete( configFile );
         String[] args = {"--list"};
         try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
         {
-            DiagnosticsReportCommand
-                    diagnosticsReportCommand = new DiagnosticsReportCommand( homeDir, configDir, outsideWorld );
+            DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand( homeDir, configDir, outsideWorld );
 
-            expected.expect( CommandFailed.class );
-            expected.expectMessage( containsString( "Unable to find config file, tried: " ) );
-            diagnosticsReportCommand.execute( args );
+            CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> diagnosticsReportCommand.execute( args ) );
+            assertThat( commandFailed.getMessage(), containsString( "Unable to find config file, tried: " ) );
         }
     }
 
     @Test
-    public void allHasToBeOnlyClassifier() throws Exception
+    void allHasToBeOnlyClassifier() throws Exception
     {
         String[] args = {"all", "logs", "tx"};
         try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
         {
-            DiagnosticsReportCommand
-                    diagnosticsReportCommand = new DiagnosticsReportCommand( homeDir, configDir, outsideWorld );
+            DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand( homeDir, configDir, outsideWorld );
 
-            expected.expect( IncorrectUsage.class );
-            expected.expectMessage(
-                    "If you specify 'all' this has to be the only classifier. Found ['logs','tx'] as well." );
-            diagnosticsReportCommand.execute( args );
+            IncorrectUsage incorrectUsage = assertThrows( IncorrectUsage.class, () -> diagnosticsReportCommand.execute( args ) );
+            assertEquals( "If you specify 'all' this has to be the only classifier. Found ['logs','tx'] as well.", incorrectUsage.getMessage() );
         }
     }
 
     @Test
-    public void printUnrecognizedClassifiers() throws Exception
+    void printUnrecognizedClassifiers() throws Exception
     {
         String[] args = {"logs", "tx", "invalid"};
         try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
@@ -155,15 +151,14 @@ public class DiagnosticsReportCommandTest
             DiagnosticsReportCommand
                     diagnosticsReportCommand = new DiagnosticsReportCommand( homeDir, configDir, outsideWorld );
 
-            expected.expect( IncorrectUsage.class );
-            expected.expectMessage( "Unknown classifier: invalid" );
-            diagnosticsReportCommand.execute( args );
+            IncorrectUsage incorrectUsage = assertThrows( IncorrectUsage.class, () -> diagnosticsReportCommand.execute( args ) );
+            assertEquals( "Unknown classifier: invalid", incorrectUsage.getMessage() );
         }
     }
 
     @SuppressWarnings( "ResultOfMethodCallIgnored" )
     @Test
-    public void defaultValuesShouldBeValidClassifiers()
+    void defaultValuesShouldBeValidClassifiers()
     {
         for ( String classifier : DEFAULT_CLASSIFIERS )
         {
@@ -171,20 +166,19 @@ public class DiagnosticsReportCommandTest
         }
 
         // Make sure the above actually catches bad classifiers
-        expected.expect( IllegalArgumentException.class );
-        expected.expectMessage( "Unknown classifier: invalid" );
-        describeClassifier( "invalid" );
+        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> describeClassifier( "invalid" ) );
+        assertEquals( "Unknown classifier: invalid", exception.getMessage() );
     }
 
     @Test
-    public void listShouldDisplayAllClassifiers() throws Exception
+    void listShouldDisplayAllClassifiers() throws Exception
     {
         try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
         {
             PrintStream ps = new PrintStream( baos );
             String[] args = {"--list"};
             OutsideWorld outsideWorld = mock( OutsideWorld.class );
-            when( outsideWorld.fileSystem() ).thenReturn( fsRule.get() );
+            when( outsideWorld.fileSystem() ).thenReturn( fs );
             when( outsideWorld.outStream() ).thenReturn( ps );
 
             DiagnosticsReportCommand
@@ -206,7 +200,7 @@ public class DiagnosticsReportCommandTest
     }
 
     @Test
-    public void overrideDestination() throws Exception
+    void overrideDestination() throws Exception
     {
         // because of https://bugs.openjdk.java.net/browse/JDK-8202127 and current surefire behaviour we need to have custom value for JRE >= 11
         String toArgument = JRE.JAVA_11.isCurrentVersion() ? "--to=" + System.getProperty( "user.dir" ) + "/other/" : "--to=other/";
@@ -229,16 +223,15 @@ public class DiagnosticsReportCommandTest
     }
 
     @Test
-    public void errorOnInvalidPid() throws Exception
+    void errorOnInvalidPid() throws Exception
     {
-        expected.expect( CommandFailed.class );
-        expected.expectMessage( "Unable to parse --pid" );
         String[] args = {"--pid=a", "all"};
         try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
         {
             DiagnosticsReportCommand
                     diagnosticsReportCommand = new DiagnosticsReportCommand( homeDir, configDir, outsideWorld );
-            diagnosticsReportCommand.execute( args );
+            CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> diagnosticsReportCommand.execute( args ) );
+            assertEquals( "Unable to parse --pid", commandFailed.getMessage() );
         }
     }
 }

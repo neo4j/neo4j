@@ -19,18 +19,17 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.apache.commons.lang3.SystemUtils;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -50,17 +49,19 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.internal.locker.StoreLocker;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
+import static java.util.Collections.singletonList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -71,12 +72,11 @@ import static org.neo4j.dbms.archive.TestUtils.withPermissions;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
 
-public class DumpCommandTest
+@ExtendWith( TestDirectoryExtension.class )
+class DumpCommandTest
 {
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public ExpectedException expected = ExpectedException.none();
+    @Inject
+    private TestDirectory testDirectory;
 
     private Path homeDir;
     private Path configDir;
@@ -84,8 +84,8 @@ public class DumpCommandTest
     private Dumper dumper;
     private Path databaseDirectory;
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    void setUp() throws Exception
     {
         homeDir = testDirectory.directory( "home-dir" ).toPath();
         configDir = testDirectory.directory( "config-dir" ).toPath();
@@ -96,7 +96,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldDumpTheDatabaseToTheArchive() throws Exception
+    void shouldDumpTheDatabaseToTheArchive() throws Exception
     {
         execute( "foo.db" );
         verify( dumper ).dump( eq( homeDir.resolve( "data/databases/foo.db" ) ),
@@ -104,20 +104,19 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldCalculateTheDatabaseDirectoryFromConfig() throws Exception
+    void shouldCalculateTheDatabaseDirectoryFromConfig() throws Exception
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
         putStoreInDirectory( databaseDir );
-        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
-                asList( formatProperty( data_directory, dataDir ) ) );
+        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
 
         execute( "foo.db" );
         verify( dumper ).dump( eq( databaseDir ), eq( databaseDir ), any(), any() );
     }
 
     @Test
-    public void shouldCalculateTheTxLogDirectoryFromConfig() throws Exception
+    void shouldCalculateTheTxLogDirectoryFromConfig() throws Exception
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path txLogsDir = testDirectory.directory( "txLogsPath" ).toPath();
@@ -132,10 +131,9 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldHandleDatabaseSymlink() throws Exception
+    @DisabledOnOs( OS.WINDOWS )
+    void shouldHandleDatabaseSymlink() throws Exception
     {
-        assumeFalse( "Can't reliably create symlinks on windows", SystemUtils.IS_OS_WINDOWS );
-
         Path symDir = testDirectory.directory( "path-to-links" ).toPath();
         Path realDatabaseDir = symDir.resolve( "foo.db" );
 
@@ -147,15 +145,14 @@ public class DumpCommandTest
 
         Files.createSymbolicLink( databaseDir, realDatabaseDir );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
-                asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
+                singletonList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
 
         execute( "foo.db" );
         verify( dumper ).dump( eq( realDatabaseDir ), eq( realDatabaseDir ), any(), any() );
     }
 
     @Test
-    public void shouldCalculateTheArchiveNameIfPassedAnExistingDirectory()
-            throws Exception
+    void shouldCalculateTheArchiveNameIfPassedAnExistingDirectory() throws Exception
     {
         File to = testDirectory.directory( "some-dir" );
         new DumpCommand( homeDir, configDir, dumper ).execute( new String[]{"--database=" + "foo.db", "--to=" + to} );
@@ -163,7 +160,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldConvertToCanonicalPath() throws Exception
+    void shouldConvertToCanonicalPath() throws Exception
     {
         new DumpCommand( homeDir, configDir, dumper )
                 .execute( new String[]{"--database=" + "foo.db", "--to=foo.dump"} );
@@ -172,7 +169,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldNotCalculateTheArchiveNameIfPassedAnExistingFile()
+    void shouldNotCalculateTheArchiveNameIfPassedAnExistingFile()
             throws Exception
     {
         Files.createFile( archive );
@@ -181,7 +178,7 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldRespectTheStoreLock() throws Exception
+    void shouldRespectTheStoreLock() throws Exception
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
 
@@ -190,40 +187,28 @@ public class DumpCommandTest
         {
             storeLocker.checkLock();
 
-            execute( "foo.db" );
-            fail( "expected exception" );
-        }
-        catch ( CommandFailed e )
-        {
-            assertThat( e.getMessage(), equalTo( "the database is in use -- stop Neo4j and try again" ) );
+            CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo.db" ) );
+            assertEquals( "the database is in use -- stop Neo4j and try again", commandFailed.getMessage() );
         }
     }
 
     @Test
-    public void shouldReleaseTheStoreLockAfterDumping() throws Exception
+    void shouldReleaseTheStoreLockAfterDumping() throws Exception
     {
         execute( "foo.db" );
         assertCanLockStore( databaseDirectory );
     }
 
     @Test
-    public void shouldReleaseTheStoreLockEvenIfThereIsAnError() throws Exception
+    void shouldReleaseTheStoreLockEvenIfThereIsAnError() throws Exception
     {
         doThrow( IOException.class ).when( dumper ).dump( any(), any(), any(), any() );
-
-        try
-        {
-            execute( "foo.db" );
-        }
-        catch ( CommandFailed ignored )
-        {
-        }
-
+        assertThrows( CommandFailed.class, () -> execute( "foo.db" ) );
         assertCanLockStore( databaseDirectory );
     }
 
     @Test
-    public void shouldNotAccidentallyCreateTheDatabaseDirectoryAsASideEffectOfStoreLocking()
+    void shouldNotAccidentallyCreateTheDatabaseDirectoryAsASideEffectOfStoreLocking()
             throws Exception
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/accident.db" );
@@ -238,10 +223,9 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldReportAHelpfulErrorIfWeDontHaveWritePermissionsForLock() throws Exception
+    @DisabledOnOs( OS.WINDOWS )
+    void shouldReportAHelpfulErrorIfWeDontHaveWritePermissionsForLock() throws Exception
     {
-        assumeFalse( "We haven't found a way to reliably tests permissions on Windows", SystemUtils.IS_OS_WINDOWS );
-
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               StoreLocker storeLocker = new StoreLocker( fileSystem, databaseDirectory.toFile() ) )
         {
@@ -250,24 +234,18 @@ public class DumpCommandTest
             try ( Closeable ignored = withPermissions( databaseDirectory.resolve( StoreLocker.STORE_LOCK_FILENAME ),
                     emptySet() ) )
             {
-                execute( "foo.db" );
-                fail( "expected exception" );
-            }
-            catch ( CommandFailed e )
-            {
-                assertThat( e.getMessage(), equalTo( "you do not have permission to dump the database -- is Neo4j " +
-                        "running as a different user?" ) );
+                CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo.db" ) );
+                assertEquals( commandFailed.getMessage(), "you do not have permission to dump the database -- is Neo4j running as a different user?" );
             }
         }
     }
 
     @Test
-    public void shouldExcludeTheStoreLockFromTheArchiveToAvoidProblemsWithReadingLockedFilesOnWindows()
+    void shouldExcludeTheStoreLockFromTheArchiveToAvoidProblemsWithReadingLockedFilesOnWindows()
             throws Exception
     {
         doAnswer( invocation ->
         {
-            //noinspection unchecked
             Predicate<Path> exclude = invocation.getArgument( 3 );
             assertThat( exclude.test( Paths.get( StoreLocker.STORE_LOCK_FILENAME ) ), is( true ) );
             assertThat( exclude.test( Paths.get( "some-other-file" ) ), is( false ) );
@@ -278,95 +256,60 @@ public class DumpCommandTest
     }
 
     @Test
-    public void shouldDefaultToGraphDB() throws Exception
+    void shouldDefaultToGraphDB() throws Exception
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/graph.db" );
         putStoreInDirectory( databaseDir );
-        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
-                asList( formatProperty( data_directory, dataDir ) ) );
+        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
 
         new DumpCommand( homeDir, configDir, dumper ).execute( new String[]{"--to=" + archive} );
         verify( dumper ).dump( eq( databaseDir ), eq( databaseDir ), any(), any() );
     }
 
     @Test
-    public void shouldObjectIfTheArchiveArgumentIsMissing() throws Exception
+    void shouldObjectIfTheArchiveArgumentIsMissing()
     {
-        try
-        {
-            new DumpCommand( homeDir, configDir, null ).execute( new String[]{"--database=something"} );
-            fail( "expected exception" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            assertThat( e.getMessage(), equalTo( "Missing argument 'to'" ) );
-        }
+
+        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class,
+                () -> new DumpCommand( homeDir, configDir, null ).execute( new String[]{"--database=something"} ) );
+        assertEquals( "Missing argument 'to'", exception.getMessage() );
     }
 
     @Test
-    public void shouldGiveAClearErrorIfTheArchiveAlreadyExists() throws Exception
+    void shouldGiveAClearErrorIfTheArchiveAlreadyExists() throws Exception
     {
         doThrow( new FileAlreadyExistsException( "the-archive-path" ) ).when( dumper ).dump( any(), any(), any(), any() );
-        try
-        {
-            execute( "foo.db" );
-            fail( "expected exception" );
-        }
-        catch ( CommandFailed e )
-        {
-            assertThat( e.getMessage(), equalTo( "archive already exists: the-archive-path" ) );
-        }
+        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo.db" ) );
+        assertEquals( "archive already exists: the-archive-path", commandFailed.getMessage() );
     }
 
     @Test
-    public void shouldGiveAClearMessageIfTheDatabaseDoesntExist() throws Exception
+    void shouldGiveAClearMessageIfTheDatabaseDoesntExist()
     {
-        try
-        {
-            execute( "bobo.db" );
-            fail( "expected exception" );
-        }
-        catch ( CommandFailed e )
-        {
-            assertThat( e.getMessage(), equalTo( "database does not exist: bobo.db" ) );
-        }
+        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "bobo.db" ) );
+        assertEquals( "database does not exist: bobo.db", commandFailed.getMessage() );
     }
 
     @Test
-    public void shouldGiveAClearMessageIfTheArchivesParentDoesntExist() throws Exception
+    void shouldGiveAClearMessageIfTheArchivesParentDoesntExist() throws Exception
     {
         doThrow( new NoSuchFileException( archive.getParent().toString() ) ).when( dumper ).dump(any(), any(), any(), any() );
-        try
-        {
-            execute( "foo.db" );
-            fail( "expected exception" );
-        }
-        catch ( CommandFailed e )
-        {
-            assertThat( e.getMessage(),
-                    equalTo( "unable to dump database: NoSuchFileException: " + archive.getParent() ) );
-        }
+        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo.db" ) );
+        assertEquals( "unable to dump database: NoSuchFileException: " + archive.getParent(), commandFailed.getMessage() );
     }
 
     @Test
-    public void shouldWrapIOExceptionsCarefullyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
+    void shouldWrapIOExceptionsCarefullyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
             throws Exception
     {
         doThrow( new IOException( "the-message" ) ).when( dumper ).dump(any(), any(), any(), any() );
-        try
-        {
-            execute( "foo.db" );
-            fail( "expected exception" );
-        }
-        catch ( CommandFailed e )
-        {
-            assertThat( e.getMessage(), equalTo( "unable to dump database: IOException: the-message" ) );
-        }
+        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo.db" ) );
+        assertEquals( "unable to dump database: IOException: the-message", commandFailed.getMessage() );
     }
 
     @Test
-    public void shouldPrintNiceHelp() throws Exception
+    void shouldPrintNiceHelp() throws Exception
     {
         try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
         {

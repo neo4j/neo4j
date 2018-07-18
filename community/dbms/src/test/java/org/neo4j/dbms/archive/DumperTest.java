@@ -19,9 +19,10 @@
  */
 package org.neo4j.dbms.archive;
 
-import org.apache.commons.lang3.SystemUtils;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -33,100 +34,74 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
 import org.neo4j.function.Predicates;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.emptySet;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class DumperTest
+@ExtendWith( TestDirectoryExtension.class )
+class DumperTest
 {
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory testDirectory;
 
     @Test
-    public void shouldGiveAClearErrorIfTheArchiveAlreadyExists() throws IOException
+    void shouldGiveAClearErrorIfTheArchiveAlreadyExists() throws IOException
     {
         Path directory = testDirectory.directory( "a-directory" ).toPath();
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
         Files.write( archive, new byte[0] );
-        try
-        {
-            new Dumper().dump( directory, directory, archive, Predicates.alwaysFalse() );
-            fail( "Expected an exception" );
-        }
-        catch ( FileAlreadyExistsException e )
-        {
-            assertEquals( archive.toString(), e.getMessage() );
-        }
+        FileAlreadyExistsException exception =
+                assertThrows( FileAlreadyExistsException.class, () -> new Dumper().dump( directory, directory, archive, Predicates.alwaysFalse() ) );
+        assertEquals( archive.toString(), exception.getMessage() );
     }
 
     @Test
-    public void shouldGiveAClearErrorMessageIfTheDirectoryDoesntExist() throws IOException
+    void shouldGiveAClearErrorMessageIfTheDirectoryDoesntExist()
     {
         Path directory = testDirectory.file( "a-directory" ).toPath();
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
-        try
-        {
-            new Dumper().dump( directory, directory, archive, Predicates.alwaysFalse() );
-            fail( "Expected an exception" );
-        }
-        catch ( NoSuchFileException e )
-        {
-            assertEquals( directory.toString(), e.getMessage() );
-        }
+        NoSuchFileException exception =
+                assertThrows( NoSuchFileException.class, () -> new Dumper().dump( directory, directory, archive, Predicates.alwaysFalse() ) );
+        assertEquals( directory.toString(), exception.getMessage() );
     }
 
     @Test
-    public void shouldGiveAClearErrorMessageIfTheArchivesParentDirectoryDoesntExist() throws IOException
+    void shouldGiveAClearErrorMessageIfTheArchivesParentDirectoryDoesntExist()
     {
         Path directory = testDirectory.directory( "a-directory" ).toPath();
         Path archive = testDirectory.file( "subdir/the-archive.dump" ).toPath();
-        try
-        {
-            new Dumper().dump( directory, directory, archive, Predicates.alwaysFalse() );
-            fail( "Expected an exception" );
-        }
-        catch ( NoSuchFileException e )
-        {
-            assertEquals( archive.getParent().toString(), e.getMessage() );
-        }
+        NoSuchFileException exception =
+                assertThrows( NoSuchFileException.class, () -> new Dumper().dump( directory, directory, archive, Predicates.alwaysFalse() ) );
+        assertEquals( archive.getParent().toString(), exception.getMessage() );
     }
 
     @Test
-    public void shouldGiveAClearErrorMessageIfTheArchivesParentDirectoryIsAFile() throws IOException
+    void shouldGiveAClearErrorMessageIfTheArchivesParentDirectoryIsAFile() throws IOException
     {
         Path directory = testDirectory.directory( "a-directory" ).toPath();
         Path archive = testDirectory.file( "subdir/the-archive.dump" ).toPath();
         Files.write( archive.getParent(), new byte[0] );
-        try
-        {
-            new Dumper().dump( directory, directory, archive, Predicates.alwaysFalse() );
-            fail( "Expected an exception" );
-        }
-        catch ( FileSystemException e )
-        {
-            assertEquals( archive.getParent().toString() + ": Not a directory", e.getMessage() );
-        }
+        FileSystemException exception =
+                assertThrows( FileSystemException.class, () -> new Dumper().dump( directory, directory, archive, Predicates.alwaysFalse() ) );
+        assertEquals( archive.getParent().toString() + ": Not a directory", exception.getMessage() );
     }
 
     @Test
-    public void shouldGiveAClearErrorMessageIfTheArchivesParentDirectoryIsNotWritable() throws IOException
+    @DisabledOnOs( OS.WINDOWS )
+    void shouldGiveAClearErrorMessageIfTheArchivesParentDirectoryIsNotWritable() throws IOException
     {
-        assumeFalse( "We haven't found a way to reliably tests permissions on Windows", SystemUtils.IS_OS_WINDOWS );
-
         Path directory = testDirectory.directory( "a-directory" ).toPath();
         Path archive = testDirectory.file( "subdir/the-archive.dump" ).toPath();
         Files.createDirectories( archive.getParent() );
         try ( Closeable ignored = TestUtils.withPermissions( archive.getParent(), emptySet() ) )
         {
-            new Dumper().dump( directory, directory, archive, Predicates.alwaysFalse() );
-            fail( "Expected an exception" );
-        }
-        catch ( AccessDeniedException e )
-        {
-            assertEquals( archive.getParent().toString(), e.getMessage() );
+            AccessDeniedException exception =
+                    assertThrows( AccessDeniedException.class, () -> new Dumper().dump( directory, directory, archive, Predicates.alwaysFalse() ) );
+            assertEquals( archive.getParent().toString(), exception.getMessage() );
         }
     }
 }

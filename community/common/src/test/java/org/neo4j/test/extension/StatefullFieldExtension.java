@@ -52,6 +52,7 @@ public abstract class StatefullFieldExtension<T> implements TestInstancePostProc
     public void postProcessTestInstance( Object testInstance, ExtensionContext context ) throws Exception
     {
         Class<?> clazz = testInstance.getClass();
+        Object instance = createInstance( context );
         List<Field> declaredFields = getAllFields( clazz );
         for ( Field declaredField : declaredFields )
         {
@@ -59,7 +60,7 @@ public abstract class StatefullFieldExtension<T> implements TestInstancePostProc
                     getFieldType().equals( declaredField.getType() ) )
             {
                 declaredField.setAccessible( true );
-                declaredField.set( testInstance, createFieldInstance( context ) );
+                declaredField.set( testInstance, instance );
             }
         }
     }
@@ -74,7 +75,7 @@ public abstract class StatefullFieldExtension<T> implements TestInstancePostProc
         getLocalStore( context ).remove( getFieldKey(), getFieldType() );
     }
 
-    Store getStore( ExtensionContext extensionContext, Namespace namespace )
+    static Store getStore( ExtensionContext extensionContext, Namespace namespace )
     {
         return extensionContext.getRoot().getStore( namespace );
     }
@@ -84,7 +85,7 @@ public abstract class StatefullFieldExtension<T> implements TestInstancePostProc
         return getStore( extensionContext, getNameSpace() );
     }
 
-    private Object createFieldInstance( ExtensionContext extensionContext )
+    private Object createInstance( ExtensionContext extensionContext )
     {
         Store store = getLocalStore( extensionContext );
         return store.getOrComputeIfAbsent( getFieldKey(), (Function<String,Object>) s -> createField( extensionContext ) );

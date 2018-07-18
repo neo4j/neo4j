@@ -19,8 +19,8 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -42,29 +42,33 @@ import org.neo4j.helpers.Args;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class ImportCommandTest
+@ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
+class ImportCommandTest
 {
-    @Rule
-    public final TestDirectory testDir = TestDirectory.testDirectory();
-    @Rule
-    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Inject
+    private TestDirectory testDir;
+    @Inject
+    private SuppressOutput suppressOutput;
 
     @Test
-    public void defaultsToCsvWhenModeNotSpecified() throws Exception
+    void defaultsToCsvWhenModeNotSpecified() throws Exception
     {
         File homeDir = testDir.directory( "home" );
         ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
@@ -89,7 +93,7 @@ public class ImportCommandTest
     }
 
     @Test
-    public void acceptsNodeMetadata() throws Exception
+    void acceptsNodeMetadata() throws Exception
     {
         File homeDir = testDir.directory( "home" );
         ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
@@ -111,7 +115,7 @@ public class ImportCommandTest
     }
 
     @Test
-    public void acceptsRelationshipsMetadata() throws Exception
+    void acceptsRelationshipsMetadata() throws Exception
     {
         File homeDir = testDir.directory( "home" );
         ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
@@ -133,7 +137,7 @@ public class ImportCommandTest
     }
 
     @Test
-    public void requiresDatabaseArgument() throws Exception
+    void requiresDatabaseArgument()
     {
         try ( NullOutsideWorld outsideWorld = new NullOutsideWorld() )
         {
@@ -142,20 +146,13 @@ public class ImportCommandTest
                             outsideWorld );
 
             String[] arguments = {"--mode=database", "--from=bar"};
-            try
-            {
-                importCommand.execute( arguments );
-                fail( "Should have thrown an exception." );
-            }
-            catch ( IncorrectUsage e )
-            {
-                assertThat( e.getMessage(), containsString( "database" ) );
-            }
+            IncorrectUsage incorrectUsage = assertThrows( IncorrectUsage.class, () -> importCommand.execute( arguments ) );
+            assertThat( incorrectUsage.getMessage(), containsString( "database" ) );
         }
     }
 
     @Test
-    public void failIfInvalidModeSpecified() throws Exception
+    void failIfInvalidModeSpecified()
     {
         try ( NullOutsideWorld outsideWorld = new NullOutsideWorld() )
         {
@@ -164,20 +161,13 @@ public class ImportCommandTest
                             outsideWorld );
 
             String[] arguments = {"--mode=foo", "--database=bar", "--from=baz"};
-            try
-            {
-                importCommand.execute( arguments );
-                fail( "Should have thrown an exception." );
-            }
-            catch ( IncorrectUsage e )
-            {
-                assertThat( e.getMessage(), containsString( "foo" ) );
-            }
+            IncorrectUsage incorrectUsage = assertThrows( IncorrectUsage.class, () -> importCommand.execute( arguments ) );
+            assertThat( incorrectUsage.getMessage(), containsString( "foo" ) );
         }
     }
 
     @Test
-    public void failIfDestinationDatabaseAlreadyExists() throws Exception
+    void failIfDestinationDatabaseAlreadyExists() throws Exception
     {
         try ( NullOutsideWorld outsideWorld = new NullOutsideWorld() )
         {
@@ -186,29 +176,23 @@ public class ImportCommandTest
 
             putStoreInDirectory( homeDir.resolve( "data" ).resolve( "databases" ).resolve( "existing.db" ) );
             String[] arguments = {"--mode=csv", "--database=existing.db"};
-            try
-            {
-                importCommand.execute( arguments );
-                fail( "Should have thrown an exception." );
-            }
-            catch ( Exception e )
-            {
-                assertThat( e.getMessage(), containsString( "already contains a database" ) );
-            }
+            Exception exception = assertThrows( Exception.class, () -> importCommand.execute( arguments ) );
+            assertThat( exception.getMessage(), containsString( "already contains a database" ) );
         }
     }
 
     @Test
-    public void shouldUseArgumentsFoundInside_f_Argument() throws FileNotFoundException, CommandFailed, IncorrectUsage
+    void shouldUseArgumentsFoundInside_f_Argument() throws FileNotFoundException, CommandFailed, IncorrectUsage
     {
         // given
+        File report = testDir.file( "report" );
         ImportCommand importCommand =
                 new ImportCommand( testDir.directory( "home" ).toPath(), testDir.directory( "conf" ).toPath(),
                         new RealOutsideWorld( System.out, System.err, new ByteArrayInputStream( new byte[0] ) ) );
         File nodesFile = createTextFile( "nodes.csv", ":ID", "1", "2" );
-        String pathForFile = nodesFile.getAbsolutePath();
-        String pathWithEscapedSpaces = pathForFile.replaceAll( " ", "\\\\ " );
-        File argFile = createTextFile( "args.txt", "--database=foo", "--nodes=" + pathWithEscapedSpaces );
+        String pathWithEscapedSpaces = escapeSpaces( nodesFile.getAbsolutePath() );
+        String reportEscapedPath = escapeSpaces( report.getAbsolutePath() );
+        File argFile = createTextFile( "args.txt", "--database=foo", "--nodes=" + pathWithEscapedSpaces, "--report-file=" + reportEscapedPath );
         String[] arguments = {"-f", argFile.getAbsolutePath()};
 
         // when
@@ -221,7 +205,7 @@ public class ImportCommandTest
     }
 
     @Test
-    public void shouldPrintNiceHelp() throws Throwable
+    void shouldPrintNiceHelp() throws Throwable
     {
         try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
         {
@@ -334,7 +318,7 @@ public class ImportCommandTest
         }
     }
 
-    private void putStoreInDirectory( Path storeDir ) throws IOException
+    private static void putStoreInDirectory( Path storeDir ) throws IOException
     {
         Files.createDirectories( storeDir );
         Path storeFile = storeDir.resolve( StoreFileType.STORE.augment( MetaDataStore.DEFAULT_NAME ) );
@@ -352,5 +336,10 @@ public class ImportCommandTest
             }
         }
         return file;
+    }
+
+    private static String escapeSpaces( String pathForFile )
+    {
+        return pathForFile.replaceAll( " ", "\\\\ " );
     }
 }

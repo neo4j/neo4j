@@ -24,7 +24,7 @@ import java.nio.file.Path;
 
 public class IncorrectFormat extends Exception
 {
-    public IncorrectFormat( Path archive, IOException cause )
+    IncorrectFormat( Path archive, IOException cause )
     {
         super( archive.toString(), cause );
     }

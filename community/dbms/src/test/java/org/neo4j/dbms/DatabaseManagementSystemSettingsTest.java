@@ -19,20 +19,20 @@
  */
 package org.neo4j.dbms;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertThat;
 
-public class DatabaseManagementSystemSettingsTest
+class DatabaseManagementSystemSettingsTest
 {
     @Test
-    public void shouldPutDatabaseDirectoriesIntoDataDatabases()
+    void shouldPutDatabaseDirectoriesIntoDataDatabases()
     {
         Config config = Config.defaults( GraphDatabaseSettings.data_directory, "the-data-directory" );
         assertThat( config.get( GraphDatabaseSettings.database_path ),

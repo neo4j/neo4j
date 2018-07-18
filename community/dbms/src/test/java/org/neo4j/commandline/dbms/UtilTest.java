@@ -19,38 +19,41 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.commandline.Util;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.commandline.Util.isSameOrChildFile;
 import static org.neo4j.commandline.Util.isSameOrChildPath;
 import static org.neo4j.commandline.Util.neo4jVersion;
 
-public class UtilTest
+@ExtendWith( TestDirectoryExtension.class )
+class UtilTest
 {
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory directory;
 
     @Test
-    public void canonicalPath()
+    void canonicalPath()
     {
         assertNotNull( Util.canonicalPath( "foo" ).getParent() );
     }
 
     @Test
-    public void returnsAVersion()
+    void returnsAVersion()
     {
-        assertNotNull( "A version should be returned", neo4jVersion() );
+        assertNotNull( neo4jVersion(), "A version should be returned" );
     }
 
     @Test
-    public void correctlyIdentifySameOrChildFile()
+    void correctlyIdentifySameOrChildFile()
     {
         assertTrue( isSameOrChildFile( directory.directory(), directory.directory( "a" ) ) );
         assertTrue( isSameOrChildFile( directory.directory(), directory.directory() ) );
@@ -61,16 +64,13 @@ public class UtilTest
     }
 
     @Test
-    public void correctlyIdentifySameOrChildPath()
+    void correctlyIdentifySameOrChildPath()
     {
         assertTrue( isSameOrChildPath( directory.directory().toPath(), directory.directory( "a" ).toPath() ) );
         assertTrue( isSameOrChildPath( directory.directory().toPath(), directory.directory().toPath() ) );
-        assertTrue( isSameOrChildPath( directory.directory( "/a/./b" ).toPath(),
-                directory.directory( "a/b" ).toPath() ) );
-        assertTrue( isSameOrChildPath( directory.directory( "a/b" ).toPath(),
-                directory.directory( "/a/./b" ).toPath() ) );
+        assertTrue( isSameOrChildPath( directory.directory( "/a/./b" ).toPath(), directory.directory( "a/b" ).toPath() ) );
+        assertTrue( isSameOrChildPath( directory.directory( "a/b" ).toPath(), directory.directory( "/a/./b" ).toPath() ) );
 
-        assertFalse( isSameOrChildPath( directory.directory( "a" ).toPath(),
-                directory.directory( "b" ).toPath() ) );
+        assertFalse( isSameOrChildPath( directory.directory( "a" ).toPath(), directory.directory( "b" ).toPath() ) );
     }
 }

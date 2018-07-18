@@ -19,10 +19,11 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.apache.commons.lang3.SystemUtils;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -48,16 +49,18 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.locker.StoreLocker;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -67,17 +70,18 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
 
-public class LoadCommandTest
+@ExtendWith( TestDirectoryExtension.class )
+class LoadCommandTest
 {
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory testDirectory;
     private Path homeDir;
     private Path configDir;
     private Path archive;
     private Loader loader;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         homeDir = testDirectory.directory( "home-dir" ).toPath();
         configDir = testDirectory.directory( "config-dir" ).toPath();
@@ -86,28 +90,27 @@ public class LoadCommandTest
     }
 
     @Test
-    public void shouldLoadTheDatabaseFromTheArchive() throws CommandFailed, IncorrectUsage, IOException, IncorrectFormat
+    void shouldLoadTheDatabaseFromTheArchive() throws CommandFailed, IncorrectUsage, IOException, IncorrectFormat
     {
         execute( "foo.db" );
         verify( loader ).load( archive, homeDir.resolve( "data/databases/foo.db" ), homeDir.resolve( "data/databases/foo.db" ) );
     }
 
     @Test
-    public void shouldCalculateTheDatabaseDirectoryFromConfig()
+    void shouldCalculateTheDatabaseDirectoryFromConfig()
             throws IOException, CommandFailed, IncorrectUsage, IncorrectFormat
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
         Files.createDirectories( databaseDir );
-        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
-                asList( formatProperty( data_directory, dataDir ) ) );
+        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
 
         execute( "foo.db" );
         verify( loader ).load( any(), eq( databaseDir ), eq( databaseDir ) );
     }
 
     @Test
-    public void shouldCalculateTheTxLogDirectoryFromConfig() throws Exception
+    void shouldCalculateTheTxLogDirectoryFromConfig() throws Exception
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path txLogsDir = testDirectory.directory( "txLogsPath" ).toPath();
@@ -121,10 +124,9 @@ public class LoadCommandTest
     }
 
     @Test
-    public void shouldHandleSymlinkToDatabaseDir() throws IOException, CommandFailed, IncorrectUsage, IncorrectFormat
+    @DisabledOnOs( OS.WINDOWS )
+    void shouldHandleSymlinkToDatabaseDir() throws IOException, CommandFailed, IncorrectUsage, IncorrectFormat
     {
-        assumeFalse( "Can't reliably create symlinks on windows", SystemUtils.IS_OS_WINDOWS );
-
         Path symDir = testDirectory.directory( "path-to-links" ).toPath();
         Path realDatabaseDir = symDir.resolve( "foo.db" );
 
@@ -136,21 +138,19 @@ public class LoadCommandTest
 
         Files.createSymbolicLink( databaseDir, realDatabaseDir );
 
-        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
-                asList( formatProperty( data_directory, dataDir ) ) );
+        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
 
         execute( "foo.db" );
         verify( loader ).load( any(), eq( realDatabaseDir ), eq( realDatabaseDir ) );
     }
 
     @Test
-    public void shouldMakeFromCanonical() throws IOException, CommandFailed, IncorrectUsage, IncorrectFormat
+    void shouldMakeFromCanonical() throws IOException, CommandFailed, IncorrectUsage, IncorrectFormat
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
         Files.createDirectories( databaseDir );
-        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
-                asList( formatProperty( data_directory, dataDir ) ) );
+        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
 
         new LoadCommand( homeDir, configDir, loader )
                 .execute( ArrayUtil.concat( new String[]{"--database=foo.db", "--from=foo.dump"} ) );
@@ -159,7 +159,7 @@ public class LoadCommandTest
     }
 
     @Test
-    public void shouldDeleteTheOldDatabaseIfForceArgumentIsProvided()
+    void shouldDeleteTheOldDatabaseIfForceArgumentIsProvided()
             throws CommandFailed, IncorrectUsage, IOException, IncorrectFormat
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
@@ -175,7 +175,7 @@ public class LoadCommandTest
     }
 
     @Test
-    public void shouldNotDeleteTheOldDatabaseIfForceArgumentIsNotProvided()
+    void shouldNotDeleteTheOldDatabaseIfForceArgumentIsNotProvided()
             throws CommandFailed, IncorrectUsage, IOException, IncorrectFormat
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
@@ -191,7 +191,7 @@ public class LoadCommandTest
     }
 
     @Test
-    public void shouldRespectTheStoreLock() throws IOException, IncorrectUsage
+    void shouldRespectTheStoreLock() throws IOException
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
         Files.createDirectories( databaseDirectory );
@@ -200,17 +200,13 @@ public class LoadCommandTest
               StoreLocker locker = new StoreLocker( fileSystem, databaseDirectory.toFile() ) )
         {
             locker.checkLock();
-            execute( "foo.db", "--force" );
-            fail( "expected exception" );
-        }
-        catch ( CommandFailed e )
-        {
-            assertThat( e.getMessage(), equalTo( "the database is in use -- stop Neo4j and try again" ) );
+            CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo.db", "--force" ) );
+            assertEquals( "the database is in use -- stop Neo4j and try again", commandFailed.getMessage() );
         }
     }
 
     @Test
-    public void shouldDefaultToGraphDb() throws Exception
+    void shouldDefaultToGraphDb() throws Exception
     {
         Path databaseDir = homeDir.resolve( "data/databases/graph.db" );
         Files.createDirectories( databaseDir );
@@ -220,100 +216,58 @@ public class LoadCommandTest
     }
 
     @Test
-    public void shouldObjectIfTheArchiveArgumentIsMissing() throws Exception
+    void shouldObjectIfTheArchiveArgumentIsMissing()
     {
-        try
-        {
-            new LoadCommand( homeDir, configDir, loader ).execute( new String[]{"--database=something"} );
-            fail( "expected exception" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            assertThat( e.getMessage(), equalTo( "Missing argument 'from'" ) );
-        }
+        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class,
+                () -> new LoadCommand( homeDir, configDir, loader ).execute( new String[]{"--database=something"} ) );
+        assertEquals( "Missing argument 'from'", exception.getMessage() );
     }
 
     @Test
-    public void shouldGiveAClearMessageIfTheArchiveDoesntExist() throws IOException, IncorrectFormat, IncorrectUsage
+    void shouldGiveAClearMessageIfTheArchiveDoesntExist() throws IOException, IncorrectFormat
     {
         doThrow( new NoSuchFileException( archive.toString() ) ).when( loader ).load( any(), any(), any() );
-        try
-        {
-            execute( null );
-            fail( "expected exception" );
-        }
-        catch ( CommandFailed e )
-        {
-            assertThat( e.getMessage(), equalTo( "archive does not exist: " + archive ) );
-        }
+        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( null ) );
+        assertEquals( "archive does not exist: " + archive, commandFailed.getMessage() );
     }
 
     @Test
-    public void shouldGiveAClearMessageIfTheDatabaseAlreadyExists() throws IOException, IncorrectFormat, IncorrectUsage
+    void shouldGiveAClearMessageIfTheDatabaseAlreadyExists() throws IOException, IncorrectFormat, IncorrectUsage
     {
         doThrow( FileAlreadyExistsException.class ).when( loader ).load( any(), any(), any() );
-        try
-        {
-            execute( "foo.db" );
-            fail( "expected exception" );
-        }
-        catch ( CommandFailed e )
-        {
-            assertThat( e.getMessage(), equalTo( "database already exists: foo.db" ) );
-        }
+        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo.db" ) );
+        assertEquals( "database already exists: foo.db", commandFailed.getMessage() );
     }
 
     @Test
-    public void shouldGiveAClearMessageIfTheDatabasesDirectoryIsNotWritable()
-            throws IOException, IncorrectFormat, IncorrectUsage
+    void shouldGiveAClearMessageIfTheDatabasesDirectoryIsNotWritable()
+            throws IOException, IncorrectFormat
     {
         doThrow( AccessDeniedException.class ).when( loader ).load( any(), any(), any() );
-        try
-        {
-            execute( null );
-            fail( "expected exception" );
-        }
-        catch ( CommandFailed e )
-        {
-            assertThat( e.getMessage(), equalTo(
-                    "you do not have permission to load a database -- is Neo4j running " + "as a different user?" ) );
-        }
+        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( null ) );
+        assertEquals( "you do not have permission to load a database -- is Neo4j running as a different user?", commandFailed.getMessage() );
     }
 
     @Test
-    public void shouldWrapIOExceptionsCarefullyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
-            throws IOException, IncorrectUsage, IncorrectFormat
+    void shouldWrapIOExceptionsCarefullyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
+            throws IOException, IncorrectFormat
     {
         doThrow( new FileSystemException( "the-message" ) ).when( loader ).load( any(), any(), any() );
-        try
-        {
-            execute( null );
-            fail( "expected exception" );
-        }
-        catch ( CommandFailed e )
-        {
-            assertThat( e.getMessage(), equalTo( "unable to load database: FileSystemException: the-message" ) );
-        }
+        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( null ) );
+        assertEquals( "unable to load database: FileSystemException: the-message", commandFailed.getMessage() );
     }
 
     @Test
-    public void shouldThrowIfTheArchiveFormatIsInvalid() throws IOException, IncorrectUsage, IncorrectFormat
+    void shouldThrowIfTheArchiveFormatIsInvalid() throws IOException, IncorrectFormat
     {
         doThrow( IncorrectFormat.class ).when( loader ).load( any(), any(), any() );
-        try
-        {
-            execute( null );
-            fail( "expected exception" );
-        }
-        catch ( CommandFailed e )
-        {
-            assertThat( e.getMessage(), containsString( archive.toString() ) );
-            assertThat( e.getMessage(), containsString( "valid Neo4j archive" ) );
-        }
+        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( null ) );
+        assertThat( commandFailed.getMessage(), containsString( archive.toString() ) );
+        assertThat( commandFailed.getMessage(), containsString( "valid Neo4j archive" ) );
     }
 
     @Test
-    public void shouldPrintNiceHelp() throws Throwable
+    void shouldPrintNiceHelp() throws Throwable
     {
         try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
         {

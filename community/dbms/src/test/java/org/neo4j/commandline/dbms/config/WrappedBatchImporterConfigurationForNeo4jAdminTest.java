@@ -19,21 +19,20 @@
  */
 package org.neo4j.commandline.dbms.config;
 
-import org.junit.Test;
-import org.omg.CORBA.COMM_FAILURE;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Function;
 
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 
-public class WrappedBatchImporterConfigurationForNeo4jAdminTest
+class WrappedBatchImporterConfigurationForNeo4jAdminTest
 {
     @Test
-    public void shouldDelegateDenseNodeThreshold()
+    void shouldDelegateDenseNodeThreshold()
     {
         shouldDelegate( expected -> new Configuration()
         {
@@ -46,7 +45,7 @@ public class WrappedBatchImporterConfigurationForNeo4jAdminTest
     }
 
     @Test
-    public void shouldDelegateMovingAverageSize()
+    void shouldDelegateMovingAverageSize()
     {
         shouldDelegate( expected -> new Configuration()
         {
@@ -59,7 +58,7 @@ public class WrappedBatchImporterConfigurationForNeo4jAdminTest
     }
 
     @Test
-    public void shouldDelegateSequentialBackgroundFlushing()
+    void shouldDelegateSequentialBackgroundFlushing()
     {
         shouldDelegate( expected -> new Configuration()
         {
@@ -72,7 +71,7 @@ public class WrappedBatchImporterConfigurationForNeo4jAdminTest
     }
 
     @Test
-    public void shouldDelegateBatchSize()
+    void shouldDelegateBatchSize()
     {
         shouldDelegate( expected -> new Configuration()
         {
@@ -85,7 +84,7 @@ public class WrappedBatchImporterConfigurationForNeo4jAdminTest
     }
 
     @Test
-    public void shouldOverrideMaxNumberOfProcessors()
+    void shouldOverrideMaxNumberOfProcessors()
     {
         shouldOverride( expected -> new Configuration()
         {
@@ -98,7 +97,7 @@ public class WrappedBatchImporterConfigurationForNeo4jAdminTest
     }
 
     @Test
-    public void shouldDelegateParallelRecordWrites()
+    void shouldDelegateParallelRecordWrites()
     {
         shouldDelegate( expected -> new Configuration()
         {
@@ -111,7 +110,7 @@ public class WrappedBatchImporterConfigurationForNeo4jAdminTest
     }
 
     @Test
-    public void shouldDelegateParallelRecordReads()
+    void shouldDelegateParallelRecordReads()
     {
         shouldDelegate( expected -> new Configuration()
         {
@@ -124,7 +123,7 @@ public class WrappedBatchImporterConfigurationForNeo4jAdminTest
     }
 
     @Test
-    public void shouldDelegateHighIO()
+    void shouldDelegateHighIO()
     {
         shouldDelegate( expected -> new Configuration()
         {
@@ -137,7 +136,7 @@ public class WrappedBatchImporterConfigurationForNeo4jAdminTest
     }
 
     @Test
-    public void shouldDelegateMaxMemoryUsage()
+    void shouldDelegateMaxMemoryUsage()
     {
         shouldDelegate( expected -> new Configuration()
         {
@@ -150,7 +149,7 @@ public class WrappedBatchImporterConfigurationForNeo4jAdminTest
     }
 
     @Test
-    public void shouldDelegateAllowCacheAllocationOnHeap()
+    void shouldDelegateAllowCacheAllocationOnHeap()
     {
         shouldDelegate( expected -> new Configuration()
         {
