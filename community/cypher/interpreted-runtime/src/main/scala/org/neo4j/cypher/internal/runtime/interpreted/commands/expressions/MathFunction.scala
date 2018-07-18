@@ -57,9 +57,13 @@ trait NumericHelper {
 
   protected def asDouble(a: AnyValue): DoubleValue = Values.doubleValue(asNumber(a).doubleValue())
 
-  protected def asInt(a: AnyValue): IntValue = Values.intValue(asNumber(a).longValue().toInt)
+  protected def asInt(a: AnyValue): IntValue = Values.intValue(asPrimitiveInt(a))
 
-  protected def asLong(a: AnyValue): LongValue = Values.longValue(asNumber(a).longValue())
+  protected def asPrimitiveInt(a: AnyValue): Int = asNumber(a).longValue().toInt
+
+  protected def asLong(a: AnyValue): LongValue = Values.longValue(asPrimitiveLong(a))
+
+  protected def asPrimitiveLong(a: AnyValue): Long = asNumber(a).longValue()
 
   private def asNumber(a: AnyValue): NumberValue = a match {
     case null => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got null")

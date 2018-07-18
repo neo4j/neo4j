@@ -33,8 +33,8 @@ case class SkipPipe(source: Pipe, exp: Expression)
     if(input.isEmpty)
       return Iterator.empty
 
-    val skip = asInt(exp(state.createOrGetInitialContext(executionContextFactory), state))
+    val skip = asPrimitiveInt(exp(state.createOrGetInitialContext(executionContextFactory), state))
 
-    input.drop(skip.value())
+    input.drop(skip)
   }
 }
