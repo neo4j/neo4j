@@ -171,6 +171,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -230,7 +231,8 @@ public class HighlyAvailableEditionModule
         InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logging.getInternalLogProvider() ) );
 
         //TODO: particular database directory
-        life.add( new BranchedDataMigrator( platformModule.storeDir ) );
+        File databaseDirectory = new File( platformModule.storeDir, DataSourceManager.DEFAULT_DATABASE_NAME );
+        life.add( new BranchedDataMigrator( databaseDirectory ) );
         DelegateInvocationHandler<Master> masterDelegateInvocationHandler =
                 new DelegateInvocationHandler<>( Master.class );
         Master master = (Master) newProxyInstance( Master.class.getClassLoader(), new Class[]{Master.class},
@@ -424,7 +426,7 @@ public class HighlyAvailableEditionModule
 
         SwitchToSlave switchToSlaveInstance = chooseSwitchToSlaveStrategy( platformModule, config, dependencies, logging, monitors,
                 masterDelegateInvocationHandler, requestContextFactory, clusterMemberAvailability,
-                masterClientResolver, updatePullerProxy, pullerFactory, slaveServerFactory, editionIdGeneratorFactory );
+                masterClientResolver, updatePullerProxy, pullerFactory, slaveServerFactory, editionIdGeneratorFactory, databaseDirectory );
 
         final Factory<MasterImpl.SPI> masterSPIFactory =
                 () -> new DefaultMasterImplSPI( platformModule.graphDatabaseFacade, platformModule.fileSystem,
@@ -591,17 +593,16 @@ public class HighlyAvailableEditionModule
         );
     }
 
-    private SwitchToSlave chooseSwitchToSlaveStrategy( PlatformModule platformModule, Config config, Dependencies
-            dependencies, LogService logging, Monitors monitors, DelegateInvocationHandler<Master>
-            masterDelegateInvocationHandler, RequestContextFactory requestContextFactory, ClusterMemberAvailability
-            clusterMemberAvailability, MasterClientResolver masterClientResolver, UpdatePuller updatePullerProxy,
-            PullerFactory pullerFactory, Function<Slave, SlaveServer> slaveServerFactory, HaIdGeneratorFactory idGeneratorFactory )
+    private static SwitchToSlave chooseSwitchToSlaveStrategy( PlatformModule platformModule, Config config, Dependencies dependencies, LogService logging,
+            Monitors monitors, DelegateInvocationHandler<Master> masterDelegateInvocationHandler, RequestContextFactory requestContextFactory,
+            ClusterMemberAvailability clusterMemberAvailability, MasterClientResolver masterClientResolver, UpdatePuller updatePullerProxy,
+            PullerFactory pullerFactory, Function<Slave,SlaveServer> slaveServerFactory, HaIdGeneratorFactory idGeneratorFactory, File databaseDirectory )
     {
         switch ( config.get( HaSettings.branched_data_copying_strategy ) )
         {
             // :TODO: particular database directory should be used here
             case branch_then_copy:
-                return new SwitchToSlaveBranchThenCopy( platformModule.storeDir, logging,
+                return new SwitchToSlaveBranchThenCopy( databaseDirectory, logging,
                         platformModule.fileSystem, config, idGeneratorFactory,
                         masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
                         pullerFactory,
@@ -613,7 +614,7 @@ public class HighlyAvailableEditionModule
                         slaveServerFactory, updatePullerProxy, platformModule.pageCache,
                         monitors, platformModule.transactionMonitor );
             case copy_then_branch:
-                return new SwitchToSlaveCopyThenBranch( platformModule.storeDir, logging,
+                return new SwitchToSlaveCopyThenBranch( databaseDirectory, logging,
                         platformModule.fileSystem, config, idGeneratorFactory,
                         masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
                         pullerFactory,
@@ -629,13 +630,12 @@ public class HighlyAvailableEditionModule
         }
     }
 
-    private void publishServerId( Config config, UsageData sysInfo )
+    private static void publishServerId( Config config, UsageData sysInfo )
     {
         sysInfo.set( UsageDataKeys.serverId, config.get( ClusterSettings.server_id ).toString() );
     }
 
-    private TransactionHeaderInformationFactory createHeaderInformationFactory(
-            final HighAvailabilityMemberContext memberContext )
+    private static TransactionHeaderInformationFactory createHeaderInformationFactory( final HighAvailabilityMemberContext memberContext )
     {
         return new TransactionHeaderInformationFactory.WithRandomBytes()
         {
@@ -648,9 +648,8 @@ public class HighlyAvailableEditionModule
         };
     }
 
-    private CommitProcessFactory createCommitProcessFactory( Dependencies dependencies, LogService logging,
-            Monitors monitors, Config config, LifeSupport paxosLife, ClusterClient clusterClient,
-            ClusterMembers members, JobScheduler jobScheduler, Master master,
+    private static CommitProcessFactory createCommitProcessFactory( Dependencies dependencies, LogService logging, Monitors monitors, Config config,
+            LifeSupport paxosLife, ClusterClient clusterClient, ClusterMembers members, JobScheduler jobScheduler, Master master,
             RequestContextFactory requestContextFactory, ComponentSwitcherContainer componentSwitcherContainer,
             Supplier<LogEntryReader<ReadableClosablePositionAwareChannel>> logEntryReader )
     {
@@ -693,9 +692,9 @@ public class HighlyAvailableEditionModule
         return idGeneratorFactory;
     }
 
-    private Locks createLockManager( ComponentSwitcherContainer componentSwitcherContainer, Config config,
-            DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
-            RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard, Clock clock, LogService logService )
+    private static Locks createLockManager( ComponentSwitcherContainer componentSwitcherContainer, Config config,
+            DelegateInvocationHandler<Master> masterDelegateInvocationHandler, RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
+            Clock clock, LogService logService )
     {
         DelegateInvocationHandler<Locks> lockManagerDelegate = new DelegateInvocationHandler<>( Locks.class );
         Locks lockManager = (Locks) newProxyInstance( Locks.class.getClassLoader(), new Class[]{Locks.class},
@@ -711,10 +710,8 @@ public class HighlyAvailableEditionModule
         return lockManager;
     }
 
-    private TokenCreator createRelationshipTypeCreator( Config config,
-            ComponentSwitcherContainer componentSwitcherContainer,
-            DelegateInvocationHandler<Master> masterInvocationHandler, RequestContextFactory requestContextFactory,
-            Supplier<Kernel> kernelProvider )
+    private static TokenCreator createRelationshipTypeCreator( Config config, ComponentSwitcherContainer componentSwitcherContainer,
+            DelegateInvocationHandler<Master> masterInvocationHandler, RequestContextFactory requestContextFactory, Supplier<Kernel> kernelProvider )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -734,9 +731,8 @@ public class HighlyAvailableEditionModule
         return relationshipTypeCreator;
     }
 
-    private TokenCreator createPropertyKeyCreator( Config config, ComponentSwitcherContainer componentSwitcherContainer,
-            DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
-            RequestContextFactory requestContextFactory, Supplier<Kernel> kernelSupplier )
+    private static TokenCreator createPropertyKeyCreator( Config config, ComponentSwitcherContainer componentSwitcherContainer,
+            DelegateInvocationHandler<Master> masterDelegateInvocationHandler, RequestContextFactory requestContextFactory, Supplier<Kernel> kernelSupplier )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -756,9 +752,8 @@ public class HighlyAvailableEditionModule
         return propertyTokenCreator;
     }
 
-    private TokenCreator createLabelIdCreator( Config config, ComponentSwitcherContainer componentSwitcherContainer,
-            DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
-            RequestContextFactory requestContextFactory, Supplier<Kernel> kernelProvider )
+    private static TokenCreator createLabelIdCreator( Config config, ComponentSwitcherContainer componentSwitcherContainer,
+            DelegateInvocationHandler<Master> masterDelegateInvocationHandler, RequestContextFactory requestContextFactory, Supplier<Kernel> kernelProvider )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -777,9 +772,8 @@ public class HighlyAvailableEditionModule
         return labelIdCreator;
     }
 
-    private KernelData createKernelData( Config config, GraphDatabaseAPI graphDb, ClusterMembers members,
-            FileSystemAbstraction fs, PageCache pageCache, File storeDir,
-            LastUpdateTime lastUpdateTime, LastTxIdGetter txIdGetter, LifeSupport life )
+    private static KernelData createKernelData( Config config, GraphDatabaseAPI graphDb, ClusterMembers members, FileSystemAbstraction fs, PageCache pageCache,
+            File storeDir, LastUpdateTime lastUpdateTime, LastTxIdGetter txIdGetter, LifeSupport life )
     {
         ClusterDatabaseInfoProvider databaseInfo = new ClusterDatabaseInfoProvider( members,
                 txIdGetter,
@@ -883,17 +877,17 @@ public class HighlyAvailableEditionModule
         }
     }
 
-    private Server.Configuration masterServerConfig( final Config config )
+    private static Server.Configuration masterServerConfig( final Config config )
     {
         return commonConfig( config );
     }
 
-    private Server.Configuration slaveServerConfig( final Config config )
+    private static Server.Configuration slaveServerConfig( final Config config )
     {
         return commonConfig( config );
     }
 
-    private Server.Configuration commonConfig( final Config config )
+    private static Server.Configuration commonConfig( final Config config )
     {
         return new Server.Configuration()
         {

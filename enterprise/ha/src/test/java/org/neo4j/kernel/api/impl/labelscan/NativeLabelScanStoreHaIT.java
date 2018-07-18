@@ -78,7 +78,7 @@ public class NativeLabelScanStoreHaIT
                     if ( serverId == 1 )
                     {
                         GraphDatabaseService db = new TestGraphDatabaseFactory()
-                                .newEmbeddedDatabaseBuilder( storeDir.getAbsoluteFile() )
+                                .newEmbeddedDatabaseBuilder( storeDir )
                                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                                 .newGraphDatabase();
                         try

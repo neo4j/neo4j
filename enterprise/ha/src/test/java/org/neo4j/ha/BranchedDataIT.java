@@ -97,10 +97,11 @@ public class BranchedDataIT
             Thread.sleep( 1 ); // To make sure we get different timestamps
         }
 
-        File dir = directory.directory();
+        File storeDirectory = directory.directory();
+        File databaseDirectory = directory.graphDbDir();
         int clusterPort = PortAuthority.allocatePort();
         new TestHighlyAvailableGraphDatabaseFactory().
-                newEmbeddedDatabaseBuilder( dir )
+                newEmbeddedDatabaseBuilder( storeDirectory )
                 .setConfig( ClusterSettings.server_id, "1" )
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + clusterPort )
                 .setConfig( ClusterSettings.initial_hosts, "localhost:" + clusterPort )
@@ -111,9 +112,9 @@ public class BranchedDataIT
         for ( long timestamp : timestamps )
         {
             assertFalse( "directory branched-" + timestamp + " still exists.",
-                    new File( dir, "branched-" + timestamp ).exists() );
+                    new File( databaseDirectory, "branched-" + timestamp ).exists() );
             assertTrue( "directory " + timestamp + " is not there",
-                    StoreUtil.getBranchedDataDirectory( dir, timestamp ).exists() );
+                    StoreUtil.getBranchedDataDirectory( databaseDirectory, timestamp ).exists() );
         }
     }
 
@@ -155,8 +156,8 @@ public class BranchedDataIT
         // GIVEN a cluster of 3, all having the same data (node A)
         // thor is whoever is the master to begin with
         // odin is whoever is picked as _the_ slave given thor as initial master
-        File dir = directory.directory();
-        ClusterManager clusterManager = life.add( new ClusterManager.Builder( dir )
+        File storeDirectory = directory.directory();
+        ClusterManager clusterManager = life.add( new ClusterManager.Builder( storeDirectory )
                 .withSharedConfig( stringMap(
                 // Effectively disable automatic transaction propagation within the cluster
                 HaSettings.tx_push_factor.name(), "0",
@@ -219,24 +220,24 @@ public class BranchedDataIT
         assertTrue( hasNode( odin, "0-0" ) );
     }
 
-    private BranchMonitor installBranchedDataMonitor( Monitors monitors )
+    private static BranchMonitor installBranchedDataMonitor( Monitors monitors )
     {
         BranchMonitor monitor = new BranchMonitor();
         monitors.addMonitorListener( monitor );
         return monitor;
     }
 
-    private void retryOnTransactionFailure( GraphDatabaseService db, Consumer<GraphDatabaseService> tx )
+    private static void retryOnTransactionFailure( GraphDatabaseService db, Consumer<GraphDatabaseService> tx )
     {
         DatabaseRule.tx( db, retryACoupleOfTimesOn( ANY_EXCEPTION ), tx );
     }
 
-    private boolean changed( Set<File> before, Set<File> after )
+    private static boolean changed( Set<File> before, Set<File> after )
     {
         return !before.containsAll( after ) && !after.containsAll( before );
     }
 
-    private Collection<File> gatherLuceneFiles( HighlyAvailableGraphDatabase db, String indexName ) throws IOException
+    private static Collection<File> gatherLuceneFiles( HighlyAvailableGraphDatabase db, String indexName ) throws IOException
     {
         Collection<File> result = new ArrayList<>();
         NeoStoreDataSource ds = db.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
@@ -254,7 +255,7 @@ public class BranchedDataIT
         return result;
     }
 
-    private Listener<Node> andIndexInto( final String indexName )
+    private static Listener<Node> andIndexInto( final String indexName )
     {
         return node ->
         {
@@ -266,7 +267,7 @@ public class BranchedDataIT
         };
     }
 
-    private boolean hasNode( GraphDatabaseService db, String nodeName )
+    private static boolean hasNode( GraphDatabaseService db, String nodeName )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -282,7 +283,7 @@ public class BranchedDataIT
     }
 
     @SuppressWarnings( "unchecked" )
-    private void createNodeOffline( File storeDir, String name )
+    private static void createNodeOffline( File storeDir, String name )
     {
         GraphDatabaseService db = startGraphDatabaseService( storeDir );
         try
@@ -296,7 +297,7 @@ public class BranchedDataIT
     }
 
     @SuppressWarnings( "unchecked" )
-    private void createNode( GraphDatabaseService db, String name, Listener<Node>... additional )
+    private static void createNode( GraphDatabaseService db, String name, Listener<Node>... additional )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -310,7 +311,7 @@ public class BranchedDataIT
     }
 
     @SuppressWarnings( "unchecked" )
-    private void createNodes( GraphDatabaseService db, String namePrefix, int count, Listener<Node>... additional )
+    private static void createNodes( GraphDatabaseService db, String namePrefix, int count, Listener<Node>... additional )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -326,7 +327,7 @@ public class BranchedDataIT
         }
     }
 
-    private Node createNamedNode( GraphDatabaseService db, String name )
+    private static Node createNamedNode( GraphDatabaseService db, String name )
     {
         Node node = db.createNode();
         node.setProperty( "name", name );
@@ -335,7 +336,7 @@ public class BranchedDataIT
 
     private long moveAwayToLookLikeOldBranchedDirectory() throws IOException
     {
-        File dir = directory.directory();
+        File dir = directory.graphDbDir();
         long timestamp = System.currentTimeMillis();
         File branchDir = new File( dir, "branched-" + timestamp );
         assertTrue( "create directory: " + branchDir, branchDir.mkdirs() );
@@ -364,7 +365,7 @@ public class BranchedDataIT
         }
     }
 
-    private GraphDatabaseService startGraphDatabaseService( File storeDir )
+    private static GraphDatabaseService startGraphDatabaseService( File storeDir )
     {
         return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )

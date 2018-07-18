@@ -55,6 +55,7 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.StreamConsumer;
 import org.neo4j.test.rule.TestDirectory;
@@ -193,7 +194,7 @@ public class PullUpdatesAppliedIT
 
         int clusterPort = configuration.clusterPort;
         int haPort = configuration.haPort;
-        File directory = configuration.directory;
+        File storeDirectory = configuration.directory;
 
         // Setup to detect shutdown of separate JVM, required since we don't exit cleanly. That is also why we go
         // through the heartbeat and not through the cluster change as above.
@@ -211,7 +212,7 @@ public class PullUpdatesAppliedIT
                     }
                 } );
 
-        runInOtherJvm( directory, serverIdOfDatabaseToKill, clusterPort, haPort, configurations.get( serverIdOfMaster ).clusterPort );
+        runInOtherJvm( storeDirectory, serverIdOfDatabaseToKill, clusterPort, haPort, configurations.get( serverIdOfMaster ).clusterPort );
 
         assertTrue( "Timeout waiting for instance to fail", latch2.await( 60, TimeUnit.SECONDS ) );
 
@@ -220,7 +221,8 @@ public class PullUpdatesAppliedIT
         Thread.sleep( 15000 );
 
         restart( serverIdOfDatabaseToKill ); // recovery and branching.
-        boolean hasBranchedData = new File( directory, "branched" ).listFiles().length > 0;
+        File databaseDirectory = new File( storeDirectory, DataSourceManager.DEFAULT_DATABASE_NAME );
+        boolean hasBranchedData = new File( databaseDirectory, "branched" ).listFiles().length > 0;
         assertFalse( hasBranchedData );
     }
 
@@ -266,7 +268,7 @@ public class PullUpdatesAppliedIT
                 .newGraphDatabase();
     }
 
-    private void runInOtherJvm( File directory, int serverIdOfDatabaseToKill, int clusterPort, int haPort, int initialHostPort ) throws Exception
+    private static void runInOtherJvm( File directory, int serverIdOfDatabaseToKill, int clusterPort, int haPort, int initialHostPort ) throws Exception
     {
         List<String> commandLine = new ArrayList<>( Arrays.asList(
                 "java",

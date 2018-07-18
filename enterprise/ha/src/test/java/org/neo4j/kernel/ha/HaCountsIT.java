@@ -59,7 +59,7 @@ public class HaCountsIT
     private static final String PROPERTY_VALUE = "value";
 
     @Rule
-    public ClusterRule clusterRule = new ClusterRule();
+    public final ClusterRule clusterRule = new ClusterRule();
 
     private ManagedCluster cluster;
     private HighlyAvailableGraphDatabase master;
@@ -172,7 +172,7 @@ public class HaCountsIT
         assertOnIndexCounts( 0, 1, 1, 1, schemaIndexDescriptor, slave2 );
     }
 
-    private void createANode( HighlyAvailableGraphDatabase db, Label label, String value, String property )
+    private static void createANode( HighlyAvailableGraphDatabase db, Label label, String value, String property )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -182,7 +182,7 @@ public class HaCountsIT
         }
     }
 
-    private IndexDescriptor createAnIndex( HighlyAvailableGraphDatabase db, Label label, String propertyName )
+    private static IndexDescriptor createAnIndex( HighlyAvailableGraphDatabase db, Label label, String propertyName )
             throws KernelException
     {
         try ( Transaction tx = db.beginTx() )
@@ -197,8 +197,7 @@ public class HaCountsIT
         }
     }
 
-    private void assertOnNodeCounts( int expectedTotalNodes, int expectedLabelledNodes,
-                                     Label label, HighlyAvailableGraphDatabase db )
+    private static void assertOnNodeCounts( int expectedTotalNodes, int expectedLabelledNodes, Label label, HighlyAvailableGraphDatabase db )
     {
         try ( Transaction ignored = db.beginTx() )
         {
@@ -209,9 +208,8 @@ public class HaCountsIT
         }
     }
 
-    private void assertOnIndexCounts( int expectedIndexUpdates, int expectedIndexSize,
-                                      int expectedUniqueValues, int expectedSampleSize,
-                                      IndexDescriptor indexDescriptor, HighlyAvailableGraphDatabase db )
+    private static void assertOnIndexCounts( int expectedIndexUpdates, int expectedIndexSize, int expectedUniqueValues, int expectedSampleSize,
+            IndexDescriptor indexDescriptor, HighlyAvailableGraphDatabase db )
             throws TransactionFailureException, IndexNotFoundKernelException
     {
         try ( org.neo4j.internal.kernel.api.Transaction tx = db.getDependencyResolver().resolveDependency( Kernel.class )
@@ -223,21 +221,21 @@ public class HaCountsIT
         }
     }
 
-    private void assertDoubleLongEquals( int expectedFirst, int expectedSecond, DoubleLongRegister actualValues )
+    private static void assertDoubleLongEquals( int expectedFirst, int expectedSecond, DoubleLongRegister actualValues )
     {
         String msg = String.format( "Expected (%d,%d) but was (%d,%d)", expectedFirst, expectedSecond,
                 actualValues.readFirst(), actualValues.readSecond() );
         assertTrue( msg, actualValues.hasValues( expectedFirst, expectedSecond ) );
     }
 
-    private KernelTransaction kernelTransaction( HighlyAvailableGraphDatabase db )
+    private static KernelTransaction kernelTransaction( HighlyAvailableGraphDatabase db )
     {
         return db.getDependencyResolver()
                 .resolveDependency( ThreadToStatementContextBridge.class )
                 .getKernelTransactionBoundToThisThread(true);
     }
 
-    private void awaitOnline( HighlyAvailableGraphDatabase db )
+    private static void awaitOnline( HighlyAvailableGraphDatabase db )
     {
         try ( Transaction tx = db.beginTx() )
         {

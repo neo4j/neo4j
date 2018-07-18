@@ -53,32 +53,32 @@ public class StoreUtil
     {
     }
 
-    public static void cleanStoreDir( File storeDir ) throws IOException
+    public static void cleanStoreDir( File databaseDirectory ) throws IOException
     {
-        for ( File file : relevantDbFiles( storeDir ) )
+        for ( File file : relevantDbFiles( databaseDirectory ) )
         {
             FileUtils.deleteRecursively( file );
         }
     }
 
-    public static File newBranchedDataDir( File storeDir )
+    public static File newBranchedDataDir( File databaseDirectory )
     {
-        File result = getBranchedDataDirectory( storeDir, System.currentTimeMillis() );
+        File result = getBranchedDataDirectory( databaseDirectory, System.currentTimeMillis() );
         result.mkdirs();
         return result;
     }
 
-    public static void moveAwayDb( File storeDir, File branchedDataDir ) throws IOException
+    public static void moveAwayDb( File databaseDirectory, File branchedDataDir ) throws IOException
     {
-        for ( File file : relevantDbFiles( storeDir ) )
+        for ( File file : relevantDbFiles( databaseDirectory ) )
         {
             FileUtils.moveFileToDirectory( file, branchedDataDir );
         }
     }
 
-    public static void deleteRecursive( File storeDir ) throws IOException
+    public static void deleteRecursive( File databaseDirectory ) throws IOException
     {
-        FileUtils.deleteRecursively( storeDir );
+        FileUtils.deleteRecursively( databaseDirectory );
     }
 
     public static boolean isBranchedDataDirectory( File file )
@@ -87,24 +87,24 @@ public class StoreUtil
                StringUtils.isNumeric( file.getName() );
     }
 
-    public static File getBranchedDataRootDirectory( File storeDir )
+    public static File getBranchedDataRootDirectory( File databaseDirectory )
     {
-        return new File( storeDir, BRANCH_SUBDIRECTORY );
+        return new File( databaseDirectory, BRANCH_SUBDIRECTORY );
     }
 
-    public static File getBranchedDataDirectory( File storeDir, long timestamp )
+    public static File getBranchedDataDirectory( File databaseDirectory, long timestamp )
     {
-        return new File( getBranchedDataRootDirectory( storeDir ), "" + timestamp );
+        return new File( getBranchedDataRootDirectory( databaseDirectory ), "" + timestamp );
     }
 
-    public static File[] relevantDbFiles( File storeDir )
+    public static File[] relevantDbFiles( File databaseDirectory )
     {
-        if ( !storeDir.exists() )
+        if ( !databaseDirectory.exists() )
         {
             return new File[0];
         }
 
-        return storeDir.listFiles( STORE_FILE_FILTER );
+        return databaseDirectory.listFiles( STORE_FILE_FILTER );
     }
 
     private static boolean isBranchedDataRootDirectory( File file )

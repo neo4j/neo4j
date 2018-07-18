@@ -112,7 +112,7 @@ public class BackupHaIT
         }
     }
 
-    private String[] backupArguments( String from, File backupDir, String name )
+    private static String[] backupArguments( String from, File backupDir, String name )
     {
         List<String> args = new ArrayList<>();
         args.add( "--from=" + from );

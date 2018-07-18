@@ -41,29 +41,33 @@ public enum BranchedDataPolicy
     keep_all
             {
                 @Override
-                public void handle( File storeDir, PageCache pageCache, LogService logService ) throws IOException
+                public void handle( File databaseDirectory, PageCache pageCache, LogService logService ) throws IOException
                 {
                     Log msgLog = logService.getInternalLog( getClass() );
-                    File branchedDataDir = newBranchedDataDir( storeDir );
-                    msgLog.debug( "Moving store from " + storeDir + " to " + branchedDataDir );
-                    moveAwayDb( storeDir, branchedDataDir );
+                    File branchedDataDir = newBranchedDataDir( databaseDirectory );
+                    msgLog.debug( "Moving store from " + databaseDirectory + " to " + branchedDataDir );
+                    moveAwayDb( databaseDirectory, branchedDataDir );
                 }
             },
     keep_last
             {
                 @Override
-                public void handle( File storeDir, PageCache pageCache, LogService logService ) throws IOException
+                public void handle( File databaseDirectory, PageCache pageCache, LogService logService ) throws IOException
                 {
                     Log msgLog = logService.getInternalLog( getClass() );
 
-                    File branchedDataDir = newBranchedDataDir( storeDir );
-                    msgLog.debug( "Moving store from " + storeDir + " to " + branchedDataDir );
-                    moveAwayDb( storeDir, branchedDataDir );
-                    for ( File file : getBranchedDataRootDirectory( storeDir ).listFiles() )
+                    File branchedDataDir = newBranchedDataDir( databaseDirectory );
+                    msgLog.debug( "Moving store from " + databaseDirectory + " to " + branchedDataDir );
+                    moveAwayDb( databaseDirectory, branchedDataDir );
+                    File[] files = getBranchedDataRootDirectory( databaseDirectory ).listFiles();
+                    if ( files != null )
                     {
-                        if ( isBranchedDataDirectory( file ) && !file.equals( branchedDataDir ) )
+                        for ( File file : files )
                         {
-                            deleteRecursive( file );
+                            if ( isBranchedDataDirectory( file ) && !file.equals( branchedDataDir ) )
+                            {
+                                deleteRecursive( file );
+                            }
                         }
                     }
                 }
@@ -71,11 +75,11 @@ public enum BranchedDataPolicy
     keep_none
             {
                 @Override
-                public void handle( File storeDir, PageCache pageCache, LogService logService ) throws IOException
+                public void handle( File databaseDirectory, PageCache pageCache, LogService logService ) throws IOException
                 {
                     Log msgLog = logService.getInternalLog( getClass() );
-                    msgLog.debug( "Removing store  " + storeDir );
-                    cleanStoreDir( storeDir );
+                    msgLog.debug( "Removing store  " + databaseDirectory );
+                    cleanStoreDir( databaseDirectory );
                 }
             };
 
