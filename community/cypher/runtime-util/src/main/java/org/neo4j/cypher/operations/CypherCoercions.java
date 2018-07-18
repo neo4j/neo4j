@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.cypher.operations;
 
 import org.opencypher.v9_0.util.CypherTypeException;
@@ -28,6 +47,7 @@ import org.neo4j.values.virtual.VirtualValues;
 import static java.lang.String.format;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
+@SuppressWarnings( {"unused", "WeakerAccess"} )
 public final class CypherCoercions
 {
     private CypherCoercions()
@@ -41,7 +61,7 @@ public final class CypherCoercions
         {
             throw cantCoerce( value, "String" );
         }
-        return ((TextValue) value);
+        return (TextValue) value;
     }
 
     public static NodeValue asNodeValue( AnyValue value )
@@ -50,7 +70,7 @@ public final class CypherCoercions
         {
             throw cantCoerce( value, "Node" );
         }
-        return ((NodeValue) value);
+        return (NodeValue) value;
     }
 
     public static RelationshipValue asRelationshipValue( AnyValue value )
@@ -59,7 +79,7 @@ public final class CypherCoercions
         {
             throw cantCoerce( value, "Relationship" );
         }
-        return ((RelationshipValue) value);
+        return (RelationshipValue) value;
     }
 
     public static PathValue asPathValue( AnyValue value )
@@ -68,7 +88,7 @@ public final class CypherCoercions
         {
             throw cantCoerce( value, "Path" );
         }
-        return ((PathValue) value);
+        return (PathValue) value;
     }
 
     public static IntegralValue asIntegralValue( AnyValue value )
@@ -95,7 +115,7 @@ public final class CypherCoercions
         {
             throw cantCoerce( value, "Boolean" );
         }
-        return ((BooleanValue) value);
+        return (BooleanValue) value;
     }
 
     public static NumberValue asNumberValue( AnyValue value )
@@ -104,7 +124,7 @@ public final class CypherCoercions
         {
             throw cantCoerce( value, "Number" );
         }
-        return ((NumberValue) value);
+        return (NumberValue) value;
     }
 
     public static PointValue asPointValue( AnyValue value )
@@ -113,7 +133,7 @@ public final class CypherCoercions
         {
             throw cantCoerce( value, "Point" );
         }
-        return ((PointValue) value);
+        return (PointValue) value;
     }
 
     public static DateValue asDateValue( AnyValue value )
@@ -122,7 +142,7 @@ public final class CypherCoercions
         {
             throw cantCoerce( value, "Date" );
         }
-        return ((DateValue) value);
+        return (DateValue) value;
     }
 
     public static TimeValue asTimeValue( AnyValue value )
@@ -131,7 +151,7 @@ public final class CypherCoercions
         {
             throw cantCoerce( value, "Time" );
         }
-        return ((TimeValue) value);
+        return (TimeValue) value;
     }
 
     public static LocalTimeValue asLocalTimeValue( AnyValue value )
@@ -140,7 +160,7 @@ public final class CypherCoercions
         {
             throw cantCoerce( value, "LocalTime" );
         }
-        return ((LocalTimeValue) value);
+        return (LocalTimeValue) value;
     }
 
     public static LocalDateTimeValue asLocalDateTimeValue( AnyValue value )
@@ -149,7 +169,7 @@ public final class CypherCoercions
         {
             throw cantCoerce( value, "LocalDateTime" );
         }
-        return ((LocalDateTimeValue) value);
+        return (LocalDateTimeValue) value;
     }
 
     public static DateTimeValue asDateTimeValue( AnyValue value )
@@ -158,7 +178,7 @@ public final class CypherCoercions
         {
             throw cantCoerce( value, "DateTime" );
         }
-        return ((DateTimeValue) value);
+        return (DateTimeValue) value;
     }
 
     public static DurationValue asDurationValue( AnyValue value )
@@ -167,27 +187,27 @@ public final class CypherCoercions
         {
             throw cantCoerce( value, "Duration" );
         }
-        return ((DurationValue) value);
+        return (DurationValue) value;
     }
 
     public static MapValue asMapValue( AnyValue value, DbAccess access )
     {
-       if ( value instanceof MapValue )
-       {
-           return (MapValue) value;
-       }
-       else if ( value instanceof NodeValue )
-       {
-           return access.nodeAsMap( ((NodeValue) value).id() );
-       }
-       else if ( value instanceof RelationshipValue )
-       {
-           return access.relationshipAsMap( ((RelationshipValue) value).id() );
-       }
-       else
-       {
-           throw cantCoerce( value, "Map" );
-       }
+        if ( value instanceof MapValue )
+        {
+            return (MapValue) value;
+        }
+        else if ( value instanceof NodeValue )
+        {
+            return access.nodeAsMap( ((NodeValue) value).id() );
+        }
+        else if ( value instanceof RelationshipValue )
+        {
+            return access.relationshipAsMap( ((RelationshipValue) value).id() );
+        }
+        else
+        {
+            throw cantCoerce( value, "Map" );
+        }
     }
 
     public static ListValue asListValueFailOnPaths( AnyValue value )
@@ -196,21 +216,9 @@ public final class CypherCoercions
         {
             throw cantCoerce( value, "List" );
         }
-        else if ( value instanceof ListValue )
-        {
-            return (ListValue) value;
-        }
-        else if ( value instanceof ArrayValue )
-        {
-            return VirtualValues.fromArray( (ArrayValue) value );
-        }
-        else if ( value == NO_VALUE )
-        {
-            return VirtualValues.EMPTY_LIST;
-        }
         else
         {
-            return VirtualValues.list( value );
+            return asList( value );
         }
     }
 
@@ -220,7 +228,20 @@ public final class CypherCoercions
         {
             return ((PathValue) value).asList();
         }
-        else if ( value instanceof ListValue )
+        else
+        {
+            return asList( value );
+        }
+    }
+
+    private static CypherTypeException cantCoerce( AnyValue value, String type )
+    {
+        return new CypherTypeException( format( "Can't coerce `%s` to %s", value, type ), null );
+    }
+
+    private static ListValue asList( AnyValue value )
+    {
+        if ( value instanceof ListValue )
         {
             return (ListValue) value;
         }
@@ -236,10 +257,5 @@ public final class CypherCoercions
         {
             return VirtualValues.list( value );
         }
-    }
-
-    static CypherTypeException cantCoerce(AnyValue value, String type)
-    {
-        return new CypherTypeException( format( "Can't coerce `%s` to %s", value, type ), null );
     }
 }

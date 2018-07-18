@@ -167,7 +167,7 @@ public final class CypherBoolean
 
     public static Value lessThan( AnyValue lhs, AnyValue rhs )
     {
-        if ( isNan(lhs) || isNan( rhs ))
+        if ( isNan( lhs ) || isNan( rhs ) )
         {
             return NO_VALUE;
         }
@@ -215,7 +215,7 @@ public final class CypherBoolean
 
     public static Value lessThanOrEqual( AnyValue lhs, AnyValue rhs )
     {
-        if ( isNan(lhs) || isNan( rhs ))
+        if ( isNan( lhs ) || isNan( rhs ) )
         {
             return NO_VALUE;
         }
@@ -263,7 +263,7 @@ public final class CypherBoolean
 
     public static Value greaterThan( AnyValue lhs, AnyValue rhs )
     {
-        if ( isNan(lhs) || isNan( rhs ))
+        if ( isNan( lhs ) || isNan( rhs ) )
         {
             return NO_VALUE;
         }
@@ -311,7 +311,7 @@ public final class CypherBoolean
 
     public static Value greaterThanOrEqual( AnyValue lhs, AnyValue rhs )
     {
-        if ( isNan(lhs) || isNan( rhs ))
+        if ( isNan( lhs ) || isNan( rhs ) )
         {
             return NO_VALUE;
         }
