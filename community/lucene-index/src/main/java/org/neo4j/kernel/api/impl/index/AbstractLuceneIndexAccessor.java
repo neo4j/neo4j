@@ -68,7 +68,7 @@ public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, IN
     protected abstract IndexUpdater getIndexUpdater( IndexUpdateMode mode );
 
     @Override
-    public void drop() throws IOException
+    public void drop()
     {
         luceneIndex.drop();
     }
